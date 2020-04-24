@@ -1,0 +1,96 @@
+using RimWorld.Planet;
+using System.Collections.Generic;
+using System.Linq;
+using Verse;
+
+namespace RimWorld
+{
+	public class QuestPart_RequirementsToAcceptBedroom : QuestPart_RequirementsToAccept
+	{
+		public List<Pawn> targetPawns = new List<Pawn>();
+
+		public MapParent mapParent;
+
+		private List<Thing> tmpOccupiedBeds = new List<Thing>();
+
+		private List<Pawn> culpritsResult = new List<Pawn>();
+
+		public override IEnumerable<Dialog_InfoCard.Hyperlink> Hyperlinks => CulpritsAre().Select(delegate(Pawn p)
+		{
+			RoyalTitle royalTitle = p.royalty.HighestTitleWithBedroomRequirements();
+			return new Dialog_InfoCard.Hyperlink(royalTitle.def, royalTitle.faction);
+		});
+
+		public override AcceptanceReport CanAccept()
+		{
+			int num = CulpritsAre().Count();
+			if (num > 0)
+			{
+				return ((num > 1) ? "QuestBedroomRequirementsUnsatisfied" : "QuestBedroomRequirementsUnsatisfiedSingle").Translate() + " " + (from p in CulpritsAre()
+					select p.royalty.MainTitle().GetLabelFor(p).CapitalizeFirst() + " " + p.LabelShort).ToCommaList(useAnd: true) + ".";
+			}
+			return true;
+		}
+
+		private List<Pawn> CulpritsAre()
+		{
+			culpritsResult.Clear();
+			if (targetPawns.Any())
+			{
+				foreach (Pawn allMapsCaravansAndTravelingTransportPods_Alive_Colonist in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_Colonists)
+				{
+					if (allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty != null && allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty.HighestTitleWithBedroomRequirements() != null && (!allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty.HasPersonalBedroom() || allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty.GetUnmetBedroomRequirements().Any()))
+					{
+						culpritsResult.Add(allMapsCaravansAndTravelingTransportPods_Alive_Colonist);
+					}
+				}
+			}
+			tmpOccupiedBeds.Clear();
+			List<Thing> list = mapParent.Map.listerThings.ThingsInGroup(ThingRequestGroup.Bed);
+			foreach (Pawn targetPawn in targetPawns)
+			{
+				RoyalTitle title = targetPawn.royalty.HighestTitleWithBedroomRequirements();
+				Thing thing = null;
+				for (int i = 0; i < list.Count; i++)
+				{
+					Thing thing2 = list[i];
+					if (thing2.Faction == Faction.OfPlayer && thing2.GetRoom() != null && !tmpOccupiedBeds.Contains(thing2))
+					{
+						CompAssignableToPawn compAssignableToPawn = thing2.TryGetComp<CompAssignableToPawn>();
+						if (compAssignableToPawn != null && compAssignableToPawn.AssignedPawnsForReading.Count <= 0 && RoyalTitleUtility.BedroomSatisfiesRequirements(thing2.GetRoom(), title))
+						{
+							thing = thing2;
+							break;
+						}
+					}
+				}
+				if (thing != null)
+				{
+					tmpOccupiedBeds.Add(thing);
+				}
+				else
+				{
+					culpritsResult.Add(targetPawn);
+				}
+			}
+			tmpOccupiedBeds.Clear();
+			return culpritsResult;
+		}
+
+		public override void ExposeData()
+		{
+			base.ExposeData();
+			Scribe_References.Look(ref mapParent, "mapParent");
+			Scribe_Collections.Look(ref targetPawns, "targetPawns", LookMode.Reference);
+			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			{
+				targetPawns.RemoveAll((Pawn x) => x == null);
+			}
+		}
+
+		public override void ReplacePawnReferences(Pawn replace, Pawn with)
+		{
+			targetPawns.Replace(replace, with);
+		}
+	}
+}
