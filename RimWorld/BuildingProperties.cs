@@ -82,6 +82,8 @@ namespace RimWorld
 
 		public float combatPower;
 
+		public int minMechClusterPoints;
+
 		public bool isPlayerEjectable;
 
 		public GraphicData fullGraveGraphicData;
@@ -120,6 +122,8 @@ namespace RimWorld
 		public bool ai_combatDangerous;
 
 		public bool ai_chillDestination = true;
+
+		public bool ai_neverTrashThis;
 
 		public SoundDef soundDoorOpenPowered;
 
@@ -182,6 +186,8 @@ namespace RimWorld
 		public float instrumentRange;
 
 		public int minDistanceToSameTypeOfBuilding;
+
+		public bool artificialForMeditationPurposes = true;
 
 		public bool SupportsPlants => sowTag != null;
 

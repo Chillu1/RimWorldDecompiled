@@ -249,12 +249,12 @@ namespace RimWorld
 			}
 			if (!prisoner && pawn.Faction.HostileTo(newHost))
 			{
-				Log.Error("Tried to make " + pawn + " a guest of " + newHost + " but their faction " + pawn.Faction + " is hostile to " + newHost);
+				Log.Error(string.Concat("Tried to make ", pawn, " a guest of ", newHost, " but their faction ", pawn.Faction, " is hostile to ", newHost));
 				return;
 			}
 			if (newHost != null && newHost == pawn.Faction && !prisoner)
 			{
-				Log.Error("Tried to make " + pawn + " a guest of their own faction " + pawn.Faction);
+				Log.Error(string.Concat("Tried to make ", pawn, " a guest of their own faction ", pawn.Faction));
 				return;
 			}
 			bool num = prisoner && (!IsPrisoner || HostFaction != newHost);

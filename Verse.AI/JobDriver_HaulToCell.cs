@@ -71,6 +71,7 @@ namespace Verse.AI
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
+			JobDriver_HaulToCell jobDriver_HaulToCell = this;
 			this.FailOnDestroyedOrNull(TargetIndex.A);
 			this.FailOnBurningImmobile(TargetIndex.B);
 			if (!forbiddenInitially)
@@ -87,7 +88,7 @@ namespace Verse.AI
 				if (curJob.haulMode == HaulMode.ToCellStorage)
 				{
 					Thing thing = curJob.GetTarget(TargetIndex.A).Thing;
-					if (!actor.jobs.curJob.GetTarget(TargetIndex.B).Cell.IsValidStorageFor(base.Map, thing))
+					if (!actor.jobs.curJob.GetTarget(TargetIndex.B).Cell.IsValidStorageFor(jobDriver_HaulToCell.Map, thing))
 					{
 						return true;
 					}

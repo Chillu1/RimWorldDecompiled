@@ -196,34 +196,36 @@ namespace RimWorld
 			}
 			foreach (IntVec3 item2 in GenAdj.CellsAdjacentCardinal(center, rot, entDef.Size))
 			{
-				if (item2.InBounds(map))
+				if (!item2.InBounds(map))
 				{
-					thingList = item2.GetThingList(map);
-					for (int k = 0; k < thingList.Count; k++)
+					continue;
+				}
+				thingList = item2.GetThingList(map);
+				for (int k = 0; k < thingList.Count; k++)
+				{
+					Thing thing3 = thingList[k];
+					if (thing3 == thingToIgnore)
 					{
-						Thing thing3 = thingList[k];
-						if (thing3 != thingToIgnore)
+						continue;
+					}
+					ThingDef thingDef2 = null;
+					Blueprint blueprint = thing3 as Blueprint;
+					if (blueprint != null)
+					{
+						ThingDef thingDef3 = blueprint.def.entityDefToBuild as ThingDef;
+						if (thingDef3 == null)
 						{
-							ThingDef thingDef2 = null;
-							Blueprint blueprint = thing3 as Blueprint;
-							if (blueprint != null)
-							{
-								ThingDef thingDef3 = blueprint.def.entityDefToBuild as ThingDef;
-								if (thingDef3 == null)
-								{
-									continue;
-								}
-								thingDef2 = thingDef3;
-							}
-							else
-							{
-								thingDef2 = thing3.def;
-							}
-							if (thingDef2.hasInteractionCell && (entDef.passability == Traversability.Impassable || entDef == thingDef2) && cellRect.Contains(ThingUtility.InteractionCellWhenAt(thingDef2, thing3.Position, thing3.Rotation, thing3.Map)))
-							{
-								return new AcceptanceReport("WouldBlockInteractionSpot".Translate(entDef.label, thingDef2.label).CapitalizeFirst());
-							}
+							continue;
 						}
+						thingDef2 = thingDef3;
+					}
+					else
+					{
+						thingDef2 = thing3.def;
+					}
+					if (thingDef2.hasInteractionCell && (entDef.passability == Traversability.Impassable || entDef == thingDef2) && cellRect.Contains(ThingUtility.InteractionCellWhenAt(thingDef2, thing3.Position, thing3.Rotation, thing3.Map)))
+					{
+						return new AcceptanceReport("WouldBlockInteractionSpot".Translate(entDef.label, thingDef2.label).CapitalizeFirst());
 					}
 				}
 			}
@@ -418,7 +420,7 @@ namespace RimWorld
 				{
 					return HaulAIUtility.HaulAsideJobFor(worker, thing);
 				}
-				Log.ErrorOnce("Never haulable " + thing + " blocking " + constructible.ToStringSafe() + " at " + constructible.Position, 6429262);
+				Log.ErrorOnce(string.Concat("Never haulable ", thing, " blocking ", constructible.ToStringSafe(), " at ", constructible.Position), 6429262);
 			}
 			else if (thing.def.category == ThingCategory.Building)
 			{

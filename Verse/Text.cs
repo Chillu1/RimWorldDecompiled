@@ -238,7 +238,7 @@ namespace Verse
 			}
 			if (Anchor != 0)
 			{
-				Log.ErrorOnce("Alignment was " + Anchor + " at end of frame.", 15558);
+				Log.ErrorOnce(string.Concat("Alignment was ", Anchor, " at end of frame."), 15558);
 				Anchor = TextAnchor.UpperLeft;
 			}
 			Font = GameFont.Small;

@@ -23,11 +23,11 @@ namespace Verse
 			string str = "[";
 			if (keyBindingA != 0)
 			{
-				str += keyBindingA.ToString();
+				str += keyBindingA;
 			}
 			if (keyBindingB != 0)
 			{
-				str = str + ", " + keyBindingB.ToString();
+				str = str + ", " + keyBindingB;
 			}
 			return str + "]";
 		}

@@ -41,6 +41,7 @@ namespace RimWorld
 			this.FailOnThingMissingDesignation(TargetIndex.A, Designation);
 			this.FailOnForbidden(TargetIndex.A);
 			yield return Toils_Goto.GotoThing(TargetIndex.A, (Target is Building_Trap) ? PathEndMode.OnCell : PathEndMode.Touch);
+			JobDriver_RemoveBuilding jobDriver_RemoveBuilding = this;
 			Toil doWork = new Toil().FailOnDestroyedNullOrForbidden(TargetIndex.A).FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
 			doWork.initAction = delegate
 			{
@@ -49,9 +50,9 @@ namespace RimWorld
 			};
 			doWork.tickAction = delegate
 			{
-				workLeft -= pawn.GetStatValue(StatDefOf.ConstructionSpeed) * 1.7f;
-				TickAction();
-				if (workLeft <= 0f)
+				jobDriver_RemoveBuilding.workLeft -= jobDriver_RemoveBuilding.pawn.GetStatValue(StatDefOf.ConstructionSpeed) * 1.7f;
+				jobDriver_RemoveBuilding.TickAction();
+				if (jobDriver_RemoveBuilding.workLeft <= 0f)
 				{
 					doWork.actor.jobs.curDriver.ReadyForNextToil();
 				}

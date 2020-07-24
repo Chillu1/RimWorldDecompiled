@@ -81,7 +81,7 @@ namespace Verse
 				if ((i == 0 || i == array.Length - 1 || TitleCaseHelper.IsUppercaseTitleWord(text)) && !text.NullOrEmpty())
 				{
 					int num = text.FirstLetterBetweenTags();
-					string str2 = (num == 0) ? text[num].ToString().ToUpper() : (text.Substring(0, num) + char.ToUpper(text[num]).ToString());
+					string str2 = (num == 0) ? text[num].ToString().ToUpper() : (text.Substring(0, num) + char.ToUpper(text[num]));
 					string str3 = text.Substring(num + 1);
 					array[i] = str2 + str3;
 				}

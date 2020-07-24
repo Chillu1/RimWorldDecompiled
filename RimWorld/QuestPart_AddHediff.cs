@@ -17,6 +17,8 @@ namespace RimWorld
 
 		public bool checkDiseaseContractChance;
 
+		public bool addToHyperlinks;
+
 		public override IEnumerable<GlobalTargetInfo> QuestLookTargets
 		{
 			get
@@ -28,6 +30,21 @@ namespace RimWorld
 				for (int i = 0; i < pawns.Count; i++)
 				{
 					yield return pawns[i];
+				}
+			}
+		}
+
+		public override IEnumerable<Dialog_InfoCard.Hyperlink> Hyperlinks
+		{
+			get
+			{
+				foreach (Dialog_InfoCard.Hyperlink hyperlink in base.Hyperlinks)
+				{
+					yield return hyperlink;
+				}
+				if (addToHyperlinks)
+				{
+					yield return new Dialog_InfoCard.Hyperlink(hediffDef);
 				}
 			}
 		}
@@ -56,6 +73,7 @@ namespace RimWorld
 			Scribe_Values.Look(ref inSignal, "inSignal");
 			Scribe_Defs.Look(ref hediffDef, "hediffDef");
 			Scribe_Values.Look(ref checkDiseaseContractChance, "checkDiseaseContractChance", defaultValue: false);
+			Scribe_Values.Look(ref addToHyperlinks, "addToHyperlinks", defaultValue: false);
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				pawns.RemoveAll((Pawn x) => x == null);

@@ -79,6 +79,7 @@ namespace Verse
 				});
 			}
 			base.Map.listerBuildingsRepairable.Notify_BuildingSpawned(this);
+			base.Map.listerArtificialBuildingsForMeditation.Notify_BuildingSpawned(this);
 			if (!this.CanBeSeenOver())
 			{
 				base.Map.exitMapGrid.Notify_LOSBlockerSpawned();
@@ -144,6 +145,7 @@ namespace Verse
 			}
 			map.listerBuildings.Remove(this);
 			map.listerBuildingsRepairable.Notify_BuildingDeSpawned(this);
+			map.listerArtificialBuildingsForMeditation.Notify_BuildingDeSpawned(this);
 			if (def.building.leaveTerrain != null && Current.ProgramState == ProgramState.Playing && canChangeTerrainOnDestroyed)
 			{
 				foreach (IntVec3 item in this.OccupiedRect())
@@ -276,12 +278,13 @@ namespace Verse
 			{
 				yield return command;
 			}
-			if (base.Faction == Faction.OfPlayer)
+			if (base.Faction != Faction.OfPlayer)
 			{
-				foreach (Command item in BuildFacilityCommandUtility.BuildFacilityCommands(def))
-				{
-					yield return item;
-				}
+				yield break;
+			}
+			foreach (Command item in BuildFacilityCommandUtility.BuildFacilityCommands(def))
+			{
+				yield return item;
 			}
 		}
 

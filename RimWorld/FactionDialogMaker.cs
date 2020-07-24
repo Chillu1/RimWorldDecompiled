@@ -22,7 +22,7 @@ namespace RimWorld
 			}
 			else
 			{
-				Log.Error("Faction " + faction + " has no leader.");
+				Log.Error(string.Concat("Faction ", faction, " has no leader."));
 				pawn = negotiator;
 				value = faction.Name;
 			}
@@ -49,22 +49,24 @@ namespace RimWorld
 				{
 					foreach (RoyalTitle item in royalty.AllTitlesInEffectForReading)
 					{
-						if (item.def.permits != null)
+						if (item.def.permits == null)
 						{
-							foreach (RoyalTitlePermitDef permit in item.def.permits)
+							continue;
+						}
+						foreach (RoyalTitlePermitDef permit in item.def.permits)
+						{
+							IEnumerable<DiaOption> factionCommDialogOptions = permit.Worker.GetFactionCommDialogOptions(map, negotiator, faction);
+							if (factionCommDialogOptions == null)
 							{
-								IEnumerable<DiaOption> factionCommDialogOptions = permit.Worker.GetFactionCommDialogOptions(map, negotiator, faction);
-								if (factionCommDialogOptions != null)
-								{
-									foreach (DiaOption item2 in factionCommDialogOptions)
-									{
-										AddAndDecorateOption(item2, needsSocial: true);
-									}
-								}
+								continue;
+							}
+							foreach (DiaOption item2 in factionCommDialogOptions)
+							{
+								AddAndDecorateOption(item2, needsSocial: true);
 							}
 						}
 					}
-					if (!negotiator.IsQuestLodger())
+					if (royalty.GetCurrentTitle(faction).canBeInherited && !negotiator.IsQuestLodger())
 					{
 						AddAndDecorateOption(RequestRoyalHeirChangeOption(map, faction, pawn, negotiator), needsSocial: false);
 					}
@@ -98,19 +100,21 @@ namespace RimWorld
 
 		private static IEnumerable<DiaOption> DebugOptions(Faction faction, Pawn negotiator)
 		{
+			Faction faction2 = faction;
+			Pawn negotiator2 = negotiator;
 			DiaOption diaOption = new DiaOption("(Debug) Goodwill +10");
 			diaOption.action = delegate
 			{
-				faction.TryAffectGoodwillWith(Faction.OfPlayer, 10, canSendMessage: false);
+				faction2.TryAffectGoodwillWith(Faction.OfPlayer, 10, canSendMessage: false);
 			};
-			diaOption.linkLateBind = (() => FactionDialogFor(negotiator, faction));
+			diaOption.linkLateBind = (() => FactionDialogFor(negotiator2, faction2));
 			yield return diaOption;
 			DiaOption diaOption2 = new DiaOption("(Debug) Goodwill -10");
 			diaOption2.action = delegate
 			{
-				faction.TryAffectGoodwillWith(Faction.OfPlayer, -10, canSendMessage: false);
+				faction2.TryAffectGoodwillWith(Faction.OfPlayer, -10, canSendMessage: false);
 			};
-			diaOption2.linkLateBind = (() => FactionDialogFor(negotiator, faction));
+			diaOption2.linkLateBind = (() => FactionDialogFor(negotiator2, faction2));
 			yield return diaOption2;
 		}
 
@@ -323,33 +327,34 @@ namespace RimWorld
 			foreach (Pawn item in PawnsFinder.AllMaps_FreeColonistsAndPrisonersSpawned)
 			{
 				DiaOption diaOption = new DiaOption(item.Name.ToStringFull);
-				if (item != negotiator && item != heir2)
+				if (item == negotiator || item == heir2)
 				{
-					if (item.royalty != null)
+					continue;
+				}
+				if (item.royalty != null)
+				{
+					RoyalTitleDef currentTitle = item.royalty.GetCurrentTitle(faction);
+					if (currentTitle != null && currentTitle.seniority >= title.seniority)
 					{
-						RoyalTitleDef currentTitle = item.royalty.GetCurrentTitle(faction);
-						if (currentTitle != null && currentTitle.seniority >= title.seniority)
-						{
-							continue;
-						}
+						continue;
 					}
-					if (!item.IsQuestLodger())
+				}
+				if (!item.IsQuestLodger())
+				{
+					Pawn heir = item;
+					Action confirmedAct = delegate
 					{
-						Pawn heir = item;
-						Action confirmedAct = delegate
-						{
-							QuestScriptDef changeRoyalHeir = QuestScriptDefOf.ChangeRoyalHeir;
-							Slate slate = new Slate();
-							slate.Set("points", title.changeHeirQuestPoints);
-							slate.Set("asker", factionRepresentative);
-							slate.Set("titleHolder", negotiator);
-							slate.Set("titleHeir", heir);
-							slate.Set("titlePreviousHeir", negotiator.royalty.GetHeir(faction));
-							QuestUtility.SendLetterQuestAvailable(QuestUtility.GenerateQuestAndMakeAvailable(changeRoyalHeir, slate));
-						};
-						diaOption.link = RoyalHeirChangeConfirm(faction, negotiator, heir2, confirmedAct);
-						diaNode.options.Add(diaOption);
-					}
+						QuestScriptDef changeRoyalHeir = QuestScriptDefOf.ChangeRoyalHeir;
+						Slate slate = new Slate();
+						slate.Set("points", title.changeHeirQuestPoints);
+						slate.Set("asker", factionRepresentative);
+						slate.Set("titleHolder", negotiator);
+						slate.Set("titleHeir", heir);
+						slate.Set("titlePreviousHeir", negotiator.royalty.GetHeir(faction));
+						QuestUtility.SendLetterQuestAvailable(QuestUtility.GenerateQuestAndMakeAvailable(changeRoyalHeir, slate));
+					};
+					diaOption.link = RoyalHeirChangeConfirm(faction, negotiator, heir2, confirmedAct);
+					diaNode.options.Add(diaOption);
 				}
 			}
 			DiaOption diaOption2 = new DiaOption("GoBack".Translate());

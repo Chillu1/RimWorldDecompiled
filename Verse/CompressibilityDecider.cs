@@ -48,37 +48,50 @@ namespace Verse
 					}
 				}
 			}
-			List<Lord> lords = map.lordManager.lords;
-			for (int j = 0; j < lords.Count; j++)
+			List<Thing> list = map.listerThings.ThingsInGroup(ThingRequestGroup.Projectile);
+			for (int j = 0; j < list.Count; j++)
 			{
-				LordJob_FormAndSendCaravan lordJob_FormAndSendCaravan = lords[j].LordJob as LordJob_FormAndSendCaravan;
+				Projectile projectile = (Projectile)list[j];
+				if (projectile.usedTarget.HasThing)
+				{
+					referencedThings.Add(projectile.usedTarget.Thing);
+				}
+				if (projectile.intendedTarget.HasThing)
+				{
+					referencedThings.Add(projectile.intendedTarget.Thing);
+				}
+			}
+			List<Lord> lords = map.lordManager.lords;
+			for (int k = 0; k < lords.Count; k++)
+			{
+				LordJob_FormAndSendCaravan lordJob_FormAndSendCaravan = lords[k].LordJob as LordJob_FormAndSendCaravan;
 				if (lordJob_FormAndSendCaravan == null)
 				{
 					continue;
 				}
-				for (int k = 0; k < lordJob_FormAndSendCaravan.transferables.Count; k++)
+				for (int l = 0; l < lordJob_FormAndSendCaravan.transferables.Count; l++)
 				{
-					TransferableOneWay transferableOneWay = lordJob_FormAndSendCaravan.transferables[k];
-					for (int l = 0; l < transferableOneWay.things.Count; l++)
+					TransferableOneWay transferableOneWay = lordJob_FormAndSendCaravan.transferables[l];
+					for (int m = 0; m < transferableOneWay.things.Count; m++)
 					{
-						referencedThings.Add(transferableOneWay.things[l]);
+						referencedThings.Add(transferableOneWay.things[m]);
 					}
 				}
 			}
-			List<Thing> list = map.listerThings.ThingsInGroup(ThingRequestGroup.Transporter);
-			for (int m = 0; m < list.Count; m++)
+			List<Thing> list2 = map.listerThings.ThingsInGroup(ThingRequestGroup.Transporter);
+			for (int n = 0; n < list2.Count; n++)
 			{
-				CompTransporter compTransporter = list[m].TryGetComp<CompTransporter>();
+				CompTransporter compTransporter = list2[n].TryGetComp<CompTransporter>();
 				if (compTransporter.leftToLoad == null)
 				{
 					continue;
 				}
-				for (int n = 0; n < compTransporter.leftToLoad.Count; n++)
+				for (int num = 0; num < compTransporter.leftToLoad.Count; num++)
 				{
-					TransferableOneWay transferableOneWay2 = compTransporter.leftToLoad[n];
-					for (int num = 0; num < transferableOneWay2.things.Count; num++)
+					TransferableOneWay transferableOneWay2 = compTransporter.leftToLoad[num];
+					for (int num2 = 0; num2 < transferableOneWay2.things.Count; num2++)
 					{
-						referencedThings.Add(transferableOneWay2.things[num]);
+						referencedThings.Add(transferableOneWay2.things[num2]);
 					}
 				}
 			}

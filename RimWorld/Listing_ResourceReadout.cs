@@ -74,27 +74,28 @@ namespace RimWorld
 		private void DoThingDef(ThingDef thingDef, int nestLevel)
 		{
 			int count = map.resourceCounter.GetCount(thingDef);
-			if (count != 0)
+			if (count == 0)
 			{
-				Rect rect = new Rect(0f, curY, LabelWidth, lineHeight);
-				rect.xMin = XAtIndentLevel(nestLevel) + 18f;
-				if (Mouse.IsOver(rect))
-				{
-					GUI.DrawTexture(rect, TexUI.HighlightTex);
-				}
-				if (Mouse.IsOver(rect))
-				{
-					TooltipHandler.TipRegion(rect, new TipSignal(() => thingDef.LabelCap + ": " + thingDef.description.CapitalizeFirst(), thingDef.shortHash));
-				}
-				Rect rect2 = new Rect(rect);
-				float num3 = rect2.width = (rect2.height = 28f);
-				rect2.y = rect.y + rect.height / 2f - rect2.height / 2f;
-				Widgets.ThingIcon(rect2, thingDef);
-				Rect rect3 = new Rect(rect);
-				rect3.xMin = rect2.xMax + 6f;
-				Widgets.Label(rect3, count.ToStringCached());
-				EndLine();
+				return;
 			}
+			Rect rect = new Rect(0f, curY, LabelWidth, lineHeight);
+			rect.xMin = XAtIndentLevel(nestLevel) + 18f;
+			if (Mouse.IsOver(rect))
+			{
+				GUI.DrawTexture(rect, TexUI.HighlightTex);
+			}
+			if (Mouse.IsOver(rect))
+			{
+				TooltipHandler.TipRegion(rect, new TipSignal(() => thingDef.LabelCap + ": " + thingDef.description.CapitalizeFirst(), thingDef.shortHash));
+			}
+			Rect rect2 = new Rect(rect);
+			float num3 = rect2.width = (rect2.height = 28f);
+			rect2.y = rect.y + rect.height / 2f - rect2.height / 2f;
+			Widgets.ThingIcon(rect2, thingDef);
+			Rect rect3 = new Rect(rect);
+			rect3.xMin = rect2.xMax + 6f;
+			Widgets.Label(rect3, count.ToStringCached());
+			EndLine();
 		}
 	}
 }

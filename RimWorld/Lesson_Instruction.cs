@@ -37,14 +37,15 @@ namespace RimWorld
 				thing.stackCount = def.giveOnActivateCount;
 				GenSpawn.Spawn(thing, TutorUtility.FindUsableRect(2, 2, Map).CenterCell, Map);
 			}
-			if (def.resetBuildDesignatorStuffs)
+			if (!def.resetBuildDesignatorStuffs)
 			{
-				foreach (DesignationCategoryDef allDef in DefDatabase<DesignationCategoryDef>.AllDefs)
+				return;
+			}
+			foreach (DesignationCategoryDef allDef in DefDatabase<DesignationCategoryDef>.AllDefs)
+			{
+				foreach (Designator resolvedAllowedDesignator in allDef.ResolvedAllowedDesignators)
 				{
-					foreach (Designator resolvedAllowedDesignator in allDef.ResolvedAllowedDesignators)
-					{
-						(resolvedAllowedDesignator as Designator_Build)?.ResetStuffToDefault();
-					}
+					(resolvedAllowedDesignator as Designator_Build)?.ResetStuffToDefault();
 				}
 			}
 		}

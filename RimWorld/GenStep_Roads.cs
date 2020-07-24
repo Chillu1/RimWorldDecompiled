@@ -53,53 +53,54 @@ namespace RimWorld
 		public override void Generate(Map map, GenStepParams parms)
 		{
 			List<NeededRoad> neededRoads = CalculateNeededRoads(map);
-			if (neededRoads.Count != 0)
+			if (neededRoads.Count == 0)
 			{
-				List<DrawCommand> list = new List<DrawCommand>();
-				DeepProfiler.Start("RebuildAllRegions");
-				map.regionAndRoomUpdater.RebuildAllRegionsAndRooms();
-				DeepProfiler.End();
-				TerrainDef rockDef = BaseGenUtility.RegionalRockTerrainDef(map.Tile, beautiful: false);
-				IntVec3 centerpoint = CellFinderLoose.TryFindCentralCell(map, 3, 10);
-				RoadDef bestRoadType = DefDatabase<RoadDef>.AllDefs.Where((RoadDef rd) => neededRoads.Count((NeededRoad nr) => nr.road == rd) >= 2).MaxByWithFallback((RoadDef rd) => rd.priority);
-				DrawCommand item;
-				if (bestRoadType != null)
+				return;
+			}
+			List<DrawCommand> list = new List<DrawCommand>();
+			DeepProfiler.Start("RebuildAllRegions");
+			map.regionAndRoomUpdater.RebuildAllRegionsAndRooms();
+			DeepProfiler.End();
+			TerrainDef rockDef = BaseGenUtility.RegionalRockTerrainDef(map.Tile, beautiful: false);
+			IntVec3 centerpoint = CellFinderLoose.TryFindCentralCell(map, 3, 10);
+			RoadDef bestRoadType = DefDatabase<RoadDef>.AllDefs.Where((RoadDef rd) => neededRoads.Count((NeededRoad nr) => nr.road == rd) >= 2).MaxByWithFallback((RoadDef rd) => rd.priority);
+			DrawCommand item;
+			if (bestRoadType != null)
+			{
+				NeededRoad neededRoad = neededRoads[neededRoads.FindIndex((NeededRoad nr) => nr.road == bestRoadType)];
+				neededRoads.RemoveAt(neededRoads.FindIndex((NeededRoad nr) => nr.road == bestRoadType));
+				NeededRoad neededRoad2 = neededRoads[neededRoads.FindIndex((NeededRoad nr) => nr.road == bestRoadType)];
+				neededRoads.RemoveAt(neededRoads.FindIndex((NeededRoad nr) => nr.road == bestRoadType));
+				RoadPathingDef pathingDef = neededRoad.road.pathingMode;
+				IntVec3 intVec = FindRoadExitCell(map, neededRoad.angle, centerpoint, ref pathingDef);
+				IntVec3 end = FindRoadExitCell(map, neededRoad2.angle, intVec, ref pathingDef);
+				Action action = PrepDrawRoad(map, rockDef, intVec, end, neededRoad.road, pathingDef, out centerpoint);
+				item = new DrawCommand
 				{
-					NeededRoad neededRoad = neededRoads[neededRoads.FindIndex((NeededRoad nr) => nr.road == bestRoadType)];
-					neededRoads.RemoveAt(neededRoads.FindIndex((NeededRoad nr) => nr.road == bestRoadType));
-					NeededRoad neededRoad2 = neededRoads[neededRoads.FindIndex((NeededRoad nr) => nr.road == bestRoadType)];
-					neededRoads.RemoveAt(neededRoads.FindIndex((NeededRoad nr) => nr.road == bestRoadType));
-					RoadPathingDef pathingDef = neededRoad.road.pathingMode;
-					IntVec3 intVec = FindRoadExitCell(map, neededRoad.angle, centerpoint, ref pathingDef);
-					IntVec3 end = FindRoadExitCell(map, neededRoad2.angle, intVec, ref pathingDef);
-					Action action = PrepDrawRoad(map, rockDef, intVec, end, neededRoad.road, pathingDef, out centerpoint);
+					action = action,
+					roadDef = bestRoadType
+				};
+				list.Add(item);
+			}
+			foreach (NeededRoad item2 in neededRoads)
+			{
+				RoadPathingDef pathingDef2 = item2.road.pathingMode;
+				IntVec3 intVec2 = FindRoadExitCell(map, item2.angle, centerpoint, ref pathingDef2);
+				if (!(intVec2 == IntVec3.Invalid))
+				{
 					item = new DrawCommand
 					{
-						action = action,
-						roadDef = bestRoadType
+						action = PrepDrawRoad(map, rockDef, centerpoint, intVec2, item2.road, pathingDef2),
+						roadDef = item2.road
 					};
 					list.Add(item);
 				}
-				foreach (NeededRoad item2 in neededRoads)
+			}
+			foreach (DrawCommand item3 in list.OrderBy((DrawCommand dc) => dc.roadDef.priority))
+			{
+				if (item3.action != null)
 				{
-					RoadPathingDef pathingDef2 = item2.road.pathingMode;
-					IntVec3 intVec2 = FindRoadExitCell(map, item2.angle, centerpoint, ref pathingDef2);
-					if (!(intVec2 == IntVec3.Invalid))
-					{
-						item = new DrawCommand
-						{
-							action = PrepDrawRoad(map, rockDef, centerpoint, intVec2, item2.road, pathingDef2),
-							roadDef = item2.road
-						};
-						list.Add(item);
-					}
-				}
-				foreach (DrawCommand item3 in list.OrderBy((DrawCommand dc) => dc.roadDef.priority))
-				{
-					if (item3.action != null)
-					{
-						item3.action();
-					}
+					item3.action();
 				}
 			}
 		}

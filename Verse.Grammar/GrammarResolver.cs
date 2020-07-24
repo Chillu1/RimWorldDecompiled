@@ -222,25 +222,26 @@ namespace Verse.Grammar
 				{
 					RulePackDef rulePackDef = list[list.Count - 1];
 					list.RemoveLast();
-					if (!hashSet.Contains(rulePackDef))
+					if (hashSet.Contains(rulePackDef))
 					{
-						if (flag)
+						continue;
+					}
+					if (flag)
+					{
+						logSbMid.AppendLine($"{rulePackDef.defName}");
+					}
+					hashSet.Add(rulePackDef);
+					List<Rule> list2 = useUntranslatedRules ? rulePackDef.UntranslatedRulesImmediate : rulePackDef.RulesImmediate;
+					if (list2 != null)
+					{
+						foreach (Rule item in list2)
 						{
-							logSbMid.AppendLine($"{rulePackDef.defName}");
+							AddRule(item);
 						}
-						hashSet.Add(rulePackDef);
-						List<Rule> list2 = useUntranslatedRules ? rulePackDef.UntranslatedRulesImmediate : rulePackDef.RulesImmediate;
-						if (list2 != null)
-						{
-							foreach (Rule item in list2)
-							{
-								AddRule(item);
-							}
-						}
-						if (!rulePackDef.include.NullOrEmpty())
-						{
-							list.AddRange(rulePackDef.include);
-						}
+					}
+					if (!rulePackDef.include.NullOrEmpty())
+					{
+						list.AddRange(rulePackDef.include);
 					}
 				}
 			}

@@ -53,38 +53,40 @@ namespace RimWorld
 				list.RemoveDuplicates();
 			}
 			base.EjectContents();
-			if (!contentsKnown)
+			if (contentsKnown)
 			{
-				ThingDef filth_Slime = ThingDefOf.Filth_Slime;
-				FilthMaker.TryMakeFilth(base.Position, base.Map, filth_Slime, Rand.Range(8, 12));
-				SetFaction(null);
-				foreach (Building_AncientCryptosleepCasket item in UnopenedCasketsInGroup())
-				{
-					item.contentsKnown = true;
-					item.EjectContents();
-				}
-				IEnumerable<Pawn> enumerable = from p in list.OfType<Pawn>().ToList()
-					where p.RaceProps.Humanlike && p.GetLord() == null && p.Faction == Faction.OfAncientsHostile
-					select p;
-				if (enumerable.Any())
-				{
-					LordMaker.MakeNewLord(Faction.OfAncientsHostile, new LordJob_AssaultColony(Faction.OfAncientsHostile, canKidnap: false, canTimeoutOrFlee: true, sappers: false, useAvoidGridSmart: false, canSteal: false), base.Map, enumerable);
-				}
+				return;
+			}
+			ThingDef filth_Slime = ThingDefOf.Filth_Slime;
+			FilthMaker.TryMakeFilth(base.Position, base.Map, filth_Slime, Rand.Range(8, 12));
+			SetFaction(null);
+			foreach (Building_AncientCryptosleepCasket item in UnopenedCasketsInGroup())
+			{
+				item.contentsKnown = true;
+				item.EjectContents();
+			}
+			IEnumerable<Pawn> enumerable = from p in list.OfType<Pawn>().ToList()
+				where p.RaceProps.Humanlike && p.GetLord() == null && p.Faction == Faction.OfAncientsHostile
+				select p;
+			if (enumerable.Any())
+			{
+				LordMaker.MakeNewLord(Faction.OfAncientsHostile, new LordJob_AssaultColony(Faction.OfAncientsHostile, canKidnap: false, canTimeoutOrFlee: true, sappers: false, useAvoidGridSmart: false, canSteal: false), base.Map, enumerable);
 			}
 		}
 
 		private IEnumerable<Building_AncientCryptosleepCasket> UnopenedCasketsInGroup()
 		{
 			yield return this;
-			if (groupID != -1)
+			if (groupID == -1)
 			{
-				foreach (Thing item in base.Map.listerThings.ThingsOfDef(ThingDefOf.AncientCryptosleepCasket))
+				yield break;
+			}
+			foreach (Thing item in base.Map.listerThings.ThingsOfDef(ThingDefOf.AncientCryptosleepCasket))
+			{
+				Building_AncientCryptosleepCasket building_AncientCryptosleepCasket = item as Building_AncientCryptosleepCasket;
+				if (building_AncientCryptosleepCasket.groupID == groupID && !building_AncientCryptosleepCasket.contentsKnown)
 				{
-					Building_AncientCryptosleepCasket building_AncientCryptosleepCasket = item as Building_AncientCryptosleepCasket;
-					if (building_AncientCryptosleepCasket.groupID == groupID && !building_AncientCryptosleepCasket.contentsKnown)
-					{
-						yield return building_AncientCryptosleepCasket;
-					}
+					yield return building_AncientCryptosleepCasket;
 				}
 			}
 		}

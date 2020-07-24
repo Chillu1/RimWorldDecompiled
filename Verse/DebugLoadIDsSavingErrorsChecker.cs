@@ -66,20 +66,21 @@ namespace Verse
 
 		public void CheckForErrorsAndClear()
 		{
-			if (Prefs.DevMode)
+			if (!Prefs.DevMode)
 			{
-				if (!Scribe.saver.savingForDebug)
+				return;
+			}
+			if (!Scribe.saver.savingForDebug)
+			{
+				foreach (ReferencedObject item in referenced)
 				{
-					foreach (ReferencedObject item in referenced)
+					if (!deepSaved.Contains(item.loadID))
 					{
-						if (!deepSaved.Contains(item.loadID))
-						{
-							Log.Warning("Object with load ID " + item.loadID + " is referenced (xml node name: " + item.label + ") but is not deep-saved. This will cause errors during loading.");
-						}
+						Log.Warning("Object with load ID " + item.loadID + " is referenced (xml node name: " + item.label + ") but is not deep-saved. This will cause errors during loading.");
 					}
 				}
-				Clear();
 			}
+			Clear();
 		}
 
 		public void RegisterDeepSaved(object obj, string label)
@@ -90,46 +91,52 @@ namespace Verse
 			}
 			if (Scribe.mode != LoadSaveMode.Saving)
 			{
-				Log.Error("Registered " + obj + ", but current mode is " + Scribe.mode);
+				Log.Error(string.Concat("Registered ", obj, ", but current mode is ", Scribe.mode));
 			}
-			else if (obj != null)
+			else
 			{
-				ILoadReferenceable loadReferenceable = obj as ILoadReferenceable;
-				if (loadReferenceable != null)
+				if (obj == null)
 				{
-					try
+					return;
+				}
+				ILoadReferenceable loadReferenceable = obj as ILoadReferenceable;
+				if (loadReferenceable == null)
+				{
+					return;
+				}
+				try
+				{
+					if (!deepSaved.Add(loadReferenceable.GetUniqueLoadID()))
 					{
-						if (!deepSaved.Add(loadReferenceable.GetUniqueLoadID()))
-						{
-							Log.Warning("DebugLoadIDsSavingErrorsChecker error: tried to register deep-saved object with loadID " + loadReferenceable.GetUniqueLoadID() + ", but it's already here. label=" + label + " (not cleared after the previous save? different objects have the same load ID? the same object is deep-saved twice?)");
-						}
+						Log.Warning("DebugLoadIDsSavingErrorsChecker error: tried to register deep-saved object with loadID " + loadReferenceable.GetUniqueLoadID() + ", but it's already here. label=" + label + " (not cleared after the previous save? different objects have the same load ID? the same object is deep-saved twice?)");
 					}
-					catch (Exception arg)
-					{
-						Log.Error("Error in GetUniqueLoadID(): " + arg);
-					}
+				}
+				catch (Exception arg)
+				{
+					Log.Error("Error in GetUniqueLoadID(): " + arg);
 				}
 			}
 		}
 
 		public void RegisterReferenced(ILoadReferenceable obj, string label)
 		{
-			if (Prefs.DevMode)
+			if (!Prefs.DevMode)
 			{
-				if (Scribe.mode != LoadSaveMode.Saving)
+				return;
+			}
+			if (Scribe.mode != LoadSaveMode.Saving)
+			{
+				Log.Error(string.Concat("Registered ", obj, ", but current mode is ", Scribe.mode));
+			}
+			else if (obj != null)
+			{
+				try
 				{
-					Log.Error("Registered " + obj + ", but current mode is " + Scribe.mode);
+					referenced.Add(new ReferencedObject(obj.GetUniqueLoadID(), label));
 				}
-				else if (obj != null)
+				catch (Exception arg)
 				{
-					try
-					{
-						referenced.Add(new ReferencedObject(obj.GetUniqueLoadID(), label));
-					}
-					catch (Exception arg)
-					{
-						Log.Error("Error in GetUniqueLoadID(): " + arg);
-					}
+					Log.Error("Error in GetUniqueLoadID(): " + arg);
 				}
 			}
 		}

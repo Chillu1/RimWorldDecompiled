@@ -198,7 +198,7 @@ namespace RimWorld
 		{
 			if (pct > 1f)
 			{
-				Log.ErrorOnce(def + " drawing bar percent > 1 : " + pct, 6932178);
+				Log.ErrorOnce(string.Concat(def, " drawing bar percent > 1 : ", pct), 6932178);
 			}
 			float num = 12f;
 			if (barRect.width < 150f)

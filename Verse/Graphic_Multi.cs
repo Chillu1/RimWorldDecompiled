@@ -182,7 +182,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return "Multi(initPath=" + path + ", color=" + color + ", colorTwo=" + colorTwo + ")";
+			return string.Concat("Multi(initPath=", path, ", color=", color, ", colorTwo=", colorTwo, ")");
 		}
 
 		public override int GetHashCode()

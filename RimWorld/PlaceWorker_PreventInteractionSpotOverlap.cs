@@ -19,21 +19,22 @@ namespace RimWorld
 					IntVec3 c = intVec;
 					c.x += i;
 					c.z += j;
-					if (c.InBounds(map))
+					if (!c.InBounds(map))
 					{
-						foreach (Thing item in map.thingGrid.ThingsListAtFast(c))
+						continue;
+					}
+					foreach (Thing item in map.thingGrid.ThingsListAtFast(c))
+					{
+						if (item != thingToIgnore)
 						{
-							if (item != thingToIgnore)
+							ThingDef thingDef2 = item.def;
+							if (item.def.entityDefToBuild != null)
 							{
-								ThingDef thingDef2 = item.def;
-								if (item.def.entityDefToBuild != null)
-								{
-									thingDef2 = (item.def.entityDefToBuild as ThingDef);
-								}
-								if (thingDef2 != null && thingDef2.hasInteractionCell && ThingUtility.InteractionCellWhenAt(thingDef2, item.Position, item.Rotation, item.Map) == intVec)
-								{
-									return new AcceptanceReport(((item.def.entityDefToBuild == null) ? "InteractionSpotOverlaps" : "InteractionSpotWillOverlap").Translate(item.LabelNoCount, item));
-								}
+								thingDef2 = (item.def.entityDefToBuild as ThingDef);
+							}
+							if (thingDef2 != null && thingDef2.hasInteractionCell && ThingUtility.InteractionCellWhenAt(thingDef2, item.Position, item.Rotation, item.Map) == intVec)
+							{
+								return new AcceptanceReport(((item.def.entityDefToBuild == null) ? "InteractionSpotOverlaps" : "InteractionSpotWillOverlap").Translate(item.LabelNoCount, item));
 							}
 						}
 					}

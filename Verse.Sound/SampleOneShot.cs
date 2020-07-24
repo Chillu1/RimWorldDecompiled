@@ -28,7 +28,7 @@ namespace Verse.Sound
 		{
 			if ((double)info.pitchFactor <= 0.0001)
 			{
-				Log.ErrorOnce("Played sound with pitchFactor " + info.pitchFactor + ": " + def + ", " + info, 632321);
+				Log.ErrorOnce(string.Concat("Played sound with pitchFactor ", info.pitchFactor, ": ", def, ", ", info), 632321);
 				return null;
 			}
 			SampleOneShot sampleOneShot = new SampleOneShot(def);

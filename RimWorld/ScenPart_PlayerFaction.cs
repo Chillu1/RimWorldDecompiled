@@ -17,19 +17,20 @@ namespace RimWorld
 
 		public override void DoEditInterface(Listing_ScenEdit listing)
 		{
-			if (Widgets.ButtonText(listing.GetScenPartRect(this, ScenPart.RowHeight), factionDef.LabelCap))
+			if (!Widgets.ButtonText(listing.GetScenPartRect(this, ScenPart.RowHeight), factionDef.LabelCap))
 			{
-				List<FloatMenuOption> list = new List<FloatMenuOption>();
-				foreach (FactionDef item in DefDatabase<FactionDef>.AllDefs.Where((FactionDef d) => d.isPlayer))
-				{
-					FactionDef localFd = item;
-					list.Add(new FloatMenuOption(localFd.LabelCap, delegate
-					{
-						factionDef = localFd;
-					}));
-				}
-				Find.WindowStack.Add(new FloatMenu(list));
+				return;
 			}
+			List<FloatMenuOption> list = new List<FloatMenuOption>();
+			foreach (FactionDef item in DefDatabase<FactionDef>.AllDefs.Where((FactionDef d) => d.isPlayer))
+			{
+				FactionDef localFd = item;
+				list.Add(new FloatMenuOption(localFd.LabelCap, delegate
+				{
+					factionDef = localFd;
+				}));
+			}
+			Find.WindowStack.Add(new FloatMenu(list));
 		}
 
 		public override string Summary(Scenario scen)

@@ -3,7 +3,7 @@ using Verse;
 
 namespace RimWorld
 {
-	public struct ThingStuffPairWithQuality : IEquatable<ThingStuffPairWithQuality>
+	public struct ThingStuffPairWithQuality : IEquatable<ThingStuffPairWithQuality>, IExposable
 	{
 		public ThingDef thing;
 
@@ -20,12 +20,12 @@ namespace RimWorld
 			this.quality = quality;
 			if (quality != QualityCategory.Normal && !thing.HasComp(typeof(CompQuality)))
 			{
-				Log.Warning("Created ThingStuffPairWithQuality with quality" + quality + " but " + thing + " doesn't have CompQuality.");
+				Log.Warning(string.Concat("Created ThingStuffPairWithQuality with quality", quality, " but ", thing, " doesn't have CompQuality."));
 				quality = QualityCategory.Normal;
 			}
 			if (stuff != null && !thing.MadeFromStuff)
 			{
-				Log.Warning("Created ThingStuffPairWithQuality with stuff " + stuff + " but " + thing + " is not made from stuff.");
+				Log.Warning(string.Concat("Created ThingStuffPairWithQuality with stuff ", stuff, " but ", thing, " is not made from stuff."));
 				stuff = null;
 			}
 		}
@@ -78,6 +78,13 @@ namespace RimWorld
 			Thing result = ThingMaker.MakeThing(thing, stuff);
 			result.TryGetComp<CompQuality>()?.SetQuality(Quality, ArtGenerationContext.Outsider);
 			return result;
+		}
+
+		public void ExposeData()
+		{
+			Scribe_Defs.Look(ref thing, "thing");
+			Scribe_Defs.Look(ref stuff, "stuff");
+			Scribe_Values.Look(ref quality, "quality");
 		}
 	}
 }

@@ -334,6 +334,18 @@ namespace Verse
 			{
 				return false;
 			}
+			if (request.KindDef.minTitleRequired != null)
+			{
+				if (pawn.royalty == null)
+				{
+					return false;
+				}
+				RoyalTitleDef royalTitleDef = pawn.royalty.MainTitle();
+				if (royalTitleDef == null || royalTitleDef.seniority < request.KindDef.minTitleRequired.seniority)
+				{
+					return false;
+				}
+			}
 			if (request.Context == PawnGenerationContext.PlayerStarter && Find.Scenario != null && !Find.Scenario.AllowPlayerStartingPawn(pawn, tryingToRedress: true, request))
 			{
 				return false;
@@ -350,6 +362,10 @@ namespace Verse
 				}
 			}
 			if (request.RedressValidator != null && !request.RedressValidator(pawn))
+			{
+				return false;
+			}
+			if (request.KindDef.requiredWorkTags != 0 && pawn.kindDef != request.KindDef && (pawn.CombinedDisabledWorkTags & request.KindDef.requiredWorkTags) != 0)
 			{
 				return false;
 			}
@@ -467,6 +483,10 @@ namespace Verse
 						royalTitleDef = request.KindDef.titleSelectOne.RandomElementByWeight((RoyalTitleDef t) => t.commonality);
 					}
 				}
+				if (request.KindDef.minTitleRequired != null && (royalTitleDef == null || royalTitleDef.seniority < request.KindDef.minTitleRequired.seniority))
+				{
+					royalTitleDef = request.KindDef.minTitleRequired;
+				}
 				if (royalTitleDef != null)
 				{
 					Faction faction2 = (request.Faction != null && request.Faction.def.HasRoyalTitles) ? request.Faction : Find.FactionManager.RandomRoyalFaction();
@@ -477,12 +497,11 @@ namespace Verse
 						amount = Rand.Range(0, royalTitleDef.GetNextTitle(faction2).favorCost - 1);
 					}
 					pawn.royalty.SetFavor(faction2, amount);
-					int num = royalTitleDef.MaxAllowedPsychicAmplifierLevel(faction2.def);
-					if (num > 0)
+					if (royalTitleDef.maxPsylinkLevel > 0)
 					{
 						Hediff_ImplantWithLevel hediff_ImplantWithLevel = HediffMaker.MakeHediff(HediffDefOf.PsychicAmplifier, pawn, pawn.health.hediffSet.GetBrain()) as Hediff_ImplantWithLevel;
 						pawn.health.AddHediff(hediff_ImplantWithLevel);
-						hediff_ImplantWithLevel.SetLevelTo(num);
+						hediff_ImplantWithLevel.SetLevelTo(royalTitleDef.maxPsylinkLevel);
 					}
 				}
 				if (pawn.royalty != null)
@@ -520,6 +539,24 @@ namespace Verse
 					error = "Generated pawn incapable of violence.";
 					return null;
 				}
+				if (request.KindDef != null && !request.KindDef.skills.NullOrEmpty())
+				{
+					List<SkillRange> skills = request.KindDef.skills;
+					for (int i = 0; i < skills.Count; i++)
+					{
+						if (pawn.skills.GetSkill(skills[i].Skill).TotallyDisabled)
+						{
+							error = "Generated pawn incapable of required skill: " + skills[i].Skill.defName;
+							return null;
+						}
+					}
+				}
+				if (request.KindDef.requiredWorkTags != 0 && (pawn.CombinedDisabledWorkTags & request.KindDef.requiredWorkTags) != 0)
+				{
+					DiscardGeneratedPawn(pawn);
+					error = "Generated pawn with disabled requiredWorkTags.";
+					return null;
+				}
 				if (!ignoreScenarioRequirements && request.Context == PawnGenerationContext.PlayerStarter && Find.Scenario != null && !Find.Scenario.AllowPlayerStartingPawn(pawn, tryingToRedress: false, request))
 				{
 					DiscardGeneratedPawn(pawn);
@@ -542,13 +579,13 @@ namespace Verse
 					error = "Generated pawn didn't pass validator check (post-gear).";
 					return null;
 				}
-				for (int i = 0; i < pawnsBeingGenerated.Count - 1; i++)
+				for (int j = 0; j < pawnsBeingGenerated.Count - 1; j++)
 				{
-					if (pawnsBeingGenerated[i].PawnsGeneratedInTheMeantime == null)
+					if (pawnsBeingGenerated[j].PawnsGeneratedInTheMeantime == null)
 					{
-						pawnsBeingGenerated[i] = new PawnGenerationStatus(pawnsBeingGenerated[i].Pawn, new List<Pawn>());
+						pawnsBeingGenerated[j] = new PawnGenerationStatus(pawnsBeingGenerated[j].Pawn, new List<Pawn>());
 					}
-					pawnsBeingGenerated[i].PawnsGeneratedInTheMeantime.Add(pawn);
+					pawnsBeingGenerated[j].PawnsGeneratedInTheMeantime.Add(pawn);
 				}
 				return pawn;
 			}
@@ -671,7 +708,7 @@ namespace Verse
 		{
 			if (request.FixedBiologicalAge.HasValue && request.FixedChronologicalAge.HasValue && request.FixedBiologicalAge > request.FixedChronologicalAge)
 			{
-				Log.Warning("Tried to generate age for pawn " + pawn + ", but pawn generation request demands biological age (" + request.FixedBiologicalAge + ") to be greater than chronological age (" + request.FixedChronologicalAge + ").");
+				Log.Warning(string.Concat("Tried to generate age for pawn ", pawn, ", but pawn generation request demands biological age (", request.FixedBiologicalAge, ") to be greater than chronological age (", request.FixedChronologicalAge, ")."));
 			}
 			if (request.Newborn)
 			{
@@ -806,7 +843,7 @@ namespace Verse
 			while (pawn.story.traits.allTraits.Count < num)
 			{
 				TraitDef newTraitDef = DefDatabase<TraitDef>.AllDefsListForReading.RandomElementByWeight((TraitDef tr) => tr.GetGenderSpecificCommonality(pawn.gender));
-				if (pawn.story.traits.HasTrait(newTraitDef) || (request.KindDef.disallowedTraits != null && request.KindDef.disallowedTraits.Contains(newTraitDef)) || (newTraitDef == TraitDefOf.Gay && (!request.AllowGay || LovePartnerRelationUtility.HasAnyLovePartnerOfTheOppositeGender(pawn) || LovePartnerRelationUtility.HasAnyExLovePartnerOfTheOppositeGender(pawn))) || (request.ProhibitedTraits != null && request.ProhibitedTraits.Contains(newTraitDef)) || (request.Faction != null && Faction.OfPlayerSilentFail != null && request.Faction.HostileTo(Faction.OfPlayer) && !newTraitDef.allowOnHostileSpawn) || pawn.story.traits.allTraits.Any((Trait tr) => newTraitDef.ConflictsWith(tr)) || (newTraitDef.requiredWorkTypes != null && pawn.OneOfWorkTypesIsDisabled(newTraitDef.requiredWorkTypes)) || pawn.WorkTagIsDisabled(newTraitDef.requiredWorkTags) || (newTraitDef.forcedPassions != null && pawn.workSettings != null && newTraitDef.forcedPassions.Any((SkillDef p) => p.IsDisabled(pawn.story.DisabledWorkTagsBackstoryAndTraits, pawn.GetDisabledWorkTypes(permanentOnly: true)))))
+				if (pawn.story.traits.HasTrait(newTraitDef) || (request.KindDef.disallowedTraits != null && request.KindDef.disallowedTraits.Contains(newTraitDef)) || (request.KindDef.requiredWorkTags != 0 && (newTraitDef.disabledWorkTags & request.KindDef.requiredWorkTags) != 0) || (newTraitDef == TraitDefOf.Gay && (!request.AllowGay || LovePartnerRelationUtility.HasAnyLovePartnerOfTheOppositeGender(pawn) || LovePartnerRelationUtility.HasAnyExLovePartnerOfTheOppositeGender(pawn))) || (request.ProhibitedTraits != null && request.ProhibitedTraits.Contains(newTraitDef)) || (request.Faction != null && Faction.OfPlayerSilentFail != null && request.Faction.HostileTo(Faction.OfPlayer) && !newTraitDef.allowOnHostileSpawn) || pawn.story.traits.allTraits.Any((Trait tr) => newTraitDef.ConflictsWith(tr)) || (newTraitDef.requiredWorkTypes != null && pawn.OneOfWorkTypesIsDisabled(newTraitDef.requiredWorkTypes)) || pawn.WorkTagIsDisabled(newTraitDef.requiredWorkTags) || (newTraitDef.forcedPassions != null && pawn.workSettings != null && newTraitDef.forcedPassions.Any((SkillDef p) => p.IsDisabled(pawn.story.DisabledWorkTagsBackstoryAndTraits, pawn.GetDisabledWorkTypes(permanentOnly: true)))))
 				{
 					continue;
 				}
@@ -971,7 +1008,7 @@ namespace Verse
 			{
 				if (pawn2.Discarded)
 				{
-					Log.Warning("Warning during generating pawn relations for " + pawn + ": Pawn " + pawn2 + " is discarded, yet he was yielded by PawnUtility. Discarding a pawn means that he is no longer managed by anything.");
+					Log.Warning(string.Concat("Warning during generating pawn relations for ", pawn, ": Pawn ", pawn2, " is discarded, yet he was yielded by PawnUtility. Discarding a pawn means that he is no longer managed by anything."));
 				}
 				else if (pawn2.Faction != null && pawn2.Faction.IsPlayer)
 				{

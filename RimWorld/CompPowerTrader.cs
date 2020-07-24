@@ -64,12 +64,12 @@ namespace RimWorld
 				{
 					if (!FlickUtility.WantsToBeOn(parent))
 					{
-						Log.Warning("Tried to power on " + parent + " which did not desire it.");
+						Log.Warning(string.Concat("Tried to power on ", parent, " which did not desire it."));
 						return;
 					}
 					if (parent.IsBrokenDown())
 					{
-						Log.Warning("Tried to power on " + parent + " which is broken down.");
+						Log.Warning(string.Concat("Tried to power on ", parent, " which is broken down."));
 						return;
 					}
 					if (powerStartedAction != null)
@@ -112,7 +112,7 @@ namespace RimWorld
 			{
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.AppendLine(parent.LabelCap + " CompPower:");
-				stringBuilder.AppendLine("   PowerOn: " + PowerOn.ToString());
+				stringBuilder.AppendLine("   PowerOn: " + PowerOn);
 				stringBuilder.AppendLine("   energyProduction: " + PowerOutput);
 				return stringBuilder.ToString();
 			}
@@ -120,9 +120,13 @@ namespace RimWorld
 
 		public override void ReceiveCompSignal(string signal)
 		{
-			if (signal == "FlickedOff" || signal == "ScheduledOff" || signal == "Breakdown")
+			switch (signal)
 			{
+			case "FlickedOff":
+			case "ScheduledOff":
+			case "Breakdown":
 				PowerOn = false;
+				break;
 			}
 			if (signal == "RanOutOfFuel" && powerLastOutputted)
 			{

@@ -11,5 +11,9 @@ namespace RimWorld
 		public int pawnCount;
 
 		public PawnKindDef pawnKindDef;
+
+		public float targetingRange;
+
+		public bool targetingRequireLOS = true;
 	}
 }

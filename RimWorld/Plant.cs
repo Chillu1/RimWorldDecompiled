@@ -194,7 +194,7 @@ namespace RimWorld
 				{
 					num = Mathf.Max(num, 0.005f);
 				}
-				if (!def.plant.cavePlant && unlitTicks > 450000)
+				if (!def.plant.cavePlant && def.plant.dieIfNoSunlight && unlitTicks > 450000)
 				{
 					num = Mathf.Max(num, 0.005f);
 				}
@@ -691,7 +691,7 @@ namespace RimWorld
 						num7 = 5;
 						break;
 					default:
-						Log.Error(def + " must have plant.MaxMeshCount that is a perfect square.");
+						Log.Error(string.Concat(def, " must have plant.MaxMeshCount that is a perfect square."));
 						break;
 					}
 					float num8 = 1f / (float)num7;
@@ -779,6 +779,11 @@ namespace RimWorld
 			if (Blighted)
 			{
 				stringBuilder.AppendLine("Blighted".Translate() + " (" + Blight.Severity.ToStringPercent() + ")");
+			}
+			string text = InspectStringPartsFromComps();
+			if (!text.NullOrEmpty())
+			{
+				stringBuilder.Append(text);
 			}
 			return stringBuilder.ToString().TrimEndNewlines();
 		}

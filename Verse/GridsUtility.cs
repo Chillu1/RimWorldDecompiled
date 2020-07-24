@@ -268,14 +268,10 @@ namespace Verse
 
 		public static Building_Door GetDoor(this IntVec3 c, Map map)
 		{
-			List<Thing> list = map.thingGrid.ThingsListAt(c);
-			for (int i = 0; i < list.Count; i++)
+			Building_Door result;
+			if ((result = (c.GetEdifice(map) as Building_Door)) != null)
 			{
-				Building_Door building_Door = list[i] as Building_Door;
-				if (building_Door != null)
-				{
-					return building_Door;
-				}
+				return result;
 			}
 			return null;
 		}
@@ -310,7 +306,7 @@ namespace Verse
 			{
 				return roomOrAdjacent.isPrisonCell;
 			}
-			Log.Error("Checking prison cell status of " + c + " which is not in or adjacent to a room.");
+			Log.Error(string.Concat("Checking prison cell status of ", c, " which is not in or adjacent to a room."));
 			return false;
 		}
 

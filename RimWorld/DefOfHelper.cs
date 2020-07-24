@@ -35,7 +35,7 @@ namespace RimWorld
 				Type fieldType = fieldInfo.FieldType;
 				if (!typeof(Def).IsAssignableFrom(fieldType))
 				{
-					Log.Error(fieldType + " is not a Def.");
+					Log.Error(string.Concat(fieldType, " is not a Def."));
 					continue;
 				}
 				MayRequireAttribute mayRequireAttribute = fieldInfo.TryGetAttribute<MayRequireAttribute>();

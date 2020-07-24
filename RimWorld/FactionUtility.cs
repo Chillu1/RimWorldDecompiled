@@ -19,28 +19,33 @@ namespace RimWorld
 			return !fac.HostileTo(other);
 		}
 
-		public static bool CanTradeWith(this Pawn p, Faction faction, TraderKindDef traderKind = null)
+		public static AcceptanceReport CanTradeWith_NewTemp(this Pawn p, Faction faction, TraderKindDef traderKind = null)
 		{
 			if (p.skills.GetSkill(SkillDefOf.Social).TotallyDisabled)
 			{
-				return false;
+				return AcceptanceReport.WasRejected;
 			}
 			if (faction != null)
 			{
 				if (faction.HostileTo(p.Faction))
 				{
-					return false;
+					return AcceptanceReport.WasRejected;
 				}
 				if (traderKind == null || traderKind.permitRequiredForTrading == null)
 				{
-					return true;
+					return AcceptanceReport.WasAccepted;
 				}
 				if (p.royalty == null || !p.royalty.HasPermit(traderKind.permitRequiredForTrading, faction))
 				{
-					return false;
+					return new AcceptanceReport("MessageNeedRoyalTitleToCallWithShip".Translate(traderKind.TitleRequiredToTrade));
 				}
 			}
-			return true;
+			return AcceptanceReport.WasAccepted;
+		}
+
+		public static bool CanTradeWith(this Pawn p, Faction faction, TraderKindDef traderKind = null)
+		{
+			return p.CanTradeWith_NewTemp(faction, traderKind).Accepted;
 		}
 
 		public static Faction DefaultFactionFrom(FactionDef ft)

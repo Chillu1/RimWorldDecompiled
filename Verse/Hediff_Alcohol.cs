@@ -2,7 +2,7 @@ using RimWorld;
 
 namespace Verse
 {
-	public class Hediff_Alcohol : HediffWithComps
+	public class Hediff_Alcohol : Hediff_High
 	{
 		private const int HangoverCheckInterval = 300;
 

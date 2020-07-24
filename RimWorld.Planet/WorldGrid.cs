@@ -492,7 +492,7 @@ namespace RimWorld.Planet
 			{
 				return int.MaxValue;
 			}
-			if (((cachedTraversalDistanceForStart == start && cachedTraversalDistanceForEnd == end) & passImpassable) && maxDist == int.MaxValue)
+			if (cachedTraversalDistanceForStart == start && cachedTraversalDistanceForEnd == end && passImpassable && maxDist == int.MaxValue)
 			{
 				return cachedTraversalDistance;
 			}

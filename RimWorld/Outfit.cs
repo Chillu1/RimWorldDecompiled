@@ -32,7 +32,7 @@ namespace RimWorld
 
 		public string GetUniqueLoadID()
 		{
-			return "Outfit_" + label + uniqueId.ToString();
+			return "Outfit_" + label + uniqueId;
 		}
 	}
 }

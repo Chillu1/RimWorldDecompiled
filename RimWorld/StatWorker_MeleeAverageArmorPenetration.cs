@@ -53,7 +53,7 @@ namespace RimWorld
 				float f = item.verbProps.AdjustedArmorPenetration(item.tool, currentWeaponUser, req.Thing, null);
 				if (item.tool != null)
 				{
-					stringBuilder.AppendLine(string.Format("  {0}: {1} ({2})", "Tool".Translate(), item.tool.LabelCap, item.ToolCapacity.defName));
+					stringBuilder.AppendLine($"  {item.tool.LabelCap} ({item.ToolCapacity.label})");
 				}
 				else
 				{

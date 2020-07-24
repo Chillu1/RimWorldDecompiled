@@ -34,19 +34,20 @@ namespace RimWorld
 			Text.Anchor = TextAnchor.MiddleCenter;
 			Widgets.Label(inRect, "PressAnyKeyOrEsc".Translate());
 			Text.Anchor = TextAnchor.UpperLeft;
-			if (Event.current.isKey && Event.current.type == EventType.KeyDown && Event.current.keyCode != 0)
+			if (!Event.current.isKey || Event.current.type != EventType.KeyDown || Event.current.keyCode == KeyCode.None)
 			{
-				if (Event.current.keyCode != KeyCode.Escape)
-				{
-					keyPrefsData.EraseConflictingBindingsForKeyCode(keyDef, Event.current.keyCode, delegate(KeyBindingDef oldDef)
-					{
-						Messages.Message("KeyBindingOverwritten".Translate(oldDef.LabelCap), MessageTypeDefOf.TaskCompletion, historical: false);
-					});
-					keyPrefsData.SetBinding(keyDef, slot, Event.current.keyCode);
-				}
-				Close();
-				Event.current.Use();
+				return;
 			}
+			if (Event.current.keyCode != KeyCode.Escape)
+			{
+				keyPrefsData.EraseConflictingBindingsForKeyCode(keyDef, Event.current.keyCode, delegate(KeyBindingDef oldDef)
+				{
+					Messages.Message("KeyBindingOverwritten".Translate(oldDef.LabelCap), MessageTypeDefOf.TaskCompletion, historical: false);
+				});
+				keyPrefsData.SetBinding(keyDef, slot, Event.current.keyCode);
+			}
+			Close();
+			Event.current.Use();
 		}
 	}
 }

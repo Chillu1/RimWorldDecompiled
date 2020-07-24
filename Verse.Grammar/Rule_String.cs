@@ -54,49 +54,53 @@ namespace Verse.Grammar
 				string value = match.Groups["paramname"].Captures[i].Value;
 				string value2 = match.Groups["paramoperator"].Captures[i].Value;
 				string value3 = match.Groups["paramvalue"].Captures[i].Value;
-				if (value == "p")
+				switch (value)
 				{
+				case "p":
 					if (value2 != "=")
 					{
 						Log.Error($"Attempt to compare p instead of assigning in rule {rawString}");
 					}
 					weight = float.Parse(value3);
-				}
-				else if (value == "priority")
-				{
+					continue;
+				case "priority":
 					if (value2 != "=")
 					{
 						Log.Error($"Attempt to compare priority instead of assigning in rule {rawString}");
 					}
 					priority = float.Parse(value3);
-				}
-				else if (value == "tag")
-				{
+					continue;
+				case "tag":
 					if (value2 != "=")
 					{
 						Log.Error($"Attempt to compare tag instead of assigning in rule {rawString}");
 					}
 					tag = value3;
-				}
-				else if (value == "requiredTag")
-				{
+					continue;
+				case "requiredTag":
 					if (value2 != "=")
 					{
 						Log.Error($"Attempt to compare requiredTag instead of assigning in rule {rawString}");
 					}
 					requiredTag = value3;
-				}
-				else if (value == "debug")
-				{
+					continue;
+				case "debug":
 					Log.Error($"Rule {rawString} contains debug flag; fix before commit");
+					continue;
 				}
-				else if (value2 == "==" || value2 == "!=" || value2 == ">" || value2 == "<" || value2 == ">=" || value2 == "<=")
+				switch (value2)
 				{
+				case "==":
+				case "!=":
+				case ">":
+				case "<":
+				case ">=":
+				case "<=":
 					AddConstantConstraint(value, value3, value2);
-				}
-				else
-				{
+					break;
+				default:
 					Log.Error($"Unknown parameter {value} in rule {rawString}");
+					break;
 				}
 			}
 		}

@@ -87,7 +87,7 @@ namespace RimWorld
 			GUI.color = Color.white;
 			rect.yMin += 17f;
 			DoMainMenuControls(rect, anyMapFiles);
-			DoTranslationInfoRect(new Rect(8f, 100f, 240f, 400f));
+			DoTranslationInfoRect(new Rect(8f, 100f, 300f, 400f));
 			DoExpansionIcons();
 		}
 
@@ -349,44 +349,45 @@ namespace RimWorld
 
 		public static void DoTranslationInfoRect(Rect outRect)
 		{
-			if (LanguageDatabase.activeLanguage != LanguageDatabase.defaultLanguage)
+			if (LanguageDatabase.activeLanguage == LanguageDatabase.defaultLanguage)
 			{
-				Widgets.DrawWindowBackground(outRect);
-				Rect rect = outRect.ContractedBy(8f);
-				GUI.BeginGroup(rect);
-				rect = rect.AtZero();
-				Rect rect2 = new Rect(5f, rect.height - 25f, rect.width - 10f, 25f);
-				rect.height -= 29f;
-				Rect rect3 = new Rect(5f, rect.height - 25f, rect.width - 10f, 25f);
-				rect.height -= 29f;
-				Rect rect4 = new Rect(5f, rect.height - 25f, rect.width - 10f, 25f);
-				rect.height -= 29f;
-				string text = "";
-				foreach (CreditsEntry credit in LanguageDatabase.activeLanguage.info.credits)
-				{
-					CreditRecord_Role creditRecord_Role = credit as CreditRecord_Role;
-					if (creditRecord_Role != null)
-					{
-						text = text + creditRecord_Role.creditee + "\n";
-					}
-				}
-				text = text.TrimEndNewlines();
-				string label = "TranslationThanks".Translate(text) + "\n\n" + "TranslationHowToContribute".Translate();
-				Widgets.LabelScrollable(rect, label, ref translationInfoScrollbarPos, dontConsumeScrollEventsIfNoScrollbar: false, takeScrollbarSpaceEvenIfNoScrollbar: false);
-				if (Widgets.ButtonText(rect4, "LearnMore".Translate()))
-				{
-					Application.OpenURL(TranslationsContributeURL);
-				}
-				if (Widgets.ButtonText(rect3, "SaveTranslationReport".Translate()))
-				{
-					LanguageReportGenerator.SaveTranslationReport();
-				}
-				if (Widgets.ButtonText(rect2, "CleanupTranslationFiles".Translate()))
-				{
-					TranslationFilesCleaner.CleanupTranslationFiles();
-				}
-				GUI.EndGroup();
+				return;
 			}
+			Widgets.DrawWindowBackground(outRect);
+			Rect rect = outRect.ContractedBy(8f);
+			GUI.BeginGroup(rect);
+			rect = rect.AtZero();
+			Rect rect2 = new Rect(5f, rect.height - 25f, rect.width - 10f, 25f);
+			rect.height -= 29f;
+			Rect rect3 = new Rect(5f, rect.height - 25f, rect.width - 10f, 25f);
+			rect.height -= 29f;
+			Rect rect4 = new Rect(5f, rect.height - 25f, rect.width - 10f, 25f);
+			rect.height -= 29f;
+			string text = "";
+			foreach (CreditsEntry credit in LanguageDatabase.activeLanguage.info.credits)
+			{
+				CreditRecord_Role creditRecord_Role = credit as CreditRecord_Role;
+				if (creditRecord_Role != null)
+				{
+					text = text + creditRecord_Role.creditee + "\n";
+				}
+			}
+			text = text.TrimEndNewlines();
+			string label = "TranslationThanks".Translate(text) + "\n\n" + "TranslationHowToContribute".Translate();
+			Widgets.LabelScrollable(rect, label, ref translationInfoScrollbarPos, dontConsumeScrollEventsIfNoScrollbar: false, takeScrollbarSpaceEvenIfNoScrollbar: false);
+			if (Widgets.ButtonText(rect4, "LearnMore".Translate()))
+			{
+				Application.OpenURL(TranslationsContributeURL);
+			}
+			if (Widgets.ButtonText(rect3, "SaveTranslationReport".Translate()))
+			{
+				LanguageReportGenerator.SaveTranslationReport();
+			}
+			if (Widgets.ButtonText(rect2, "CleanupTranslationFiles".Translate()))
+			{
+				TranslationFilesCleaner.CleanupTranslationFiles();
+			}
+			GUI.EndGroup();
 		}
 
 		private static void DoDevBuildWarningRect(Rect outRect)

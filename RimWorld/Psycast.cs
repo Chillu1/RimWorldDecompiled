@@ -22,6 +22,10 @@ namespace RimWorld
 		{
 			get
 			{
+				if (!base.CanCast)
+				{
+					return false;
+				}
 				if (def.EntropyGain > float.Epsilon)
 				{
 					Hediff hediff = pawn.health.hediffSet.hediffs.FirstOrDefault((Hediff h) => h.def == HediffDefOf.PsychicAmplifier);
@@ -30,6 +34,10 @@ namespace RimWorld
 						return false;
 					}
 					return !pawn.psychicEntropy.WouldOverflowEntropy(def.EntropyGain);
+				}
+				if (def.PsyfocusCost > pawn.psychicEntropy.CurrentPsyfocus)
+				{
+					return false;
 				}
 				return true;
 			}
@@ -60,6 +68,10 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (def.PsyfocusCost > float.Epsilon)
+			{
+				pawn.psychicEntropy.OffsetPsyfocusDirectly(0f - def.PsyfocusCost);
+			}
 			bool flag = base.EffectComps.Any((CompAbilityEffect c) => c.Props.psychic);
 			if (flag)
 			{
@@ -85,7 +97,6 @@ namespace RimWorld
 			{
 				MoteMaker.MakeConnectingLine(pawn.DrawPos, target.CenterVector3, flag ? ThingDefOf.Mote_PsycastPsychicLine : ThingDefOf.Mote_PsycastSkipLine, pawn.Map);
 			}
-			pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.PsychicAmplifier)?.Notify_ImplantUsed(def.LabelCap, def.GetStatValueAbstract(StatDefOf.Ability_DetectChancePerEntropy), def.level);
 			return base.Activate(target, dest);
 		}
 
@@ -127,19 +138,31 @@ namespace RimWorld
 
 		public override bool GizmoDisabled(out string reason)
 		{
-			if (def.EntropyGain > float.Epsilon)
+			if (pawn.GetStatValue(StatDefOf.PsychicSensitivity) < float.Epsilon)
 			{
-				Hediff hediff = pawn.health.hediffSet.hediffs.FirstOrDefault((Hediff h) => h.def == HediffDefOf.PsychicAmplifier);
-				if ((hediff == null || hediff.Severity < (float)def.level) && def.level > 0)
-				{
-					reason = "CommandPsycastHigherLevelAmplifierRequired".Translate(def.level);
-					return true;
-				}
-				if (pawn.psychicEntropy.WouldOverflowEntropy(def.EntropyGain + PsycastUtility.TotalEntropyFromQueuedPsycasts(pawn)))
-				{
-					reason = "CommandPsycastWouldExceedEntropy".Translate(def.label);
-					return true;
-				}
+				reason = "CommandPsycastZeroPsychicSensitivity".Translate();
+				return true;
+			}
+			Hediff firstHediffOfDef = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.PsychicAmplifier);
+			if ((firstHediffOfDef == null || firstHediffOfDef.Severity < (float)def.level) && def.level > 0)
+			{
+				reason = "CommandPsycastHigherLevelPsylinkRequired".Translate(def.level);
+				return true;
+			}
+			if (def.level > pawn.psychicEntropy.MaxAbilityLevel)
+			{
+				reason = "CommandPsycastLowPsyfocus".Translate(Pawn_PsychicEntropyTracker.PsyfocusBandPercentages[def.RequiredPsyfocusBand].ToStringPercent());
+				return true;
+			}
+			if (def.PsyfocusCost > pawn.psychicEntropy.CurrentPsyfocus)
+			{
+				reason = "CommandPsycastNotEnoughPsyfocus".Translate(def.PsyfocusCost.ToStringPercent(), pawn.psychicEntropy.CurrentPsyfocus.ToStringPercent(), def.label.Named("PSYCASTNAME"), pawn.Named("CASTERNAME"));
+				return true;
+			}
+			if (def.EntropyGain > float.Epsilon && pawn.psychicEntropy.WouldOverflowEntropy(def.EntropyGain + PsycastUtility.TotalEntropyFromQueuedPsycasts(pawn)))
+			{
+				reason = "CommandPsycastWouldExceedEntropy".Translate(def.label);
+				return true;
 			}
 			return base.GizmoDisabled(out reason);
 		}

@@ -166,7 +166,7 @@ namespace Verse.AI
 				}
 				return true;
 			};
-			if (HasRangedAttack(searcher))
+			if (HasRangedAttack(searcher) && (searcherPawn == null || !searcherPawn.InAggroMentalState))
 			{
 				tmpTargets.Clear();
 				tmpTargets.AddRange(searcherThing.Map.attackTargetsCache.GetPotentialTargetsFor(searcher));
@@ -489,19 +489,20 @@ namespace Verse.AI
 			foreach (IntVec3 item in enumerable)
 			{
 				float num2 = VerbUtility.InterceptChanceFactorFromDistance(report.ShootLine.Source.ToVector3Shifted(), item);
-				if (!(num2 <= 0f))
+				if (num2 <= 0f)
 				{
-					List<Thing> thingList = item.GetThingList(map);
-					for (int i = 0; i < thingList.Count; i++)
+					continue;
+				}
+				List<Thing> thingList = item.GetThingList(map);
+				for (int i = 0; i < thingList.Count; i++)
+				{
+					Thing thing = thingList[i];
+					if (thing is IAttackTarget && thing != target)
 					{
-						Thing thing = thingList[i];
-						if (thing is IAttackTarget && thing != target)
-						{
-							float num3 = (thing == searcher) ? 40f : ((!(thing is Pawn)) ? 10f : (thing.def.race.Animal ? 7f : 18f));
-							num3 *= num2;
-							num3 = ((!searcher.Thing.HostileTo(thing)) ? (num3 * -1f) : (num3 * 0.6f));
-							num += num3;
-						}
+						float num3 = (thing == searcher) ? 40f : ((!(thing is Pawn)) ? 10f : (thing.def.race.Animal ? 7f : 18f));
+						num3 *= num2;
+						num3 = ((!searcher.Thing.HostileTo(thing)) ? (num3 * -1f) : (num3 * 0.6f));
+						num += num3;
 					}
 				}
 			}

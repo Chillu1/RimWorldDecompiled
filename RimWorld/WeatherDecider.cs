@@ -164,7 +164,7 @@ namespace RimWorld
 			StringBuilder stringBuilder = new StringBuilder();
 			foreach (WeatherDef item in DefDatabase<WeatherDef>.AllDefs.OrderByDescending((WeatherDef w) => CurrentWeatherCommonality(w)))
 			{
-				stringBuilder.AppendLine(item.label + " - " + CurrentWeatherCommonality(item).ToString());
+				stringBuilder.AppendLine(item.label + " - " + CurrentWeatherCommonality(item));
 			}
 			Log.Message(stringBuilder.ToString());
 		}

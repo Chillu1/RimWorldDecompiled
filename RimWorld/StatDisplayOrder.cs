@@ -8,8 +8,6 @@ namespace RimWorld
 
 		public const int HitPointsBasic = 99998;
 
-		public const int Race_NutritationEatenPerDay = 4000;
-
 		public const int Race = 2100;
 
 		public const int Race_Wildness = 2050;
@@ -19,6 +17,8 @@ namespace RimWorld
 		public const int Race_LifeExpectancy = 2000;
 
 		public const int Race_Trainability = 2500;
+
+		public const int Race_NutritationEatenPerDay = 1600;
 
 		public const int Race_Diet = 1500;
 
@@ -82,13 +82,45 @@ namespace RimWorld
 
 		public const int Thing_Plant_MinGrowthTemperature = 4152;
 
-		public const int Thing_Drug_Addictiveness = 2500;
-
-		public const int Thing_Drug_MedicineXpGainFactor = 1000;
+		public const int Thing_Ingestible_MaxSatisfiedTitle = 4752;
 
 		public const int Thing_Ingestible_Joy = 4751;
 
-		public const int Thing_Ingestible_MaxSatisfiedTitle = 4752;
+		public const int Thing_Drug_Chemical = 2490;
+
+		public const int Thing_Drug_HighGainPerDose = 2480;
+
+		public const int Thing_Drug_HighFallRate = 2470;
+
+		public const int Thing_Drug_HighDurationPerDose = 2460;
+
+		public const int Thing_Drug_ToleranceGainPerDose = 2450;
+
+		public const int Thing_Drug_ToleranceFallRate = 2440;
+
+		public const int Thing_Drug_NewAddictionMinTolerance = 2437;
+
+		public const int Thing_Drug_SafeDoseInterval = 2435;
+
+		public const int Thing_Drug_NewAddictionChance = 2428;
+
+		public const int Thing_Drug_NewAddictionSeverity = 2427;
+
+		public const int Thing_Drug_AddictionSeverityPerDose = 2424;
+
+		public const int Thing_Drug_AddictionNeedOffset = 2420;
+
+		public const int Thing_Drug_AddictionNeedFallRate = 2410;
+
+		public const int Thing_Drug_AddictionNeedInterval = 2400;
+
+		public const int Thing_Drug_AddictionRecoveryTime = 2395;
+
+		public const int Thing_Drug_AddictionCostPerDay = 2390;
+
+		public const int Thing_Drug_RandomODChance = 2380;
+
+		public const int Thing_Drug_MedicineXpGainFactor = 1000;
 
 		public const int Thing_Weapon_Biocoded = 5404;
 
@@ -176,10 +208,10 @@ namespace RimWorld
 
 		public const int Title_RoomRequirements = 99997;
 
-		public const int Title_AllowedAmplifierLevel = 99996;
-
 		public const int Title_RequiredMeals = 99995;
 
 		public const int Title_DisabledWorkTypes = 99994;
+
+		public const int Meditation_FocusesAvailable = 99995;
 	}
 }

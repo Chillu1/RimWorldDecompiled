@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using UnityEngine;
 
 namespace Verse
 {
@@ -16,7 +17,7 @@ namespace Verse
 			public Func<object[], object> func;
 		}
 
-		public static readonly FunctionType[] FunctionTypes = new FunctionType[9]
+		public static readonly FunctionType[] FunctionTypes = new FunctionType[11]
 		{
 			new FunctionType
 			{
@@ -38,6 +39,13 @@ namespace Verse
 				minArgs = 1,
 				maxArgs = 1,
 				func = Round
+			},
+			new FunctionType
+			{
+				name = "roundToDigits",
+				minArgs = 2,
+				maxArgs = 2,
+				func = RoundToDigits
 			},
 			new FunctionType
 			{
@@ -80,6 +88,13 @@ namespace Verse
 				minArgs = 1,
 				maxArgs = 1,
 				func = RoundToTicksRough
+			},
+			new FunctionType
+			{
+				name = "lerp",
+				minArgs = 3,
+				maxArgs = 3,
+				func = Lerp
 			}
 		};
 
@@ -99,6 +114,12 @@ namespace Verse
 		{
 			CultureInfo invariantCulture = CultureInfo.InvariantCulture;
 			return Math.Round(Convert.ToDouble(args[0], invariantCulture));
+		}
+
+		private static object RoundToDigits(object[] args)
+		{
+			CultureInfo invariantCulture = CultureInfo.InvariantCulture;
+			return Math.Round(Convert.ToDouble(args[0], invariantCulture), Convert.ToInt32(args[1], invariantCulture));
 		}
 
 		private static object Floor(object[] args)
@@ -152,6 +173,12 @@ namespace Verse
 				return GenMath.RoundTo(num, 6000);
 			}
 			return GenMath.RoundTo(num, 60000);
+		}
+
+		public static object Lerp(object[] args)
+		{
+			CultureInfo invariantCulture = CultureInfo.InvariantCulture;
+			return Mathf.Lerp(Convert.ToSingle(args[0], invariantCulture), Convert.ToSingle(args[1], invariantCulture), Convert.ToSingle(args[2], invariantCulture));
 		}
 	}
 }

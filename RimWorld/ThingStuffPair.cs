@@ -50,7 +50,7 @@ namespace RimWorld
 			this.commonalityMultiplier = commonalityMultiplier;
 			if (stuff != null && !thing.MadeFromStuff)
 			{
-				Log.Warning("Created ThingStuffPairWithQuality with stuff " + stuff + " but " + thing + " is not made from stuff.");
+				Log.Warning(string.Concat("Created ThingStuffPairWithQuality with stuff ", stuff, " but ", thing, " is not made from stuff."));
 				stuff = null;
 			}
 			cachedPrice = thing.GetStatValueAbstract(StatDefOf.MarketValue, stuff);
@@ -65,21 +65,22 @@ namespace RimWorld
 			for (int i = 0; i < allDefsListForReading.Count; i++)
 			{
 				ThingDef thingDef = allDefsListForReading[i];
-				if (thingValidator(thingDef))
+				if (!thingValidator(thingDef))
 				{
-					if (!thingDef.MadeFromStuff)
-					{
-						list.Add(new ThingStuffPair(thingDef, null));
-						continue;
-					}
-					IEnumerable<ThingDef> enumerable = DefDatabase<ThingDef>.AllDefs.Where((ThingDef st) => st.IsStuff && st.stuffProps.CanMake(thingDef));
-					int num = enumerable.Count();
-					float num2 = enumerable.Average((ThingDef st) => st.stuffProps.commonality);
-					float num3 = 1f / (float)num / num2;
-					foreach (ThingDef item in enumerable)
-					{
-						list.Add(new ThingStuffPair(thingDef, item, num3));
-					}
+					continue;
+				}
+				if (!thingDef.MadeFromStuff)
+				{
+					list.Add(new ThingStuffPair(thingDef, null));
+					continue;
+				}
+				IEnumerable<ThingDef> enumerable = DefDatabase<ThingDef>.AllDefs.Where((ThingDef st) => st.IsStuff && st.stuffProps.CanMake(thingDef));
+				int num = enumerable.Count();
+				float num2 = enumerable.Average((ThingDef st) => st.stuffProps.commonality);
+				float num3 = 1f / (float)num / num2;
+				foreach (ThingDef item in enumerable)
+				{
+					list.Add(new ThingStuffPair(thingDef, item, num3));
 				}
 			}
 			return list.OrderByDescending((ThingStuffPair p) => p.Price).ToList();

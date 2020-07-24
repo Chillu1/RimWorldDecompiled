@@ -30,30 +30,31 @@ namespace RimWorld
 			int randomInRange2 = SizeRange.RandomInRange;
 			CellRect rect = new CellRect(loc.x, loc.z, randomInRange, randomInRange2);
 			rect.ClipInsideMap(map);
-			if (rect.Width == randomInRange && rect.Height == randomInRange2)
+			if (rect.Width != randomInRange || rect.Height != randomInRange2)
 			{
-				foreach (IntVec3 cell in rect.Cells)
+				return;
+			}
+			foreach (IntVec3 cell in rect.Cells)
+			{
+				List<Thing> list = map.thingGrid.ThingsListAt(cell);
+				for (int i = 0; i < list.Count; i++)
 				{
-					List<Thing> list = map.thingGrid.ThingsListAt(cell);
-					for (int i = 0; i < list.Count; i++)
+					if (list[i].def == ThingDefOf.AncientCryptosleepCasket)
 					{
-						if (list[i].def == ThingDefOf.AncientCryptosleepCasket)
-						{
-							return;
-						}
+						return;
 					}
 				}
-				if (CanPlaceAncientBuildingInRange(rect, map))
-				{
-					ResolveParams resolveParams = default(ResolveParams);
-					resolveParams.rect = rect;
-					resolveParams.disableSinglePawn = true;
-					resolveParams.disableHives = true;
-					resolveParams.makeWarningLetter = true;
-					RimWorld.BaseGen.BaseGen.globalSettings.map = map;
-					RimWorld.BaseGen.BaseGen.symbolStack.Push("ancientTemple", resolveParams);
-					RimWorld.BaseGen.BaseGen.Generate();
-				}
+			}
+			if (CanPlaceAncientBuildingInRange(rect, map))
+			{
+				ResolveParams resolveParams = default(ResolveParams);
+				resolveParams.rect = rect;
+				resolveParams.disableSinglePawn = true;
+				resolveParams.disableHives = true;
+				resolveParams.makeWarningLetter = true;
+				RimWorld.BaseGen.BaseGen.globalSettings.map = map;
+				RimWorld.BaseGen.BaseGen.symbolStack.Push("ancientTemple", resolveParams);
+				RimWorld.BaseGen.BaseGen.Generate();
 			}
 		}
 	}

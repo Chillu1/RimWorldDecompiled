@@ -5,6 +5,8 @@ namespace RimWorld
 {
 	public static class DeepDrillUtility
 	{
+		public const int NumCellsToScan = 21;
+
 		public static ThingDef GetNextResource(IntVec3 p, Map map)
 		{
 			GetNextResource(p, map, out ThingDef resDef, out int _, out IntVec3 _);
@@ -13,7 +15,7 @@ namespace RimWorld
 
 		public static bool GetNextResource(IntVec3 p, Map map, out ThingDef resDef, out int countPresent, out IntVec3 cell)
 		{
-			for (int i = 0; i < 9; i++)
+			for (int i = 0; i < 21; i++)
 			{
 				IntVec3 intVec = p + GenRadial.RadialPattern[i];
 				if (intVec.InBounds(map))

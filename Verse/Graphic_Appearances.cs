@@ -11,6 +11,11 @@ namespace Verse
 
 		public override Material MatSingle => subGraphics[StuffAppearanceDefOf.Smooth.index].MatSingle;
 
+		public override Material MatAt(Rot4 rot, Thing thing = null)
+		{
+			return SubGraphicFor(thing).MatAt(rot, thing);
+		}
+
 		public override void Init(GraphicRequest req)
 		{
 			data = req.graphicData;
@@ -55,27 +60,37 @@ namespace Verse
 
 		public override Material MatSingleFor(Thing thing)
 		{
-			StuffAppearanceDef stuffAppearanceDef = StuffAppearanceDefOf.Smooth;
-			if (thing != null && thing.Stuff != null && thing.Stuff.stuffProps.appearance != null)
-			{
-				stuffAppearanceDef = thing.Stuff.stuffProps.appearance;
-			}
-			return subGraphics[stuffAppearanceDef.index].MatSingleFor(thing);
+			return SubGraphicFor(thing).MatSingleFor(thing);
 		}
 
 		public override void DrawWorker(Vector3 loc, Rot4 rot, ThingDef thingDef, Thing thing, float extraRotation)
 		{
-			StuffAppearanceDef stuffAppearanceDef = StuffAppearanceDefOf.Smooth;
-			if (thing != null && thing.Stuff != null && thing.Stuff.stuffProps.appearance != null)
+			SubGraphicFor(thing).DrawWorker(loc, rot, thingDef, thing, extraRotation);
+		}
+
+		public Graphic SubGraphicFor(Thing thing)
+		{
+			StuffAppearanceDef smooth = StuffAppearanceDefOf.Smooth;
+			if (thing != null)
 			{
-				stuffAppearanceDef = thing.Stuff.stuffProps.appearance;
+				return SubGraphicFor(thing.Stuff);
 			}
-			subGraphics[stuffAppearanceDef.index].DrawWorker(loc, rot, thingDef, thing, extraRotation);
+			return subGraphics[smooth.index];
+		}
+
+		public Graphic SubGraphicFor(ThingDef stuff)
+		{
+			StuffAppearanceDef stuffAppearanceDef = StuffAppearanceDefOf.Smooth;
+			if (stuff != null && stuff.stuffProps.appearance != null)
+			{
+				stuffAppearanceDef = stuff.stuffProps.appearance;
+			}
+			return subGraphics[stuffAppearanceDef.index];
 		}
 
 		public override string ToString()
 		{
-			return "Appearance(path=" + path + ", color=" + color + ", colorTwo=unsupported)";
+			return string.Concat("Appearance(path=", path, ", color=", color, ", colorTwo=unsupported)");
 		}
 	}
 }

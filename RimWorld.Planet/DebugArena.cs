@@ -56,32 +56,33 @@ namespace RimWorld.Planet
 			}
 			bool flag = !lhs.Any((Pawn pawn) => !pawn.Dead && !pawn.Downed && pawn.Spawned);
 			bool flag2 = !rhs.Any((Pawn pawn) => !pawn.Dead && !pawn.Downed && pawn.Spawned);
-			if (flag | flag2)
+			if (!(flag || flag2))
 			{
-				ArenaUtility.ArenaResult obj2 = default(ArenaUtility.ArenaResult);
-				obj2.tickDuration = Find.TickManager.TicksGame - tickFightStarted;
-				if (flag && !flag2)
-				{
-					obj2.winner = ArenaUtility.ArenaResult.Winner.Rhs;
-				}
-				else if (!flag && flag2)
-				{
-					obj2.winner = ArenaUtility.ArenaResult.Winner.Lhs;
-				}
-				else
-				{
-					obj2.winner = ArenaUtility.ArenaResult.Winner.Other;
-				}
-				callback(obj2);
-				foreach (Pawn item2 in lhs.Concat(rhs))
-				{
-					if (!item2.Destroyed)
-					{
-						item2.Destroy();
-					}
-				}
-				parent.Destroy();
+				return;
 			}
+			ArenaUtility.ArenaResult obj2 = default(ArenaUtility.ArenaResult);
+			obj2.tickDuration = Find.TickManager.TicksGame - tickFightStarted;
+			if (flag && !flag2)
+			{
+				obj2.winner = ArenaUtility.ArenaResult.Winner.Rhs;
+			}
+			else if (!flag && flag2)
+			{
+				obj2.winner = ArenaUtility.ArenaResult.Winner.Lhs;
+			}
+			else
+			{
+				obj2.winner = ArenaUtility.ArenaResult.Winner.Other;
+			}
+			callback(obj2);
+			foreach (Pawn item2 in lhs.Concat(rhs))
+			{
+				if (!item2.Destroyed)
+				{
+					item2.Destroy();
+				}
+			}
+			parent.Destroy();
 		}
 	}
 }

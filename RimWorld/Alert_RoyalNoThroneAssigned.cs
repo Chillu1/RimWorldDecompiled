@@ -17,22 +17,23 @@ namespace RimWorld
 				{
 					foreach (Pawn freeColonist in maps[i].mapPawns.FreeColonists)
 					{
-						if (freeColonist.royalty != null && freeColonist.royalty.CanRequireThroneroom())
+						if (freeColonist.royalty == null || !freeColonist.royalty.CanRequireThroneroom())
 						{
-							bool flag = false;
-							List<RoyalTitle> allTitlesForReading = freeColonist.royalty.AllTitlesForReading;
-							for (int j = 0; j < allTitlesForReading.Count; j++)
+							continue;
+						}
+						bool flag = false;
+						List<RoyalTitle> allTitlesForReading = freeColonist.royalty.AllTitlesForReading;
+						for (int j = 0; j < allTitlesForReading.Count; j++)
+						{
+							if (!allTitlesForReading[j].def.throneRoomRequirements.NullOrEmpty())
 							{
-								if (!allTitlesForReading[j].def.throneRoomRequirements.NullOrEmpty())
-								{
-									flag = true;
-									break;
-								}
+								flag = true;
+								break;
 							}
-							if (flag && freeColonist.ownership.AssignedThrone == null)
-							{
-								targetsResult.Add(freeColonist);
-							}
+						}
+						if (flag && freeColonist.ownership.AssignedThrone == null)
+						{
+							targetsResult.Add(freeColonist);
 						}
 					}
 				}

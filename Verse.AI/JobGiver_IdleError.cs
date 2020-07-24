@@ -8,7 +8,7 @@ namespace Verse.AI
 
 		protected override Job TryGiveJob(Pawn pawn)
 		{
-			Log.ErrorOnce(pawn + " issued IdleError wait job. The behavior tree should never get here.", 532983);
+			Log.ErrorOnce(string.Concat(pawn, " issued IdleError wait job. The behavior tree should never get here."), 532983);
 			Job job = JobMaker.MakeJob(JobDefOf.Wait);
 			job.expiryInterval = 100;
 			return job;

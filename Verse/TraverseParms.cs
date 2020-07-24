@@ -102,9 +102,9 @@ namespace Verse
 			string text = canBash ? " canBash" : "";
 			if (mode == TraverseMode.ByPawn)
 			{
-				return "(" + mode + " " + maxDanger + " " + pawn + text + ")";
+				return string.Concat("(", mode, " ", maxDanger, " ", pawn, text, ")");
 			}
-			return "(" + mode + " " + maxDanger + text + ")";
+			return string.Concat("(", mode, " ", maxDanger, text, ")");
 		}
 	}
 }

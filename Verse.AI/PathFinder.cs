@@ -163,17 +163,17 @@ namespace Verse.AI
 			Pawn pawn = traverseParms.pawn;
 			if (pawn != null && pawn.Map != map)
 			{
-				Log.Error("Tried to FindPath for pawn which is spawned in another map. His map PathFinder should have been used, not this one. pawn=" + pawn + " pawn.Map=" + pawn.Map + " map=" + map);
+				Log.Error(string.Concat("Tried to FindPath for pawn which is spawned in another map. His map PathFinder should have been used, not this one. pawn=", pawn, " pawn.Map=", pawn.Map, " map=", map));
 				return PawnPath.NotFound;
 			}
 			if (!start.IsValid)
 			{
-				Log.Error("Tried to FindPath with invalid start " + start + ", pawn= " + pawn);
+				Log.Error(string.Concat("Tried to FindPath with invalid start ", start, ", pawn= ", pawn));
 				return PawnPath.NotFound;
 			}
 			if (!dest.IsValid)
 			{
-				Log.Error("Tried to FindPath with invalid dest " + dest + ", pawn= " + pawn);
+				Log.Error(string.Concat("Tried to FindPath with invalid dest ", dest, ", pawn= ", pawn));
 				return PawnPath.NotFound;
 			}
 			if (traverseParms.mode == TraverseMode.ByPawn)
@@ -187,7 +187,7 @@ namespace Verse.AI
 			{
 				return PawnPath.NotFound;
 			}
-			PfProfilerBeginSample("FindPath for " + pawn + " from " + start + " to " + dest + (dest.HasThing ? (" at " + dest.Cell) : ""));
+			PfProfilerBeginSample(string.Concat("FindPath for ", pawn, " from ", start, " to ", dest, dest.HasThing ? (" at " + dest.Cell) : ""));
 			cellIndices = map.cellIndices;
 			pathGrid = map.pathGrid;
 			this.edificeGrid = map.edificeGrid.InnerArray;
@@ -209,7 +209,7 @@ namespace Verse.AI
 			int num3 = 0;
 			Area allowedArea = GetAllowedArea(pawn);
 			bool flag5 = pawn != null && PawnUtility.ShouldCollideWithPawns(pawn);
-			bool flag6 = (!flag && start.GetRegion(map) != null) & flag2;
+			bool flag6 = !flag && start.GetRegion(map) != null && flag2;
 			bool flag7 = !flag || !flag3;
 			bool flag8 = false;
 			bool flag9 = pawn?.Drafted ?? false;
@@ -238,7 +238,7 @@ namespace Verse.AI
 				{
 					string text = (pawn != null && pawn.CurJob != null) ? pawn.CurJob.ToString() : "null";
 					string text2 = (pawn != null && pawn.Faction != null) ? pawn.Faction.ToString() : "null";
-					Log.Warning(pawn + " pathing from " + start + " to " + dest + " ran out of cells to process.\nJob:" + text + "\nFaction: " + text2);
+					Log.Warning(string.Concat(pawn, " pathing from ", start, " to ", dest, " ran out of cells to process.\nJob:", text, "\nFaction: ", text2));
 					DebugDrawRichData();
 					PfProfilerEndSample();
 					PfProfilerEndSample();
@@ -463,7 +463,7 @@ namespace Verse.AI
 						calcGrid[num14].heuristicCost = Mathf.RoundToInt((float)regionCostCalculator.GetPathCostFromDestToRegion(num14) * RegionHeuristicWeightByNodesOpened.Evaluate(num3));
 						if (calcGrid[num14].heuristicCost < 0)
 						{
-							Log.ErrorOnce("Heuristic cost overflow for " + pawn.ToStringSafe() + " pathing from " + start + " to " + dest + ".", pawn.GetHashCode() ^ 0xB8DC389);
+							Log.ErrorOnce(string.Concat("Heuristic cost overflow for ", pawn.ToStringSafe(), " pathing from ", start, " to ", dest, "."), pawn.GetHashCode() ^ 0xB8DC389);
 							calcGrid[num14].heuristicCost = 0;
 						}
 					}
@@ -477,7 +477,7 @@ namespace Verse.AI
 					int num21 = num18 + calcGrid[num14].heuristicCost;
 					if (num21 < 0)
 					{
-						Log.ErrorOnce("Node cost overflow for " + pawn.ToStringSafe() + " pathing from " + start + " to " + dest + ".", pawn.GetHashCode() ^ 0x53CB9DE);
+						Log.ErrorOnce(string.Concat("Node cost overflow for ", pawn.ToStringSafe(), " pathing from ", start, " to ", dest, "."), pawn.GetHashCode() ^ 0x53CB9DE);
 						num21 = 0;
 					}
 					calcGrid[num14].parentIndex = curIndex;
@@ -499,7 +499,7 @@ namespace Verse.AI
 					num2 = 0;
 				}
 			}
-			Log.Warning(pawn + " pathing from " + start + " to " + dest + " hit search limit of " + 160000 + " cells.");
+			Log.Warning(string.Concat(pawn, " pathing from ", start, " to ", dest, " hit search limit of ", 160000, " cells."));
 			DebugDrawRichData();
 			PfProfilerEndSample();
 			PfProfilerEndSample();

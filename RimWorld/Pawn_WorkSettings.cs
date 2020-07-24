@@ -119,7 +119,7 @@ namespace RimWorld
 		{
 			if (priorities == null)
 			{
-				Log.Error(pawn + " did not have work settings initialized.");
+				Log.Error(string.Concat(pawn, " did not have work settings initialized."));
 				EnableAndInitialize();
 			}
 		}
@@ -129,7 +129,7 @@ namespace RimWorld
 			ConfirmInitializedDebug();
 			if (priority != 0 && pawn.WorkTypeIsDisabled(w))
 			{
-				Log.Error("Tried to change priority on disabled worktype " + w + " for pawn " + pawn);
+				Log.Error(string.Concat("Tried to change priority on disabled worktype ", w, " for pawn ", pawn));
 				return;
 			}
 			if (priority < 0 || priority > 4)

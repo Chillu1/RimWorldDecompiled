@@ -48,6 +48,10 @@ namespace Verse
 
 		public bool recoverFromSleep;
 
+		public bool recoverFromDowned = true;
+
+		public bool recoverFromCollapsingExhausted = true;
+
 		public ThoughtDef moodRecoveryThought;
 
 		[MustTranslate]

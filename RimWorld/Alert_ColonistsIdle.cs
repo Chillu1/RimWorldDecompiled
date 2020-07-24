@@ -18,25 +18,27 @@ namespace RimWorld
 				List<Map> maps = Find.Maps;
 				for (int i = 0; i < maps.Count; i++)
 				{
-					if (maps[i].IsPlayerHome)
+					if (!maps[i].IsPlayerHome)
 					{
-						foreach (Pawn item in maps[i].mapPawns.FreeColonistsSpawned)
+						continue;
+					}
+					foreach (Pawn item in maps[i].mapPawns.FreeColonistsSpawned)
+					{
+						if (!item.mindState.IsIdle)
 						{
-							if (item.mindState.IsIdle)
+							continue;
+						}
+						if (item.royalty != null)
+						{
+							RoyalTitle mostSeniorTitle = item.royalty.MostSeniorTitle;
+							if (mostSeniorTitle == null || !mostSeniorTitle.def.suppressIdleAlert)
 							{
-								if (item.royalty != null)
-								{
-									RoyalTitle mostSeniorTitle = item.royalty.MostSeniorTitle;
-									if (mostSeniorTitle == null || !mostSeniorTitle.def.suppressIdleAlert)
-									{
-										idleColonistsResult.Add(item);
-									}
-								}
-								else
-								{
-									idleColonistsResult.Add(item);
-								}
+								idleColonistsResult.Add(item);
 							}
+						}
+						else
+						{
+							idleColonistsResult.Add(item);
 						}
 					}
 				}

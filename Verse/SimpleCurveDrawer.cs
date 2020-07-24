@@ -98,46 +98,47 @@ namespace Verse
 				viewRect.xMin = style.FixedSection.min;
 				viewRect.xMax = style.FixedSection.max;
 			}
-			if (!Mathf.Approximately(viewRect.width, 0f) && !Mathf.Approximately(viewRect.height, 0f))
+			if (Mathf.Approximately(viewRect.width, 0f) || Mathf.Approximately(viewRect.height, 0f))
 			{
-				Rect rect2 = rect;
-				if (style.DrawMeasures)
-				{
-					rect2.xMin += 60f;
-					rect2.yMax -= 30f;
-				}
-				if (marks != null)
-				{
-					Rect rect3 = rect2;
-					rect3.height = 15f;
-					DrawCurveMarks(rect3, viewRect, marks);
-					rect2.yMin = rect3.yMax;
-				}
-				if (style.DrawBackground)
-				{
-					GUI.color = new Color(0.302f, 0.318f, 0.365f);
-					GUI.DrawTexture(rect2, BaseContent.WhiteTex);
-				}
-				if (style.DrawBackgroundLines)
-				{
-					DrawGraphBackgroundLines(rect2, viewRect);
-				}
-				if (style.DrawMeasures)
-				{
-					DrawCurveMeasures(rect, viewRect, rect2, style.MeasureLabelsXCount, style.MeasureLabelsYCount, style.XIntegersOnly, style.YIntegersOnly);
-				}
-				foreach (SimpleCurveDrawInfo curf in curves)
-				{
-					DrawCurveLines(rect2, curf, style.DrawPoints, viewRect, style.UseAntiAliasedLines, style.PointsRemoveOptimization);
-				}
-				if (style.DrawLegend)
-				{
-					DrawCurvesLegend(legendRect, curves);
-				}
-				if (style.DrawCurveMousePoint)
-				{
-					DrawCurveMousePoint(curves, rect2, viewRect, style.LabelX);
-				}
+				return;
+			}
+			Rect rect2 = rect;
+			if (style.DrawMeasures)
+			{
+				rect2.xMin += 60f;
+				rect2.yMax -= 30f;
+			}
+			if (marks != null)
+			{
+				Rect rect3 = rect2;
+				rect3.height = 15f;
+				DrawCurveMarks(rect3, viewRect, marks);
+				rect2.yMin = rect3.yMax;
+			}
+			if (style.DrawBackground)
+			{
+				GUI.color = new Color(0.302f, 0.318f, 0.365f);
+				GUI.DrawTexture(rect2, BaseContent.WhiteTex);
+			}
+			if (style.DrawBackgroundLines)
+			{
+				DrawGraphBackgroundLines(rect2, viewRect);
+			}
+			if (style.DrawMeasures)
+			{
+				DrawCurveMeasures(rect, viewRect, rect2, style.MeasureLabelsXCount, style.MeasureLabelsYCount, style.XIntegersOnly, style.YIntegersOnly);
+			}
+			foreach (SimpleCurveDrawInfo curf in curves)
+			{
+				DrawCurveLines(rect2, curf, style.DrawPoints, viewRect, style.UseAntiAliasedLines, style.PointsRemoveOptimization);
+			}
+			if (style.DrawLegend)
+			{
+				DrawCurvesLegend(legendRect, curves);
+			}
+			if (style.DrawCurveMousePoint)
+			{
+				DrawCurveMousePoint(curves, rect2, viewRect, style.LabelX);
 			}
 		}
 
@@ -357,7 +358,7 @@ namespace Verse
 			if (flag)
 			{
 				DrawPoint(vector2);
-				Rect rect = new Rect(vector2.x, vector2.y, 100f, 60f);
+				Rect rect = new Rect(vector2.x, vector2.y, 120f, 60f);
 				Text.Anchor = TextAnchor.UpperLeft;
 				if (rect.x + rect.width > screenRect.width)
 				{
@@ -376,7 +377,8 @@ namespace Verse
 						Text.Anchor = TextAnchor.LowerRight;
 					}
 				}
-				Widgets.Label(rect, labelX + ": " + vector.x.ToString("0.##") + "\n" + simpleCurveDrawInfo.labelY + ": " + vector.y.ToString("0.##"));
+				string text = (!simpleCurveDrawInfo.valueFormat.NullOrEmpty()) ? string.Format(simpleCurveDrawInfo.valueFormat, vector.y) : vector.y.ToString("0.##");
+				Widgets.Label(rect, simpleCurveDrawInfo.label + "\n" + labelX + " " + vector.x.ToString("0.##") + "\n" + text);
 				Text.Anchor = TextAnchor.UpperLeft;
 			}
 			GUI.EndGroup();

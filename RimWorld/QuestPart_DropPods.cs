@@ -47,45 +47,25 @@ namespace RimWorld
 			{
 				items.Clear();
 				pawns.Clear();
-				if (value != null)
+				if (value == null)
 				{
-					foreach (Thing item in value)
+					return;
+				}
+				foreach (Thing item in value)
+				{
+					if (item.Destroyed)
 					{
-						if (item.Destroyed)
-						{
-							Log.Error("Tried to add a destroyed thing to QuestPart_DropPods: " + item.ToStringSafe());
-						}
-						else
-						{
-							Pawn pawn = item as Pawn;
-							if (pawn != null)
-							{
-								pawns.Add(pawn);
-							}
-							else
-							{
-								items.Add(item);
-							}
-						}
+						Log.Error("Tried to add a destroyed thing to QuestPart_DropPods: " + item.ToStringSafe());
+						continue;
 					}
-				}
-			}
-		}
-
-		public override IEnumerable<Dialog_InfoCard.Hyperlink> Hyperlinks
-		{
-			get
-			{
-				foreach (Dialog_InfoCard.Hyperlink hyperlink in base.Hyperlinks)
-				{
-					yield return hyperlink;
-				}
-				foreach (Thing item in items)
-				{
-					ThingDef def = item.GetInnerIfMinified().def;
-					if (!thingsToExcludeFromHyperlinks.Contains(def))
+					Pawn pawn = item as Pawn;
+					if (pawn != null)
 					{
-						yield return new Dialog_InfoCard.Hyperlink(def);
+						pawns.Add(pawn);
+					}
+					else
+					{
+						items.Add(item);
 					}
 				}
 			}
@@ -175,6 +155,10 @@ namespace RimWorld
 						}
 					}
 				}
+				for (int k = 0; k < pawns.Count; k++)
+				{
+					pawns[k].needs.SetInitialLevels();
+				}
 				DropPodUtility.DropThingsNear(intVec, map, Things, 110, canInstaDropDuringInit: false, leaveSlag: false, !useTradeDropSpot, forbid: false);
 				importantLookTarget = items.Find((Thing x) => x.GetInnerIfMinified() is MonumentMarker).GetInnerIfMinified();
 				items.Clear();
@@ -204,6 +188,26 @@ namespace RimWorld
 		public override void ReplacePawnReferences(Pawn replace, Pawn with)
 		{
 			pawns.Replace(replace, with);
+		}
+
+		public override void PostQuestAdded()
+		{
+			base.PostQuestAdded();
+			int num = 0;
+			while (true)
+			{
+				if (num < items.Count)
+				{
+					if (items[num].def == ThingDefOf.PsychicAmplifier)
+					{
+						break;
+					}
+					num++;
+					continue;
+				}
+				return;
+			}
+			Find.History.Notify_PsylinkAvailable();
 		}
 
 		public override void Cleanup()

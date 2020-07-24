@@ -121,12 +121,13 @@ namespace RimWorld
 		{
 			for (int i = 0; i < options.Count; i++)
 			{
-				if (!(options[i].chance <= 0f))
+				if (options[i].chance <= 0f)
 				{
-					foreach (ThingDef item in options[i].thingSetMaker.AllGeneratableThingsDebug(parms))
-					{
-						yield return item;
-					}
+					continue;
+				}
+				foreach (ThingDef item in options[i].thingSetMaker.AllGeneratableThingsDebug(parms))
+				{
+					yield return item;
 				}
 			}
 		}

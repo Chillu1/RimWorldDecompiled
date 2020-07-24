@@ -21,7 +21,11 @@ namespace Verse
 			{
 				return nomatch.Apply(xml);
 			}
-			return false;
+			if (match == null)
+			{
+				return nomatch != null;
+			}
+			return true;
 		}
 	}
 }

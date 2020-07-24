@@ -88,7 +88,7 @@ namespace RimWorld
 				Thing thing = thingList[i];
 				if (thing is Plant)
 				{
-					if (Rand.Value < 0.0065f)
+					if (thing.def.plant.dieFromToxicFallout && Rand.Value < 0.0065f)
 					{
 						thing.Kill();
 					}

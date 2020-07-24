@@ -73,6 +73,14 @@ namespace RimWorld
 
 		public static SoundDef Clock_Superfast;
 
+		public static SoundDef Quest_Accepted;
+
+		public static SoundDef Quest_Succeded;
+
+		public static SoundDef Quest_Concluded;
+
+		public static SoundDef Quest_Failed;
+
 		public static SoundDef Mouseover_Standard;
 
 		public static SoundDef Mouseover_Thump;
@@ -253,6 +261,10 @@ namespace RimWorld
 
 		public static SoundDef MechanoidsWakeUp;
 
+		public static SoundDef FlashstormAmbience;
+
+		public static SoundDef MechSerumUsed;
+
 		[MayRequireRoyalty]
 		public static SoundDef PsycastPsychicEffect;
 
@@ -279,6 +291,15 @@ namespace RimWorld
 
 		[MayRequireRoyalty]
 		public static SoundDef PsychicEntropyBrainRoasting;
+
+		[MayRequireRoyalty]
+		public static SoundDef MeditationGainPsyfocus;
+
+		[MayRequireRoyalty]
+		public static SoundDef MechClusterDefeated;
+
+		[MayRequireRoyalty]
+		public static SoundDef TechprintApplied;
 
 		public static SoundDef GameStartSting;
 

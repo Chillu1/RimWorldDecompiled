@@ -32,592 +32,301 @@ namespace Verse
 		{
 			if (defType == typeof(ThingDef))
 			{
-				if (defName == "Apparel_VestPlate")
+				switch (defName)
 				{
+				case "Apparel_VestPlate":
 					return "Apparel_FlakVest";
-				}
-				if (defName == "Refinery")
-				{
+				case "Refinery":
 					return "BiofuelRefinery";
-				}
-				if (defName == "TrapDeadfall")
-				{
+				case "TrapDeadfall":
 					return "TrapSpike";
-				}
-				if (defName == "PsychoidPekoe")
-				{
+				case "PsychoidPekoe":
 					return "PsychiteTea";
-				}
-				if (defName == "ExplosiveDropPodIncoming")
-				{
+				case "ExplosiveDropPodIncoming":
 					return "DropPodIncoming";
-				}
-				if (defName == "MeleeWeapon_Shiv")
-				{
+				case "MeleeWeapon_Shiv":
 					return "MeleeWeapon_Knife";
-				}
-				if (defName == "ScytherBlade")
-				{
+				case "ScytherBlade":
 					return "PowerClaw";
-				}
-				if (defName == "GrizzlyBear")
-				{
+				case "GrizzlyBear":
 					return "Bear_Grizzly";
-				}
-				if (defName == "PolarBear")
-				{
+				case "PolarBear":
 					return "Bear_Polar";
-				}
-				if (defName == "WolfTimber")
-				{
+				case "WolfTimber":
 					return "Wolf_Timber";
-				}
-				if (defName == "WolfArctic")
-				{
+				case "WolfArctic":
 					return "Wolf_Arctic";
-				}
-				if (defName == "FoxFennec")
-				{
+				case "FoxFennec":
 					return "Fox_Fennec";
-				}
-				if (defName == "FoxRed")
-				{
+				case "FoxRed":
 					return "Fox_Red";
-				}
-				if (defName == "FoxArctic")
-				{
+				case "FoxArctic":
 					return "Fox_Arctic";
-				}
-				if (defName == "GrizzlyBear_Meat")
-				{
+				case "GrizzlyBear_Meat":
 					return "Meat_Bear_Grizzly";
-				}
-				if (defName == "WolfTimber_Meat")
-				{
+				case "WolfTimber_Meat":
 					return "Meat_Wolf_Timber";
-				}
-				if (defName == "FoxFennec_Meat")
-				{
+				case "FoxFennec_Meat":
 					return "Meat_Fox_Fennec";
-				}
-				if (defName == "GrizzlyBear_Corpse")
-				{
+				case "GrizzlyBear_Corpse":
 					return "Corpse_Bear_Grizzly";
-				}
-				if (defName == "PolarBear_Corpse")
-				{
+				case "PolarBear_Corpse":
 					return "Corpse_Bear_Polar";
-				}
-				if (defName == "WolfTimber_Corpse")
-				{
+				case "WolfTimber_Corpse":
 					return "Corpse_Wolf_Timber";
-				}
-				if (defName == "WolfArctic_Corpse")
-				{
+				case "WolfArctic_Corpse":
 					return "Corpse_Wolf_Arctic";
-				}
-				if (defName == "FoxFennec_Corpse")
-				{
+				case "FoxFennec_Corpse":
 					return "Corpse_Fox_Fennec";
-				}
-				if (defName == "FoxRed_Corpse")
-				{
+				case "FoxRed_Corpse":
 					return "Corpse_Fox_Red";
-				}
-				if (defName == "FoxArctic_Corpse")
-				{
+				case "FoxArctic_Corpse":
 					return "Corpse_Fox_Arctic";
-				}
-				if (defName == "TurretGun")
-				{
+				case "TurretGun":
 					return "Turret_MiniTurret";
-				}
-				if (defName == "Gun_TurretImprovised")
-				{
+				case "Gun_TurretImprovised":
 					return "Gun_MiniTurret";
-				}
-				if (defName == "Bullet_TurretImprovised")
-				{
+				case "Bullet_TurretImprovised":
 					return "Bullet_MiniTurret";
-				}
-				if (defName == "MinifiedFurniture")
-				{
+				case "MinifiedFurniture":
 					return "MinifiedThing";
-				}
-				if (defName == "MinifiedSculpture")
-				{
+				case "MinifiedSculpture":
 					return "MinifiedThing";
-				}
-				if (defName == "HerbalMedicine")
-				{
+				case "HerbalMedicine":
 					return "MedicineHerbal";
-				}
-				if (defName == "Medicine")
-				{
+				case "Medicine":
 					return "MedicineIndustrial";
-				}
-				if (defName == "GlitterworldMedicine")
-				{
+				case "GlitterworldMedicine":
 					return "MedicineUltratech";
-				}
-				if (defName == "Component")
-				{
+				case "Component":
 					return "ComponentIndustrial";
-				}
-				if (defName == "AdvancedComponent")
-				{
+				case "AdvancedComponent":
 					return "ComponentSpacer";
-				}
-				if (defName == "MineableComponents")
-				{
+				case "MineableComponents":
 					return "MineableComponentsIndustrial";
-				}
-				if (defName == "Mechanoid_Scyther")
-				{
+				case "Mechanoid_Scyther":
 					return "Mech_Scyther";
-				}
-				if (defName == "Mechanoid_Centipede")
-				{
+				case "Mechanoid_Centipede":
 					return "Mech_Centipede";
-				}
-				if (defName == "Mechanoid_Scyther_Corpse")
-				{
+				case "Mechanoid_Scyther_Corpse":
 					return "Corpse_Mech_Scyther";
-				}
-				if (defName == "Mechanoid_Centipede_Corpse")
-				{
+				case "Mechanoid_Centipede_Corpse":
 					return "Corpse_Mech_Centipede";
-				}
-				if (defName == "ArcticBear")
-				{
+				case "ArcticBear":
 					return "Bear_Arctic";
-				}
-				if (defName == "ArcticBear_Corpse")
-				{
+				case "ArcticBear_Corpse":
 					return "Corpse_Bear_Arctic";
-				}
-				if (defName == "GrizzlyBear_Leather")
-				{
+				case "GrizzlyBear_Leather":
 					return "Leather_Bear";
-				}
-				if (defName == "PolarBear_Leather")
-				{
+				case "PolarBear_Leather":
 					return "Leather_Bear";
-				}
-				if (defName == "Cassowary_Leather")
-				{
+				case "Cassowary_Leather":
 					return "Leather_Bird";
-				}
-				if (defName == "Emu_Leather")
-				{
+				case "Emu_Leather":
 					return "Leather_Bird";
-				}
-				if (defName == "Ostrich_Leather")
-				{
+				case "Ostrich_Leather":
 					return "Leather_Bird";
-				}
-				if (defName == "Turkey_Leather")
-				{
+				case "Turkey_Leather":
 					return "Leather_Bird";
-				}
-				if (defName == "Muffalo_Leather")
-				{
+				case "Muffalo_Leather":
 					return "Leather_Bluefur";
-				}
-				if (defName == "Dromedary_Leather")
-				{
+				case "Dromedary_Leather":
 					return "Leather_Camel";
-				}
-				if (defName == "Alpaca_Leather")
-				{
+				case "Alpaca_Leather":
 					return "Leather_Camel";
-				}
-				if (defName == "Chinchilla_Leather")
-				{
+				case "Chinchilla_Leather":
 					return "Leather_Chinchilla";
-				}
-				if (defName == "Boomalope_Leather")
-				{
+				case "Boomalope_Leather":
 					return "Leather_Plain";
-				}
-				if (defName == "Cow_Leather")
-				{
+				case "Cow_Leather":
 					return "Leather_Plain";
-				}
-				if (defName == "Gazelle_Leather")
-				{
+				case "Gazelle_Leather":
 					return "Leather_Plain";
-				}
-				if (defName == "Ibex_Leather")
-				{
+				case "Ibex_Leather":
 					return "Leather_Plain";
-				}
-				if (defName == "Deer_Leather")
-				{
+				case "Deer_Leather":
 					return "Leather_Plain";
-				}
-				if (defName == "Elk_Leather")
-				{
+				case "Elk_Leather":
 					return "Leather_Plain";
-				}
-				if (defName == "Caribou_Leather")
-				{
+				case "Caribou_Leather":
 					return "Leather_Plain";
-				}
-				if (defName == "YorkshireTerrier_Leather")
-				{
+				case "YorkshireTerrier_Leather":
 					return "Leather_Dog";
-				}
-				if (defName == "Husky_Leather")
-				{
+				case "Husky_Leather":
 					return "Leather_Dog";
-				}
-				if (defName == "LabradorRetriever_Leather")
-				{
+				case "LabradorRetriever_Leather":
 					return "Leather_Dog";
-				}
-				if (defName == "Elephant_Leather")
-				{
+				case "Elephant_Leather":
 					return "Leather_Elephant";
-				}
-				if (defName == "FoxFennec_Leather")
-				{
+				case "FoxFennec_Leather":
 					return "Leather_Fox";
-				}
-				if (defName == "FoxRed_Leather")
-				{
+				case "FoxRed_Leather":
 					return "Leather_Fox";
-				}
-				if (defName == "FoxArctic_Leather")
-				{
+				case "FoxArctic_Leather":
 					return "Leather_Fox";
-				}
-				if (defName == "Megasloth_Leather")
-				{
+				case "Megasloth_Leather":
 					return "Leather_Heavy";
-				}
-				if (defName == "Human_Leather")
-				{
+				case "Human_Leather":
 					return "Leather_Human";
-				}
-				if (defName == "Boomrat_Leather")
-				{
+				case "Boomrat_Leather":
 					return "Leather_Light";
-				}
-				if (defName == "Cat_Leather")
-				{
+				case "Cat_Leather":
 					return "Leather_Light";
-				}
-				if (defName == "Hare_Leather")
-				{
+				case "Hare_Leather":
 					return "Leather_Light";
-				}
-				if (defName == "Snowhare_Leather")
-				{
+				case "Snowhare_Leather":
 					return "Leather_Light";
-				}
-				if (defName == "Squirrel_Leather")
-				{
+				case "Squirrel_Leather":
 					return "Leather_Light";
-				}
-				if (defName == "Alphabeaver_Leather")
-				{
+				case "Alphabeaver_Leather":
 					return "Leather_Light";
-				}
-				if (defName == "Capybara_Leather")
-				{
+				case "Capybara_Leather":
 					return "Leather_Light";
-				}
-				if (defName == "Raccoon_Leather")
-				{
+				case "Raccoon_Leather":
 					return "Leather_Light";
-				}
-				if (defName == "Rat_Leather")
-				{
+				case "Rat_Leather":
 					return "Leather_Light";
-				}
-				if (defName == "Monkey_Leather")
-				{
+				case "Monkey_Leather":
 					return "Leather_Light";
-				}
-				if (defName == "Iguana_Leather")
-				{
+				case "Iguana_Leather":
 					return "Leather_Lizard";
-				}
-				if (defName == "Tortoise_Leather")
-				{
+				case "Tortoise_Leather":
 					return "Leather_Lizard";
-				}
-				if (defName == "Cobra_Leather")
-				{
+				case "Cobra_Leather":
 					return "Leather_Lizard";
-				}
-				if (defName == "Cougar_Leather")
-				{
+				case "Cougar_Leather":
 					return "Leather_Panthera";
-				}
-				if (defName == "Panther_Leather")
-				{
+				case "Panther_Leather":
 					return "Leather_Panthera";
-				}
-				if (defName == "Lynx_Leather")
-				{
+				case "Lynx_Leather":
 					return "Leather_Panthera";
-				}
-				if (defName == "Pig_Leather")
-				{
+				case "Pig_Leather":
 					return "Leather_Pig";
-				}
-				if (defName == "Rhinoceros_Leather")
-				{
+				case "Rhinoceros_Leather":
 					return "Leather_Rhinoceros";
-				}
-				if (defName == "Thrumbo_Leather")
-				{
+				case "Thrumbo_Leather":
 					return "Leather_Thrumbo";
-				}
-				if (defName == "Warg_Leather")
-				{
+				case "Warg_Leather":
 					return "Leather_Wolf";
-				}
-				if (defName == "WolfTimber_Leather")
-				{
+				case "WolfTimber_Leather":
 					return "Leather_Wolf";
-				}
-				if (defName == "WolfArctic_Leather")
-				{
+				case "WolfArctic_Leather":
 					return "Leather_Wolf";
-				}
-				if (defName == "PlantRose")
-				{
+				case "PlantRose":
 					return "Plant_Rose";
-				}
-				if (defName == "PlantDaylily")
-				{
+				case "PlantDaylily":
 					return "Plant_Daylily";
-				}
-				if (defName == "PlantRice")
-				{
+				case "PlantRice":
 					return "Plant_Rice";
-				}
-				if (defName == "PlantPotato")
-				{
+				case "PlantPotato":
 					return "Plant_Potato";
-				}
-				if (defName == "PlantCorn")
-				{
+				case "PlantCorn":
 					return "Plant_Corn";
-				}
-				if (defName == "PlantStrawberry")
-				{
+				case "PlantStrawberry":
 					return "Plant_Strawberry";
-				}
-				if (defName == "PlantHaygrass")
-				{
+				case "PlantHaygrass":
 					return "Plant_Haygrass";
-				}
-				if (defName == "PlantCotton")
-				{
+				case "PlantCotton":
 					return "Plant_Cotton";
-				}
-				if (defName == "PlantDevilstrand")
-				{
+				case "PlantDevilstrand":
 					return "Plant_Devilstrand";
-				}
-				if (defName == "PlantHealroot")
-				{
+				case "PlantHealroot":
 					return "Plant_Healroot";
-				}
-				if (defName == "PlantHops")
-				{
+				case "PlantHops":
 					return "Plant_Hops";
-				}
-				if (defName == "PlantSmokeleaf")
-				{
+				case "PlantSmokeleaf":
 					return "Plant_Smokeleaf";
-				}
-				if (defName == "PlantPsychoid")
-				{
+				case "PlantPsychoid":
 					return "Plant_Psychoid";
-				}
-				if (defName == "PlantAmbrosia")
-				{
+				case "PlantAmbrosia":
 					return "Plant_Ambrosia";
-				}
-				if (defName == "PlantAgave")
-				{
+				case "PlantAgave":
 					return "Plant_Agave";
-				}
-				if (defName == "PlantPincushionCactus")
-				{
+				case "PlantPincushionCactus":
 					return "Plant_PincushionCactus";
-				}
-				if (defName == "PlantSaguaroCactus")
-				{
+				case "PlantSaguaroCactus":
 					return "Plant_SaguaroCactus";
-				}
-				if (defName == "PlantTreeDrago")
-				{
+				case "PlantTreeDrago":
 					return "Plant_TreeDrago";
-				}
-				if (defName == "PlantGrass")
-				{
+				case "PlantGrass":
 					return "Plant_Grass";
-				}
-				if (defName == "PlantTallGrass")
-				{
+				case "PlantTallGrass":
 					return "Plant_TallGrass";
-				}
-				if (defName == "PlantBush")
-				{
+				case "PlantBush":
 					return "Plant_Bush";
-				}
-				if (defName == "PlantBrambles")
-				{
+				case "PlantBrambles":
 					return "Plant_Brambles";
-				}
-				if (defName == "PlantWildHealroot")
-				{
+				case "PlantWildHealroot":
 					return "Plant_HealrootWild";
-				}
-				if (defName == "PlantTreeWillow")
-				{
+				case "PlantTreeWillow":
 					return "Plant_TreeWillow";
-				}
-				if (defName == "PlantTreeCypress")
-				{
+				case "PlantTreeCypress":
 					return "Plant_TreeCypress";
-				}
-				if (defName == "PlantTreeMaple")
-				{
+				case "PlantTreeMaple":
 					return "Plant_TreeMaple";
-				}
-				if (defName == "PlantChokevine")
-				{
+				case "PlantChokevine":
 					return "Plant_Chokevine";
-				}
-				if (defName == "PlantDandelion")
-				{
+				case "PlantDandelion":
 					return "Plant_Dandelion";
-				}
-				if (defName == "PlantAstragalus")
-				{
+				case "PlantAstragalus":
 					return "Plant_Astragalus";
-				}
-				if (defName == "PlantMoss")
-				{
+				case "PlantMoss":
 					return "Plant_Moss";
-				}
-				if (defName == "PlantRaspberry")
-				{
+				case "PlantRaspberry":
 					return "Plant_Berry";
-				}
-				if (defName == "PlantTreeOak")
-				{
+				case "PlantTreeOak":
 					return "Plant_TreeOak";
-				}
-				if (defName == "PlantTreePoplar")
-				{
+				case "PlantTreePoplar":
 					return "Plant_TreePoplar";
-				}
-				if (defName == "PlantTreePine")
-				{
+				case "PlantTreePine":
 					return "Plant_TreePine";
-				}
-				if (defName == "PlantTreeBirch")
-				{
+				case "PlantTreeBirch":
 					return "Plant_TreeBirch";
-				}
-				if (defName == "PlantShrubLow")
-				{
+				case "PlantShrubLow":
 					return "Plant_ShrubLow";
-				}
-				if (defName == "PlantAlocasia")
-				{
+				case "PlantAlocasia":
 					return "Plant_Alocasia";
-				}
-				if (defName == "PlantClivia")
-				{
+				case "PlantClivia":
 					return "Plant_Clivia";
-				}
-				if (defName == "PlantRafflesia")
-				{
+				case "PlantRafflesia":
 					return "Plant_Rafflesia";
-				}
-				if (defName == "PlantTreeTeak")
-				{
+				case "PlantTreeTeak":
 					return "Plant_TreeTeak";
-				}
-				if (defName == "PlantTreeCecropia")
-				{
+				case "PlantTreeCecropia":
 					return "Plant_TreeCecropia";
-				}
-				if (defName == "PlantTreePalm")
-				{
+				case "PlantTreePalm":
 					return "Plant_TreePalm";
-				}
-				if (defName == "PlantTreeBamboo")
-				{
+				case "PlantTreeBamboo":
 					return "Plant_TreeBamboo";
-				}
-				if (defName == "Plant_Raspberry")
-				{
+				case "Plant_Raspberry":
 					return "Plant_Berry";
-				}
-				if (defName == "FilthDirt")
-				{
+				case "FilthDirt":
 					return "Filth_Dirt";
-				}
-				if (defName == "FilthAnimalFilth")
-				{
+				case "FilthAnimalFilth":
 					return "Filth_AnimalFilth";
-				}
-				if (defName == "FilthSand")
-				{
+				case "FilthSand":
 					return "Filth_Sand";
-				}
-				if (defName == "FilthBlood")
-				{
+				case "FilthBlood":
 					return "Filth_Blood";
-				}
-				if (defName == "FilthBloodInsect")
-				{
+				case "FilthBloodInsect":
 					return "Filth_BloodInsect";
-				}
-				if (defName == "FilthAmnioticFluid")
-				{
+				case "FilthAmnioticFluid":
 					return "Filth_AmnioticFluid";
-				}
-				if (defName == "FilthSlime")
-				{
+				case "FilthSlime":
 					return "Filth_Slime";
-				}
-				if (defName == "FilthVomit")
-				{
+				case "FilthVomit":
 					return "Filth_Vomit";
-				}
-				if (defName == "FilthFireFoam")
-				{
+				case "FilthFireFoam":
 					return "Filth_FireFoam";
-				}
-				if (defName == "FilthFuel")
-				{
+				case "FilthFuel":
 					return "Filth_Fuel";
-				}
-				if (defName == "FilthCorpseBile")
-				{
+				case "FilthCorpseBile":
 					return "Filth_CorpseBile";
-				}
-				if (defName == "FilthAsh")
-				{
+				case "FilthAsh":
 					return "Filth_Ash";
-				}
-				if (defName == "RockRubble")
-				{
+				case "RockRubble":
 					return "Filth_RubbleRock";
-				}
-				if (defName == "BuildingRubble")
-				{
+				case "BuildingRubble":
 					return "Filth_RubbleBuilding";
 				}
 				if (defName.EndsWith("_Meat"))
@@ -654,31 +363,26 @@ namespace Verse
 			}
 			else if (defType == typeof(WorldObjectDef))
 			{
-				if (defName == "FactionBase")
+				switch (defName)
 				{
+				case "FactionBase":
 					return "Settlement";
-				}
-				if (defName == "DestroyedFactionBase")
-				{
+				case "DestroyedFactionBase":
 					return "DestroyedSettlement";
-				}
-				if (defName == "AbandonedFactionBase" || defName == "AbandonedBase")
-				{
+				case "AbandonedFactionBase":
+				case "AbandonedBase":
 					return "AbandonedSettlement";
 				}
 			}
 			else if (defType == typeof(PawnKindDef))
 			{
-				if (defName == "SpaceSoldier")
+				switch (defName)
 				{
+				case "SpaceSoldier":
 					return "AncientSoldier";
-				}
-				if (defName == "Scyther")
-				{
+				case "Scyther":
 					return "Mech_Scyther";
-				}
-				if (defName == "Centipede")
-				{
+				case "Centipede":
 					return "Mech_Centipede";
 				}
 			}
@@ -691,40 +395,25 @@ namespace Verse
 			}
 			else if (defType == typeof(IncidentDef))
 			{
-				if (defName == "QuestBanditCamp")
+				switch (defName)
 				{
+				case "QuestBanditCamp":
 					return "Quest_BanditCamp";
-				}
-				if (defName == "QuestItemStash")
-				{
+				case "QuestItemStash":
 					return "Quest_ItemStash";
-				}
-				if (defName == "QuestItemStashGuaranteedCore")
-				{
+				case "QuestItemStashGuaranteedCore":
 					return "Quest_ItemStashAICore";
-				}
-				if (defName == "QuestDownedRefugee")
-				{
+				case "QuestDownedRefugee":
 					return "Quest_DownedRefugee";
-				}
-				if (defName == "QuestPrisonerWillingToJoin")
-				{
+				case "QuestPrisonerWillingToJoin":
 					return "Quest_PrisonerRescue";
-				}
-				if (defName == "QuestPeaceTalks")
-				{
+				case "QuestPeaceTalks":
 					return "Quest_PeaceTalks";
-				}
-				if (defName == "JourneyOffer")
-				{
+				case "JourneyOffer":
 					return "Quest_JourneyOffer";
-				}
-				if (defName == "CaravanRequest")
-				{
+				case "CaravanRequest":
 					return "Quest_TradeRequest";
-				}
-				if (defName == "RaidEnemyEscapeShip")
-				{
+				case "RaidEnemyEscapeShip":
 					return "RaidEnemyBeacon";
 				}
 			}
@@ -755,56 +444,33 @@ namespace Verse
 			}
 			else if (defType == typeof(RulePackDef))
 			{
-				if (defName == "NamerFactionBasePlayerColony")
+				switch (defName)
 				{
+				case "NamerFactionBasePlayerColony":
 					return "NamerInitialSettlementColony";
-				}
-				if (defName == "NamerFactionBasePlayerTribe")
-				{
+				case "NamerFactionBasePlayerTribe":
 					return "NamerInitialSettlementTribe";
-				}
-				if (defName == "NamerFactionBasePlayerTribe")
-				{
+				case "NamerFactionBasePlayerTribe":
 					return "NamerSettlementPlayerTribe";
-				}
-				if (defName == "NamerFactionBasePlayerColonyRandomized")
-				{
+				case "NamerFactionBasePlayerColonyRandomized":
 					return "NamerSettlementPlayerColonyRandomized";
-				}
-				if (defName == "NamerFactionBasePirate")
-				{
+				case "NamerFactionBasePirate":
 					return "NamerSettlementPirate";
-				}
-				if (defName == "NamerFactionBaseOutlander")
-				{
+				case "NamerFactionBaseOutlander":
 					return "NamerSettlementOutlander";
-				}
-				if (defName == "NamerFactionBaseTribal")
-				{
+				case "NamerFactionBaseTribal":
 					return "NamerSettlementTribal";
-				}
-				if (defName == "ArtName_Sculpture")
-				{
+				case "ArtName_Sculpture":
 					return "NamerArtSculpture";
-				}
-				if (defName == "ArtName_Weapon")
-				{
+				case "ArtName_Weapon":
 					return "NamerArtWeapon";
-				}
-				if (defName == "ArtName_WeaponMelee")
-				{
+				case "ArtName_WeaponMelee":
 					return "NamerArtWeaponMelee";
-				}
-				if (defName == "ArtName_WeaponGun")
-				{
+				case "ArtName_WeaponGun":
 					return "NamerArtWeaponGun";
-				}
-				if (defName == "ArtName_Furniture")
-				{
+				case "ArtName_Furniture":
 					return "NamerArtFurniture";
-				}
-				if (defName == "ArtName_SarcophagusPlate")
-				{
+				case "ArtName_SarcophagusPlate":
 					return "NamerArtSarcophagusPlate";
 				}
 			}
@@ -830,476 +496,243 @@ namespace Verse
 			{
 				if (!forDefInjections)
 				{
-					if (defName == "LeftAntenna")
+					switch (defName)
 					{
+					case "LeftAntenna":
 						return "Antenna";
-					}
-					if (defName == "RightAntenna")
-					{
+					case "RightAntenna":
 						return "Antenna";
-					}
-					if (defName == "LeftElytra")
-					{
+					case "LeftElytra":
 						return "Elytra";
-					}
-					if (defName == "RightElytra")
-					{
+					case "RightElytra":
 						return "Elytra";
-					}
-					if (defName == "FrontLeftLeg")
-					{
+					case "FrontLeftLeg":
 						return "Leg";
-					}
-					if (defName == "FrontRightLeg")
-					{
+					case "FrontRightLeg":
 						return "Leg";
-					}
-					if (defName == "MiddleLeftLeg")
-					{
+					case "MiddleLeftLeg":
 						return "Leg";
-					}
-					if (defName == "MiddleRightLeg")
-					{
+					case "MiddleRightLeg":
 						return "Leg";
-					}
-					if (defName == "RearLeftLeg")
-					{
+					case "RearLeftLeg":
 						return "Leg";
-					}
-					if (defName == "RearRightLeg")
-					{
+					case "RearRightLeg":
 						return "Leg";
-					}
-					if (defName == "FrontLeftInsectLeg")
-					{
+					case "FrontLeftInsectLeg":
 						return "InsectLeg";
-					}
-					if (defName == "FrontRightInsectLeg")
-					{
+					case "FrontRightInsectLeg":
 						return "InsectLeg";
-					}
-					if (defName == "MiddleLeftInsectLeg")
-					{
+					case "MiddleLeftInsectLeg":
 						return "InsectLeg";
-					}
-					if (defName == "MiddleRightInsectLeg")
-					{
+					case "MiddleRightInsectLeg":
 						return "InsectLeg";
-					}
-					if (defName == "RearLeftInsectLeg")
-					{
+					case "RearLeftInsectLeg":
 						return "InsectLeg";
-					}
-					if (defName == "RearRightInsectLeg")
-					{
+					case "RearRightInsectLeg":
 						return "InsectLeg";
-					}
-					if (defName == "FrontLeftPaw")
-					{
+					case "FrontLeftPaw":
 						return "Paw";
-					}
-					if (defName == "FrontRightPaw")
-					{
+					case "FrontRightPaw":
 						return "Paw";
-					}
-					if (defName == "RearLeftPaw")
-					{
+					case "RearLeftPaw":
 						return "Paw";
-					}
-					if (defName == "RearRightPaw")
-					{
+					case "RearRightPaw":
 						return "Paw";
-					}
-					if (defName == "FrontLeftHoof")
-					{
+					case "FrontLeftHoof":
 						return "Hoof";
-					}
-					if (defName == "FrontRightHoof")
-					{
+					case "FrontRightHoof":
 						return "Hoof";
-					}
-					if (defName == "RearLeftHoof")
-					{
+					case "RearLeftHoof":
 						return "Hoof";
-					}
-					if (defName == "RearRightHoof")
-					{
+					case "RearRightHoof":
 						return "Hoof";
-					}
-					if (defName == "FrontLeftLegFirstClaw")
-					{
+					case "FrontLeftLegFirstClaw":
 						return "FrontClaw";
-					}
-					if (defName == "FrontLeftLegSecondClaw")
-					{
+					case "FrontLeftLegSecondClaw":
 						return "FrontClaw";
-					}
-					if (defName == "FrontLeftLegThirdClaw")
-					{
+					case "FrontLeftLegThirdClaw":
 						return "FrontClaw";
-					}
-					if (defName == "FrontLeftLegFourthClaw")
-					{
+					case "FrontLeftLegFourthClaw":
 						return "FrontClaw";
-					}
-					if (defName == "FrontLeftLegFifthClaw")
-					{
+					case "FrontLeftLegFifthClaw":
 						return "FrontClaw";
-					}
-					if (defName == "FrontRightLegFirstClaw")
-					{
+					case "FrontRightLegFirstClaw":
 						return "FrontClaw";
-					}
-					if (defName == "FrontRightLegSecondClaw")
-					{
+					case "FrontRightLegSecondClaw":
 						return "FrontClaw";
-					}
-					if (defName == "FrontRightLegThirdClaw")
-					{
+					case "FrontRightLegThirdClaw":
 						return "FrontClaw";
-					}
-					if (defName == "FrontRightLegFourthClaw")
-					{
+					case "FrontRightLegFourthClaw":
 						return "FrontClaw";
-					}
-					if (defName == "FrontRightLegFifthClaw")
-					{
+					case "FrontRightLegFifthClaw":
 						return "FrontClaw";
-					}
-					if (defName == "RearLeftLegFirstClaw")
-					{
+					case "RearLeftLegFirstClaw":
 						return "RearClaw";
-					}
-					if (defName == "RearLeftLegSecondClaw")
-					{
+					case "RearLeftLegSecondClaw":
 						return "RearClaw";
-					}
-					if (defName == "RearLeftLegThirdClaw")
-					{
+					case "RearLeftLegThirdClaw":
 						return "RearClaw";
-					}
-					if (defName == "RearLeftLegFourthClaw")
-					{
+					case "RearLeftLegFourthClaw":
 						return "RearClaw";
-					}
-					if (defName == "RearLeftLegFifthClaw")
-					{
+					case "RearLeftLegFifthClaw":
 						return "RearClaw";
-					}
-					if (defName == "RearRightLegFirstClaw")
-					{
+					case "RearRightLegFirstClaw":
 						return "RearClaw";
-					}
-					if (defName == "RearRightLegSecondClaw")
-					{
+					case "RearRightLegSecondClaw":
 						return "RearClaw";
-					}
-					if (defName == "RearRightLegThirdClaw")
-					{
+					case "RearRightLegThirdClaw":
 						return "RearClaw";
-					}
-					if (defName == "RearRightLegFourthClaw")
-					{
+					case "RearRightLegFourthClaw":
 						return "RearClaw";
-					}
-					if (defName == "RearRightLegFifthClaw")
-					{
+					case "RearRightLegFifthClaw":
 						return "RearClaw";
-					}
-					if (defName == "LeftEye")
-					{
+					case "LeftEye":
 						return "Eye";
-					}
-					if (defName == "RightEye")
-					{
+					case "RightEye":
 						return "Eye";
-					}
-					if (defName == "LeftEar")
-					{
+					case "LeftEar":
 						return "Ear";
-					}
-					if (defName == "RightEar")
-					{
+					case "RightEar":
 						return "Ear";
-					}
-					if (defName == "LeftLeg")
-					{
+					case "LeftLeg":
 						return "Leg";
-					}
-					if (defName == "RightLeg")
-					{
+					case "RightLeg":
 						return "Leg";
-					}
-					if (defName == "LeftFoot")
-					{
+					case "LeftFoot":
 						return "Foot";
-					}
-					if (defName == "RightFoot")
-					{
+					case "RightFoot":
 						return "Foot";
-					}
-					if (defName == "LeftShoulder")
-					{
+					case "LeftShoulder":
 						return "Shoulder";
-					}
-					if (defName == "RightShoulder")
-					{
+					case "RightShoulder":
 						return "Shoulder";
-					}
-					if (defName == "LeftArm")
-					{
+					case "LeftArm":
 						return "Arm";
-					}
-					if (defName == "RightArm")
-					{
+					case "RightArm":
 						return "Arm";
-					}
-					if (defName == "LeftHand")
-					{
+					case "LeftHand":
 						return "Hand";
-					}
-					if (defName == "RightHand")
-					{
+					case "RightHand":
 						return "Hand";
-					}
-					if (defName == "LeftHandPinky")
-					{
+					case "LeftHandPinky":
 						return "Finger";
-					}
-					if (defName == "LeftHandRingFinger")
-					{
+					case "LeftHandRingFinger":
 						return "Finger";
-					}
-					if (defName == "LeftHandMiddleFinger")
-					{
+					case "LeftHandMiddleFinger":
 						return "Finger";
-					}
-					if (defName == "LeftHandIndexFinger")
-					{
+					case "LeftHandIndexFinger":
 						return "Finger";
-					}
-					if (defName == "LeftHandThumb")
-					{
+					case "LeftHandThumb":
 						return "Finger";
-					}
-					if (defName == "RightHandPinky")
-					{
+					case "RightHandPinky":
 						return "Finger";
-					}
-					if (defName == "RightHandRingFinger")
-					{
+					case "RightHandRingFinger":
 						return "Finger";
-					}
-					if (defName == "RightHandMiddleFinger")
-					{
+					case "RightHandMiddleFinger":
 						return "Finger";
-					}
-					if (defName == "RightHandIndexFinger")
-					{
+					case "RightHandIndexFinger":
 						return "Finger";
-					}
-					if (defName == "RightHandThumb")
-					{
+					case "RightHandThumb":
 						return "Finger";
-					}
-					if (defName == "LeftFootLittleToe")
-					{
+					case "LeftFootLittleToe":
 						return "Toe";
-					}
-					if (defName == "LeftFootFourthToe")
-					{
+					case "LeftFootFourthToe":
 						return "Toe";
-					}
-					if (defName == "LeftFootMiddleToe")
-					{
+					case "LeftFootMiddleToe":
 						return "Toe";
-					}
-					if (defName == "LeftFootSecondToe")
-					{
+					case "LeftFootSecondToe":
 						return "Toe";
-					}
-					if (defName == "LeftFootBigToe")
-					{
+					case "LeftFootBigToe":
 						return "Toe";
-					}
-					if (defName == "RightFootLittleToe")
-					{
+					case "RightFootLittleToe":
 						return "Toe";
-					}
-					if (defName == "RightFootFourthToe")
-					{
+					case "RightFootFourthToe":
 						return "Toe";
-					}
-					if (defName == "RightFootMiddleToe")
-					{
+					case "RightFootMiddleToe":
 						return "Toe";
-					}
-					if (defName == "RightFootSecondToe")
-					{
+					case "RightFootSecondToe":
 						return "Toe";
-					}
-					if (defName == "RightFootBigToe")
-					{
+					case "RightFootBigToe":
 						return "Toe";
-					}
-					if (defName == "LeftClavicle")
-					{
+					case "LeftClavicle":
 						return "Clavicle";
-					}
-					if (defName == "RightClavicle")
-					{
+					case "RightClavicle":
 						return "Clavicle";
-					}
-					if (defName == "LeftHumerus")
-					{
+					case "LeftHumerus":
 						return "Humerus";
-					}
-					if (defName == "RightHumerus")
-					{
+					case "RightHumerus":
 						return "Humerus";
-					}
-					if (defName == "LeftRadius")
-					{
+					case "LeftRadius":
 						return "Radius";
-					}
-					if (defName == "RightRadius")
-					{
+					case "RightRadius":
 						return "Radius";
-					}
-					if (defName == "LeftFemur")
-					{
+					case "LeftFemur":
 						return "Femur";
-					}
-					if (defName == "RightFemur")
-					{
+					case "RightFemur":
 						return "Femur";
-					}
-					if (defName == "LeftTibia")
-					{
+					case "LeftTibia":
 						return "Tibia";
-					}
-					if (defName == "RightTibia")
-					{
+					case "RightTibia":
 						return "Tibia";
-					}
-					if (defName == "LeftSightSensor")
-					{
+					case "LeftSightSensor":
 						return "SightSensor";
-					}
-					if (defName == "RightSightSensor")
-					{
+					case "RightSightSensor":
 						return "SightSensor";
-					}
-					if (defName == "LeftHearingSensor")
-					{
+					case "LeftHearingSensor":
 						return "HearingSensor";
-					}
-					if (defName == "RightHearingSensor")
-					{
+					case "RightHearingSensor":
 						return "HearingSensor";
-					}
-					if (defName == "LeftMechanicalShoulder")
-					{
+					case "LeftMechanicalShoulder":
 						return "MechanicalShoulder";
-					}
-					if (defName == "RightMechanicalShoulder")
-					{
+					case "RightMechanicalShoulder":
 						return "MechanicalShoulder";
-					}
-					if (defName == "LeftMechanicalArm")
-					{
+					case "LeftMechanicalArm":
 						return "MechanicalArm";
-					}
-					if (defName == "RightMechanicalArm")
-					{
+					case "RightMechanicalArm":
 						return "MechanicalArm";
-					}
-					if (defName == "LeftMechanicalHand")
-					{
+					case "LeftMechanicalHand":
 						return "MechanicalHand";
-					}
-					if (defName == "RightMechanicalHand")
-					{
+					case "RightMechanicalHand":
 						return "MechanicalHand";
-					}
-					if (defName == "LeftHandMechanicalPinky")
-					{
+					case "LeftHandMechanicalPinky":
 						return "MechanicalFinger";
-					}
-					if (defName == "LeftHandMechanicalMiddleFinger")
-					{
+					case "LeftHandMechanicalMiddleFinger":
 						return "MechanicalFinger";
-					}
-					if (defName == "LeftHandMechanicalIndexFinger")
-					{
+					case "LeftHandMechanicalIndexFinger":
 						return "MechanicalFinger";
-					}
-					if (defName == "LeftHandMechanicalThumb")
-					{
+					case "LeftHandMechanicalThumb":
 						return "MechanicalFinger";
-					}
-					if (defName == "RightHandMechanicalPinky")
-					{
+					case "RightHandMechanicalPinky":
 						return "MechanicalFinger";
-					}
-					if (defName == "RightHandMechanicalMiddleFinger")
-					{
+					case "RightHandMechanicalMiddleFinger":
 						return "MechanicalFinger";
-					}
-					if (defName == "RightHandMechanicalIndexFinger")
-					{
+					case "RightHandMechanicalIndexFinger":
 						return "MechanicalFinger";
-					}
-					if (defName == "RightHandMechanicalThumb")
-					{
+					case "RightHandMechanicalThumb":
 						return "MechanicalFinger";
-					}
-					if (defName == "LeftMechanicalLeg")
-					{
+					case "LeftMechanicalLeg":
 						return "MechanicalLeg";
-					}
-					if (defName == "RightMechanicalLeg")
-					{
+					case "RightMechanicalLeg":
 						return "MechanicalLeg";
-					}
-					if (defName == "LeftMechanicalFoot")
-					{
+					case "LeftMechanicalFoot":
 						return "MechanicalFoot";
-					}
-					if (defName == "RightMechanicalFoot")
-					{
+					case "RightMechanicalFoot":
 						return "MechanicalFoot";
-					}
-					if (defName == "LeftBlade")
-					{
+					case "LeftBlade":
 						return "Blade";
-					}
-					if (defName == "RightBlade")
-					{
+					case "RightBlade":
 						return "Blade";
-					}
-					if (defName == "LeftLung")
-					{
+					case "LeftLung":
 						return "Lung";
-					}
-					if (defName == "RightLung")
-					{
+					case "RightLung":
 						return "Lung";
-					}
-					if (defName == "LeftKidney")
-					{
+					case "LeftKidney":
 						return "Kidney";
-					}
-					if (defName == "RightKidney")
-					{
+					case "RightKidney":
 						return "Kidney";
-					}
-					if (defName == "LeftTusk")
-					{
+					case "LeftTusk":
 						return "Tusk";
-					}
-					if (defName == "RightTusk")
-					{
+					case "RightTusk":
 						return "Tusk";
 					}
 				}
@@ -1322,12 +755,13 @@ namespace Verse
 		{
 			if (baseType == typeof(WorldObject))
 			{
-				if (providedClassName == "RimWorld.Planet.FactionBase" || providedClassName == "FactionBase")
+				switch (providedClassName)
 				{
+				case "RimWorld.Planet.FactionBase":
+				case "FactionBase":
 					return typeof(Settlement);
-				}
-				if (providedClassName == "RimWorld.Planet.DestroyedFactionBase" || providedClassName == "DestroyedFactionBase")
-				{
+				case "RimWorld.Planet.DestroyedFactionBase":
+				case "DestroyedFactionBase":
 					return typeof(DestroyedSettlement);
 				}
 			}

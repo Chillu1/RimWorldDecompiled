@@ -91,7 +91,7 @@ namespace RimWorld
 				bool forbid = pawn.Faction != null && pawn.Faction.HostileTo(Faction.OfPlayer);
 				if (!pawn.apparel.TryDrop(wornApparel[num], out Apparel _, pawn.PositionHeld, forbid))
 				{
-					Log.Error(pawn + " could not drop " + wornApparel[num].ToStringSafe());
+					Log.Error(string.Concat(pawn, " could not drop ", wornApparel[num].ToStringSafe()));
 					EndJobWith(JobCondition.Errored);
 				}
 			}

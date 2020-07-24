@@ -65,13 +65,30 @@ namespace RimWorld
 		protected override void ScatterAt(IntVec3 c, Map map, GenStepParams parms, int stackCount = 1)
 		{
 			CellRect rect = new CellRect(c.x, c.z, randomSize, randomSize).ClipInsideMap(map);
-			if (CanPlaceAncientBuildingInRange(rect, map))
+			if (!CanPlaceAncientBuildingInRange(rect, map))
 			{
-				ResolveParams parms2 = default(ResolveParams);
-				parms2.sketch = new Sketch();
-				parms2.monumentSize = new IntVec2(rect.Width, rect.Height);
-				RimWorld.SketchGen.SketchGen.Generate(SketchResolverDefOf.MonumentRuin, parms2).Spawn(map, rect.CenterCell, null);
+				return;
 			}
+			ResolveParams parms2 = default(ResolveParams);
+			parms2.sketch = new Sketch();
+			parms2.monumentSize = new IntVec2(rect.Width, rect.Height);
+			RimWorld.SketchGen.SketchGen.Generate(SketchResolverDefOf.MonumentRuin, parms2).Spawn(map, rect.CenterCell, null, Sketch.SpawnPosType.Unchanged, Sketch.SpawnMode.Normal, wipeIfCollides: false, clearEdificeWhereFloor: false, null, dormant: false, buildRoofsInstantly: false, delegate(SketchEntity entity, IntVec3 cell)
+			{
+				bool result = false;
+				foreach (IntVec3 adjacentCell in entity.OccupiedRect.AdjacentCells)
+				{
+					IntVec3 c2 = cell + adjacentCell;
+					if (c2.InBounds(map))
+					{
+						Building edifice = c2.GetEdifice(map);
+						if (edifice == null || !edifice.def.building.isNaturalRock)
+						{
+							return true;
+						}
+					}
+				}
+				return result;
+			});
 		}
 	}
 }

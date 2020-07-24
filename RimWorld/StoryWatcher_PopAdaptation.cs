@@ -16,7 +16,7 @@ namespace RimWorld
 			{
 				if (DebugViewSettings.writeStoryteller)
 				{
-					Log.Message("PopAdaptation event: " + ev + " - " + p);
+					Log.Message(string.Concat("PopAdaptation event: ", ev, " - ", p));
 				}
 				if (ev == PopAdaptationEvent.GainedColonist)
 				{

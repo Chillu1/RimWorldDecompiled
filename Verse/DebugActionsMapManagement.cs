@@ -83,24 +83,25 @@ namespace Verse
 			for (int i = 0; i < maps.Count; i++)
 			{
 				Map map = maps[i];
-				if (map != Find.CurrentMap)
+				if (map == Find.CurrentMap)
 				{
-					list.Add(new DebugMenuOption(map.ToString(), DebugMenuOptionMode.Action, delegate
-					{
-						for (int j = 0; j < toTransfer.Count; j++)
-						{
-							if (CellFinder.TryFindRandomCellNear(map.Center, map, Mathf.Max(map.Size.x, map.Size.z), (IntVec3 x) => !x.Fogged(map) && x.Standable(map), out IntVec3 result))
-							{
-								toTransfer[j].DeSpawn();
-								GenPlace.TryPlaceThing(toTransfer[j], result, map, ThingPlaceMode.Near);
-							}
-							else
-							{
-								Log.Error("Could not find spawn cell.");
-							}
-						}
-					}));
+					continue;
 				}
+				list.Add(new DebugMenuOption(map.ToString(), DebugMenuOptionMode.Action, delegate
+				{
+					for (int j = 0; j < toTransfer.Count; j++)
+					{
+						if (CellFinder.TryFindRandomCellNear(map.Center, map, Mathf.Max(map.Size.x, map.Size.z), (IntVec3 x) => !x.Fogged(map) && x.Standable(map), out IntVec3 result))
+						{
+							toTransfer[j].DeSpawn();
+							GenPlace.TryPlaceThing(toTransfer[j], result, map, ThingPlaceMode.Near);
+						}
+						else
+						{
+							Log.Error("Could not find spawn cell.");
+						}
+					}
+				}));
 			}
 			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
 		}

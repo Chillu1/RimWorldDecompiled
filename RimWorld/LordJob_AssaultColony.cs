@@ -61,10 +61,6 @@ namespace RimWorld
 				Transition transition = new Transition(lordToil, lordToil, canMoveToSameState: true);
 				transition.AddTrigger(new Trigger_PawnLost());
 				stateGraph.AddTransition(transition);
-				Transition transition2 = new Transition(lordToil, lordToil, canMoveToSameState: true, updateDutiesIfMovedToSameState: false);
-				transition2.AddTrigger(new Trigger_PawnHarmed());
-				transition2.AddPostAction(new TransitionAction_CheckForJobOverride());
-				stateGraph.AddTransition(transition2);
 			}
 			LordToil lordToil2 = new LordToil_AssaultColony();
 			if (useAvoidGridSmart)
@@ -77,65 +73,65 @@ namespace RimWorld
 			stateGraph.AddToil(lordToil_ExitMap);
 			if (sappers)
 			{
-				Transition transition3 = new Transition(lordToil, lordToil2);
-				transition3.AddTrigger(new Trigger_NoFightingSappers());
-				stateGraph.AddTransition(transition3);
+				Transition transition2 = new Transition(lordToil, lordToil2);
+				transition2.AddTrigger(new Trigger_NoFightingSappers());
+				stateGraph.AddTransition(transition2);
 			}
 			if (assaulterFaction.def.humanlikeFaction)
 			{
 				if (canTimeoutOrFlee)
 				{
+					Transition transition3 = new Transition(lordToil2, lordToil_ExitMap);
+					if (lordToil != null)
+					{
+						transition3.AddSource(lordToil);
+					}
+					transition3.AddTrigger(new Trigger_TicksPassed(sappers ? SapTimeBeforeGiveUp.RandomInRange : AssaultTimeBeforeGiveUp.RandomInRange));
+					transition3.AddPreAction(new TransitionAction_Message("MessageRaidersGivenUpLeaving".Translate(assaulterFaction.def.pawnsPlural.CapitalizeFirst(), assaulterFaction.Name)));
+					stateGraph.AddTransition(transition3);
 					Transition transition4 = new Transition(lordToil2, lordToil_ExitMap);
 					if (lordToil != null)
 					{
 						transition4.AddSource(lordToil);
 					}
-					transition4.AddTrigger(new Trigger_TicksPassed(sappers ? SapTimeBeforeGiveUp.RandomInRange : AssaultTimeBeforeGiveUp.RandomInRange));
-					transition4.AddPreAction(new TransitionAction_Message("MessageRaidersGivenUpLeaving".Translate(assaulterFaction.def.pawnsPlural.CapitalizeFirst(), assaulterFaction.Name)));
-					stateGraph.AddTransition(transition4);
-					Transition transition5 = new Transition(lordToil2, lordToil_ExitMap);
-					if (lordToil != null)
-					{
-						transition5.AddSource(lordToil);
-					}
 					float randomInRange = new FloatRange(0.25f, 0.35f).RandomInRange;
-					transition5.AddTrigger(new Trigger_FractionColonyDamageTaken(randomInRange, 900f));
-					transition5.AddPreAction(new TransitionAction_Message("MessageRaidersSatisfiedLeaving".Translate(assaulterFaction.def.pawnsPlural.CapitalizeFirst(), assaulterFaction.Name)));
-					stateGraph.AddTransition(transition5);
+					transition4.AddTrigger(new Trigger_FractionColonyDamageTaken(randomInRange, 900f));
+					transition4.AddPreAction(new TransitionAction_Message("MessageRaidersSatisfiedLeaving".Translate(assaulterFaction.def.pawnsPlural.CapitalizeFirst(), assaulterFaction.Name)));
+					stateGraph.AddTransition(transition4);
 				}
 				if (canKidnap)
 				{
 					LordToil startingToil = stateGraph.AttachSubgraph(new LordJob_Kidnap().CreateGraph()).StartingToil;
-					Transition transition6 = new Transition(lordToil2, startingToil);
+					Transition transition5 = new Transition(lordToil2, startingToil);
 					if (lordToil != null)
 					{
-						transition6.AddSource(lordToil);
+						transition5.AddSource(lordToil);
 					}
-					transition6.AddPreAction(new TransitionAction_Message("MessageRaidersKidnapping".Translate(assaulterFaction.def.pawnsPlural.CapitalizeFirst(), assaulterFaction.Name)));
-					transition6.AddTrigger(new Trigger_KidnapVictimPresent());
-					stateGraph.AddTransition(transition6);
+					transition5.AddPreAction(new TransitionAction_Message("MessageRaidersKidnapping".Translate(assaulterFaction.def.pawnsPlural.CapitalizeFirst(), assaulterFaction.Name)));
+					transition5.AddTrigger(new Trigger_KidnapVictimPresent());
+					stateGraph.AddTransition(transition5);
 				}
 				if (canSteal)
 				{
 					LordToil startingToil2 = stateGraph.AttachSubgraph(new LordJob_Steal().CreateGraph()).StartingToil;
-					Transition transition7 = new Transition(lordToil2, startingToil2);
+					Transition transition6 = new Transition(lordToil2, startingToil2);
 					if (lordToil != null)
 					{
-						transition7.AddSource(lordToil);
+						transition6.AddSource(lordToil);
 					}
-					transition7.AddPreAction(new TransitionAction_Message("MessageRaidersStealing".Translate(assaulterFaction.def.pawnsPlural.CapitalizeFirst(), assaulterFaction.Name)));
-					transition7.AddTrigger(new Trigger_HighValueThingsAround());
-					stateGraph.AddTransition(transition7);
+					transition6.AddPreAction(new TransitionAction_Message("MessageRaidersStealing".Translate(assaulterFaction.def.pawnsPlural.CapitalizeFirst(), assaulterFaction.Name)));
+					transition6.AddTrigger(new Trigger_HighValueThingsAround());
+					stateGraph.AddTransition(transition6);
 				}
 			}
-			Transition transition8 = new Transition(lordToil2, lordToil_ExitMap);
+			Transition transition7 = new Transition(lordToil2, lordToil_ExitMap);
 			if (lordToil != null)
 			{
-				transition8.AddSource(lordToil);
+				transition7.AddSource(lordToil);
 			}
-			transition8.AddTrigger(new Trigger_BecameNonHostileToPlayer());
-			transition8.AddPreAction(new TransitionAction_Message("MessageRaidersLeaving".Translate(assaulterFaction.def.pawnsPlural.CapitalizeFirst(), assaulterFaction.Name)));
-			stateGraph.AddTransition(transition8);
+			transition7.AddTrigger(new Trigger_BecameNonHostileToPlayer());
+			transition7.AddPreAction(new TransitionAction_Message("MessageRaidersLeaving".Translate(assaulterFaction.def.pawnsPlural.CapitalizeFirst(), assaulterFaction.Name)));
+			stateGraph.AddTransition(transition7);
 			return stateGraph;
 		}
 

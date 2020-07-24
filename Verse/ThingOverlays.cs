@@ -25,7 +25,7 @@ namespace Verse
 					}
 					catch (Exception ex)
 					{
-						Log.Error("Exception drawing ThingOverlay for " + thing + ": " + ex);
+						Log.Error(string.Concat("Exception drawing ThingOverlay for ", thing, ": ", ex));
 					}
 				}
 			}

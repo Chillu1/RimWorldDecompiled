@@ -443,40 +443,42 @@ namespace RimWorld
 					break;
 				}
 			}
-			if (!flag)
+			if (flag)
 			{
-				int num = 0;
-				CellRect cellRect2 = cellRect.ExpandedBy(2);
-				foreach (IntVec3 item2 in cellRect2)
+				return;
+			}
+			int num = 0;
+			CellRect cellRect2 = cellRect.ExpandedBy(2);
+			foreach (IntVec3 item2 in cellRect2)
+			{
+				if (item2.InBounds(thing.Map) && item2.GetRoofHolderOrImpassable(thing.Map) != null)
 				{
-					if (item2.InBounds(thing.Map) && item2.GetRoofHolderOrImpassable(thing.Map) != null)
+					num++;
+				}
+			}
+			if (num < 2)
+			{
+				ThingDef stuff = Rand.Element(ThingDefOf.WoodLog, ThingDefOf.Steel);
+				foreach (IntVec3 corner in cellRect2.Corners)
+				{
+					if (corner.InBounds(thing.Map) && corner.Standable(thing.Map) && corner.GetFirstItem(thing.Map) == null && corner.GetFirstBuilding(thing.Map) == null && corner.GetFirstPawn(thing.Map) == null && !GenAdj.CellsAdjacent8Way(new TargetInfo(corner, thing.Map)).Any((IntVec3 x) => !x.InBounds(thing.Map) || !x.Walkable(thing.Map)) && corner.SupportsStructureType(thing.Map, ThingDefOf.Wall.terrainAffordanceNeeded))
 					{
+						Thing thing2 = ThingMaker.MakeThing(ThingDefOf.Wall, stuff);
+						GenSpawn.Spawn(thing2, corner, thing.Map);
+						thing2.SetFaction(thing.Faction);
 						num++;
 					}
 				}
-				if (num < 2)
+			}
+			if (num <= 0)
+			{
+				return;
+			}
+			foreach (IntVec3 item3 in cellRect2)
+			{
+				if (item3.InBounds(thing.Map) && !item3.Roofed(thing.Map))
 				{
-					ThingDef stuff = Rand.Element(ThingDefOf.WoodLog, ThingDefOf.Steel);
-					foreach (IntVec3 corner in cellRect2.Corners)
-					{
-						if (corner.InBounds(thing.Map) && corner.Standable(thing.Map) && corner.GetFirstItem(thing.Map) == null && corner.GetFirstBuilding(thing.Map) == null && corner.GetFirstPawn(thing.Map) == null && !GenAdj.CellsAdjacent8Way(new TargetInfo(corner, thing.Map)).Any((IntVec3 x) => !x.InBounds(thing.Map) || !x.Walkable(thing.Map)) && corner.SupportsStructureType(thing.Map, ThingDefOf.Wall.terrainAffordanceNeeded))
-						{
-							Thing thing2 = ThingMaker.MakeThing(ThingDefOf.Wall, stuff);
-							GenSpawn.Spawn(thing2, corner, thing.Map);
-							thing2.SetFaction(thing.Faction);
-							num++;
-						}
-					}
-				}
-				if (num > 0)
-				{
-					foreach (IntVec3 item3 in cellRect2)
-					{
-						if (item3.InBounds(thing.Map) && !item3.Roofed(thing.Map))
-						{
-							thing.Map.roofGrid.SetRoof(item3, RoofDefOf.RoofConstructed);
-						}
-					}
+					thing.Map.roofGrid.SetRoof(item3, RoofDefOf.RoofConstructed);
 				}
 			}
 		}

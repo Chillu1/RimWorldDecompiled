@@ -31,35 +31,36 @@ namespace RimWorld.QuestGen
 
 		private void SetVars(Slate slate)
 		{
-			if (pawn.GetValue(slate) != null && otherPawns.GetValue(slate) != null)
+			if (pawn.GetValue(slate) == null || otherPawns.GetValue(slate) == null)
 			{
+				return;
+			}
+			tmpRelations.Clear();
+			int num = 0;
+			foreach (Pawn item in otherPawns.GetValue(slate))
+			{
+				PawnRelationDef mostImportantRelation = pawn.GetValue(slate).GetMostImportantRelation(item);
+				if (mostImportantRelation != null)
+				{
+					tmpRelations.Add(mostImportantRelation.GetGenderSpecificLabel(item));
+				}
+				else
+				{
+					num++;
+				}
+			}
+			if (num == 1)
+			{
+				tmpRelations.Add(nonRelatedLabel.GetValue(slate));
+			}
+			else if (num >= 2)
+			{
+				tmpRelations.Add(num + " " + nonRelatedLabelPlural.GetValue(slate));
+			}
+			if (tmpRelations.Any())
+			{
+				slate.Set(storeAs.GetValue(slate), tmpRelations.ToCommaList(useAnd: true));
 				tmpRelations.Clear();
-				int num = 0;
-				foreach (Pawn item in otherPawns.GetValue(slate))
-				{
-					PawnRelationDef mostImportantRelation = pawn.GetValue(slate).GetMostImportantRelation(item);
-					if (mostImportantRelation != null)
-					{
-						tmpRelations.Add(mostImportantRelation.GetGenderSpecificLabel(item));
-					}
-					else
-					{
-						num++;
-					}
-				}
-				if (num == 1)
-				{
-					tmpRelations.Add(nonRelatedLabel.GetValue(slate));
-				}
-				else if (num >= 2)
-				{
-					tmpRelations.Add(num + " " + nonRelatedLabelPlural.GetValue(slate));
-				}
-				if (tmpRelations.Any())
-				{
-					slate.Set(storeAs.GetValue(slate), tmpRelations.ToCommaList(useAnd: true));
-					tmpRelations.Clear();
-				}
 			}
 		}
 	}

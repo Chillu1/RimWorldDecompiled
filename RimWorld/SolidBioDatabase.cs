@@ -20,23 +20,21 @@ namespace RimWorld
 				if (item.childhood == null || item.adulthood == null)
 				{
 					PawnNameDatabaseSolid.AddPlayerContentName(item.name, item.gender);
+					continue;
 				}
-				else
+				item.PostLoad();
+				item.ResolveReferences();
+				foreach (string item2 in item.ConfigErrors())
 				{
-					item.PostLoad();
-					item.ResolveReferences();
-					foreach (string item2 in item.ConfigErrors())
-					{
-						Log.Error(item2);
-					}
-					allBios.Add(item);
-					item.childhood.shuffleable = false;
-					item.childhood.slot = BackstorySlot.Childhood;
-					item.adulthood.shuffleable = false;
-					item.adulthood.slot = BackstorySlot.Adulthood;
-					BackstoryDatabase.AddBackstory(item.childhood);
-					BackstoryDatabase.AddBackstory(item.adulthood);
+					Log.Error(item2);
 				}
+				allBios.Add(item);
+				item.childhood.shuffleable = false;
+				item.childhood.slot = BackstorySlot.Childhood;
+				item.adulthood.shuffleable = false;
+				item.adulthood.slot = BackstorySlot.Adulthood;
+				BackstoryDatabase.AddBackstory(item.childhood);
+				BackstoryDatabase.AddBackstory(item.adulthood);
 			}
 		}
 	}

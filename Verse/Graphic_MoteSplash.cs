@@ -21,7 +21,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return "MoteSplash(path=" + path + ", shader=" + base.Shader + ", color=" + color + ", colorTwo=unsupported)";
+			return string.Concat("MoteSplash(path=", path, ", shader=", base.Shader, ", color=", color, ", colorTwo=unsupported)");
 		}
 	}
 }

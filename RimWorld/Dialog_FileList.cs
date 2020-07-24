@@ -140,7 +140,7 @@ namespace RimWorld
 				UI.FocusControl("MapNameField", this);
 				focusedNameArea = true;
 			}
-			if (Widgets.ButtonText(new Rect(420f, y, rect.width - 400f - 20f, 35f), "SaveGameButton".Translate()) | flag)
+			if (Widgets.ButtonText(new Rect(420f, y, rect.width - 400f - 20f, 35f), "SaveGameButton".Translate()) || flag)
 			{
 				if (typingName.NullOrEmpty())
 				{

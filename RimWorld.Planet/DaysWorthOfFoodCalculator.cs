@@ -229,7 +229,7 @@ namespace RimWorld.Planet
 					num3 = Mathf.Max(num3, tmpDaysWorthOfFoodForPawn[num11]);
 				}
 			}
-			while (!(!flag3 | flag2) && !(num3 > 601f));
+			while (!(!flag3 || flag2) && !(num3 > 601f));
 			float num18 = 600f;
 			int num19 = 0;
 			for (int count9 = pawns.Count; num19 < count9; num19++)

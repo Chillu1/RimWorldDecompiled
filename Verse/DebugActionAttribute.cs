@@ -23,7 +23,7 @@ namespace Verse
 				bool flag2 = (allowedGameStates & AllowedGameStates.WorldRenderedNow) == 0 || WorldRendererUtility.WorldRenderedNow;
 				bool flag3 = (allowedGameStates & AllowedGameStates.IsCurrentlyOnMap) == 0 || (!WorldRendererUtility.WorldRenderedNow && Find.CurrentMap != null);
 				bool flag4 = (allowedGameStates & AllowedGameStates.HasGameCondition) == 0 || (!WorldRendererUtility.WorldRenderedNow && Find.CurrentMap != null && Find.CurrentMap.gameConditionManager.ActiveConditions.Count > 0);
-				return num & flag & flag2 & flag3 & flag4;
+				return num && flag && flag2 && flag3 && flag4;
 			}
 		}
 

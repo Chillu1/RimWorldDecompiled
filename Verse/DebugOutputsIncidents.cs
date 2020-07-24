@@ -151,72 +151,73 @@ namespace Verse
 			List<DebugMenuOption> list = new List<DebugMenuOption>();
 			foreach (Faction allFaction in Find.FactionManager.AllFactions)
 			{
-				if (allFaction.def.pawnGroupMakers != null && allFaction.def.pawnGroupMakers.Any((PawnGroupMaker x) => x.kindDef == PawnGroupKindDefOf.Combat))
+				if (allFaction.def.pawnGroupMakers == null || !allFaction.def.pawnGroupMakers.Any((PawnGroupMaker x) => x.kindDef == PawnGroupKindDefOf.Combat))
 				{
-					Faction localFac = allFaction;
+					continue;
+				}
+				Faction localFac = allFaction;
+				list.Add(new DebugMenuOption(localFac.Name + " (" + localFac.def.defName + ")", DebugMenuOptionMode.Action, delegate
+				{
+					List<DebugMenuOption> list2 = new List<DebugMenuOption>();
 					float localP = default(float);
 					float maxPawnCost = default(float);
-					list.Add(new DebugMenuOption(localFac.Name + " (" + localFac.def.defName + ")", DebugMenuOptionMode.Action, delegate
+					foreach (float item in DebugActionsUtility.PointsOptions(extended: true))
 					{
-						List<DebugMenuOption> list2 = new List<DebugMenuOption>();
-						foreach (float item in DebugActionsUtility.PointsOptions(extended: true))
+						localP = item;
+						maxPawnCost = PawnGroupMakerUtility.MaxPawnCost(localFac, localP, null, PawnGroupKindDefOf.Combat);
+						string defName = (from op in localFac.def.pawnGroupMakers.SelectMany((PawnGroupMaker gm) => gm.options)
+							where op.Cost <= maxPawnCost
+							select op).MaxBy((PawnGenOption op) => op.Cost).kind.defName;
+						string label = localP + ", max " + maxPawnCost.ToString("F0") + " " + defName;
+						list2.Add(new DebugMenuOption(label, DebugMenuOptionMode.Action, delegate
 						{
-							localP = item;
-							maxPawnCost = PawnGroupMakerUtility.MaxPawnCost(localFac, localP, null, PawnGroupKindDefOf.Combat);
-							string defName = (from op in localFac.def.pawnGroupMakers.SelectMany((PawnGroupMaker gm) => gm.options)
-								where op.Cost <= maxPawnCost
-								select op).MaxBy((PawnGenOption op) => op.Cost).kind.defName;
-							string label = localP.ToString() + ", max " + maxPawnCost.ToString("F0") + " " + defName;
-							list2.Add(new DebugMenuOption(label, DebugMenuOptionMode.Action, delegate
+							Dictionary<ThingDef, int>[] weaponsCount = new Dictionary<ThingDef, int>[20];
+							string[] pawnKinds = new string[20];
+							for (int i = 0; i < 20; i++)
 							{
-								Dictionary<ThingDef, int>[] weaponsCount = new Dictionary<ThingDef, int>[20];
-								string[] pawnKinds = new string[20];
-								for (int i = 0; i < 20; i++)
+								weaponsCount[i] = new Dictionary<ThingDef, int>();
+								List<Pawn> list3 = PawnGroupMakerUtility.GeneratePawns(new PawnGroupMakerParms
 								{
-									weaponsCount[i] = new Dictionary<ThingDef, int>();
-									List<Pawn> list3 = PawnGroupMakerUtility.GeneratePawns(new PawnGroupMakerParms
+									groupKind = PawnGroupKindDefOf.Combat,
+									tile = Find.CurrentMap.Tile,
+									points = localP,
+									faction = localFac
+								}, warnOnZeroResults: false).ToList();
+								pawnKinds[i] = PawnUtility.PawnKindsToCommaList(list3, useAnd: true);
+								foreach (Pawn item2 in list3)
+								{
+									if (item2.equipment.Primary != null)
 									{
-										groupKind = PawnGroupKindDefOf.Combat,
-										tile = Find.CurrentMap.Tile,
-										points = localP,
-										faction = localFac
-									}, warnOnZeroResults: false).ToList();
-									pawnKinds[i] = PawnUtility.PawnKindsToCommaList(list3, useAnd: true);
-									foreach (Pawn item2 in list3)
-									{
-										if (item2.equipment.Primary != null)
+										if (!weaponsCount[i].ContainsKey(item2.equipment.Primary.def))
 										{
-											if (!weaponsCount[i].ContainsKey(item2.equipment.Primary.def))
-											{
-												weaponsCount[i].Add(item2.equipment.Primary.def, 0);
-											}
-											weaponsCount[i][item2.equipment.Primary.def]++;
+											weaponsCount[i].Add(item2.equipment.Primary.def, 0);
 										}
-										item2.Destroy();
+										weaponsCount[i][item2.equipment.Primary.def]++;
 									}
+									item2.Destroy();
 								}
-								int totalPawns = weaponsCount.Sum((Dictionary<ThingDef, int> x) => x.Sum((KeyValuePair<ThingDef, int> y) => y.Value));
-								List<TableDataGetter<int>> list4 = new List<TableDataGetter<int>>();
-								list4.Add(new TableDataGetter<int>("", (int x) => (x != 20) ? (x + 1).ToString() : "avg"));
-								list4.Add(new TableDataGetter<int>("pawns", (int x) => " " + ((x == 20) ? ((float)totalPawns / 20f).ToString("0.#") : weaponsCount[x].Sum((KeyValuePair<ThingDef, int> y) => y.Value).ToString())));
-								list4.Add(new TableDataGetter<int>("kinds", (int x) => (x != 20) ? pawnKinds[x] : ""));
-								list4.AddRange(from x in DefDatabase<ThingDef>.AllDefs
-									where x.IsWeapon && !x.weaponTags.NullOrEmpty() && weaponsCount.Any((Dictionary<ThingDef, int> wc) => wc.ContainsKey(x))
-									orderby x.IsMeleeWeapon descending, x.techLevel, x.BaseMarketValue
-									select new TableDataGetter<int>(x.label.Shorten(), delegate(int y)
+							}
+							int totalPawns = weaponsCount.Sum((Dictionary<ThingDef, int> x) => x.Sum((KeyValuePair<ThingDef, int> y) => y.Value));
+							List<TableDataGetter<int>> list4 = new List<TableDataGetter<int>>();
+							list4.Add(new TableDataGetter<int>("", (int x) => (x != 20) ? (x + 1).ToString() : "avg"));
+							list4.Add(new TableDataGetter<int>("pawns", (int x) => " " + ((x == 20) ? ((float)totalPawns / 20f).ToString("0.#") : weaponsCount[x].Sum((KeyValuePair<ThingDef, int> y) => y.Value).ToString())));
+							list4.Add(new TableDataGetter<int>("kinds", (int x) => (x != 20) ? pawnKinds[x] : ""));
+							list4.AddRange(from x in DefDatabase<ThingDef>.AllDefs
+								where x.IsWeapon && !x.weaponTags.NullOrEmpty() && weaponsCount.Any((Dictionary<ThingDef, int> wc) => wc.ContainsKey(x))
+								orderby x.IsMeleeWeapon descending, x.techLevel, x.BaseMarketValue
+								select new TableDataGetter<int>(x.label.Shorten(), delegate(int y)
+								{
+									if (y == 20)
 									{
-										if (y == 20)
-										{
-											return " " + ((float)weaponsCount.Sum((Dictionary<ThingDef, int> z) => z.ContainsKey(x) ? z[x] : 0) / 20f).ToString("0.#");
-										}
-										return (!weaponsCount[y].ContainsKey(x)) ? "" : (" " + weaponsCount[y][x] + " (" + ((float)weaponsCount[y][x] / (float)weaponsCount[y].Sum((KeyValuePair<ThingDef, int> z) => z.Value)).ToStringPercent("F0") + ")");
-									}));
-								DebugTables.MakeTablesDialog(Enumerable.Range(0, 21), list4.ToArray());
-							}));
-						}
-						Find.WindowStack.Add(new Dialog_DebugOptionListLister(list2));
-					}));
-				}
+										return " " + ((float)weaponsCount.Sum((Dictionary<ThingDef, int> z) => z.ContainsKey(x) ? z[x] : 0) / 20f).ToString("0.#");
+									}
+									return (!weaponsCount[y].ContainsKey(x)) ? "" : (" " + weaponsCount[y][x] + " (" + ((float)weaponsCount[y][x] / (float)weaponsCount[y].Sum((KeyValuePair<ThingDef, int> z) => z.Value)).ToStringPercent("F0") + ")");
+								}));
+							DebugTables.MakeTablesDialog(Enumerable.Range(0, 21), list4.ToArray());
+						}));
+					}
+					Find.WindowStack.Add(new Dialog_DebugOptionListLister(list2));
+				}));
 			}
 			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
 		}

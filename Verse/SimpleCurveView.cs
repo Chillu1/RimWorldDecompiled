@@ -18,12 +18,13 @@ namespace Verse
 		{
 			get
 			{
-				if (debugInputValues != null)
+				if (debugInputValues == null)
 				{
-					foreach (float value in debugInputValues.Values)
-					{
-						yield return value;
-					}
+					yield break;
+				}
+				foreach (float value in debugInputValues.Values)
+				{
+					yield return value;
 				}
 			}
 		}

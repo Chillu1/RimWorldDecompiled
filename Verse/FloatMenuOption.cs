@@ -240,8 +240,7 @@ namespace Verse
 		public virtual bool DoGUI(Rect rect, bool colonistOrdering, FloatMenu floatMenu)
 		{
 			Rect rect2 = rect;
-			float height = rect2.height;
-			rect2.height = height - 1f;
+			rect2.height--;
 			bool flag = !Disabled && Mouse.IsOver(rect2);
 			bool flag2 = false;
 			Text.Font = CurrentFont;

@@ -12,8 +12,8 @@ namespace RimWorld
 		public static void DropInDropPodsNearSpawnCenter(IncidentParms parms, List<Pawn> pawns)
 		{
 			Map map = (Map)parms.target;
-			bool canRoofPunch = parms.faction != null && parms.faction.HostileTo(Faction.OfPlayer);
-			DropPodUtility.DropThingsNear(parms.spawnCenter, map, pawns.Cast<Thing>(), parms.podOpenDelay, canInstaDropDuringInit: false, leaveSlag: true, canRoofPunch);
+			bool flag = parms.faction != null && parms.faction.HostileTo(Faction.OfPlayer);
+			DropPodUtility.DropThingsNear(parms.spawnCenter, map, pawns.Cast<Thing>(), parms.podOpenDelay, canInstaDropDuringInit: false, leaveSlag: true, flag || parms.raidArrivalModeForQuickMilitaryAid);
 		}
 
 		public static List<Pair<List<Pawn>, IntVec3>> SplitIntoRandomGroupsNearMapEdge(List<Pawn> pawns, Map map, bool arriveInPods)
@@ -48,11 +48,11 @@ namespace RimWorld
 				IntVec3 result2;
 				if (arriveInPods)
 				{
-					result2 = DropCellFinder.FindRaidDropCenterDistant(map);
+					result2 = DropCellFinder.FindRaidDropCenterDistant_NewTemp(map);
 				}
 				else if (!RCellFinder.TryFindRandomPawnEntryCell(out result2, map, CellFinder.EdgeRoadChance_Hostile))
 				{
-					result2 = DropCellFinder.FindRaidDropCenterDistant(map);
+					result2 = DropCellFinder.FindRaidDropCenterDistant_NewTemp(map);
 				}
 				if (!groups.Any())
 				{

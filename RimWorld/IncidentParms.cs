@@ -21,6 +21,8 @@ namespace RimWorld
 
 		public List<ThingDef> letterHyperlinkThingDefs;
 
+		public List<HediffDef> letterHyperlinkHediffDefs;
+
 		public string inSignalEnd;
 
 		public IntVec3 spawnCenter = IntVec3.Invalid;
@@ -78,6 +80,8 @@ namespace RimWorld
 			Scribe_Values.Look(ref customLetterLabel, "customLetterLabel");
 			Scribe_Values.Look(ref customLetterText, "customLetterText");
 			Scribe_Defs.Look(ref customLetterDef, "customLetterDef");
+			Scribe_Collections.Look(ref letterHyperlinkThingDefs, "letterHyperlinkThingDefs", LookMode.Def);
+			Scribe_Collections.Look(ref letterHyperlinkHediffDefs, "letterHyperlinkHediffDefs", LookMode.Def);
 			Scribe_Values.Look(ref inSignalEnd, "inSignalEnd");
 			Scribe_Values.Look(ref spawnCenter, "spawnCenter");
 			Scribe_Values.Look(ref spawnRotation, "spawnRotation");
@@ -113,7 +117,7 @@ namespace RimWorld
 			}
 			if (generateFightersOnly)
 			{
-				text = text + ", generateFightersOnly=" + generateFightersOnly.ToString();
+				text = text + ", generateFightersOnly=" + generateFightersOnly;
 			}
 			if (raidStrategy != null)
 			{

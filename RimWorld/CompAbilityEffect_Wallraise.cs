@@ -55,6 +55,11 @@ namespace RimWorld
 			}
 		}
 
+		public override bool CanApplyOn(LocalTargetInfo target, LocalTargetInfo dest)
+		{
+			return Valid(target, throwMessages: true);
+		}
+
 		public override void DrawEffectPreview(LocalTargetInfo target)
 		{
 			GenDraw.DrawFieldEdges(AffectedCells(target, parent.pawn.Map).ToList(), Valid(target) ? Color.white : Color.red);
@@ -64,7 +69,11 @@ namespace RimWorld
 		{
 			foreach (IntVec2 item in Props.pattern)
 			{
-				yield return target.Cell + new IntVec3(item.x, 0, item.z);
+				IntVec3 intVec = target.Cell + new IntVec3(item.x, 0, item.z);
+				if (intVec.InBounds(map))
+				{
+					yield return intVec;
+				}
 			}
 		}
 
@@ -74,7 +83,7 @@ namespace RimWorld
 			{
 				if (throwMessages)
 				{
-					Messages.Message("AbilityOccupiedCells".Translate(parent.def.LabelCap), MessageTypeDefOf.RejectInput);
+					Messages.Message("AbilityOccupiedCells".Translate(parent.def.LabelCap), target.ToTargetInfo(parent.pawn.Map), MessageTypeDefOf.RejectInput, historical: false);
 				}
 				return false;
 			}
@@ -82,7 +91,7 @@ namespace RimWorld
 			{
 				if (throwMessages)
 				{
-					Messages.Message("AbilityUnwalkable".Translate(parent.def.LabelCap), MessageTypeDefOf.RejectInput);
+					Messages.Message("AbilityUnwalkable".Translate(parent.def.LabelCap), target.ToTargetInfo(parent.pawn.Map), MessageTypeDefOf.RejectInput, historical: false);
 				}
 				return false;
 			}

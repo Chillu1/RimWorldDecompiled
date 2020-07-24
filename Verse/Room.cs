@@ -233,23 +233,23 @@ namespace Verse
 				Pawn secondOwner = null;
 				foreach (Building_Bed containedBed in ContainedBeds)
 				{
-					if (containedBed.def.building.bed_humanlike)
+					if (!containedBed.def.building.bed_humanlike)
 					{
-						for (int i = 0; i < containedBed.OwnersForReading.Count; i++)
+						continue;
+					}
+					for (int i = 0; i < containedBed.OwnersForReading.Count; i++)
+					{
+						if (pawn == null)
 						{
-							if (pawn == null)
-							{
-								pawn = containedBed.OwnersForReading[i];
-							}
-							else
-							{
-								if (secondOwner != null)
-								{
-									yield break;
-								}
-								secondOwner = containedBed.OwnersForReading[i];
-							}
+							pawn = containedBed.OwnersForReading[i];
+							continue;
 						}
+						if (secondOwner == null)
+						{
+							secondOwner = containedBed.OwnersForReading[i];
+							continue;
+						}
+						yield break;
 					}
 				}
 				if (pawn != null)
@@ -361,7 +361,7 @@ namespace Verse
 		{
 			if (regions.Contains(r))
 			{
-				Log.Error("Tried to add the same region twice to Room. region=" + r + ", room=" + this);
+				Log.Error(string.Concat("Tried to add the same region twice to Room. region=", r, ", room=", this));
 				return;
 			}
 			regions.Add(r);
@@ -379,7 +379,7 @@ namespace Verse
 		{
 			if (!regions.Contains(r))
 			{
-				Log.Error("Tried to remove region from Room but this region is not here. region=" + r + ", room=" + this);
+				Log.Error(string.Concat("Tried to remove region from Room but this region is not here. region=", r, ", room=", this));
 				return;
 			}
 			regions.Remove(r);
@@ -413,7 +413,7 @@ namespace Verse
 				for (int i = 0; i < regions[0].links.Count; i++)
 				{
 					Region otherRegion = regions[0].links[i].GetOtherRegion(regions[0]);
-					if (!otherRegion.IsDoorway)
+					if (otherRegion != null && !otherRegion.IsDoorway)
 					{
 						otherRegion.Room.Notify_ContainedThingSpawnedOrDespawned(th);
 					}
@@ -503,21 +503,21 @@ namespace Verse
 		public IEnumerable<Thing> ContainedThings(ThingDef def)
 		{
 			uniqueContainedThingsOfDef.Clear();
-			int j = 0;
-			while (j < regions.Count)
+			int i = 0;
+			while (i < regions.Count)
 			{
-				List<Thing> things = regions[j].ListerThings.ThingsOfDef(def);
+				List<Thing> things = regions[i].ListerThings.ThingsOfDef(def);
 				int num;
-				for (int i = 0; i < things.Count; i = num)
+				for (int j = 0; j < things.Count; j = num)
 				{
-					if (uniqueContainedThingsOfDef.Add(things[i]))
+					if (uniqueContainedThingsOfDef.Add(things[j]))
 					{
-						yield return things[i];
+						yield return things[j];
 					}
-					num = i + 1;
+					num = j + 1;
 				}
-				num = j + 1;
-				j = num;
+				num = i + 1;
+				i = num;
 			}
 			uniqueContainedThingsOfDef.Clear();
 		}
@@ -639,7 +639,7 @@ namespace Verse
 
 		internal string DebugString()
 		{
-			return "Room ID=" + ID + "\n  first cell=" + Cells.FirstOrDefault() + "\n  RegionCount=" + RegionCount + "\n  RegionType=" + RegionType + "\n  CellCount=" + CellCount + "\n  OpenRoofCount=" + OpenRoofCount + "\n  numRegionsTouchingMapEdge=" + numRegionsTouchingMapEdge + "\n  lastChangeTick=" + lastChangeTick + "\n  isPrisonCell=" + isPrisonCell.ToString() + "\n  RoomGroup=" + ((Group != null) ? Group.ID.ToString() : "null");
+			return string.Concat("Room ID=", ID, "\n  first cell=", Cells.FirstOrDefault(), "\n  RegionCount=", RegionCount, "\n  RegionType=", RegionType, "\n  CellCount=", CellCount, "\n  OpenRoofCount=", OpenRoofCount, "\n  numRegionsTouchingMapEdge=", numRegionsTouchingMapEdge, "\n  lastChangeTick=", lastChangeTick, "\n  isPrisonCell=", isPrisonCell.ToString(), "\n  RoomGroup=", (Group != null) ? Group.ID.ToString() : "null");
 		}
 
 		public override string ToString()

@@ -119,7 +119,7 @@ namespace RimWorld
 			{
 				if (!twelfths.Contains(twelfth))
 				{
-					Log.Error("Twelfths doesn't contain " + twelfth + " (" + leftMostTwelfth + ".." + rightMostTwelfth + ")");
+					Log.Error(string.Concat("Twelfths doesn't contain ", twelfth, " (", leftMostTwelfth, "..", rightMostTwelfth, ")"));
 					break;
 				}
 				twelfths.Remove(twelfth);

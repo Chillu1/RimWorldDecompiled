@@ -53,5 +53,13 @@ namespace RimWorld.QuestGen
 		public const string TestRunCallback = "testRunCallback";
 
 		public const string AllowViolentQuests = "allowViolentQuests";
+
+		public const string Refugee = "refugee";
+
+		public const string Prisoner = "prisoner";
+
+		public const string GeneratedItemStashThings = "generatedItemStashThings";
+
+		public const string DebugDontGenerateRewardThings = "debugDontGenerateRewardThings";
 	}
 }

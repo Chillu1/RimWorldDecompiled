@@ -120,50 +120,49 @@ namespace Verse
 						if (!flag2)
 						{
 							Log.ErrorOnce("Could not find matching '}' in \"" + str + "\".", str.GetHashCode() ^ 0xB9D492D);
+							continue;
 						}
-						else if (flag5)
+						if (flag5)
 						{
 							stringBuilder.Append(stringBuilder2);
+							continue;
+						}
+						if (flag4)
+						{
+							while (stringBuilder4.Length != 0 && stringBuilder4[stringBuilder4.Length - 1] == ' ')
+							{
+								stringBuilder4.Length--;
+							}
+						}
+						string text = stringBuilder3.ToString();
+						bool flag6 = false;
+						int result = -1;
+						if (int.TryParse(text, out result))
+						{
+							if (result >= 0 && result < list2.Count && TryResolveSymbol(list2[result], stringBuilder4.ToString(), stringBuilder5.ToString(), out TaggedString resolvedStr, str))
+							{
+								flag6 = true;
+								stringBuilder.Append(resolvedStr.RawText);
+							}
 						}
 						else
 						{
-							if (flag4)
+							for (int j = 0; j < list.Count; j++)
 							{
-								while (stringBuilder4.Length != 0 && stringBuilder4[stringBuilder4.Length - 1] == ' ')
+								if (list[j] == text)
 								{
-									stringBuilder4.Length--;
-								}
-							}
-							string text = stringBuilder3.ToString();
-							bool flag6 = false;
-							int result = -1;
-							if (int.TryParse(text, out result))
-							{
-								if (result >= 0 && result < list2.Count && TryResolveSymbol(list2[result], stringBuilder4.ToString(), stringBuilder5.ToString(), out TaggedString resolvedStr, str))
-								{
-									flag6 = true;
-									stringBuilder.Append(resolvedStr.RawText);
-								}
-							}
-							else
-							{
-								for (int j = 0; j < list.Count; j++)
-								{
-									if (list[j] == text)
+									if (TryResolveSymbol(list2[j], stringBuilder4.ToString(), stringBuilder5.ToString(), out TaggedString resolvedStr2, str))
 									{
-										if (TryResolveSymbol(list2[j], stringBuilder4.ToString(), stringBuilder5.ToString(), out TaggedString resolvedStr2, str))
-										{
-											flag6 = true;
-											stringBuilder.Append(resolvedStr2.RawText);
-										}
-										break;
+										flag6 = true;
+										stringBuilder.Append(resolvedStr2.RawText);
 									}
+									break;
 								}
 							}
-							if (!flag6)
-							{
-								Log.ErrorOnce("Could not resolve symbol \"" + stringBuilder2 + "\" for string \"" + str + "\".", str.GetHashCode() ^ stringBuilder2.ToString().GetHashCode() ^ 0x346E76FE);
-							}
+						}
+						if (!flag6)
+						{
+							Log.ErrorOnce(string.Concat("Could not resolve symbol \"", stringBuilder2, "\" for string \"") + str + "\".", str.GetHashCode() ^ stringBuilder2.ToString().GetHashCode() ^ 0x346E76FE);
 						}
 					}
 					else
@@ -187,240 +186,244 @@ namespace Verse
 		private static bool TryResolveSymbol(object obj, string subSymbol, string symbolArgs, out TaggedString resolvedStr, string fullStringForReference)
 		{
 			Pawn pawn = obj as Pawn;
-			switch (subSymbol)
+			if (pawn != null)
 			{
-			case "":
-				resolvedStr = ((pawn.Name != null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.Name.ToStringShort, pawn.gender, plural: false, name: true).ApplyTag(TagType.Name) : ((TaggedString)pawn.KindLabelIndefinite()));
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "nameFull":
-				resolvedStr = ((pawn.Name != null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.Name.ToStringFull, pawn.gender, plural: false, name: true).ApplyTag(TagType.Name) : ((TaggedString)pawn.KindLabelIndefinite()));
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "nameFullDef":
-				resolvedStr = ((pawn.Name != null) ? Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.Name.ToStringFull, pawn.gender, plural: false, name: true).ApplyTag(TagType.Name) : ((TaggedString)pawn.KindLabelDefinite()));
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "label":
-				resolvedStr = pawn.LabelNoCountColored;
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "labelShort":
-				resolvedStr = ((pawn.Name != null) ? pawn.Name.ToStringShort.ApplyTag(TagType.Name) : ((TaggedString)pawn.KindLabel));
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "definite":
-				resolvedStr = ((pawn.Name != null) ? Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.Name.ToStringShort, pawn.gender, plural: false, name: true).ApplyTag(TagType.Name) : ((TaggedString)pawn.KindLabelDefinite()));
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "nameDef":
-				resolvedStr = ((pawn.Name != null) ? Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.Name.ToStringShort, pawn.gender, plural: false, name: true).ApplyTag(TagType.Name) : ((TaggedString)pawn.KindLabelDefinite()));
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "indefinite":
-				resolvedStr = ((pawn.Name != null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.Name.ToStringShort, pawn.gender, plural: false, name: true).ApplyTag(TagType.Name) : ((TaggedString)pawn.KindLabelIndefinite()));
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "nameIndef":
-				resolvedStr = ((pawn.Name != null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.Name.ToStringShort, pawn.gender, plural: false, name: true).ApplyTag(TagType.Name) : ((TaggedString)pawn.KindLabelIndefinite()));
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "pronoun":
-				resolvedStr = pawn.gender.GetPronoun();
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "possessive":
-				resolvedStr = pawn.gender.GetPossessive();
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "objective":
-				resolvedStr = pawn.gender.GetObjective();
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "factionName":
-				resolvedStr = ((pawn.Faction != null) ? pawn.Faction.Name.ApplyTag(pawn.Faction) : ((TaggedString)""));
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "factionPawnSingular":
-				resolvedStr = ((pawn.Faction != null) ? pawn.Faction.def.pawnSingular : "");
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "factionPawnSingularDef":
-				resolvedStr = ((pawn.Faction != null) ? Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.Faction.def.pawnSingular) : "");
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "factionPawnSingularIndef":
-				resolvedStr = ((pawn.Faction != null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.Faction.def.pawnSingular) : "");
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "factionPawnsPlural":
-				resolvedStr = ((pawn.Faction != null) ? pawn.Faction.def.pawnsPlural : "");
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "factionPawnsPluralDef":
-				resolvedStr = ((pawn.Faction != null) ? Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.Faction.def.pawnsPlural, LanguageDatabase.activeLanguage.ResolveGender(pawn.Faction.def.pawnsPlural, pawn.Faction.def.pawnSingular), plural: true) : "");
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "factionPawnsPluralIndef":
-				resolvedStr = ((pawn.Faction != null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.Faction.def.pawnsPlural, LanguageDatabase.activeLanguage.ResolveGender(pawn.Faction.def.pawnsPlural, pawn.Faction.def.pawnSingular), plural: true) : "");
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "factionRoyalFavorLabel":
-				resolvedStr = ((pawn.Faction != null) ? pawn.Faction.def.royalFavorLabel : "");
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "kind":
-				resolvedStr = pawn.KindLabel;
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "kindDef":
-				resolvedStr = pawn.KindLabelDefinite();
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "kindIndef":
-				resolvedStr = pawn.KindLabelIndefinite();
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "kindPlural":
-				resolvedStr = pawn.GetKindLabelPlural();
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "kindPluralDef":
-				resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.GetKindLabelPlural(), pawn.gender, plural: true);
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "kindPluralIndef":
-				resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.GetKindLabelPlural(), pawn.gender, plural: true);
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "kindBase":
-				resolvedStr = pawn.kindDef.label;
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "kindBaseDef":
-				resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.kindDef.label);
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "kindBaseIndef":
-				resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.kindDef.label);
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "kindBasePlural":
-				resolvedStr = pawn.kindDef.GetLabelPlural();
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "kindBasePluralDef":
-				resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.kindDef.GetLabelPlural(), LanguageDatabase.activeLanguage.ResolveGender(pawn.kindDef.GetLabelPlural(), pawn.kindDef.label), plural: true);
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "kindBasePluralIndef":
-				resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.kindDef.GetLabelPlural(), LanguageDatabase.activeLanguage.ResolveGender(pawn.kindDef.GetLabelPlural(), pawn.kindDef.label), plural: true);
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "race":
-				resolvedStr = pawn.def.label;
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "raceDef":
-				resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.def.label);
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "raceIndef":
-				resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.def.label);
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "lifeStage":
-				resolvedStr = pawn.ageTracker.CurLifeStage.label;
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "lifeStageDef":
-				resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.ageTracker.CurLifeStage.label, pawn.gender);
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "lifeStageIndef":
-				resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.ageTracker.CurLifeStage.label, pawn.gender);
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "lifeStageAdjective":
-				resolvedStr = pawn.ageTracker.CurLifeStage.Adjective;
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "title":
-				resolvedStr = ((pawn.story != null) ? pawn.story.Title : "");
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "titleDef":
-				resolvedStr = ((pawn.story != null) ? Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.story.Title, pawn.gender) : "");
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "titleIndef":
-				resolvedStr = ((pawn.story != null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.story.Title, pawn.gender) : "");
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "bestRoyalTitle":
-				resolvedStr = PawnResolveBestRoyalTitle(pawn);
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "bestRoyalTitleIndef":
-				resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(PawnResolveBestRoyalTitle(pawn));
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "bestRoyalTitleDef":
-				resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(PawnResolveBestRoyalTitle(pawn));
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "royalTitleInCurrentFaction":
-				resolvedStr = PawnResolveRoyalTitleInCurrentFaction(pawn);
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "royalTitleInCurrentFactionIndef":
-				resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(PawnResolveRoyalTitleInCurrentFaction(pawn));
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "royalTitleInCurrentFactionDef":
-				resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(PawnResolveRoyalTitleInCurrentFaction(pawn));
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "age":
-				resolvedStr = pawn.ageTracker.AgeBiologicalYears.ToString();
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "chronologicalAge":
-				resolvedStr = pawn.ageTracker.AgeChronologicalYears.ToString();
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "ageFull":
-				resolvedStr = pawn.ageTracker.AgeNumberString;
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
-			case "relationInfo":
-			{
-				resolvedStr = "";
-				TaggedString text2 = resolvedStr;
-				PawnRelationUtility.TryAppendRelationsWithColonistsInfo(ref text2, pawn);
-				resolvedStr = text2.RawText;
-				return true;
-			}
-			case "relationInfoInParentheses":
-				resolvedStr = "";
-				PawnRelationUtility.TryAppendRelationsWithColonistsInfo(ref resolvedStr, pawn);
-				if (!resolvedStr.NullOrEmpty())
+				switch (subSymbol)
 				{
-					resolvedStr = "(" + resolvedStr + ")";
+				case "":
+					resolvedStr = ((pawn.Name != null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.Name.ToStringShort, pawn.gender, plural: false, name: true).ApplyTag(TagType.Name) : ((TaggedString)pawn.KindLabelIndefinite()));
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "nameFull":
+					resolvedStr = ((pawn.Name != null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.Name.ToStringFull, pawn.gender, plural: false, name: true).ApplyTag(TagType.Name) : ((TaggedString)pawn.KindLabelIndefinite()));
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "nameFullDef":
+					resolvedStr = ((pawn.Name != null) ? Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.Name.ToStringFull, pawn.gender, plural: false, name: true).ApplyTag(TagType.Name) : ((TaggedString)pawn.KindLabelDefinite()));
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "label":
+					resolvedStr = pawn.LabelNoCountColored;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "labelShort":
+					resolvedStr = ((pawn.Name != null) ? pawn.Name.ToStringShort.ApplyTag(TagType.Name) : ((TaggedString)pawn.KindLabel));
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "definite":
+					resolvedStr = ((pawn.Name != null) ? Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.Name.ToStringShort, pawn.gender, plural: false, name: true).ApplyTag(TagType.Name) : ((TaggedString)pawn.KindLabelDefinite()));
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "nameDef":
+					resolvedStr = ((pawn.Name != null) ? Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.Name.ToStringShort, pawn.gender, plural: false, name: true).ApplyTag(TagType.Name) : ((TaggedString)pawn.KindLabelDefinite()));
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "indefinite":
+					resolvedStr = ((pawn.Name != null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.Name.ToStringShort, pawn.gender, plural: false, name: true).ApplyTag(TagType.Name) : ((TaggedString)pawn.KindLabelIndefinite()));
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "nameIndef":
+					resolvedStr = ((pawn.Name != null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.Name.ToStringShort, pawn.gender, plural: false, name: true).ApplyTag(TagType.Name) : ((TaggedString)pawn.KindLabelIndefinite()));
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "pronoun":
+					resolvedStr = pawn.gender.GetPronoun();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "possessive":
+					resolvedStr = pawn.gender.GetPossessive();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "objective":
+					resolvedStr = pawn.gender.GetObjective();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "factionName":
+					resolvedStr = ((pawn.Faction != null) ? pawn.Faction.Name.ApplyTag(pawn.Faction) : ((TaggedString)""));
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "factionPawnSingular":
+					resolvedStr = ((pawn.Faction != null) ? pawn.Faction.def.pawnSingular : "");
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "factionPawnSingularDef":
+					resolvedStr = ((pawn.Faction != null) ? Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.Faction.def.pawnSingular) : "");
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "factionPawnSingularIndef":
+					resolvedStr = ((pawn.Faction != null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.Faction.def.pawnSingular) : "");
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "factionPawnsPlural":
+					resolvedStr = ((pawn.Faction != null) ? pawn.Faction.def.pawnsPlural : "");
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "factionPawnsPluralDef":
+					resolvedStr = ((pawn.Faction != null) ? Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.Faction.def.pawnsPlural, LanguageDatabase.activeLanguage.ResolveGender(pawn.Faction.def.pawnsPlural, pawn.Faction.def.pawnSingular), plural: true) : "");
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "factionPawnsPluralIndef":
+					resolvedStr = ((pawn.Faction != null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.Faction.def.pawnsPlural, LanguageDatabase.activeLanguage.ResolveGender(pawn.Faction.def.pawnsPlural, pawn.Faction.def.pawnSingular), plural: true) : "");
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "factionRoyalFavorLabel":
+					resolvedStr = ((pawn.Faction != null) ? pawn.Faction.def.royalFavorLabel : "");
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "kind":
+					resolvedStr = pawn.KindLabel;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "kindDef":
+					resolvedStr = pawn.KindLabelDefinite();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "kindIndef":
+					resolvedStr = pawn.KindLabelIndefinite();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "kindPlural":
+					resolvedStr = pawn.GetKindLabelPlural();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "kindPluralDef":
+					resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.GetKindLabelPlural(), pawn.gender, plural: true);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "kindPluralIndef":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.GetKindLabelPlural(), pawn.gender, plural: true);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "kindBase":
+					resolvedStr = pawn.kindDef.label;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "kindBaseDef":
+					resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.kindDef.label);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "kindBaseIndef":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.kindDef.label);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "kindBasePlural":
+					resolvedStr = pawn.kindDef.GetLabelPlural();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "kindBasePluralDef":
+					resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.kindDef.GetLabelPlural(), LanguageDatabase.activeLanguage.ResolveGender(pawn.kindDef.GetLabelPlural(), pawn.kindDef.label), plural: true);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "kindBasePluralIndef":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.kindDef.GetLabelPlural(), LanguageDatabase.activeLanguage.ResolveGender(pawn.kindDef.GetLabelPlural(), pawn.kindDef.label), plural: true);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "race":
+					resolvedStr = pawn.def.label;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "raceDef":
+					resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.def.label);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "raceIndef":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.def.label);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "lifeStage":
+					resolvedStr = pawn.ageTracker.CurLifeStage.label;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "lifeStageDef":
+					resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.ageTracker.CurLifeStage.label, pawn.gender);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "lifeStageIndef":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.ageTracker.CurLifeStage.label, pawn.gender);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "lifeStageAdjective":
+					resolvedStr = pawn.ageTracker.CurLifeStage.Adjective;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "title":
+					resolvedStr = ((pawn.story != null) ? pawn.story.Title : "");
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "titleDef":
+					resolvedStr = ((pawn.story != null) ? Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.story.Title, pawn.gender) : "");
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "titleIndef":
+					resolvedStr = ((pawn.story != null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.story.Title, pawn.gender) : "");
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "bestRoyalTitle":
+					resolvedStr = PawnResolveBestRoyalTitle(pawn);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "bestRoyalTitleIndef":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(PawnResolveBestRoyalTitle(pawn));
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "bestRoyalTitleDef":
+					resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(PawnResolveBestRoyalTitle(pawn));
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "royalTitleInCurrentFaction":
+					resolvedStr = PawnResolveRoyalTitleInCurrentFaction(pawn);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "royalTitleInCurrentFactionIndef":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(PawnResolveRoyalTitleInCurrentFaction(pawn));
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "royalTitleInCurrentFactionDef":
+					resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(PawnResolveRoyalTitleInCurrentFaction(pawn));
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "age":
+					resolvedStr = pawn.ageTracker.AgeBiologicalYears.ToString();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "chronologicalAge":
+					resolvedStr = pawn.ageTracker.AgeChronologicalYears.ToString();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "ageFull":
+					resolvedStr = pawn.ageTracker.AgeNumberString;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "relationInfo":
+				{
+					resolvedStr = "";
+					TaggedString text = resolvedStr;
+					PawnRelationUtility.TryAppendRelationsWithColonistsInfo(ref text, pawn);
+					resolvedStr = text.RawText;
+					return true;
 				}
-				return true;
-			case "gender":
-				resolvedStr = ResolveGenderSymbol(pawn.gender, pawn.RaceProps.Animal, symbolArgs, fullStringForReference);
-				return true;
-			case "humanlike":
-				resolvedStr = ResolveHumanlikeSymbol(pawn.RaceProps.Humanlike, symbolArgs, fullStringForReference);
-				return true;
-			default:
-				resolvedStr = "";
-				return false;
-			case null:
+				case "relationInfoInParentheses":
+					resolvedStr = "";
+					PawnRelationUtility.TryAppendRelationsWithColonistsInfo(ref resolvedStr, pawn);
+					if (!resolvedStr.NullOrEmpty())
+					{
+						resolvedStr = "(" + resolvedStr + ")";
+					}
+					return true;
+				case "gender":
+					resolvedStr = ResolveGenderSymbol(pawn.gender, pawn.RaceProps.Animal, symbolArgs, fullStringForReference);
+					return true;
+				case "humanlike":
+					resolvedStr = ResolveHumanlikeSymbol(pawn.RaceProps.Humanlike, symbolArgs, fullStringForReference);
+					return true;
+				default:
+					resolvedStr = "";
+					return false;
+				}
+			}
+			Thing thing = obj as Thing;
+			if (thing != null)
 			{
-				Thing thing = obj as Thing;
 				switch (subSymbol)
 				{
 				case "":
@@ -477,291 +480,286 @@ namespace Verse
 				default:
 					resolvedStr = "";
 					return false;
-				case null:
+				}
+			}
+			Hediff hediff = obj as Hediff;
+			if (hediff != null)
+			{
+				if (subSymbol == "label")
 				{
-					Hediff hediff = obj as Hediff;
-					if (hediff != null)
-					{
-						if (subSymbol == "label")
-						{
-							resolvedStr = hediff.Label;
-							EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-							return true;
-						}
-						if (subSymbol == "labelNoun")
-						{
-							resolvedStr = ((!hediff.def.labelNoun.NullOrEmpty()) ? hediff.def.labelNoun : hediff.Label);
-							EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-							return true;
-						}
-					}
-					WorldObject worldObject = obj as WorldObject;
+					resolvedStr = hediff.Label;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				}
+				if (subSymbol == "labelNoun")
+				{
+					resolvedStr = ((!hediff.def.labelNoun.NullOrEmpty()) ? hediff.def.labelNoun : hediff.Label);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				}
+			}
+			WorldObject worldObject = obj as WorldObject;
+			if (worldObject != null)
+			{
+				switch (subSymbol)
+				{
+				case "":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(worldObject.Label, plural: false, worldObject.HasName);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "label":
+					resolvedStr = worldObject.Label;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "labelPlural":
+					resolvedStr = Find.ActiveLanguageWorker.Pluralize(worldObject.Label);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "labelPluralDef":
+					resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(Find.ActiveLanguageWorker.Pluralize(worldObject.Label), LanguageDatabase.activeLanguage.ResolveGender(Find.ActiveLanguageWorker.Pluralize(worldObject.Label), worldObject.Label), plural: true, worldObject.HasName);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "labelPluralIndef":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(Find.ActiveLanguageWorker.Pluralize(worldObject.Label), LanguageDatabase.activeLanguage.ResolveGender(Find.ActiveLanguageWorker.Pluralize(worldObject.Label), worldObject.Label), plural: true, worldObject.HasName);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "definite":
+					resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(worldObject.Label, plural: false, worldObject.HasName);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "indefinite":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(worldObject.Label, plural: false, worldObject.HasName);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "pronoun":
+					resolvedStr = LanguageDatabase.activeLanguage.ResolveGender(worldObject.Label).GetPronoun();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "possessive":
+					resolvedStr = LanguageDatabase.activeLanguage.ResolveGender(worldObject.Label).GetPossessive();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "objective":
+					resolvedStr = LanguageDatabase.activeLanguage.ResolveGender(worldObject.Label).GetObjective();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "factionName":
+					resolvedStr = ((worldObject.Faction != null) ? worldObject.Faction.Name.ApplyTag(worldObject.Faction) : ((TaggedString)""));
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "gender":
+					resolvedStr = ResolveGenderSymbol(LanguageDatabase.activeLanguage.ResolveGender(worldObject.Label), animal: false, symbolArgs, fullStringForReference);
+					return true;
+				default:
+					resolvedStr = "";
+					return false;
+				}
+			}
+			Faction faction = obj as Faction;
+			if (faction != null)
+			{
+				switch (subSymbol)
+				{
+				case "":
+					resolvedStr = faction.Name.ApplyTag(faction);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "name":
+					resolvedStr = faction.Name.ApplyTag(faction);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "pawnSingular":
+					resolvedStr = faction.def.pawnSingular;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "pawnSingularDef":
+					resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(faction.def.pawnSingular);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "pawnSingularIndef":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(faction.def.pawnSingular);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "pawnsPlural":
+					resolvedStr = faction.def.pawnsPlural;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "pawnsPluralDef":
+					resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(faction.def.pawnsPlural, LanguageDatabase.activeLanguage.ResolveGender(faction.def.pawnsPlural, faction.def.pawnSingular), plural: true);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "pawnsPluralIndef":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(faction.def.pawnsPlural, LanguageDatabase.activeLanguage.ResolveGender(faction.def.pawnsPlural, faction.def.pawnSingular), plural: true);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "royalFavorLabel":
+					resolvedStr = faction.def.royalFavorLabel;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				default:
+					resolvedStr = "";
+					return false;
+				}
+			}
+			Def def = obj as Def;
+			if (def != null)
+			{
+				PawnKindDef pawnKindDef = def as PawnKindDef;
+				if (pawnKindDef != null)
+				{
 					switch (subSymbol)
 					{
-					case "":
-						resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(worldObject.Label, plural: false, worldObject.HasName);
-						EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-						return true;
-					case "label":
-						resolvedStr = worldObject.Label;
-						EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-						return true;
 					case "labelPlural":
-						resolvedStr = Find.ActiveLanguageWorker.Pluralize(worldObject.Label);
+						resolvedStr = pawnKindDef.GetLabelPlural();
 						EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 						return true;
 					case "labelPluralDef":
-						resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(Find.ActiveLanguageWorker.Pluralize(worldObject.Label), LanguageDatabase.activeLanguage.ResolveGender(Find.ActiveLanguageWorker.Pluralize(worldObject.Label), worldObject.Label), plural: true, worldObject.HasName);
+						resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(pawnKindDef.GetLabelPlural(), LanguageDatabase.activeLanguage.ResolveGender(pawnKindDef.GetLabelPlural(), pawnKindDef.label), plural: true);
 						EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 						return true;
 					case "labelPluralIndef":
-						resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(Find.ActiveLanguageWorker.Pluralize(worldObject.Label), LanguageDatabase.activeLanguage.ResolveGender(Find.ActiveLanguageWorker.Pluralize(worldObject.Label), worldObject.Label), plural: true, worldObject.HasName);
+						resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(pawnKindDef.GetLabelPlural(), LanguageDatabase.activeLanguage.ResolveGender(pawnKindDef.GetLabelPlural(), pawnKindDef.label), plural: true);
 						EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 						return true;
-					case "definite":
-						resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(worldObject.Label, plural: false, worldObject.HasName);
-						EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-						return true;
-					case "indefinite":
-						resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(worldObject.Label, plural: false, worldObject.HasName);
-						EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-						return true;
-					case "pronoun":
-						resolvedStr = LanguageDatabase.activeLanguage.ResolveGender(worldObject.Label).GetPronoun();
-						EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-						return true;
-					case "possessive":
-						resolvedStr = LanguageDatabase.activeLanguage.ResolveGender(worldObject.Label).GetPossessive();
-						EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-						return true;
-					case "objective":
-						resolvedStr = LanguageDatabase.activeLanguage.ResolveGender(worldObject.Label).GetObjective();
-						EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-						return true;
-					case "factionName":
-						resolvedStr = ((worldObject.Faction != null) ? worldObject.Faction.Name.ApplyTag(worldObject.Faction) : ((TaggedString)""));
-						EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-						return true;
-					case "gender":
-						resolvedStr = ResolveGenderSymbol(LanguageDatabase.activeLanguage.ResolveGender(worldObject.Label), animal: false, symbolArgs, fullStringForReference);
-						return true;
-					default:
-						resolvedStr = "";
-						return false;
-					case null:
+					}
+				}
+				switch (subSymbol)
+				{
+				case "":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(def.label);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "label":
+					resolvedStr = def.label;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "labelPlural":
+					resolvedStr = Find.ActiveLanguageWorker.Pluralize(def.label);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "labelPluralDef":
+					resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(Find.ActiveLanguageWorker.Pluralize(def.label), LanguageDatabase.activeLanguage.ResolveGender(Find.ActiveLanguageWorker.Pluralize(def.label), def.label), plural: true);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "labelPluralIndef":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(Find.ActiveLanguageWorker.Pluralize(def.label), LanguageDatabase.activeLanguage.ResolveGender(Find.ActiveLanguageWorker.Pluralize(def.label), def.label), plural: true);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "definite":
+					resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(def.label);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "indefinite":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(def.label);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "pronoun":
+					resolvedStr = LanguageDatabase.activeLanguage.ResolveGender(def.label).GetPronoun();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "possessive":
+					resolvedStr = LanguageDatabase.activeLanguage.ResolveGender(def.label).GetPossessive();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "objective":
+					resolvedStr = LanguageDatabase.activeLanguage.ResolveGender(def.label).GetObjective();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "gender":
+					resolvedStr = ResolveGenderSymbol(LanguageDatabase.activeLanguage.ResolveGender(def.label), animal: false, symbolArgs, fullStringForReference);
+					return true;
+				default:
+					resolvedStr = "";
+					return false;
+				}
+			}
+			string text2 = obj as string;
+			if (text2 != null)
+			{
+				switch (subSymbol)
+				{
+				case "":
+					resolvedStr = text2;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "plural":
+					resolvedStr = Find.ActiveLanguageWorker.Pluralize(text2);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "pluralDef":
+					resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(Find.ActiveLanguageWorker.Pluralize(text2), LanguageDatabase.activeLanguage.ResolveGender(Find.ActiveLanguageWorker.Pluralize(text2), text2), plural: true);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "pluralIndef":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(Find.ActiveLanguageWorker.Pluralize(text2), LanguageDatabase.activeLanguage.ResolveGender(Find.ActiveLanguageWorker.Pluralize(text2), text2), plural: true);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "definite":
+					resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(text2);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "indefinite":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(text2);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "pronoun":
+					resolvedStr = LanguageDatabase.activeLanguage.ResolveGender(text2).GetPronoun();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "possessive":
+					resolvedStr = LanguageDatabase.activeLanguage.ResolveGender(text2).GetPossessive();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "objective":
+					resolvedStr = LanguageDatabase.activeLanguage.ResolveGender(text2).GetObjective();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "gender":
+					resolvedStr = ResolveGenderSymbol(LanguageDatabase.activeLanguage.ResolveGender(text2), animal: false, symbolArgs, fullStringForReference);
+					return true;
+				default:
+					resolvedStr = "";
+					return false;
+				}
+			}
+			if (obj is int || obj is long)
+			{
+				int number = (int)((obj is int) ? ((int)obj) : ((long)obj));
+				if (subSymbol == null || subSymbol.Length != 0)
+				{
+					if (subSymbol == "ordinal")
 					{
-						Faction faction = obj as Faction;
-						switch (subSymbol)
-						{
-						case "":
-							resolvedStr = faction.Name.ApplyTag(faction);
-							EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-							return true;
-						case "name":
-							resolvedStr = faction.Name.ApplyTag(faction);
-							EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-							return true;
-						case "pawnSingular":
-							resolvedStr = faction.def.pawnSingular;
-							EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-							return true;
-						case "pawnSingularDef":
-							resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(faction.def.pawnSingular);
-							EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-							return true;
-						case "pawnSingularIndef":
-							resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(faction.def.pawnSingular);
-							EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-							return true;
-						case "pawnsPlural":
-							resolvedStr = faction.def.pawnsPlural;
-							EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-							return true;
-						case "pawnsPluralDef":
-							resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(faction.def.pawnsPlural, LanguageDatabase.activeLanguage.ResolveGender(faction.def.pawnsPlural, faction.def.pawnSingular), plural: true);
-							EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-							return true;
-						case "pawnsPluralIndef":
-							resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(faction.def.pawnsPlural, LanguageDatabase.activeLanguage.ResolveGender(faction.def.pawnsPlural, faction.def.pawnSingular), plural: true);
-							EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-							return true;
-						case "royalFavorLabel":
-							resolvedStr = faction.def.royalFavorLabel;
-							EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-							return true;
-						default:
-							resolvedStr = "";
-							return false;
-						case null:
-						{
-							Def def = obj as Def;
-							if (def != null)
-							{
-								PawnKindDef pawnKindDef = def as PawnKindDef;
-								if (pawnKindDef != null)
-								{
-									if (subSymbol == "labelPlural")
-									{
-										resolvedStr = pawnKindDef.GetLabelPlural();
-										EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-										return true;
-									}
-									if (subSymbol == "labelPluralDef")
-									{
-										resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(pawnKindDef.GetLabelPlural(), LanguageDatabase.activeLanguage.ResolveGender(pawnKindDef.GetLabelPlural(), pawnKindDef.label), plural: true);
-										EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-										return true;
-									}
-									if (subSymbol == "labelPluralIndef")
-									{
-										resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(pawnKindDef.GetLabelPlural(), LanguageDatabase.activeLanguage.ResolveGender(pawnKindDef.GetLabelPlural(), pawnKindDef.label), plural: true);
-										EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-										return true;
-									}
-								}
-								switch (subSymbol)
-								{
-								case "":
-									resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(def.label);
-									EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-									return true;
-								case "label":
-									resolvedStr = def.label;
-									EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-									return true;
-								case "labelPlural":
-									resolvedStr = Find.ActiveLanguageWorker.Pluralize(def.label);
-									EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-									return true;
-								case "labelPluralDef":
-									resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(Find.ActiveLanguageWorker.Pluralize(def.label), LanguageDatabase.activeLanguage.ResolveGender(Find.ActiveLanguageWorker.Pluralize(def.label), def.label), plural: true);
-									EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-									return true;
-								case "labelPluralIndef":
-									resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(Find.ActiveLanguageWorker.Pluralize(def.label), LanguageDatabase.activeLanguage.ResolveGender(Find.ActiveLanguageWorker.Pluralize(def.label), def.label), plural: true);
-									EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-									return true;
-								case "definite":
-									resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(def.label);
-									EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-									return true;
-								case "indefinite":
-									resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(def.label);
-									EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-									return true;
-								case "pronoun":
-									resolvedStr = LanguageDatabase.activeLanguage.ResolveGender(def.label).GetPronoun();
-									EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-									return true;
-								case "possessive":
-									resolvedStr = LanguageDatabase.activeLanguage.ResolveGender(def.label).GetPossessive();
-									EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-									return true;
-								case "objective":
-									resolvedStr = LanguageDatabase.activeLanguage.ResolveGender(def.label).GetObjective();
-									EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-									return true;
-								case "gender":
-									resolvedStr = ResolveGenderSymbol(LanguageDatabase.activeLanguage.ResolveGender(def.label), animal: false, symbolArgs, fullStringForReference);
-									return true;
-								default:
-									resolvedStr = "";
-									return false;
-								}
-							}
-							string text = obj as string;
-							switch (subSymbol)
-							{
-							case "":
-								resolvedStr = text;
-								EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-								return true;
-							case "plural":
-								resolvedStr = Find.ActiveLanguageWorker.Pluralize(text);
-								EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-								return true;
-							case "pluralDef":
-								resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(Find.ActiveLanguageWorker.Pluralize(text), LanguageDatabase.activeLanguage.ResolveGender(Find.ActiveLanguageWorker.Pluralize(text), text), plural: true);
-								EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-								return true;
-							case "pluralIndef":
-								resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(Find.ActiveLanguageWorker.Pluralize(text), LanguageDatabase.activeLanguage.ResolveGender(Find.ActiveLanguageWorker.Pluralize(text), text), plural: true);
-								EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-								return true;
-							case "definite":
-								resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(text);
-								EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-								return true;
-							case "indefinite":
-								resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(text);
-								EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-								return true;
-							case "pronoun":
-								resolvedStr = LanguageDatabase.activeLanguage.ResolveGender(text).GetPronoun();
-								EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-								return true;
-							case "possessive":
-								resolvedStr = LanguageDatabase.activeLanguage.ResolveGender(text).GetPossessive();
-								EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-								return true;
-							case "objective":
-								resolvedStr = LanguageDatabase.activeLanguage.ResolveGender(text).GetObjective();
-								EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-								return true;
-							case "gender":
-								resolvedStr = ResolveGenderSymbol(LanguageDatabase.activeLanguage.ResolveGender(text), animal: false, symbolArgs, fullStringForReference);
-								return true;
-							default:
-								resolvedStr = "";
-								return false;
-							case null:
-								if (obj is int || obj is long)
-								{
-									int number = (int)((obj is int) ? ((int)obj) : ((long)obj));
-									if (subSymbol == null || subSymbol.Length != 0)
-									{
-										if (subSymbol == "ordinal")
-										{
-											resolvedStr = Find.ActiveLanguageWorker.OrdinalNumber(number).ToString();
-											EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-											return true;
-										}
-										resolvedStr = "";
-										return false;
-									}
-									resolvedStr = number.ToString();
-									EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-									return true;
-								}
-								if (obj is TaggedString)
-								{
-									EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-									resolvedStr = ((TaggedString)obj).RawText;
-								}
-								if (subSymbol.NullOrEmpty())
-								{
-									EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-									if (obj == null)
-									{
-										resolvedStr = "";
-									}
-									else
-									{
-										resolvedStr = obj.ToString();
-									}
-									return true;
-								}
-								resolvedStr = "";
-								return false;
-							}
-						}
-						}
+						resolvedStr = Find.ActiveLanguageWorker.OrdinalNumber(number).ToString();
+						EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+						return true;
 					}
-					}
+					resolvedStr = "";
+					return false;
 				}
+				resolvedStr = number.ToString();
+				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+				return true;
+			}
+			if (obj is TaggedString)
+			{
+				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+				resolvedStr = ((TaggedString)obj).RawText;
+			}
+			if (subSymbol.NullOrEmpty())
+			{
+				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+				if (obj == null)
+				{
+					resolvedStr = "";
 				}
+				else
+				{
+					resolvedStr = obj.ToString();
+				}
+				return true;
 			}
-			}
+			resolvedStr = "";
+			return false;
 		}
 
 		private static void EnsureNoArgs(string subSymbol, string symbolArgs, string fullStringForReference)

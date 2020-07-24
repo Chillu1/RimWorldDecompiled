@@ -34,26 +34,25 @@ namespace RimWorld.QuestGen
 					enumerable = enumerable.Concat(Gen.YieldSingle(outSignalsFormat.GetValue(slate).Formatted(i.Named("INDEX")).ToString()));
 				}
 			}
-			if (!enumerable.EnumerableNullOrEmpty())
+			if (enumerable.EnumerableNullOrEmpty())
 			{
-				if (enumerable.Count() == 1)
-				{
-					QuestPart_Pass questPart_Pass = new QuestPart_Pass();
-					questPart_Pass.inSignal = QuestGen.slate.Get<string>("inSignal");
-					questPart_Pass.outSignal = QuestGenUtility.HardcodedSignalWithQuestID(enumerable.First());
-					QuestGen.quest.AddPart(questPart_Pass);
-				}
-				else
-				{
-					QuestPart_PassOutMany questPart_PassOutMany = new QuestPart_PassOutMany();
-					questPart_PassOutMany.inSignal = QuestGen.slate.Get<string>("inSignal");
-					foreach (string item in enumerable)
-					{
-						questPart_PassOutMany.outSignals.Add(QuestGenUtility.HardcodedSignalWithQuestID(item));
-					}
-					QuestGen.quest.AddPart(questPart_PassOutMany);
-				}
+				return;
 			}
+			if (enumerable.Count() == 1)
+			{
+				QuestPart_Pass questPart_Pass = new QuestPart_Pass();
+				questPart_Pass.inSignal = QuestGen.slate.Get<string>("inSignal");
+				questPart_Pass.outSignal = QuestGenUtility.HardcodedSignalWithQuestID(enumerable.First());
+				QuestGen.quest.AddPart(questPart_Pass);
+				return;
+			}
+			QuestPart_PassOutMany questPart_PassOutMany = new QuestPart_PassOutMany();
+			questPart_PassOutMany.inSignal = QuestGen.slate.Get<string>("inSignal");
+			foreach (string item in enumerable)
+			{
+				questPart_PassOutMany.outSignals.Add(QuestGenUtility.HardcodedSignalWithQuestID(item));
+			}
+			QuestGen.quest.AddPart(questPart_PassOutMany);
 		}
 	}
 }

@@ -40,7 +40,7 @@ namespace Verse
 			int defCount = DefDatabase<D>.DefCount;
 			if (defCount == 0)
 			{
-				throw new Exception("Constructed DefMap<" + typeof(D) + ", " + typeof(V) + "> without defs being initialized. Try constructing it in ResolveReferences instead of the constructor.");
+				throw new Exception(string.Concat("Constructed DefMap<", typeof(D), ", ", typeof(V), "> without defs being initialized. Try constructing it in ResolveReferences instead of the constructor."));
 			}
 			values = new List<V>(defCount);
 			for (int i = 0; i < defCount; i++)

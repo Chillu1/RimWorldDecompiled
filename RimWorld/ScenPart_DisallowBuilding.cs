@@ -41,21 +41,22 @@ namespace RimWorld
 
 		public override void DoEditInterface(Listing_ScenEdit listing)
 		{
-			if (Widgets.ButtonText(listing.GetScenPartRect(this, ScenPart.RowHeight), building.LabelCap))
+			if (!Widgets.ButtonText(listing.GetScenPartRect(this, ScenPart.RowHeight), building.LabelCap))
 			{
-				List<FloatMenuOption> list = new List<FloatMenuOption>();
-				foreach (ThingDef item in from t in PossibleBuildingDefs()
-					orderby t.label
-					select t)
-				{
-					ThingDef localTd = item;
-					list.Add(new FloatMenuOption(localTd.LabelCap, delegate
-					{
-						building = localTd;
-					}));
-				}
-				Find.WindowStack.Add(new FloatMenu(list));
+				return;
 			}
+			List<FloatMenuOption> list = new List<FloatMenuOption>();
+			foreach (ThingDef item in from t in PossibleBuildingDefs()
+				orderby t.label
+				select t)
+			{
+				ThingDef localTd = item;
+				list.Add(new FloatMenuOption(localTd.LabelCap, delegate
+				{
+					building = localTd;
+				}));
+			}
+			Find.WindowStack.Add(new FloatMenu(list));
 		}
 
 		public override bool TryMerge(ScenPart other)

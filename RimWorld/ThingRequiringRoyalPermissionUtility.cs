@@ -30,18 +30,8 @@ namespace RimWorld
 			return num < num2;
 		}
 
-		[Obsolete("Only need this overload to not break mod compatibility.")]
 		public static bool IsViolatingRulesOfAnyFaction(Def implantOrWeapon, Pawn pawn, int implantLevel = 0)
 		{
-			return IsViolatingRulesOfAnyFaction_NewTemp(implantOrWeapon, pawn, implantLevel);
-		}
-
-		public static bool IsViolatingRulesOfAnyFaction_NewTemp(Def implantOrWeapon, Pawn pawn, int implantLevel = 0, bool ignoreSilencer = false)
-		{
-			if (!ignoreSilencer && pawn.health.hediffSet.HasHediff(HediffDefOf.PsychicSilencer))
-			{
-				return false;
-			}
 			foreach (Faction allFaction in Find.FactionManager.AllFactions)
 			{
 				if (IsViolatingRulesOf(implantOrWeapon, pawn, allFaction, implantLevel))
@@ -52,6 +42,12 @@ namespace RimWorld
 			return false;
 		}
 
+		[Obsolete("Only need this overload to not break mod compatibility.")]
+		public static bool IsViolatingRulesOfAnyFaction_NewTemp(Def implantOrWeapon, Pawn pawn, int implantLevel = 0, bool ignoreSilencer = false)
+		{
+			return IsViolatingRulesOfAnyFaction(implantOrWeapon, pawn, implantLevel);
+		}
+
 		public static RoyalTitleDef GetMinTitleToUse(Def implantOrWeapon, Faction faction, int implantLevel = 0)
 		{
 			HediffDef implantDef;
@@ -59,28 +55,12 @@ namespace RimWorld
 			{
 				return faction.GetMinTitleForImplant(implantDef, implantLevel);
 			}
-			ThingDef thingDef;
-			if ((thingDef = (implantOrWeapon as ThingDef)) != null && thingDef.HasComp(typeof(CompBladelinkWeapon)))
-			{
-				return faction.def.minTitleForBladelinkWeapons;
-			}
 			return null;
 		}
 
+		[Obsolete("Will be removed in the future")]
 		public static TaggedString GetEquipWeaponConfirmationDialogText(Thing weapon, Pawn pawn)
 		{
-			if (pawn.health.hediffSet.HasHediff(HediffDefOf.PsychicSilencer))
-			{
-				return null;
-			}
-			foreach (Faction item in Find.FactionManager.AllFactionsListForReading)
-			{
-				if (pawn.Faction != null && !item.def.hidden && !item.HostileTo(Faction.OfPlayer) && IsViolatingRulesOf(weapon.def, pawn, item))
-				{
-					RoyalTitleDef minTitleToUse = GetMinTitleToUse(weapon.def, item);
-					return "RoyalWeaponIllegalUseWarning".Translate(pawn.Named("PAWN"), weapon.Named("WEAPON"), item.Named("FACTION"), minTitleToUse.GetLabelCapFor(pawn).Named("TITLE"));
-				}
-			}
 			return null;
 		}
 	}

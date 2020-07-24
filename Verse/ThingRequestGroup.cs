@@ -49,6 +49,8 @@ namespace Verse
 		ConditionCauser,
 		MusicalInstrument,
 		Throne,
-		FoodDispenser
+		FoodDispenser,
+		Projectile,
+		MeditationFocus
 	}
 }

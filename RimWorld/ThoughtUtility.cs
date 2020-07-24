@@ -55,29 +55,30 @@ namespace RimWorld
 
 		public static void GiveThoughtsForPawnOrganHarvested(Pawn victim)
 		{
-			if (victim.RaceProps.Humanlike)
+			if (!victim.RaceProps.Humanlike)
 			{
-				ThoughtDef thoughtDef = null;
-				if (victim.IsColonist)
+				return;
+			}
+			ThoughtDef thoughtDef = null;
+			if (victim.IsColonist)
+			{
+				thoughtDef = ThoughtDefOf.KnowColonistOrganHarvested;
+			}
+			else if (victim.HostFaction == Faction.OfPlayer)
+			{
+				thoughtDef = ThoughtDefOf.KnowGuestOrganHarvested;
+			}
+			foreach (Pawn allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners)
+			{
+				if (allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner.needs.mood != null)
 				{
-					thoughtDef = ThoughtDefOf.KnowColonistOrganHarvested;
-				}
-				else if (victim.HostFaction == Faction.OfPlayer)
-				{
-					thoughtDef = ThoughtDefOf.KnowGuestOrganHarvested;
-				}
-				foreach (Pawn allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners)
-				{
-					if (allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner.needs.mood != null)
+					if (allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner == victim)
 					{
-						if (allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner == victim)
-						{
-							allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.MyOrganHarvested);
-						}
-						else if (thoughtDef != null)
-						{
-							allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner.needs.mood.thoughts.memories.TryGainMemory(thoughtDef);
-						}
+						allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.MyOrganHarvested);
+					}
+					else if (thoughtDef != null)
+					{
+						allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner.needs.mood.thoughts.memories.TryGainMemory(thoughtDef);
 					}
 				}
 			}

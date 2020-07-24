@@ -11,6 +11,8 @@ namespace RimWorld
 
 		public SimpleCurveDrawerStyle curveDrawerStyle;
 
+		public int lastPsylinkAvailable = -999999;
+
 		public History()
 		{
 			autoRecorderGroups = new List<HistoryAutoRecorderGroup>();
@@ -49,11 +51,26 @@ namespace RimWorld
 		{
 			Scribe_Deep.Look(ref archive, "archive");
 			Scribe_Collections.Look(ref autoRecorderGroups, "autoRecorderGroups", LookMode.Deep);
+			Scribe_Values.Look(ref lastPsylinkAvailable, "lastPsylinkAvailable", -999999);
 			BackCompatibility.PostExposeData(this);
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				AddOrRemoveHistoryRecorderGroups();
+				if (lastPsylinkAvailable == -999999)
+				{
+					lastPsylinkAvailable = Find.TickManager.TicksGame;
+				}
 			}
+		}
+
+		public void Notify_PsylinkAvailable()
+		{
+			lastPsylinkAvailable = Find.TickManager.TicksGame;
+		}
+
+		public void FinalizeInit()
+		{
+			lastPsylinkAvailable = Find.TickManager.TicksGame;
 		}
 
 		private void AddOrRemoveHistoryRecorderGroups()

@@ -109,7 +109,7 @@ namespace RimWorld
 				{
 					return FirstThingTrader.GetInnerIfMinified();
 				}
-				Log.Error(GetType() + " lacks AnyThing.");
+				Log.Error(string.Concat(GetType(), " lacks AnyThing."));
 				return null;
 			}
 		}
@@ -301,7 +301,7 @@ namespace RimWorld
 				return text;
 			}
 			text += "\n\n";
-			text += StatDefOf.MarketValue.LabelCap + ": " + BaseMarketValue.ToStringMoney("F2");
+			text += StatDefOf.MarketValue.LabelCap + ": " + BaseMarketValue.ToStringMoney();
 			if (action == TradeAction.PlayerBuys)
 			{
 				text += "\n  x " + 1.4f.ToString("F2") + " (" + "Buying".Translate() + ")";
@@ -344,7 +344,7 @@ namespace RimWorld
 			}
 			text += "\n\n";
 			float priceFor = GetPriceFor(action);
-			text += "FinalPrice".Translate() + ": " + priceFor.ToStringMoney("F2");
+			text += "FinalPrice".Translate() + ": " + priceFor.ToStringMoney();
 			if ((action == TradeAction.PlayerBuys && priceFor <= 0.5f) || (action == TradeAction.PlayerBuys && priceFor <= 0.01f))
 			{
 				text += " (" + "minimum".Translate() + ")";
@@ -465,7 +465,7 @@ namespace RimWorld
 
 		public override string ToString()
 		{
-			return GetType() + "(" + ThingDef + ", countToTransfer=" + CountToTransfer + ")";
+			return string.Concat(GetType(), "(", ThingDef, ", countToTransfer=", CountToTransfer, ")");
 		}
 
 		public override int GetHashCode()

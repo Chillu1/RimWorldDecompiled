@@ -310,7 +310,7 @@ namespace Verse
 			{
 				if (def.HasThingIDNumber)
 				{
-					return def.defName + thingIDNumber.ToString();
+					return def.defName + thingIDNumber;
 				}
 				return def.defName;
 			}
@@ -474,7 +474,7 @@ namespace Verse
 			}
 			set
 			{
-				Log.Error("Cannot set instance color on non-ThingWithComps " + LabelCap + " at " + Position + ".");
+				Log.Error(string.Concat("Cannot set instance color on non-ThingWithComps ", LabelCap, " at ", Position, "."));
 			}
 		}
 
@@ -525,7 +525,7 @@ namespace Verse
 		{
 			if (Destroyed)
 			{
-				Log.Error("Spawning destroyed thing " + this + " at " + Position + ". Correcting.");
+				Log.Error(string.Concat("Spawning destroyed thing ", this, " at ", Position, ". Correcting."));
 				mapIndexOrState = -1;
 				if (HitPoints <= 0 && def.useHitPoints)
 				{
@@ -534,25 +534,25 @@ namespace Verse
 			}
 			if (Spawned)
 			{
-				Log.Error("Tried to spawn already-spawned thing " + this + " at " + Position);
+				Log.Error(string.Concat("Tried to spawn already-spawned thing ", this, " at ", Position));
 				return;
 			}
 			int num = Find.Maps.IndexOf(map);
 			if (num < 0)
 			{
-				Log.Error("Tried to spawn thing " + this + ", but the map provided does not exist.");
+				Log.Error(string.Concat("Tried to spawn thing ", this, ", but the map provided does not exist."));
 				return;
 			}
 			if (stackCount > def.stackLimit)
 			{
-				Log.Error("Spawned " + this + " with stackCount " + stackCount + " but stackLimit is " + def.stackLimit + ". Truncating.");
+				Log.Error(string.Concat("Spawned ", this, " with stackCount ", stackCount, " but stackLimit is ", def.stackLimit, ". Truncating."));
 				stackCount = def.stackLimit;
 			}
 			mapIndexOrState = (sbyte)num;
 			RegionListersUpdater.RegisterInRegions(this, map);
 			if (!map.spawnedThings.TryAdd(this, canMergeWithExistingStacks: false))
 			{
-				Log.Error("Couldn't add thing " + this + " to spawned things.");
+				Log.Error(string.Concat("Couldn't add thing ", this, " to spawned things."));
 			}
 			map.listerThings.Add(this);
 			map.thingGrid.Register(this);
@@ -792,7 +792,7 @@ namespace Verse
 		{
 			if (mapIndexOrState <= 0)
 			{
-				Log.Warning("Tried to decrement map index for " + this + ", but mapIndexOrState=" + mapIndexOrState);
+				Log.Warning(string.Concat("Tried to decrement map index for ", this, ", but mapIndexOrState=", mapIndexOrState));
 			}
 			else
 			{
@@ -841,7 +841,7 @@ namespace Verse
 				Scribe_Values.Look(ref hitPointsInt, "health", -1);
 			}
 			bool flag = def.tradeability != 0 && def.category == ThingCategory.Item;
-			if ((def.stackLimit > 1) | flag)
+			if (def.stackLimit > 1 || flag)
 			{
 				Scribe_Values.Look(ref stackCount, "stackCount", 0, forceSave: true);
 			}
@@ -884,12 +884,13 @@ namespace Verse
 
 		public void DirtyMapMesh(Map map)
 		{
-			if (def.drawerType != DrawerType.RealtimeOnly)
+			if (def.drawerType == DrawerType.RealtimeOnly)
 			{
-				foreach (IntVec3 item in this.OccupiedRect())
-				{
-					map.mapDrawer.MapMeshDirty(item, MapMeshFlag.Things);
-				}
+				return;
+			}
+			foreach (IntVec3 item in this.OccupiedRect())
+			{
+				map.mapDrawer.MapMeshDirty(item, MapMeshFlag.Things);
 			}
 		}
 
@@ -1079,7 +1080,7 @@ namespace Verse
 			{
 				if (count > stackCount)
 				{
-					Log.Error("Tried to split off " + count + " of " + this + " but there are only " + stackCount);
+					Log.Error(string.Concat("Tried to split off ", count, " of ", this, " but there are only ", stackCount));
 				}
 				if (Spawned)
 				{
@@ -1160,7 +1161,7 @@ namespace Verse
 		{
 			if (!def.CanHaveFaction)
 			{
-				Log.Error("Tried to SetFactionDirect on " + this + " which cannot have a faction.");
+				Log.Error(string.Concat("Tried to SetFactionDirect on ", this, " which cannot have a faction."));
 			}
 			else
 			{
@@ -1172,7 +1173,7 @@ namespace Verse
 		{
 			if (!def.CanHaveFaction)
 			{
-				Log.Error("Tried to SetFaction on " + this + " which cannot have a faction.");
+				Log.Error(string.Concat("Tried to SetFaction on ", this, " which cannot have a faction."));
 				return;
 			}
 			factionInt = newFaction;
@@ -1215,7 +1216,7 @@ namespace Verse
 		{
 			if (mapIndexOrState != -2)
 			{
-				Log.Warning("Tried to discard " + this + " whose state is " + mapIndexOrState + ".");
+				Log.Warning(string.Concat("Tried to discard ", this, " whose state is ", mapIndexOrState, "."));
 			}
 			else
 			{
@@ -1274,12 +1275,12 @@ namespace Verse
 		{
 			if (Destroyed)
 			{
-				Log.Error(ingester + " ingested destroyed thing " + this);
+				Log.Error(string.Concat(ingester, " ingested destroyed thing ", this));
 				return 0f;
 			}
 			if (!IngestibleNow)
 			{
-				Log.Error(ingester + " ingested IngestibleNow=false thing " + this);
+				Log.Error(string.Concat(ingester, " ingested IngestibleNow=false thing ", this));
 				return 0f;
 			}
 			ingester.mindState.lastIngestTick = Find.TickManager.TicksGame;
@@ -1314,7 +1315,7 @@ namespace Verse
 			{
 				if (stackCount == 0)
 				{
-					Log.Error(this + " stack count is 0.");
+					Log.Error(string.Concat(this, " stack count is 0."));
 				}
 				if (numTaken == stackCount)
 				{
@@ -1325,6 +1326,7 @@ namespace Verse
 					SplitOff(numTaken);
 				}
 			}
+			PrePostIngested(ingester);
 			if (def.ingestible.outcomeDoers != null)
 			{
 				for (int j = 0; j < def.ingestible.outcomeDoers.Count; j++)
@@ -1338,6 +1340,10 @@ namespace Verse
 			}
 			PostIngested(ingester);
 			return nutritionIngested;
+		}
+
+		protected virtual void PrePostIngested(Pawn ingester)
+		{
 		}
 
 		protected virtual void PostIngested(Pawn ingester)

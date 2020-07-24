@@ -24,14 +24,15 @@ namespace RimWorld
 					}
 				}
 			}
-			if (currentTitle != null && currentTitle.permits != null)
+			if (currentTitle == null || currentTitle.permits == null)
 			{
-				foreach (RoyalTitlePermitDef permit2 in currentTitle.permits)
+				return;
+			}
+			foreach (RoyalTitlePermitDef permit2 in currentTitle.permits)
+			{
+				if (newTitle == null || newTitle.permits == null || !newTitle.permits.Contains(permit2))
 				{
-					if (newTitle == null || newTitle.permits == null || !newTitle.permits.Contains(permit2))
-					{
-						lostPermits.Add(permit2);
-					}
+					lostPermits.Add(permit2);
 				}
 			}
 		}
@@ -62,15 +63,27 @@ namespace RimWorld
 					stringBuilder.AppendLine();
 				}
 			}
-			Pawn heir = pawn.royalty.GetHeir(faction);
-			TaggedString taggedString = (heir != null) ? "LetterRoyalTitleHeir".Translate(pawn.Named("PAWN"), heir.Named("HEIR")) : "LetterRoyalTitleNoHeir".Translate(pawn.Named("PAWN"));
-			stringBuilder.Append(taggedString);
-			if (heir != null && heir.Faction != Faction.OfPlayer)
+			if (newTitle != null)
 			{
-				stringBuilder.Append(" " + "LetterRoyalTitleHeirFactionWarning".Translate(heir.Named("PAWN"), faction.Named("FACTION")));
+				if (newTitle.canBeInherited)
+				{
+					Pawn heir = pawn.royalty.GetHeir(faction);
+					TaggedString taggedString = (heir != null) ? "LetterRoyalTitleHeir".Translate(pawn.Named("PAWN"), heir.Named("HEIR")) : "LetterRoyalTitleNoHeir".Translate(pawn.Named("PAWN"));
+					stringBuilder.Append(taggedString);
+					if (heir != null && heir.Faction != Faction.OfPlayer)
+					{
+						stringBuilder.Append(" " + "LetterRoyalTitleHeirFactionWarning".Translate(heir.Named("PAWN"), faction.Named("FACTION")));
+					}
+					stringBuilder.AppendLine(" " + "LetterRoyalTitleChangingHeir".Translate(faction.Named("FACTION")));
+				}
+				else
+				{
+					stringBuilder.Append("LetterRoyalTitleCantBeInherited".Translate(newTitle.Named("TITLE")).CapitalizeFirst());
+					stringBuilder.Append(" " + "LetterRoyalTitleNoHeir".Translate(pawn.Named("PAWN")));
+					stringBuilder.AppendLine();
+				}
+				stringBuilder.AppendLine();
 			}
-			stringBuilder.AppendLine(" " + "LetterRoyalTitleChangingHeir".Translate(faction.Named("FACTION")));
-			stringBuilder.AppendLine();
 			if (flag && list2.Count > 0)
 			{
 				stringBuilder.AppendLine("LetterRoyalTitleDisabledWorkTag".Translate(pawn.Named("PAWN"), (from t in list2
@@ -99,7 +112,7 @@ namespace RimWorld
 							return result;
 						}).ToArray()));
 					}
-					stringBuilder.AppendLine("- " + "ApparelRequirementAnyPowerArmor".Translate());
+					stringBuilder.AppendLine("- " + "ApparelRequirementAnyPrestigeArmor".Translate());
 					stringBuilder.AppendLine("- " + "ApparelRequirementAnyPsycasterApparel".Translate());
 					stringBuilder.AppendLine();
 				}
@@ -146,11 +159,6 @@ namespace RimWorld
 			}
 			if (newTitle != null)
 			{
-				if (newTitle.needFallPerDayAuthority > 0f && (currentTitle == null || currentTitle.needFallPerDayAuthority <= 0f))
-				{
-					stringBuilder.AppendLine("LetterRoyalTitleAuthorityNeed".Translate(pawn.Named("PAWN")).CapitalizeFirst());
-					stringBuilder.AppendLine();
-				}
 				if (newTitle.grantedAbilities.Contains(AbilityDefOf.Speech) && (currentTitle == null || !currentTitle.grantedAbilities.Contains(AbilityDefOf.Speech)))
 				{
 					stringBuilder.AppendLine("LetterRoyalTitleSpeechAbilityGained".Translate(pawn.Named("PAWN")).CapitalizeFirst());
@@ -175,27 +183,30 @@ namespace RimWorld
 					}
 					stringBuilder.AppendLine();
 				}
-				List<RoyalImplantRule> list4 = new List<RoyalImplantRule>();
-				foreach (RoyalImplantRule royalImplantRule in faction.def.royalImplantRules)
+				if (faction.def.royalImplantRules != null)
 				{
-					RoyalTitleDef minTitleForImplant = faction.GetMinTitleForImplant(royalImplantRule.implantHediff);
-					int num2 = faction.def.RoyalTitlesAwardableInSeniorityOrderForReading.IndexOf(minTitleForImplant);
-					if (num >= num2)
+					List<RoyalImplantRule> list4 = new List<RoyalImplantRule>();
+					foreach (RoyalImplantRule royalImplantRule in faction.def.royalImplantRules)
 					{
-						if (royalImplantRule.maxLevel == 0)
+						RoyalTitleDef minTitleForImplant = faction.GetMinTitleForImplant(royalImplantRule.implantHediff);
+						int num2 = faction.def.RoyalTitlesAwardableInSeniorityOrderForReading.IndexOf(minTitleForImplant);
+						if (num >= num2)
 						{
-							list4.Add(royalImplantRule);
-						}
-						else
-						{
-							list4.AddDistinct(faction.GetMaxAllowedImplantLevel(royalImplantRule.implantHediff, newTitle));
+							if (royalImplantRule.maxLevel == 0)
+							{
+								list4.Add(royalImplantRule);
+							}
+							else
+							{
+								list4.AddDistinct(faction.GetMaxAllowedImplantLevel(royalImplantRule.implantHediff, newTitle));
+							}
 						}
 					}
-				}
-				if (list4.Count > 0)
-				{
-					stringBuilder.AppendLine("LetterRoyalTitleAllowedImplants".Translate(pawn.Named("PAWN"), "\n" + list4.Select((RoyalImplantRule i) => (i.maxLevel == 0) ? $"{i.implantHediff.LabelCap} ({faction.GetMinTitleForImplant(i.implantHediff).GetLabelFor(pawn)})" : $"{i.implantHediff.LabelCap}({i.maxLevel}x) ({i.minTitle.GetLabelFor(pawn)})").ToLineList("- ")).CapitalizeFirst());
-					stringBuilder.AppendLine();
+					if (list4.Count > 0)
+					{
+						stringBuilder.AppendLine("LetterRoyalTitleAllowedImplants".Translate(pawn.Named("PAWN"), "\n" + list4.Select((RoyalImplantRule i) => (i.maxLevel == 0) ? $"{i.implantHediff.LabelCap} ({faction.GetMinTitleForImplant(i.implantHediff).GetLabelFor(pawn)})" : $"{i.implantHediff.LabelCap}({i.maxLevel}x) ({i.minTitle.GetLabelFor(pawn)})").ToLineList("- ")).CapitalizeFirst());
+						stringBuilder.AppendLine();
+					}
 				}
 				if (currentTitle != null && newTitle.seniority < currentTitle.seniority)
 				{
@@ -333,7 +344,29 @@ namespace RimWorld
 			return true;
 		}
 
-		private static IEnumerable<Trait> GetConceitedTraits(Pawn p)
+		public static bool IsPawnConceited(Pawn p)
+		{
+			TraitSet traitSet = p.story?.traits;
+			if (traitSet != null && traitSet.HasTrait(TraitDefOf.Ascetic))
+			{
+				return false;
+			}
+			if (p.Faction.IsPlayer && !p.IsQuestLodger())
+			{
+				if (traitSet != null)
+				{
+					if (!traitSet.HasTrait(TraitDefOf.Abrasive) && !traitSet.HasTrait(TraitDefOf.Greedy))
+					{
+						return traitSet.HasTrait(TraitDefOf.Jealous);
+					}
+					return true;
+				}
+				return false;
+			}
+			return true;
+		}
+
+		public static IEnumerable<Trait> GetConceitedTraits(Pawn p)
 		{
 			TraitSet traits = p.story?.traits;
 			if (traits == null)
@@ -348,6 +381,32 @@ namespace RimWorld
 					yield return trait;
 				}
 			}
+		}
+
+		public static IEnumerable<Trait> GetTraitsAffectingPsylinkNegatively(Pawn p)
+		{
+			if (p.story == null || p.story.traits == null || p.story.traits.allTraits.NullOrEmpty())
+			{
+				yield break;
+			}
+			foreach (Trait allTrait in p.story.traits.allTraits)
+			{
+				TraitDegreeData traitDegreeData = allTrait.def.DataAtDegree(allTrait.Degree);
+				if ((traitDegreeData.statFactors != null && traitDegreeData.statFactors.Any((StatModifier f) => f.stat == StatDefOf.PsychicSensitivity && f.value < 1f)) || (traitDegreeData.statOffsets != null && traitDegreeData.statOffsets.Any((StatModifier f) => f.stat == StatDefOf.PsychicSensitivity && f.value < 0f)))
+				{
+					yield return allTrait;
+				}
+			}
+		}
+
+		public static TaggedString GetPsylinkAffectedByTraitsNegativelyWarning(Pawn p)
+		{
+			if (p.HasPsylink || !GetTraitsAffectingPsylinkNegatively(p).Any())
+			{
+				return null;
+			}
+			return "RoyalWithTraitAffectingPsylinkNegatively".Translate(p.Named("PAWN"), p.Faction.Named("FACTION"), (from t in GetTraitsAffectingPsylinkNegatively(p)
+				select t.Label).ToCommaList(useAnd: true));
 		}
 
 		public static bool ShouldBecomeConceitedOnNewTitle(Pawn p)

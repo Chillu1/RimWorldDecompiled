@@ -262,14 +262,15 @@ namespace RimWorld
 				}
 				foreach (PawnKindDef allDef in DefDatabase<PawnKindDef>.AllDefs)
 				{
-					if (allDef.RaceProps.wildBiomes != null)
+					if (allDef.RaceProps.wildBiomes == null)
 					{
-						for (int j = 0; j < allDef.RaceProps.wildBiomes.Count; j++)
+						continue;
+					}
+					for (int j = 0; j < allDef.RaceProps.wildBiomes.Count; j++)
+					{
+						if (allDef.RaceProps.wildBiomes[j].biome == this)
 						{
-							if (allDef.RaceProps.wildBiomes[j].biome == this)
-							{
-								cachedAnimalCommonalities.Add(allDef, allDef.RaceProps.wildBiomes[j].commonality);
-							}
+							cachedAnimalCommonalities.Add(allDef, allDef.RaceProps.wildBiomes[j].commonality);
 						}
 					}
 				}
@@ -307,14 +308,15 @@ namespace RimWorld
 				}
 				foreach (IncidentDef allDef in DefDatabase<IncidentDef>.AllDefs)
 				{
-					if (allDef.diseaseBiomeRecords != null)
+					if (allDef.diseaseBiomeRecords == null)
 					{
-						for (int j = 0; j < allDef.diseaseBiomeRecords.Count; j++)
+						continue;
+					}
+					for (int j = 0; j < allDef.diseaseBiomeRecords.Count; j++)
+					{
+						if (allDef.diseaseBiomeRecords[j].biome == this)
 						{
-							if (allDef.diseaseBiomeRecords[j].biome == this)
-							{
-								cachedDiseaseCommonalities.Add(allDef.diseaseBiomeRecords[j].diseaseInc, allDef.diseaseBiomeRecords[j].commonality);
-							}
+							cachedDiseaseCommonalities.Add(allDef.diseaseBiomeRecords[j].diseaseInc, allDef.diseaseBiomeRecords[j].commonality);
 						}
 					}
 				}
@@ -338,28 +340,33 @@ namespace RimWorld
 
 		private void CachePlantCommonalitiesIfShould()
 		{
-			if (cachedPlantCommonalities == null)
+			if (cachedPlantCommonalities != null)
 			{
-				cachedPlantCommonalities = new Dictionary<ThingDef, float>();
-				for (int i = 0; i < wildPlants.Count; i++)
+				return;
+			}
+			cachedPlantCommonalities = new Dictionary<ThingDef, float>();
+			for (int i = 0; i < wildPlants.Count; i++)
+			{
+				if (wildPlants[i].plant != null)
 				{
 					cachedPlantCommonalities.Add(wildPlants[i].plant, wildPlants[i].commonality);
 				}
-				foreach (ThingDef allDef in DefDatabase<ThingDef>.AllDefs)
+			}
+			foreach (ThingDef allDef in DefDatabase<ThingDef>.AllDefs)
+			{
+				if (allDef.plant == null || allDef.plant.wildBiomes == null)
 				{
-					if (allDef.plant != null && allDef.plant.wildBiomes != null)
+					continue;
+				}
+				for (int j = 0; j < allDef.plant.wildBiomes.Count; j++)
+				{
+					if (allDef.plant.wildBiomes[j].biome == this)
 					{
-						for (int j = 0; j < allDef.plant.wildBiomes.Count; j++)
-						{
-							if (allDef.plant.wildBiomes[j].biome == this)
-							{
-								cachedPlantCommonalities.Add(allDef, allDef.plant.wildBiomes[j].commonality);
-							}
-						}
+						cachedPlantCommonalities.Add(allDef, allDef.plant.wildBiomes[j].commonality);
 					}
 				}
-				cachedPlantCommonalitiesSum = cachedPlantCommonalities.Sum((KeyValuePair<ThingDef, float> x) => x.Value);
 			}
+			cachedPlantCommonalitiesSum = cachedPlantCommonalities.Sum((KeyValuePair<ThingDef, float> x) => x.Value);
 		}
 
 		public override IEnumerable<string> ConfigErrors()
@@ -368,14 +375,15 @@ namespace RimWorld
 			{
 				yield return item;
 			}
-			if (Prefs.DevMode)
+			if (!Prefs.DevMode)
 			{
-				foreach (BiomeAnimalRecord wa in wildAnimals)
+				yield break;
+			}
+			foreach (BiomeAnimalRecord wa in wildAnimals)
+			{
+				if (wildAnimals.Count((BiomeAnimalRecord a) => a.animal == wa.animal) > 1)
 				{
-					if (wildAnimals.Count((BiomeAnimalRecord a) => a.animal == wa.animal) > 1)
-					{
-						yield return "Duplicate animal record: " + wa.animal.defName;
-					}
+					yield return "Duplicate animal record: " + wa.animal.defName;
 				}
 			}
 		}

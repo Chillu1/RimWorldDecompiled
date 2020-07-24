@@ -43,6 +43,8 @@ namespace RimWorld
 
 		public List<string> showIfModsLoaded;
 
+		public List<HediffDef> showIfHediffsPresent;
+
 		public bool neverDisabled;
 
 		public int displayPriorityInCategory;
@@ -55,6 +57,9 @@ namespace RimWorld
 
 		[MustTranslate]
 		public string formatString;
+
+		[MustTranslate]
+		public string formatStringUnfinalized;
 
 		public float defaultBaseValue = 1f;
 
@@ -161,14 +166,15 @@ namespace RimWorld
 					}
 				}
 			}
-			if (parts != null)
+			if (parts == null)
 			{
-				for (int i = 0; i < parts.Count; i++)
+				yield break;
+			}
+			for (int i = 0; i < parts.Count; i++)
+			{
+				foreach (string item2 in parts[i].ConfigErrors())
 				{
-					foreach (string item2 in parts[i].ConfigErrors())
-					{
-						yield return defName + " has error in StatPart " + parts[i].ToString() + ": " + item2;
-					}
+					yield return defName + " has error in StatPart " + parts[i].ToString() + ": " + item2;
 				}
 			}
 		}
@@ -196,6 +202,21 @@ namespace RimWorld
 		public T GetStatPart<T>() where T : StatPart
 		{
 			return parts.OfType<T>().FirstOrDefault();
+		}
+
+		public bool CanShowWithLoadedMods()
+		{
+			if (!showIfModsLoaded.NullOrEmpty())
+			{
+				for (int i = 0; i < showIfModsLoaded.Count; i++)
+				{
+					if (!ModsConfig.IsActive(showIfModsLoaded[i]))
+					{
+						return false;
+					}
+				}
+			}
+			return true;
 		}
 	}
 }

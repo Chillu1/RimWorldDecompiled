@@ -53,21 +53,29 @@ namespace Verse
 
 		public static readonly Color ColonistCountColor = GenColor.FromHex("dcffaf");
 
-		private static readonly Regex CurrencyRegex = new Regex("[^>]\\$\\d+\\.?\\d*[^<)]");
+		private static readonly Regex CurrencyRegex = new Regex("\\$\\d+\\.?\\d*");
 
-		private static readonly Regex TagRegex = new Regex("<[^>]*>");
+		private static readonly Regex TagRegex = new Regex("\\([\\*\\/][^\\)]*\\)");
+
+		private static readonly Regex XMLRegex = new Regex("<[^>]*>");
 
 		private const string Digits = "\\d+\\.?\\d*";
 
 		private const string Replacement = "$&";
 
+		private const string TagStartString = "(*";
+
+		private const char TagStartChar = '(';
+
+		private const char TagEndChar = ')';
+
 		public static void ResetStaticData()
 		{
-			DaysRegex = new Regex(string.Format("[^>]" + "PeriodDays".Translate() + "[^<]", "\\d+\\.?\\d*"));
-			HoursRegex = new Regex(string.Format("[^>]" + "PeriodHours".Translate() + "[^<]", "\\d+\\.?\\d*"));
-			SecondsRegex = new Regex(string.Format("[^>]" + "PeriodSeconds".Translate() + "[^<]", "\\d+\\.?\\d*"));
+			DaysRegex = new Regex(string.Format("PeriodDays".Translate(), "\\d+\\.?\\d*"));
+			HoursRegex = new Regex(string.Format("PeriodHours".Translate(), "\\d+\\.?\\d*"));
+			SecondsRegex = new Regex(string.Format("PeriodSeconds".Translate(), "\\d+\\.?\\d*"));
 			string str = "(" + FactionDefOf.PlayerColony.pawnSingular + "|" + FactionDefOf.PlayerColony.pawnsPlural + ")";
-			ColonistCountRegex = new Regex("[^>]\\d+\\.?\\d* " + str + "[^<]");
+			ColonistCountRegex = new Regex("\\d+\\.?\\d* " + str);
 		}
 
 		public static void ClearCache()
@@ -79,9 +87,9 @@ namespace Verse
 		{
 			if (arg == null)
 			{
-				return string.Format("<{0}>{1}</{0}>", tagType.ToString(), s);
+				return string.Format("(*{0}){1}(/{0})", tagType.ToString(), s);
 			}
-			return string.Format("<{0}={1}>{2}</{0}>", tagType.ToString(), arg, s);
+			return string.Format("(*{0}={1}){2}(/{0})", tagType.ToString(), arg, s);
 		}
 
 		public static TaggedString ApplyTag(this string s, Faction faction)
@@ -95,10 +103,11 @@ namespace Verse
 
 		public static string StripTags(this string s)
 		{
-			if (s.NullOrEmpty() || s.IndexOf('<') < 0)
+			if (s.NullOrEmpty() || (s.IndexOf("(*") < 0 && s.IndexOf('<') < 0))
 			{
 				return s;
 			}
+			s = XMLRegex.Replace(s, string.Empty);
 			return TagRegex.Replace(s, string.Empty);
 		}
 
@@ -123,7 +132,7 @@ namespace Verse
 				return cache[rawText];
 			}
 			resultBuffer.Length = 0;
-			if (rawText.IndexOf('<') < 0)
+			if (rawText.IndexOf("(*") < 0)
 			{
 				resultBuffer.Append(rawText);
 			}
@@ -132,17 +141,17 @@ namespace Verse
 				for (int i = 0; i < rawText.Length; i++)
 				{
 					char c = rawText[i];
-					if (c == '<' && rawText.IndexOf('>', i) > i)
+					if (c == '(' && i < rawText.Length - 1 && rawText[i + 1] == '*' && rawText.IndexOf(')', i) > i + 1)
 					{
 						bool flag = false;
 						int num = i;
 						tagBuffer.Length = 0;
 						argBuffer.Length = 0;
 						capStage = CaptureStage.Tag;
-						for (i++; i < rawText.Length; i++)
+						for (i += 2; i < rawText.Length; i++)
 						{
 							char c2 = rawText[i];
-							if (c2 == '>')
+							if (c2 == ')')
 							{
 								capStage = CaptureStage.Result;
 								if (flag)
@@ -199,10 +208,6 @@ namespace Verse
 		private static string SwapTagWithColor(this string str, string tag, string arg)
 		{
 			TagType tagType = ParseEnum<TagType>(tag.CapitalizeFirst());
-			if (tagType == TagType.Color)
-			{
-				return str;
-			}
 			string text = str.StripTags();
 			switch (tagType)
 			{
@@ -244,8 +249,6 @@ namespace Verse
 				return text.Colorize(DateTimeColor);
 			case TagType.ColonistCount:
 				return text.Colorize(ColonistCountColor);
-			case TagType.Color:
-				return str;
 			default:
 				Log.Error("Invalid tag '" + tag + "'");
 				return text;

@@ -38,5 +38,14 @@ namespace RimWorld
 		{
 			return target.Thing.def.plant.IsTree;
 		}
+
+		public override void DesignateThing(Thing t)
+		{
+			if (t.def == ThingDefOf.Plant_TreeAnima)
+			{
+				Messages.Message("MessageWarningCutAnimaTree".Translate(), t, MessageTypeDefOf.CautionInput, historical: false);
+			}
+			base.DesignateThing(t);
+		}
 	}
 }

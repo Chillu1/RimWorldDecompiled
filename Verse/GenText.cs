@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -424,9 +425,9 @@ namespace Verse
 			int num = str.FirstLetterBetweenTags();
 			if (num == 0)
 			{
-				return char.ToUpper(str[num]).ToString() + str.Substring(num + 1);
+				return char.ToUpper(str[num]) + str.Substring(num + 1);
 			}
-			return str.Substring(0, num) + char.ToUpper(str[num]).ToString() + str.Substring(num + 1);
+			return str.Substring(0, num) + char.ToUpper(str[num]) + str.Substring(num + 1);
 		}
 
 		public static string CapitalizeFirst(this string str, Def possibleDef)
@@ -455,9 +456,9 @@ namespace Verse
 			int num = str.FirstLetterBetweenTags();
 			if (num == 0)
 			{
-				return char.ToLower(str[num]).ToString() + str.Substring(num + 1);
+				return char.ToLower(str[num]) + str.Substring(num + 1);
 			}
-			return str.Substring(0, num) + char.ToLower(str[num]).ToString() + str.Substring(num + 1);
+			return str.Substring(0, num) + char.ToLower(str[num]) + str.Substring(num + 1);
 		}
 
 		public static string ToNewsCase(string str)
@@ -908,6 +909,9 @@ namespace Verse
 			case ToStringStyle.WorkAmount:
 				text = f.ToStringWorkAmount();
 				break;
+			case ToStringStyle.Money:
+				text = f.ToStringMoney();
+				break;
 			default:
 				Log.Error("Unknown ToStringStyle " + style);
 				text = f.ToString();
@@ -955,7 +959,7 @@ namespace Verse
 		{
 			if (format == null)
 			{
-				format = ((!(f > 100f)) ? "F2" : "F0");
+				format = ((!(f >= 10f) && f != 0f) ? "F2" : "F0");
 			}
 			return "MoneyFormat".Translate(f.ToString(format));
 		}
@@ -1117,7 +1121,7 @@ namespace Verse
 
 		public static string ToStringBytes(this uint b, string format = "F2")
 		{
-			return ((float)(double)b / 8f / 1024f).ToString(format) + "kb";
+			return ((float)b / 8f / 1024f).ToString(format) + "kb";
 		}
 
 		public static string ToStringBytes(this long b, string format = "F2")
@@ -1127,7 +1131,7 @@ namespace Verse
 
 		public static string ToStringBytes(this ulong b, string format = "F2")
 		{
-			return ((float)(double)b / 8f / 1024f).ToString(format) + "kb";
+			return ((float)b / 8f / 1024f).ToString(format) + "kb";
 		}
 
 		public static string ToStringReadable(this KeyCode k)
@@ -1371,6 +1375,35 @@ namespace Verse
 				return eventTypesCached[(int)eventType];
 			}
 			return "Unknown";
+		}
+
+		public static string FieldsToString<T>(T obj)
+		{
+			if (obj == null)
+			{
+				return "";
+			}
+			StringBuilder stringBuilder = new StringBuilder();
+			FieldInfo[] fields = typeof(T).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+			foreach (FieldInfo fieldInfo in fields)
+			{
+				if (stringBuilder.Length != 0)
+				{
+					stringBuilder.Append(", ");
+				}
+				stringBuilder.Append(fieldInfo.Name);
+				stringBuilder.Append("=");
+				object value = fieldInfo.GetValue(obj);
+				if (value == null)
+				{
+					stringBuilder.Append("null");
+				}
+				else
+				{
+					stringBuilder.Append(value.ToString());
+				}
+			}
+			return stringBuilder.ToString();
 		}
 	}
 }

@@ -7,12 +7,12 @@ namespace RimWorld
 	{
 		public override string PostProcessLabel(Pawn p, string label)
 		{
-			return base.PostProcessLabel(p, label).Formatted(p.gender.Opposite().GetLabel().ToLower(), p.Named("PAWN"));
+			return label.Formatted(p.gender.Opposite().GetLabel().ToLower(), p.Named("PAWN"));
 		}
 
 		public override string PostProcessDescription(Pawn p, string description)
 		{
-			return base.PostProcessDescription(p, description).Formatted(p.gender.Opposite().GetLabel().ToLower(), p.gender.GetLabel(), p.Named("PAWN"));
+			return description.Formatted(p.gender.Opposite().GetLabel().ToLower(), p.gender.GetLabel(), p.Named("PAWN"));
 		}
 
 		protected override ThoughtState CurrentStateInternal(Pawn p)

@@ -61,7 +61,7 @@ namespace Verse
 
 		public string ToGameStringFromPOV(Thing pov, bool forceLog = false)
 		{
-			if ((cachedString == null || pov == null != (cachedStringPov == null) || (cachedStringPov != null && pov != cachedStringPov.Target) || DebugViewSettings.logGrammarResolution) | forceLog)
+			if (cachedString == null || pov == null != (cachedStringPov == null) || (cachedStringPov != null && pov != cachedStringPov.Target) || DebugViewSettings.logGrammarResolution || forceLog)
 			{
 				Rand.PushState();
 				try

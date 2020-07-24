@@ -238,7 +238,7 @@ namespace Verse
 							for (int i = 0; i < potentialTargetsFor.Count; i++)
 							{
 								Thing thing = (Thing)potentialTargetsFor[i];
-								stringBuilder.AppendLine(thing.LabelShort + ", " + thing.Faction + (potentialTargetsFor[i].ThreatDisabled(null) ? " (threat disabled)" : ""));
+								stringBuilder.AppendLine(string.Concat(thing.LabelShort, ", ", thing.Faction, potentialTargetsFor[i].ThreatDisabled(null) ? " (threat disabled)" : ""));
 							}
 						}
 					}
@@ -256,7 +256,7 @@ namespace Verse
 					if (DebugViewSettings.writeCanReachColony)
 					{
 						stringBuilder.AppendLine("---");
-						stringBuilder.AppendLine("CanReachColony: " + Find.CurrentMap.reachability.CanReachColony(UI.MouseCell()).ToString());
+						stringBuilder.AppendLine("CanReachColony: " + Find.CurrentMap.reachability.CanReachColony(UI.MouseCell()));
 					}
 					if (DebugViewSettings.writeMentalStateCalcs)
 					{
@@ -310,12 +310,10 @@ namespace Verse
 								if (!fullMode)
 								{
 									stringBuilder.AppendLine(item5.LabelCap + " - " + item5.ToString());
+									continue;
 								}
-								else
-								{
-									stringBuilder.AppendLine(Scribe.saver.DebugOutputFor(item5));
-									stringBuilder.AppendLine();
-								}
+								stringBuilder.AppendLine(Scribe.saver.DebugOutputFor(item5));
+								stringBuilder.AppendLine();
 							}
 						}
 					}

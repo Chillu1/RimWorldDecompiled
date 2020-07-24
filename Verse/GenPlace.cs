@@ -30,7 +30,7 @@ namespace Verse
 		{
 			if (map == null)
 			{
-				Log.Error("Tried to place thing " + thing + " in a null map.");
+				Log.Error(string.Concat("Tried to place thing ", thing, " in a null map."));
 				lastResultingThing = null;
 				return false;
 			}
@@ -59,7 +59,7 @@ namespace Verse
 					}
 				}
 				while (thing.stackCount != num);
-				Log.Error("Failed to place " + thing + " at " + center + " in mode " + mode + ".");
+				Log.Error(string.Concat("Failed to place ", thing, " at ", center, " in mode ", mode, "."));
 				lastResultingThing = null;
 				return false;
 			}
@@ -203,7 +203,7 @@ namespace Verse
 				Pawn pawn = thing4 as Pawn;
 				if (pawn != null)
 				{
-					if (pawn.Downed | flag)
+					if (pawn.Downed || flag)
 					{
 						return PlaceSpotQuality.Bad;
 					}

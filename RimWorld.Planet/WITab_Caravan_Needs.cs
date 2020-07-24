@@ -61,24 +61,25 @@ namespace RimWorld.Planet
 			EnsureSpecificNeedsTabForPawnValid();
 			base.ExtraOnGUI();
 			Pawn localSpecificNeedsTabForPawn = specificNeedsTabForPawn;
-			if (localSpecificNeedsTabForPawn != null)
+			if (localSpecificNeedsTabForPawn == null)
 			{
-				Rect tabRect = base.TabRect;
-				float specificNeedsTabWidth = SpecificNeedsTabWidth;
-				Rect rect = new Rect(tabRect.xMax - 1f, tabRect.yMin, specificNeedsTabWidth, tabRect.height);
-				Find.WindowStack.ImmediateWindow(1439870015, rect, WindowLayer.GameUI, delegate
-				{
-					if (!localSpecificNeedsTabForPawn.DestroyedOrNull())
-					{
-						NeedsCardUtility.DoNeedsMoodAndThoughts(rect.AtZero(), localSpecificNeedsTabForPawn, ref thoughtScrollPosition);
-						if (Widgets.CloseButtonFor(rect.AtZero()))
-						{
-							specificNeedsTabForPawn = null;
-							SoundDefOf.TabClose.PlayOneShotOnCamera();
-						}
-					}
-				});
+				return;
 			}
+			Rect tabRect = base.TabRect;
+			float specificNeedsTabWidth = SpecificNeedsTabWidth;
+			Rect rect = new Rect(tabRect.xMax - 1f, tabRect.yMin, specificNeedsTabWidth, tabRect.height);
+			Find.WindowStack.ImmediateWindow(1439870015, rect, WindowLayer.GameUI, delegate
+			{
+				if (!localSpecificNeedsTabForPawn.DestroyedOrNull())
+				{
+					NeedsCardUtility.DoNeedsMoodAndThoughts(rect.AtZero(), localSpecificNeedsTabForPawn, ref thoughtScrollPosition);
+					if (Widgets.CloseButtonFor(rect.AtZero()))
+					{
+						specificNeedsTabForPawn = null;
+						SoundDefOf.TabClose.PlayOneShotOnCamera();
+					}
+				}
+			});
 		}
 
 		public override void Notify_ClearingAllMapsMemory()

@@ -160,14 +160,15 @@ namespace RimWorld.Planet
 						currentGroupMembers.Add(currentGroup[l]);
 					}
 				}
-				if (currentGroupMembers.Count >= minOverallSize)
+				if (currentGroupMembers.Count < minOverallSize)
 				{
-					if (currentGroup.Any((int x) => worldGrid[x].feature == null))
-					{
-						currentGroup.RemoveAll((int x) => worldGrid[x].feature != null);
-					}
-					AddFeature(currentGroupMembers, currentGroup);
+					continue;
 				}
+				if (currentGroup.Any((int x) => worldGrid[x].feature == null))
+				{
+					currentGroup.RemoveAll((int x) => worldGrid[x].feature != null);
+				}
+				AddFeature(currentGroupMembers, currentGroup);
 			}
 		}
 	}

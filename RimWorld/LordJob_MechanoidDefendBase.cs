@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Verse;
 using Verse.AI.Group;
+using Verse.Sound;
 
 namespace RimWorld
 {
@@ -62,8 +63,13 @@ namespace RimWorld
 				thingsToNotifyOnDefeat[i].Notify_LordDestroyed();
 			}
 			mechClusterDefeated = true;
+			foreach (Pawn item in base.Map.mapPawns.FreeColonistsSpawned)
+			{
+				item.needs?.mood?.thoughts.memories.TryGainMemory(ThoughtDefOf.DefeatedMechCluster);
+			}
 			QuestUtility.SendQuestTargetSignals(lord.questTags, "AllEnemiesDefeated");
 			Messages.Message("MessageMechClusterDefeated".Translate(), new LookTargets(defSpot, base.Map), MessageTypeDefOf.PositiveEvent);
+			SoundDefOf.MechClusterDefeated.PlayOneShotOnCamera(base.Map);
 		}
 
 		public void AddThingToNotifyOnDefeat(Thing t)

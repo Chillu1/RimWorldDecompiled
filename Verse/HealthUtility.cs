@@ -125,7 +125,7 @@ namespace Verse
 			{
 				return "SeriouslyImpaired".Translate();
 			}
-			if ((part.depth == BodyPartDepth.Inside) | fresh)
+			if (part.depth == BodyPartDepth.Inside || fresh)
 			{
 				if (solid)
 				{
@@ -293,7 +293,7 @@ namespace Verse
 			if (p.Dead)
 			{
 				StringBuilder stringBuilder = new StringBuilder();
-				stringBuilder.AppendLine(p + " died during GiveInjuriesToForceDowned");
+				stringBuilder.AppendLine(string.Concat(p, " died during GiveInjuriesToForceDowned"));
 				for (int i = 0; i < p.health.hediffSet.hediffs.Count; i++)
 				{
 					stringBuilder.AppendLine("   -" + p.health.hediffSet.hediffs[i].ToString());
@@ -318,7 +318,7 @@ namespace Verse
 			}
 			if (!p.Dead)
 			{
-				Log.Error(p + " not killed during GiveInjuriesToKill");
+				Log.Error(string.Concat(p, " not killed during GiveInjuriesToKill"));
 			}
 		}
 
@@ -436,6 +436,33 @@ namespace Verse
 			}
 			float num = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.BloodLoss)?.Severity ?? 0f;
 			return (int)((1f - num) / bleedRateTotal * 60000f);
+		}
+
+		public static void CureHediff(Hediff hediff)
+		{
+			Pawn pawn = hediff.pawn;
+			pawn.health.RemoveHediff(hediff);
+			if (!hediff.def.cureAllAtOnceIfCuredByItem)
+			{
+				return;
+			}
+			int num = 0;
+			while (true)
+			{
+				num++;
+				if (num > 10000)
+				{
+					break;
+				}
+				Hediff firstHediffOfDef = pawn.health.hediffSet.GetFirstHediffOfDef(hediff.def);
+				if (firstHediffOfDef != null)
+				{
+					pawn.health.RemoveHediff(firstHediffOfDef);
+					continue;
+				}
+				return;
+			}
+			Log.Error("Too many iterations.");
 		}
 	}
 }

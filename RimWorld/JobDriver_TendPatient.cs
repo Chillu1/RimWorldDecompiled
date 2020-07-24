@@ -48,33 +48,34 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
+			JobDriver_TendPatient jobDriver_TendPatient = this;
 			this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
 			this.FailOn(delegate
 			{
-				if (!WorkGiver_Tend.GoodLayingStatusForTend(Deliveree, pawn))
+				if (!WorkGiver_Tend.GoodLayingStatusForTend(jobDriver_TendPatient.Deliveree, jobDriver_TendPatient.pawn))
 				{
 					return true;
 				}
-				if (MedicineUsed != null && pawn.Faction == Faction.OfPlayer)
+				if (jobDriver_TendPatient.MedicineUsed != null && jobDriver_TendPatient.pawn.Faction == Faction.OfPlayer)
 				{
-					if (Deliveree.playerSettings == null)
+					if (jobDriver_TendPatient.Deliveree.playerSettings == null)
 					{
 						return true;
 					}
-					if (!Deliveree.playerSettings.medCare.AllowsMedicine(MedicineUsed.def))
+					if (!jobDriver_TendPatient.Deliveree.playerSettings.medCare.AllowsMedicine(jobDriver_TendPatient.MedicineUsed.def))
 					{
 						return true;
 					}
 				}
-				return (pawn == Deliveree && pawn.Faction == Faction.OfPlayer && !pawn.playerSettings.selfTend) ? true : false;
+				return (jobDriver_TendPatient.pawn == jobDriver_TendPatient.Deliveree && jobDriver_TendPatient.pawn.Faction == Faction.OfPlayer && !jobDriver_TendPatient.pawn.playerSettings.selfTend) ? true : false;
 			});
 			AddEndCondition(delegate
 			{
-				if (pawn.Faction == Faction.OfPlayer && HealthAIUtility.ShouldBeTendedNowByPlayer(Deliveree))
+				if (jobDriver_TendPatient.pawn.Faction == Faction.OfPlayer && HealthAIUtility.ShouldBeTendedNowByPlayer(jobDriver_TendPatient.Deliveree))
 				{
 					return JobCondition.Ongoing;
 				}
-				return (pawn.Faction != Faction.OfPlayer && Deliveree.health.HasHediffsNeedingTend()) ? JobCondition.Ongoing : JobCondition.Succeeded;
+				return (jobDriver_TendPatient.pawn.Faction != Faction.OfPlayer && jobDriver_TendPatient.Deliveree.health.HasHediffsNeedingTend()) ? JobCondition.Ongoing : JobCondition.Succeeded;
 			});
 			this.FailOnAggroMentalState(TargetIndex.A);
 			Toil reserveMedicine = null;
@@ -96,9 +97,9 @@ namespace RimWorld
 			{
 				toil.tickAction = delegate
 				{
-					if (pawn.IsHashIntervalTick(100) && !pawn.Position.Fogged(pawn.Map))
+					if (jobDriver_TendPatient.pawn.IsHashIntervalTick(100) && !jobDriver_TendPatient.pawn.Position.Fogged(jobDriver_TendPatient.pawn.Map))
 					{
-						MoteMaker.ThrowMetaIcon(pawn.Position, pawn.Map, ThingDefOf.Mote_HealingCross);
+						MoteMaker.ThrowMetaIcon(jobDriver_TendPatient.pawn.Position, jobDriver_TendPatient.pawn.Map, ThingDefOf.Mote_HealingCross);
 					}
 				};
 			}
@@ -109,13 +110,13 @@ namespace RimWorld
 				Toil toil2 = new Toil();
 				toil2.initAction = delegate
 				{
-					if (MedicineUsed.DestroyedOrNull())
+					if (jobDriver_TendPatient.MedicineUsed.DestroyedOrNull())
 					{
-						Thing thing = HealthAIUtility.FindBestMedicine(pawn, Deliveree);
+						Thing thing = HealthAIUtility.FindBestMedicine(jobDriver_TendPatient.pawn, jobDriver_TendPatient.Deliveree);
 						if (thing != null)
 						{
-							job.targetB = thing;
-							JumpToToil(reserveMedicine);
+							jobDriver_TendPatient.job.targetB = thing;
+							jobDriver_TendPatient.JumpToToil(reserveMedicine);
 						}
 					}
 				};

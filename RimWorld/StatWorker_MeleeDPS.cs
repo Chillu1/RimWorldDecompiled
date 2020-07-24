@@ -19,7 +19,7 @@ namespace RimWorld
 		{
 			if (req.Thing == null)
 			{
-				Log.Error("Getting MeleeDPS stat for " + req.Def + " without concrete pawn. This always returns 0.");
+				Log.Error(string.Concat("Getting MeleeDPS stat for ", req.Def, " without concrete pawn. This always returns 0."));
 			}
 			return GetMeleeDamage(req, applyPostProcess) * GetMeleeHitChance(req, applyPostProcess) / GetMeleeCooldown(req, applyPostProcess);
 		}

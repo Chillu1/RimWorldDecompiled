@@ -4,6 +4,7 @@ using Verse;
 
 namespace RimWorld
 {
+	[StaticConstructorOnStartup]
 	public class QuestPart_FactionGoodwillChange : QuestPart
 	{
 		public string inSignal;
@@ -57,7 +58,12 @@ namespace RimWorld
 				LookTargets lookTargets;
 				GlobalTargetInfo value = lookTarget.IsValid ? lookTarget : ((!getLookTargetFromSignal) ? GlobalTargetInfo.Invalid : ((!SignalArgsUtility.TryGetLookTargets(signal.args, "SUBJECT", out lookTargets)) ? GlobalTargetInfo.Invalid : lookTargets.TryGetPrimaryTarget()));
 				FactionRelationKind playerRelationKind = faction.PlayerRelationKind;
-				faction.TryAffectGoodwillWith(Faction.OfPlayer, change, canSendMessage, canSendHostilityLetter, signal.args.GetFormattedText(reason), value);
+				int arg = 0;
+				if (!signal.args.TryGetArg("GOODWILL", out arg))
+				{
+					arg = change;
+				}
+				faction.TryAffectGoodwillWith(Faction.OfPlayer, arg, canSendMessage, canSendHostilityLetter, signal.args.GetFormattedText(reason), value);
 				TaggedString text = "";
 				faction.TryAppendRelationKindChangedInfo(ref text, playerRelationKind, faction.PlayerRelationKind);
 				if (!text.NullOrEmpty())

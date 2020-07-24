@@ -13,10 +13,11 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
+			JobDriver_OperateDeepDrill jobDriver_OperateDeepDrill = this;
 			this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
 			this.FailOnBurningImmobile(TargetIndex.A);
 			this.FailOnThingHavingDesignation(TargetIndex.A, DesignationDefOf.Uninstall);
-			this.FailOn(() => !job.targetA.Thing.TryGetComp<CompDeepDrill>().CanDrillNow());
+			this.FailOn(() => !jobDriver_OperateDeepDrill.job.targetA.Thing.TryGetComp<CompDeepDrill>().CanDrillNow());
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.InteractionCell);
 			Toil work = new Toil();
 			work.tickAction = delegate

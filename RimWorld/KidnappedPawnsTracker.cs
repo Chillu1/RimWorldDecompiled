@@ -81,7 +81,7 @@ namespace RimWorld
 			}
 			else
 			{
-				Log.Warning("Tried to remove kidnapped pawn " + pawn + " but he's not here.");
+				Log.Warning(string.Concat("Tried to remove kidnapped pawn ", pawn, " but he's not here."));
 			}
 		}
 

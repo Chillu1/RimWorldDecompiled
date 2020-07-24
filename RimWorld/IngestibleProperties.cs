@@ -115,7 +115,7 @@ namespace RimWorld
 			}
 			if (parent.GetStatValueAbstract(StatDefOf.Nutrition) == 0f && preferability != FoodPreferability.NeverForNutrition)
 			{
-				yield return "Nutrition == 0 but preferability is " + preferability + " instead of " + FoodPreferability.NeverForNutrition;
+				yield return string.Concat("Nutrition == 0 but preferability is ", preferability, " instead of ", FoodPreferability.NeverForNutrition);
 			}
 			if (!parent.IsCorpse && (int)preferability > 3 && !parent.socialPropernessMatters && parent.EverHaulable)
 			{
@@ -143,7 +143,8 @@ namespace RimWorld
 		{
 			if (joy > 0f)
 			{
-				yield return new StatDrawEntry(StatCategoryDefOf.Basics, "Joy".Translate(), joy.ToStringPercent("F2") + " (" + JoyKind.label + ")", "Stat_Thing_Ingestible_Joy_Desc".Translate(), 4751);
+				StatCategoryDef category = (drugCategory != 0) ? StatCategoryDefOf.Drug : StatCategoryDefOf.Basics;
+				yield return new StatDrawEntry(category, "Joy".Translate(), joy.ToStringPercent("F0") + " (" + JoyKind.label + ")", "Stat_Thing_Ingestible_Joy_Desc".Translate(), 4751);
 			}
 			if (HumanEdible)
 			{
@@ -153,14 +154,15 @@ namespace RimWorld
 					yield return new StatDrawEntry(StatCategoryDefOf.Basics, "Stat_Thing_Ingestible_MaxSatisfiedTitle".Translate(), royalTitleDef.GetLabelCapForBothGenders(), "Stat_Thing_Ingestible_MaxSatisfiedTitle_Desc".Translate(), 4752);
 				}
 			}
-			if (outcomeDoers != null)
+			if (outcomeDoers == null)
 			{
-				for (int i = 0; i < outcomeDoers.Count; i++)
+				yield break;
+			}
+			for (int i = 0; i < outcomeDoers.Count; i++)
+			{
+				foreach (StatDrawEntry item in outcomeDoers[i].SpecialDisplayStats(parent))
 				{
-					foreach (StatDrawEntry item in outcomeDoers[i].SpecialDisplayStats(parent))
-					{
-						yield return item;
-					}
+					yield return item;
 				}
 			}
 		}

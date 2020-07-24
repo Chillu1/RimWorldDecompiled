@@ -510,16 +510,17 @@ namespace RimWorld
 			}
 			bool skip;
 			float foragedNutritionPerDay = ForagedFoodPerDayCalculator.GetBaseForagedNutritionPerDay(p, out skip);
-			if (!skip)
+			if (skip)
 			{
-				Widgets.DrawHighlightIfMouseover(rect);
-				GUI.color = ((foragedNutritionPerDay == 0f) ? Color.gray : Color.green);
-				Widgets.Label(rect, "+" + foragedNutritionPerDay.ToString("0.##"));
-				GUI.color = Color.white;
-				if (Mouse.IsOver(rect))
-				{
-					TooltipHandler.TipRegion(rect, () => "NutritionForagedPerDayTip".Translate(StatDefOf.ForagedNutritionPerDay.Worker.GetExplanationFull(StatRequest.For(p), StatDefOf.ForagedNutritionPerDay.toStringNumberSense, foragedNutritionPerDay)), trad.GetHashCode() ^ 0x74BEF43E);
-				}
+				return;
+			}
+			Widgets.DrawHighlightIfMouseover(rect);
+			GUI.color = ((foragedNutritionPerDay == 0f) ? Color.gray : Color.green);
+			Widgets.Label(rect, "+" + foragedNutritionPerDay.ToString("0.##"));
+			GUI.color = Color.white;
+			if (Mouse.IsOver(rect))
+			{
+				TooltipHandler.TipRegion(rect, () => "NutritionForagedPerDayTip".Translate(StatDefOf.ForagedNutritionPerDay.Worker.GetExplanationFull(StatRequest.For(p), StatDefOf.ForagedNutritionPerDay.toStringNumberSense, foragedNutritionPerDay)), trad.GetHashCode() ^ 0x74BEF43E);
 			}
 		}
 
@@ -530,22 +531,23 @@ namespace RimWorld
 				return;
 			}
 			Pawn p = trad.AnyThing as Pawn;
-			if (p != null && p.RaceProps.EatsFood && !p.Dead && p.needs.food != null)
+			if (p == null || !p.RaceProps.EatsFood || p.Dead || p.needs.food == null)
 			{
-				Widgets.DrawHighlightIfMouseover(rect);
-				string text = (p.needs.food.FoodFallPerTickAssumingCategory(HungerCategory.Fed, ignoreMalnutrition: true) * 60000f).ToString("0.##");
-				DietCategory resolvedDietCategory = p.RaceProps.ResolvedDietCategory;
-				if (resolvedDietCategory != DietCategory.Omnivorous)
-				{
-					text = text + " (" + resolvedDietCategory.ToStringHumanShort() + ")";
-				}
-				GUI.color = new Color(1f, 0.5f, 0f);
-				Widgets.Label(rect, text);
-				GUI.color = Color.white;
-				if (Mouse.IsOver(rect))
-				{
-					TooltipHandler.TipRegion(rect, () => RaceProperties.NutritionEatenPerDayExplanation(p), trad.GetHashCode() ^ 0x17016B3E);
-				}
+				return;
+			}
+			Widgets.DrawHighlightIfMouseover(rect);
+			string text = (p.needs.food.FoodFallPerTickAssumingCategory(HungerCategory.Fed, ignoreMalnutrition: true) * 60000f).ToString("0.##");
+			DietCategory resolvedDietCategory = p.RaceProps.ResolvedDietCategory;
+			if (resolvedDietCategory != DietCategory.Omnivorous)
+			{
+				text = text + " (" + resolvedDietCategory.ToStringHumanShort() + ")";
+			}
+			GUI.color = new Color(1f, 0.5f, 0f);
+			Widgets.Label(rect, text);
+			GUI.color = Color.white;
+			if (Mouse.IsOver(rect))
+			{
+				TooltipHandler.TipRegion(rect, () => RaceProperties.NutritionEatenPerDayExplanation_NewTemp(p, showDiet: true, showLegend: true, showCalculations: false), trad.GetHashCode() ^ 0x17016B3E);
 			}
 		}
 
@@ -554,7 +556,7 @@ namespace RimWorld
 			if (trad.HasAnyThing)
 			{
 				Widgets.DrawHighlightIfMouseover(rect);
-				Widgets.Label(rect, trad.AnyThing.MarketValue.ToStringMoney("F2"));
+				Widgets.Label(rect, trad.AnyThing.MarketValue.ToStringMoney());
 				TooltipHandler.TipRegionByKey(rect, "MarketValueTip");
 			}
 		}

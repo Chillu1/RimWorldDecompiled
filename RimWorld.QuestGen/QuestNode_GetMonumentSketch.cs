@@ -79,6 +79,11 @@ namespace RimWorld.QuestGen
 				{
 					things[i].stuff = null;
 				}
+				List<SketchTerrain> terrain = sketch.Terrain;
+				for (int j = 0; j < terrain.Count; j++)
+				{
+					terrain[j].treatSimilarAsSame = true;
+				}
 			}
 			slate.Set(storeAs.GetValue(slate), sketch);
 			return true;

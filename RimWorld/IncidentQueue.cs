@@ -18,7 +18,7 @@ namespace RimWorld
 				StringBuilder stringBuilder = new StringBuilder();
 				foreach (QueuedIncident queuedIncident in queuedIncidents)
 				{
-					stringBuilder.AppendLine(queuedIncident.ToString() + " (in " + (queuedIncident.FireTick - Find.TickManager.TicksGame).ToString() + " ticks)");
+					stringBuilder.AppendLine(queuedIncident.ToString() + " (in " + (queuedIncident.FireTick - Find.TickManager.TicksGame) + " ticks)");
 				}
 				return stringBuilder.ToString();
 			}

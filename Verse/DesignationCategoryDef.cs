@@ -63,7 +63,7 @@ namespace Verse
 				}
 				catch (Exception ex)
 				{
-					Log.Error("DesignationCategoryDef" + defName + " could not instantiate special designator from class " + specialDesignatorClass + ".\n Exception: \n" + ex.ToString());
+					Log.Error(string.Concat("DesignationCategoryDef", defName, " could not instantiate special designator from class ", specialDesignatorClass, ".\n Exception: \n", ex.ToString()));
 				}
 				if (designator != null)
 				{

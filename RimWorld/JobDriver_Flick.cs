@@ -13,8 +13,9 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
+			JobDriver_Flick jobDriver_Flick = this;
 			this.FailOnDespawnedOrNull(TargetIndex.A);
-			this.FailOn(() => (base.Map.designationManager.DesignationOn(base.TargetThingA, DesignationDefOf.Flick) == null) ? true : false);
+			this.FailOn(() => (jobDriver_Flick.Map.designationManager.DesignationOn(jobDriver_Flick.TargetThingA, DesignationDefOf.Flick) == null) ? true : false);
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
 			yield return Toils_General.Wait(15).FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
 			Toil finalize = new Toil();
@@ -31,7 +32,7 @@ namespace RimWorld
 					}
 				}
 				actor.records.Increment(RecordDefOf.SwitchesFlicked);
-				base.Map.designationManager.DesignationOn(thingWithComps, DesignationDefOf.Flick)?.Delete();
+				jobDriver_Flick.Map.designationManager.DesignationOn(thingWithComps, DesignationDefOf.Flick)?.Delete();
 			};
 			finalize.defaultCompleteMode = ToilCompleteMode.Instant;
 			yield return finalize;

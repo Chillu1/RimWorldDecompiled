@@ -71,6 +71,10 @@ namespace RimWorld
 
 		public bool interferesWithRoof;
 
+		public bool dieIfNoSunlight = true;
+
+		public bool dieFromToxicFallout = true;
+
 		public PlantPurpose purpose = PlantPurpose.Misc;
 
 		public float topWindExposure = 0.25f;

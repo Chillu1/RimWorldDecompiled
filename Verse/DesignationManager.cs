@@ -43,14 +43,14 @@ namespace Verse
 				case TargetType.Thing:
 					if (!allDesignations[num].target.HasThing)
 					{
-						Log.Error("Thing-needing designation " + allDesignations[num] + " had no thing target. Removing...");
+						Log.Error(string.Concat("Thing-needing designation ", allDesignations[num], " had no thing target. Removing..."));
 						allDesignations.RemoveAt(num);
 					}
 					break;
 				case TargetType.Cell:
 					if (!allDesignations[num].target.Cell.IsValid)
 					{
-						Log.Error("Cell-needing designation " + allDesignations[num] + " had no cell target. Removing...");
+						Log.Error(string.Concat("Cell-needing designation ", allDesignations[num], " had no cell target. Removing..."));
 						allDesignations.RemoveAt(num);
 					}
 					break;

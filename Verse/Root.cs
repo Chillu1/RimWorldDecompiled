@@ -142,28 +142,27 @@ namespace Verse
 		{
 			try
 			{
-				if (!destroyed)
+				if (destroyed)
 				{
-					GUI.depth = 50;
-					UI.ApplyUIScale();
-					LongEventHandler.LongEventsOnGUI();
-					if (LongEventHandler.ShouldWaitForEvent)
-					{
-						ScreenFader.OverlayOnGUI(new Vector2(UI.screenWidth, UI.screenHeight));
-					}
-					else
-					{
-						uiRoot.UIRootOnGUI();
-						ScreenFader.OverlayOnGUI(new Vector2(UI.screenWidth, UI.screenHeight));
-						if (Find.CameraDriver != null && Find.CameraDriver.isActiveAndEnabled)
-						{
-							Find.CameraDriver.CameraDriverOnGUI();
-						}
-						if (Find.WorldCameraDriver != null && Find.WorldCameraDriver.isActiveAndEnabled)
-						{
-							Find.WorldCameraDriver.WorldCameraDriverOnGUI();
-						}
-					}
+					return;
+				}
+				GUI.depth = 50;
+				UI.ApplyUIScale();
+				LongEventHandler.LongEventsOnGUI();
+				if (LongEventHandler.ShouldWaitForEvent)
+				{
+					ScreenFader.OverlayOnGUI(new Vector2(UI.screenWidth, UI.screenHeight));
+					return;
+				}
+				uiRoot.UIRootOnGUI();
+				ScreenFader.OverlayOnGUI(new Vector2(UI.screenWidth, UI.screenHeight));
+				if (Find.CameraDriver != null && Find.CameraDriver.isActiveAndEnabled)
+				{
+					Find.CameraDriver.CameraDriverOnGUI();
+				}
+				if (Find.WorldCameraDriver != null && Find.WorldCameraDriver.isActiveAndEnabled)
+				{
+					Find.WorldCameraDriver.WorldCameraDriverOnGUI();
 				}
 			}
 			catch (Exception arg)

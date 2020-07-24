@@ -38,15 +38,16 @@ namespace RimWorld
 					AllAlerts.Add((Alert)Activator.CreateInstance(item2));
 				}
 			}
-			if (PriosInDrawOrder == null)
+			if (PriosInDrawOrder != null)
 			{
-				PriosInDrawOrder = new List<AlertPriority>();
-				foreach (AlertPriority value in Enum.GetValues(typeof(AlertPriority)))
-				{
-					PriosInDrawOrder.Add(value);
-				}
-				PriosInDrawOrder.Reverse();
+				return;
 			}
+			PriosInDrawOrder = new List<AlertPriority>();
+			foreach (AlertPriority value in Enum.GetValues(typeof(AlertPriority)))
+			{
+				PriosInDrawOrder.Add(value);
+			}
+			PriosInDrawOrder.Reverse();
 		}
 
 		public void AlertsReadoutUpdate()
@@ -87,7 +88,7 @@ namespace RimWorld
 						{
 							bool flag = questsListForReading[j].State != QuestState.Ongoing || questPartActivable.State != QuestPartState.Enabled;
 							bool alertDirty = questPartActivable.AlertDirty;
-							CheckAddOrRemoveAlert(cachedAlert, flag | alertDirty);
+							CheckAddOrRemoveAlert(cachedAlert, flag || alertDirty);
 							if (alertDirty)
 							{
 								questPartActivable.ClearCachedAlert();

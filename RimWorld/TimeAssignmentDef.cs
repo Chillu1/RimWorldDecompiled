@@ -11,6 +11,9 @@ namespace RimWorld
 
 		public bool allowJoy = true;
 
+		[Unsaved(false)]
+		public string cachedHighlightNotSelectedTag;
+
 		private Texture2D colorTextureInt;
 
 		public Texture2D ColorTexture
@@ -23,6 +26,12 @@ namespace RimWorld
 				}
 				return colorTextureInt;
 			}
+		}
+
+		public override void PostLoad()
+		{
+			base.PostLoad();
+			cachedHighlightNotSelectedTag = "TimeAssignmentButton-" + defName + "-NotSelected";
 		}
 	}
 }

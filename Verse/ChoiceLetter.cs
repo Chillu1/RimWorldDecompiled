@@ -16,6 +16,8 @@ namespace Verse
 
 		public List<ThingDef> hyperlinkThingDefs;
 
+		public List<HediffDef> hyperlinkHediffDefs;
+
 		public abstract IEnumerable<DiaOption> Choices
 		{
 			get;
@@ -122,6 +124,11 @@ namespace Verse
 
 		protected DiaOption Option_ViewInfoCard(int index)
 		{
+			int num = (hyperlinkThingDefs != null) ? hyperlinkThingDefs.Count : 0;
+			if (index >= num)
+			{
+				return new DiaOption(new Dialog_InfoCard.Hyperlink(hyperlinkHediffDefs[index - num]));
+			}
 			return new DiaOption(new Dialog_InfoCard.Hyperlink(hyperlinkThingDefs[index]));
 		}
 
@@ -133,6 +140,7 @@ namespace Verse
 			Scribe_Values.Look(ref radioMode, "radioMode", defaultValue: false);
 			Scribe_References.Look(ref quest, "quest");
 			Scribe_Collections.Look(ref hyperlinkThingDefs, "hyperlinkThingDefs", LookMode.Def);
+			Scribe_Collections.Look(ref hyperlinkHediffDefs, "hyperlinkHediffDefs", LookMode.Def);
 		}
 
 		protected override string GetMouseoverText()

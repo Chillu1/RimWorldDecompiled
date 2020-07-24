@@ -175,13 +175,11 @@ namespace RimWorld
 			if (techLevel.IsNeolithicOrWorse())
 			{
 				yield return ThingDefOf.WoodLog;
+				yield break;
 			}
-			else
+			foreach (ThingDef item4 in DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef d) => BaseGenUtility.IsCheapWallStuff(d)))
 			{
-				foreach (ThingDef item4 in DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef d) => BaseGenUtility.IsCheapWallStuff(d)))
-				{
-					yield return item4;
-				}
+				yield return item4;
 			}
 		}
 	}

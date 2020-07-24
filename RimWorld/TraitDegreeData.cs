@@ -36,6 +36,12 @@ namespace RimWorld
 
 		public List<InspirationDef> mentalBreakInspirationGainSet;
 
+		public string mentalBreakInspirationGainReasonText;
+
+		public List<MeditationFocusDef> allowedMeditationFocusTypes;
+
+		public List<MeditationFocusDef> disallowedMeditationFocusTypes;
+
 		public float mentalBreakInspirationGainChance;
 
 		public List<MentalBreakDef> theOnlyAllowedMentalBreaks;
@@ -47,6 +53,8 @@ namespace RimWorld
 		public float marketValueFactorOffset;
 
 		public float randomDiseaseMtbDays;
+
+		public float hungerRateFactor = 1f;
 
 		public Type mentalStateGiverClass = typeof(TraitMentalStateGiver);
 

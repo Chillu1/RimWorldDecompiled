@@ -10,12 +10,12 @@ namespace Verse.Steam
 			{
 				return "None".Translate();
 			}
-			return ("WorkshopInteractStage_" + stage.ToString()).Translate();
+			return ("WorkshopInteractStage_" + stage).Translate();
 		}
 
 		public static string GetLabel(this EItemUpdateStatus status)
 		{
-			return ("EItemUpdateStatus_" + status.ToString()).Translate();
+			return ("EItemUpdateStatus_" + status).Translate();
 		}
 
 		public static string GetLabel(this EResult result)

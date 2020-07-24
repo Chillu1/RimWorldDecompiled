@@ -99,7 +99,7 @@ namespace RimWorld.Planet
 				}
 				else if (item.Discarded)
 				{
-					Log.Error("World pawn " + item + " has been discarded while still being a world pawn. This should never happen, because discard destroy mode means that the pawn is no longer managed by anything. Pawn should have been removed from the world first.");
+					Log.Error(string.Concat("World pawn ", item, " has been discarded while still being a world pawn. This should never happen, because discard destroy mode means that the pawn is no longer managed by anything. Pawn should have been removed from the world first."));
 					tmpPawnsToRemove.Add(item);
 				}
 			}
@@ -176,17 +176,17 @@ namespace RimWorld.Planet
 		{
 			if (pawn.Spawned)
 			{
-				Log.Error("Tried to call PassToWorld with spawned pawn: " + pawn + ". Despawn him first.");
+				Log.Error(string.Concat("Tried to call PassToWorld with spawned pawn: ", pawn, ". Despawn him first."));
 				return;
 			}
 			if (Contains(pawn))
 			{
-				Log.Error("Tried to pass pawn " + pawn + " to world, but it's already here.");
+				Log.Error(string.Concat("Tried to pass pawn ", pawn, " to world, but it's already here."));
 				return;
 			}
 			if (discardMode == PawnDiscardDecideMode.KeepForever && pawn.Discarded)
 			{
-				Log.Error("Tried to pass a discarded pawn " + pawn + " to world with discardMode=Keep. Discarded pawns should never be stored in WorldPawns.");
+				Log.Error(string.Concat("Tried to pass a discarded pawn ", pawn, " to world with discardMode=Keep. Discarded pawns should never be stored in WorldPawns."));
 				discardMode = PawnDiscardDecideMode.Decide;
 			}
 			if (PawnComponentsUtility.HasSpawnedComponents(pawn))
@@ -212,7 +212,7 @@ namespace RimWorld.Planet
 		{
 			if (!Contains(p))
 			{
-				Log.Error("Tried to remove pawn " + p + " from " + GetType() + ", but it's not here.");
+				Log.Error(string.Concat("Tried to remove pawn ", p, " from ", GetType(), ", but it's not here."));
 			}
 			gc.CancelGCPass();
 			if (pawnsMothballed.Contains(p) && Find.TickManager.TicksGame % 15000 != 0)
@@ -433,26 +433,27 @@ namespace RimWorld.Planet
 			WorldPawnSituation[] array = (WorldPawnSituation[])Enum.GetValues(typeof(WorldPawnSituation));
 			foreach (WorldPawnSituation worldPawnSituation in array)
 			{
-				if (worldPawnSituation != 0)
+				if (worldPawnSituation == WorldPawnSituation.None)
 				{
-					stringBuilder.AppendLine();
-					stringBuilder.AppendLine("== " + worldPawnSituation + " ==");
-					foreach (Pawn item in from x in GetPawnsBySituation(worldPawnSituation)
-						orderby (x.Faction != null) ? x.Faction.loadID : (-1)
-						select x)
+					continue;
+				}
+				stringBuilder.AppendLine();
+				stringBuilder.AppendLine(string.Concat("== ", worldPawnSituation, " =="));
+				foreach (Pawn item in from x in GetPawnsBySituation(worldPawnSituation)
+					orderby (x.Faction != null) ? x.Faction.loadID : (-1)
+					select x)
+				{
+					string str = (item.Name != null) ? item.Name.ToStringFull : item.LabelCap;
+					str = str + ", " + item.KindLabel;
+					if (item.royalty != null && item.royalty.AllTitlesForReading.Count > 0)
 					{
-						string str = (item.Name != null) ? item.Name.ToStringFull : item.LabelCap;
-						str = str + ", " + item.KindLabel;
-						if (item.royalty != null && item.royalty.AllTitlesForReading.Count > 0)
+						foreach (RoyalTitle item2 in item.royalty.AllTitlesForReading)
 						{
-							foreach (RoyalTitle item2 in item.royalty.AllTitlesForReading)
-							{
-								str = str + ", " + item2.def.GetLabelFor(item);
-							}
+							str = str + ", " + item2.def.GetLabelFor(item);
 						}
-						str = str + ", " + item.Faction;
-						stringBuilder.AppendLine(str);
 					}
+					str = str + ", " + item.Faction;
+					stringBuilder.AppendLine(str);
 				}
 			}
 			stringBuilder.AppendLine("===========================");
@@ -472,15 +473,13 @@ namespace RimWorld.Planet
 				if (hediffDef == null)
 				{
 					num++;
+					continue;
 				}
-				else
+				if (!dictionary.ContainsKey(hediffDef))
 				{
-					if (!dictionary.ContainsKey(hediffDef))
-					{
-						dictionary[hediffDef] = 0;
-					}
-					int num2 = ++dictionary[hediffDef];
+					dictionary[hediffDef] = 0;
 				}
+				dictionary[hediffDef]++;
 			}
 			stringBuilder.AppendLine($"Will be mothballed: {num}");
 			stringBuilder.AppendLine();

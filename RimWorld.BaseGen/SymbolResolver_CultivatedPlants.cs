@@ -28,20 +28,21 @@ namespace RimWorld.BaseGen
 		{
 			Map map = BaseGen.globalSettings.map;
 			ThingDef thingDef = rp.cultivatedPlantDef ?? DeterminePlantDef(rp.rect);
-			if (thingDef != null)
+			if (thingDef == null)
 			{
-				float growth = Rand.Range(0.2f, 1f);
-				int age = thingDef.plant.LimitedLifespan ? Rand.Range(0, Mathf.Max(thingDef.plant.LifespanTicks - 2500, 0)) : 0;
-				foreach (IntVec3 item in rp.rect)
+				return;
+			}
+			float growth = Rand.Range(0.2f, 1f);
+			int age = thingDef.plant.LimitedLifespan ? Rand.Range(0, Mathf.Max(thingDef.plant.LifespanTicks - 2500, 0)) : 0;
+			foreach (IntVec3 item in rp.rect)
+			{
+				if (!(map.fertilityGrid.FertilityAt(item) < thingDef.plant.fertilityMin) && TryDestroyBlockingThingsAt(item))
 				{
-					if (!(map.fertilityGrid.FertilityAt(item) < thingDef.plant.fertilityMin) && TryDestroyBlockingThingsAt(item))
+					Plant plant = (Plant)GenSpawn.Spawn(thingDef, item, map);
+					plant.Growth = growth;
+					if (plant.def.plant.LimitedLifespan)
 					{
-						Plant plant = (Plant)GenSpawn.Spawn(thingDef, item, map);
-						plant.Growth = growth;
-						if (plant.def.plant.LimitedLifespan)
-						{
-							plant.Age = age;
-						}
+						plant.Age = age;
 					}
 				}
 			}

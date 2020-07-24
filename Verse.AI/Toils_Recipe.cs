@@ -189,7 +189,7 @@ namespace Verse.AI
 					{
 						if (!GenPlace.TryPlaceThing(list[i], actor.Position, actor.Map, ThingPlaceMode.Near))
 						{
-							Log.Error(actor + " could not drop recipe product " + list[i] + " near " + actor.Position);
+							Log.Error(string.Concat(actor, " could not drop recipe product ", list[i], " near ", actor.Position));
 						}
 					}
 					actor.jobs.EndCurrentJob(JobCondition.Succeeded);
@@ -202,7 +202,7 @@ namespace Verse.AI
 						{
 							if (!GenPlace.TryPlaceThing(list[j], actor.Position, actor.Map, ThingPlaceMode.Near))
 							{
-								Log.Error(actor + " could not drop recipe product " + list[j] + " near " + actor.Position);
+								Log.Error(string.Concat(actor, " could not drop recipe product ", list[j], " near ", actor.Position));
 							}
 						}
 					}
@@ -230,7 +230,7 @@ namespace Verse.AI
 					{
 						if (!GenPlace.TryPlaceThing(list[0], actor.Position, actor.Map, ThingPlaceMode.Near))
 						{
-							Log.Error("Bill doer could not drop product " + list[0] + " near " + actor.Position);
+							Log.Error(string.Concat("Bill doer could not drop product ", list[0], " near ", actor.Position));
 						}
 						actor.jobs.EndCurrentJob(JobCondition.Succeeded);
 					}
@@ -256,7 +256,7 @@ namespace Verse.AI
 				{
 					if (job.placedThings[i].Count <= 0)
 					{
-						Log.Error("PlacedThing " + job.placedThings[i] + " with count " + job.placedThings[i].Count + " for job " + job);
+						Log.Error(string.Concat("PlacedThing ", job.placedThings[i], " with count ", job.placedThings[i].Count, " for job ", job));
 						continue;
 					}
 					Thing thing = (job.placedThings[i].Count >= job.placedThings[i].thing.stackCount) ? job.placedThings[i].thing : job.placedThings[i].thing.SplitOff(job.placedThings[i].Count);

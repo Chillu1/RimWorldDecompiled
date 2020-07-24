@@ -20,14 +20,15 @@ namespace Verse
 			}
 			set
 			{
-				if (value != isPermanentInt)
+				if (value == isPermanentInt)
 				{
-					isPermanentInt = value;
-					if (isPermanentInt)
-					{
-						painCategory = HealthTuning.InjuryPainCategories.RandomElementByWeight((HealthTuning.PainCategoryWeighted cat) => cat.weight).category;
-						permanentDamageThreshold = 9999f;
-					}
+					return;
+				}
+				isPermanentInt = value;
+				if (isPermanentInt)
+				{
+					painCategory = HealthTuning.InjuryPainCategories.RandomElementByWeight((HealthTuning.PainCategoryWeighted cat) => cat.weight).category;
+					permanentDamageThreshold = 9999f;
 				}
 			}
 		}

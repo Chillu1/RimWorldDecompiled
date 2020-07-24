@@ -93,6 +93,8 @@ namespace RimWorld
 		[Unsaved(false)]
 		public bool descTranslated;
 
+		private List<string> unlockedMeditationTypesTemp = new List<string>();
+
 		public RulePackDef NameMaker => nameMakerResolved;
 
 		public IEnumerable<WorkTypeDef> DisabledWorkTypes
@@ -214,6 +216,28 @@ namespace RimWorld
 			{
 				stringBuilder.AppendLine(disabledWorkGiver.workType.gerundLabel.CapitalizeFirst() + ": " + disabledWorkGiver.LabelCap + " " + "DisabledLower".Translate());
 			}
+			if (ModsConfig.RoyaltyActive)
+			{
+				unlockedMeditationTypesTemp.Clear();
+				foreach (MeditationFocusDef allDef in DefDatabase<MeditationFocusDef>.AllDefs)
+				{
+					for (int j = 0; j < allDef.requiredBackstoriesAny.Count; j++)
+					{
+						BackstoryCategoryAndSlot backstoryCategoryAndSlot = allDef.requiredBackstoriesAny[j];
+						if (spawnCategories.Contains(backstoryCategoryAndSlot.categoryName) && backstoryCategoryAndSlot.slot == slot)
+						{
+							unlockedMeditationTypesTemp.Add(allDef.LabelCap);
+							break;
+						}
+					}
+				}
+				if (unlockedMeditationTypesTemp.Count > 0)
+				{
+					stringBuilder.AppendLine();
+					stringBuilder.AppendLine("MeditationFocusesUnlocked".Translate() + ": ");
+					stringBuilder.AppendLine(unlockedMeditationTypesTemp.ToLineList("  - "));
+				}
+			}
 			string str = stringBuilder.ToString().TrimEndNewlines();
 			return Find.ActiveLanguageWorker.PostProcessed(str);
 		}
@@ -262,7 +286,7 @@ namespace RimWorld
 			int num = Mathf.Abs(GenText.StableStringHash(baseDesc) % 100);
 			string s = title.Replace('-', ' ');
 			s = GenText.CapitalizedNoSpaces(s);
-			identifier = GenText.RemoveNonAlphanumeric(s) + num.ToString();
+			identifier = GenText.RemoveNonAlphanumeric(s) + num;
 			foreach (KeyValuePair<string, int> skillGain in skillGains)
 			{
 				skillGainsResolved.Add(DefDatabase<SkillDef>.GetNamed(skillGain.Key), skillGain.Value);
@@ -338,21 +362,22 @@ namespace RimWorld
 					}
 				}
 			}
-			if (Prefs.DevMode)
+			if (!Prefs.DevMode)
 			{
-				foreach (KeyValuePair<SkillDef, int> item in skillGainsResolved)
+				yield break;
+			}
+			foreach (KeyValuePair<SkillDef, int> item in skillGainsResolved)
+			{
+				if (item.Key.IsDisabled(workDisables, DisabledWorkTypes))
 				{
-					if (item.Key.IsDisabled(workDisables, DisabledWorkTypes))
-					{
-						yield return "modifies skill " + item.Key + " but also disables this skill";
-					}
+					yield return string.Concat("modifies skill ", item.Key, " but also disables this skill");
 				}
-				foreach (KeyValuePair<string, Backstory> allBackstory in BackstoryDatabase.allBackstories)
+			}
+			foreach (KeyValuePair<string, Backstory> allBackstory in BackstoryDatabase.allBackstories)
+			{
+				if (allBackstory.Value != this && allBackstory.Value.identifier == identifier)
 				{
-					if (allBackstory.Value != this && allBackstory.Value.identifier == identifier)
-					{
-						yield return "backstory identifier used more than once: " + identifier;
-					}
+					yield return "backstory identifier used more than once: " + identifier;
 				}
 			}
 		}

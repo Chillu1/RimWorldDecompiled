@@ -88,7 +88,7 @@ namespace RimWorld
 						}
 					}
 				}
-				listing_Standard.Label("SlavePrice".Translate() + ": " + base.SelPawn.GetStatValue(StatDefOf.MarketValue).ToStringMoney("F02"));
+				listing_Standard.Label("SlavePrice".Translate() + ": " + base.SelPawn.GetStatValue(StatDefOf.MarketValue).ToStringMoney());
 				TaggedString t;
 				if (base.SelPawn.Faction == null || base.SelPawn.Faction.IsPlayer || !base.SelPawn.Faction.CanChangeGoodwillFor(Faction.OfPlayer, 1))
 				{
@@ -116,18 +116,19 @@ namespace RimWorld
 				Rect rect7 = new Rect(0f, 0f, position.width, 30f);
 				foreach (PrisonerInteractionModeDef item in DefDatabase<PrisonerInteractionModeDef>.AllDefs.OrderBy((PrisonerInteractionModeDef pim) => pim.listOrder))
 				{
-					if (!flag || item.allowOnWildMan)
+					if (flag && !item.allowOnWildMan)
 					{
-						if (Widgets.RadioButtonLabeled(rect7, item.LabelCap, base.SelPawn.guest.interactionMode == item))
-						{
-							base.SelPawn.guest.interactionMode = item;
-							if (item == PrisonerInteractionModeDefOf.Execution && base.SelPawn.MapHeld != null && !ColonyHasAnyWardenCapableOfViolence(base.SelPawn.MapHeld))
-							{
-								Messages.Message("MessageCantDoExecutionBecauseNoWardenCapableOfViolence".Translate(), base.SelPawn, MessageTypeDefOf.CautionInput, historical: false);
-							}
-						}
-						rect7.y += 28f;
+						continue;
 					}
+					if (Widgets.RadioButtonLabeled(rect7, item.LabelCap, base.SelPawn.guest.interactionMode == item))
+					{
+						base.SelPawn.guest.interactionMode = item;
+						if (item == PrisonerInteractionModeDefOf.Execution && base.SelPawn.MapHeld != null && !ColonyHasAnyWardenCapableOfViolence(base.SelPawn.MapHeld))
+						{
+							Messages.Message("MessageCantDoExecutionBecauseNoWardenCapableOfViolence".Translate(), base.SelPawn, MessageTypeDefOf.CautionInput, historical: false);
+						}
+					}
+					rect7.y += 28f;
 				}
 				GUI.EndGroup();
 			}

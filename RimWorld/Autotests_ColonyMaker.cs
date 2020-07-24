@@ -131,12 +131,13 @@ namespace RimWorld
 						break;
 					}
 					Building_WorkTable building_WorkTable = thing2 as Building_WorkTable;
-					if (building_WorkTable != null)
+					if (building_WorkTable == null)
 					{
-						foreach (RecipeDef allRecipe in building_WorkTable.def.AllRecipes)
-						{
-							building_WorkTable.billStack.AddBill(allRecipe.MakeNewBill());
-						}
+						continue;
+					}
+					foreach (RecipeDef allRecipe in building_WorkTable.def.AllRecipes)
+					{
+						building_WorkTable.billStack.AddBill(allRecipe.MakeNewBill());
 					}
 				}
 			}

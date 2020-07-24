@@ -72,7 +72,7 @@ namespace Verse
 			}
 			if (reportFailure)
 			{
-				Log.Error("Could not load " + typeof(T) + " at " + itemPath + " in any active mod or in base resources.");
+				Log.Error(string.Concat("Could not load ", typeof(T), " at ", itemPath, " in any active mod or in base resources."));
 			}
 			return null;
 		}
@@ -130,18 +130,19 @@ namespace Verse
 							}
 						}
 					}
-					if (typeof(T) == typeof(AudioClip))
+					if (!(typeof(T) == typeof(AudioClip)))
 					{
-						string fullPath2 = Path.Combine(Path.Combine(dirForBundle2, GenFilePaths.ContentPath<AudioClip>()).Replace('\\', '/'), folderPath).ToLower();
-						IEnumerable<string> enumerable2 = from p in mods[j].AllAssetNamesInBundle(i)
-							where p.StartsWith(fullPath2)
-							select p;
-						foreach (string item3 in enumerable2)
+						continue;
+					}
+					string fullPath2 = Path.Combine(Path.Combine(dirForBundle2, GenFilePaths.ContentPath<AudioClip>()).Replace('\\', '/'), folderPath).ToLower();
+					IEnumerable<string> enumerable2 = from p in mods[j].AllAssetNamesInBundle(i)
+						where p.StartsWith(fullPath2)
+						select p;
+					foreach (string item3 in enumerable2)
+					{
+						if (ModAssetBundlesHandler.AudioClipExtensions.Contains(Path.GetExtension(item3)))
 						{
-							if (ModAssetBundlesHandler.AudioClipExtensions.Contains(Path.GetExtension(item3)))
-							{
-								yield return (T)(object)assetBundle.LoadAsset<AudioClip>(item3);
-							}
+							yield return (T)(object)assetBundle.LoadAsset<AudioClip>(item3);
 						}
 					}
 				}

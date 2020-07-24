@@ -126,7 +126,20 @@ namespace RimWorld.QuestGen
 					Log.Error("Error while resolving text requests: " + arg3);
 				}
 				AddSlateQuestTags();
-				if (root.autoAccept)
+				bool flag = root.autoAccept;
+				if (flag)
+				{
+					List<QuestPart> partsListForReading = quest.PartsListForReading;
+					for (int i = 0; i < partsListForReading.Count; i++)
+					{
+						if (partsListForReading[i].PreventsAutoAccept)
+						{
+							flag = false;
+							break;
+						}
+					}
+				}
+				if (flag)
 				{
 					quest.SetInitiallyAccepted();
 				}
@@ -202,15 +215,13 @@ namespace RimWorld.QuestGen
 			if (!working)
 			{
 				Log.Error("Tried to add quest description constants while not resolving any quest.");
+				return;
 			}
-			else
+			foreach (KeyValuePair<string, string> item in QuestGenUtility.AppendCurrentPrefix(constants))
 			{
-				foreach (KeyValuePair<string, string> item in QuestGenUtility.AppendCurrentPrefix(constants))
+				if (!questDescriptionConstants.ContainsKey(item.Key))
 				{
-					if (!questDescriptionConstants.ContainsKey(item.Key))
-					{
-						questDescriptionConstants.Add(item.Key, item.Value);
-					}
+					questDescriptionConstants.Add(item.Key, item.Value);
 				}
 			}
 		}
@@ -237,15 +248,13 @@ namespace RimWorld.QuestGen
 			if (!working)
 			{
 				Log.Error("Tried to add quest name constants while not resolving any quest.");
+				return;
 			}
-			else
+			foreach (KeyValuePair<string, string> item in QuestGenUtility.AppendCurrentPrefix(constants))
 			{
-				foreach (KeyValuePair<string, string> item in QuestGenUtility.AppendCurrentPrefix(constants))
+				if (!questNameConstants.ContainsKey(item.Key))
 				{
-					if (!questNameConstants.ContainsKey(item.Key))
-					{
-						questNameConstants.Add(item.Key, item.Value);
-					}
+					questNameConstants.Add(item.Key, item.Value);
 				}
 			}
 		}

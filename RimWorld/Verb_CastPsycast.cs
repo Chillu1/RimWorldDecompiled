@@ -40,7 +40,12 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (CasterPawn.psychicEntropy.WouldOverflowEntropy(Psycast.def.EntropyGain + PsycastUtility.TotalEntropyFromQueuedPsycasts(CasterPawn)))
+			if (CasterPawn.GetStatValue(StatDefOf.PsychicSensitivity) < float.Epsilon)
+			{
+				Messages.Message("CommandPsycastZeroPsychicSensitivity".Translate(), caster, MessageTypeDefOf.RejectInput);
+				return false;
+			}
+			if (Psycast.def.EntropyGain > float.Epsilon && CasterPawn.psychicEntropy.WouldOverflowEntropy(Psycast.def.EntropyGain + PsycastUtility.TotalEntropyFromQueuedPsycasts(CasterPawn)))
 			{
 				Messages.Message("CommandPsycastWouldExceedEntropy".Translate(), caster, MessageTypeDefOf.RejectInput);
 				return false;
@@ -82,10 +87,9 @@ namespace RimWorld
 			{
 				texture2D = TexCommand.CannotShoot;
 			}
-			if (ThingRequiringRoyalPermissionUtility.IsViolatingRulesOfAnyFaction_NewTemp(HediffDefOf.PsychicAmplifier, CasterPawn, Psycast.def.level, ignoreSilencer: true))
+			if (ThingRequiringRoyalPermissionUtility.IsViolatingRulesOfAnyFaction_NewTemp(HediffDefOf.PsychicAmplifier, CasterPawn, Psycast.def.level, ignoreSilencer: true) && Psycast.def.DetectionChance > 0f)
 			{
-				float f = ((Pawn)caster).health.hediffSet.HasHediff(HediffDefOf.PsychicSilencer) ? 0f : Psycast.def.GetStatValueAbstract(StatDefOf.Ability_DetectChancePerEntropy);
-				TaggedString taggedString = ((string)"Illegal".Translate()).ToUpper() + "\n" + f.ToStringPercent() + " " + "DetectionChance".Translate();
+				TaggedString taggedString = ((string)"Illegal".Translate()).ToUpper() + "\n" + Psycast.def.DetectionChance.ToStringPercent() + " " + "DetectionChance".Translate();
 				Text.Font = GameFont.Small;
 				GenUI.DrawMouseAttachment(texture2D, taggedString, 0f, default(Vector2), null, drawTextBackground: true, new Color(0.25f, 0f, 0f));
 			}

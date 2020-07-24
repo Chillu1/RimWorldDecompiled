@@ -28,8 +28,12 @@ namespace RimWorld
 					{
 						Log.Error("Dead pawn in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists:" + item);
 					}
-					else if (item.needs.mood != null)
+					else
 					{
+						if (item.needs.mood == null)
+						{
+							continue;
+						}
 						item.needs.mood.thoughts.GetAllMoodThoughts(tmpThoughts);
 						try
 						{

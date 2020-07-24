@@ -22,7 +22,7 @@ namespace RimWorld
 
 		private const float FactionNameWidth = 250f;
 
-		public override Vector2 InitialSize => new Vector2(700f, 400f);
+		public override Vector2 InitialSize => new Vector2(700f, 440f);
 
 		public Dialog_RewardPrefsConfig()
 		{
@@ -38,53 +38,58 @@ namespace RimWorld
 			Text.Font = GameFont.Medium;
 			Widgets.Label(new Rect(0f, 0f, InitialSize.x / 2f, 40f), "ChooseRewards".Translate());
 			Text.Font = GameFont.Small;
+			string text = "ChooseRewardsDesc".Translate();
+			float height = Text.CalcHeight(text, inRect.width);
+			Rect rect = new Rect(0f, 40f, inRect.width, height);
+			Widgets.Label(rect, text);
 			IEnumerable<Faction> allFactionsVisibleInViewOrder = Find.FactionManager.AllFactionsVisibleInViewOrder;
 			Rect outRect = new Rect(inRect);
 			outRect.yMax -= CloseButSize.y;
-			outRect.yMin += 44f;
+			outRect.yMin += 44f + rect.height + 4f;
 			float curY = 0f;
-			Rect rect = new Rect(0f, curY, outRect.width - 16f, viewRectHeight);
-			Widgets.BeginScrollView(outRect, ref scrollPosition, rect);
+			Rect rect2 = new Rect(0f, curY, outRect.width - 16f, viewRectHeight);
+			Widgets.BeginScrollView(outRect, ref scrollPosition, rect2);
 			int index = 0;
 			foreach (Faction item in allFactionsVisibleInViewOrder)
 			{
-				if (!item.IsPlayer)
+				if (item.IsPlayer)
 				{
-					float curX = 0f;
-					if (item.def.HasRoyalTitles)
+					continue;
+				}
+				float curX = 0f;
+				if (item.def.HasRoyalTitles)
+				{
+					DoFactionInfo(rect2, item, ref curX, ref curY, ref index);
+					TaggedString label = "AcceptRoyalFavor".Translate(item.Named("FACTION")).CapitalizeFirst();
+					Rect rect3 = new Rect(curX, curY, label.GetWidthCached(), 45f);
+					Text.Anchor = TextAnchor.MiddleLeft;
+					Widgets.Label(rect3, label);
+					Text.Anchor = TextAnchor.UpperLeft;
+					if (Mouse.IsOver(rect3))
 					{
-						DoFactionInfo(rect, item, ref curX, ref curY, ref index);
-						TaggedString label = "AcceptRoyalFavor".Translate(item.Named("FACTION")).CapitalizeFirst();
-						Rect rect2 = new Rect(curX, curY, label.GetWidthCached(), 45f);
-						Text.Anchor = TextAnchor.MiddleLeft;
-						Widgets.Label(rect2, label);
-						Text.Anchor = TextAnchor.UpperLeft;
-						if (Mouse.IsOver(rect2))
-						{
-							TooltipHandler.TipRegion(rect2, "AcceptRoyalFavorDesc".Translate(item.Named("FACTION")));
-							Widgets.DrawHighlight(rect2);
-						}
-						Widgets.Checkbox(rect.width - 150f, curY + 12f, ref item.allowRoyalFavorRewards);
-						curY += 45f;
+						TooltipHandler.TipRegion(rect3, "AcceptRoyalFavorDesc".Translate(item.Named("FACTION")));
+						Widgets.DrawHighlight(rect3);
 					}
-					if (item.CanEverGiveGoodwillRewards)
+					Widgets.Checkbox(rect2.width - 150f, curY + 12f, ref item.allowRoyalFavorRewards);
+					curY += 45f;
+				}
+				if (item.CanEverGiveGoodwillRewards)
+				{
+					curX = 0f;
+					DoFactionInfo(rect2, item, ref curX, ref curY, ref index);
+					TaggedString label2 = "AcceptGoodwill".Translate().CapitalizeFirst();
+					Rect rect4 = new Rect(curX, curY, label2.GetWidthCached(), 45f);
+					Text.Anchor = TextAnchor.MiddleLeft;
+					Widgets.Label(rect4, label2);
+					Text.Anchor = TextAnchor.UpperLeft;
+					if (Mouse.IsOver(rect4))
 					{
-						curX = 0f;
-						DoFactionInfo(rect, item, ref curX, ref curY, ref index);
-						TaggedString label2 = "AcceptGoodwill".Translate().CapitalizeFirst();
-						Rect rect3 = new Rect(curX, curY, label2.GetWidthCached(), 45f);
-						Text.Anchor = TextAnchor.MiddleLeft;
-						Widgets.Label(rect3, label2);
-						Text.Anchor = TextAnchor.UpperLeft;
-						if (Mouse.IsOver(rect3))
-						{
-							TooltipHandler.TipRegion(rect3, "AcceptGoodwillDesc".Translate(item.Named("FACTION")));
-							Widgets.DrawHighlight(rect3);
-						}
-						Widgets.Checkbox(rect.width - 150f, curY + 12f, ref item.allowGoodwillRewards);
-						Widgets.Label(new Rect(rect.width - 100f, curY, 100f, 35f), (item.PlayerGoodwill.ToStringWithSign() + "\n" + item.PlayerRelationKind.GetLabel()).Colorize(item.PlayerRelationKind.GetColor()));
-						curY += 45f;
+						TooltipHandler.TipRegion(rect4, "AcceptGoodwillDesc".Translate(item.Named("FACTION")));
+						Widgets.DrawHighlight(rect4);
 					}
+					Widgets.Checkbox(rect2.width - 150f, curY + 12f, ref item.allowGoodwillRewards);
+					Widgets.Label(new Rect(rect2.width - 100f, curY, 100f, 35f), (item.PlayerGoodwill.ToStringWithSign() + "\n" + item.PlayerRelationKind.GetLabel()).Colorize(item.PlayerRelationKind.GetColor()));
+					curY += 45f;
 				}
 			}
 			if (Event.current.type == EventType.Layout)

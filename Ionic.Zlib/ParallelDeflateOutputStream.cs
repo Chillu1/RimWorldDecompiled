@@ -12,23 +12,23 @@ namespace Ionic.Zlib
 		[Flags]
 		private enum TraceBits : uint
 		{
-			None = 0x0,
-			NotUsed1 = 0x1,
-			EmitLock = 0x2,
-			EmitEnter = 0x4,
-			EmitBegin = 0x8,
-			EmitDone = 0x10,
-			EmitSkip = 0x20,
-			EmitAll = 0x3A,
-			Flush = 0x40,
-			Lifecycle = 0x80,
-			Session = 0x100,
-			Synch = 0x200,
-			Instance = 0x400,
-			Compress = 0x800,
-			Write = 0x1000,
-			WriteEnter = 0x2000,
-			WriteTake = 0x4000,
+			None = 0x0u,
+			NotUsed1 = 0x1u,
+			EmitLock = 0x2u,
+			EmitEnter = 0x4u,
+			EmitBegin = 0x8u,
+			EmitDone = 0x10u,
+			EmitSkip = 0x20u,
+			EmitAll = 0x3Au,
+			Flush = 0x40u,
+			Lifecycle = 0x80u,
+			Session = 0x100u,
+			Synch = 0x200u,
+			Instance = 0x400u,
+			Compress = 0x800u,
+			Write = 0x1000u,
+			WriteEnter = 0x2000u,
+			WriteTake = 0x4000u,
 			All = uint.MaxValue
 		}
 
@@ -374,25 +374,26 @@ namespace Ionic.Zlib
 
 		public void Reset(Stream stream)
 		{
-			if (_firstWriteDone)
+			if (!_firstWriteDone)
 			{
-				_toWrite.Clear();
-				_toFill.Clear();
-				foreach (WorkItem item in _pool)
-				{
-					_toFill.Enqueue(item.index);
-					item.ordinal = -1;
-				}
-				_firstWriteDone = false;
-				_totalBytesProcessed = 0L;
-				_runningCrc = new CRC32();
-				_isClosed = false;
-				_currentlyFilling = -1;
-				_lastFilled = -1;
-				_lastWritten = -1;
-				_latestCompressed = -1;
-				_outStream = stream;
+				return;
 			}
+			_toWrite.Clear();
+			_toFill.Clear();
+			foreach (WorkItem item in _pool)
+			{
+				_toFill.Enqueue(item.index);
+				item.ordinal = -1;
+			}
+			_firstWriteDone = false;
+			_totalBytesProcessed = 0L;
+			_runningCrc = new CRC32();
+			_isClosed = false;
+			_currentlyFilling = -1;
+			_lastFilled = -1;
+			_lastWritten = -1;
+			_latestCompressed = -1;
+			_outStream = stream;
 		}
 
 		private void EmitPendingBuffers(bool doAll, bool mustWait)
@@ -402,7 +403,7 @@ namespace Ionic.Zlib
 				return;
 			}
 			emitting = true;
-			if (doAll | mustWait)
+			if (doAll || mustWait)
 			{
 				_newlyCompressedBlob.WaitOne();
 			}

@@ -25,31 +25,36 @@ namespace RimWorld
 
 		public override IEnumerable<FloatMenuOption> GetFloatMenuOptions(Pawn myPawn)
 		{
-			if (myPawn.IsQuestLodger())
+			_003C_003Ec__DisplayClass1_0 _003C_003Ec__DisplayClass1_ = new _003C_003Ec__DisplayClass1_0();
+			_003C_003Ec__DisplayClass1_._003C_003E4__this = this;
+			_003C_003Ec__DisplayClass1_.myPawn = myPawn;
+			if (_003C_003Ec__DisplayClass1_.myPawn.IsQuestLodger())
 			{
 				yield return new FloatMenuOption("CannotUseReason".Translate("CryptosleepCasketGuestsNotAllowed".Translate()), null);
 				yield break;
 			}
-			foreach (FloatMenuOption floatMenuOption in base.GetFloatMenuOptions(myPawn))
+			foreach (FloatMenuOption floatMenuOption in base.GetFloatMenuOptions(_003C_003Ec__DisplayClass1_.myPawn))
 			{
 				yield return floatMenuOption;
 			}
-			if (innerContainer.Count == 0)
+			if (innerContainer.Count != 0)
 			{
-				if (!myPawn.CanReach(this, PathEndMode.InteractionCell, Danger.Deadly))
-				{
-					yield return new FloatMenuOption("CannotUseNoPath".Translate(), null);
-					yield break;
-				}
-				JobDef jobDef = JobDefOf.EnterCryptosleepCasket;
-				string label = "EnterCryptosleepCasket".Translate();
-				Action action = delegate
-				{
-					Job job = JobMaker.MakeJob(jobDef, this);
-					myPawn.jobs.TryTakeOrderedJob(job);
-				};
-				yield return FloatMenuUtility.DecoratePrioritizedTask(new FloatMenuOption(label, action), myPawn, this);
+				yield break;
 			}
+			if (!_003C_003Ec__DisplayClass1_.myPawn.CanReach(this, PathEndMode.InteractionCell, Danger.Deadly))
+			{
+				yield return new FloatMenuOption("CannotUseNoPath".Translate(), null);
+				yield break;
+			}
+			_003C_003Ec__DisplayClass1_0 _003C_003Ec__DisplayClass1_2 = _003C_003Ec__DisplayClass1_;
+			JobDef jobDef = JobDefOf.EnterCryptosleepCasket;
+			string label = "EnterCryptosleepCasket".Translate();
+			Action action = delegate
+			{
+				Job job = JobMaker.MakeJob(jobDef, _003C_003Ec__DisplayClass1_2._003C_003E4__this);
+				_003C_003Ec__DisplayClass1_2.myPawn.jobs.TryTakeOrderedJob(job);
+			};
+			yield return FloatMenuUtility.DecoratePrioritizedTask(new FloatMenuOption(label, action), _003C_003Ec__DisplayClass1_2.myPawn, this);
 		}
 
 		public override IEnumerable<Gizmo> GetGizmos()

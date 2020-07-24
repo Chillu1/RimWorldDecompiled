@@ -24,18 +24,21 @@ namespace RimWorld.SketchGen
 			{
 				return;
 			}
-			if (parms.floorFillRoomsOnly ?? false)
+			bool num = parms.floorFillRoomsOnly ?? false;
+			bool flag = parms.singleFloorType ?? false;
+			if (num)
 			{
 				tmpWalls.Clear();
 				for (int i = 0; i < parms.sketch.Things.Count; i++)
 				{
 					SketchThing sketchThing = parms.sketch.Things[i];
-					if (sketchThing.def.passability == Traversability.Impassable && sketchThing.def.Fillage == FillCategory.Full)
+					if (sketchThing.def.passability != Traversability.Impassable || sketchThing.def.Fillage != FillCategory.Full)
 					{
-						foreach (IntVec3 item in sketchThing.OccupiedRect)
-						{
-							tmpWalls.Add(item);
-						}
+						continue;
+					}
+					foreach (IntVec3 item in sketchThing.OccupiedRect)
+					{
+						tmpWalls.Add(item);
 					}
 				}
 				tmpVisited.Clear();
@@ -43,25 +46,23 @@ namespace RimWorld.SketchGen
 				{
 					if (!tmpWalls.Contains(item2))
 					{
-						FloorFillRoom(item2, tmpWalls, tmpVisited, parms.sketch, floor, floor2, outerRect);
+						FloorFillRoom_NewTmp(item2, tmpWalls, tmpVisited, parms.sketch, floor, floor2, outerRect, flag);
 					}
 				}
+				return;
 			}
-			else
+			bool[,] array = AbstractShapeGenerator.Generate(outerRect.Width, outerRect.Height, horizontalSymmetry: true, verticalSymmetry: true);
+			foreach (IntVec3 item3 in outerRect)
 			{
-				bool[,] array = AbstractShapeGenerator.Generate(outerRect.Width, outerRect.Height, horizontalSymmetry: true, verticalSymmetry: true);
-				foreach (IntVec3 item3 in outerRect)
+				if (!parms.sketch.ThingsAt(item3).Any((SketchThing x) => x.def.Fillage == FillCategory.Full))
 				{
-					if (!parms.sketch.ThingsAt(item3).Any((SketchThing x) => x.def.Fillage == FillCategory.Full))
+					if (array[item3.x - outerRect.minX, item3.z - outerRect.minZ] || flag)
 					{
-						if (array[item3.x - outerRect.minX, item3.z - outerRect.minZ])
-						{
-							parms.sketch.AddTerrain(floor, item3, wipeIfCollides: false);
-						}
-						else
-						{
-							parms.sketch.AddTerrain(floor2, item3, wipeIfCollides: false);
-						}
+						parms.sketch.AddTerrain(floor, item3, wipeIfCollides: false);
+					}
+					else
+					{
+						parms.sketch.AddTerrain(floor2, item3, wipeIfCollides: false);
 					}
 				}
 			}
@@ -78,17 +79,28 @@ namespace RimWorld.SketchGen
 
 		private static bool TryFindFloors(out TerrainDef floor1, out TerrainDef floor2, ResolveParams parms)
 		{
-			Predicate<TerrainDef> validator = (TerrainDef x) => SketchGenUtility.IsFloorAllowed(x, parms.allowWood ?? true, parms.allowConcrete ?? true, parms.useOnlyStonesAvailableOnMap, parms.onlyBuildableByPlayer ?? false);
+			Predicate<TerrainDef> validator = (TerrainDef x) => SketchGenUtility.IsFloorAllowed_NewTmp(x, parms.allowWood ?? true, parms.allowConcrete ?? true, parms.useOnlyStonesAvailableOnMap, parms.onlyBuildableByPlayer ?? false, parms.onlyStoneFloors ?? true);
 			if (!BaseGenUtility.TryRandomInexpensiveFloor(out floor1, validator))
 			{
 				floor2 = null;
 				return false;
 			}
+			if (parms.singleFloorType ?? false)
+			{
+				floor2 = null;
+				return true;
+			}
 			TerrainDef floor1Local = floor1;
 			return BaseGenUtility.TryRandomInexpensiveFloor(out floor2, (TerrainDef x) => x != floor1Local && (validator == null || validator(x)));
 		}
 
+		[Obsolete("Obsolete. Only needed for mod back-compatibility.")]
 		private void FloorFillRoom(IntVec3 c, HashSet<IntVec3> walls, HashSet<IntVec3> visited, Sketch sketch, TerrainDef def1, TerrainDef def2, CellRect outerRect)
+		{
+			FloorFillRoom_NewTmp(c, walls, visited, sketch, def1, def2, outerRect, singleFloorType: false);
+		}
+
+		private void FloorFillRoom_NewTmp(IntVec3 c, HashSet<IntVec3> walls, HashSet<IntVec3> visited, Sketch sketch, TerrainDef def1, TerrainDef def2, CellRect outerRect, bool singleFloorType)
 		{
 			if (visited.Contains(c))
 			{
@@ -147,7 +159,7 @@ namespace RimWorld.SketchGen
 				IntVec3 pos = tmpCells[j];
 				if (!sketch.ThingsAt(pos).Any((SketchThing x) => x.def.passability == Traversability.Impassable && x.def.Fillage == FillCategory.Full))
 				{
-					if (array[pos.x - cellRect.minX, pos.z - cellRect.minZ])
+					if (array[pos.x - cellRect.minX, pos.z - cellRect.minZ] || singleFloorType)
 					{
 						sketch.AddTerrain(def1, pos, wipeIfCollides: false);
 					}

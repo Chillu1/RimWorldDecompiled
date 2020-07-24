@@ -13,7 +13,7 @@ namespace RimWorld
 
 		public override void TravelingTransportPodsArrived(List<ActiveDropPodInfo> dropPods, Map map)
 		{
-			IntVec3 near = DropCellFinder.FindRaidDropCenterDistant(map);
+			IntVec3 near = DropCellFinder.FindRaidDropCenterDistant_NewTemp(map);
 			TransportPodsArrivalActionUtility.DropTravelingTransportPods(dropPods, near, map);
 		}
 
@@ -22,7 +22,7 @@ namespace RimWorld
 			Map map = (Map)parms.target;
 			if (!parms.spawnCenter.IsValid)
 			{
-				parms.spawnCenter = DropCellFinder.FindRaidDropCenterDistant(map);
+				parms.spawnCenter = DropCellFinder.FindRaidDropCenterDistant_NewTemp(map);
 			}
 			parms.spawnRotation = Rot4.Random;
 			return true;

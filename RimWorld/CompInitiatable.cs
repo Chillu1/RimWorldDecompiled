@@ -12,11 +12,15 @@ namespace RimWorld
 		{
 			get
 			{
-				if (spawnedTick >= 0)
+				if (Delay > 0)
 				{
-					return Find.TickManager.TicksGame >= spawnedTick + Delay;
+					if (spawnedTick >= 0)
+					{
+						return Find.TickManager.TicksGame >= spawnedTick + Delay;
+					}
+					return false;
 				}
-				return false;
+				return true;
 			}
 		}
 

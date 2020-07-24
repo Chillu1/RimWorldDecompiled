@@ -76,20 +76,21 @@ namespace Verse
 
 		private static void BuildDatabaseIfNecessary()
 		{
-			if (heads.Count <= 0 || skull == null || stump == null)
+			if (heads.Count > 0 && skull != null && stump != null)
 			{
-				heads.Clear();
-				string[] headsFolderPaths = HeadsFolderPaths;
-				foreach (string text in headsFolderPaths)
-				{
-					foreach (string item in GraphicDatabaseUtility.GraphicNamesInFolder(text))
-					{
-						heads.Add(new HeadGraphicRecord(text + "/" + item));
-					}
-				}
-				skull = new HeadGraphicRecord(SkullPath);
-				stump = new HeadGraphicRecord(StumpPath);
+				return;
 			}
+			heads.Clear();
+			string[] headsFolderPaths = HeadsFolderPaths;
+			foreach (string text in headsFolderPaths)
+			{
+				foreach (string item in GraphicDatabaseUtility.GraphicNamesInFolder(text))
+				{
+					heads.Add(new HeadGraphicRecord(text + "/" + item));
+				}
+			}
+			skull = new HeadGraphicRecord(SkullPath);
+			stump = new HeadGraphicRecord(StumpPath);
 		}
 
 		public static Graphic_Multi GetHeadNamed(string graphicPath, Color skinColor)
@@ -148,7 +149,7 @@ namespace Verse
 					return item.GetGraphic(skinColor);
 				}
 			}
-			Log.Error("Failed to find head for gender=" + gender + ". Defaulting...");
+			Log.Error(string.Concat("Failed to find head for gender=", gender, ". Defaulting..."));
 			return heads.First().GetGraphic(skinColor);
 		}
 	}

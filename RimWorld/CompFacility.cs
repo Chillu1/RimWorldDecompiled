@@ -153,18 +153,19 @@ namespace RimWorld
 		{
 			UnlinkAll();
 			CompProperties_Facility props = Props;
-			if (props.linkableBuildings != null)
+			if (props.linkableBuildings == null)
 			{
-				for (int i = 0; i < props.linkableBuildings.Count; i++)
+				return;
+			}
+			for (int i = 0; i < props.linkableBuildings.Count; i++)
+			{
+				foreach (Thing item in parent.Map.listerThings.ThingsOfDef(props.linkableBuildings[i]))
 				{
-					foreach (Thing item in parent.Map.listerThings.ThingsOfDef(props.linkableBuildings[i]))
+					CompAffectedByFacilities compAffectedByFacilities = item.TryGetComp<CompAffectedByFacilities>();
+					if (compAffectedByFacilities != null && compAffectedByFacilities.CanLinkTo(parent))
 					{
-						CompAffectedByFacilities compAffectedByFacilities = item.TryGetComp<CompAffectedByFacilities>();
-						if (compAffectedByFacilities != null && compAffectedByFacilities.CanLinkTo(parent))
-						{
-							linkedBuildings.Add(item);
-							compAffectedByFacilities.Notify_NewLink(parent);
-						}
+						linkedBuildings.Add(item);
+						compAffectedByFacilities.Notify_NewLink(parent);
 					}
 				}
 			}

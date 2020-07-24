@@ -13,13 +13,13 @@ namespace Verse.AI
 		{
 			if (!haulThing.Spawned)
 			{
-				Log.Message(pawn + " tried to start carry " + haulThing + " which isn't spawned.");
+				Log.Message(string.Concat(pawn, " tried to start carry ", haulThing, " which isn't spawned."));
 				pawn.jobs.EndCurrentJob(JobCondition.Incompletable);
 				return true;
 			}
 			if (haulThing.stackCount == 0)
 			{
-				Log.Message(pawn + " tried to start carry " + haulThing + " which had stackcount 0.");
+				Log.Message(string.Concat(pawn, " tried to start carry ", haulThing, " which had stackcount 0."));
 				pawn.jobs.EndCurrentJob(JobCondition.Incompletable);
 				return true;
 			}
@@ -48,7 +48,7 @@ namespace Verse.AI
 					int num = actor.carryTracker.AvailableStackSpace(thing.def);
 					if (num == 0)
 					{
-						throw new Exception("StartCarryThing got availableStackSpace " + num + " for haulTarg " + thing + ". Job: " + curJob);
+						throw new Exception(string.Concat("StartCarryThing got availableStackSpace ", num, " for haulTarg ", thing, ". Job: ", curJob));
 					}
 					if (failIfStackCountLessThanJobCount && thing.stackCount < curJob.count)
 					{
@@ -108,7 +108,7 @@ namespace Verse.AI
 				{
 					if (actor.carryTracker.CarriedThing == null)
 					{
-						Log.Error("JumpToAlsoCollectTargetInQueue run on " + actor + " who is not carrying something.");
+						Log.Error(string.Concat("JumpToAlsoCollectTargetInQueue run on ", actor, " who is not carrying something."));
 					}
 					else if (actor.carryTracker.AvailableStackSpace(actor.carryTracker.CarriedThing.def) > 0)
 					{
@@ -218,7 +218,7 @@ namespace Verse.AI
 				Pawn actor = toil.actor;
 				if (actor.carryTracker.CarriedThing == null)
 				{
-					Log.Error(actor + " tried to place hauled thing in facing cell but is not hauling anything.");
+					Log.Error(string.Concat(actor, " tried to place hauled thing in facing cell but is not hauling anything."));
 				}
 				else
 				{
@@ -244,7 +244,7 @@ namespace Verse.AI
 				IntVec3 cell = curJob.GetTarget(cellInd).Cell;
 				if (actor.carryTracker.CarriedThing == null)
 				{
-					Log.Error(actor + " tried to place hauled thing in cell but is not hauling anything.");
+					Log.Error(string.Concat(actor, " tried to place hauled thing in cell but is not hauling anything."));
 				}
 				else
 				{
@@ -301,7 +301,7 @@ namespace Verse.AI
 								}
 								else
 								{
-									Log.Error("Incomplete haul for " + actor + ": Could not find anywhere to put " + actor.carryTracker.CarriedThing + " near " + actor.Position + ". Destroying. This should never happen!");
+									Log.Error(string.Concat("Incomplete haul for ", actor, ": Could not find anywhere to put ", actor.carryTracker.CarriedThing, " near ", actor.Position, ". Destroying. This should never happen!"));
 									actor.carryTracker.CarriedThing.Destroy();
 								}
 							}
@@ -346,7 +346,7 @@ namespace Verse.AI
 				Job curJob = actor.jobs.curJob;
 				if (actor.carryTracker.CarriedThing == null)
 				{
-					Log.Error(actor + " tried to place hauled thing in container but is not hauling anything.");
+					Log.Error(string.Concat(actor, " tried to place hauled thing in container but is not hauling anything."));
 				}
 				else
 				{

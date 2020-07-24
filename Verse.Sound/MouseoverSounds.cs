@@ -37,7 +37,7 @@ namespace Verse.Sound
 				{
 					return "(Invalid)";
 				}
-				return "(rect=" + rect + (mouseIsOver ? "mouseIsOver" : "") + ")";
+				return string.Concat("(rect=", rect, mouseIsOver ? "mouseIsOver" : "", ")");
 			}
 		}
 

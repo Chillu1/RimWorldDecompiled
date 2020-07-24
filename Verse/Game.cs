@@ -309,7 +309,7 @@ namespace Verse
 					}
 					catch (Exception ex)
 					{
-						Log.Error("Could not instantiate a GameComponent of type " + item2 + ": " + ex);
+						Log.Error(string.Concat("Could not instantiate a GameComponent of type ", item2, ": ", ex));
 					}
 				}
 			}
@@ -547,6 +547,7 @@ namespace Verse
 			researchManager.ReapplyAllMods();
 			MessagesRepeatAvoider.Reset();
 			GameComponentUtility.FinalizeInit();
+			history.FinalizeInit();
 			Current.ProgramState = ProgramState.Playing;
 		}
 
@@ -559,7 +560,7 @@ namespace Verse
 			}
 			if (!maps.Contains(map))
 			{
-				Log.Error("Tried to remove map " + map + " but it's not here.");
+				Log.Error(string.Concat("Tried to remove map ", map, " but it's not here."));
 				return;
 			}
 			if (map.Parent != null)

@@ -32,7 +32,7 @@ namespace RimWorld
 
 		public static float GetNaturalRandomSelectionWeight(QuestScriptDef quest, float points, StoryState storyState)
 		{
-			if (quest.rootSelectionWeight <= 0f || points < quest.rootMinPoints)
+			if (quest.rootSelectionWeight <= 0f || points < quest.rootMinPoints || StorytellerUtility.GetProgressScore(storyState.Target) < quest.rootMinProgressScore)
 			{
 				return 0f;
 			}
@@ -68,7 +68,7 @@ namespace RimWorld
 				num *= QuestTuning.NonFavorQuestSelectionWeightFactorByDaysSinceFavorQuestCurve.Evaluate(x);
 			}
 			return num;
-			bool PlayerWantsRoyalFavorFromAnyFaction()
+			static bool PlayerWantsRoyalFavorFromAnyFaction()
 			{
 				List<Faction> allFactionsListForReading = Find.FactionManager.AllFactionsListForReading;
 				for (int j = 0; j < allFactionsListForReading.Count; j++)

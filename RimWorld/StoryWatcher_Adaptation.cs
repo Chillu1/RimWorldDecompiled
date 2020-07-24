@@ -58,7 +58,7 @@ namespace RimWorld
 			}
 			if (DebugViewSettings.writeStoryteller)
 			{
-				Log.Message("Adaptation event: " + p + " " + ev + ". Loss: " + num.ToString("F1") + " from " + adaptDays.ToString("F1"));
+				Log.Message(string.Concat("Adaptation event: ", p, " ", ev, ". Loss: ", num.ToString("F1"), " from ", adaptDays.ToString("F1")));
 			}
 			adaptDays = Mathf.Max(StorytellerDef.adaptDaysMin, adaptDays - num);
 		}

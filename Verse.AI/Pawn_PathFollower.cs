@@ -123,7 +123,7 @@ namespace Verse.AI
 			dest = (LocalTargetInfo)GenPath.ResolvePathMode(pawn, dest.ToTargetInfo(pawn.Map), ref peMode);
 			if (dest.HasThing && dest.ThingDestroyed)
 			{
-				Log.Error(pawn + " pathing to destroyed thing " + dest.Thing);
+				Log.Error(string.Concat(pawn, " pathing to destroyed thing ", dest.Thing));
 				PatherFailed();
 			}
 			else
@@ -358,7 +358,7 @@ namespace Verse.AI
 				}
 				if (error)
 				{
-					Log.Warning(pawn + " on unwalkable cell " + pawn.Position + ". Teleporting to " + intVec);
+					Log.Warning(string.Concat(pawn, " on unwalkable cell ", pawn.Position, ". Teleporting to ", intVec));
 				}
 				pawn.Position = intVec;
 				pawn.Notify_Teleported(endCurrentJob: true, resetTweenedPos: false);
@@ -368,7 +368,7 @@ namespace Verse.AI
 			if (!flag)
 			{
 				pawn.Destroy();
-				Log.Error(pawn.ToStringSafe() + " on unwalkable cell " + pawn.Position + ". Could not find walkable position nearby. Destroyed.");
+				Log.Error(string.Concat(pawn.ToStringSafe(), " on unwalkable cell ", pawn.Position, ". Could not find walkable position nearby. Destroyed."));
 			}
 			return flag;
 		}
@@ -465,14 +465,14 @@ namespace Verse.AI
 		{
 			if (curPath.NodesLeftCount <= 1)
 			{
-				Log.Error(pawn + " at " + pawn.Position + " ran out of path nodes while pathing to " + destination + ".");
+				Log.Error(string.Concat(pawn, " at ", pawn.Position, " ran out of path nodes while pathing to ", destination, "."));
 				PatherFailed();
 				return;
 			}
 			nextCell = curPath.ConsumeNextNode();
 			if (!nextCell.Walkable(pawn.Map))
 			{
-				Log.Error(pawn + " entering " + nextCell + " which is unwalkable.");
+				Log.Error(string.Concat(pawn, " entering ", nextCell, " which is unwalkable."));
 			}
 			int num = CostToMoveIntoCell(nextCell);
 			nextCellCostTotal = num;

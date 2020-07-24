@@ -93,7 +93,7 @@ namespace Verse
 			}
 			if (Contains(item))
 			{
-				Log.Warning("Tried to add " + item + " to ThingOwner but this item is already here.");
+				Log.Warning(string.Concat("Tried to add ", item, " to ThingOwner but this item is already here."));
 				return 0;
 			}
 			if (item.holdingOwner != null)
@@ -209,15 +209,13 @@ namespace Verse
 						list[i].Destroy();
 					}
 				}
+				return;
 			}
-			else
+			foreach (T thing in things)
 			{
-				foreach (T thing in things)
+				if (!TryAddOrTransfer(thing, canMergeWithExistingStacks) && destroyLeftover)
 				{
-					if (!TryAddOrTransfer(thing, canMergeWithExistingStacks) && destroyLeftover)
-					{
-						thing.Destroy();
-					}
+					thing.Destroy();
 				}
 			}
 		}
@@ -328,7 +326,7 @@ namespace Verse
 				};
 			}
 			Thing lastResultingThing2;
-			bool result = TryDrop(thing, dropLoc, map, mode, out lastResultingThing2, placedAction2, nearPlaceValidator);
+			bool result = TryDrop_NewTmp(thing, dropLoc, map, mode, out lastResultingThing2, placedAction2, nearPlaceValidator);
 			lastResultingThing = (T)lastResultingThing2;
 			return result;
 		}
@@ -663,15 +661,13 @@ namespace Verse
 						list[i].Destroy();
 					}
 				}
+				return;
 			}
-			else
+			foreach (Thing thing in things)
 			{
-				foreach (Thing thing in things)
+				if (!TryAddOrTransfer(thing, canMergeWithExistingStacks) && destroyLeftover)
 				{
-					if (!TryAddOrTransfer(thing, canMergeWithExistingStacks) && destroyLeftover)
-					{
-						thing.Destroy();
-					}
+					thing.Destroy();
 				}
 			}
 		}
@@ -705,7 +701,7 @@ namespace Verse
 		{
 			if (!Contains(item))
 			{
-				Log.Error("Can't transfer item " + item + " because it's not here. owner=" + owner.ToStringSafe());
+				Log.Error(string.Concat("Can't transfer item ", item, " because it's not here. owner=", owner.ToStringSafe()));
 				resultingTransferredItem = null;
 				return 0;
 			}
@@ -797,7 +793,7 @@ namespace Verse
 			IntVec3 rootPosition = ThingOwnerUtility.GetRootPosition(owner);
 			if (rootMap == null || !rootPosition.IsValid)
 			{
-				Log.Error("Cannot drop " + thing + " without a dropLoc and with an owner whose map is null.");
+				Log.Error(string.Concat("Cannot drop ", thing, " without a dropLoc and with an owner whose map is null."));
 				lastResultingThing = null;
 				return false;
 			}
@@ -814,12 +810,12 @@ namespace Verse
 			}
 			if (thing.stackCount < count)
 			{
-				Log.Error("Tried to drop " + count + " of " + thing + " while only having " + thing.stackCount);
+				Log.Error(string.Concat("Tried to drop ", count, " of ", thing, " while only having ", thing.stackCount));
 				count = thing.stackCount;
 			}
 			if (count == thing.stackCount)
 			{
-				if (GenDrop.TryDropSpawn(thing, dropLoc, map, mode, out resultingThing, placedAction, nearPlaceValidator))
+				if (GenDrop.TryDropSpawn_NewTmp(thing, dropLoc, map, mode, out resultingThing, placedAction, nearPlaceValidator))
 				{
 					Remove(thing);
 					return true;
@@ -827,7 +823,7 @@ namespace Verse
 				return false;
 			}
 			Thing thing2 = thing.SplitOff(count);
-			if (GenDrop.TryDropSpawn(thing2, dropLoc, map, mode, out resultingThing, placedAction, nearPlaceValidator))
+			if (GenDrop.TryDropSpawn_NewTmp(thing2, dropLoc, map, mode, out resultingThing, placedAction, nearPlaceValidator))
 			{
 				return true;
 			}
@@ -841,14 +837,20 @@ namespace Verse
 			IntVec3 rootPosition = ThingOwnerUtility.GetRootPosition(owner);
 			if (rootMap == null || !rootPosition.IsValid)
 			{
-				Log.Error("Cannot drop " + thing + " without a dropLoc and with an owner whose map is null.");
+				Log.Error(string.Concat("Cannot drop ", thing, " without a dropLoc and with an owner whose map is null."));
 				lastResultingThing = null;
 				return false;
 			}
-			return TryDrop(thing, rootPosition, rootMap, mode, out lastResultingThing, placedAction, nearPlaceValidator);
+			return TryDrop_NewTmp(thing, rootPosition, rootMap, mode, out lastResultingThing, placedAction, nearPlaceValidator);
 		}
 
+		[Obsolete("Only used for mod compatibility")]
 		public bool TryDrop(Thing thing, IntVec3 dropLoc, Map map, ThingPlaceMode mode, out Thing lastResultingThing, Action<Thing, int> placedAction = null, Predicate<IntVec3> nearPlaceValidator = null)
+		{
+			return TryDrop_NewTmp(thing, dropLoc, map, mode, out lastResultingThing, placedAction, nearPlaceValidator);
+		}
+
+		public bool TryDrop_NewTmp(Thing thing, IntVec3 dropLoc, Map map, ThingPlaceMode mode, out Thing lastResultingThing, Action<Thing, int> placedAction = null, Predicate<IntVec3> nearPlaceValidator = null, bool playDropSound = true)
 		{
 			if (!Contains(thing))
 			{
@@ -856,7 +858,7 @@ namespace Verse
 				lastResultingThing = null;
 				return false;
 			}
-			if (GenDrop.TryDropSpawn(thing, dropLoc, map, mode, out lastResultingThing, placedAction, nearPlaceValidator))
+			if (GenDrop.TryDropSpawn_NewTmp(thing, dropLoc, map, mode, out lastResultingThing, placedAction, nearPlaceValidator, playDropSound))
 			{
 				Remove(thing);
 				return true;
@@ -869,7 +871,7 @@ namespace Verse
 			bool result = true;
 			for (int num = Count - 1; num >= 0; num--)
 			{
-				if (!TryDrop(GetAt(num), dropLoc, map, mode, out Thing _, placeAction, nearPlaceValidator))
+				if (!TryDrop_NewTmp(GetAt(num), dropLoc, map, mode, out Thing _, placeAction, nearPlaceValidator))
 				{
 					result = false;
 				}

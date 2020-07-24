@@ -12,7 +12,7 @@ namespace RimWorld.Planet
 		{
 			if (enterMode == CaravanEnterMode.None)
 			{
-				Log.Error("Caravan " + caravan + " tried to enter map " + map + " with enter mode " + enterMode);
+				Log.Error(string.Concat("Caravan ", caravan, " tried to enter map ", map, " with enter mode ", enterMode));
 				enterMode = CaravanEnterMode.Edge;
 			}
 			IntVec3 enterCell = GetEnterCell(caravan, map, enterMode, extraCellValidator);

@@ -49,7 +49,11 @@ namespace RimWorld
 			List<Thing> list = mapParent.Map.listerThings.ThingsInGroup(ThingRequestGroup.Bed);
 			foreach (Pawn targetPawn in targetPawns)
 			{
-				RoyalTitle title = targetPawn.royalty.HighestTitleWithBedroomRequirements();
+				RoyalTitle royalTitle = targetPawn.royalty.HighestTitleWithBedroomRequirements();
+				if (royalTitle == null)
+				{
+					continue;
+				}
 				Thing thing = null;
 				for (int i = 0; i < list.Count; i++)
 				{
@@ -57,7 +61,7 @@ namespace RimWorld
 					if (thing2.Faction == Faction.OfPlayer && thing2.GetRoom() != null && !tmpOccupiedBeds.Contains(thing2))
 					{
 						CompAssignableToPawn compAssignableToPawn = thing2.TryGetComp<CompAssignableToPawn>();
-						if (compAssignableToPawn != null && compAssignableToPawn.AssignedPawnsForReading.Count <= 0 && RoyalTitleUtility.BedroomSatisfiesRequirements(thing2.GetRoom(), title))
+						if (compAssignableToPawn != null && compAssignableToPawn.AssignedPawnsForReading.Count <= 0 && RoyalTitleUtility.BedroomSatisfiesRequirements(thing2.GetRoom(), royalTitle))
 						{
 							thing = thing2;
 							break;

@@ -40,7 +40,7 @@ namespace RimWorld
 			}
 			if (parentDef.tickerType != TickerType.Normal && parentDef.tickerType != TickerType.Rare)
 			{
-				yield return "CompRottable needs tickerType " + TickerType.Rare + " or " + TickerType.Normal + ", has " + parentDef.tickerType;
+				yield return string.Concat("CompRottable needs tickerType ", TickerType.Rare, " or ", TickerType.Normal, ", has ", parentDef.tickerType);
 			}
 		}
 	}

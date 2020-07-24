@@ -64,7 +64,7 @@ namespace Verse
 				UI.FocusControl("RenameField", this);
 				focusedRenameField = true;
 			}
-			if (!(Widgets.ButtonText(new Rect(15f, inRect.height - 35f - 15f, inRect.width - 15f - 15f, 35f), "OK") | flag))
+			if (!(Widgets.ButtonText(new Rect(15f, inRect.height - 35f - 15f, inRect.width - 15f - 15f, 35f), "OK") || flag))
 			{
 				return;
 			}

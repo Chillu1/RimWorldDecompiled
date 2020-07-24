@@ -21,9 +21,9 @@ namespace RimWorld
 				Lord lord = pawn.GetLord();
 				if (lord == null || !(lord.LordJob is LordJob_TradeWithColony))
 				{
-					for (int k = 0; k < pawn.inventory.innerContainer.Count; k++)
+					for (int j = 0; j < pawn.inventory.innerContainer.Count; j++)
 					{
-						Thing thing = pawn.inventory.innerContainer[k];
+						Thing thing = pawn.inventory.innerContainer[j];
 						if (!pawn.inventory.NotForSale(thing))
 						{
 							yield return thing;
@@ -34,16 +34,16 @@ namespace RimWorld
 				{
 					yield break;
 				}
-				for (int k = 0; k < lord.ownedPawns.Count; k++)
+				for (int j = 0; j < lord.ownedPawns.Count; j++)
 				{
-					Pawn p = lord.ownedPawns[k];
+					Pawn p = lord.ownedPawns[j];
 					switch (p.GetTraderCaravanRole())
 					{
 					case TraderCaravanRole.Carrier:
 					{
-						for (int i = 0; i < p.inventory.innerContainer.Count; i++)
+						for (int k = 0; k < p.inventory.innerContainer.Count; k++)
 						{
-							yield return p.inventory.innerContainer[i];
+							yield return p.inventory.innerContainer[k];
 						}
 						break;
 					}
@@ -100,14 +100,15 @@ namespace RimWorld
 			{
 				yield return item;
 			}
-			if (pawn.GetLord() != null)
+			if (pawn.GetLord() == null)
 			{
-				foreach (Pawn item2 in from x in TradeUtility.AllSellableColonyPawns(pawn.Map)
-					where !x.Downed && ReachableForTrade(x)
-					select x)
-				{
-					yield return item2;
-				}
+				yield break;
+			}
+			foreach (Pawn item2 in from x in TradeUtility.AllSellableColonyPawns(pawn.Map)
+				where !x.Downed && ReachableForTrade(x)
+				select x)
+			{
+				yield return item2;
 			}
 		}
 
@@ -115,7 +116,7 @@ namespace RimWorld
 		{
 			if (Goods.Contains(toGive))
 			{
-				Log.Error("Tried to add " + toGive + " to stock (pawn's trader tracker), but it's already here.");
+				Log.Error(string.Concat("Tried to add ", toGive, " to stock (pawn's trader tracker), but it's already here."));
 				return;
 			}
 			Pawn pawn = toGive as Pawn;
@@ -163,7 +164,7 @@ namespace RimWorld
 				this.pawn.GetLord()?.extraForbiddenThings.Add(thing);
 				return;
 			}
-			Log.Error("Could not place bought thing " + thing + " at " + positionHeld);
+			Log.Error(string.Concat("Could not place bought thing ", thing, " at ", positionHeld));
 			thing.Destroy();
 		}
 
@@ -185,14 +186,16 @@ namespace RimWorld
 			if (lord == null)
 			{
 				newPawn.Destroy();
-				Log.Error("Tried to sell pawn " + newPawn + " to " + pawn + ", but " + pawn + " has no lord. Traders without lord can't buy pawns.");
-				return;
+				Log.Error(string.Concat("Tried to sell pawn ", newPawn, " to ", pawn, ", but ", pawn, " has no lord. Traders without lord can't buy pawns."));
 			}
-			if (newPawn.RaceProps.Humanlike)
+			else
 			{
-				soldPrisoners.Add(newPawn);
+				if (newPawn.RaceProps.Humanlike)
+				{
+					soldPrisoners.Add(newPawn);
+				}
+				lord.AddPawn(newPawn);
 			}
-			lord.AddPawn(newPawn);
 		}
 
 		private void AddThingToRandomInventory(Thing thing)

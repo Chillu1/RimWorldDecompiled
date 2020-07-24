@@ -313,7 +313,7 @@ namespace RimWorld
 			{
 				for (int i = 0; i < allCavePlants.Count; i++)
 				{
-					if (allCavePlants[i].CanEverPlantAt(c, map))
+					if (allCavePlants[i].CanEverPlantAt_NewTemp(c, map))
 					{
 						outPlants.Add(allCavePlants[i]);
 					}
@@ -324,7 +324,7 @@ namespace RimWorld
 			for (int j = 0; j < allWildPlants.Count; j++)
 			{
 				ThingDef thingDef = allWildPlants[j];
-				if (!thingDef.CanEverPlantAt(c, map))
+				if (!thingDef.CanEverPlantAt_NewTemp(c, map))
 				{
 					continue;
 				}

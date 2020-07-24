@@ -79,17 +79,14 @@ namespace RimWorld
 
 		protected void DoIncidentEditInterface(Rect rect)
 		{
-			if (Widgets.ButtonText(rect, incident.LabelCap))
+			if (!Widgets.ButtonText(rect, incident.LabelCap))
 			{
-				FloatMenuUtility.MakeMenu(DefDatabase<IncidentDef>.AllDefs, (IncidentDef id) => id.LabelCap, delegate(IncidentDef id)
-				{
-					ScenPart_IncidentBase scenPart_IncidentBase = this;
-					return delegate
-					{
-						scenPart_IncidentBase.incident = id;
-					};
-				});
+				return;
 			}
+			FloatMenuUtility.MakeMenu(DefDatabase<IncidentDef>.AllDefs, (IncidentDef id) => id.LabelCap, (IncidentDef id) => delegate
+			{
+				incident = id;
+			});
 		}
 	}
 }

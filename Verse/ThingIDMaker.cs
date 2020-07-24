@@ -8,7 +8,7 @@ namespace Verse
 			{
 				if (t.thingIDNumber != -1)
 				{
-					Log.Error("Giving ID to " + t + " which already has id " + t.thingIDNumber);
+					Log.Error(string.Concat("Giving ID to ", t, " which already has id ", t.thingIDNumber));
 				}
 				t.thingIDNumber = Find.UniqueIDsManager.GetNextThingID();
 			}

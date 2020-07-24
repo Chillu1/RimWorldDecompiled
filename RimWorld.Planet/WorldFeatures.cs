@@ -45,18 +45,19 @@ namespace RimWorld.Planet
 		public void ExposeData()
 		{
 			Scribe_Collections.Look(ref features, "features", LookMode.Deep);
-			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			if (Scribe.mode != LoadSaveMode.PostLoadInit)
 			{
-				WorldGrid grid = Find.WorldGrid;
-				if (grid.tileFeature != null && grid.tileFeature.Length != 0)
-				{
-					DataSerializeUtility.LoadUshort(grid.tileFeature, grid.TilesCount, delegate(int i, ushort data)
-					{
-						grid[i].feature = ((data == ushort.MaxValue) ? null : GetFeatureWithID(data));
-					});
-				}
-				textsCreated = false;
+				return;
 			}
+			WorldGrid grid = Find.WorldGrid;
+			if (grid.tileFeature != null && grid.tileFeature.Length != 0)
+			{
+				DataSerializeUtility.LoadUshort(grid.tileFeature, grid.TilesCount, delegate(int i, ushort data)
+				{
+					grid[i].feature = ((data == ushort.MaxValue) ? null : GetFeatureWithID(data));
+				});
+			}
+			textsCreated = false;
 		}
 
 		public void UpdateFeatures()

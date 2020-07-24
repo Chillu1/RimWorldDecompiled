@@ -28,12 +28,13 @@ namespace Verse
 			for (int i = 0; i < thingList.Count; i++)
 			{
 				Thing thing = thingList[i];
-				if (thing.def.Fillage == FillCategory.Full)
+				if (thing.def.Fillage != FillCategory.Full)
 				{
-					foreach (IntVec3 cell in thing.OccupiedRect().Cells)
-					{
-						UnfogWorker(cell);
-					}
+					continue;
+				}
+				foreach (IntVec3 cell in thing.OccupiedRect().Cells)
+				{
+					UnfogWorker(cell);
 				}
 			}
 		}

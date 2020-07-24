@@ -32,19 +32,20 @@ namespace Verse
 			{
 				yield return item;
 			}
-			if (tools != null)
+			if (tools == null)
 			{
-				Tool tool = tools.SelectMany((Tool lhs) => tools.Where((Tool rhs) => lhs != rhs && lhs.id == rhs.id)).FirstOrDefault();
-				if (tool != null)
+				yield break;
+			}
+			Tool tool = tools.SelectMany((Tool lhs) => tools.Where((Tool rhs) => lhs != rhs && lhs.id == rhs.id)).FirstOrDefault();
+			if (tool != null)
+			{
+				yield return $"duplicate hediff tool id {tool.id}";
+			}
+			foreach (Tool tool2 in tools)
+			{
+				foreach (string item2 in tool2.ConfigErrors())
 				{
-					yield return $"duplicate hediff tool id {tool.id}";
-				}
-				foreach (Tool tool2 in tools)
-				{
-					foreach (string item2 in tool2.ConfigErrors())
-					{
-						yield return item2;
-					}
+					yield return item2;
 				}
 			}
 		}

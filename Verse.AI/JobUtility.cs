@@ -16,26 +16,27 @@ namespace Verse.AI
 				msg = msg + "\n" + exception;
 			}
 			Log.Error(msg);
-			if (pawn.jobs != null)
+			if (pawn.jobs == null)
 			{
-				if (pawn.jobs.curJob != null)
-				{
-					pawn.jobs.EndCurrentJob(JobCondition.Errored, startNewJob: false);
-				}
-				if (startingErrorRecoverJob)
-				{
-					Log.Error("An error occurred while starting an error recover job. We have to stop now to avoid infinite loops. This means that the pawn is now jobless which can cause further bugs. pawn=" + pawn.ToStringSafe());
-					return;
-				}
-				startingErrorRecoverJob = true;
-				try
-				{
-					pawn.jobs.StartJob(JobMaker.MakeJob(JobDefOf.Wait, 150));
-				}
-				finally
-				{
-					startingErrorRecoverJob = false;
-				}
+				return;
+			}
+			if (pawn.jobs.curJob != null)
+			{
+				pawn.jobs.EndCurrentJob(JobCondition.Errored, startNewJob: false);
+			}
+			if (startingErrorRecoverJob)
+			{
+				Log.Error("An error occurred while starting an error recover job. We have to stop now to avoid infinite loops. This means that the pawn is now jobless which can cause further bugs. pawn=" + pawn.ToStringSafe());
+				return;
+			}
+			startingErrorRecoverJob = true;
+			try
+			{
+				pawn.jobs.StartJob(JobMaker.MakeJob(JobDefOf.Wait, 150));
+			}
+			finally
+			{
+				startingErrorRecoverJob = false;
 			}
 		}
 
@@ -55,7 +56,7 @@ namespace Verse.AI
 			GetText(b, out string backCompatibleText3, out object obj3);
 			GetText(c, out string backCompatibleText4, out object obj4);
 			return GetResolvedJobReportRaw(baseText, backCompatibleText2, obj2, backCompatibleText3, obj3, backCompatibleText4, obj4);
-			void GetText(LocalTargetInfo x, out string backCompatibleText, out object obj)
+			static void GetText(LocalTargetInfo x, out string backCompatibleText, out object obj)
 			{
 				if (!x.IsValid)
 				{

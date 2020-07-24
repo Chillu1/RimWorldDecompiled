@@ -25,6 +25,8 @@ namespace RimWorld
 
 		public bool predatorsHuntHumanlikes = true;
 
+		public float scariaRotChance;
+
 		public float colonistMoodOffset;
 
 		public float tradePriceFactorLoss;

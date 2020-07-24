@@ -214,7 +214,7 @@ namespace Verse
 		{
 			if (!nickInt.NullOrEmpty())
 			{
-				nickInt = char.ToUpper(Nick[0]).ToString() + Nick.Substring(1);
+				nickInt = char.ToUpper(Nick[0]) + Nick.Substring(1);
 			}
 		}
 

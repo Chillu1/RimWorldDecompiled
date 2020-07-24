@@ -44,8 +44,12 @@ namespace RimWorld.BaseGen
 						}
 					}
 				}
-				else if (edgeCell.Standable(map) && !edgeCell.Roofed(map) && edgeCell.SupportsStructureType(map, ThingDefOf.Sandbags.terrainAffordanceNeeded) && !GenSpawn.WouldWipeAnythingWith(edgeCell, Rot4.North, ThingDefOf.Sandbags, map, (Thing x) => x.def.category == ThingCategory.Building || x.def.category == ThingCategory.Item))
+				else
 				{
+					if (!edgeCell.Standable(map) || edgeCell.Roofed(map) || !edgeCell.SupportsStructureType(map, ThingDefOf.Sandbags.terrainAffordanceNeeded) || GenSpawn.WouldWipeAnythingWith(edgeCell, Rot4.North, ThingDefOf.Sandbags, map, (Thing x) => x.def.category == ThingCategory.Building || x.def.category == ThingCategory.Item))
+					{
+						continue;
+					}
 					if (num > 0)
 					{
 						num--;

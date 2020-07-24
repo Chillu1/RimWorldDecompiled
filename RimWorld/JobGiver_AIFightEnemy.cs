@@ -77,7 +77,7 @@ namespace RimWorld
 			bool flag = pawn.Position.Standable(pawn.Map) && pawn.Map.pawnDestinationReservationManager.CanReserve(pawn.Position, pawn, pawn.Drafted);
 			bool flag2 = verb.CanHitTarget(enemyTarget);
 			bool flag3 = (pawn.Position - enemyTarget.Position).LengthHorizontalSquared < 25;
-			if ((num & flag & flag2) || (flag3 && flag2))
+			if ((num && flag && flag2) || (flag3 && flag2))
 			{
 				return JobMaker.MakeJob(JobDefOf.Wait_Combat, ExpiryInterval_ShooterSucceeded.RandomInRange, checkOverrideOnExpiry: true);
 			}

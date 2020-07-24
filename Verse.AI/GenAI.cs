@@ -88,7 +88,7 @@ namespace Verse.AI
 			{
 				return result.Position;
 			}
-			IEnumerable<Building> source = map.listerBuildings.allBuildingsColonist.Where((Building b) => !b.def.building.ai_combatDangerous && !b.def.building.isInert);
+			IEnumerable<Building> source = map.listerBuildings.allBuildingsColonist.Where((Building b) => !b.def.building.ai_combatDangerous && !b.def.building.isInert && !b.def.building.ai_neverTrashThis);
 			if (source.Any())
 			{
 				for (int j = 0; j < 500; j++)

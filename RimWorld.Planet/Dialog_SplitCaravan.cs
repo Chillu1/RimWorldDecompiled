@@ -454,7 +454,7 @@ namespace RimWorld.Planet
 					Pawn ownerOf = CaravanInventoryUtility.GetOwnerOf(caravan, thing);
 					if (ownerOf == null)
 					{
-						Log.Error("Error while splitting a caravan: Thing " + thing + " has no owner. Where did it come from then?");
+						Log.Error(string.Concat("Error while splitting a caravan: Thing ", thing, " has no owner. Where did it come from then?"));
 					}
 					else
 					{

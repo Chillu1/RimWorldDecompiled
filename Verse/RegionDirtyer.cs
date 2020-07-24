@@ -118,25 +118,27 @@ namespace Verse
 
 		private void SetRegionDirty(Region reg, bool addCellsToDirtyCells = true)
 		{
-			if (reg.valid)
+			if (!reg.valid)
 			{
-				reg.valid = false;
-				reg.Room = null;
-				for (int i = 0; i < reg.links.Count; i++)
+				return;
+			}
+			reg.valid = false;
+			reg.Room = null;
+			for (int i = 0; i < reg.links.Count; i++)
+			{
+				reg.links[i].Deregister(reg);
+			}
+			reg.links.Clear();
+			if (!addCellsToDirtyCells)
+			{
+				return;
+			}
+			foreach (IntVec3 cell in reg.Cells)
+			{
+				dirtyCells.Add(cell);
+				if (DebugViewSettings.drawRegionDirties)
 				{
-					reg.links[i].Deregister(reg);
-				}
-				reg.links.Clear();
-				if (addCellsToDirtyCells)
-				{
-					foreach (IntVec3 cell in reg.Cells)
-					{
-						dirtyCells.Add(cell);
-						if (DebugViewSettings.drawRegionDirties)
-						{
-							map.debugDrawer.FlashCell(cell);
-						}
-					}
+					map.debugDrawer.FlashCell(cell);
 				}
 			}
 		}

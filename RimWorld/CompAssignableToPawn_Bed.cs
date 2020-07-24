@@ -19,6 +19,16 @@ namespace RimWorld
 			pawn.ownership.UnclaimBed();
 		}
 
+		protected override bool ShouldShowAssignmentGizmo()
+		{
+			Building_Bed building_Bed = (Building_Bed)parent;
+			if (building_Bed.def.building.bed_humanlike && building_Bed.Faction == Faction.OfPlayer && !building_Bed.ForPrisoners)
+			{
+				return !building_Bed.Medical;
+			}
+			return false;
+		}
+
 		public override void PostExposeData()
 		{
 			base.PostExposeData();

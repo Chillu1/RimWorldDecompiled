@@ -28,23 +28,24 @@ namespace Verse.AI
 		{
 			outCandidates.Clear();
 			Region region = bully.GetRegion();
-			if (region != null)
+			if (region == null)
 			{
-				TraverseParms traverseParams = TraverseParms.For(bully);
-				RegionTraverser.BreadthFirstTraverse(region, (Region from, Region to) => to.Allows(traverseParams, isDestination: false), delegate(Region r)
-				{
-					List<Thing> list = r.ListerThings.ThingsInGroup(ThingRequestGroup.Pawn);
-					for (int i = 0; i < list.Count; i++)
-					{
-						Pawn pawn = (Pawn)list[i];
-						if (CanChaseAndInsult(bully, pawn, skipReachabilityCheck: true, allowPrisoners))
-						{
-							outCandidates.Add(pawn);
-						}
-					}
-					return false;
-				}, 40);
+				return;
 			}
+			TraverseParms traverseParams = TraverseParms.For(bully);
+			RegionTraverser.BreadthFirstTraverse(region, (Region from, Region to) => to.Allows(traverseParams, isDestination: false), delegate(Region r)
+			{
+				List<Thing> list = r.ListerThings.ThingsInGroup(ThingRequestGroup.Pawn);
+				for (int i = 0; i < list.Count; i++)
+				{
+					Pawn pawn = (Pawn)list[i];
+					if (CanChaseAndInsult(bully, pawn, skipReachabilityCheck: true, allowPrisoners))
+					{
+						outCandidates.Add(pawn);
+					}
+				}
+				return false;
+			}, 40);
 		}
 	}
 }

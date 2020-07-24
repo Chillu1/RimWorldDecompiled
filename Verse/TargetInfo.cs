@@ -106,7 +106,7 @@ namespace Verse
 		{
 			if (!allowNullMap && cell.IsValid && map == null)
 			{
-				Log.Warning("Constructed TargetInfo with cell=" + cell + " and a null map.");
+				Log.Warning(string.Concat("Constructed TargetInfo with cell=", cell, " and a null map."));
 			}
 			thingInt = null;
 			cellInt = cell;

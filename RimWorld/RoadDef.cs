@@ -44,14 +44,15 @@ namespace RimWorld
 				for (int i = 0; i < DefDatabase<RoadWorldLayerDef>.DefCount; i++)
 				{
 					RoadWorldLayerDef roadWorldLayerDef = DefDatabase<RoadWorldLayerDef>.AllDefsListForReading[i];
-					if (worldRenderSteps != null)
+					if (worldRenderSteps == null)
 					{
-						foreach (WorldRenderStep worldRenderStep in worldRenderSteps)
+						continue;
+					}
+					foreach (WorldRenderStep worldRenderStep in worldRenderSteps)
+					{
+						if (worldRenderStep.layer == roadWorldLayerDef)
 						{
-							if (worldRenderStep.layer == roadWorldLayerDef)
-							{
-								cachedLayerWidth[roadWorldLayerDef.index] = worldRenderStep.width;
-							}
+							cachedLayerWidth[roadWorldLayerDef.index] = worldRenderStep.width;
 						}
 					}
 				}

@@ -18,7 +18,7 @@ namespace RimWorld
 				{
 					text = text + ", " + AnyPawn.def.label;
 				}
-				return text + " (" + AnyPawn.GetGenderLabel() + ", " + Mathf.FloorToInt(AnyPawn.ageTracker.AgeBiologicalYearsFloat).ToString() + ")";
+				return text + " (" + AnyPawn.GetGenderLabel() + ", " + Mathf.FloorToInt(AnyPawn.ageTracker.AgeBiologicalYearsFloat) + ")";
 			}
 		}
 

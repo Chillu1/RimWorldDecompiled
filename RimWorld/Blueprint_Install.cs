@@ -86,12 +86,13 @@ namespace RimWorld
 			{
 				yield return command;
 			}
-			if (base.Faction == Faction.OfPlayer)
+			if (base.Faction != Faction.OfPlayer)
 			{
-				foreach (Command item in BuildFacilityCommandUtility.BuildFacilityCommands(ThingToInstall.def))
-				{
-					yield return item;
-				}
+				yield break;
+			}
+			foreach (Command item in BuildFacilityCommandUtility.BuildFacilityCommands(ThingToInstall.def))
+			{
+				yield return item;
 			}
 		}
 

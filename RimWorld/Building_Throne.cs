@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 using Verse;
 
 namespace RimWorld
@@ -10,7 +9,7 @@ namespace RimWorld
 		private static List<RoyalTitleDef> tmpTitles = new List<RoyalTitleDef>();
 
 		public static IEnumerable<RoyalTitleDef> AllTitlesForThroneStature => from title in DefDatabase<RoyalTitleDef>.AllDefsListForReading
-			where title.MinThroneRoomImpressiveness > 0f && title.needFallPerDayAuthority > 0f
+			where title.MinThroneRoomImpressiveness > 0f
 			orderby title.MinThroneRoomImpressiveness
 			select title;
 
@@ -18,6 +17,11 @@ namespace RimWorld
 		{
 			get
 			{
+				if (!ModLister.RoyaltyInstalled)
+				{
+					Log.ErrorOnce("Thrones are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 1222185);
+					return null;
+				}
 				if (CompAssignableToPawn == null || !CompAssignableToPawn.AssignedPawnsForReading.Any())
 				{
 					return null;
@@ -41,11 +45,12 @@ namespace RimWorld
 				RoyalTitleDef result = null;
 				foreach (RoyalTitleDef item in AllTitlesForThroneStature)
 				{
-					if (!(stat > item.MinThroneRoomImpressiveness))
+					if (stat > item.MinThroneRoomImpressiveness)
 					{
-						return result;
+						result = item;
+						continue;
 					}
-					result = item;
+					return result;
 				}
 				return result;
 			}
@@ -81,20 +86,15 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> GetGizmos()
 		{
+			if (!ModLister.RoyaltyInstalled)
+			{
+				Log.ErrorOnce("Thrones are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it.  See rules on the Ludeon forum for more info.", 1222185);
+				yield break;
+			}
 			foreach (Gizmo gizmo in base.GetGizmos())
 			{
 				yield return gizmo;
 			}
-			Command_Action command_Action = new Command_Action();
-			command_Action.defaultLabel = "CommandThingSetOwnerLabel".Translate();
-			command_Action.icon = ContentFinder<Texture2D>.Get("UI/Commands/AssignOwner");
-			command_Action.defaultDesc = "CommandThroneSetOwnerDesc".Translate();
-			command_Action.action = delegate
-			{
-				Find.WindowStack.Add(new Dialog_AssignBuildingOwner(CompAssignableToPawn));
-			};
-			command_Action.hotKey = KeyBindingDefOf.Misc3;
-			yield return command_Action;
 		}
 	}
 }

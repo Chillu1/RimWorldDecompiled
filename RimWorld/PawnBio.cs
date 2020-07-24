@@ -66,21 +66,22 @@ namespace RimWorld
 			{
 				foreach (string item in childhood.ConfigErrors(ignoreNoSpawnCategories: true))
 				{
-					yield return name + ", " + childhood.title + ": " + item;
+					yield return string.Concat(name, ", ", childhood.title, ": ", item);
 				}
 			}
-			if (adulthood != null)
+			if (adulthood == null)
 			{
-				foreach (string item2 in adulthood.ConfigErrors(ignoreNoSpawnCategories: false))
-				{
-					yield return name + ", " + adulthood.title + ": " + item2;
-				}
+				yield break;
+			}
+			foreach (string item2 in adulthood.ConfigErrors(ignoreNoSpawnCategories: false))
+			{
+				yield return string.Concat(name, ", ", adulthood.title, ": ", item2);
 			}
 		}
 
 		public override string ToString()
 		{
-			return "PawnBio(" + name + ")";
+			return string.Concat("PawnBio(", name, ")");
 		}
 	}
 }

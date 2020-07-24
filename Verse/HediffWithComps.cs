@@ -268,24 +268,25 @@ namespace Verse
 
 		private void InitializeComps()
 		{
-			if (def.comps != null)
+			if (def.comps == null)
 			{
-				comps = new List<HediffComp>();
-				for (int i = 0; i < def.comps.Count; i++)
+				return;
+			}
+			comps = new List<HediffComp>();
+			for (int i = 0; i < def.comps.Count; i++)
+			{
+				HediffComp hediffComp = null;
+				try
 				{
-					HediffComp hediffComp = null;
-					try
-					{
-						hediffComp = (HediffComp)Activator.CreateInstance(def.comps[i].compClass);
-						hediffComp.props = def.comps[i];
-						hediffComp.parent = this;
-						comps.Add(hediffComp);
-					}
-					catch (Exception arg)
-					{
-						Log.Error("Could not instantiate or initialize a HediffComp: " + arg);
-						comps.Remove(hediffComp);
-					}
+					hediffComp = (HediffComp)Activator.CreateInstance(def.comps[i].compClass);
+					hediffComp.props = def.comps[i];
+					hediffComp.parent = this;
+					comps.Add(hediffComp);
+				}
+				catch (Exception arg)
+				{
+					Log.Error("Could not instantiate or initialize a HediffComp: " + arg);
+					comps.Remove(hediffComp);
 				}
 			}
 		}

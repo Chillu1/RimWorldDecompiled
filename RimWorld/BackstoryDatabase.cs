@@ -64,11 +64,9 @@ namespace RimWorld
 				if (bs == allBackstories[bs.identifier])
 				{
 					Log.Error("Tried to add the same backstory twice " + bs.identifier);
+					return;
 				}
-				else
-				{
-					Log.Error("Backstory " + bs.title + " has same unique save key " + bs.identifier + " as old backstory " + allBackstories[bs.identifier].title);
-				}
+				Log.Error("Backstory " + bs.title + " has same unique save key " + bs.identifier + " as old backstory " + allBackstories[bs.identifier].title);
 			}
 			else
 			{

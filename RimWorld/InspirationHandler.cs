@@ -75,7 +75,13 @@ namespace RimWorld
 			}
 		}
 
+		[Obsolete("Will be removed in a future game release and replaced with TryStartInspiration_NewTemp.")]
 		public bool TryStartInspiration(InspirationDef def)
+		{
+			return TryStartInspiration_NewTemp(def);
+		}
+
+		public bool TryStartInspiration_NewTemp(InspirationDef def, string reason = null)
 		{
 			if (Inspired)
 			{
@@ -88,6 +94,7 @@ namespace RimWorld
 			curState = (Inspiration)Activator.CreateInstance(def.inspirationClass);
 			curState.def = def;
 			curState.pawn = pawn;
+			curState.reason = reason;
 			curState.PostStart();
 			return true;
 		}
@@ -131,7 +138,7 @@ namespace RimWorld
 				InspirationDef randomAvailableInspirationDef = GetRandomAvailableInspirationDef();
 				if (randomAvailableInspirationDef != null)
 				{
-					TryStartInspiration(randomAvailableInspirationDef);
+					TryStartInspiration_NewTemp(randomAvailableInspirationDef, "LetterInspirationBeginThanksToHighMoodPart".Translate());
 				}
 			}
 		}

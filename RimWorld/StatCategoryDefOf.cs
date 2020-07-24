@@ -45,6 +45,12 @@ namespace RimWorld
 
 		public static StatCategoryDef CapacityEffects;
 
+		public static StatCategoryDef Meditation;
+
+		public static StatCategoryDef Drug;
+
+		public static StatCategoryDef DrugAddiction;
+
 		static StatCategoryDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(StatCategoryDefOf));

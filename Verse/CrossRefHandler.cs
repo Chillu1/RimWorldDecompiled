@@ -15,7 +15,7 @@ namespace Verse
 		{
 			if (Scribe.mode != LoadSaveMode.LoadingVars)
 			{
-				Log.Error("Registered " + s + " for cross ref resolve, but current mode is " + Scribe.mode);
+				Log.Error(string.Concat("Registered ", s, " for cross ref resolve, but current mode is ", Scribe.mode));
 			}
 			else if (s != null)
 			{

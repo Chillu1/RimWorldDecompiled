@@ -45,11 +45,13 @@ namespace Verse
 				{
 					DrawContents(rect.AtZero());
 				});
-				return;
 			}
-			Widgets.DrawShadowAround(rect);
-			Widgets.DrawWindowBackground(rect);
-			DrawContents(rect);
+			else
+			{
+				Widgets.DrawShadowAround(rect);
+				Widgets.DrawWindowBackground(rect);
+				DrawContents(rect);
+			}
 		}
 
 		private static void DrawContents(Rect rect)

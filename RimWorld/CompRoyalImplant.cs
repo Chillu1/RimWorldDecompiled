@@ -54,10 +54,6 @@ namespace RimWorld
 			{
 				return "";
 			}
-			if (pawn.health.hediffSet.HasHediff(HediffDefOf.PsychicSilencer))
-			{
-				return "";
-			}
 			Hediff_ImplantWithLevel hediff_ImplantWithLevel = (Hediff_ImplantWithLevel)pawn.health.hediffSet.hediffs.FirstOrDefault((Hediff h) => h.def == hediff);
 			int num = (levelOffset != 0 && hediff_ImplantWithLevel != null) ? (hediff_ImplantWithLevel.level + levelOffset) : 0;
 			foreach (Faction item in Find.FactionManager.AllFactionsListForReading)

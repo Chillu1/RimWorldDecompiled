@@ -27,16 +27,18 @@ namespace Verse
 
 		public override void GizmoUpdateOnMouseover()
 		{
-			if (drawRadius)
+			if (!drawRadius)
 			{
-				verb.verbProps.DrawRadiusRing(verb.caster.Position);
-				if (!groupedVerbs.NullOrEmpty())
-				{
-					foreach (Verb groupedVerb in groupedVerbs)
-					{
-						groupedVerb.verbProps.DrawRadiusRing(groupedVerb.caster.Position);
-					}
-				}
+				return;
+			}
+			verb.verbProps.DrawRadiusRing(verb.caster.Position);
+			if (groupedVerbs.NullOrEmpty())
+			{
+				return;
+			}
+			foreach (Verb groupedVerb in groupedVerbs)
+			{
+				groupedVerb.verbProps.DrawRadiusRing(groupedVerb.caster.Position);
 			}
 		}
 

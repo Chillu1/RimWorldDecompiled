@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Text;
-using UnityEngine;
 using Verse;
 
 namespace RimWorld
@@ -176,25 +175,13 @@ namespace RimWorld
 			{
 				yield return gizmo;
 			}
-			if (StorageTabVisible)
+			if (!StorageTabVisible)
 			{
-				foreach (Gizmo item in StorageSettingsClipboard.CopyPasteGizmosFor(storageSettings))
-				{
-					yield return item;
-				}
+				yield break;
 			}
-			if (!HasCorpse)
+			foreach (Gizmo item in StorageSettingsClipboard.CopyPasteGizmosFor(storageSettings))
 			{
-				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "CommandGraveAssignColonistLabel".Translate();
-				command_Action.icon = ContentFinder<Texture2D>.Get("UI/Commands/AssignOwner");
-				command_Action.defaultDesc = "CommandGraveAssignColonistDesc".Translate();
-				command_Action.action = delegate
-				{
-					Find.WindowStack.Add(new Dialog_AssignBuildingOwner(CompAssignableToPawn));
-				};
-				command_Action.hotKey = KeyBindingDefOf.Misc3;
-				yield return command_Action;
+				yield return item;
 			}
 		}
 

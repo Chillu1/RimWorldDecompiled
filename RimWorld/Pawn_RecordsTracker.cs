@@ -89,7 +89,7 @@ namespace RimWorld
 		{
 			if (def.type != RecordType.Int)
 			{
-				Log.Error("Tried to increment record \"" + def.defName + "\" whose record type is \"" + def.type + "\".");
+				Log.Error(string.Concat("Tried to increment record \"", def.defName, "\" whose record type is \"", def.type, "\"."));
 			}
 			else
 			{
@@ -102,15 +102,14 @@ namespace RimWorld
 			if (def.type == RecordType.Int)
 			{
 				records[def] = Mathf.Round(records[def] + Mathf.Round(value));
+				return;
 			}
-			else if (def.type == RecordType.Float)
+			if (def.type == RecordType.Float)
 			{
 				records[def] += value;
+				return;
 			}
-			else
-			{
-				Log.Error("Tried to add value to record \"" + def.defName + "\" whose record type is \"" + def.type + "\".");
-			}
+			Log.Error(string.Concat("Tried to add value to record \"", def.defName, "\" whose record type is \"", def.type, "\"."));
 		}
 
 		public float GetValue(RecordDef def)

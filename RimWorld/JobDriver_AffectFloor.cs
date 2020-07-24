@@ -29,35 +29,36 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			this.FailOn(() => (!job.ignoreDesignations && base.Map.designationManager.DesignationAt(base.TargetLocA, DesDef) == null) ? true : false);
+			JobDriver_AffectFloor jobDriver_AffectFloor = this;
+			this.FailOn(() => (!jobDriver_AffectFloor.job.ignoreDesignations && jobDriver_AffectFloor.Map.designationManager.DesignationAt(jobDriver_AffectFloor.TargetLocA, jobDriver_AffectFloor.DesDef) == null) ? true : false);
 			yield return Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.Touch);
 			Toil doWork = new Toil();
 			doWork.initAction = delegate
 			{
-				workLeft = BaseWorkAmount;
+				jobDriver_AffectFloor.workLeft = jobDriver_AffectFloor.BaseWorkAmount;
 			};
 			doWork.tickAction = delegate
 			{
-				float num = (SpeedStat != null) ? doWork.actor.GetStatValue(SpeedStat) : 1f;
+				float num = (jobDriver_AffectFloor.SpeedStat != null) ? doWork.actor.GetStatValue(jobDriver_AffectFloor.SpeedStat) : 1f;
 				num *= 1.7f;
-				workLeft -= num;
+				jobDriver_AffectFloor.workLeft -= num;
 				if (doWork.actor.skills != null)
 				{
 					doWork.actor.skills.Learn(SkillDefOf.Construction, 0.1f);
 				}
-				if (clearSnow)
+				if (jobDriver_AffectFloor.clearSnow)
 				{
-					base.Map.snowGrid.SetDepth(base.TargetLocA, 0f);
+					jobDriver_AffectFloor.Map.snowGrid.SetDepth(jobDriver_AffectFloor.TargetLocA, 0f);
 				}
-				if (workLeft <= 0f)
+				if (jobDriver_AffectFloor.workLeft <= 0f)
 				{
-					DoEffect(base.TargetLocA);
-					base.Map.designationManager.DesignationAt(base.TargetLocA, DesDef)?.Delete();
-					ReadyForNextToil();
+					jobDriver_AffectFloor.DoEffect(jobDriver_AffectFloor.TargetLocA);
+					jobDriver_AffectFloor.Map.designationManager.DesignationAt(jobDriver_AffectFloor.TargetLocA, jobDriver_AffectFloor.DesDef)?.Delete();
+					jobDriver_AffectFloor.ReadyForNextToil();
 				}
 			};
 			doWork.FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
-			doWork.WithProgressBar(TargetIndex.A, () => 1f - workLeft / (float)BaseWorkAmount);
+			doWork.WithProgressBar(TargetIndex.A, () => 1f - jobDriver_AffectFloor.workLeft / (float)jobDriver_AffectFloor.BaseWorkAmount);
 			doWork.defaultCompleteMode = ToilCompleteMode.Never;
 			doWork.activeSkill = (() => SkillDefOf.Construction);
 			yield return doWork;

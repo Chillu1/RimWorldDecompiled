@@ -43,7 +43,7 @@ namespace RimWorld
 
 		public void RoyalTitleTick(Pawn pawn)
 		{
-			if (pawn.IsHashIntervalTick(833) && conceited && pawn.Spawned && pawn.IsFreeColonist && !pawn.IsQuestHelper() && def.decreeMtbDays > 0f && pawn.Awake() && Rand.MTBEventOccurs(def.decreeMtbDays, 60000f, 833f) && (float)(Find.TickManager.TicksGame - pawn.royalty.lastDecreeTicks) >= def.decreeMinIntervalDays * 60000f)
+			if (pawn.IsHashIntervalTick(833) && conceited && pawn.Spawned && pawn.IsFreeColonist && (!pawn.IsQuestLodger() || pawn.LodgerAllowedDecrees()) && def.decreeMtbDays > 0f && pawn.Awake() && Rand.MTBEventOccurs(def.decreeMtbDays, 60000f, 833f) && (float)(Find.TickManager.TicksGame - pawn.royalty.lastDecreeTicks) >= def.decreeMinIntervalDays * 60000f)
 			{
 				pawn.royalty.IssueDecree(causedByMentalBreak: false);
 			}

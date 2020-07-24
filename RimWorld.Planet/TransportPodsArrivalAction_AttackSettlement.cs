@@ -81,11 +81,13 @@ namespace RimWorld.Planet
 
 		public static IEnumerable<FloatMenuOption> GetFloatMenuOptions(CompLaunchable representative, IEnumerable<IThingHolder> pods, Settlement settlement)
 		{
-			foreach (FloatMenuOption floatMenuOption in TransportPodsArrivalActionUtility.GetFloatMenuOptions(() => CanAttack(pods, settlement), () => new TransportPodsArrivalAction_AttackSettlement(settlement, PawnsArrivalModeDefOf.EdgeDrop), "AttackAndDropAtEdge".Translate(settlement.Label), representative, settlement.Tile))
+			IEnumerable<IThingHolder> pods2 = pods;
+			Settlement settlement2 = settlement;
+			foreach (FloatMenuOption floatMenuOption in TransportPodsArrivalActionUtility.GetFloatMenuOptions(() => CanAttack(pods2, settlement2), () => new TransportPodsArrivalAction_AttackSettlement(settlement2, PawnsArrivalModeDefOf.EdgeDrop), "AttackAndDropAtEdge".Translate(settlement2.Label), representative, settlement2.Tile))
 			{
 				yield return floatMenuOption;
 			}
-			foreach (FloatMenuOption floatMenuOption2 in TransportPodsArrivalActionUtility.GetFloatMenuOptions(() => CanAttack(pods, settlement), () => new TransportPodsArrivalAction_AttackSettlement(settlement, PawnsArrivalModeDefOf.CenterDrop), "AttackAndDropInCenter".Translate(settlement.Label), representative, settlement.Tile))
+			foreach (FloatMenuOption floatMenuOption2 in TransportPodsArrivalActionUtility.GetFloatMenuOptions(() => CanAttack(pods2, settlement2), () => new TransportPodsArrivalAction_AttackSettlement(settlement2, PawnsArrivalModeDefOf.CenterDrop), "AttackAndDropInCenter".Translate(settlement2.Label), representative, settlement2.Tile))
 			{
 				yield return floatMenuOption2;
 			}

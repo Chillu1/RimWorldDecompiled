@@ -172,7 +172,7 @@ namespace Verse.AI.Group
 			{
 				if (tmpLordToilDatum.Key < 0 || tmpLordToilDatum.Key >= graph.lordToils.Count)
 				{
-					Log.Error("Could not find lord toil for lord toil data of type \"" + tmpLordToilDatum.Value.GetType() + "\" (lord job: \"" + curJob.GetType() + "\"), because lord toil index is out of bounds: " + tmpLordToilDatum.Key);
+					Log.Error(string.Concat("Could not find lord toil for lord toil data of type \"", tmpLordToilDatum.Value.GetType(), "\" (lord job: \"", curJob.GetType(), "\"), because lord toil index is out of bounds: ", tmpLordToilDatum.Key));
 				}
 				else
 				{
@@ -185,7 +185,7 @@ namespace Verse.AI.Group
 				Trigger triggerByIndex = GetTriggerByIndex(tmpTriggerDatum.Key);
 				if (triggerByIndex == null)
 				{
-					Log.Error("Could not find trigger for trigger data of type \"" + tmpTriggerDatum.Value.GetType() + "\" (lord job: \"" + curJob.GetType() + "\"), because trigger index is out of bounds: " + tmpTriggerDatum.Key);
+					Log.Error(string.Concat("Could not find trigger for trigger data of type \"", tmpTriggerDatum.Value.GetType(), "\" (lord job: \"", curJob.GetType(), "\"), because trigger index is out of bounds: ", tmpTriggerDatum.Key));
 				}
 				else
 				{
@@ -195,7 +195,7 @@ namespace Verse.AI.Group
 			tmpTriggerData.Clear();
 			if (tmpCurLordToilIdx < 0 || tmpCurLordToilIdx >= graph.lordToils.Count)
 			{
-				Log.Error("Current lord toil index out of bounds (lord job: \"" + curJob.GetType() + "\"): " + tmpCurLordToilIdx);
+				Log.Error(string.Concat("Current lord toil index out of bounds (lord job: \"", curJob.GetType(), "\"): ", tmpCurLordToilIdx));
 			}
 			else
 			{
@@ -265,31 +265,34 @@ namespace Verse.AI.Group
 		{
 			if (ownedPawns.Contains(p))
 			{
-				Log.Error("Lord for " + faction.ToStringSafe() + " tried to add " + p + " whom it already controls.");
-				return;
+				Log.Error(string.Concat("Lord for ", faction.ToStringSafe(), " tried to add ", p, " whom it already controls."));
 			}
-			if (p.GetLord() != null)
+			else if (p.GetLord() != null)
 			{
-				Log.Error("Tried to add pawn " + p + " to lord " + this + " but this pawn is already a member of lord " + p.GetLord() + ". Pawns can't be members of more than one lord at the same time.");
-				return;
+				Log.Error(string.Concat("Tried to add pawn ", p, " to lord ", this, " but this pawn is already a member of lord ", p.GetLord(), ". Pawns can't be members of more than one lord at the same time."));
 			}
-			ownedPawns.Add(p);
-			numPawnsEverGained++;
-			Map.attackTargetsCache.UpdateTarget(p);
-			curLordToil.UpdateAllDuties();
-			curJob.Notify_PawnAdded(p);
+			else
+			{
+				ownedPawns.Add(p);
+				numPawnsEverGained++;
+				Map.attackTargetsCache.UpdateTarget(p);
+				curLordToil.UpdateAllDuties();
+				curJob.Notify_PawnAdded(p);
+			}
 		}
 
 		public void AddBuilding(Building b)
 		{
 			if (ownedBuildings.Contains(b))
 			{
-				Log.Error("Lord for " + faction.ToStringSafe() + " tried to add " + b + " which it already controls.");
-				return;
+				Log.Error(string.Concat("Lord for ", faction.ToStringSafe(), " tried to add ", b, " which it already controls."));
 			}
-			ownedBuildings.Add(b);
-			curLordToil.UpdateAllDuties();
-			curJob.Notify_BuildingAdded(b);
+			else
+			{
+				ownedBuildings.Add(b);
+				curLordToil.UpdateAllDuties();
+				curJob.Notify_BuildingAdded(b);
+			}
 		}
 
 		private void RemovePawn(Pawn p)
@@ -419,7 +422,7 @@ namespace Verse.AI.Group
 			}
 			else
 			{
-				Log.Error("Lord lost pawn " + pawn + " it didn't have. Condition=" + cond);
+				Log.Error(string.Concat("Lord lost pawn ", pawn, " it didn't have. Condition=", cond));
 			}
 		}
 
@@ -450,7 +453,7 @@ namespace Verse.AI.Group
 			}
 			else
 			{
-				Log.Error("Lord lost building " + building + " it didn't have.");
+				Log.Error(string.Concat("Lord lost building ", building, " it didn't have."));
 			}
 		}
 

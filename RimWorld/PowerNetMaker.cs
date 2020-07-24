@@ -32,17 +32,18 @@ namespace RimWorld
 				{
 					foreach (IntVec3 item3 in GenAdj.CellsAdjacentCardinal(item2))
 					{
-						if (item3.InBounds(item2.Map))
+						if (!item3.InBounds(item2.Map))
 						{
-							List<Thing> thingList = item3.GetThingList(item2.Map);
-							for (int i = 0; i < thingList.Count; i++)
+							continue;
+						}
+						List<Thing> thingList = item3.GetThingList(item2.Map);
+						for (int i = 0; i < thingList.Count; i++)
+						{
+							Building building = thingList[i] as Building;
+							if (building != null && building.TransmitsPowerNow && !openSet.Contains(building) && !currentSet.Contains(building) && !closedSet.Contains(building))
 							{
-								Building building = thingList[i] as Building;
-								if (building != null && building.TransmitsPowerNow && !openSet.Contains(building) && !currentSet.Contains(building) && !closedSet.Contains(building))
-								{
-									openSet.Add(building);
-									break;
-								}
+								openSet.Add(building);
+								break;
 							}
 						}
 					}

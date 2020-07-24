@@ -22,7 +22,7 @@ namespace Verse
 			node.DoSpecialPreElements(this);
 			if (node.children == null)
 			{
-				Log.Error(node + " children is null.");
+				Log.Error(string.Concat(node, " children is null."));
 				return;
 			}
 			for (int i = 0; i < node.children.Count; i++)

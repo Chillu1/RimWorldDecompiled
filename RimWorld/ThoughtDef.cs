@@ -177,12 +177,13 @@ namespace RimWorld
 			}
 			for (int i = 0; i < stages.Count; i++)
 			{
-				if (stages[i] != null)
+				if (stages[i] == null)
 				{
-					foreach (string item2 in stages[i].ConfigErrors())
-					{
-						yield return item2;
-					}
+					continue;
+				}
+				foreach (string item2 in stages[i].ConfigErrors())
+				{
+					yield return item2;
 				}
 			}
 		}

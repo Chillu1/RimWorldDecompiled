@@ -42,6 +42,8 @@ namespace RimWorld
 
 		private CellRect cachedOccupiedRect;
 
+		private Rot4 rotation = Rot4.North;
+
 		private bool floodFillWorking;
 
 		private Queue<IntVec3> floodFillOpenSet;
@@ -427,22 +429,20 @@ namespace RimWorld
 					{
 						return true;
 					}
+					continue;
 				}
-				else
+				foreach (IntVec3 item in sketchThing.OccupiedRect)
 				{
-					foreach (IntVec3 item in sketchThing.OccupiedRect)
+					if (!(item + offset).InBounds(map))
 					{
-						if (!(item + offset).InBounds(map))
-						{
-							return true;
-						}
+						return true;
 					}
 				}
 			}
 			return false;
 		}
 
-		public void Spawn(Map map, IntVec3 pos, Faction faction, SpawnPosType posType = SpawnPosType.Unchanged, SpawnMode spawnMode = SpawnMode.Normal, bool wipeIfCollides = false, bool clearEdificeWhereFloor = false, List<Thing> spawnedThings = null, bool dormant = false, bool buildRoofsInstantly = false, Action<IntVec3, SketchEntity> onFailedToSpawnThing = null)
+		public void Spawn(Map map, IntVec3 pos, Faction faction, SpawnPosType posType = SpawnPosType.Unchanged, SpawnMode spawnMode = SpawnMode.Normal, bool wipeIfCollides = false, bool clearEdificeWhereFloor = false, List<Thing> spawnedThings = null, bool dormant = false, bool buildRoofsInstantly = false, Func<SketchEntity, IntVec3, bool> canSpawnThing = null, Action<IntVec3, SketchEntity> onFailedToSpawnThing = null)
 		{
 			IntVec3 offset = GetOffset(pos, posType);
 			if (clearEdificeWhereFloor)
@@ -458,7 +458,7 @@ namespace RimWorld
 			foreach (SketchEntity item in entities.OrderBy((SketchEntity x) => x.SpawnOrder))
 			{
 				IntVec3 intVec = item.pos + offset;
-				if (!item.Spawn(intVec, map, faction, spawnMode, wipeIfCollides, spawnedThings, dormant))
+				if ((canSpawnThing == null || canSpawnThing(item, intVec)) && !item.Spawn(intVec, map, faction, spawnMode, wipeIfCollides, spawnedThings, dormant))
 				{
 					onFailedToSpawnThing?.Invoke(intVec, item);
 				}
@@ -495,15 +495,16 @@ namespace RimWorld
 					}
 				}
 			}
-			if (buildRoofsInstantly && spawnMode == SpawnMode.Normal)
+			if (!buildRoofsInstantly || spawnMode != SpawnMode.Normal)
 			{
-				foreach (IntVec3 suggestedRoofCell in GetSuggestedRoofCells())
+				return;
+			}
+			foreach (IntVec3 suggestedRoofCell in GetSuggestedRoofCells())
+			{
+				IntVec3 c = suggestedRoofCell + offset;
+				if (c.InBounds(map) && !c.Roofed(map))
 				{
-					IntVec3 c = suggestedRoofCell + offset;
-					if (c.InBounds(map) && !c.Roofed(map))
-					{
-						map.roofGrid.SetRoof(c, RoofDefOf.RoofConstructed);
-					}
+					map.roofGrid.SetRoof(c, RoofDefOf.RoofConstructed);
 				}
 			}
 		}
@@ -877,51 +878,54 @@ namespace RimWorld
 
 		private IEnumerable<IntVec3> GetSuggestedRoofCells()
 		{
-			if (!Empty)
+			if (Empty)
 			{
-				CellRect occupiedRect = OccupiedRect;
-				tmpSuggestedRoofCellsVisited.Clear();
-				tmpYieldedSuggestedRoofCells.Clear();
-				foreach (IntVec3 item in OccupiedRect)
+				yield break;
+			}
+			CellRect occupiedRect = OccupiedRect;
+			tmpSuggestedRoofCellsVisited.Clear();
+			tmpYieldedSuggestedRoofCells.Clear();
+			foreach (IntVec3 item in OccupiedRect)
+			{
+				if (tmpSuggestedRoofCellsVisited.Contains(item) || AnyRoofHolderAt(item))
 				{
-					if (!tmpSuggestedRoofCellsVisited.Contains(item) && !AnyRoofHolderAt(item))
+					continue;
+				}
+				tmpSuggestedRoofCells.Clear();
+				FloodFill(item, (IntVec3 c) => !AnyRoofHolderAt(c), delegate(IntVec3 c, int dist)
+				{
+					tmpSuggestedRoofCellsVisited.Add(c);
+					tmpSuggestedRoofCells.Add(c);
+					return false;
+				});
+				bool flag = false;
+				for (int k = 0; k < tmpSuggestedRoofCells.Count; k++)
+				{
+					if (occupiedRect.IsOnEdge(tmpSuggestedRoofCells[k]))
 					{
-						tmpSuggestedRoofCells.Clear();
-						FloodFill(item, (IntVec3 c) => !AnyRoofHolderAt(c), delegate(IntVec3 c, int dist)
+						flag = true;
+						break;
+					}
+				}
+				if (flag)
+				{
+					continue;
+				}
+				for (int i = 0; i < tmpSuggestedRoofCells.Count; i++)
+				{
+					for (int j = 0; j < 9; j++)
+					{
+						IntVec3 intVec = tmpSuggestedRoofCells[i] + GenAdj.AdjacentCellsAndInside[j];
+						if (!tmpYieldedSuggestedRoofCells.Contains(intVec) && occupiedRect.Contains(intVec) && (j == 8 || AnyRoofHolderAt(intVec)))
 						{
-							tmpSuggestedRoofCellsVisited.Add(c);
-							tmpSuggestedRoofCells.Add(c);
-							return false;
-						});
-						bool flag = false;
-						for (int k = 0; k < tmpSuggestedRoofCells.Count; k++)
-						{
-							if (occupiedRect.IsOnEdge(tmpSuggestedRoofCells[k]))
-							{
-								flag = true;
-								break;
-							}
-						}
-						if (!flag)
-						{
-							for (int j = 0; j < tmpSuggestedRoofCells.Count; j++)
-							{
-								for (int i = 0; i < 9; i++)
-								{
-									IntVec3 intVec = tmpSuggestedRoofCells[j] + GenAdj.AdjacentCellsAndInside[i];
-									if (!tmpYieldedSuggestedRoofCells.Contains(intVec) && occupiedRect.Contains(intVec) && (i == 8 || AnyRoofHolderAt(intVec)))
-									{
-										tmpYieldedSuggestedRoofCells.Add(intVec);
-										yield return intVec;
-									}
-								}
-							}
+							tmpYieldedSuggestedRoofCells.Add(intVec);
+							yield return intVec;
 						}
 					}
 				}
-				tmpSuggestedRoofCellsVisited.Clear();
-				tmpYieldedSuggestedRoofCells.Clear();
 			}
+			tmpSuggestedRoofCellsVisited.Clear();
+			tmpYieldedSuggestedRoofCells.Clear();
 			bool AnyRoofHolderAt(IntVec3 c)
 			{
 				return EdificeAt(c)?.def.holdsRoof ?? false;
@@ -949,9 +953,55 @@ namespace RimWorld
 			return a + pos;
 		}
 
+		public void Rotate(Rot4 rot)
+		{
+			if (rot == rotation)
+			{
+				return;
+			}
+			int num = rot.AsInt - rotation.AsInt;
+			if (num < 0)
+			{
+				num += 4;
+			}
+			Rot4 rot2 = new Rot4(num);
+			rotation = rot;
+			foreach (SketchEntity entity in Entities)
+			{
+				entity.pos = entity.pos.RotatedBy(rot2);
+				SketchThing sketchThing;
+				if ((sketchThing = (entity as SketchThing)) != null)
+				{
+					RotationDirection rotationDirection = RotationDirection.None;
+					if (rot2.AsInt == 1)
+					{
+						rotationDirection = RotationDirection.Clockwise;
+					}
+					else if (rot2.AsInt == 3)
+					{
+						rotationDirection = RotationDirection.Counterclockwise;
+					}
+					if (sketchThing.def.rotatable)
+					{
+						sketchThing.rot = sketchThing.rot.Rotated(rotationDirection);
+					}
+					else if (sketchThing.def.size.z % 2 == 0 && rotationDirection == RotationDirection.Clockwise)
+					{
+						entity.pos.z--;
+					}
+					else if (sketchThing.def.size.x % 2 == 0 && rotationDirection == RotationDirection.Counterclockwise)
+					{
+						entity.pos.x--;
+					}
+				}
+			}
+			RecacheAll();
+		}
+
 		public void ExposeData()
 		{
 			Scribe_Collections.Look(ref entities, "entities", LookMode.Deep);
+			Scribe_Values.Look(ref rotation, "rotation", Rot4.North);
 			if (Scribe.mode != LoadSaveMode.PostLoadInit)
 			{
 				return;

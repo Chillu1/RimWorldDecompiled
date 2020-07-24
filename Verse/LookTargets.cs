@@ -102,13 +102,11 @@ namespace Verse
 				{
 					this.targets.Add(list[i]);
 				}
+				return;
 			}
-			else
+			foreach (TargetInfo target in targets)
 			{
-				foreach (TargetInfo target in targets)
-				{
-					this.targets.Add(target);
-				}
+				this.targets.Add(target);
 			}
 		}
 
@@ -290,13 +288,11 @@ namespace Verse
 				{
 					targets.Add(list[i]);
 				}
+				return;
 			}
-			else
+			foreach (T thing in things)
 			{
-				foreach (T thing in things)
-				{
-					targets.Add(thing);
-				}
+				targets.Add(thing);
 			}
 		}
 
@@ -313,13 +309,11 @@ namespace Verse
 				{
 					targets.Add(list[i]);
 				}
+				return;
 			}
-			else
+			foreach (T worldObject in worldObjects)
 			{
-				foreach (T worldObject in worldObjects)
-				{
-					targets.Add(worldObject);
-				}
+				targets.Add(worldObject);
 			}
 		}
 

@@ -31,7 +31,7 @@ namespace RimWorld
 					}
 				}
 				return awaitingMedicalOperationResult;
-				bool IsAwaiting(Pawn p)
+				static bool IsAwaiting(Pawn p)
 				{
 					if (HealthAIUtility.ShouldHaveSurgeryDoneNow(p))
 					{

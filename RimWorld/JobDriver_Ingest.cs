@@ -134,18 +134,19 @@ namespace RimWorld
 				yield return Toils_Jump.Jump(chewToil);
 				yield return gotoToPickup;
 				yield return Toils_Ingest.PickupIngestible(TargetIndex.A, pawn);
+				JobDriver_Ingest jobDriver_Ingest = this;
 				Toil reserveExtraFoodToCollect = Toils_Ingest.ReserveFoodFromStackForIngesting(TargetIndex.C);
 				Toil findExtraFoodToCollect = new Toil
 				{
 					initAction = delegate
 					{
-						if (pawn.inventory.innerContainer.TotalStackCountOfDef(IngestibleSource.def) < job.takeExtraIngestibles)
+						if (jobDriver_Ingest.pawn.inventory.innerContainer.TotalStackCountOfDef(jobDriver_Ingest.IngestibleSource.def) < jobDriver_Ingest.job.takeExtraIngestibles)
 						{
-							Thing thing = GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(IngestibleSource.def), PathEndMode.Touch, TraverseParms.For(pawn), 12f, (Thing x) => pawn.CanReserve(x, 10, 1) && !x.IsForbidden(pawn) && x.IsSociallyProper(pawn));
+							Thing thing = GenClosest.ClosestThingReachable(jobDriver_Ingest.pawn.Position, jobDriver_Ingest.pawn.Map, ThingRequest.ForDef(jobDriver_Ingest.IngestibleSource.def), PathEndMode.Touch, TraverseParms.For(jobDriver_Ingest.pawn), 12f, (Thing x) => jobDriver_Ingest.pawn.CanReserve(x, 10, 1) && !x.IsForbidden(jobDriver_Ingest.pawn) && x.IsSociallyProper(jobDriver_Ingest.pawn));
 							if (thing != null)
 							{
-								job.SetTarget(TargetIndex.C, thing);
-								JumpToToil(reserveExtraFoodToCollect);
+								jobDriver_Ingest.job.SetTarget(TargetIndex.C, thing);
+								jobDriver_Ingest.JumpToToil(reserveExtraFoodToCollect);
 							}
 						}
 					},
@@ -157,7 +158,10 @@ namespace RimWorld
 				yield return Toils_Haul.TakeToInventory(TargetIndex.C, () => job.takeExtraIngestibles - pawn.inventory.innerContainer.TotalStackCountOfDef(IngestibleSource.def));
 				yield return findExtraFoodToCollect;
 			}
-			yield return Toils_Ingest.CarryIngestibleToChewSpot(pawn, TargetIndex.A).FailOnDestroyedOrNull(TargetIndex.A);
+			if (!IngestibleSource.def.IsDrug)
+			{
+				yield return Toils_Ingest.CarryIngestibleToChewSpot(pawn, TargetIndex.A).FailOnDestroyedOrNull(TargetIndex.A);
+			}
 			yield return Toils_Ingest.FindAdjacentEatSurface(TargetIndex.B, TargetIndex.A);
 		}
 
@@ -183,7 +187,7 @@ namespace RimWorld
 							{
 								if (!pawn.Reserve(thing, job, 10, maxAmountToPickup))
 								{
-									Log.Error("Pawn food reservation for " + pawn + " on job " + this + " failed, because it could not register food from " + thing + " - amount: " + maxAmountToPickup);
+									Log.Error(string.Concat("Pawn food reservation for ", pawn, " on job ", this, " failed, because it could not register food from ", thing, " - amount: ", maxAmountToPickup));
 									pawn.jobs.EndCurrentJob(JobCondition.Errored);
 								}
 								job.count = maxAmountToPickup;

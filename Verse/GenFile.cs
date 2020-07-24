@@ -91,7 +91,7 @@ namespace Verse
 			{
 				if (!invalidFileNameChars.Contains(fileName[i]))
 				{
-					text += fileName[i].ToString();
+					text += fileName[i];
 				}
 			}
 			if (text.Length == 0)

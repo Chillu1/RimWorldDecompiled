@@ -101,7 +101,10 @@ namespace RimWorld.Planet
 						lordJob_FormAndSendCaravan.downedPawns.Remove(pawn);
 					}
 				}
-				pawn.jobs.EndCurrentJob(JobCondition.Incompletable);
+				if (pawn.jobs != null)
+				{
+					pawn.jobs.EndCurrentJob(JobCondition.Incompletable);
+				}
 			}
 			if (flag2)
 			{
@@ -164,9 +167,10 @@ namespace RimWorld.Planet
 
 		public static IEnumerable<Gizmo> GetGizmos(Pawn pawn)
 		{
-			if (IsFormingCaravanOrDownedPawnToBeTakenByCaravan(pawn))
+			Pawn pawn2 = pawn;
+			if (IsFormingCaravanOrDownedPawnToBeTakenByCaravan(pawn2))
 			{
-				Lord lord = GetFormAndSendCaravanLord(pawn);
+				Lord lord = GetFormAndSendCaravanLord(pawn2);
 				Command_Action command_Action = new Command_Action();
 				command_Action.defaultLabel = "CommandCancelFormingCaravan".Translate();
 				command_Action.defaultDesc = "CommandCancelFormingCaravanDesc".Translate();
@@ -184,74 +188,75 @@ namespace RimWorld.Planet
 				command_Action2.icon = RemoveFromCaravanCommand;
 				command_Action2.action = delegate
 				{
-					RemovePawnFromCaravan(pawn, lord);
+					RemovePawnFromCaravan(pawn2, lord);
 				};
 				command_Action2.hotKey = KeyBindingDefOf.Misc6;
 				yield return command_Action2;
 			}
 			else
 			{
-				if (!pawn.Spawned)
+				if (!pawn2.Spawned)
 				{
 					yield break;
 				}
 				bool flag = false;
-				for (int i = 0; i < pawn.Map.lordManager.lords.Count; i++)
+				for (int i = 0; i < pawn2.Map.lordManager.lords.Count; i++)
 				{
-					Lord lord2 = pawn.Map.lordManager.lords[i];
+					Lord lord2 = pawn2.Map.lordManager.lords[i];
 					if (lord2.faction == Faction.OfPlayer && lord2.LordJob is LordJob_FormAndSendCaravan)
 					{
 						flag = true;
 						break;
 					}
 				}
-				if (flag && Dialog_FormCaravan.AllSendablePawns(pawn.Map, reform: false).Contains(pawn))
+				if (!flag || !Dialog_FormCaravan.AllSendablePawns(pawn2.Map, reform: false).Contains(pawn2))
 				{
-					Command_Action command_Action3 = new Command_Action();
-					command_Action3.defaultLabel = "CommandAddToCaravan".Translate();
-					command_Action3.defaultDesc = "CommandAddToCaravanDesc".Translate();
-					command_Action3.icon = AddToCaravanCommand;
-					command_Action3.action = delegate
-					{
-						List<Lord> list = new List<Lord>();
-						for (int j = 0; j < pawn.Map.lordManager.lords.Count; j++)
-						{
-							Lord lord3 = pawn.Map.lordManager.lords[j];
-							if (lord3.faction == Faction.OfPlayer && lord3.LordJob is LordJob_FormAndSendCaravan)
-							{
-								list.Add(lord3);
-							}
-						}
-						if (list.Count != 0)
-						{
-							if (list.Count == 1)
-							{
-								LateJoinFormingCaravan(pawn, list[0]);
-								SoundDefOf.Click.PlayOneShotOnCamera();
-							}
-							else
-							{
-								List<FloatMenuOption> list2 = new List<FloatMenuOption>();
-								Lord caravanLocal = default(Lord);
-								for (int k = 0; k < list.Count; k++)
-								{
-									caravanLocal = list[k];
-									string label = (string)("Caravan".Translate() + " ") + (k + 1);
-									list2.Add(new FloatMenuOption(label, delegate
-									{
-										if (pawn.Spawned && pawn.Map.lordManager.lords.Contains(caravanLocal) && Dialog_FormCaravan.AllSendablePawns(pawn.Map, reform: false).Contains(pawn))
-										{
-											LateJoinFormingCaravan(pawn, caravanLocal);
-										}
-									}));
-								}
-								Find.WindowStack.Add(new FloatMenu(list2));
-							}
-						}
-					};
-					command_Action3.hotKey = KeyBindingDefOf.Misc7;
-					yield return command_Action3;
+					yield break;
 				}
+				Command_Action command_Action3 = new Command_Action();
+				command_Action3.defaultLabel = "CommandAddToCaravan".Translate();
+				command_Action3.defaultDesc = "CommandAddToCaravanDesc".Translate();
+				command_Action3.icon = AddToCaravanCommand;
+				command_Action3.action = delegate
+				{
+					List<Lord> list = new List<Lord>();
+					for (int j = 0; j < pawn2.Map.lordManager.lords.Count; j++)
+					{
+						Lord lord3 = pawn2.Map.lordManager.lords[j];
+						if (lord3.faction == Faction.OfPlayer && lord3.LordJob is LordJob_FormAndSendCaravan)
+						{
+							list.Add(lord3);
+						}
+					}
+					if (list.Count != 0)
+					{
+						if (list.Count == 1)
+						{
+							LateJoinFormingCaravan(pawn2, list[0]);
+							SoundDefOf.Click.PlayOneShotOnCamera();
+						}
+						else
+						{
+							List<FloatMenuOption> list2 = new List<FloatMenuOption>();
+							Lord caravanLocal = default(Lord);
+							for (int k = 0; k < list.Count; k++)
+							{
+								caravanLocal = list[k];
+								string label = (string)("Caravan".Translate() + " ") + (k + 1);
+								list2.Add(new FloatMenuOption(label, delegate
+								{
+									if (pawn2.Spawned && pawn2.Map.lordManager.lords.Contains(caravanLocal) && Dialog_FormCaravan.AllSendablePawns(pawn2.Map, reform: false).Contains(pawn2))
+									{
+										LateJoinFormingCaravan(pawn2, caravanLocal);
+									}
+								}));
+							}
+							Find.WindowStack.Add(new FloatMenu(list2));
+						}
+					}
+				};
+				command_Action3.hotKey = KeyBindingDefOf.Misc7;
+				yield return command_Action3;
 			}
 		}
 

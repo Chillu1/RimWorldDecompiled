@@ -5,6 +5,17 @@ namespace RimWorld
 {
 	public class Building_ShipReactor : Building
 	{
+		public bool charlonsReactor;
+
+		public override void Destroy(DestroyMode mode = DestroyMode.Vanish)
+		{
+			if (charlonsReactor)
+			{
+				QuestUtility.SendQuestTargetSignals(base.Map.Parent.questTags, "ReactorDestroyed");
+			}
+			base.Destroy(mode);
+		}
+
 		public override IEnumerable<Gizmo> GetGizmos()
 		{
 			foreach (Gizmo gizmo in base.GetGizmos())
@@ -15,6 +26,12 @@ namespace RimWorld
 			{
 				yield return item;
 			}
+		}
+
+		public override void ExposeData()
+		{
+			base.ExposeData();
+			Scribe_Values.Look(ref charlonsReactor, "charlonsReactor", defaultValue: false);
 		}
 	}
 }

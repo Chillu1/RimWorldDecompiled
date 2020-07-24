@@ -14,20 +14,21 @@ namespace RimWorld
 
 		public override void DoCell(Rect rect, Pawn pawn, PawnTable table)
 		{
-			if (!pawn.Dead && pawn.workSettings != null && pawn.workSettings.EverWork)
+			if (pawn.Dead || pawn.workSettings == null || !pawn.workSettings.EverWork)
 			{
-				Text.Font = GameFont.Medium;
-				float x = rect.x + (rect.width - 25f) / 2f;
-				float y = rect.y + 2.5f;
-				bool incapable = IsIncapableOfWholeWorkType(pawn, def.workType);
-				WidgetsWork.DrawWorkBoxFor(x, y, pawn, def.workType, incapable);
-				Rect rect2 = new Rect(x, y, 25f, 25f);
-				if (Mouse.IsOver(rect2))
-				{
-					TooltipHandler.TipRegion(rect2, () => WidgetsWork.TipForPawnWorker(pawn, def.workType, incapable), pawn.thingIDNumber ^ def.workType.GetHashCode());
-				}
-				Text.Font = GameFont.Small;
+				return;
 			}
+			Text.Font = GameFont.Medium;
+			float x = rect.x + (rect.width - 25f) / 2f;
+			float y = rect.y + 2.5f;
+			bool incapable = IsIncapableOfWholeWorkType(pawn, def.workType);
+			WidgetsWork.DrawWorkBoxFor(x, y, pawn, def.workType, incapable);
+			Rect rect2 = new Rect(x, y, 25f, 25f);
+			if (Mouse.IsOver(rect2))
+			{
+				TooltipHandler.TipRegion(rect2, () => WidgetsWork.TipForPawnWorker(pawn, def.workType, incapable), pawn.thingIDNumber ^ def.workType.GetHashCode());
+			}
+			Text.Font = GameFont.Small;
 		}
 
 		public override void DoHeader(Rect rect, PawnTable table)

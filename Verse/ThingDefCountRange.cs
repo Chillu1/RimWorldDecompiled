@@ -21,8 +21,8 @@ namespace Verse
 		public int TrueMax => countRange.TrueMax;
 
 		public ThingDefCountRange(ThingDef thingDef, int min, int max)
+			: this(thingDef, new IntRange(min, max))
 		{
-			this = new ThingDefCountRange(thingDef, new IntRange(min, max));
 		}
 
 		public ThingDefCountRange(ThingDef thingDef, IntRange countRange)
@@ -82,7 +82,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return "(" + countRange + "x " + ((thingDef != null) ? thingDef.defName : "null") + ")";
+			return string.Concat("(", countRange, "x ", (thingDef != null) ? thingDef.defName : "null", ")");
 		}
 
 		public static implicit operator ThingDefCountRange(ThingDefCountRangeClass t)

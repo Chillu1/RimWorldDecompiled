@@ -21,6 +21,7 @@ namespace RimWorld
 			{
 				Job job = JobMaker.MakeJob(JobDefOf.Wait_Combat);
 				job.expiryInterval = 90;
+				job.canUseRangedWeapon = false;
 				return job;
 			}
 			if (pawn.TryGetAttackVerb(null) == null)

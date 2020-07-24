@@ -18,7 +18,7 @@ namespace RimWorld
 				{
 					if (!item.def.tradeability.TraderCanSell())
 					{
-						Log.Error(traderKindDef + " generated carrying " + item + " which can't be sold by traders. Ignoring...");
+						Log.Error(string.Concat(traderKindDef, " generated carrying ", item, " which can't be sold by traders. Ignoring..."));
 					}
 					else
 					{
@@ -68,15 +68,16 @@ namespace RimWorld
 
 		protected override IEnumerable<ThingDef> AllGeneratableThingsDebugSub(ThingSetMakerParams parms)
 		{
-			if (parms.traderDef != null)
+			if (parms.traderDef == null)
 			{
-				for (int i = 0; i < parms.traderDef.stockGenerators.Count; i++)
+				yield break;
+			}
+			for (int i = 0; i < parms.traderDef.stockGenerators.Count; i++)
+			{
+				StockGenerator stock = parms.traderDef.stockGenerators[i];
+				foreach (ThingDef item in DefDatabase<ThingDef>.AllDefs.Where((ThingDef x) => x.tradeability.TraderCanSell() && stock.HandlesThingDef(x)))
 				{
-					StockGenerator stock = parms.traderDef.stockGenerators[i];
-					foreach (ThingDef item in DefDatabase<ThingDef>.AllDefs.Where((ThingDef x) => x.tradeability.TraderCanSell() && stock.HandlesThingDef(x)))
-					{
-						yield return item;
-					}
+					yield return item;
 				}
 			}
 		}

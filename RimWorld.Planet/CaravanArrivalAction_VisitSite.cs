@@ -70,7 +70,28 @@ namespace RimWorld.Planet
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.Append("LetterCaravanEnteredMap".Translate(caravan.Label, site).CapitalizeFirst());
 				AppendThreatInfo(stringBuilder, site, orGenerateMap, out LetterDef letterDef, out LookTargets allLookTargets);
-				Find.LetterStack.ReceiveLetter("LetterLabelCaravanEnteredMap".Translate(site), stringBuilder.ToString(), letterDef ?? LetterDefOf.NeutralEvent, allLookTargets.IsValid() ? allLookTargets : lookTargets);
+				List<HediffDef> list = null;
+				foreach (SitePart part in site.parts)
+				{
+					if (part.def.arrivedLetterHediffHyperlinks.NullOrEmpty())
+					{
+						continue;
+					}
+					if (list == null)
+					{
+						list = new List<HediffDef>();
+					}
+					foreach (HediffDef arrivedLetterHediffHyperlink in part.def.arrivedLetterHediffHyperlinks)
+					{
+						if (!list.Contains(arrivedLetterHediffHyperlink))
+						{
+							list.Add(arrivedLetterHediffHyperlink);
+						}
+					}
+				}
+				ChoiceLetter choiceLetter = LetterMaker.MakeLetter("LetterLabelCaravanEnteredMap".Translate(site), stringBuilder.ToString(), letterDef ?? LetterDefOf.NeutralEvent, allLookTargets.IsValid() ? allLookTargets : lookTargets);
+				choiceLetter.hyperlinkHediffDefs = list;
+				Find.LetterStack.ReceiveLetter(choiceLetter);
 			}
 			else
 			{

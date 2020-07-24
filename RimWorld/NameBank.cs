@@ -19,11 +19,11 @@ namespace RimWorld
 		{
 			get
 			{
-				for (int j = 0; j < numGenders; j++)
+				for (int i = 0; i < numGenders; i++)
 				{
-					for (int i = 0; i < numSlots; i++)
+					for (int j = 0; j < numSlots; j++)
 					{
-						yield return names[j, i];
+						yield return names[i, j];
 					}
 				}
 			}
@@ -87,7 +87,7 @@ namespace RimWorld
 			int num = 0;
 			if (list.Count == 0)
 			{
-				Log.Error("Name list for gender=" + gender + " slot=" + slot + " is empty.");
+				Log.Error(string.Concat("Name list for gender=", gender, " slot=", slot, " is empty."));
 				return "Errorname";
 			}
 			string text;

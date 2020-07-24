@@ -19,14 +19,15 @@ namespace RimWorld
 		public override void Notify_ImplantUsed(string violationSourceName, float detectionChance, int violationSourceLevel = -1)
 		{
 			base.Notify_ImplantUsed(violationSourceName, detectionChance);
-			if (parent.pawn.Faction == Faction.OfPlayer && !parent.pawn.health.hediffSet.HasHediff(HediffDefOf.PsychicSilencer) && Rand.Chance(detectionChance))
+			if (parent.pawn.Faction != Faction.OfPlayer || !Rand.Chance(detectionChance))
 			{
-				foreach (Faction allFaction in Find.FactionManager.AllFactions)
+				return;
+			}
+			foreach (Faction allFaction in Find.FactionManager.AllFactions)
+			{
+				if (IsViolatingRulesOf(allFaction, violationSourceLevel))
 				{
-					if (IsViolatingRulesOf(allFaction, violationSourceLevel))
-					{
-						allFaction.Notify_RoyalThingUseViolation(parent.def, base.Pawn, violationSourceName, detectionChance, violationSourceLevel);
-					}
+					allFaction.Notify_RoyalThingUseViolation(parent.def, base.Pawn, violationSourceName, detectionChance, violationSourceLevel);
 				}
 			}
 		}

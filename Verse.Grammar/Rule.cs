@@ -81,49 +81,30 @@ namespace Verse.Grammar
 		public void AddConstantConstraint(string key, string value, string op)
 		{
 			ConstantConstraint.Type type;
-			if (!(op == "=="))
+			switch (op)
 			{
-				if (!(op == "!="))
-				{
-					if (!(op == "<"))
-					{
-						if (!(op == ">"))
-						{
-							if (!(op == "<="))
-							{
-								if (op == ">=")
-								{
-									type = ConstantConstraint.Type.GreaterOrEqual;
-								}
-								else
-								{
-									type = ConstantConstraint.Type.Equal;
-									Log.Error("Unknown ConstantConstraint type: " + op);
-								}
-							}
-							else
-							{
-								type = ConstantConstraint.Type.LessOrEqual;
-							}
-						}
-						else
-						{
-							type = ConstantConstraint.Type.Greater;
-						}
-					}
-					else
-					{
-						type = ConstantConstraint.Type.Less;
-					}
-				}
-				else
-				{
-					type = ConstantConstraint.Type.NotEqual;
-				}
-			}
-			else
-			{
+			case "==":
 				type = ConstantConstraint.Type.Equal;
+				break;
+			case "!=":
+				type = ConstantConstraint.Type.NotEqual;
+				break;
+			case "<":
+				type = ConstantConstraint.Type.Less;
+				break;
+			case ">":
+				type = ConstantConstraint.Type.Greater;
+				break;
+			case "<=":
+				type = ConstantConstraint.Type.LessOrEqual;
+				break;
+			case ">=":
+				type = ConstantConstraint.Type.GreaterOrEqual;
+				break;
+			default:
+				type = ConstantConstraint.Type.Equal;
+				Log.Error("Unknown ConstantConstraint type: " + op);
+				break;
 			}
 			AddConstantConstraint(key, value, type);
 		}

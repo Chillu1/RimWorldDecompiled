@@ -30,23 +30,24 @@ namespace Verse
 		{
 			foreach (Type item in typeof(Def).AllSubclasses())
 			{
-				if (!item.IsAbstract && !(item == typeof(Def)))
+				if (item.IsAbstract || item == typeof(Def))
 				{
-					bool flag = false;
-					Type baseType = item.BaseType;
-					while (baseType != null && baseType != typeof(Def))
+					continue;
+				}
+				bool flag = false;
+				Type baseType = item.BaseType;
+				while (baseType != null && baseType != typeof(Def))
+				{
+					if (!baseType.IsAbstract)
 					{
-						if (!baseType.IsAbstract)
-						{
-							flag = true;
-							break;
-						}
-						baseType = baseType.BaseType;
+						flag = true;
+						break;
 					}
-					if (!flag)
-					{
-						yield return item;
-					}
+					baseType = baseType.BaseType;
+				}
+				if (!flag)
+				{
+					yield return item;
 				}
 			}
 		}

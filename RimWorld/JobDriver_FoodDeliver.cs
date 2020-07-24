@@ -81,10 +81,11 @@ namespace RimWorld
 				return (!pawn.guest.CanBeBroughtFood) ? true : false;
 			});
 			yield return toil;
+			JobDriver_FoodDeliver jobDriver_FoodDeliver = this;
 			Toil toil2 = new Toil();
 			toil2.initAction = delegate
 			{
-				pawn.carryTracker.TryDropCarriedThing(toil2.actor.jobs.curJob.targetC.Cell, ThingPlaceMode.Direct, out Thing _);
+				jobDriver_FoodDeliver.pawn.carryTracker.TryDropCarriedThing(toil2.actor.jobs.curJob.targetC.Cell, ThingPlaceMode.Direct, out Thing _);
 			};
 			toil2.defaultCompleteMode = ToilCompleteMode.Instant;
 			yield return toil2;

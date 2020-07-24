@@ -87,7 +87,7 @@ namespace Verse
 		{
 			if (debugLog)
 			{
-				Log.Message(Find.TickManager.TicksGame + " " + pawn + " SetStance " + curStance + " -> " + newStance);
+				Log.Message(string.Concat(Find.TickManager.TicksGame, " ", pawn, " SetStance ", curStance, " -> ", newStance));
 			}
 			newStance.stanceTracker = this;
 			curStance = newStance;

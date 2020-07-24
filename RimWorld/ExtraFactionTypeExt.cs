@@ -6,7 +6,7 @@ namespace RimWorld
 	{
 		public static string GetLabel(this ExtraFactionType factionType)
 		{
-			return ("ExtraFactionType_" + factionType.ToString()).Translate();
+			return ("ExtraFactionType_" + factionType).Translate();
 		}
 	}
 }

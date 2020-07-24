@@ -18,6 +18,10 @@ namespace RimWorld
 			{
 				num *= Props.acceptPercentFactorPerThreatPointsCurve.Evaluate(StorytellerUtility.DefaultThreatPointsNow(target));
 			}
+			if (Props.acceptPercentFactorPerProgressScoreCurve != null)
+			{
+				num *= Props.acceptPercentFactorPerProgressScoreCurve.Evaluate(StorytellerUtility.GetProgressScore(target));
+			}
 			int incCount = IncidentCycleUtility.IncidentCountThisInterval(target, Find.Storyteller.storytellerComps.IndexOf(this), Props.minDaysPassed, Props.onDays, Props.offDays, Props.minSpacingDays, Props.numIncidentsRange.min, Props.numIncidentsRange.max, num);
 			for (int i = 0; i < incCount; i++)
 			{

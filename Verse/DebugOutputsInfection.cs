@@ -116,11 +116,11 @@ namespace Verse
 				}));
 			}
 			DebugTables.MakeTablesDialog(InfectionList(), list.ToArray());
-			float baseSeverityIncrease(HediffDef d)
+			static float baseSeverityIncrease(HediffDef d)
 			{
 				return d.CompProps<HediffCompProperties_Immunizable>().severityPerDayNotImmune;
 			}
-			bool isAnimal(HediffDef d)
+			static bool isAnimal(HediffDef d)
 			{
 				return d.defName.Contains("Animal");
 			}

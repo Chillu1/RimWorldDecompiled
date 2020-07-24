@@ -67,7 +67,7 @@ namespace Verse
 					(dinfo.Instigator as Pawn)?.records.Increment(RecordDefOf.Headshots);
 				}
 			}
-			if ((damageResult.deflected || damageResult.diminished) & spawnedOrAnyParentSpawned)
+			if ((damageResult.deflected || damageResult.diminished) && spawnedOrAnyParentSpawned)
 			{
 				EffecterDef effecterDef = damageResult.deflected ? ((damageResult.deflectedByMetalArmor && dinfo.Def.canUseDeflectMetalEffect) ? ((dinfo.Def != DamageDefOf.Bullet) ? EffecterDefOf.Deflect_Metal : EffecterDefOf.Deflect_Metal_Bullet) : ((dinfo.Def != DamageDefOf.Bullet) ? EffecterDefOf.Deflect_General : EffecterDefOf.Deflect_General_Bullet)) : ((!damageResult.diminishedByMetalArmor) ? EffecterDefOf.DamageDiminished_General : EffecterDefOf.DamageDiminished_Metal);
 				if (pawn.health.deflectionEffecter == null || pawn.health.deflectionEffecter.def != effecterDef)
@@ -133,6 +133,10 @@ namespace Verse
 					result.diminishedByMetalArmor = diminishedByMetalArmor;
 				}
 			}
+			if (dinfo.Def.ExternalViolenceFor(pawn))
+			{
+				num *= pawn.GetStatValue(StatDefOf.IncomingDamageFactor);
+			}
 			if (num <= 0f)
 			{
 				result.AddPart(pawn, dinfo.HitPart);
@@ -170,10 +174,6 @@ namespace Verse
 			{
 				return 0f;
 			}
-			if (dinfo.Def.ExternalViolenceFor(pawn))
-			{
-				totalDamage *= pawn.GetStatValue(StatDefOf.IncomingDamageFactor);
-			}
 			HediffDef hediffDefFromDamage = HealthUtility.GetHediffDefFromDamage(dinfo.Def, pawn, dinfo.HitPart);
 			Hediff_Injury hediff_Injury = (Hediff_Injury)HediffMaker.MakeHediff(hediffDefFromDamage, pawn);
 			hediff_Injury.Part = dinfo.HitPart;
@@ -190,7 +190,7 @@ namespace Verse
 				}
 				else
 				{
-					Log.Error("Tried to create instant permanent injury on Hediff without a GetsPermanent comp: " + hediffDefFromDamage + " on " + pawn);
+					Log.Error(string.Concat("Tried to create instant permanent injury on Hediff without a GetsPermanent comp: ", hediffDefFromDamage, " on ", pawn));
 				}
 			}
 			return FinalizeAndAddInjury(pawn, hediff_Injury, dinfo, result);

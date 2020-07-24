@@ -163,9 +163,9 @@ namespace RimWorld
 			bool flag = t.TryGetQuality(out qc);
 			int hitPoints = t.HitPoints;
 			int maxHitPoints = t.MaxHitPoints;
-			bool flag2 = (t.def.useHitPoints && hitPoints < maxHitPoints && t.def.stackLimit == 1) & includeHp;
+			bool flag2 = t.def.useHitPoints && hitPoints < maxHitPoints && t.def.stackLimit == 1 && includeHp;
 			bool flag3 = (t as Apparel)?.WornByCorpse ?? false;
-			if (flag | flag2 | flag3)
+			if (flag || flag2 || flag3)
 			{
 				text += " (";
 				if (flag)
@@ -182,7 +182,7 @@ namespace RimWorld
 				}
 				if (flag3)
 				{
-					if (flag | flag2)
+					if (flag || flag2)
 					{
 						text += " ";
 					}
@@ -225,19 +225,17 @@ namespace RimWorld
 			tmpThingsLabelElements.Clear();
 			foreach (ThingCount thing in things)
 			{
-				LabelElement labelElement = tmpThingsLabelElements.Where((LabelElement elem) => ((thing.Thing.def.stackLimit > 1) | ignoreStackLimit) && elem.thingTemplate.def == thing.Thing.def && elem.thingTemplate.Stuff == thing.Thing.Stuff).FirstOrDefault();
+				LabelElement labelElement = tmpThingsLabelElements.Where((LabelElement elem) => (thing.Thing.def.stackLimit > 1 || ignoreStackLimit) && elem.thingTemplate.def == thing.Thing.def && elem.thingTemplate.Stuff == thing.Thing.Stuff).FirstOrDefault();
 				if (labelElement != null)
 				{
 					labelElement.count += thing.Count;
+					continue;
 				}
-				else
+				tmpThingsLabelElements.Add(new LabelElement
 				{
-					tmpThingsLabelElements.Add(new LabelElement
-					{
-						thingTemplate = thing.Thing,
-						count = thing.Count
-					});
-				}
+					thingTemplate = thing.Thing,
+					count = thing.Count
+				});
 			}
 			tmpThingsLabelElements.Sort(delegate(LabelElement lhs, LabelElement rhs)
 			{

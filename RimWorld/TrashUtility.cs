@@ -31,7 +31,7 @@ namespace RimWorld
 
 		public static bool ShouldTrashBuilding(Pawn pawn, Building b, bool attackAllInert = false)
 		{
-			if (!b.def.useHitPoints)
+			if (!b.def.useHitPoints || (b.def.building != null && b.def.building.ai_neverTrashThis))
 			{
 				return false;
 			}
@@ -105,7 +105,7 @@ namespace RimWorld
 			}
 			else
 			{
-				if (!(!((t as Building)?.def.building.isInert ?? false) | allowPunchingInert))
+				if (!(!((t as Building)?.def.building.isInert ?? false) || allowPunchingInert))
 				{
 					return null;
 				}

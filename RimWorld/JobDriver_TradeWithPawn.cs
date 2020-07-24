@@ -15,15 +15,16 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
+			JobDriver_TradeWithPawn jobDriver_TradeWithPawn = this;
 			this.FailOnDespawnedOrNull(TargetIndex.A);
-			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch).FailOn(() => !Trader.CanTradeNow);
+			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch).FailOn(() => !jobDriver_TradeWithPawn.Trader.CanTradeNow);
 			Toil trade = new Toil();
 			trade.initAction = delegate
 			{
 				Pawn actor = trade.actor;
-				if (Trader.CanTradeNow)
+				if (jobDriver_TradeWithPawn.Trader.CanTradeNow)
 				{
-					Find.WindowStack.Add(new Dialog_Trade(actor, Trader));
+					Find.WindowStack.Add(new Dialog_Trade(actor, jobDriver_TradeWithPawn.Trader));
 				}
 			};
 			yield return trade;

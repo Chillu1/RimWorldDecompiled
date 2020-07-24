@@ -124,14 +124,15 @@ namespace RimWorld
 			{
 				foreach (RoyalTitle item in AllTitlesInEffectForReading)
 				{
-					if (!item.def.permits.NullOrEmpty())
+					if (item.def.permits.NullOrEmpty())
 					{
-						foreach (RoyalTitlePermitDef permit in item.def.permits)
+						continue;
+					}
+					foreach (RoyalTitlePermitDef permit in item.def.permits)
+					{
+						if (permit.workerClass == typeof(RoyalTitlePermitWorker_CallAid))
 						{
-							if (permit.workerClass == typeof(RoyalTitlePermitWorker_CallAid))
-							{
-								return true;
-							}
+							return true;
 						}
 					}
 				}
@@ -261,7 +262,7 @@ namespace RimWorld
 		{
 			if (!ModLister.RoyaltyInstalled)
 			{
-				Log.Error("Pawn_RoyaltyTracker requires Royalty installed.");
+				Log.ErrorOnce("Royal favor is a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 63699999);
 				return;
 			}
 			if (!favor.TryGetValue(faction, out int value))
@@ -296,7 +297,7 @@ namespace RimWorld
 		{
 			if (!ModLister.RoyaltyInstalled)
 			{
-				Log.Error("Pawn_RoyaltyTracker requires Royalty installed.");
+				Log.ErrorOnce("Royal favor is a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 7641236);
 			}
 			else if (amount == 0 && favor.ContainsKey(faction) && FindFactionTitleIndex(faction) == -1)
 			{
@@ -331,7 +332,7 @@ namespace RimWorld
 		{
 			if (!ModLister.RoyaltyInstalled)
 			{
-				Log.Error("Pawn_RoyaltyTracker requires Royalty installed.");
+				Log.ErrorOnce("Royal favor is a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 7445532);
 				return;
 			}
 			RoyalTitleDef currentTitle = GetCurrentTitle(faction);
@@ -422,11 +423,15 @@ namespace RimWorld
 			factionHeirsToClearTmp.Clear();
 			foreach (KeyValuePair<Faction, Pawn> heir in heirs)
 			{
-				Pawn value = heir.Value;
-				if (value != null && value.Dead)
+				RoyalTitleDef currentTitle = GetCurrentTitle(heir.Key);
+				if (currentTitle != null && currentTitle.canBeInherited)
 				{
-					Find.LetterStack.ReceiveLetter("LetterTitleHeirLostLabel".Translate(), "LetterTitleHeirLost".Translate(pawn.Named("HOLDER"), value.Named("HEIR"), heir.Key.Named("FACTION")), LetterDefOf.NegativeEvent, pawn);
-					factionHeirsToClearTmp.Add(heir.Key);
+					Pawn value = heir.Value;
+					if (value != null && value.Dead)
+					{
+						Find.LetterStack.ReceiveLetter("LetterTitleHeirLostLabel".Translate(), "LetterTitleHeirLost".Translate(pawn.Named("HOLDER"), value.Named("HEIR"), heir.Key.Named("FACTION")), LetterDefOf.NegativeEvent, pawn);
+						factionHeirsToClearTmp.Add(heir.Key);
+					}
 				}
 			}
 			foreach (Faction item in factionHeirsToClearTmp)
@@ -448,7 +453,7 @@ namespace RimWorld
 		{
 			if (!ModLister.RoyaltyInstalled)
 			{
-				Log.Error("Pawn_RoyaltyTracker requires Royalty installed.");
+				Log.ErrorOnce("Decrees are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 281653);
 				return;
 			}
 			IIncidentTarget mapHeld = pawn.MapHeld;
@@ -542,6 +547,7 @@ namespace RimWorld
 				UpdateHighestTitleAchieved(faction, newTitle);
 			}
 			QuestUtility.SendQuestTargetSignals(pawn.questTags, "TitleChanged", pawn.Named("SUBJECT"));
+			MeditationFocusTypeAvailabilityCache.ClearFor(pawn);
 		}
 
 		private void UpdateRoyalTitle(Faction faction)
@@ -603,31 +609,40 @@ namespace RimWorld
 				for (int i = num; i <= num2; i++)
 				{
 					RoyalTitleDef royalTitleDef = faction.def.RoyalTitlesAwardableInSeniorityOrderForReading[i];
-					if (royalTitleDef.rewards != null)
+					if (royalTitleDef.rewards == null)
 					{
-						List<Thing> list3 = royalTitleDef.rewards.Select(delegate(ThingDefCountClass r)
-						{
-							Thing thing = ThingMaker.MakeThing(r.thingDef);
-							thing.stackCount = r.count;
-							return thing;
-						}).ToList();
-						if (pawn.Spawned)
-						{
-							DropPodUtility.DropThingsNear(result, mapHeld, list3, 110, canInstaDropDuringInit: false, leaveSlag: false, canRoofPunch: false, forbid: false);
-						}
-						else
-						{
-							foreach (Thing item in list3)
-							{
-								pawn.inventory.TryAddItemNotForSale(item);
-							}
-						}
-						for (int j = 0; j < list3.Count; j++)
-						{
-							list2.Add(new ThingCount(list3[j], list3[j].stackCount));
-						}
-						list.AddRange(list3);
+						continue;
 					}
+					List<Thing> list3 = royalTitleDef.rewards.Select(delegate(ThingDefCountClass r)
+					{
+						Thing thing = ThingMaker.MakeThing(r.thingDef);
+						thing.stackCount = r.count;
+						return thing;
+					}).ToList();
+					for (int j = 0; j < list3.Count; j++)
+					{
+						if (list3[j].def == ThingDefOf.PsychicAmplifier)
+						{
+							Find.History.Notify_PsylinkAvailable();
+							break;
+						}
+					}
+					if (pawn.Spawned)
+					{
+						DropPodUtility.DropThingsNear(result, mapHeld, list3, 110, canInstaDropDuringInit: false, leaveSlag: false, canRoofPunch: false, forbid: false);
+					}
+					else
+					{
+						foreach (Thing item in list3)
+						{
+							pawn.inventory.TryAddItemNotForSale(item);
+						}
+					}
+					for (int k = 0; k < list3.Count; k++)
+					{
+						list2.Add(new ThingCount(list3[k], list3[k].stackCount));
+					}
+					list.AddRange(list3);
 				}
 				if (list.Count > 0)
 				{
@@ -666,65 +681,74 @@ namespace RimWorld
 
 		public void Notify_PawnKilled()
 		{
-			if (!PawnGenerator.IsBeingGenerated(pawn) && AllTitlesForReading.Count != 0)
+			if (PawnGenerator.IsBeingGenerated(pawn) || AllTitlesForReading.Count == 0)
 			{
-				bool flag = pawn.IsFreeColonist && !pawn.IsQuestLodger();
-				StringBuilder stringBuilder = new StringBuilder();
-				try
+				return;
+			}
+			bool flag = false;
+			StringBuilder stringBuilder = new StringBuilder();
+			try
+			{
+				stringBuilder.AppendLine("LetterTitleInheritance_Base".Translate(pawn.Named("PAWN")));
+				stringBuilder.AppendLine();
+				foreach (RoyalTitle item in AllTitlesForReading)
 				{
-					stringBuilder.AppendLine("LetterTitleInheritance_Base".Translate(pawn.Named("PAWN")));
-					stringBuilder.AppendLine();
-					foreach (RoyalTitle item in AllTitlesForReading)
+					if (!item.def.canBeInherited)
 					{
-						if (item.def.TryInherit(pawn, item.faction, out RoyalTitleInheritanceOutcome outcome))
+						continue;
+					}
+					if (pawn.IsFreeColonist && !pawn.IsQuestLodger())
+					{
+						flag = true;
+					}
+					if (item.def.TryInherit(pawn, item.faction, out RoyalTitleInheritanceOutcome outcome))
+					{
+						if (outcome.HeirHasTitle && !outcome.heirTitleHigher)
 						{
-							if (outcome.HeirHasTitle && !outcome.heirTitleHigher)
-							{
-								stringBuilder.AppendLine("LetterTitleInheritance_AsReplacement".Translate(pawn.Named("PAWN"), item.faction.Named("FACTION"), outcome.heir.Named("HEIR"), item.def.GetLabelFor(pawn).Named("TITLE"), outcome.heirCurrentTitle.GetLabelFor(outcome.heir).Named("REPLACEDTITLE")).CapitalizeFirst().Resolve());
-								stringBuilder.AppendLine();
-							}
-							else if (outcome.heirTitleHigher)
-							{
-								stringBuilder.AppendLine("LetterTitleInheritance_NoEffectHigherTitle".Translate(pawn.Named("PAWN"), item.faction.Named("FACTION"), outcome.heir.Named("HEIR"), item.def.GetLabelFor(pawn).Named("TITLE"), outcome.heirCurrentTitle.GetLabelFor(outcome.heir).Named("HIGHERTITLE")).CapitalizeFirst().Resolve());
-								stringBuilder.AppendLine();
-							}
-							else
-							{
-								stringBuilder.AppendLine("LetterTitleInheritance_WasInherited".Translate(pawn.Named("PAWN"), item.faction.Named("FACTION"), outcome.heir.Named("HEIR"), item.def.GetLabelFor(pawn).Named("TITLE")).CapitalizeFirst().Resolve());
-								stringBuilder.AppendLine();
-							}
-							if (!outcome.heirTitleHigher)
-							{
-								RoyalTitle titleLocal = item;
-								tmpInheritedTitles.Add(delegate
-								{
-									outcome.heir.royalty.SetTitle(titleLocal.faction, titleLocal.def, grantRewards: true, rewardsOnlyForNewestTitle: true);
-									titleLocal.wasInherited = true;
-								});
-								if (outcome.heir.IsFreeColonist && !outcome.heir.IsQuestLodger())
-								{
-									flag = true;
-								}
-							}
+							stringBuilder.AppendLine("LetterTitleInheritance_AsReplacement".Translate(pawn.Named("PAWN"), item.faction.Named("FACTION"), outcome.heir.Named("HEIR"), item.def.GetLabelFor(pawn).Named("TITLE"), outcome.heirCurrentTitle.GetLabelFor(outcome.heir).Named("REPLACEDTITLE")).CapitalizeFirst().Resolve());
+							stringBuilder.AppendLine();
+						}
+						else if (outcome.heirTitleHigher)
+						{
+							stringBuilder.AppendLine("LetterTitleInheritance_NoEffectHigherTitle".Translate(pawn.Named("PAWN"), item.faction.Named("FACTION"), outcome.heir.Named("HEIR"), item.def.GetLabelFor(pawn).Named("TITLE"), outcome.heirCurrentTitle.GetLabelFor(outcome.heir).Named("HIGHERTITLE")).CapitalizeFirst().Resolve());
+							stringBuilder.AppendLine();
 						}
 						else
 						{
-							stringBuilder.AppendLine("LetterTitleInheritance_NoHeirFound".Translate(pawn.Named("PAWN"), item.def.GetLabelFor(pawn).Named("TITLE"), item.faction.Named("FACTION")).CapitalizeFirst().Resolve());
+							stringBuilder.AppendLine("LetterTitleInheritance_WasInherited".Translate(pawn.Named("PAWN"), item.faction.Named("FACTION"), outcome.heir.Named("HEIR"), item.def.GetLabelFor(pawn).Named("TITLE")).CapitalizeFirst().Resolve());
+							stringBuilder.AppendLine();
+						}
+						if (!outcome.heirTitleHigher)
+						{
+							RoyalTitle titleLocal = item;
+							tmpInheritedTitles.Add(delegate
+							{
+								outcome.heir.royalty.SetTitle(titleLocal.faction, titleLocal.def, grantRewards: true, rewardsOnlyForNewestTitle: true);
+								titleLocal.wasInherited = true;
+							});
+							if (outcome.heir.IsFreeColonist && !outcome.heir.IsQuestLodger())
+							{
+								flag = true;
+							}
 						}
 					}
-					if (stringBuilder.Length > 0 && flag)
+					else
 					{
-						Find.LetterStack.ReceiveLetter("LetterTitleInheritance".Translate(), stringBuilder.ToString().TrimEndNewlines(), LetterDefOf.PositiveEvent);
-					}
-					foreach (Action tmpInheritedTitle in tmpInheritedTitles)
-					{
-						tmpInheritedTitle();
+						stringBuilder.AppendLine("LetterTitleInheritance_NoHeirFound".Translate(pawn.Named("PAWN"), item.def.GetLabelFor(pawn).Named("TITLE"), item.faction.Named("FACTION")).CapitalizeFirst().Resolve());
 					}
 				}
-				finally
+				if (stringBuilder.Length > 0 && flag)
 				{
-					tmpInheritedTitles.Clear();
+					Find.LetterStack.ReceiveLetter("LetterTitleInheritance".Translate(), stringBuilder.ToString().TrimEndNewlines(), LetterDefOf.PositiveEvent);
 				}
+				foreach (Action tmpInheritedTitle in tmpInheritedTitles)
+				{
+					tmpInheritedTitle();
+				}
+			}
+			finally
+			{
+				tmpInheritedTitles.Clear();
 			}
 		}
 
@@ -807,23 +831,25 @@ namespace RimWorld
 				yield break;
 			}
 			RoyalTitle highestTitle = HighestTitleWithThroneRoomRequirements();
-			if (highestTitle != null)
+			if (highestTitle == null)
 			{
-				Room throneRoom = pawn.ownership.AssignedThrone.GetRoom();
-				if (throneRoom != null)
+				yield break;
+			}
+			Room throneRoom = pawn.ownership.AssignedThrone.GetRoom();
+			if (throneRoom == null)
+			{
+				yield break;
+			}
+			RoyalTitleDef prevTitle = highestTitle.def.GetPreviousTitle(highestTitle.faction);
+			foreach (RoomRequirement throneRoomRequirement in highestTitle.def.throneRoomRequirements)
+			{
+				if (!throneRoomRequirement.Met(throneRoom, pawn))
 				{
-					RoyalTitleDef prevTitle = highestTitle.def.GetPreviousTitle(highestTitle.faction);
-					foreach (RoomRequirement throneRoomRequirement in highestTitle.def.throneRoomRequirements)
+					bool flag = highestTitle.RoomRequirementGracePeriodActive(pawn);
+					bool flag2 = prevTitle != null && !prevTitle.HasSameThroneroomRequirement(throneRoomRequirement);
+					if ((!onlyOnGracePeriod || (flag2 && flag)) && (!(flag && flag2) || includeOnGracePeriod))
 					{
-						if (!throneRoomRequirement.Met(throneRoom, pawn))
-						{
-							bool flag = highestTitle.RoomRequirementGracePeriodActive(pawn);
-							bool flag2 = prevTitle != null && !prevTitle.HasSameThroneroomRequirement(throneRoomRequirement);
-							if ((!onlyOnGracePeriod || (flag2 && flag)) && (!flag || !flag2 || includeOnGracePeriod))
-							{
-								yield return throneRoomRequirement.LabelCap(throneRoom);
-							}
-						}
+						yield return throneRoomRequirement.LabelCap(throneRoom);
 					}
 				}
 			}
@@ -859,23 +885,25 @@ namespace RimWorld
 		public IEnumerable<string> GetUnmetBedroomRequirements(bool includeOnGracePeriod = true, bool onlyOnGracePeriod = false)
 		{
 			RoyalTitle royalTitle = HighestTitleWithBedroomRequirements();
-			if (royalTitle != null)
+			if (royalTitle == null)
 			{
-				bool gracePeriodActive = royalTitle.RoomRequirementGracePeriodActive(pawn);
-				RoyalTitleDef prevTitle = royalTitle.def.GetPreviousTitle(royalTitle.faction);
-				if (HasPersonalBedroom())
+				yield break;
+			}
+			bool gracePeriodActive = royalTitle.RoomRequirementGracePeriodActive(pawn);
+			RoyalTitleDef prevTitle = royalTitle.def.GetPreviousTitle(royalTitle.faction);
+			if (!HasPersonalBedroom())
+			{
+				yield break;
+			}
+			Room bedroom = pawn.ownership.OwnedRoom;
+			foreach (RoomRequirement bedroomRequirement in royalTitle.def.GetBedroomRequirements(pawn))
+			{
+				if (!bedroomRequirement.Met(bedroom))
 				{
-					Room bedroom = pawn.ownership.OwnedRoom;
-					foreach (RoomRequirement bedroomRequirement in royalTitle.def.GetBedroomRequirements(pawn))
+					bool flag = prevTitle != null && !prevTitle.HasSameBedroomRequirement(bedroomRequirement);
+					if ((!onlyOnGracePeriod || (flag && gracePeriodActive)) && (!(gracePeriodActive && flag) || includeOnGracePeriod))
 					{
-						if (!bedroomRequirement.Met(bedroom))
-						{
-							bool flag = prevTitle != null && !prevTitle.HasSameBedroomRequirement(bedroomRequirement);
-							if ((!onlyOnGracePeriod || (flag && gracePeriodActive)) && (!gracePeriodActive || !flag || includeOnGracePeriod))
-							{
-								yield return bedroomRequirement.LabelCap(bedroom);
-							}
-						}
+						yield return bedroomRequirement.LabelCap(bedroom);
 					}
 				}
 			}

@@ -57,35 +57,37 @@ namespace Verse
 			forPawnFound = false;
 			foreach (IntVec3 item in CellRect.SingleCell(at).ExpandedBy(1))
 			{
-				if (item.InBounds(map))
+				if (!item.InBounds(map))
 				{
-					List<Thing> thingList = item.GetThingList(map);
-					for (int i = 0; i < thingList.Count; i++)
+					continue;
+				}
+				List<Thing> thingList = item.GetThingList(map);
+				for (int i = 0; i < thingList.Count; i++)
+				{
+					Pawn pawn = thingList[i] as Pawn;
+					if (pawn == null || pawn.GetPosture() != 0)
 					{
-						Pawn pawn = thingList[i] as Pawn;
-						if (pawn != null && pawn.GetPosture() == PawnPosture.Standing)
+						continue;
+					}
+					if (item != at)
+					{
+						if (!pawn.pather.MovingNow || pawn.pather.nextCell != pawn.pather.Destination.Cell || pawn.pather.Destination.Cell != at)
 						{
-							if (item != at)
-							{
-								if (!pawn.pather.MovingNow || pawn.pather.nextCell != pawn.pather.Destination.Cell || pawn.pather.Destination.Cell != at)
-								{
-									continue;
-								}
-							}
-							else if (pawn.pather.MovingNow)
-							{
-								continue;
-							}
-							if (pawn == forPawn)
-							{
-								forPawnFound = true;
-							}
-							pawnsCount++;
-							if (pawn.thingIDNumber < forPawn.thingIDNumber)
-							{
-								pawnsWithLowerIdCount++;
-							}
+							continue;
 						}
+					}
+					else if (pawn.pather.MovingNow)
+					{
+						continue;
+					}
+					if (pawn == forPawn)
+					{
+						forPawnFound = true;
+					}
+					pawnsCount++;
+					if (pawn.thingIDNumber < forPawn.thingIDNumber)
+					{
+						pawnsWithLowerIdCount++;
 					}
 				}
 			}
@@ -96,26 +98,28 @@ namespace Verse
 			IntVec3 nextCell = pawn.pather.nextCell;
 			foreach (IntVec3 item in CellRect.FromLimits(nextCell, pawn.Position).ExpandedBy(1))
 			{
-				if (item.InBounds(pawn.Map))
+				if (!item.InBounds(pawn.Map))
 				{
-					List<Thing> thingList = item.GetThingList(pawn.Map);
-					for (int i = 0; i < thingList.Count; i++)
+					continue;
+				}
+				List<Thing> thingList = item.GetThingList(pawn.Map);
+				for (int i = 0; i < thingList.Count; i++)
+				{
+					Pawn pawn2 = thingList[i] as Pawn;
+					if (pawn2 == null || pawn2 == pawn || pawn2.GetPosture() != 0)
 					{
-						Pawn pawn2 = thingList[i] as Pawn;
-						if (pawn2 != null && pawn2 != pawn && pawn2.GetPosture() == PawnPosture.Standing)
+						continue;
+					}
+					if (pawn2.pather.MovingNow)
+					{
+						if (((pawn2.Position == nextCell && WillBeFasterOnNextCell(pawn, pawn2)) || pawn2.pather.nextCell == nextCell || pawn2.Position == pawn.Position || (pawn2.pather.nextCell == pawn.Position && WillBeFasterOnNextCell(pawn2, pawn))) && pawn2.thingIDNumber < pawn.thingIDNumber)
 						{
-							if (pawn2.pather.MovingNow)
-							{
-								if (((pawn2.Position == nextCell && WillBeFasterOnNextCell(pawn, pawn2)) || pawn2.pather.nextCell == nextCell || pawn2.Position == pawn.Position || (pawn2.pather.nextCell == pawn.Position && WillBeFasterOnNextCell(pawn2, pawn))) && pawn2.thingIDNumber < pawn.thingIDNumber)
-								{
-									return false;
-								}
-							}
-							else if (pawn2.Position == pawn.Position || pawn2.Position == nextCell)
-							{
-								return false;
-							}
+							return false;
 						}
+					}
+					else if (pawn2.Position == pawn.Position || pawn2.Position == nextCell)
+					{
+						return false;
 					}
 				}
 			}

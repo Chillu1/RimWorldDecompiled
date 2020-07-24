@@ -22,6 +22,7 @@ namespace Verse
 		Hauling = 0x4000,
 		PlantWork = 0x8000,
 		Mining = 0x10000,
-		Hunting = 0x20000
+		Hunting = 0x20000,
+		AllWork = 0x40000
 	}
 }

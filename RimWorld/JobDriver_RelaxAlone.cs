@@ -6,11 +6,13 @@ namespace RimWorld
 {
 	public class JobDriver_RelaxAlone : JobDriver
 	{
-		private Rot4 faceDir = Rot4.Invalid;
+		protected Rot4 faceDir = Rot4.Invalid;
 
-		private const TargetIndex SpotOrBedInd = TargetIndex.A;
+		protected const TargetIndex SpotOrBedInd = TargetIndex.A;
 
-		private bool FromBed => job.GetTarget(TargetIndex.A).HasThing;
+		private bool FromBed => job.GetTarget(TargetIndex.A).Thing is Building_Bed;
+
+		protected virtual bool CanSleep => true;
 
 		public override bool CanBeginNowWhileLyingDown()
 		{
@@ -45,7 +47,7 @@ namespace RimWorld
 				this.KeepLyingDown(TargetIndex.A);
 				yield return Toils_Bed.ClaimBedIfNonMedical(TargetIndex.A);
 				yield return Toils_Bed.GotoBed(TargetIndex.A);
-				toil = Toils_LayDown.LayDown(TargetIndex.A, hasBed: true, lookForOtherJobs: false);
+				toil = Toils_LayDown.LayDown(TargetIndex.A, hasBed: true, lookForOtherJobs: false, CanSleep);
 				toil.AddFailCondition(() => !pawn.Awake());
 			}
 			else

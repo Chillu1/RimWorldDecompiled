@@ -21,348 +21,197 @@ namespace Verse
 		{
 			if (defType == typeof(ThingDef))
 			{
-				if (defName == "Gun_SurvivalRifle")
+				switch (defName)
 				{
+				case "Gun_SurvivalRifle":
 					return "Gun_BoltActionRifle";
-				}
-				if (defName == "Bullet_SurvivalRifle")
-				{
+				case "Bullet_SurvivalRifle":
 					return "Bullet_BoltActionRifle";
-				}
-				if (defName == "Neurotrainer")
-				{
+				case "Neurotrainer":
 					return "MechSerumNeurotrainer";
-				}
-				if (defName == "FueledGenerator")
-				{
+				case "FueledGenerator":
 					return "WoodFiredGenerator";
-				}
-				if (defName == "Gun_Pistol")
-				{
+				case "Gun_Pistol":
 					return "Gun_Revolver";
-				}
-				if (defName == "Bullet_Pistol")
-				{
+				case "Bullet_Pistol":
 					return "Bullet_Revolver";
-				}
-				if (defName == "TableShort")
-				{
+				case "TableShort":
 					return "Table2x2c";
-				}
-				if (defName == "TableLong")
-				{
+				case "TableLong":
 					return "Table2x4c";
-				}
-				if (defName == "TableShort_Blueprint")
-				{
+				case "TableShort_Blueprint":
 					return "Table2x2c_Blueprint";
-				}
-				if (defName == "TableLong_Blueprint")
-				{
+				case "TableLong_Blueprint":
 					return "Table2x4c_Blueprint";
-				}
-				if (defName == "TableShort_Frame")
-				{
+				case "TableShort_Frame":
 					return "Table2x2c_Frame";
-				}
-				if (defName == "TableLong_Frame")
-				{
+				case "TableLong_Frame":
 					return "Table2x4c_Frame";
-				}
-				if (defName == "TableShort_Install")
-				{
+				case "TableShort_Install":
 					return "Table2x2c_Install";
-				}
-				if (defName == "TableLong_Install")
-				{
+				case "TableLong_Install":
 					return "Table2x4c_Install";
-				}
-				if (defName == "Turret_MortarBomb")
-				{
+				case "Turret_MortarBomb":
 					return "Turret_Mortar";
-				}
-				if (defName == "Turret_Incendiary")
-				{
+				case "Turret_Incendiary":
 					return "Turret_Mortar";
-				}
-				if (defName == "Turret_MortarIncendiary")
-				{
+				case "Turret_MortarIncendiary":
 					return "Turret_Mortar";
-				}
-				if (defName == "Turret_EMP")
-				{
+				case "Turret_EMP":
 					return "Turret_Mortar";
-				}
-				if (defName == "Turret_MortarEMP")
-				{
+				case "Turret_MortarEMP":
 					return "Turret_Mortar";
-				}
-				if (defName == "Turret_MortarBomb_Blueprint")
-				{
+				case "Turret_MortarBomb_Blueprint":
 					return "Turret_Mortar_Blueprint";
-				}
-				if (defName == "Turret_Incendiary_Blueprint")
-				{
+				case "Turret_Incendiary_Blueprint":
 					return "Turret_Mortar_Blueprint";
-				}
-				if (defName == "Turret_MortarIncendiary_Blueprint")
-				{
+				case "Turret_MortarIncendiary_Blueprint":
 					return "Turret_Mortar_Blueprint";
-				}
-				if (defName == "Turret_EMP_Blueprint")
-				{
+				case "Turret_EMP_Blueprint":
 					return "Turret_Mortar_Blueprint";
-				}
-				if (defName == "Turret_MortarEMP_Blueprint")
-				{
+				case "Turret_MortarEMP_Blueprint":
 					return "Turret_Mortar_Blueprint";
-				}
-				if (defName == "Turret_MortarBomb_Frame")
-				{
+				case "Turret_MortarBomb_Frame":
 					return "Turret_Mortar_Frame";
-				}
-				if (defName == "Turret_Incendiary_Frame")
-				{
+				case "Turret_Incendiary_Frame":
 					return "Turret_Mortar_Frame";
-				}
-				if (defName == "Turret_MortarIncendiary_Frame")
-				{
+				case "Turret_MortarIncendiary_Frame":
 					return "Turret_Mortar_Frame";
-				}
-				if (defName == "Turret_EMP_Frame")
-				{
+				case "Turret_EMP_Frame":
 					return "Turret_Mortar_Frame";
-				}
-				if (defName == "Turret_MortarEMP_Frame")
-				{
+				case "Turret_MortarEMP_Frame":
 					return "Turret_Mortar_Frame";
-				}
-				if (defName == "Turret_MortarBomb_Install")
-				{
+				case "Turret_MortarBomb_Install":
 					return "Turret_Mortar_Install";
-				}
-				if (defName == "Turret_Incendiary_Install")
-				{
+				case "Turret_Incendiary_Install":
 					return "Turret_Mortar_Install";
-				}
-				if (defName == "Turret_MortarIncendiary_Install")
-				{
+				case "Turret_MortarIncendiary_Install":
 					return "Turret_Mortar_Install";
-				}
-				if (defName == "Turret_EMP_Install")
-				{
+				case "Turret_EMP_Install":
 					return "Turret_Mortar_Install";
-				}
-				if (defName == "Turret_MortarEMP_Install")
-				{
+				case "Turret_MortarEMP_Install":
 					return "Turret_Mortar_Install";
-				}
-				if (defName == "Artillery_MortarBomb")
-				{
+				case "Artillery_MortarBomb":
 					return "Artillery_Mortar";
-				}
-				if (defName == "Artillery_MortarIncendiary")
-				{
+				case "Artillery_MortarIncendiary":
 					return "Artillery_Mortar";
-				}
-				if (defName == "Artillery_MortarEMP")
-				{
+				case "Artillery_MortarEMP":
 					return "Artillery_Mortar";
-				}
-				if (defName == "TrapIEDBomb")
-				{
+				case "TrapIEDBomb":
 					return "TrapIED_HighExplosive";
-				}
-				if (defName == "TrapIEDIncendiary")
-				{
+				case "TrapIEDIncendiary":
 					return "TrapIED_Incendiary";
-				}
-				if (defName == "TrapIEDBomb_Blueprint")
-				{
+				case "TrapIEDBomb_Blueprint":
 					return "TrapIED_HighExplosive_Blueprint";
-				}
-				if (defName == "TrapIEDIncendiary_Blueprint")
-				{
+				case "TrapIEDIncendiary_Blueprint":
 					return "TrapIED_Incendiary_Blueprint";
-				}
-				if (defName == "TrapIEDBomb_Frame")
-				{
+				case "TrapIEDBomb_Frame":
 					return "TrapIED_HighExplosive_Frame";
-				}
-				if (defName == "TrapIEDIncendiary_Frame")
-				{
+				case "TrapIEDIncendiary_Frame":
 					return "TrapIED_Incendiary_Frame";
-				}
-				if (defName == "TrapIEDBomb_Install")
-				{
+				case "TrapIEDBomb_Install":
 					return "TrapIED_HighExplosive_Install";
-				}
-				if (defName == "TrapIEDIncendiary_Install")
-				{
+				case "TrapIEDIncendiary_Install":
 					return "TrapIED_Incendiary_Install";
-				}
-				if (defName == "Bullet_MortarBomb")
-				{
+				case "Bullet_MortarBomb":
 					return "Bullet_Shell_HighExplosive";
-				}
-				if (defName == "Bullet_MortarIncendiary")
-				{
+				case "Bullet_MortarIncendiary":
 					return "Bullet_Shell_Incendiary";
-				}
-				if (defName == "Bullet_MortarEMP")
-				{
+				case "Bullet_MortarEMP":
 					return "Bullet_Shell_EMP";
-				}
-				if (defName == "MortarShell")
-				{
+				case "MortarShell":
 					return "Shell_HighExplosive";
 				}
 			}
 			else if (defType == typeof(ResearchProjectDef))
 			{
-				if (defName == "IEDBomb")
+				switch (defName)
 				{
+				case "IEDBomb":
 					return "IEDs";
-				}
-				if (defName == "Greatbows")
-				{
+				case "Greatbows":
 					return "Greatbow";
-				}
-				if (defName == "Refining")
-				{
+				case "Refining":
 					return "BiofuelRefining";
-				}
-				if (defName == "ComponentAssembly")
-				{
+				case "ComponentAssembly":
 					return "Fabrication";
-				}
-				if (defName == "AdvancedAssembly")
-				{
+				case "AdvancedAssembly":
 					return "AdvancedFabrication";
 				}
 			}
 			else if (defType == typeof(RecipeDef))
 			{
-				if (defName == "Make_Gun_SurvivalRifle")
+				switch (defName)
 				{
+				case "Make_Gun_SurvivalRifle":
 					return "Make_Gun_BoltActionRifle";
-				}
-				if (defName == "Make_Gun_Pistol")
-				{
+				case "Make_Gun_Pistol":
 					return "Make_Gun_Revolver";
-				}
-				if (defName == "Make_TableShort")
-				{
+				case "Make_TableShort":
 					return "Make_Table2x2c";
-				}
-				if (defName == "Make_TableLong")
-				{
+				case "Make_TableLong":
 					return "Make_Table2x4c";
-				}
-				if (defName == "MakeMortarShell")
-				{
+				case "MakeMortarShell":
 					return "Make_Shell_HighExplosive";
-				}
-				if (defName == "MakeWort")
-				{
+				case "MakeWort":
 					return "Make_Wort";
-				}
-				if (defName == "MakeKibble")
-				{
+				case "MakeKibble":
 					return "Make_Kibble";
-				}
-				if (defName == "MakePemmican")
-				{
+				case "MakePemmican":
 					return "Make_Pemmican";
-				}
-				if (defName == "MakePemmicanCampfire")
-				{
+				case "MakePemmicanCampfire":
 					return "Make_PemmicanCampfire";
-				}
-				if (defName == "MakeStoneBlocksAny")
-				{
+				case "MakeStoneBlocksAny":
 					return "Make_StoneBlocksAny";
-				}
-				if (defName == "MakeChemfuelFromWood")
-				{
+				case "MakeChemfuelFromWood":
 					return "Make_ChemfuelFromWood";
-				}
-				if (defName == "MakeChemfuelFromOrganics")
-				{
+				case "MakeChemfuelFromOrganics":
 					return "Make_ChemfuelFromOrganics";
-				}
-				if (defName == "MakeComponent")
-				{
+				case "MakeComponent":
 					return "Make_ComponentIndustrial";
-				}
-				if (defName == "MakeAdvancedComponent")
-				{
+				case "MakeAdvancedComponent":
 					return "Make_ComponentSpacer";
-				}
-				if (defName == "MakePatchleather")
-				{
+				case "MakePatchleather":
 					return "Make_Patchleather";
-				}
-				if (defName == "MakeStoneBlocksSandstone")
-				{
+				case "MakeStoneBlocksSandstone":
 					return "Make_StoneBlocksSandstone";
-				}
-				if (defName == "MakeStoneBlocksGranite")
-				{
+				case "MakeStoneBlocksGranite":
 					return "Make_StoneBlocksGranite";
-				}
-				if (defName == "MakeStoneBlocksLimestone")
-				{
+				case "MakeStoneBlocksLimestone":
 					return "Make_StoneBlocksLimestone";
-				}
-				if (defName == "MakeStoneBlocksSlate")
-				{
+				case "MakeStoneBlocksSlate":
 					return "Make_StoneBlocksSlate";
-				}
-				if (defName == "MakeStoneBlocksMarble")
-				{
+				case "MakeStoneBlocksMarble":
 					return "Make_StoneBlocksMarble";
-				}
-				if (defName == "Make_Component")
-				{
+				case "Make_Component":
 					return "Make_ComponentIndustrial";
-				}
-				if (defName == "Make_AdvancedComponent")
-				{
+				case "Make_AdvancedComponent":
 					return "Make_ComponentSpacer";
 				}
 			}
 			else if (defType == typeof(StatDef))
 			{
-				if (defName == "GiftImpact")
+				switch (defName)
 				{
+				case "GiftImpact":
 					return "NegotiationAbility";
-				}
-				if (defName == "DiplomacyPower")
-				{
+				case "DiplomacyPower":
 					return "NegotiationAbility";
-				}
-				if (defName == "DrugProductionSpeed")
-				{
+				case "DrugProductionSpeed":
 					return "DrugSynthesisSpeed";
-				}
-				if (defName == "BrewingSpeed")
-				{
+				case "BrewingSpeed":
 					return "DrugCookingSpeed";
 				}
 			}
 			else if (defType == typeof(LetterDef))
 			{
-				if (defName == "BadUrgent")
+				switch (defName)
 				{
+				case "BadUrgent":
 					return "ThreatBig";
-				}
-				if (defName == "BadNonUrgent")
-				{
+				case "BadNonUrgent":
 					return "NegativeEvent";
-				}
-				if (defName == "Good")
-				{
+				case "Good":
 					return "PositiveEvent";
 				}
 			}
@@ -379,94 +228,61 @@ namespace Verse
 			}
 			else if (defType == typeof(HistoryAutoRecorderDef))
 			{
-				if (defName == "WealthTotal")
+				switch (defName)
 				{
+				case "WealthTotal":
 					return "Wealth_Total";
-				}
-				if (defName == "WealthItems")
-				{
+				case "WealthItems":
 					return "Wealth_Items";
-				}
-				if (defName == "WealthBuildings")
-				{
+				case "WealthBuildings":
 					return "Wealth_Buildings";
-				}
-				if (defName == "Wealth_TameAnimals")
-				{
+				case "Wealth_TameAnimals":
 					return "Wealth_Pawns";
 				}
 			}
 			else if (defType == typeof(InspirationDef))
 			{
-				if (defName == "GoFrenzy")
+				switch (defName)
 				{
+				case "GoFrenzy":
 					return "Frenzy_Go";
-				}
-				if (defName == "InspiredArt")
-				{
+				case "InspiredArt":
 					return "Inspired_Creativity";
-				}
-				if (defName == "InspiredRecruitment")
-				{
+				case "InspiredRecruitment":
 					return "Inspired_Recruitment";
-				}
-				if (defName == "InspiredSurgery")
-				{
+				case "InspiredSurgery":
 					return "Inspired_Surgery";
-				}
-				if (defName == "InspiredTrade")
-				{
+				case "InspiredTrade":
 					return "Inspired_Trade";
-				}
-				if (defName == "ShootFrenzy")
-				{
+				case "ShootFrenzy":
 					return "Frenzy_Shoot";
-				}
-				if (defName == "WorkFrenzy")
-				{
+				case "WorkFrenzy":
 					return "Frenzy_Work";
 				}
 			}
 			else if (defType == typeof(JobDef))
 			{
-				if (defName == "PlayBilliards")
+				switch (defName)
 				{
+				case "PlayBilliards":
 					return "Play_Billiards";
-				}
-				if (defName == "PlayChess")
-				{
+				case "PlayChess":
 					return "Play_Chess";
-				}
-				if (defName == "PlayHoopstone")
-				{
+				case "PlayHoopstone":
 					return "Play_Hoopstone";
-				}
-				if (defName == "PlayHorseshoes")
-				{
+				case "PlayHorseshoes":
 					return "Play_Horseshoes";
-				}
-				if (defName == "PlayPoker")
-				{
+				case "PlayPoker":
 					return "Play_Poker";
-				}
-				if (defName == "WaitCombat")
-				{
+				case "WaitCombat":
 					return "Wait_Combat";
-				}
-				if (defName == "WaitDowned")
-				{
+				case "WaitDowned":
 					return "Wait_Downed";
-				}
-				if (defName == "WaitMaintainPosture")
-				{
+				case "WaitMaintainPosture":
 					return "Wait_MaintainPosture";
-				}
-				if (defName == "WaitSafeTemperature")
-				{
+				case "WaitSafeTemperature":
 					return "Wait_SafeTemperature";
-				}
-				if (defName == "WaitWander")
-				{
+				case "WaitWander":
 					return "Wait_Wander";
 				}
 			}
@@ -483,292 +299,169 @@ namespace Verse
 			}
 			else if (defType == typeof(KeyBindingDef))
 			{
-				if (defName == "MapDollyUp")
+				switch (defName)
 				{
+				case "MapDollyUp":
 					return "MapDolly_Up";
-				}
-				if (defName == "MapDollyDown")
-				{
+				case "MapDollyDown":
 					return "MapDolly_Down";
-				}
-				if (defName == "MapDollyLeft")
-				{
+				case "MapDollyLeft":
 					return "MapDolly_Left";
-				}
-				if (defName == "MapDollyRight")
-				{
+				case "MapDollyRight":
 					return "MapDolly_Right";
-				}
-				if (defName == "MapZoomIn")
-				{
+				case "MapZoomIn":
 					return "MapZoom_In";
-				}
-				if (defName == "MapZoomOut")
-				{
+				case "MapZoomOut":
 					return "MapZoom_Out";
-				}
-				if (defName == "TimeSpeedNormal")
-				{
+				case "TimeSpeedNormal":
 					return "TimeSpeed_Normal";
-				}
-				if (defName == "TimeSpeedFast")
-				{
+				case "TimeSpeedFast":
 					return "TimeSpeed_Fast";
-				}
-				if (defName == "TimeSpeedSuperfast")
-				{
+				case "TimeSpeedSuperfast":
 					return "TimeSpeed_Superfast";
-				}
-				if (defName == "TimeSpeedUltrafast")
-				{
+				case "TimeSpeedUltrafast":
 					return "TimeSpeed_Ultrafast";
-				}
-				if (defName == "CommandTogglePower")
-				{
+				case "CommandTogglePower":
 					return "Command_TogglePower";
-				}
-				if (defName == "CommandItemForbid")
-				{
+				case "CommandItemForbid":
 					return "Command_ItemForbid";
-				}
-				if (defName == "CommandColonistDraft")
-				{
+				case "CommandColonistDraft":
 					return "Command_ColonistDraft";
-				}
-				if (defName == "DesignatorCancel")
-				{
+				case "DesignatorCancel":
 					return "Designator_Cancel";
-				}
-				if (defName == "DesignatorDeconstruct")
-				{
+				case "DesignatorDeconstruct":
 					return "Designator_Deconstruct";
-				}
-				if (defName == "DesignatorRotateLeft")
-				{
+				case "DesignatorRotateLeft":
 					return "Designator_RotateLeft";
-				}
-				if (defName == "DesignatorRotateRight")
-				{
+				case "DesignatorRotateRight":
 					return "Designator_RotateRight";
-				}
-				if (defName == "ModifierIncrement10x")
-				{
+				case "ModifierIncrement10x":
 					return "ModifierIncrement_10x";
-				}
-				if (defName == "ModifierIncrement100x")
-				{
+				case "ModifierIncrement100x":
 					return "ModifierIncrement_100x";
-				}
-				if (defName == "TickOnce")
-				{
+				case "TickOnce":
 					return "Dev_TickOnce";
-				}
-				if (defName == "ToggleGodMode")
-				{
+				case "ToggleGodMode":
 					return "Dev_ToggleGodMode";
-				}
-				if (defName == "ToggleDebugLog")
-				{
+				case "ToggleDebugLog":
 					return "Dev_ToggleDebugLog";
-				}
-				if (defName == "ToggleDebugActionsMenu")
-				{
+				case "ToggleDebugActionsMenu":
 					return "Dev_ToggleDebugActionsMenu";
-				}
-				if (defName == "ToggleDebugActionsMenu")
-				{
+				case "ToggleDebugActionsMenu":
 					return "Dev_ToggleDebugActionsMenu";
-				}
-				if (defName == "ToggleDebugLogMenu")
-				{
+				case "ToggleDebugLogMenu":
 					return "Dev_ToggleDebugLogMenu";
-				}
-				if (defName == "ToggleDebugInspector")
-				{
+				case "ToggleDebugInspector":
 					return "Dev_ToggleDebugInspector";
-				}
-				if (defName == "ToggleDebugSettingsMenu")
-				{
+				case "ToggleDebugSettingsMenu":
 					return "Dev_ToggleDebugSettingsMenu";
 				}
 			}
 			else if (defType == typeof(MentalBreakDef))
 			{
-				if (defName == "BingingDrugExtreme")
+				switch (defName)
 				{
+				case "BingingDrugExtreme":
 					return "Binging_DrugExtreme";
-				}
-				if (defName == "BingingDrugMajor")
-				{
+				case "BingingDrugMajor":
 					return "Binging_DrugMajor";
-				}
-				if (defName == "BingingFood")
-				{
+				case "BingingFood":
 					return "Binging_Food";
-				}
-				if (defName == "WanderOwnRoom")
-				{
+				case "WanderOwnRoom":
 					return "Wander_OwnRoom";
-				}
-				if (defName == "WanderPsychotic")
-				{
+				case "WanderPsychotic":
 					return "Wander_Psychotic";
-				}
-				if (defName == "WanderSad")
-				{
+				case "WanderSad":
 					return "Wander_Sad";
 				}
 			}
 			else if (defType == typeof(MentalStateDef))
 			{
-				if (defName == "BingingDrugExtreme")
+				switch (defName)
 				{
+				case "BingingDrugExtreme":
 					return "Binging_DrugExtreme";
-				}
-				if (defName == "BingingDrugMajor")
-				{
+				case "BingingDrugMajor":
 					return "Binging_DrugMajor";
-				}
-				if (defName == "BingingFood")
-				{
+				case "BingingFood":
 					return "Binging_Food";
-				}
-				if (defName == "WanderOwnRoom")
-				{
+				case "WanderOwnRoom":
 					return "Wander_OwnRoom";
-				}
-				if (defName == "WanderPsychotic")
-				{
+				case "WanderPsychotic":
 					return "Wander_Psychotic";
-				}
-				if (defName == "WanderSad")
-				{
+				case "WanderSad":
 					return "Wander_Sad";
 				}
 			}
 			else if (defType == typeof(MentalStateDef))
 			{
-				if (defName == "BingingDrugExtreme")
+				switch (defName)
 				{
+				case "BingingDrugExtreme":
 					return "Binging_DrugExtreme";
-				}
-				if (defName == "BingingDrugMajor")
-				{
+				case "BingingDrugMajor":
 					return "Binging_DrugMajor";
-				}
-				if (defName == "BingingFood")
-				{
+				case "BingingFood":
 					return "Binging_Food";
-				}
-				if (defName == "WanderOwnRoom")
-				{
+				case "WanderOwnRoom":
 					return "Wander_OwnRoom";
-				}
-				if (defName == "WanderPsychotic")
-				{
+				case "WanderPsychotic":
 					return "Wander_Psychotic";
-				}
-				if (defName == "WanderSad")
-				{
+				case "WanderSad":
 					return "Wander_Sad";
 				}
 			}
 			else if (defType == typeof(PawnKindDef))
 			{
-				if (defName == "GrenadierDestructive")
+				switch (defName)
 				{
+				case "GrenadierDestructive":
 					return "Grenadier_Destructive";
-				}
-				if (defName == "GrenadierEMP")
-				{
+				case "GrenadierEMP":
 					return "Grenadier_EMP";
-				}
-				if (defName == "MercenaryGunner")
-				{
+				case "MercenaryGunner":
 					return "Mercenary_Gunner";
-				}
-				if (defName == "MercenarySniper")
-				{
+				case "MercenarySniper":
 					return "Mercenary_Sniper";
-				}
-				if (defName == "MercenarySlasher")
-				{
+				case "MercenarySlasher":
 					return "Mercenary_Slasher";
-				}
-				if (defName == "MercenaryHeavy")
-				{
+				case "MercenaryHeavy":
 					return "Mercenary_Heavy";
-				}
-				if (defName == "MercenaryElite")
-				{
+				case "MercenaryElite":
 					return "Mercenary_Elite";
-				}
-				if (defName == "TownCouncilman")
-				{
+				case "TownCouncilman":
 					return "Town_Councilman";
-				}
-				if (defName == "TownTrader")
-				{
+				case "TownTrader":
 					return "Town_Trader";
-				}
-				if (defName == "TownGuard")
-				{
+				case "TownGuard":
 					return "Town_Guard";
-				}
-				if (defName == "TribalWarrior")
-				{
+				case "TribalWarrior":
 					return "Tribal_Warrior";
-				}
-				if (defName == "TribalTrader")
-				{
+				case "TribalTrader":
 					return "Tribal_Trader";
-				}
-				if (defName == "TribalArcher")
-				{
+				case "TribalArcher":
 					return "Tribal_Archer";
-				}
-				if (defName == "TribalHunter")
-				{
+				case "TribalHunter":
 					return "Tribal_Hunter";
-				}
-				if (defName == "TribalBerserker")
-				{
+				case "TribalBerserker":
 					return "Tribal_Berserker";
-				}
-				if (defName == "TribalChief")
-				{
+				case "TribalChief":
 					return "Tribal_ChiefRanged";
-				}
-				if (defName == "GrizzlyBear")
-				{
+				case "GrizzlyBear":
 					return "Bear_Grizzly";
-				}
-				if (defName == "PolarBear")
-				{
+				case "PolarBear":
 					return "Bear_Polar";
-				}
-				if (defName == "ArcticBear")
-				{
+				case "ArcticBear":
 					return "Bear_Arctic";
-				}
-				if (defName == "WolfTimber")
-				{
+				case "WolfTimber":
 					return "Wolf_Timber";
-				}
-				if (defName == "WolfArctic")
-				{
+				case "WolfArctic":
 					return "Wolf_Arctic";
-				}
-				if (defName == "FoxFennec")
-				{
+				case "FoxFennec":
 					return "Fox_Fennec";
-				}
-				if (defName == "FoxRed")
-				{
+				case "FoxRed":
 					return "Fox_Red";
-				}
-				if (defName == "FoxArctic")
-				{
+				case "FoxArctic":
 					return "Fox_Arctic";
 				}
 			}

@@ -13,6 +13,8 @@ namespace RimWorld
 
 		public float rootMinPoints;
 
+		public float rootMinProgressScore;
+
 		public bool rootIncreasesPopulation;
 
 		public float decreeSelectionWeight;

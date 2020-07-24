@@ -133,28 +133,27 @@ namespace RimWorld
 		{
 			while (true)
 			{
-				Thing thing;
-				if (debt > 0)
+				if (debt <= 0)
 				{
-					thing = null;
-					foreach (Building_OrbitalTradeBeacon item in Building_OrbitalTradeBeacon.AllPowered(map))
+					return;
+				}
+				Thing thing = null;
+				foreach (Building_OrbitalTradeBeacon item in Building_OrbitalTradeBeacon.AllPowered(map))
+				{
+					foreach (IntVec3 tradeableCell in item.TradeableCells)
 					{
-						foreach (IntVec3 tradeableCell in item.TradeableCells)
+						foreach (Thing item2 in map.thingGrid.ThingsAt(tradeableCell))
 						{
-							foreach (Thing item2 in map.thingGrid.ThingsAt(tradeableCell))
+							if (item2.def != resDef)
 							{
-								if (item2.def != resDef)
-								{
-									continue;
-								}
-								thing = item2;
-								goto IL_009d;
+								continue;
 							}
+							thing = item2;
+							goto IL_009d;
 						}
 					}
-					goto IL_009d;
 				}
-				return;
+				goto IL_009d;
 				IL_009d:
 				if (thing == null)
 				{
@@ -171,7 +170,7 @@ namespace RimWorld
 				}
 				debt -= num;
 			}
-			Log.Error("Could not find any " + resDef + " to transfer to trader.");
+			Log.Error(string.Concat("Could not find any ", resDef, " to transfer to trader."));
 		}
 
 		public static void LaunchSilver(Map map, int fee)

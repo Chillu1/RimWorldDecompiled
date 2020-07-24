@@ -48,7 +48,7 @@ namespace Verse
 			}
 			else
 			{
-				Log.Error("Could not register region " + reg.ToString() + " in link " + this + ": > 2 regions on link!\nRegionA: " + RegionA.DebugString + "\nRegionB: " + RegionB.DebugString);
+				Log.Error(string.Concat("Could not register region ", reg.ToString(), " in link ", this, ": > 2 regions on link!\nRegionA: ", RegionA.DebugString, "\nRegionB: ", RegionB.DebugString));
 			}
 		}
 

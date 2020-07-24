@@ -51,21 +51,19 @@ namespace RimWorld.BaseGen
 				if (symbolStack.Empty)
 				{
 					Log.Warning("Symbol stack is empty.");
+					return;
 				}
-				else if (globalSettings.map == null)
+				if (globalSettings.map == null)
 				{
 					Log.Error("Called BaseGen.Resolve() with null map.");
+					return;
 				}
-				else
+				int num = symbolStack.Count - 1;
+				int num2 = 0;
+				while (true)
 				{
-					int num = symbolStack.Count - 1;
-					int num2 = 0;
-					while (true)
+					if (!symbolStack.Empty)
 					{
-						if (symbolStack.Empty)
-						{
-							return;
-						}
 						num2++;
 						if (num2 > 100000)
 						{
@@ -84,11 +82,13 @@ namespace RimWorld.BaseGen
 						}
 						catch (Exception ex)
 						{
-							Log.Error("Error while resolving symbol \"" + toResolve.symbol + "\" with params=" + toResolve.resolveParams + "\n\nException: " + ex);
+							Log.Error(string.Concat("Error while resolving symbol \"", toResolve.symbol, "\" with params=", toResolve.resolveParams, "\n\nException: ", ex));
 						}
+						continue;
 					}
-					Log.Error("Error in BaseGen: Too many iterations. Infinite loop?");
+					return;
 				}
+				Log.Error("Error in BaseGen: Too many iterations. Infinite loop?");
 			}
 			catch (Exception arg)
 			{

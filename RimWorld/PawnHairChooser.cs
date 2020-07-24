@@ -81,7 +81,7 @@ namespace RimWorld
 					return 60f;
 				}
 			}
-			Log.Error("Unknown hair likelihood for " + hair + " with " + pawn);
+			Log.Error(string.Concat("Unknown hair likelihood for ", hair, " with ", pawn));
 			return 0f;
 		}
 	}

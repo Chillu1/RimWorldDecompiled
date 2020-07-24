@@ -14,7 +14,7 @@ namespace Verse.Sound
 		{
 			if (inScope)
 			{
-				float num = inScopePercent += 0.05f;
+				inScopePercent += 0.05f;
 				if (inScopePercent > 1f)
 				{
 					inScopePercent = 1f;

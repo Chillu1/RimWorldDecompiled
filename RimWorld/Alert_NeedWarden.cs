@@ -18,21 +18,22 @@ namespace RimWorld
 			for (int i = 0; i < maps.Count; i++)
 			{
 				Map map = maps[i];
-				if (map.IsPlayerHome && map.mapPawns.PrisonersOfColonySpawned.Any())
+				if (!map.IsPlayerHome || !map.mapPawns.PrisonersOfColonySpawned.Any())
 				{
-					bool flag = false;
-					foreach (Pawn item in map.mapPawns.FreeColonistsSpawned)
+					continue;
+				}
+				bool flag = false;
+				foreach (Pawn item in map.mapPawns.FreeColonistsSpawned)
+				{
+					if (!item.Downed && item.workSettings != null && item.workSettings.GetPriority(WorkTypeDefOf.Warden) > 0)
 					{
-						if (!item.Downed && item.workSettings != null && item.workSettings.GetPriority(WorkTypeDefOf.Warden) > 0)
-						{
-							flag = true;
-							break;
-						}
+						flag = true;
+						break;
 					}
-					if (!flag)
-					{
-						return AlertReport.CulpritIs(map.mapPawns.PrisonersOfColonySpawned[0]);
-					}
+				}
+				if (!flag)
+				{
+					return AlertReport.CulpritIs(map.mapPawns.PrisonersOfColonySpawned[0]);
 				}
 			}
 			return false;

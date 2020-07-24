@@ -215,7 +215,7 @@ namespace RimWorld
 							}
 							if (DebugViewSettings.logApparelGeneration)
 							{
-								debugSb.AppendLine("Giving free torso-cover: " + candidate + " insulation=" + candidate.InsulationCold);
+								debugSb.AppendLine(string.Concat("Giving free torso-cover: ", candidate, " insulation=", candidate.InsulationCold));
 								foreach (ThingStuffPair item in aps.Where((ThingStuffPair a) => !ApparelUtility.CanWearTogether(a.thing, candidate.thing, body)))
 								{
 									debugSb.AppendLine("    -replaces " + item.ToString() + " InsulationCold=" + item.InsulationCold);
@@ -257,7 +257,7 @@ namespace RimWorld
 					{
 						if (DebugViewSettings.logApparelGeneration)
 						{
-							debugSb.AppendLine("Giving free hat: " + hatPair + " insulation=" + hatPair.InsulationCold);
+							debugSb.AppendLine(string.Concat("Giving free hat: ", hatPair, " insulation=", hatPair.InsulationCold));
 							foreach (ThingStuffPair item2 in aps.Where((ThingStuffPair a) => !ApparelUtility.CanWearTogether(a.thing, hatPair.thing, body)))
 							{
 								debugSb.AppendLine("    -replaces " + item2.ToString() + " InsulationCold=" + item2.InsulationCold);
@@ -290,7 +290,7 @@ namespace RimWorld
 					{
 						if (j != k && !ApparelUtility.CanWearTogether(aps[j].thing, aps[k].thing, pawn.RaceProps.body))
 						{
-							Log.Error(pawn + " generated with apparel that cannot be worn together: " + aps[j] + ", " + aps[k]);
+							Log.Error(string.Concat(pawn, " generated with apparel that cannot be worn together: ", aps[j], ", ", aps[k]));
 							return;
 						}
 					}
@@ -372,7 +372,7 @@ namespace RimWorld
 				debugSb.AppendLine("Generating apparel for " + pawn);
 				debugSb.AppendLine("Money: " + randomInRange.ToString("F0"));
 				debugSb.AppendLine("Needed warmth: " + neededWarmth);
-				debugSb.AppendLine("Headgear allowed: " + allowHeadgear.ToString());
+				debugSb.AppendLine("Headgear allowed: " + allowHeadgear);
 			}
 			int @int = Rand.Int;
 			tmpApparelCandidates.Clear();
@@ -610,7 +610,7 @@ namespace RimWorld
 			return true;
 		}
 
-		private static bool ApparelRequirementTagsMatch(SpecificApparelRequirement req, ThingDef thing)
+		public static bool ApparelRequirementTagsMatch(SpecificApparelRequirement req, ThingDef thing)
 		{
 			if (!req.RequiredTag.NullOrEmpty() && thing.apparel.tags.Contains(req.RequiredTag))
 			{

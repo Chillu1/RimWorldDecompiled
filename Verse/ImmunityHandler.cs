@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -15,6 +16,8 @@ namespace Verse
 		public Pawn pawn;
 
 		private List<ImmunityRecord> immunityList = new List<ImmunityRecord>();
+
+		private const float ForcedImmunityLevel = 0.650000036f;
 
 		private static List<ImmunityInfo> tmpNeededImmunitiesNow = new List<ImmunityInfo>();
 
@@ -41,6 +44,11 @@ namespace Verse
 			{
 				return 0f;
 			}
+			if (AnyHediffMakesFullyImmuneTo_NewTemp(diseaseDef, out Hediff sourceHediff))
+			{
+				immunityCause = sourceHediff.def;
+				return 0f;
+			}
 			List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
 			for (int i = 0; i < hediffs.Count; i++)
 			{
@@ -62,15 +70,21 @@ namespace Verse
 
 		public float GetImmunity(HediffDef def)
 		{
+			float num = 0f;
 			for (int i = 0; i < immunityList.Count; i++)
 			{
 				ImmunityRecord immunityRecord = immunityList[i];
 				if (immunityRecord.hediffDef == def)
 				{
-					return immunityRecord.immunity;
+					num = immunityRecord.immunity;
+					break;
 				}
 			}
-			return 0f;
+			if (AnyHediffMakesFullyImmuneTo_NewTemp(def, out Hediff _) && num < 0.650000036f)
+			{
+				num = 0.650000036f;
+			}
+			return num;
 		}
 
 		internal void ImmunityHandlerTick()
@@ -85,10 +99,6 @@ namespace Verse
 				ImmunityRecord immunityRecord = immunityList[j];
 				Hediff firstHediffOfDef = pawn.health.hediffSet.GetFirstHediffOfDef(immunityRecord.hediffDef);
 				immunityRecord.ImmunityTick(pawn, firstHediffOfDef != null, firstHediffOfDef);
-				if (firstHediffOfDef == null && AnyHediffMakesFullyImmuneTo(immunityRecord.hediffDef))
-				{
-					immunityRecord.immunity = Mathf.Clamp(0.650000036f, immunityRecord.immunity, 1f);
-				}
 			}
 			for (int num = immunityList.Count - 1; num >= 0; num--)
 			{
@@ -118,36 +128,26 @@ namespace Verse
 			for (int i = 0; i < hediffs.Count; i++)
 			{
 				Hediff hediff = hediffs[i];
-				ImmunityInfo item;
 				if (hediff.def.PossibleToDevelopImmunityNaturally())
 				{
-					List<ImmunityInfo> list = tmpNeededImmunitiesNow;
-					item = new ImmunityInfo
+					tmpNeededImmunitiesNow.Add(new ImmunityInfo
 					{
 						immunity = hediff.def,
 						source = hediff.def
-					};
-					list.Add(item);
-				}
-				HediffStage curStage = hediff.CurStage;
-				if (curStage != null && curStage.makeImmuneTo != null)
-				{
-					for (int j = 0; j < curStage.makeImmuneTo.Count; j++)
-					{
-						List<ImmunityInfo> list2 = tmpNeededImmunitiesNow;
-						item = new ImmunityInfo
-						{
-							immunity = curStage.makeImmuneTo[j],
-							source = hediff.def
-						};
-						list2.Add(item);
-					}
+					});
 				}
 			}
 			return tmpNeededImmunitiesNow;
 		}
 
+		[Obsolete("Will be removed in a future update, use AnyHediffMakesFullyImmuneTo_NewTemp")]
 		private bool AnyHediffMakesFullyImmuneTo(HediffDef def)
+		{
+			Hediff sourceHediff;
+			return AnyHediffMakesFullyImmuneTo_NewTemp(def, out sourceHediff);
+		}
+
+		private bool AnyHediffMakesFullyImmuneTo_NewTemp(HediffDef def, out Hediff sourceHediff)
 		{
 			List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
 			for (int i = 0; i < hediffs.Count; i++)
@@ -161,10 +161,12 @@ namespace Verse
 				{
 					if (curStage.makeImmuneTo[j] == def)
 					{
+						sourceHediff = hediffs[i];
 						return true;
 					}
 				}
 			}
+			sourceHediff = null;
 			return false;
 		}
 
@@ -181,14 +183,25 @@ namespace Verse
 
 		public ImmunityRecord GetImmunityRecord(HediffDef def)
 		{
+			ImmunityRecord immunityRecord = null;
 			for (int i = 0; i < immunityList.Count; i++)
 			{
 				if (immunityList[i].hediffDef == def)
 				{
-					return immunityList[i];
+					immunityRecord = immunityList[i];
+					break;
 				}
 			}
-			return null;
+			if (AnyHediffMakesFullyImmuneTo_NewTemp(def, out Hediff sourceHediff) && (immunityRecord == null || immunityRecord.immunity < 0.650000036f))
+			{
+				immunityRecord = new ImmunityRecord
+				{
+					immunity = 0.650000036f,
+					hediffDef = def,
+					source = sourceHediff.def
+				};
+			}
+			return immunityRecord;
 		}
 
 		public bool ImmunityRecordExists(HediffDef def)

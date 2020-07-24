@@ -187,7 +187,7 @@ namespace RimWorld
 				stringBuilder.Append("Day/hr".PadRight(6));
 				for (int j = 0; j < 24; j += 2)
 				{
-					stringBuilder.Append((j.ToString() + "h").PadRight(6));
+					stringBuilder.Append((j + "h").PadRight(6));
 				}
 				stringBuilder.AppendLine();
 				for (int k = 0; k < 60; k += 5)
@@ -213,7 +213,7 @@ namespace RimWorld
 				stringBuilder.Append("Day/hr".PadRight(6));
 				for (int j = 0; j < 24; j += 2)
 				{
-					stringBuilder.Append((j.ToString() + "h").PadRight(6));
+					stringBuilder.Append((j + "h").PadRight(6));
 				}
 				stringBuilder.AppendLine();
 				for (int k = 0; k < 60; k += 5)

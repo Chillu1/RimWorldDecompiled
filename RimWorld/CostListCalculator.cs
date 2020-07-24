@@ -91,7 +91,7 @@ namespace RimWorld
 				{
 					if (errorOnNullStuff && stuff == null)
 					{
-						Log.Error("Cannot get AdjustedCostList for " + entDef + " with null Stuff.");
+						Log.Error(string.Concat("Cannot get AdjustedCostList for ", entDef, " with null Stuff."));
 						if (GenStuff.DefaultStuffFor(entDef) == null)
 						{
 							return null;
@@ -113,7 +113,7 @@ namespace RimWorld
 				}
 				else if (stuff != null)
 				{
-					Log.Error("Got AdjustedCostList for " + entDef + " with stuff " + stuff + " but is not MadeFromStuff.");
+					Log.Error(string.Concat("Got AdjustedCostList for ", entDef, " with stuff ", stuff, " but is not MadeFromStuff."));
 				}
 				bool flag = false;
 				if (entDef.costList != null)

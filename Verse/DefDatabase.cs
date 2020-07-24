@@ -27,7 +27,7 @@ namespace Verse
 				{
 					if (!hashSet.Add(item2.defName))
 					{
-						Log.Error("Mod " + item + " has multiple " + typeof(T) + "s named " + item2.defName + ". Skipping.");
+						Log.Error(string.Concat("Mod ", item, " has multiple ", typeof(T), "s named ", item2.defName, ". Skipping."));
 					}
 					else
 					{
@@ -39,11 +39,11 @@ namespace Verse
 			{
 				AddDef(item3, "Patches");
 			}
-			void AddDef(T def, string sourceName)
+			static void AddDef(T def, string sourceName)
 			{
 				if (def.defName == "UnnamedDef")
 				{
-					string text = "Unnamed" + typeof(T).Name + Rand.Range(1, 100000).ToString() + "A";
+					string text = "Unnamed" + typeof(T).Name + Rand.Range(1, 100000) + "A";
 					Log.Error(typeof(T).Name + " in " + sourceName + " with label " + def.label + " lacks a defName. Giving name " + text);
 					def.defName = text;
 				}
@@ -67,14 +67,14 @@ namespace Verse
 		{
 			while (defsByName.ContainsKey(def.defName))
 			{
-				Log.Error("Adding duplicate " + typeof(T) + " name: " + def.defName);
+				Log.Error(string.Concat("Adding duplicate ", typeof(T), " name: ", def.defName));
 				def.defName += Mathf.RoundToInt(Rand.Value * 1000f);
 			}
 			defsList.Add(def);
 			defsByName.Add(def.defName, def);
 			if (defsList.Count > 65535)
 			{
-				Log.Error("Too many " + typeof(T) + "; over " + ushort.MaxValue);
+				Log.Error(string.Concat("Too many ", typeof(T), "; over ", ushort.MaxValue));
 			}
 			def.index = (ushort)(defsList.Count - 1);
 		}
@@ -125,7 +125,7 @@ namespace Verse
 						}
 						catch (Exception ex)
 						{
-							Log.Error("Error while resolving references for def " + def + ": " + ex);
+							Log.Error(string.Concat("Error while resolving references for def ", def, ": ", ex));
 						}
 						finally
 						{
@@ -174,12 +174,13 @@ namespace Verse
 			{
 				try
 				{
-					if (!allDef.ignoreConfigErrors)
+					if (allDef.ignoreConfigErrors)
 					{
-						foreach (string item in allDef.ConfigErrors())
-						{
-							Log.Error("Config error in " + allDef + ": " + item);
-						}
+						continue;
+					}
+					foreach (string item in allDef.ConfigErrors())
+					{
+						Log.Error(string.Concat("Config error in ", allDef, ": ", item));
 					}
 				}
 				catch (Exception ex)
@@ -197,7 +198,7 @@ namespace Verse
 				{
 					return value;
 				}
-				Log.Error("Failed to find " + typeof(T) + " named " + defName + ". There are " + defsList.Count + " defs of this type loaded.");
+				Log.Error(string.Concat("Failed to find ", typeof(T), " named ", defName, ". There are ", defsList.Count, " defs of this type loaded."));
 				return null;
 			}
 			if (defsByName.TryGetValue(defName, out T value2))

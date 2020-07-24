@@ -59,12 +59,13 @@ namespace RimWorld
 				orderby a.def.level, a.def.EntropyGain
 				select a)
 			{
-				if (pawn.Drafted || item.def.displayGizmoWhileUndrafted)
+				if (!pawn.Drafted && !item.def.displayGizmoWhileUndrafted)
 				{
-					foreach (Command gizmo in item.GetGizmos())
-					{
-						yield return gizmo;
-					}
+					continue;
+				}
+				foreach (Command gizmo in item.GetGizmos())
+				{
+					yield return gizmo;
 				}
 			}
 		}

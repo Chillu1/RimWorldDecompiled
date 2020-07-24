@@ -91,7 +91,7 @@ namespace RimWorld
 				float num2 = item.verbProps.AdjustedCooldown(item.tool, currentWeaponUser, req.Thing);
 				if (item.tool != null)
 				{
-					stringBuilder.AppendLine(string.Format("  {0}: {1} ({2})", "Tool".Translate(), item.tool.LabelCap, item.ToolCapacity.LabelCap));
+					stringBuilder.AppendLine($"  {item.tool.LabelCap} ({item.ToolCapacity.label})");
 				}
 				else
 				{

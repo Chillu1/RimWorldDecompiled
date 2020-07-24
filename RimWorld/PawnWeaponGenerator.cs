@@ -19,15 +19,16 @@ namespace RimWorld
 			{
 				float num = allWeaponPairs.Where((ThingStuffPair pa) => pa.thing == thingDef).Sum((ThingStuffPair pa) => pa.Commonality);
 				float num2 = thingDef.generateCommonality / num;
-				if (num2 != 1f)
+				if (num2 == 1f)
 				{
-					for (int i = 0; i < allWeaponPairs.Count; i++)
+					continue;
+				}
+				for (int i = 0; i < allWeaponPairs.Count; i++)
+				{
+					ThingStuffPair thingStuffPair = allWeaponPairs[i];
+					if (thingStuffPair.thing == thingDef)
 					{
-						ThingStuffPair thingStuffPair = allWeaponPairs[i];
-						if (thingStuffPair.thing == thingDef)
-						{
-							allWeaponPairs[i] = new ThingStuffPair(thingStuffPair.thing, thingStuffPair.stuff, thingStuffPair.commonalityMultiplier * num2);
-						}
+						allWeaponPairs[i] = new ThingStuffPair(thingStuffPair.thing, thingStuffPair.stuff, thingStuffPair.commonalityMultiplier * num2);
 					}
 				}
 			}
@@ -44,7 +45,7 @@ namespace RimWorld
 			for (int i = 0; i < allWeaponPairs.Count; i++)
 			{
 				ThingStuffPair w2 = allWeaponPairs[i];
-				if (!(w2.Price > randomInRange) && (pawn.kindDef.weaponTags == null || pawn.kindDef.weaponTags.Any((string tag) => w2.thing.weaponTags.Contains(tag))) && (!w2.thing.HasComp(typeof(CompBladelinkWeapon)) || !ThingRequiringRoyalPermissionUtility.IsViolatingRulesOfAnyFaction_NewTemp(w2.thing, pawn)) && (!(w2.thing.generateAllowChance < 1f) || Rand.ChanceSeeded(w2.thing.generateAllowChance, pawn.thingIDNumber ^ w2.thing.shortHash ^ 0x1B3B648)))
+				if (!(w2.Price > randomInRange) && (pawn.kindDef.weaponTags == null || pawn.kindDef.weaponTags.Any((string tag) => w2.thing.weaponTags.Contains(tag))) && (!(w2.thing.generateAllowChance < 1f) || Rand.ChanceSeeded(w2.thing.generateAllowChance, pawn.thingIDNumber ^ w2.thing.shortHash ^ 0x1B3B648)))
 				{
 					workingWeapons.Add(w2);
 				}

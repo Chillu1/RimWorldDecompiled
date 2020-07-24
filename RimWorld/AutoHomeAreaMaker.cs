@@ -33,25 +33,27 @@ namespace RimWorld
 
 		public static void MarkHomeAroundThing(Thing t)
 		{
-			if (ShouldAdd())
+			if (!ShouldAdd())
 			{
-				CellRect cellRect = new CellRect(t.Position.x - t.RotatedSize.x / 2 - 4, t.Position.z - t.RotatedSize.z / 2 - 4, t.RotatedSize.x + 8, t.RotatedSize.z + 8);
-				cellRect.ClipInsideMap(t.Map);
-				foreach (IntVec3 item in cellRect)
-				{
-					t.Map.areaManager.Home[item] = true;
-				}
+				return;
+			}
+			CellRect cellRect = new CellRect(t.Position.x - t.RotatedSize.x / 2 - 4, t.Position.z - t.RotatedSize.z / 2 - 4, t.RotatedSize.x + 8, t.RotatedSize.z + 8);
+			cellRect.ClipInsideMap(t.Map);
+			foreach (IntVec3 item in cellRect)
+			{
+				t.Map.areaManager.Home[item] = true;
 			}
 		}
 
 		public static void Notify_ZoneCellAdded(IntVec3 c, Zone zone)
 		{
-			if (ShouldAdd())
+			if (!ShouldAdd())
 			{
-				foreach (IntVec3 item in CellRect.CenteredOn(c, 4).ClipInsideMap(zone.Map))
-				{
-					zone.Map.areaManager.Home[item] = true;
-				}
+				return;
+			}
+			foreach (IntVec3 item in CellRect.CenteredOn(c, 4).ClipInsideMap(zone.Map))
+			{
+				zone.Map.areaManager.Home[item] = true;
 			}
 		}
 	}

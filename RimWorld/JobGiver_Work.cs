@@ -39,6 +39,10 @@ namespace RimWorld
 			{
 				return 2f;
 			}
+			if (timeAssignmentDef == TimeAssignmentDefOf.Meditate)
+			{
+				return 2f;
+			}
 			throw new NotImplementedException();
 		}
 
@@ -68,6 +72,8 @@ namespace RimWorld
 			WorkGiver_Scanner scannerWhoProvidedTarget = null;
 			WorkGiver_Scanner scanner;
 			IntVec3 pawnPosition;
+			float closestDistSquared;
+			float bestPriority;
 			bool prioritized;
 			bool allowUnreachable;
 			Danger maxPathDanger;
@@ -90,8 +96,6 @@ namespace RimWorld
 						return new ThinkResult(job2, this, list[j].def.tagToGive);
 					}
 					scanner = (workGiver as WorkGiver_Scanner);
-					float closestDistSquared;
-					float bestPriority;
 					if (scanner != null)
 					{
 						if (scanner.def.scanThings)
@@ -192,7 +196,7 @@ namespace RimWorld
 				}
 				catch (Exception ex)
 				{
-					Log.Error(pawn + " threw exception in WorkGiver " + workGiver.def.defName + ": " + ex.ToString());
+					Log.Error(string.Concat(pawn, " threw exception in WorkGiver ", workGiver.def.defName, ": ", ex.ToString()));
 				}
 				finally
 				{
@@ -205,7 +209,7 @@ namespace RimWorld
 						job3.workGiverDef = scannerWhoProvidedTarget.def;
 						return new ThinkResult(job3, this, list[j].def.tagToGive);
 					}
-					Log.ErrorOnce(scannerWhoProvidedTarget + " provided target " + bestTargetOfLastPriority + " but yielded no actual job for pawn " + pawn + ". The CanGiveJob and JobOnX methods may not be synchronized.", 6112651);
+					Log.ErrorOnce(string.Concat(scannerWhoProvidedTarget, " provided target ", bestTargetOfLastPriority, " but yielded no actual job for pawn ", pawn, ". The CanGiveJob and JobOnX methods may not be synchronized."), 6112651);
 				}
 				num = workGiver.def.priorityInType;
 			}
@@ -289,7 +293,7 @@ namespace RimWorld
 			}
 			catch (Exception ex)
 			{
-				Log.Error(pawn + " threw exception in GiverTryGiveJobTargeted on WorkGiver " + giver.def.defName + ": " + ex.ToString());
+				Log.Error(string.Concat(pawn, " threw exception in GiverTryGiveJobTargeted on WorkGiver ", giver.def.defName, ": ", ex.ToString()));
 			}
 			return null;
 		}

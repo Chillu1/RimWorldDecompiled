@@ -88,23 +88,22 @@ namespace RimWorld
 			}
 			while (true)
 			{
-				if (!map.reachability.CanReach(intVec, intVec2, PathEndMode.OnCell, TraverseMode.PassAllDestroyableThings))
+				if (map.reachability.CanReach(intVec, intVec2, PathEndMode.OnCell, TraverseMode.PassAllDestroyableThings))
 				{
-					if (shallowFactor > 1f)
-					{
-						break;
-					}
-					shallowFactor += 0.1f;
-					foreach (IntVec3 allCell in map.AllCells)
-					{
-						if (allCell.GetTerrain(map) == TerrainDefOf.WaterMovingChestDeep && shallowizer.GetValue(allCell) <= shallowFactor)
-						{
-							map.terrainGrid.SetTerrain(allCell, TerrainDefOf.WaterMovingShallow);
-						}
-					}
-					continue;
+					return;
 				}
-				return;
+				if (shallowFactor > 1f)
+				{
+					break;
+				}
+				shallowFactor += 0.1f;
+				foreach (IntVec3 allCell in map.AllCells)
+				{
+					if (allCell.GetTerrain(map) == TerrainDefOf.WaterMovingChestDeep && shallowizer.GetValue(allCell) <= shallowFactor)
+					{
+						map.terrainGrid.SetTerrain(allCell, TerrainDefOf.WaterMovingShallow);
+					}
+				}
 			}
 			Log.Error("Failed to make river shallow enough for passability");
 		}

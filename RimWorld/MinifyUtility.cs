@@ -9,7 +9,7 @@ namespace RimWorld
 		{
 			if (!thing.def.Minifiable)
 			{
-				Log.Warning("Tried to minify " + thing + " which is not minifiable.");
+				Log.Warning(string.Concat("Tried to minify ", thing, " which is not minifiable."));
 				return null;
 			}
 			if (thing.Spawned)

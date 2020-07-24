@@ -38,7 +38,7 @@ namespace Verse.AI
 			{
 				if (job.expiryInterval == -1 && job.def == JobDefOf.Wait_Combat && !pawn.Drafted)
 				{
-					Log.Error(pawn + " in eternal WaitCombat without being drafted.");
+					Log.Error(string.Concat(pawn, " in eternal WaitCombat without being drafted."));
 					ReadyForNextToil();
 				}
 				else if ((Find.TickManager.TicksGame + pawn.thingIDNumber) % 4 == 0)
@@ -72,7 +72,7 @@ namespace Verse.AI
 			collideWithPawns = false;
 			bool flag = !base.pawn.WorkTagIsDisabled(WorkTags.Violent);
 			bool flag2 = base.pawn.RaceProps.ToolUser && base.pawn.Faction == Faction.OfPlayer && !base.pawn.WorkTagIsDisabled(WorkTags.Firefighting);
-			if (!(flag | flag2))
+			if (!(flag || flag2))
 			{
 				return;
 			}
@@ -113,7 +113,7 @@ namespace Verse.AI
 			}
 			else
 			{
-				if (!flag || base.pawn.Faction == null || job.def != JobDefOf.Wait_Combat || (base.pawn.drafter != null && !base.pawn.drafter.FireAtWill))
+				if (!flag || !job.canUseRangedWeapon || base.pawn.Faction == null || job.def != JobDefOf.Wait_Combat || (base.pawn.drafter != null && !base.pawn.drafter.FireAtWill))
 				{
 					return;
 				}

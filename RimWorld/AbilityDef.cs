@@ -40,6 +40,8 @@ namespace RimWorld
 
 		public bool disableGizmoWhileUndrafted = true;
 
+		public float detectionChanceOverride = -1f;
+
 		public string iconPath;
 
 		public Texture2D uiIcon = BaseContent.BadTex;
@@ -48,7 +50,11 @@ namespace RimWorld
 
 		private List<string> cachedTargets;
 
+		private int requiredPsyfocusBandCached = -1;
+
 		public float EntropyGain => statBases.GetStatValueFromList(StatDefOf.Ability_EntropyGain, 0f);
+
+		public float PsyfocusCost => statBases.GetStatValueFromList(StatDefOf.Ability_PsyfocusCost, 0f);
 
 		public float EffectRadius => statBases.GetStatValueFromList(StatDefOf.Ability_EffectRadius, 0f);
 
@@ -56,10 +62,47 @@ namespace RimWorld
 
 		public bool HasAreaOfEffect => EffectRadius > float.Epsilon;
 
+		public float DetectionChance
+		{
+			get
+			{
+				if (!(detectionChanceOverride >= 0f))
+				{
+					return this.GetStatValueAbstract(StatDefOf.Ability_DetectChancePerEntropy);
+				}
+				return detectionChanceOverride;
+			}
+		}
+
+		public int RequiredPsyfocusBand
+		{
+			get
+			{
+				if (requiredPsyfocusBandCached == -1)
+				{
+					requiredPsyfocusBandCached = Pawn_PsychicEntropyTracker.MaxAbilityLevelPerPsyfocusBand.Count - 1;
+					for (int i = 0; i < Pawn_PsychicEntropyTracker.MaxAbilityLevelPerPsyfocusBand.Count; i++)
+					{
+						int num = Pawn_PsychicEntropyTracker.MaxAbilityLevelPerPsyfocusBand[i];
+						if (level <= num)
+						{
+							requiredPsyfocusBandCached = i;
+							break;
+						}
+					}
+				}
+				return requiredPsyfocusBandCached;
+			}
+		}
+
 		public IEnumerable<string> StatSummary
 		{
 			get
 			{
+				if (PsyfocusCost > float.Epsilon)
+				{
+					yield return "AbilityPsyfocusCost".Translate() + ": " + PsyfocusCost.ToStringPercent();
+				}
 				if (EntropyGain > float.Epsilon)
 				{
 					yield return (string)("AbilityEntropyGain".Translate() + ": ") + EntropyGain;
@@ -70,7 +113,7 @@ namespace RimWorld
 				}
 				if (EffectDuration > float.Epsilon)
 				{
-					yield return (string)("AbilityDuration".Translate() + ": ") + EffectDuration + "LetterSecond".Translate();
+					yield return "AbilityDuration".Translate() + ": " + EffectDuration.SecondsToTicks().ToStringTicksToPeriod();
 				}
 				if (HasAreaOfEffect)
 				{
@@ -104,11 +147,14 @@ namespace RimWorld
 			if (pawn != null && ModsConfig.RoyaltyActive && abilityClass == typeof(Psycast) && level > 0)
 			{
 				Faction first = Faction.GetMinTitleForImplantAllFactions(HediffDefOf.PsychicAmplifier).First;
-				RoyalTitleDef minTitleForImplant = first.GetMinTitleForImplant(HediffDefOf.PsychicAmplifier, level);
-				RoyalTitleDef currentTitle = pawn.royalty.GetCurrentTitle(first);
-				if (minTitleForImplant != null && (currentTitle == null || currentTitle.seniority < minTitleForImplant.seniority))
+				if (first != null)
 				{
-					return cachedTooltip + "\n\n" + ColoredText.Colorize("PsycastIsIllegal".Translate(pawn.Named("PAWN"), minTitleForImplant.GetLabelCapFor(pawn).Named("TITLE")), ColoredText.WarningColor);
+					RoyalTitleDef minTitleForImplant = first.GetMinTitleForImplant(HediffDefOf.PsychicAmplifier, level);
+					RoyalTitleDef currentTitle = pawn.royalty.GetCurrentTitle(first);
+					if (minTitleForImplant != null && (currentTitle == null || currentTitle.seniority < minTitleForImplant.seniority) && DetectionChance > 0f)
+					{
+						return cachedTooltip + "\n\n" + ColoredText.Colorize("PsycastIsIllegal".Translate(pawn.Named("PAWN"), minTitleForImplant.GetLabelCapFor(pawn).Named("TITLE")), ColoredText.WarningColor);
+					}
 				}
 			}
 			return cachedTooltip;
@@ -143,11 +189,11 @@ namespace RimWorld
 			}
 			if (level != 0)
 			{
-				yield return new StatDrawEntry(StatCategoryDefOf.Ability, StatDefOf.Ability_RequiredAmplifier, level, req);
+				yield return new StatDrawEntry(StatCategoryDefOf.Ability, StatDefOf.Ability_RequiredPsylink, level, req);
 			}
 			yield return new StatDrawEntry(StatCategoryDefOf.Ability, StatDefOf.Ability_CastingTime, verbProperties.warmupTime, req);
 			yield return new StatDrawEntry(StatCategoryDefOf.Ability, StatDefOf.Ability_Range, verbProperties.range, req);
-			yield return new StatDrawEntry(StatCategoryDefOf.Ability, "Target".Translate(), string.Join(", ", cachedTargets.ToArray()), "", 1001);
+			yield return new StatDrawEntry(StatCategoryDefOf.Ability, "Target".Translate(), cachedTargets.ToCommaList().CapitalizeFirst(), "AbilityTargetDesc".Translate(), 1001);
 			yield return new StatDrawEntry(StatCategoryDefOf.Ability, "AbilityRequiresLOS".Translate(), verbProperties.requireLineOfSight ? "Yes".Translate() : "No".Translate(), "", 1000);
 		}
 
@@ -175,7 +221,7 @@ namespace RimWorld
 				{
 					if (statBases.Count((StatModifier st) => st.stat == statBase.stat) > 1)
 					{
-						yield return "defines the stat base " + statBase.stat + " more than once.";
+						yield return string.Concat("defines the stat base ", statBase.stat, " more than once.");
 					}
 				}
 			}

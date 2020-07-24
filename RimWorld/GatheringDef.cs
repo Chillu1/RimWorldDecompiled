@@ -17,12 +17,16 @@ namespace RimWorld
 
 		public List<ThingDef> gatherSpotDefs;
 
+		[MustTranslate]
 		public string letterTitle;
 
+		[MustTranslate]
 		public string letterText;
 
+		[MustTranslate]
 		public string calledOffMessage;
 
+		[MustTranslate]
 		public string finishedMessage;
 
 		public List<RoyalTitleDef> requiredTitleAny = new List<RoyalTitleDef>();

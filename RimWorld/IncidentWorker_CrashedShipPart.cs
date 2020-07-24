@@ -65,6 +65,10 @@ namespace RimWorld
 				{
 					return false;
 				}
+				if (!DropCellFinder.SkyfallerCanLandAt(loc, map, shipPartDef.Size))
+				{
+					return false;
+				}
 				foreach (IntVec3 item2 in cellRect)
 				{
 					RoofDef roof = item2.GetRoof(map);

@@ -110,23 +110,24 @@ namespace Verse.AI
 				for (int i = 0; i < destRegion.links.Count; i++)
 				{
 					RegionLink regionLink = destRegion.links[i];
-					if (regionLink.GetOtherRegion(destRegion).Allows(traverseParms, isDestination: false))
+					if (!regionLink.GetOtherRegion(destRegion).Allows(traverseParms, isDestination: false))
 					{
-						int num = RegionLinkDistance(destinationCell, regionLink, minPathCost);
-						if (distances.TryGetValue(regionLink, out int value))
-						{
-							if (num < value)
-							{
-								linkTargetCells[regionLink] = GetLinkTargetCell(destinationCell, regionLink);
-							}
-							num = Math.Min(value, num);
-						}
-						else
+						continue;
+					}
+					int num = RegionLinkDistance(destinationCell, regionLink, minPathCost);
+					if (distances.TryGetValue(regionLink, out int value))
+					{
+						if (num < value)
 						{
 							linkTargetCells[regionLink] = GetLinkTargetCell(destinationCell, regionLink);
 						}
-						distances[regionLink] = num;
+						num = Math.Min(value, num);
 					}
+					else
+					{
+						linkTargetCells[regionLink] = GetLinkTargetCell(destinationCell, regionLink);
+					}
+					distances[regionLink] = num;
 				}
 				GetPreciseRegionLinkDistances(destRegion, destination, preciseRegionLinkDistances);
 				for (int j = 0; j < preciseRegionLinkDistances.Count; j++)

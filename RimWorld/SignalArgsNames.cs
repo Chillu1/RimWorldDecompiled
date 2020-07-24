@@ -21,5 +21,9 @@ namespace RimWorld
 		public const string NewFactionLeader = "NEWFACTIONLEADER";
 
 		public const string Kidnapper = "KIDNAPPER";
+
+		public const string Goodwill = "GOODWILL";
+
+		public const string AverageMood = "AVERAGEMOOD";
 	}
 }

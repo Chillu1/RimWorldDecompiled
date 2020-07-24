@@ -72,24 +72,25 @@ namespace RimWorld.Planet
 			EnsureSpecificSocialTabForPawnValid();
 			base.ExtraOnGUI();
 			Pawn localSpecificSocialTabForPawn = specificSocialTabForPawn;
-			if (localSpecificSocialTabForPawn != null)
+			if (localSpecificSocialTabForPawn == null)
 			{
-				Rect tabRect = base.TabRect;
-				float specificSocialTabWidth = SpecificSocialTabWidth;
-				Rect rect = new Rect(tabRect.xMax - 1f, tabRect.yMin, specificSocialTabWidth, tabRect.height);
-				Find.WindowStack.ImmediateWindow(1439870015, rect, WindowLayer.GameUI, delegate
-				{
-					if (!localSpecificSocialTabForPawn.DestroyedOrNull())
-					{
-						SocialCardUtility.DrawSocialCard(rect.AtZero(), localSpecificSocialTabForPawn);
-						if (Widgets.CloseButtonFor(rect.AtZero()))
-						{
-							specificSocialTabForPawn = null;
-							SoundDefOf.TabClose.PlayOneShotOnCamera();
-						}
-					}
-				});
+				return;
 			}
+			Rect tabRect = base.TabRect;
+			float specificSocialTabWidth = SpecificSocialTabWidth;
+			Rect rect = new Rect(tabRect.xMax - 1f, tabRect.yMin, specificSocialTabWidth, tabRect.height);
+			Find.WindowStack.ImmediateWindow(1439870015, rect, WindowLayer.GameUI, delegate
+			{
+				if (!localSpecificSocialTabForPawn.DestroyedOrNull())
+				{
+					SocialCardUtility.DrawSocialCard(rect.AtZero(), localSpecificSocialTabForPawn);
+					if (Widgets.CloseButtonFor(rect.AtZero()))
+					{
+						specificSocialTabForPawn = null;
+						SoundDefOf.TabClose.PlayOneShotOnCamera();
+					}
+				}
+			});
 		}
 
 		public override void OnOpen()

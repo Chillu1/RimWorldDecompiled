@@ -28,7 +28,7 @@ namespace Verse
 				num2 += list2[j];
 			}
 			stopwatch.Stop();
-			return "Elapsed: " + stopwatch.Elapsed + "\nMilliseconds: " + stopwatch.ElapsedMilliseconds + "\nSum: " + num2;
+			return string.Concat("Elapsed: ", stopwatch.Elapsed, "\nMilliseconds: ", stopwatch.ElapsedMilliseconds, "\nSum: ", num2);
 		}
 	}
 }

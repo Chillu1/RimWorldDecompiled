@@ -1,6 +1,7 @@
 using RimWorld.Planet;
 using RimWorld.QuestGen;
 using System;
+using System.Collections.Generic;
 using Verse;
 using Verse.Grammar;
 
@@ -18,7 +19,24 @@ namespace RimWorld
 
 		public ArrivalMode arrivalMode;
 
+		public bool detailsHidden;
+
 		private const string RootSymbol = "root";
+
+		public override IEnumerable<GenUI.AnonymousStackElement> StackElements
+		{
+			get
+			{
+				if (pawn == null)
+				{
+					yield break;
+				}
+				foreach (GenUI.AnonymousStackElement rewardStackElementsForThing in QuestPartUtility.GetRewardStackElementsForThings(Gen.YieldSingle(pawn), detailsHidden))
+				{
+					yield return rewardStackElementsForThing;
+				}
+			}
+		}
 
 		public override void InitFromValue(float rewardValue, RewardsGeneratorParams parms, out float valueActuallyUsed)
 		{
@@ -27,7 +45,7 @@ namespace RimWorld
 			valueActuallyUsed = rewardValue;
 		}
 
-		public override void AddQuestPartsToGeneratingQuest(int index, RewardsGeneratorParams parms, string customLetterLabel, string customLetterText, RulePack customLetterLabelRules, RulePack customLetterTextRules)
+		public override IEnumerable<QuestPart> GenerateQuestParts(int index, RewardsGeneratorParams parms, string customLetterLabel, string customLetterText, RulePack customLetterLabelRules, RulePack customLetterTextRules)
 		{
 			Slate slate = RimWorld.QuestGen.QuestGen.slate;
 			RimWorld.QuestGen.QuestGen.AddToGeneratedPawns(pawn);
@@ -40,8 +58,8 @@ namespace RimWorld
 				QuestPart_GiveToCaravan questPart_GiveToCaravan = new QuestPart_GiveToCaravan();
 				questPart_GiveToCaravan.inSignal = slate.Get<string>("inSignal");
 				questPart_GiveToCaravan.Things = Gen.YieldSingle(pawn);
-				RimWorld.QuestGen.QuestGen.quest.AddPart(questPart_GiveToCaravan);
-				return;
+				yield return questPart_GiveToCaravan;
+				yield break;
 			}
 			QuestPart_PawnsArrive pawnsArrive = new QuestPart_PawnsArrive();
 			pawnsArrive.inSignal = slate.Get<string>("inSignal");
@@ -63,7 +81,7 @@ namespace RimWorld
 					pawnsArrive.customLetterText = x;
 				}, QuestGenUtility.MergeRules(customLetterTextRules, customLetterText, "root"));
 			}
-			RimWorld.QuestGen.QuestGen.quest.AddPart(pawnsArrive);
+			yield return pawnsArrive;
 		}
 
 		public override string GetDescription(RewardsGeneratorParams parms)
@@ -85,7 +103,15 @@ namespace RimWorld
 
 		public override string ToString()
 		{
-			return GetType().Name + " (" + pawn.MarketValue.ToStringMoney() + " pawn=" + pawn.ToStringSafe() + ", arrivalMode=" + arrivalMode + ")";
+			return string.Concat(GetType().Name, " (", pawn.MarketValue.ToStringMoney(), " pawn=", pawn.ToStringSafe(), ", arrivalMode=", arrivalMode, ")");
+		}
+
+		public override void ExposeData()
+		{
+			base.ExposeData();
+			Scribe_References.Look(ref pawn, "pawn", saveDestroyedThings: true);
+			Scribe_Values.Look(ref arrivalMode, "arrivalMode", ArrivalMode.WalkIn);
+			Scribe_Values.Look(ref detailsHidden, "detailsHidden", defaultValue: false);
 		}
 	}
 }

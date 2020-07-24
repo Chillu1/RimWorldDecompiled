@@ -13,29 +13,30 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			this.FailOn(() => !JoyUtility.EnjoyableOutsideNow(pawn));
+			JobDriver_GoForWalk jobDriver_GoForWalk = this;
+			this.FailOn(() => !JoyUtility.EnjoyableOutsideNow(jobDriver_GoForWalk.pawn));
 			Toil goToil = Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.OnCell);
 			goToil.tickAction = delegate
 			{
-				if (Find.TickManager.TicksGame > startTick + job.def.joyDuration)
+				if (Find.TickManager.TicksGame > jobDriver_GoForWalk.startTick + jobDriver_GoForWalk.job.def.joyDuration)
 				{
-					EndJobWith(JobCondition.Succeeded);
+					jobDriver_GoForWalk.EndJobWith(JobCondition.Succeeded);
 				}
 				else
 				{
-					JoyUtility.JoyTickCheckEnd(pawn);
+					JoyUtility.JoyTickCheckEnd(jobDriver_GoForWalk.pawn);
 				}
 			};
 			yield return goToil;
 			Toil toil = new Toil();
 			toil.initAction = delegate
 			{
-				if (job.targetQueueA.Count > 0)
+				if (jobDriver_GoForWalk.job.targetQueueA.Count > 0)
 				{
-					LocalTargetInfo targetA = job.targetQueueA[0];
-					job.targetQueueA.RemoveAt(0);
-					job.targetA = targetA;
-					JumpToToil(goToil);
+					LocalTargetInfo targetA = jobDriver_GoForWalk.job.targetQueueA[0];
+					jobDriver_GoForWalk.job.targetQueueA.RemoveAt(0);
+					jobDriver_GoForWalk.job.targetA = targetA;
+					jobDriver_GoForWalk.JumpToToil(goToil);
 				}
 			};
 			yield return toil;

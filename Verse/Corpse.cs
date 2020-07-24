@@ -191,7 +191,7 @@ namespace Verse
 		{
 			if (Bugged)
 			{
-				Log.Error(this + " spawned in bugged state.");
+				Log.Error(string.Concat(this, " spawned in bugged state."));
 				return;
 			}
 			base.SpawnSetup(map, respawningAfterLoad);
@@ -250,7 +250,7 @@ namespace Verse
 			}
 			if (Bugged)
 			{
-				Log.Error(this + " has null innerPawn. Destroying.");
+				Log.Error(string.Concat(this, " has null innerPawn. Destroying."));
 				Destroy();
 				return;
 			}
@@ -270,7 +270,7 @@ namespace Verse
 			BodyPartRecord bodyPartRecord = GetBestBodyPartToEat(ingester, nutritionWanted);
 			if (bodyPartRecord == null)
 			{
-				Log.Error(ingester + " ate " + this + " but no body part was found. Replacing with core part.");
+				Log.Error(string.Concat(ingester, " ate ", this, " but no body part was found. Replacing with core part."));
 				bodyPartRecord = InnerPawn.RaceProps.body.corePart;
 			}
 			float bodyPartNutrition = FoodUtility.GetBodyPartNutrition(this, bodyPartRecord);
@@ -303,21 +303,22 @@ namespace Verse
 			{
 				FilthMaker.TryMakeFilth(butcher.Position, butcher.Map, InnerPawn.RaceProps.BloodDef, InnerPawn.LabelIndefinite());
 			}
-			if (InnerPawn.RaceProps.Humanlike)
+			if (!InnerPawn.RaceProps.Humanlike)
 			{
-				if (butcher.needs.mood != null)
-				{
-					butcher.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.ButcheredHumanlikeCorpse);
-				}
-				foreach (Pawn item2 in butcher.Map.mapPawns.SpawnedPawnsInFaction(butcher.Faction))
-				{
-					if (item2 != butcher && item2.needs != null && item2.needs.mood != null && item2.needs.mood.thoughts != null)
-					{
-						item2.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.KnowButcheredHumanlikeCorpse);
-					}
-				}
-				TaleRecorder.RecordTale(TaleDefOf.ButcheredHumanlikeCorpse, butcher);
+				yield break;
 			}
+			if (butcher.needs.mood != null)
+			{
+				butcher.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.ButcheredHumanlikeCorpse);
+			}
+			foreach (Pawn item2 in butcher.Map.mapPawns.SpawnedPawnsInFaction(butcher.Faction))
+			{
+				if (item2 != butcher && item2.needs != null && item2.needs.mood != null && item2.needs.mood.thoughts != null)
+				{
+					item2.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.KnowButcheredHumanlikeCorpse);
+				}
+			}
+			TaleRecorder.RecordTale(TaleDefOf.ButcheredHumanlikeCorpse, butcher);
 		}
 
 		public override void ExposeData()

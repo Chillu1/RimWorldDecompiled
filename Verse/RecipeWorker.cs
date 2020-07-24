@@ -7,6 +7,11 @@ namespace Verse
 	{
 		public RecipeDef recipe;
 
+		public virtual bool AvailableOnNow(Thing thing)
+		{
+			return true;
+		}
+
 		public virtual IEnumerable<BodyPartRecord> GetPartsToApplyOn(Pawn pawn, RecipeDef recipe)
 		{
 			yield break;

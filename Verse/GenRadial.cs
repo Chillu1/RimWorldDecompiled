@@ -186,17 +186,17 @@ namespace Verse
 		{
 			int numCells = NumCellsInRadius(radius);
 			HashSet<Thing> returnedThings = null;
-			for (int j = (!useCenter) ? 1 : 0; j < numCells; j++)
+			for (int i = (!useCenter) ? 1 : 0; i < numCells; i++)
 			{
-				IntVec3 c = RadialPattern[j] + center;
+				IntVec3 c = RadialPattern[i] + center;
 				if (!c.InBounds(map))
 				{
 					continue;
 				}
 				List<Thing> thingList = c.GetThingList(map);
-				for (int i = 0; i < thingList.Count; i++)
+				for (int j = 0; j < thingList.Count; j++)
 				{
-					Thing thing = thingList[i];
+					Thing thing = thingList[j];
 					if (thing.def.size.x > 1 && thing.def.size.z > 1)
 					{
 						if (returnedThings == null)
@@ -230,20 +230,21 @@ namespace Verse
 				for (int i = 0; i < num2; i++)
 				{
 					IntVec3 intVec = center + RadialPattern[i];
-					if (map == null || intVec.InBounds(map))
+					if (map != null && !intVec.InBounds(map))
 					{
-						float num3 = intVec.DistanceToSquared(center);
-						if (Mathf.Abs(num3 - num) > 0.0001f)
-						{
-							if (tmpCells.Any() && processor(tmpCells))
-							{
-								return;
-							}
-							num = num3;
-							tmpCells.Clear();
-						}
-						tmpCells.Add(intVec);
+						continue;
 					}
+					float num3 = intVec.DistanceToSquared(center);
+					if (Mathf.Abs(num3 - num) > 0.0001f)
+					{
+						if (tmpCells.Any() && processor(tmpCells))
+						{
+							return;
+						}
+						num = num3;
+						tmpCells.Clear();
+					}
+					tmpCells.Add(intVec);
 				}
 				if (tmpCells.Any())
 				{

@@ -82,7 +82,7 @@ namespace Verse
 		{
 			if (defName == "UnnamedDef")
 			{
-				yield return GetType() + " lacks defName. Label=" + label;
+				yield return string.Concat(GetType(), " lacks defName. Label=", label);
 			}
 			if (defName == "null")
 			{
@@ -128,10 +128,11 @@ namespace Verse
 			{
 				Log.Warning("Some descriptionHyperlinks in " + defName + " had null def.");
 			}
+			Def def = this;
 			int i;
 			for (i = descriptionHyperlinks.Count - 1; i > 0; i--)
 			{
-				if (descriptionHyperlinks.FirstIndexOf((DefHyperlink h) => h.def == descriptionHyperlinks[i].def) < i)
+				if (descriptionHyperlinks.FirstIndexOf((DefHyperlink h) => h.def == def.descriptionHyperlinks[i].def) < i)
 				{
 					yield return "Hyperlink to " + descriptionHyperlinks[i].def.defName + " more than once on " + defName + " description";
 				}

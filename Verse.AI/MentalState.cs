@@ -70,7 +70,7 @@ namespace Verse.AI
 		{
 			if (pawn.MentalState != this)
 			{
-				Log.Error("Recovered from " + def + " but pawn's mental state is not this, it is " + pawn.MentalState);
+				Log.Error(string.Concat("Recovered from ", def, " but pawn's mental state is not this, it is ", pawn.MentalState));
 			}
 			if (!pawn.Dead)
 			{

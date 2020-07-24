@@ -95,7 +95,7 @@ namespace RimWorld
 
 		protected virtual void OnDropThing(Thing t, int count)
 		{
-			GenDrop.TryDropSpawn(t.SplitOff(count), base.SelThing.Position, base.SelThing.Map, ThingPlaceMode.Near, out Thing _);
+			GenDrop.TryDropSpawn_NewTmp(t.SplitOff(count), base.SelThing.Position, base.SelThing.Map, ThingPlaceMode.Near, out Thing _);
 		}
 
 		protected void DoThingRow(ThingDef thingDef, int count, List<Thing> things, float width, ref float curY, Action<int> discardAction)

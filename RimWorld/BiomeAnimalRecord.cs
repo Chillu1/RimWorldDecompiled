@@ -11,7 +11,7 @@ namespace RimWorld
 
 		public void LoadDataFromXmlCustom(XmlNode xmlRoot)
 		{
-			DirectXmlCrossRefLoader.RegisterObjectWantsCrossRef(this, "animal", xmlRoot.Name);
+			DirectXmlCrossRefLoader.RegisterObjectWantsCrossRef(this, "animal", xmlRoot);
 			commonality = ParseHelper.FromString<float>(xmlRoot.FirstChild.Value);
 		}
 	}

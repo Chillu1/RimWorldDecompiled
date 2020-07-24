@@ -71,6 +71,7 @@ namespace RimWorld
 			{
 				for (int j = 0; j < list.Count; j++)
 				{
+					list[j].health.AddHediff(HediffDefOf.Scaria);
 					list[j].mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.ManhunterPermanent);
 				}
 			}

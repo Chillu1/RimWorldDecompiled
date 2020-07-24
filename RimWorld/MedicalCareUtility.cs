@@ -101,14 +101,17 @@ namespace RimWorld
 
 		private static IEnumerable<Widgets.DropdownMenuElement<MedicalCareCategory>> MedicalCareSelectButton_GenerateMenu(Pawn p)
 		{
+			_003C_003Ec__DisplayClass10_0 _003C_003Ec__DisplayClass10_ = new _003C_003Ec__DisplayClass10_0();
+			_003C_003Ec__DisplayClass10_.p = p;
 			for (int i = 0; i < 5; i++)
 			{
+				_003C_003Ec__DisplayClass10_0 _003C_003Ec__DisplayClass10_2 = _003C_003Ec__DisplayClass10_;
 				MedicalCareCategory mc = (MedicalCareCategory)i;
 				yield return new Widgets.DropdownMenuElement<MedicalCareCategory>
 				{
 					option = new FloatMenuOption(mc.GetLabel(), delegate
 					{
-						p.playerSettings.medCare = mc;
+						_003C_003Ec__DisplayClass10_2.p.playerSettings.medCare = mc;
 					}),
 					payload = mc
 				};

@@ -128,7 +128,7 @@ namespace Verse
 					return "-";
 				}
 				ThingRequestGroup best2 = source2.MinBy((ThingRequestGroup x) => DefDatabase<ThingDef>.AllDefs.Count((ThingDef y) => ListerThings.EverListable(y, ListerThingsUse.Region) && x.Includes(y)));
-				return best2 + " (defs: " + DefDatabase<ThingDef>.AllDefs.Count((ThingDef x) => ListerThings.EverListable(x, ListerThingsUse.Region) && best2.Includes(x)) + ")";
+				return string.Concat(best2, " (defs: ", DefDatabase<ThingDef>.AllDefs.Count((ThingDef x) => ListerThings.EverListable(x, ListerThingsUse.Region) && best2.Includes(x)), ")");
 			}), new TableDataGetter<ThingDef>("best global", delegate(ThingDef d)
 			{
 				IEnumerable<ThingRequestGroup> source = ListerThings.EverListable(d, ListerThingsUse.Global) ? ((ThingRequestGroup[])Enum.GetValues(typeof(ThingRequestGroup))).Where((ThingRequestGroup x) => x.Includes(d)) : Enumerable.Empty<ThingRequestGroup>();
@@ -137,7 +137,7 @@ namespace Verse
 					return "-";
 				}
 				ThingRequestGroup best = source.MinBy((ThingRequestGroup x) => DefDatabase<ThingDef>.AllDefs.Count((ThingDef y) => ListerThings.EverListable(y, ListerThingsUse.Global) && x.Includes(y)));
-				return best + " (defs: " + DefDatabase<ThingDef>.AllDefs.Count((ThingDef x) => ListerThings.EverListable(x, ListerThingsUse.Global) && best.Includes(x)) + ")";
+				return string.Concat(best, " (defs: ", DefDatabase<ThingDef>.AllDefs.Count((ThingDef x) => ListerThings.EverListable(x, ListerThingsUse.Global) && best.Includes(x)), ")");
 			}));
 		}
 

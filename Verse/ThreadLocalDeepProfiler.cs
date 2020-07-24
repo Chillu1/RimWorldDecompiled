@@ -140,12 +140,13 @@ namespace Verse
 				{
 					num3++;
 					num += item2.ElapsedMilliseconds;
-					if (item2.Children != null)
+					if (item2.Children == null)
 					{
-						foreach (Watcher child in item2.Children)
-						{
-							num2 += child.ElapsedMilliseconds;
-						}
+						continue;
+					}
+					foreach (Watcher child in item2.Children)
+					{
+						num2 += child.ElapsedMilliseconds;
 					}
 				}
 				list.Add(new LabelTimeTuple
@@ -193,35 +194,36 @@ namespace Verse
 			{
 				sb.AppendLine(Prefixes[depth] + " " + elapsedTime.ToString("0.0000") + "ms " + label);
 			}
-			if (children != null)
+			if (children == null)
 			{
-				allWatchers.AddRange(children);
-				foreach (IGrouping<string, Watcher> item in from c in children
-					group c by c.Label)
+				return;
+			}
+			allWatchers.AddRange(children);
+			foreach (IGrouping<string, Watcher> item in from c in children
+				group c by c.Label)
+			{
+				List<Watcher> list = new List<Watcher>();
+				double num2 = 0.0;
+				int num3 = 0;
+				foreach (Watcher item2 in item)
 				{
-					List<Watcher> list = new List<Watcher>();
-					double num2 = 0.0;
-					int num3 = 0;
-					foreach (Watcher item2 in item)
+					if (item2.Children != null)
 					{
-						if (item2.Children != null)
+						foreach (Watcher child2 in item2.Children)
 						{
-							foreach (Watcher child2 in item2.Children)
-							{
-								list.Add(child2);
-							}
+							list.Add(child2);
 						}
-						num2 += item2.ElapsedMilliseconds;
-						num3++;
 					}
-					if (num3 <= 1)
-					{
-						AppendStringRecursive(sb, item.Key, list, num2, depth + 1, allWatchers);
-					}
-					else
-					{
-						AppendStringRecursive(sb, num3 + "x " + item.Key, list, num2, depth + 1, allWatchers);
-					}
+					num2 += item2.ElapsedMilliseconds;
+					num3++;
+				}
+				if (num3 <= 1)
+				{
+					AppendStringRecursive(sb, item.Key, list, num2, depth + 1, allWatchers);
+				}
+				else
+				{
+					AppendStringRecursive(sb, num3 + "x " + item.Key, list, num2, depth + 1, allWatchers);
 				}
 			}
 		}

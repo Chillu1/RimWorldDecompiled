@@ -33,12 +33,13 @@ namespace Verse
 			SetNestLevelRecursive(rootNode, 0);
 			foreach (ThingDef allDef2 in DefDatabase<ThingDef>.AllDefs)
 			{
-				if (allDef2.thingCategories != null)
+				if (allDef2.thingCategories == null)
 				{
-					foreach (ThingCategoryDef thingCategory in allDef2.thingCategories)
-					{
-						thingCategory.childThingDefs.Add(allDef2);
-					}
+					continue;
+				}
+				foreach (ThingCategoryDef thingCategory in allDef2.thingCategories)
+				{
+					thingCategory.childThingDefs.Add(allDef2);
 				}
 			}
 			foreach (SpecialThingFilterDef allDef3 in DefDatabase<SpecialThingFilterDef>.AllDefs)

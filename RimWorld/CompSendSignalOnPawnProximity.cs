@@ -16,7 +16,7 @@ namespace RimWorld
 
 		private const float MaxDistActivationByOther = 40f;
 
-		private CompProperties_SendSignalOnPawnProximity Props => (CompProperties_SendSignalOnPawnProximity)props;
+		public CompProperties_SendSignalOnPawnProximity Props => (CompProperties_SendSignalOnPawnProximity)props;
 
 		public bool Sent => sent;
 

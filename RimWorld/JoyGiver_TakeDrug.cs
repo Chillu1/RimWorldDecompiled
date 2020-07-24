@@ -31,11 +31,16 @@ namespace RimWorld
 					return innerContainer[i];
 				}
 			}
+			bool flag = false;
+			if (pawn.story != null && (pawn.story.traits.DegreeOfTrait(TraitDefOf.DrugDesire) > 0 || pawn.InMentalState))
+			{
+				flag = true;
+			}
 			takeableDrugs.Clear();
 			DrugPolicy currentPolicy = pawn.drugs.CurrentPolicy;
 			for (int j = 0; j < currentPolicy.Count; j++)
 			{
-				if (currentPolicy[j].allowedForJoy)
+				if (flag || currentPolicy[j].allowedForJoy)
 				{
 					takeableDrugs.Add(currentPolicy[j].drug);
 				}

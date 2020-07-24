@@ -47,17 +47,17 @@ namespace RimWorld
 			Scribe_Collections.Look(ref needs, "needs", LookMode.Deep, pawn);
 			if (Scribe.mode == LoadSaveMode.LoadingVars || Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
-				if (needs.RemoveAll((Need x) => x == null) != 0)
+				if (needs.RemoveAll((Need x) => x == null || x.def == null) != 0)
 				{
 					Log.Error("Pawn " + pawn.ToStringSafe() + " had some null needs after loading.");
 				}
 				BindDirectNeedFields();
 			}
+			BackCompatibility.PostExposeData(this);
 		}
 
 		private void BindDirectNeedFields()
 		{
-			authority = TryGetNeed<Need_Authority>();
 			mood = TryGetNeed<Need_Mood>();
 			food = TryGetNeed<Need_Food>();
 			rest = TryGetNeed<Need_Rest>();
@@ -67,6 +67,7 @@ namespace RimWorld
 			roomsize = TryGetNeed<Need_RoomSize>();
 			outdoors = TryGetNeed<Need_Outdoors>();
 			drugsDesire = TryGetNeed<Need_Chemical_Any>();
+			authority = null;
 		}
 
 		public void NeedsTrackerTick()
@@ -117,17 +118,24 @@ namespace RimWorld
 			List<NeedDef> allDefsListForReading = DefDatabase<NeedDef>.AllDefsListForReading;
 			for (int i = 0; i < allDefsListForReading.Count; i++)
 			{
-				NeedDef needDef = allDefsListForReading[i];
-				if (ShouldHaveNeed(needDef))
+				try
 				{
-					if (TryGetNeed(needDef) == null)
+					NeedDef needDef = allDefsListForReading[i];
+					if (ShouldHaveNeed(needDef))
 					{
-						AddNeed(needDef);
+						if (TryGetNeed(needDef) == null)
+						{
+							AddNeed(needDef);
+						}
+					}
+					else if (TryGetNeed(needDef) != null)
+					{
+						RemoveNeed(needDef);
 					}
 				}
-				else if (TryGetNeed(needDef) != null)
+				catch (Exception ex)
 				{
-					RemoveNeed(needDef);
+					Log.Error("Error while determining if " + pawn.ToStringSafe() + " should have Need " + allDefsListForReading[i].ToStringSafe() + ": " + ex);
 				}
 			}
 		}
@@ -177,6 +185,25 @@ namespace RimWorld
 				{
 					return false;
 				}
+			}
+			if (nd.hediffRequiredAny != null)
+			{
+				bool flag2 = false;
+				foreach (HediffDef item2 in nd.hediffRequiredAny)
+				{
+					if (pawn.health.hediffSet.HasHediff(item2))
+					{
+						flag2 = true;
+					}
+				}
+				if (!flag2)
+				{
+					return false;
+				}
+			}
+			if (nd.defName == "Authority")
+			{
+				return false;
 			}
 			if (nd == NeedDefOf.Food)
 			{

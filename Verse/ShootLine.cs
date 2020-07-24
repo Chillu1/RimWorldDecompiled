@@ -45,7 +45,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return "(" + source + "->" + dest + ")";
+			return string.Concat("(", source, "->", dest, ")");
 		}
 
 		[DebugOutput]
@@ -68,7 +68,7 @@ namespace Verse
 					}
 				}
 			}
-			DebugTables.MakeTablesDialog(colValues, (int cells) => cells.ToString() + "-away\ncell\nhit%", enumerable, (int hitchance) => ((float)hitchance / 100f).ToStringPercent() + " aimon chance", delegate(int cells, int hitchance)
+			DebugTables.MakeTablesDialog(colValues, (int cells) => cells + "-away\ncell\nhit%", enumerable, (int hitchance) => ((float)hitchance / 100f).ToStringPercent() + " aimon chance", delegate(int cells, int hitchance)
 			{
 				float num = (float)hitchance / 100f;
 				return (cells == 0) ? num.ToStringPercent() : ((float)results[hitchance, cells] / 10000f * (1f - num)).ToStringPercent();

@@ -30,6 +30,11 @@ namespace RimWorld
 			quests.Add(quest);
 			AddToCache(quest);
 			Find.SignalManager.RegisterReceiver(quest);
+			List<QuestPart> partsListForReading = quest.PartsListForReading;
+			for (int i = 0; i < partsListForReading.Count; i++)
+			{
+				partsListForReading[i].PostQuestAdded();
+			}
 			if (quest.initiallyAccepted)
 			{
 				quest.Initiate();

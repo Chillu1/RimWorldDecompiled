@@ -67,13 +67,13 @@ namespace Verse
 			get
 			{
 				List<ThingWithComps> list = AllEquipmentListForReading;
-				for (int j = 0; j < list.Count; j++)
+				for (int i = 0; i < list.Count; i++)
 				{
-					ThingWithComps thingWithComps = list[j];
+					ThingWithComps thingWithComps = list[i];
 					List<Verb> verbs = thingWithComps.GetComp<CompEquippable>().AllVerbs;
-					for (int i = 0; i < verbs.Count; i++)
+					for (int j = 0; j < verbs.Count; j++)
 					{
-						yield return verbs[i];
+						yield return verbs[j];
 					}
 				}
 			}
@@ -90,15 +90,16 @@ namespace Verse
 		public void ExposeData()
 		{
 			Scribe_Deep.Look(ref equipment, "equipment", this);
-			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			if (Scribe.mode != LoadSaveMode.PostLoadInit)
 			{
-				List<ThingWithComps> allEquipmentListForReading = AllEquipmentListForReading;
-				for (int i = 0; i < allEquipmentListForReading.Count; i++)
+				return;
+			}
+			List<ThingWithComps> allEquipmentListForReading = AllEquipmentListForReading;
+			for (int i = 0; i < allEquipmentListForReading.Count; i++)
+			{
+				foreach (Verb allVerb in allEquipmentListForReading[i].GetComp<CompEquippable>().AllVerbs)
 				{
-					foreach (Verb allVerb in allEquipmentListForReading[i].GetComp<CompEquippable>().AllVerbs)
-					{
-						allVerb.caster = pawn;
-					}
+					allVerb.caster = pawn;
 				}
 			}
 		}
@@ -127,7 +128,7 @@ namespace Verse
 				}
 				else
 				{
-					Log.Error(pawn + " couldn't make room for equipment " + eq);
+					Log.Error(string.Concat(pawn, " couldn't make room for equipment ", eq));
 				}
 			}
 		}
@@ -141,7 +142,7 @@ namespace Verse
 		{
 			if (!pos.IsValid)
 			{
-				Log.Error(pawn + " tried to drop " + eq + " at invalid cell.");
+				Log.Error(string.Concat(pawn, " tried to drop ", eq, " at invalid cell."));
 				resultingEq = null;
 				return false;
 			}
@@ -173,7 +174,7 @@ namespace Verse
 		{
 			if (!equipment.Contains(eq))
 			{
-				Log.Warning("Tried to destroy equipment " + eq + " but it's not here.");
+				Log.Warning(string.Concat("Tried to destroy equipment ", eq, " but it's not here."));
 				return;
 			}
 			Remove(eq);
@@ -206,7 +207,7 @@ namespace Verse
 		{
 			if (newEq.def.equipmentType == EquipmentType.Primary && Primary != null)
 			{
-				Log.Error("Pawn " + pawn.LabelCap + " got primaryInt equipment " + newEq + " while already having primaryInt equipment " + Primary);
+				Log.Error(string.Concat("Pawn ", pawn.LabelCap, " got primaryInt equipment ", newEq, " while already having primaryInt equipment ", Primary));
 			}
 			else
 			{
@@ -216,28 +217,29 @@ namespace Verse
 
 		public IEnumerable<Gizmo> GetGizmos()
 		{
-			if (PawnAttackGizmoUtility.CanShowEquipmentGizmos())
+			if (!PawnAttackGizmoUtility.CanShowEquipmentGizmos())
 			{
-				List<ThingWithComps> list = AllEquipmentListForReading;
-				for (int i = 0; i < list.Count; i++)
+				yield break;
+			}
+			List<ThingWithComps> list = AllEquipmentListForReading;
+			for (int i = 0; i < list.Count; i++)
+			{
+				ThingWithComps thingWithComps = list[i];
+				foreach (Command verbsCommand in thingWithComps.GetComp<CompEquippable>().GetVerbsCommands())
 				{
-					ThingWithComps thingWithComps = list[i];
-					foreach (Command verbsCommand in thingWithComps.GetComp<CompEquippable>().GetVerbsCommands())
+					switch (i)
 					{
-						switch (i)
-						{
-						case 0:
-							verbsCommand.hotKey = KeyBindingDefOf.Misc1;
-							break;
-						case 1:
-							verbsCommand.hotKey = KeyBindingDefOf.Misc2;
-							break;
-						case 2:
-							verbsCommand.hotKey = KeyBindingDefOf.Misc3;
-							break;
-						}
-						yield return verbsCommand;
+					case 0:
+						verbsCommand.hotKey = KeyBindingDefOf.Misc1;
+						break;
+					case 1:
+						verbsCommand.hotKey = KeyBindingDefOf.Misc2;
+						break;
+					case 2:
+						verbsCommand.hotKey = KeyBindingDefOf.Misc3;
+						break;
 					}
+					yield return verbsCommand;
 				}
 			}
 		}

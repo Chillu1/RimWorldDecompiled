@@ -8,39 +8,40 @@ namespace Verse
 
 		public void Init()
 		{
-			if (subcameras == null && PlayDataLoader.Loaded)
+			if (subcameras != null || !PlayDataLoader.Loaded)
 			{
-				Camera camera = Find.Camera;
-				subcameras = new Camera[DefDatabase<SubcameraDef>.DefCount];
-				foreach (SubcameraDef item in DefDatabase<SubcameraDef>.AllDefsListForReading)
+				return;
+			}
+			Camera camera = Find.Camera;
+			subcameras = new Camera[DefDatabase<SubcameraDef>.DefCount];
+			foreach (SubcameraDef item in DefDatabase<SubcameraDef>.AllDefsListForReading)
+			{
+				GameObject gameObject = new GameObject();
+				gameObject.name = item.defName;
+				gameObject.transform.parent = base.transform;
+				gameObject.transform.localPosition = Vector3.zero;
+				gameObject.transform.localScale = Vector3.one;
+				gameObject.transform.localRotation = Quaternion.identity;
+				Camera camera2 = gameObject.AddComponent<Camera>();
+				camera2.orthographic = camera.orthographic;
+				camera2.orthographicSize = camera.orthographicSize;
+				if (item.layer.NullOrEmpty())
 				{
-					GameObject gameObject = new GameObject();
-					gameObject.name = item.defName;
-					gameObject.transform.parent = base.transform;
-					gameObject.transform.localPosition = Vector3.zero;
-					gameObject.transform.localScale = Vector3.one;
-					gameObject.transform.localRotation = Quaternion.identity;
-					Camera camera2 = gameObject.AddComponent<Camera>();
-					camera2.orthographic = camera.orthographic;
-					camera2.orthographicSize = camera.orthographicSize;
-					if (item.layer.NullOrEmpty())
-					{
-						camera2.cullingMask = 0;
-					}
-					else
-					{
-						camera2.cullingMask = LayerMask.GetMask(item.layer);
-					}
-					camera2.nearClipPlane = camera.nearClipPlane;
-					camera2.farClipPlane = camera.farClipPlane;
-					camera2.useOcclusionCulling = camera.useOcclusionCulling;
-					camera2.allowHDR = camera.allowHDR;
-					camera2.renderingPath = camera.renderingPath;
-					camera2.clearFlags = CameraClearFlags.Color;
-					camera2.backgroundColor = new Color(0f, 0f, 0f, 0f);
-					camera2.depth = item.depth;
-					subcameras[item.index] = camera2;
+					camera2.cullingMask = 0;
 				}
+				else
+				{
+					camera2.cullingMask = LayerMask.GetMask(item.layer);
+				}
+				camera2.nearClipPlane = camera.nearClipPlane;
+				camera2.farClipPlane = camera.farClipPlane;
+				camera2.useOcclusionCulling = camera.useOcclusionCulling;
+				camera2.allowHDR = camera.allowHDR;
+				camera2.renderingPath = camera.renderingPath;
+				camera2.clearFlags = CameraClearFlags.Color;
+				camera2.backgroundColor = new Color(0f, 0f, 0f, 0f);
+				camera2.depth = item.depth;
+				subcameras[item.index] = camera2;
 			}
 		}
 

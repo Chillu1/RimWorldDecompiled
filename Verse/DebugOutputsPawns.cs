@@ -66,7 +66,7 @@ namespace Verse
 			list.Add(new TableDataGetter<PawnKindDef>("points", (PawnKindDef x) => x.combatPower.ToString()));
 			list.AddRange(from a in DefDatabase<ThingDef>.AllDefs
 				where a.IsApparel
-				orderby PawnApparelGenerator.IsHeadgear(a), a.BaseMarketValue
+				orderby PawnApparelGenerator.IsHeadgear(a), a.techLevel, a.BaseMarketValue
 				select new TableDataGetter<PawnKindDef>(a.label.Shorten() + "\n$" + a.BaseMarketValue.ToString("F0"), delegate(PawnKindDef k)
 				{
 					if (k.apparelRequired != null && k.apparelRequired.Contains(a))
@@ -80,6 +80,17 @@ namespace Verse
 					if (k.apparelAllowHeadgearChance <= 0f && PawnApparelGenerator.IsHeadgear(a))
 					{
 						return "nohat";
+					}
+					List<SpecificApparelRequirement> specificApparelRequirements = k.specificApparelRequirements;
+					if (specificApparelRequirements != null)
+					{
+						for (int i = 0; i < specificApparelRequirements.Count; i++)
+						{
+							if (PawnApparelGenerator.ApparelRequirementHandlesThing(specificApparelRequirements[i], a) && PawnApparelGenerator.ApparelRequirementTagsMatch(specificApparelRequirements[i], a))
+							{
+								return "SpRq";
+							}
+						}
 					}
 					if (k.apparelTags != null && a.apparel.tags.Any((string z) => k.apparelTags.Contains(z)))
 					{
@@ -380,11 +391,11 @@ namespace Verse
 		public static void AnimalsBasics()
 		{
 			DebugTables.MakeTablesDialog(DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef d) => d.race != null && d.RaceProps.Animal), new TableDataGetter<PawnKindDef>("defName", (PawnKindDef d) => d.defName), new TableDataGetter<PawnKindDef>("dps", (PawnKindDef d) => dps(d).ToString("F2")), new TableDataGetter<PawnKindDef>("healthScale", (PawnKindDef d) => d.RaceProps.baseHealthScale.ToString("F2")), new TableDataGetter<PawnKindDef>("points", (PawnKindDef d) => d.combatPower.ToString("F0")), new TableDataGetter<PawnKindDef>("points guess", (PawnKindDef d) => pointsGuess(d).ToString("F0")), new TableDataGetter<PawnKindDef>("speed", (PawnKindDef d) => d.race.GetStatValueAbstract(StatDefOf.MoveSpeed).ToString("F2")), new TableDataGetter<PawnKindDef>("mktval", (PawnKindDef d) => d.race.GetStatValueAbstract(StatDefOf.MarketValue).ToString("F0")), new TableDataGetter<PawnKindDef>("mktval guess", (PawnKindDef d) => mktValGuess(d).ToString("F0")), new TableDataGetter<PawnKindDef>("bodySize", (PawnKindDef d) => d.RaceProps.baseBodySize.ToString("F2")), new TableDataGetter<PawnKindDef>("hunger", (PawnKindDef d) => d.RaceProps.baseHungerRate.ToString("F2")), new TableDataGetter<PawnKindDef>("wildness", (PawnKindDef d) => d.RaceProps.wildness.ToStringPercent()), new TableDataGetter<PawnKindDef>("lifespan", (PawnKindDef d) => d.RaceProps.lifeExpectancy.ToString("F1")), new TableDataGetter<PawnKindDef>("trainability", (PawnKindDef d) => (d.RaceProps.trainability == null) ? "null" : d.RaceProps.trainability.label), new TableDataGetter<PawnKindDef>("tempMin", (PawnKindDef d) => d.race.GetStatValueAbstract(StatDefOf.ComfyTemperatureMin).ToString("F0")), new TableDataGetter<PawnKindDef>("tempMax", (PawnKindDef d) => d.race.GetStatValueAbstract(StatDefOf.ComfyTemperatureMax).ToString("F0")), new TableDataGetter<PawnKindDef>("flammability", (PawnKindDef d) => d.race.GetStatValueAbstract(StatDefOf.Flammability).ToStringPercent()));
-			float dps(PawnKindDef d)
+			static float dps(PawnKindDef d)
 			{
 				return RaceMeleeDpsEstimate(d.race);
 			}
-			float mktValGuess(PawnKindDef d)
+			static float mktValGuess(PawnKindDef d)
 			{
 				float num = 18f;
 				num += pointsGuess(d) * 2.7f;
@@ -424,7 +435,7 @@ namespace Verse
 				num *= Mathf.Lerp(0.8f, 1.2f, d.RaceProps.wildness);
 				return num * 0.75f;
 			}
-			float pointsGuess(PawnKindDef d)
+			static float pointsGuess(PawnKindDef d)
 			{
 				return (15f + dps(d) * 10f) * Mathf.Lerp(1f, d.race.GetStatValueAbstract(StatDefOf.MoveSpeed) / 3f, 0.25f) * d.RaceProps.baseHealthScale * GenMath.LerpDouble(0.25f, 1f, 1.65f, 1f, Mathf.Clamp(d.RaceProps.baseBodySize, 0.25f, 1f)) * 0.76f;
 			}
@@ -592,7 +603,7 @@ namespace Verse
 				}
 				return num / 4000f;
 			}
-			TraitDef getTrait(TraitDegreeData d)
+			static TraitDef getTrait(TraitDegreeData d)
 			{
 				return DefDatabase<TraitDef>.AllDefs.First((TraitDef td) => td.degreeDatas.Contains(d));
 			}

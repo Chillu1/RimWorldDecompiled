@@ -36,6 +36,10 @@ namespace Verse
 
 		public List<ExtraDamage> extraMeleeDamages;
 
+		public SoundDef soundMeleeHit;
+
+		public SoundDef soundMeleeMiss;
+
 		public BodyPartGroupDef linkedBodyPartsGroup;
 
 		public bool ensureLinkedBodyPartsGroupAlwaysUsable;

@@ -45,19 +45,20 @@ namespace RimWorld
 		{
 			foreach (Thing item in TradeSession.trader.ColonyThingsWillingToBuy(TradeSession.playerNegotiator))
 			{
-				if (TradeUtility.PlayerSellableNow(item, TradeSession.trader))
+				if (!TradeUtility.PlayerSellableNow(item, TradeSession.trader))
 				{
-					if (!TradeSession.playerNegotiator.IsWorldPawn() && !InSellablePosition(item, out string reason))
+					continue;
+				}
+				if (!TradeSession.playerNegotiator.IsWorldPawn() && !InSellablePosition(item, out string reason))
+				{
+					if (reason != null && !cannotSellReasons.Contains(reason))
 					{
-						if (reason != null && !cannotSellReasons.Contains(reason))
-						{
-							cannotSellReasons.Add(reason);
-						}
+						cannotSellReasons.Add(reason);
 					}
-					else
-					{
-						AddToTradeables(item, Transactor.Colony);
-					}
+				}
+				else
+				{
+					AddToTradeables(item, Transactor.Colony);
 				}
 			}
 			if (!TradeSession.giftMode)

@@ -71,6 +71,11 @@ namespace RimWorld
 			}
 		}
 
+		public override void PostSpawnSetup(bool respawningAfterLoad)
+		{
+			base.PostSpawnSetup(respawningAfterLoad);
+		}
+
 		public override void PostExposeData()
 		{
 			base.PostExposeData();

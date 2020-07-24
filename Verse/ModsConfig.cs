@@ -117,7 +117,7 @@ namespace Verse
 					flag2 = true;
 				}
 			}
-			if (!File.Exists(GenFilePaths.ModsConfigFilePath) | flag)
+			if (!File.Exists(GenFilePaths.ModsConfigFilePath) || flag)
 			{
 				Reset();
 			}
@@ -248,6 +248,16 @@ namespace Verse
 		{
 			data.version = VersionControl.CurrentVersionStringWithRev;
 			DirectXmlSaver.SaveDataObject(data, GenFilePaths.ModsConfigFilePath);
+		}
+
+		public static void SaveFromList(List<string> mods)
+		{
+			DirectXmlSaver.SaveDataObject(new ModsConfigData
+			{
+				version = VersionControl.CurrentVersionStringWithRev,
+				activeMods = mods,
+				knownExpansions = data.knownExpansions
+			}, GenFilePaths.ModsConfigFilePath);
 		}
 
 		public static void RestartFromChangedMods()

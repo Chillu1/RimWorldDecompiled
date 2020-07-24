@@ -29,14 +29,14 @@ namespace RimWorld
 		{
 			get
 			{
-				for (int j = 0; j < allGroupsInOrder.Count; j++)
+				for (int i = 0; i < allGroupsInOrder.Count; i++)
 				{
-					List<IntVec3> cellsList = allGroupsInOrder[j].CellsList;
-					int i = 0;
-					while (i < allGroupsInOrder.Count)
+					List<IntVec3> cellsList = allGroupsInOrder[i].CellsList;
+					int j = 0;
+					while (j < allGroupsInOrder.Count)
 					{
-						yield return cellsList[i];
-						j++;
+						yield return cellsList[j];
+						i++;
 					}
 				}
 			}
@@ -139,7 +139,7 @@ namespace RimWorld
 		{
 			if (SlotGroupAt(c) != null)
 			{
-				Log.Error(group + " overwriting slot group square " + c + " of " + SlotGroupAt(c));
+				Log.Error(string.Concat(group, " overwriting slot group square ", c, " of ", SlotGroupAt(c)));
 			}
 			groupGrid[c.x, c.y, c.z] = group;
 		}
@@ -148,7 +148,7 @@ namespace RimWorld
 		{
 			if (SlotGroupAt(c) != group)
 			{
-				Log.Error(group + " clearing group grid square " + c + " containing " + SlotGroupAt(c));
+				Log.Error(string.Concat(group, " clearing group grid square ", c, " containing ", SlotGroupAt(c)));
 			}
 			groupGrid[c.x, c.y, c.z] = null;
 		}

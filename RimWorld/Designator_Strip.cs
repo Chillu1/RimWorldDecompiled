@@ -56,6 +56,7 @@ namespace RimWorld
 		public override void DesignateThing(Thing t)
 		{
 			base.Map.designationManager.AddDesignation(new Designation(t, Designation));
+			StrippableUtility.CheckSendStrippingImpactsGoodwillMessage(t);
 		}
 
 		private IEnumerable<Thing> StrippablesInCell(IntVec3 c)

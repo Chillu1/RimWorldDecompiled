@@ -31,7 +31,7 @@ namespace RimWorld.QuestGen
 		{
 			for (int i = 0; i < nodes.Count; i++)
 			{
-				if (nodes[i].TestRun(slate.DeepCopy()))
+				if (nodes[i].SelectionWeight(slate) > 0f && nodes[i].TestRun(slate.DeepCopy()))
 				{
 					yield return nodes[i];
 				}

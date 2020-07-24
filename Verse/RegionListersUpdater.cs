@@ -68,19 +68,20 @@ namespace Verse
 			}
 			foreach (IntVec3 item in cellRect2)
 			{
-				if (item.InBounds(map))
+				if (!item.InBounds(map))
 				{
-					Region validRegionAt_NoRebuild = map.regionGrid.GetValidRegionAt_NoRebuild(item);
-					if (validRegionAt_NoRebuild != null && validRegionAt_NoRebuild.type.Passable() && !outRegions.Contains(validRegionAt_NoRebuild))
+					continue;
+				}
+				Region validRegionAt_NoRebuild = map.regionGrid.GetValidRegionAt_NoRebuild(item);
+				if (validRegionAt_NoRebuild != null && validRegionAt_NoRebuild.type.Passable() && !outRegions.Contains(validRegionAt_NoRebuild))
+				{
+					if (cellRect.Contains(item))
 					{
-						if (cellRect.Contains(item))
-						{
-							outRegions.Add(validRegionAt_NoRebuild);
-						}
-						else if (allowAdjacentEvenIfCantTouch || ReachabilityImmediate.CanReachImmediate(item, thing, map, PathEndMode.Touch, null))
-						{
-							outRegions.Add(validRegionAt_NoRebuild);
-						}
+						outRegions.Add(validRegionAt_NoRebuild);
+					}
+					else if (allowAdjacentEvenIfCantTouch || ReachabilityImmediate.CanReachImmediate(item, thing, map, PathEndMode.Touch, null))
+					{
+						outRegions.Add(validRegionAt_NoRebuild);
 					}
 				}
 			}

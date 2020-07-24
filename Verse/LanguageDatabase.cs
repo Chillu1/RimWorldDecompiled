@@ -75,23 +75,22 @@ namespace Verse
 				foreach (string item2 in runningMod.foldersToLoadDescendingOrder)
 				{
 					string text = Path.Combine(item2, "Languages");
-					if (new DirectoryInfo(text).Exists)
+					if (!new DirectoryInfo(text).Exists)
 					{
-						foreach (VirtualDirectory directory in AbstractFilesystem.GetDirectories(text, "*", SearchOption.TopDirectoryOnly))
+						continue;
+					}
+					foreach (VirtualDirectory directory in AbstractFilesystem.GetDirectories(text, "*", SearchOption.TopDirectoryOnly))
+					{
+						if (!directory.FullPath.StartsWith(text))
 						{
-							if (!directory.FullPath.StartsWith(text))
-							{
-								Log.Error("Failed to get a relative path for a file: " + directory.FullPath + ", located in " + text);
-							}
-							else
-							{
-								string item = directory.FullPath.Substring(text.Length);
-								if (!hashSet.Contains(item))
-								{
-									InitLanguageMetadataFrom(directory);
-									hashSet.Add(item);
-								}
-							}
+							Log.Error("Failed to get a relative path for a file: " + directory.FullPath + ", located in " + text);
+							continue;
+						}
+						string item = directory.FullPath.Substring(text.Length);
+						if (!hashSet.Contains(item))
+						{
+							InitLanguageMetadataFrom(directory);
+							hashSet.Add(item);
 						}
 					}
 				}
@@ -115,7 +114,7 @@ namespace Verse
 
 		private static LoadedLanguage InitLanguageMetadataFrom(VirtualDirectory langDir)
 		{
-			LoadedLanguage loadedLanguage = languages.FirstOrDefault((LoadedLanguage lib) => lib.folderName == langDir.Name);
+			LoadedLanguage loadedLanguage = languages.FirstOrDefault((LoadedLanguage lib) => lib.folderName == langDir.Name || lib.LegacyFolderName == langDir.Name);
 			if (loadedLanguage == null)
 			{
 				loadedLanguage = new LoadedLanguage(langDir.Name);

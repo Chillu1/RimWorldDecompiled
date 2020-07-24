@@ -9,6 +9,8 @@ namespace RimWorld
 
 		public bool drawAssignmentOverlay = true;
 
+		public bool drawUnownedAssignmentOverlay = true;
+
 		public string singleton;
 
 		public CompProperties_AssignableToPawn()

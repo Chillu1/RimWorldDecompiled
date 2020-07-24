@@ -233,6 +233,26 @@ namespace Verse
 			}
 		}
 
+		public static bool SimulateNotOwningRoyalty
+		{
+			get
+			{
+				if (data == null)
+				{
+					return true;
+				}
+				return data.simulateNotOwningRoyalty;
+			}
+			set
+			{
+				if (data.simulateNotOwningRoyalty != value)
+				{
+					data.simulateNotOwningRoyalty = value;
+					Apply();
+				}
+			}
+		}
+
 		public static List<string> PreferredNames
 		{
 			get

@@ -335,15 +335,17 @@ namespace RimWorld.Planet
 
 		public override IEnumerable<Gizmo> GetCaravanGizmos(Caravan caravan)
 		{
-			if (CanTradeNow && CaravanVisitUtility.SettlementVisitedNow(caravan) == this)
+			Caravan caravan2 = caravan;
+			Settlement settlement = this;
+			if (CanTradeNow && CaravanVisitUtility.SettlementVisitedNow(caravan2) == this)
 			{
-				yield return CaravanVisitUtility.TradeCommand(caravan, base.Faction, TraderKind);
+				yield return CaravanVisitUtility.TradeCommand(caravan2, base.Faction, TraderKind);
 			}
-			if ((bool)CaravanArrivalAction_OfferGifts.CanOfferGiftsTo(caravan, this))
+			if ((bool)CaravanArrivalAction_OfferGifts.CanOfferGiftsTo(caravan2, this))
 			{
-				yield return FactionGiftUtility.OfferGiftsCommand(caravan, this);
+				yield return FactionGiftUtility.OfferGiftsCommand(caravan2, this);
 			}
-			foreach (Gizmo caravanGizmo in base.GetCaravanGizmos(caravan))
+			foreach (Gizmo caravanGizmo in base.GetCaravanGizmos(caravan2))
 			{
 				yield return caravanGizmo;
 			}
@@ -355,7 +357,7 @@ namespace RimWorld.Planet
 				command_Action.defaultDesc = "CommandAttackSettlementDesc".Translate();
 				command_Action.action = delegate
 				{
-					SettlementUtility.Attack(caravan, this);
+					SettlementUtility.Attack(caravan2, settlement);
 				};
 				yield return command_Action;
 			}

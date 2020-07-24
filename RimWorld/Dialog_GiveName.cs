@@ -109,7 +109,7 @@ namespace RimWorld
 				float num2 = rect.width / 2f - 90f;
 				rect2 = new Rect(rect.width / 2f - num2 / 2f, rect.height - 35f, num2, 35f);
 			}
-			if (!(Widgets.ButtonText(rect2, "OK".Translate()) | flag))
+			if (!(Widgets.ButtonText(rect2, "OK".Translate()) || flag))
 			{
 				return;
 			}

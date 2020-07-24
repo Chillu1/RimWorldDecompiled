@@ -79,29 +79,30 @@ namespace Verse.AI.Group
 					lords[i].DebugOnGUI();
 				}
 			}
-			if (DebugViewSettings.drawDuties)
+			if (!DebugViewSettings.drawDuties)
 			{
-				Text.Anchor = TextAnchor.MiddleCenter;
-				Text.Font = GameFont.Tiny;
-				foreach (Pawn allPawn in map.mapPawns.AllPawns)
-				{
-					if (allPawn.Spawned)
-					{
-						string text = "";
-						if (!allPawn.Dead && allPawn.mindState.duty != null)
-						{
-							text = allPawn.mindState.duty.ToString();
-						}
-						if (allPawn.InMentalState)
-						{
-							text = text + "\nMentalState=" + allPawn.MentalState.ToString();
-						}
-						Vector2 vector = allPawn.DrawPos.MapToUIPosition();
-						Widgets.Label(new Rect(vector.x - 100f, vector.y - 100f, 200f, 200f), text);
-					}
-				}
-				Text.Anchor = TextAnchor.UpperLeft;
+				return;
 			}
+			Text.Anchor = TextAnchor.MiddleCenter;
+			Text.Font = GameFont.Tiny;
+			foreach (Pawn allPawn in map.mapPawns.AllPawns)
+			{
+				if (allPawn.Spawned)
+				{
+					string text = "";
+					if (!allPawn.Dead && allPawn.mindState.duty != null)
+					{
+						text = allPawn.mindState.duty.ToString();
+					}
+					if (allPawn.InMentalState)
+					{
+						text = text + "\nMentalState=" + allPawn.MentalState.ToString();
+					}
+					Vector2 vector = allPawn.DrawPos.MapToUIPosition();
+					Widgets.Label(new Rect(vector.x - 100f, vector.y - 100f, 200f, 200f), text);
+				}
+			}
+			Text.Anchor = TextAnchor.UpperLeft;
 		}
 
 		public void AddLord(Lord newLord)
@@ -180,7 +181,7 @@ namespace Verse.AI.Group
 				stringBuilder.AppendLine("Members (count: " + lord.ownedPawns.Count + "):");
 				for (int j = 0; j < lord.ownedPawns.Count; j++)
 				{
-					stringBuilder.AppendLine("  " + lord.ownedPawns[j].LabelShort + " (" + lord.ownedPawns[j].Faction + ")");
+					stringBuilder.AppendLine(string.Concat("  ", lord.ownedPawns[j].LabelShort, " (", lord.ownedPawns[j].Faction, ")"));
 				}
 			}
 			Log.Message(stringBuilder.ToString());

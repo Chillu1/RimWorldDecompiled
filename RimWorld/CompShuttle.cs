@@ -221,7 +221,14 @@ namespace RimWorld
 
 		public override void PostSpawnSetup(bool respawningAfterLoad)
 		{
-			base.PostSpawnSetup(respawningAfterLoad);
+			if (!ModLister.RoyaltyInstalled)
+			{
+				Log.ErrorOnce("Shuttle is a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 8811221);
+			}
+			else
+			{
+				base.PostSpawnSetup(respawningAfterLoad);
+			}
 		}
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
@@ -273,26 +280,27 @@ namespace RimWorld
 
 		public override IEnumerable<FloatMenuOption> CompFloatMenuOptions(Pawn selPawn)
 		{
-			if (selPawn.CanReach(parent, PathEndMode.Touch, Danger.Deadly))
+			CompShuttle compShuttle = this;
+			Pawn selPawn2 = selPawn;
+			if (!selPawn2.CanReach(parent, PathEndMode.Touch, Danger.Deadly))
 			{
-				string text = "EnterShuttle".Translate();
-				if (!IsAllowed(selPawn))
-				{
-					yield return new FloatMenuOption(text + " (" + "NotAllowed".Translate() + ")", null);
-				}
-				else
-				{
-					yield return new FloatMenuOption(text, delegate
-					{
-						if (!LoadingInProgressOrReadyToLaunch)
-						{
-							TransporterUtility.InitiateLoading(Gen.YieldSingle(Transporter));
-						}
-						Job job = JobMaker.MakeJob(JobDefOf.EnterTransporter, parent);
-						selPawn.jobs.TryTakeOrderedJob(job);
-					});
-				}
+				yield break;
 			}
+			string text = "EnterShuttle".Translate();
+			if (!IsAllowed(selPawn2))
+			{
+				yield return new FloatMenuOption(text + " (" + "NotAllowed".Translate() + ")", null);
+				yield break;
+			}
+			yield return new FloatMenuOption(text, delegate
+			{
+				if (!compShuttle.LoadingInProgressOrReadyToLaunch)
+				{
+					TransporterUtility.InitiateLoading(Gen.YieldSingle(compShuttle.Transporter));
+				}
+				Job job = JobMaker.MakeJob(JobDefOf.EnterTransporter, compShuttle.parent);
+				selPawn2.jobs.TryTakeOrderedJob(job);
+			});
 		}
 
 		public override void CompTick()
@@ -306,9 +314,13 @@ namespace RimWorld
 			{
 				if (Transporter.innerContainer.Any())
 				{
+					Thing thing = Transporter.innerContainer[0];
 					IntVec3 dropLoc = parent.Position + IntVec3.South;
 					Pawn pawn;
-					Transporter.innerContainer.TryDrop(Transporter.innerContainer[0], dropLoc, parent.Map, ThingPlaceMode.Near, out Thing _, null, (IntVec3 c) => ((pawn = (Transporter.innerContainer[0] as Pawn)) == null || !pawn.Downed || c.GetFirstPawn(parent.Map) == null) ? true : false);
+					if (Transporter.innerContainer.TryDrop_NewTmp(thing, dropLoc, parent.Map, ThingPlaceMode.Near, out Thing _, null, (IntVec3 c) => ((pawn = (Transporter.innerContainer[0] as Pawn)) == null || !pawn.Downed || c.GetFirstPawn(parent.Map) == null) ? true : false, playDropSound: false))
+					{
+						Transporter.Notify_ThingRemoved(thing);
+					}
 				}
 				else
 				{
@@ -360,87 +372,94 @@ namespace RimWorld
 
 		public void Send()
 		{
-			if (sending)
+			if (!ModLister.RoyaltyInstalled)
 			{
-				return;
-			}
-			if (!parent.Spawned)
-			{
-				Log.Error("Tried to send " + parent + ", but it's unspawned.");
-				return;
-			}
-			List<CompTransporter> transportersInGroup = TransportersInGroup;
-			if (transportersInGroup == null)
-			{
-				Log.Error("Tried to send " + parent + ", but it's not in any group.");
+				Log.ErrorOnce("Shuttle is a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 8811221);
 			}
 			else
 			{
-				if (!LoadingInProgressOrReadyToLaunch)
+				if (sending)
 				{
 					return;
 				}
-				if (!AllRequiredThingsLoaded)
+				if (!parent.Spawned)
 				{
-					if (dropEverythingIfUnsatisfied)
+					Log.Error(string.Concat("Tried to send ", parent, ", but it's unspawned."));
+					return;
+				}
+				List<CompTransporter> transportersInGroup = TransportersInGroup;
+				if (transportersInGroup == null)
+				{
+					Log.Error(string.Concat("Tried to send ", parent, ", but it's not in any group."));
+				}
+				else
+				{
+					if (!LoadingInProgressOrReadyToLaunch)
 					{
-						Transporter.CancelLoad();
+						return;
 					}
-					else if (dropNonRequiredIfUnsatisfied)
+					if (!AllRequiredThingsLoaded)
 					{
-						for (int i = 0; i < transportersInGroup.Count; i++)
+						if (dropEverythingIfUnsatisfied)
 						{
-							for (int num = transportersInGroup[i].innerContainer.Count - 1; num >= 0; num--)
+							Transporter.CancelLoad();
+						}
+						else if (dropNonRequiredIfUnsatisfied)
+						{
+							for (int i = 0; i < transportersInGroup.Count; i++)
 							{
-								Thing thing = transportersInGroup[i].innerContainer[num];
-								Pawn pawn;
-								if (!IsRequired(thing) && (requiredColonistCount <= 0 || (pawn = (thing as Pawn)) == null || !pawn.IsColonist))
+								for (int num = transportersInGroup[i].innerContainer.Count - 1; num >= 0; num--)
 								{
-									transportersInGroup[i].innerContainer.TryDrop(thing, ThingPlaceMode.Near, out Thing _);
+									Thing thing = transportersInGroup[i].innerContainer[num];
+									Pawn pawn;
+									if (!IsRequired(thing) && (requiredColonistCount <= 0 || (pawn = (thing as Pawn)) == null || !pawn.IsColonist))
+									{
+										transportersInGroup[i].innerContainer.TryDrop(thing, ThingPlaceMode.Near, out Thing _);
+									}
 								}
 							}
 						}
 					}
-				}
-				sending = true;
-				bool allRequiredThingsLoaded = AllRequiredThingsLoaded;
-				Map map = parent.Map;
-				Transporter.TryRemoveLord(map);
-				string signalPart = allRequiredThingsLoaded ? "SentSatisfied" : "SentUnsatisfied";
-				for (int j = 0; j < transportersInGroup.Count; j++)
-				{
-					QuestUtility.SendQuestTargetSignals(transportersInGroup[j].parent.questTags, signalPart, transportersInGroup[j].parent.Named("SUBJECT"), transportersInGroup[j].innerContainer.ToList().Named("SENT"));
-				}
-				List<Pawn> list = new List<Pawn>();
-				for (int k = 0; k < transportersInGroup.Count; k++)
-				{
-					CompTransporter compTransporter = transportersInGroup[k];
-					for (int num2 = transportersInGroup[k].innerContainer.Count - 1; num2 >= 0; num2--)
+					sending = true;
+					bool allRequiredThingsLoaded = AllRequiredThingsLoaded;
+					Map map = parent.Map;
+					Transporter.TryRemoveLord(map);
+					string signalPart = allRequiredThingsLoaded ? "SentSatisfied" : "SentUnsatisfied";
+					for (int j = 0; j < transportersInGroup.Count; j++)
 					{
-						Pawn pawn2 = transportersInGroup[k].innerContainer[num2] as Pawn;
-						if (pawn2 != null)
+						QuestUtility.SendQuestTargetSignals(transportersInGroup[j].parent.questTags, signalPart, transportersInGroup[j].parent.Named("SUBJECT"), transportersInGroup[j].innerContainer.ToList().Named("SENT"));
+					}
+					List<Pawn> list = new List<Pawn>();
+					for (int k = 0; k < transportersInGroup.Count; k++)
+					{
+						CompTransporter compTransporter = transportersInGroup[k];
+						for (int num2 = transportersInGroup[k].innerContainer.Count - 1; num2 >= 0; num2--)
 						{
-							if (pawn2.IsColonist && !requiredPawns.Contains(pawn2))
+							Pawn pawn2 = transportersInGroup[k].innerContainer[num2] as Pawn;
+							if (pawn2 != null)
 							{
-								list.Add(pawn2);
+								if (pawn2.IsColonist && !requiredPawns.Contains(pawn2))
+								{
+									list.Add(pawn2);
+								}
+								pawn2.ExitMap(allowedToJoinOrCreateCaravan: false, Rot4.Invalid);
 							}
-							pawn2.ExitMap(allowedToJoinOrCreateCaravan: false, Rot4.Invalid);
+						}
+						compTransporter.innerContainer.ClearAndDestroyContentsOrPassToWorld();
+						Thing newThing = ThingMaker.MakeThing(ThingDefOf.ShuttleLeaving);
+						compTransporter.CleanUpLoadingVars(map);
+						compTransporter.parent.Destroy(DestroyMode.QuestLogic);
+						GenSpawn.Spawn(newThing, compTransporter.parent.Position, map);
+					}
+					if (list.Count != 0)
+					{
+						for (int l = 0; l < transportersInGroup.Count; l++)
+						{
+							QuestUtility.SendQuestTargetSignals(transportersInGroup[l].parent.questTags, "SentWithExtraColonists", transportersInGroup[l].parent.Named("SUBJECT"), list.Named("SENTCOLONISTS"));
 						}
 					}
-					compTransporter.innerContainer.ClearAndDestroyContentsOrPassToWorld();
-					Thing newThing = ThingMaker.MakeThing(ThingDefOf.ShuttleLeaving);
-					compTransporter.CleanUpLoadingVars(map);
-					compTransporter.parent.Destroy(DestroyMode.QuestLogic);
-					GenSpawn.Spawn(newThing, compTransporter.parent.Position, map);
+					sending = false;
 				}
-				if (list.Count != 0)
-				{
-					for (int l = 0; l < transportersInGroup.Count; l++)
-					{
-						QuestUtility.SendQuestTargetSignals(transportersInGroup[l].parent.questTags, "SentWithExtraColonists", transportersInGroup[l].parent.Named("SUBJECT"), list.Named("SENTCOLONISTS"));
-					}
-				}
-				sending = false;
 			}
 		}
 

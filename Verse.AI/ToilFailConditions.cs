@@ -104,7 +104,7 @@ namespace Verse.AI
 			f.AddEndCondition(delegate
 			{
 				Pawn pawn = f.GetActor().jobs.curJob.GetTarget(ind).Thing as Pawn;
-				return (pawn == null || !pawn.InMentalState) ? JobCondition.Ongoing : JobCondition.Incompletable;
+				return (pawn == null || !pawn.InMentalState || pawn.health.hediffSet.HasHediff(HediffDefOf.Scaria)) ? JobCondition.Ongoing : JobCondition.Incompletable;
 			});
 			return f;
 		}
@@ -114,7 +114,7 @@ namespace Verse.AI
 			f.AddEndCondition(delegate
 			{
 				Pawn pawn = f.GetActor().jobs.curJob.GetTarget(ind).Thing as Pawn;
-				return (pawn == null || !pawn.InAggroMentalState) ? JobCondition.Ongoing : JobCondition.Incompletable;
+				return (pawn == null || !pawn.InAggroMentalState || pawn.health.hediffSet.HasHediff(HediffDefOf.Scaria)) ? JobCondition.Ongoing : JobCondition.Incompletable;
 			});
 			return f;
 		}
@@ -124,7 +124,7 @@ namespace Verse.AI
 			f.AddEndCondition(delegate
 			{
 				Pawn pawn = f.GetActor().jobs.curJob.GetTarget(ind).Thing as Pawn;
-				return (pawn == null || !pawn.InAggroMentalState || !pawn.HostileTo(f.GetActor())) ? JobCondition.Ongoing : JobCondition.Incompletable;
+				return (pawn == null || !pawn.InAggroMentalState || pawn.health.hediffSet.HasHediff(HediffDefOf.Scaria) || !pawn.HostileTo(f.GetActor())) ? JobCondition.Ongoing : JobCondition.Incompletable;
 			});
 			return f;
 		}

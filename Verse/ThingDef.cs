@@ -107,6 +107,8 @@ namespace Verse
 
 		public FloatRange displayNumbersBetweenSameDefDistRange = FloatRange.Zero;
 
+		public int minRewardCount = 1;
+
 		public GraphicData graphicData;
 
 		public DrawerType drawerType = DrawerType.RealtimeOnly;
@@ -463,33 +465,8 @@ namespace Verse
 
 		public bool CountAsResource => resourceReadoutPriority != ResourceCountPriority.Uncounted;
 
-		public bool BlockPlanting
-		{
-			get
-			{
-				if (building != null && building.SupportsPlants)
-				{
-					return false;
-				}
-				if (blockPlants)
-				{
-					return true;
-				}
-				if (category == ThingCategory.Plant)
-				{
-					return true;
-				}
-				if ((int)Fillage > 0)
-				{
-					return true;
-				}
-				if (this.IsEdifice())
-				{
-					return true;
-				}
-				return false;
-			}
-		}
+		[Obsolete("Will be removed in a future version.")]
+		public bool BlockPlanting => BlocksPlanting();
 
 		public List<VerbProperties> Verbs
 		{
@@ -943,6 +920,31 @@ namespace Verse
 			}
 		}
 
+		public bool BlocksPlanting(bool canWipePlants = false)
+		{
+			if (building != null && building.SupportsPlants)
+			{
+				return false;
+			}
+			if (blockPlants)
+			{
+				return true;
+			}
+			if (!canWipePlants && category == ThingCategory.Plant)
+			{
+				return true;
+			}
+			if ((int)Fillage > 0)
+			{
+				return true;
+			}
+			if (this.IsEdifice())
+			{
+				return true;
+			}
+			return false;
+		}
+
 		public bool EverStorable(bool willMinifyIfPossible)
 		{
 			if (typeof(MinifiedThing).IsAssignableFrom(thingClass))
@@ -1071,12 +1073,13 @@ namespace Verse
 			{
 				plant.PostLoadSpecial(this);
 			}
-			if (comps != null)
+			if (comps == null)
 			{
-				foreach (CompProperties comp in comps)
-				{
-					comp.PostLoadSpecial(this);
-				}
+				return;
+			}
+			foreach (CompProperties comp in comps)
+			{
+				comp.PostLoadSpecial(this);
 			}
 		}
 
@@ -1170,7 +1173,7 @@ namespace Verse
 					}
 					catch (Exception ex)
 					{
-						Log.Error("Could not instantiate inspector tab of type " + inspectorTabs[i] + ": " + ex);
+						Log.Error(string.Concat("Could not instantiate inspector tab of type ", inspectorTabs[i], ": ", ex));
 					}
 				}
 			}
@@ -1213,13 +1216,13 @@ namespace Verse
 				{
 					if (statBases.Where((StatModifier st) => st.stat == statBase.stat).Count() > 1)
 					{
-						yield return "defines the stat base " + statBase.stat + " more than once.";
+						yield return string.Concat("defines the stat base ", statBase.stat, " more than once.");
 					}
 				}
 			}
 			if (!BeautyUtility.BeautyRelevant(category) && this.StatBaseDefined(StatDefOf.Beauty))
 			{
-				yield return "Beauty stat base is defined, but Things of category " + category + " cannot have beauty.";
+				yield return string.Concat("Beauty stat base is defined, but Things of category ", category, " cannot have beauty.");
 			}
 			if (char.IsNumber(defName[defName.Length - 1]))
 			{
@@ -1243,7 +1246,7 @@ namespace Verse
 				{
 					if (cost.count == 0)
 					{
-						yield return "cost in " + cost.thingDef + " is zero.";
+						yield return string.Concat("cost in ", cost.thingDef, " is zero.");
 					}
 				}
 			}
@@ -1252,7 +1255,7 @@ namespace Verse
 				ThingCategoryDef thingCategoryDef = thingCategories.FirstOrDefault((ThingCategoryDef cat) => thingCategories.Count((ThingCategoryDef c) => c == cat) > 1);
 				if (thingCategoryDef != null)
 				{
-					yield return "has duplicate thingCategory " + thingCategoryDef + ".";
+					yield return string.Concat("has duplicate thingCategory ", thingCategoryDef, ".");
 				}
 			}
 			if (Fillage == FillCategory.Full && category != ThingCategory.Building)
@@ -1415,12 +1418,13 @@ namespace Verse
 			}
 			if (race != null && tools != null)
 			{
+				ThingDef thingDef = this;
 				int i;
 				for (i = 0; i < tools.Count; i++)
 				{
-					if (tools[i].linkedBodyPartsGroup != null && !race.body.AllParts.Any((BodyPartRecord part) => part.groups.Contains(tools[i].linkedBodyPartsGroup)))
+					if (tools[i].linkedBodyPartsGroup != null && !race.body.AllParts.Any((BodyPartRecord part) => part.groups.Contains(thingDef.tools[i].linkedBodyPartsGroup)))
 					{
-						yield return "has tool with linkedBodyPartsGroup " + tools[i].linkedBodyPartsGroup + " but body " + race.body + " has no parts with that group.";
+						yield return string.Concat("has tool with linkedBodyPartsGroup ", tools[i].linkedBodyPartsGroup, " but body ", race.body, " has no parts with that group.");
 					}
 				}
 			}
@@ -1438,19 +1442,20 @@ namespace Verse
 					yield return item10;
 				}
 			}
-			if (tools != null)
+			if (tools == null)
 			{
-				Tool tool = tools.SelectMany((Tool lhs) => tools.Where((Tool rhs) => lhs != rhs && lhs.id == rhs.id)).FirstOrDefault();
-				if (tool != null)
+				yield break;
+			}
+			Tool tool = tools.SelectMany((Tool lhs) => tools.Where((Tool rhs) => lhs != rhs && lhs.id == rhs.id)).FirstOrDefault();
+			if (tool != null)
+			{
+				yield return $"duplicate thingdef tool id {tool.id}";
+			}
+			foreach (Tool tool2 in tools)
+			{
+				foreach (string item11 in tool2.ConfigErrors())
 				{
-					yield return $"duplicate thingdef tool id {tool.id}";
-				}
-				foreach (Tool tool2 in tools)
-				{
-					foreach (string item11 in tool2.ConfigErrors())
-					{
-						yield return item11;
-					}
+					yield return item11;
 				}
 			}
 		}
@@ -1507,7 +1512,7 @@ namespace Verse
 			{
 				yield return new StatDrawEntry(StatCategoryDefOf.Basics, "SkillRequiredToBuild".Translate(SkillDefOf.Artistic.LabelCap), artisticSkillPrerequisite.ToString(), "SkillRequiredToBuildExplanation".Translate(SkillDefOf.Artistic.LabelCap), 1100);
 			}
-			string[] array = (from u in DefDatabase<RecipeDef>.AllDefsListForReading.Where((RecipeDef r) => r.recipeUsers != null && r.products.Count == 1 && r.products.Any((ThingDefCountClass p) => p.thingDef == this)).SelectMany((RecipeDef r) => r.recipeUsers)
+			string[] array = (from u in DefDatabase<RecipeDef>.AllDefsListForReading.Where((RecipeDef r) => r.recipeUsers != null && r.products.Count == 1 && r.products.Any((ThingDefCountClass p) => p.thingDef == this) && !r.IsSurgery).SelectMany((RecipeDef r) => r.recipeUsers)
 				select u.label).ToArray();
 			if (array.Any())
 			{
@@ -1753,6 +1758,14 @@ namespace Verse
 				{
 					yield return new StatDrawEntry(StatCategoryDefOf.EquippedStatOffsets, equippedStatOffsets[k].stat, equippedStatOffsets[k].value, StatRequest.ForEmpty(), ToStringNumberSense.Offset, null, forceUnfinalizedMode: true);
 				}
+			}
+			if (!IsDrug)
+			{
+				yield break;
+			}
+			foreach (StatDrawEntry item10 in DrugStatsUtility.SpecialDisplayStats(this))
+			{
+				yield return item10;
 			}
 		}
 	}

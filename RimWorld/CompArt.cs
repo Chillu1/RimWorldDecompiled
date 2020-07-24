@@ -156,7 +156,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			return "" + Title + "\n\n" + GenerateImageDescription() + "\n\n" + ("Author".Translate() + ": " + AuthorName);
+			return string.Concat(string.Concat("" + Title, "\n\n") + GenerateImageDescription(), "\n\n") + ("Author".Translate() + ": " + AuthorName);
 		}
 
 		public override bool AllowStackWith(Thing other)

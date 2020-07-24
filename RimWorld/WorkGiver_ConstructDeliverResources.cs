@@ -130,19 +130,20 @@ namespace RimWorld
 			resourcesAvailable.Clear();
 			resourcesAvailable.Add(firstFoundResource);
 			resTotalAvailable += firstFoundResource.stackCount;
-			if (resTotalAvailable < num)
+			if (resTotalAvailable >= num)
 			{
-				foreach (Thing item in GenRadial.RadialDistinctThingsAround(firstFoundResource.Position, firstFoundResource.Map, 5f, useCenter: false))
+				return;
+			}
+			foreach (Thing item in GenRadial.RadialDistinctThingsAround(firstFoundResource.Position, firstFoundResource.Map, 5f, useCenter: false))
+			{
+				if (resTotalAvailable >= num)
 				{
-					if (resTotalAvailable >= num)
-					{
-						break;
-					}
-					if (item.def == firstFoundResource.def && GenAI.CanUseItemForWork(pawn, item))
-					{
-						resourcesAvailable.Add(item);
-						resTotalAvailable += item.stackCount;
-					}
+					break;
+				}
+				if (item.def == firstFoundResource.def && GenAI.CanUseItemForWork(pawn, item))
+				{
+					resourcesAvailable.Add(item);
+					resTotalAvailable += item.stackCount;
 				}
 			}
 		}
@@ -158,36 +159,38 @@ namespace RimWorld
 				{
 					break;
 				}
-				if (IsNewValidNearbyNeeder(item, hashSet, c, pawn))
+				if (!IsNewValidNearbyNeeder(item, hashSet, c, pawn))
 				{
-					Blueprint blueprint = item as Blueprint;
-					if (blueprint == null || !ShouldRemoveExistingFloorFirst(pawn, blueprint))
+					continue;
+				}
+				Blueprint blueprint = item as Blueprint;
+				if (blueprint == null || !ShouldRemoveExistingFloorFirst(pawn, blueprint))
+				{
+					int num = GenConstruct.AmountNeededByOf((IConstructible)item, need.thingDef);
+					if (num > 0)
 					{
-						int num = GenConstruct.AmountNeededByOf((IConstructible)item, need.thingDef);
-						if (num > 0)
-						{
-							hashSet.Add(item);
-							neededTotal += num;
-						}
+						hashSet.Add(item);
+						neededTotal += num;
 					}
 				}
 			}
 			Blueprint blueprint2 = c as Blueprint;
-			if (((blueprint2 != null && blueprint2.def.entityDefToBuild is TerrainDef) & canRemoveExistingFloorUnderNearbyNeeders) && neededTotal < resTotalAvailable)
+			if (blueprint2 != null && blueprint2.def.entityDefToBuild is TerrainDef && canRemoveExistingFloorUnderNearbyNeeders && neededTotal < resTotalAvailable)
 			{
 				foreach (Thing item2 in GenRadial.RadialDistinctThingsAround(thing.Position, thing.Map, 3f, useCenter: false))
 				{
-					if (IsNewValidNearbyNeeder(item2, hashSet, c, pawn))
+					if (!IsNewValidNearbyNeeder(item2, hashSet, c, pawn))
 					{
-						Blueprint blueprint3 = item2 as Blueprint;
-						if (blueprint3 != null)
+						continue;
+					}
+					Blueprint blueprint3 = item2 as Blueprint;
+					if (blueprint3 != null)
+					{
+						Job job = RemoveExistingFloorJob(pawn, blueprint3);
+						if (job != null)
 						{
-							Job job = RemoveExistingFloorJob(pawn, blueprint3);
-							if (job != null)
-							{
-								jobToMakeNeederAvailable = job;
-								return hashSet;
-							}
+							jobToMakeNeederAvailable = job;
+							return hashSet;
 						}
 					}
 				}

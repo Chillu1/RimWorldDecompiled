@@ -131,23 +131,24 @@ namespace RimWorld.Planet
 			{
 				yield return gizmo;
 			}
-			if (HasMap)
+			if (!HasMap)
 			{
-				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "CommandShowMap".Translate();
-				command_Action.defaultDesc = "CommandShowMapDesc".Translate();
-				command_Action.icon = ShowMapCommand;
-				command_Action.hotKey = KeyBindingDefOf.Misc1;
-				command_Action.action = delegate
-				{
-					Current.Game.CurrentMap = Map;
-					if (!CameraJumper.TryHideWorld())
-					{
-						SoundDefOf.TabClose.PlayOneShotOnCamera();
-					}
-				};
-				yield return command_Action;
+				yield break;
 			}
+			Command_Action command_Action = new Command_Action();
+			command_Action.defaultLabel = "CommandShowMap".Translate();
+			command_Action.defaultDesc = "CommandShowMapDesc".Translate();
+			command_Action.icon = ShowMapCommand;
+			command_Action.hotKey = KeyBindingDefOf.Misc1;
+			command_Action.action = delegate
+			{
+				Current.Game.CurrentMap = Map;
+				if (!CameraJumper.TryHideWorld())
+				{
+					SoundDefOf.TabClose.PlayOneShotOnCamera();
+				}
+			};
+			yield return command_Action;
 		}
 
 		public override IEnumerable<IncidentTargetTagDef> IncidentTargetTags()
@@ -156,12 +157,13 @@ namespace RimWorld.Planet
 			{
 				yield return item;
 			}
-			if (hibernatableIncidentTargets != null && hibernatableIncidentTargets.Count > 0)
+			if (hibernatableIncidentTargets == null || hibernatableIncidentTargets.Count <= 0)
 			{
-				foreach (IncidentTargetTagDef hibernatableIncidentTarget in hibernatableIncidentTargets)
-				{
-					yield return hibernatableIncidentTarget;
-				}
+				yield break;
+			}
+			foreach (IncidentTargetTagDef hibernatableIncidentTarget in hibernatableIncidentTargets)
+			{
+				yield return hibernatableIncidentTarget;
 			}
 		}
 
@@ -171,41 +173,45 @@ namespace RimWorld.Planet
 			{
 				yield return floatMenuOption;
 			}
-			if (UseGenericEnterMapFloatMenuOption)
+			if (!UseGenericEnterMapFloatMenuOption)
 			{
-				foreach (FloatMenuOption floatMenuOption2 in CaravanArrivalAction_Enter.GetFloatMenuOptions(caravan, this))
-				{
-					yield return floatMenuOption2;
-				}
+				yield break;
+			}
+			foreach (FloatMenuOption floatMenuOption2 in CaravanArrivalAction_Enter.GetFloatMenuOptions(caravan, this))
+			{
+				yield return floatMenuOption2;
 			}
 		}
 
 		public override IEnumerable<FloatMenuOption> GetTransportPodsFloatMenuOptions(IEnumerable<IThingHolder> pods, CompLaunchable representative)
 		{
-			foreach (FloatMenuOption transportPodsFloatMenuOption in base.GetTransportPodsFloatMenuOptions(pods, representative))
+			CompLaunchable representative2 = representative;
+			MapParent mapParent = this;
+			foreach (FloatMenuOption transportPodsFloatMenuOption in base.GetTransportPodsFloatMenuOptions(pods, representative2))
 			{
 				yield return transportPodsFloatMenuOption;
 			}
-			if (TransportPodsArrivalAction_LandInSpecificCell.CanLandInSpecificCell(pods, this))
+			if (!TransportPodsArrivalAction_LandInSpecificCell.CanLandInSpecificCell(pods, this))
 			{
-				yield return new FloatMenuOption("LandInExistingMap".Translate(Label), delegate
-				{
-					Map myMap = representative.parent.Map;
-					Map map = Map;
-					Current.Game.CurrentMap = map;
-					CameraJumper.TryHideWorld();
-					Find.Targeter.BeginTargeting(TargetingParameters.ForDropPodsDestination(), delegate(LocalTargetInfo x)
-					{
-						representative.TryLaunch(base.Tile, new TransportPodsArrivalAction_LandInSpecificCell(this, x.Cell));
-					}, null, delegate
-					{
-						if (Find.Maps.Contains(myMap))
-						{
-							Current.Game.CurrentMap = myMap;
-						}
-					}, CompLaunchable.TargeterMouseAttachment);
-				});
+				yield break;
 			}
+			yield return new FloatMenuOption("LandInExistingMap".Translate(Label), delegate
+			{
+				Map myMap = representative2.parent.Map;
+				Map map = mapParent.Map;
+				Current.Game.CurrentMap = map;
+				CameraJumper.TryHideWorld();
+				Find.Targeter.BeginTargeting(TargetingParameters.ForDropPodsDestination(), delegate(LocalTargetInfo x)
+				{
+					representative2.TryLaunch(mapParent.Tile, new TransportPodsArrivalAction_LandInSpecificCell(mapParent, x.Cell));
+				}, null, delegate
+				{
+					if (Find.Maps.Contains(myMap))
+					{
+						Current.Game.CurrentMap = myMap;
+					}
+				}, CompLaunchable.TargeterMouseAttachment);
+			});
 		}
 
 		public void CheckRemoveMapNow()

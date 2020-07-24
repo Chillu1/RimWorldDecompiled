@@ -60,7 +60,7 @@ namespace Verse
 		{
 			if (repeats > 1)
 			{
-				return "(" + repeats.ToString() + ") " + text;
+				return "(" + repeats + ") " + text;
 			}
 			return text;
 		}

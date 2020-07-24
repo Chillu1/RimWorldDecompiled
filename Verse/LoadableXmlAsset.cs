@@ -16,7 +16,7 @@ namespace Verse
 
 		public ModContentPack mod;
 
-		public string FullFilePath => fullFolderPath + Path.DirectorySeparatorChar.ToString() + name;
+		public string FullFilePath => fullFolderPath + Path.DirectorySeparatorChar + name;
 
 		public LoadableXmlAsset(string name, string fullFolderPath, string contents)
 		{

@@ -34,7 +34,7 @@ namespace Verse.AI
 		{
 			if (target == null)
 			{
-				Log.Warning(claimant + " tried to reserve null attack target.");
+				Log.Warning(string.Concat(claimant, " tried to reserve null attack target."));
 			}
 			else if (!IsReservedBy(claimant, target))
 			{
@@ -50,7 +50,7 @@ namespace Verse.AI
 		{
 			if (target == null)
 			{
-				Log.Warning(claimant + " tried to release reservation on null attack target.");
+				Log.Warning(string.Concat(claimant, " tried to release reservation on null attack target."));
 				return;
 			}
 			for (int i = 0; i < reservations.Count; i++)
@@ -62,7 +62,7 @@ namespace Verse.AI
 					return;
 				}
 			}
-			Log.Warning(claimant + " with job " + job + " tried to release reservation on target " + target + ", but it's not reserved by him.");
+			Log.Warning(string.Concat(claimant, " with job ", job, " tried to release reservation on target ", target, ", but it's not reserved by him."));
 		}
 
 		public bool CanReserve(Pawn claimant, IAttackTarget target)

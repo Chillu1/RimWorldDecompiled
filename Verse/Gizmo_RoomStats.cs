@@ -122,7 +122,7 @@ namespace Verse
 				return null;
 			}
 			return room;
-			bool IsValid(Room r)
+			static bool IsValid(Room r)
 			{
 				if (r != null && !r.Fogged)
 				{

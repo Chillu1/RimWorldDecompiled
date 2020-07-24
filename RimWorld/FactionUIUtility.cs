@@ -108,7 +108,17 @@ namespace RimWorld
 						}
 						if (faction.def.goodwillDailyGain > 0f || faction.def.goodwillDailyFall > 0f)
 						{
-							str2 += "\n\n" + "CurrentGoodwillTip_NaturalGoodwill".Translate(faction.def.naturalColonyGoodwill.min.ToString("F0"), faction.def.naturalColonyGoodwill.max.ToString("F0"), faction.def.goodwillDailyGain.ToString("0.#"), faction.def.goodwillDailyFall.ToString("0.#"));
+							float num3 = faction.def.goodwillDailyGain * 60f;
+							float num4 = faction.def.goodwillDailyFall * 60f;
+							str2 += "\n\n" + "CurrentGoodwillTip_NaturalGoodwill".Translate(faction.def.naturalColonyGoodwill.min.ToString("F0"), faction.def.naturalColonyGoodwill.max.ToString("F0"));
+							if (faction.def.naturalColonyGoodwill.min > -100)
+							{
+								str2 += " " + "CurrentGoodwillTip_NaturalGoodwillRise".Translate(faction.def.naturalColonyGoodwill.min.ToString("F0"), num3.ToString("F0"));
+							}
+							if (faction.def.naturalColonyGoodwill.max < 100)
+							{
+								str2 += " " + "CurrentGoodwillTip_NaturalGoodwillFall".Translate(faction.def.naturalColonyGoodwill.max.ToString("F0"), num4.ToString("F0"));
+							}
 						}
 					}
 					TooltipHandler.TipRegion(rect3, str2);

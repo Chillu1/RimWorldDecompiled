@@ -125,26 +125,26 @@ namespace Verse
 			}
 			if (!sustain)
 			{
-				for (int k = 0; k < subSounds.Count; k++)
+				for (int j = 0; j < subSounds.Count; j++)
 				{
-					if (subSounds[k].startDelayRange.TrueMax > 0.001f)
+					if (subSounds[j].startDelayRange.TrueMax > 0.001f)
 					{
 						yield return "startDelayRange is only supported on sustainers.";
 					}
 				}
 			}
 			List<SoundDef> defs = DefDatabase<SoundDef>.AllDefsListForReading;
-			for (int k = 0; k < defs.Count; k++)
+			for (int j = 0; j < defs.Count; j++)
 			{
-				if (defs[k].eventNames.NullOrEmpty())
+				if (defs[j].eventNames.NullOrEmpty())
 				{
 					continue;
 				}
-				for (int i = 0; i < defs[k].eventNames.Count; i++)
+				for (int k = 0; k < defs[j].eventNames.Count; k++)
 				{
-					if (defs[k].eventNames[i] == defName)
+					if (defs[j].eventNames[k] == defName)
 					{
-						yield return defName + " is also defined in the eventNames list for " + defs[k];
+						yield return defName + " is also defined in the eventNames list for " + defs[j];
 					}
 				}
 			}
@@ -237,14 +237,14 @@ namespace Verse
 		{
 			lock (undefinedSoundDefsLock)
 			{
-				if (undefinedSoundDefs.TryGetValue(defName, out SoundDef value))
+				if (!undefinedSoundDefs.TryGetValue(defName, out SoundDef value))
 				{
+					value = new SoundDef();
+					value.isUndefined = true;
+					value.defName = defName;
+					undefinedSoundDefs.Add(defName, value);
 					return value;
 				}
-				value = new SoundDef();
-				value.isUndefined = true;
-				value.defName = defName;
-				undefinedSoundDefs.Add(defName, value);
 				return value;
 			}
 		}

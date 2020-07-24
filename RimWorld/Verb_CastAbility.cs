@@ -102,13 +102,13 @@ namespace RimWorld
 				{
 					if (target.IsValid)
 					{
-						GenDraw.DrawTargetHighlight(target);
+						GenDraw.DrawTargetHighlightWithLayer(target.CenterVector3, AltitudeLayer.MetaOverlays);
 						GenDraw.DrawRadiusRing(target.Cell, def.EffectRadius, RadiusHighlightColor);
 					}
 				}
 				else
 				{
-					GenDraw.DrawTargetHighlight(target);
+					GenDraw.DrawTargetHighlightWithLayer(target.CenterVector3, AltitudeLayer.MetaOverlays);
 				}
 			}
 			if (target.IsValid)

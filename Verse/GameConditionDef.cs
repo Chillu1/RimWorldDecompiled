@@ -25,6 +25,9 @@ namespace Verse
 		[MustTranslate]
 		public string descriptionFuture;
 
+		[NoTranslate]
+		public string jumpToSourceKey = "ClickToJumpToSource";
+
 		public PsychicDroneLevel defaultDroneLevel = PsychicDroneLevel.BadMedium;
 
 		public bool preventRain;

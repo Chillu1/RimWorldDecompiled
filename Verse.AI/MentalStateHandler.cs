@@ -63,9 +63,9 @@ namespace Verse.AI
 		{
 			if (curStateInt != null)
 			{
-				if (pawn.Downed)
+				if (pawn.Downed && curStateInt.def.recoverFromDowned)
 				{
-					Log.Error("In mental state while downed: " + pawn);
+					Log.Error("In mental state while downed, but not allowed: " + pawn);
 					CurState.RecoverFromState();
 				}
 				else

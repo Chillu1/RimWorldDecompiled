@@ -38,26 +38,27 @@ namespace RimWorld
 
 		public override void DoEffect(Pawn usedBy)
 		{
-			if ((!PlayerChoosesTarget || target != null) && (target == null || GetTargetingParameters().CanTarget(target)))
+			if ((PlayerChoosesTarget && target == null) || (target != null && !GetTargetingParameters().CanTarget(target)))
 			{
-				base.DoEffect(usedBy);
-				foreach (Thing target2 in GetTargets(target))
-				{
-					foreach (CompTargetEffect comp in parent.GetComps<CompTargetEffect>())
-					{
-						comp.DoEffectOn(usedBy, target2);
-					}
-					if (Props.moteOnTarget != null)
-					{
-						MoteMaker.MakeAttachedOverlay(target2, Props.moteOnTarget, Vector3.zero);
-					}
-					if (Props.moteConnecting != null)
-					{
-						MoteMaker.MakeConnectingLine(usedBy.DrawPos, target2.DrawPos, Props.moteConnecting, usedBy.Map);
-					}
-				}
-				target = null;
+				return;
 			}
+			base.DoEffect(usedBy);
+			foreach (Thing target2 in GetTargets(target))
+			{
+				foreach (CompTargetEffect comp in parent.GetComps<CompTargetEffect>())
+				{
+					comp.DoEffectOn(usedBy, target2);
+				}
+				if (Props.moteOnTarget != null)
+				{
+					MoteMaker.MakeAttachedOverlay(target2, Props.moteOnTarget, Vector3.zero);
+				}
+				if (Props.moteConnecting != null)
+				{
+					MoteMaker.MakeConnectingLine(usedBy.DrawPos, target2.DrawPos, Props.moteConnecting, usedBy.Map);
+				}
+			}
+			target = null;
 		}
 
 		protected abstract TargetingParameters GetTargetingParameters();

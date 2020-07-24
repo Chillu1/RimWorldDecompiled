@@ -9,6 +9,11 @@ namespace RimWorld
 			return stat.Worker.GetValue(thing, applyPostProcess);
 		}
 
+		public static float GetStatValueForPawn(this Thing thing, StatDef stat, Pawn pawn, bool applyPostProcess = true)
+		{
+			return stat.Worker.GetValue(thing, pawn, applyPostProcess);
+		}
+
 		public static float GetStatValueAbstract(this BuildableDef def, StatDef stat, ThingDef stuff = null)
 		{
 			return stat.Worker.GetValueAbstract(def, stuff);

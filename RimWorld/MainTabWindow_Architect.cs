@@ -72,8 +72,7 @@ namespace RimWorld
 			for (int i = 0; i < desPanelsCached.Count; i++)
 			{
 				Rect rect = new Rect(num2 * num, num3 * 32f, num, 32f);
-				float height = rect.height;
-				rect.height = height + 1f;
+				rect.height++;
 				if (num2 == 0f)
 				{
 					rect.width += 1f;

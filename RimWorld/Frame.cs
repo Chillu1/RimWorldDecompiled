@@ -313,12 +313,13 @@ namespace RimWorld
 			{
 				yield return command;
 			}
-			if (base.Faction == Faction.OfPlayer)
+			if (base.Faction != Faction.OfPlayer)
 			{
-				foreach (Command item in BuildFacilityCommandUtility.BuildFacilityCommands(def.entityDefToBuild))
-				{
-					yield return item;
-				}
+				yield break;
+			}
+			foreach (Command item in BuildFacilityCommandUtility.BuildFacilityCommands(def.entityDefToBuild))
+			{
+				yield return item;
 			}
 		}
 

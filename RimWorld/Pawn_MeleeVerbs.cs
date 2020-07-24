@@ -68,7 +68,7 @@ namespace RimWorld
 				SetCurMeleeVerb(result.verb, target);
 				return;
 			}
-			Log.ErrorOnce(pawn.ToStringSafe() + " has no available melee attack, spawned=" + pawn.Spawned.ToString() + " dead=" + pawn.Dead.ToString() + " downed=" + pawn.Downed.ToString() + " curJob=" + pawn.CurJob.ToStringSafe() + " verbList=" + updatedAvailableVerbsList.ToStringSafeEnumerable() + " bodyVerbs=" + pawn.verbTracker.AllVerbs.ToStringSafeEnumerable(), pawn.thingIDNumber ^ 0xBACB2DA);
+			Log.ErrorOnce(pawn.ToStringSafe() + " has no available melee attack, spawned=" + pawn.Spawned + " dead=" + pawn.Dead + " downed=" + pawn.Downed + " curJob=" + pawn.CurJob.ToStringSafe() + " verbList=" + updatedAvailableVerbsList.ToStringSafeEnumerable() + " bodyVerbs=" + pawn.verbTracker.AllVerbs.ToStringSafeEnumerable(), pawn.thingIDNumber ^ 0xBACB2DA);
 			SetCurMeleeVerb(null, null);
 		}
 
@@ -86,7 +86,7 @@ namespace RimWorld
 				}
 				if (!verbToUse.IsMeleeAttack)
 				{
-					Log.Warning("Pawn " + pawn + " tried to melee attack " + target + " with non melee-attack verb " + verbToUse + ".");
+					Log.Warning(string.Concat("Pawn ", pawn, " tried to melee attack ", target, " with non melee-attack verb ", verbToUse, "."));
 					return false;
 				}
 			}

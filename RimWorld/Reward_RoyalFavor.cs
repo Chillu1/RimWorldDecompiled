@@ -1,4 +1,5 @@
 using RimWorld.QuestGen;
+using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 using Verse.Grammar;
@@ -13,6 +14,17 @@ namespace RimWorld
 
 		public override bool MakesUseOfChosenPawnSignal => true;
 
+		public override IEnumerable<GenUI.AnonymousStackElement> StackElements
+		{
+			get
+			{
+				yield return QuestPartUtility.GetStandardRewardStackElement(faction.def.royalFavorLabel.CapitalizeFirst() + " " + amount.ToStringWithSign(), faction.def.RoyalFavorIcon, () => "RoyalFavorTip".Translate(Faction.OfPlayer.def.pawnsPlural, amount, faction.def.royalFavorLabel, faction) + "\n\n" + "ClickForMoreInfo".Translate(), delegate
+				{
+					Find.WindowStack.Add(new Dialog_InfoCard(faction));
+				});
+			}
+		}
+
 		public override void InitFromValue(float rewardValue, RewardsGeneratorParams parms, out float valueActuallyUsed)
 		{
 			amount = GenMath.RoundRandom(RewardsGenerator.RewardValueToRoyalFavorCurve.Evaluate(rewardValue));
@@ -21,7 +33,7 @@ namespace RimWorld
 			faction = parms.giverFaction;
 		}
 
-		public override void AddQuestPartsToGeneratingQuest(int index, RewardsGeneratorParams parms, string customLetterLabel, string customLetterText, RulePack customLetterLabelRules, RulePack customLetterTextRules)
+		public override IEnumerable<QuestPart> GenerateQuestParts(int index, RewardsGeneratorParams parms, string customLetterLabel, string customLetterText, RulePack customLetterLabelRules, RulePack customLetterTextRules)
 		{
 			Slate slate = RimWorld.QuestGen.QuestGen.slate;
 			QuestPart_GiveRoyalFavor questPart_GiveRoyalFavor = new QuestPart_GiveRoyalFavor();
@@ -37,7 +49,7 @@ namespace RimWorld
 				questPart_GiveRoyalFavor.inSignal = slate.Get<string>("inSignal");
 				questPart_GiveRoyalFavor.giveToAccepter = true;
 			}
-			RimWorld.QuestGen.QuestGen.quest.AddPart(questPart_GiveRoyalFavor);
+			yield return questPart_GiveRoyalFavor;
 			slate.Set("royalFavorReward_amount", amount);
 		}
 
@@ -53,6 +65,13 @@ namespace RimWorld
 		public override string ToString()
 		{
 			return GetType().Name + " (faction=" + faction.ToStringSafe() + ", amount=" + amount + ")";
+		}
+
+		public override void ExposeData()
+		{
+			base.ExposeData();
+			Scribe_Values.Look(ref amount, "amount", 0);
+			Scribe_References.Look(ref faction, "faction");
 		}
 	}
 }

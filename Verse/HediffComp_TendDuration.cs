@@ -203,7 +203,7 @@ namespace Verse
 			{
 				stringBuilder.AppendLine("untended");
 			}
-			stringBuilder.AppendLine("severity/day: " + SeverityChangePerDay().ToString());
+			stringBuilder.AppendLine("severity/day: " + SeverityChangePerDay());
 			if (TProps.disappearsAtTotalTendQuality >= 0)
 			{
 				stringBuilder.AppendLine("totalTendQuality: " + totalTendQuality.ToString("F2") + " / " + TProps.disappearsAtTotalTendQuality);

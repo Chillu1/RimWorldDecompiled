@@ -32,7 +32,7 @@ namespace Verse
 			int num = 1;
 			do
 			{
-				text = factionLabel + num.ToString();
+				text = factionLabel + num;
 				num++;
 			}
 			while (SavedGameNamedExists(text));

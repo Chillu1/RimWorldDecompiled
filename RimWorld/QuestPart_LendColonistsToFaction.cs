@@ -38,18 +38,19 @@ namespace RimWorld
 		{
 			base.Enable(receivedArgs);
 			CompTransporter compTransporter = shuttle.TryGetComp<CompTransporter>();
-			if (lendColonistsToFaction != null && compTransporter != null)
+			if (lendColonistsToFaction == null || compTransporter == null)
 			{
-				foreach (Thing item in (IEnumerable<Thing>)compTransporter.innerContainer)
-				{
-					Pawn pawn;
-					if ((pawn = (item as Pawn)) != null && pawn.IsFreeColonist)
-					{
-						lentColonists.Add(pawn);
-					}
-				}
-				returnColonistsOnTick = GenTicks.TicksGame + returnLentColonistsInTicks;
+				return;
 			}
+			foreach (Thing item in (IEnumerable<Thing>)compTransporter.innerContainer)
+			{
+				Pawn pawn;
+				if ((pawn = (item as Pawn)) != null && pawn.IsFreeColonist)
+				{
+					lentColonists.Add(pawn);
+				}
+			}
+			returnColonistsOnTick = GenTicks.TicksGame + returnLentColonistsInTicks;
 		}
 
 		public override void QuestPartTick()

@@ -103,12 +103,13 @@ namespace RimWorld
 		public void StorytellerTick()
 		{
 			incidentQueue.IncidentQueueTick();
-			if (Find.TickManager.TicksGame % 1000 == 0 && DebugSettings.enableStoryteller)
+			if (Find.TickManager.TicksGame % 1000 != 0 || !DebugSettings.enableStoryteller)
 			{
-				foreach (FiringIncident item in MakeIncidentsForInterval())
-				{
-					TryFire(item);
-				}
+				return;
+			}
+			foreach (FiringIncident item in MakeIncidentsForInterval())
+			{
+				TryFire(item);
 			}
 		}
 
@@ -125,32 +126,33 @@ namespace RimWorld
 		public IEnumerable<FiringIncident> MakeIncidentsForInterval()
 		{
 			List<IIncidentTarget> targets = AllIncidentTargets;
-			for (int k = 0; k < storytellerComps.Count; k++)
+			for (int j = 0; j < storytellerComps.Count; j++)
 			{
-				foreach (FiringIncident item in MakeIncidentsForInterval(storytellerComps[k], targets))
+				foreach (FiringIncident item in MakeIncidentsForInterval(storytellerComps[j], targets))
 				{
 					yield return item;
 				}
 			}
 			List<Quest> quests = Find.QuestManager.QuestsListForReading;
-			for (int k = 0; k < quests.Count; k++)
+			for (int j = 0; j < quests.Count; j++)
 			{
-				if (quests[k].State != QuestState.Ongoing)
+				if (quests[j].State != QuestState.Ongoing)
 				{
 					continue;
 				}
-				List<QuestPart> parts = quests[k].PartsListForReading;
-				for (int i = 0; i < parts.Count; i++)
+				List<QuestPart> parts = quests[j].PartsListForReading;
+				for (int k = 0; k < parts.Count; k++)
 				{
-					IIncidentMakerQuestPart incidentMakerQuestPart = parts[i] as IIncidentMakerQuestPart;
-					if (incidentMakerQuestPart != null && ((QuestPartActivable)parts[i]).State == QuestPartState.Enabled)
+					IIncidentMakerQuestPart incidentMakerQuestPart = parts[k] as IIncidentMakerQuestPart;
+					if (incidentMakerQuestPart == null || ((QuestPartActivable)parts[k]).State != QuestPartState.Enabled)
 					{
-						foreach (FiringIncident item2 in incidentMakerQuestPart.MakeIntervalIncidents())
-						{
-							item2.sourceQuestPart = parts[i];
-							item2.parms.quest = quests[k];
-							yield return item2;
-						}
+						continue;
+					}
+					foreach (FiringIncident item2 in incidentMakerQuestPart.MakeIntervalIncidents())
+					{
+						item2.sourceQuestPart = parts[k];
+						item2.parms.quest = quests[j];
+						yield return item2;
 					}
 				}
 			}
@@ -179,14 +181,15 @@ namespace RimWorld
 						flag2 = true;
 					}
 				}
-				if (!flag && flag2)
+				if (flag || !flag2)
 				{
-					foreach (FiringIncident item2 in comp.MakeIntervalIncidents(incidentTarget))
+					continue;
+				}
+				foreach (FiringIncident item2 in comp.MakeIntervalIncidents(incidentTarget))
+				{
+					if (Find.Storyteller.difficulty.allowBigThreats || item2.def.category != IncidentCategoryDefOf.ThreatBig)
 					{
-						if (Find.Storyteller.difficulty.allowBigThreats || item2.def.category != IncidentCategoryDefOf.ThreatBig)
-						{
-							yield return item2;
-						}
+						yield return item2;
 					}
 				}
 			}
@@ -233,6 +236,7 @@ namespace RimWorld
 					stringBuilder.AppendLine();
 					stringBuilder.AppendLine("STATS FOR INCIDENT TARGET: " + incidentTarget);
 					stringBuilder.AppendLine("------------------------");
+					stringBuilder.AppendLine("Progress score: ".PadRight(40) + StorytellerUtility.GetProgressScore(incidentTarget).ToString("F2"));
 					stringBuilder.AppendLine("Base points: ".PadRight(40) + StorytellerUtility.DefaultThreatPointsNow(incidentTarget).ToString("F0"));
 					stringBuilder.AppendLine("Points factor random range: ".PadRight(40) + incidentTarget.IncidentPointsRandomFactorRange);
 					stringBuilder.AppendLine("Wealth: ".PadRight(40) + incidentTarget.PlayerWealthForStoryteller.ToString("F0"));

@@ -137,18 +137,19 @@ namespace Verse
 						dialog_InfoCard = new Dialog_InfoCard(titleDef, faction);
 					}
 				}
-				if (dialog_InfoCard != null)
+				if (dialog_InfoCard == null)
 				{
-					int localSelectedStatIndex = selectedStatIndex;
-					if (selectedStatIndex >= 0)
-					{
-						dialog_InfoCard.executeAfterFillCardOnce = delegate
-						{
-							StatsReportUtility.SelectEntry(localSelectedStatIndex);
-						};
-					}
-					Find.WindowStack.Add(dialog_InfoCard);
+					return;
 				}
+				int localSelectedStatIndex = selectedStatIndex;
+				if (selectedStatIndex >= 0)
+				{
+					dialog_InfoCard.executeAfterFillCardOnce = delegate
+					{
+						StatsReportUtility.SelectEntry(localSelectedStatIndex);
+					};
+				}
+				Find.WindowStack.Add(dialog_InfoCard);
 			}
 		}
 

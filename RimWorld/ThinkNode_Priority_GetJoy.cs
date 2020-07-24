@@ -52,6 +52,10 @@ namespace RimWorld
 				}
 				return 0f;
 			}
+			if (timeAssignmentDef == TimeAssignmentDefOf.Meditate)
+			{
+				return 0f;
+			}
 			throw new NotImplementedException();
 		}
 	}

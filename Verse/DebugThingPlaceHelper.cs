@@ -28,7 +28,7 @@ namespace Verse
 			{
 				return true;
 			}
-			if ((def.category == ThingCategory.Building && def.BuildableByPlayer) & allowPlayerBuildable)
+			if (def.category == ThingCategory.Building && def.BuildableByPlayer && allowPlayerBuildable)
 			{
 				return true;
 			}

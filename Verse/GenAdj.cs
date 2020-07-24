@@ -119,13 +119,11 @@ namespace Verse
 			if (t.def.size.x == 1 && t.def.size.z == 1)
 			{
 				yield return t.Position;
+				yield break;
 			}
-			else
+			foreach (IntVec3 item in CellsOccupiedBy(t.Position, t.Rotation, t.def.size))
 			{
-				foreach (IntVec3 item in CellsOccupiedBy(t.Position, t.Rotation, t.def.size))
-				{
-					yield return item;
-				}
+				yield return item;
 			}
 		}
 
@@ -136,11 +134,11 @@ namespace Verse
 			int minZ = center.z - (size.z - 1) / 2;
 			int maxX = num + size.x - 1;
 			int maxZ = minZ + size.z - 1;
-			for (int j = num; j <= maxX; j++)
+			for (int i = num; i <= maxX; i++)
 			{
-				for (int i = minZ; i <= maxZ; i++)
+				for (int j = minZ; j <= maxZ; j++)
 				{
-					yield return new IntVec3(j, 0, i);
+					yield return new IntVec3(i, 0, j);
 				}
 			}
 		}
@@ -153,11 +151,13 @@ namespace Verse
 				{
 					yield return item;
 				}
-				yield break;
 			}
-			for (int i = 0; i < 8; i++)
+			else
 			{
-				yield return pack.Cell + AdjacentCells[i];
+				for (int i = 0; i < 8; i++)
+				{
+					yield return pack.Cell + AdjacentCells[i];
+				}
 			}
 		}
 
@@ -289,11 +289,11 @@ namespace Verse
 			int minZ = center.z - (size.z - 1) / 2 - 1;
 			int maxX = num + size.x + 1;
 			int maxZ = minZ + size.z + 1;
-			for (int j = num; j <= maxX; j++)
+			for (int i = num; i <= maxX; i++)
 			{
-				for (int i = minZ; i <= maxZ; i++)
+				for (int j = minZ; j <= maxZ; j++)
 				{
-					yield return new IntVec3(j, 0, i);
+					yield return new IntVec3(i, 0, j);
 				}
 			}
 		}

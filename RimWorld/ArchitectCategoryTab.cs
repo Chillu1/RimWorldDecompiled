@@ -48,6 +48,7 @@ namespace RimWorld
 					Rect rect2 = new Rect(0f, curY, position.width, position.height - curY);
 					string desc = designator.Desc;
 					GenText.SetTextSizeToFit(desc, rect2);
+					desc = desc.TruncateHeight(rect2.width, rect2.height);
 					Widgets.Label(rect2, desc);
 					GUI.EndGroup();
 				}

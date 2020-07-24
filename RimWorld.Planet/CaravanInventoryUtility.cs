@@ -182,13 +182,15 @@ namespace RimWorld.Planet
 		{
 			if (numToMove < 0 || numToMove > item.stackCount)
 			{
-				Log.Warning("Tried to move item " + item + " with numToMove=" + numToMove + " (item stack count = " + item.stackCount + ")");
-				return;
+				Log.Warning(string.Concat("Tried to move item ", item, " with numToMove=", numToMove, " (item stack count = ", item.stackCount, ")"));
 			}
-			Pawn pawn = FindPawnToMoveInventoryTo(item, candidates, ignoreCandidates, itemOwner);
-			if (pawn != null)
+			else
 			{
-				itemOwner.inventory.innerContainer.TryTransferToContainer(item, pawn.inventory.innerContainer, numToMove);
+				Pawn pawn = FindPawnToMoveInventoryTo(item, candidates, ignoreCandidates, itemOwner);
+				if (pawn != null)
+				{
+					itemOwner.inventory.innerContainer.TryTransferToContainer(item, pawn.inventory.innerContainer, numToMove);
+				}
 			}
 		}
 
@@ -282,7 +284,7 @@ namespace RimWorld.Planet
 		{
 			if (AllInventoryItems(caravan).Contains(thing))
 			{
-				Log.Error("Tried to give the same item twice (" + thing + ") to a caravan (" + caravan + ").");
+				Log.Error(string.Concat("Tried to give the same item twice (", thing, ") to a caravan (", caravan, ")."));
 				return;
 			}
 			Pawn pawn = FindPawnToMoveInventoryTo(thing, caravan.PawnsListForReading, null);

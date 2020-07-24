@@ -45,7 +45,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return "Graphic_Shadow(" + shadowInfo + ")";
+			return string.Concat("Graphic_Shadow(", shadowInfo, ")");
 		}
 	}
 }

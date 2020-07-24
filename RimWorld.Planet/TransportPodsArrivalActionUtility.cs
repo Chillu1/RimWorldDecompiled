@@ -9,39 +9,43 @@ namespace RimWorld.Planet
 	{
 		public static IEnumerable<FloatMenuOption> GetFloatMenuOptions<T>(Func<FloatMenuAcceptanceReport> acceptanceReportGetter, Func<T> arrivalActionGetter, string label, CompLaunchable representative, int destinationTile, Action<Action> uiConfirmationCallback = null) where T : TransportPodsArrivalAction
 		{
-			FloatMenuAcceptanceReport floatMenuAcceptanceReport = acceptanceReportGetter();
-			if (floatMenuAcceptanceReport.Accepted || !floatMenuAcceptanceReport.FailReason.NullOrEmpty() || !floatMenuAcceptanceReport.FailMessage.NullOrEmpty())
+			Func<FloatMenuAcceptanceReport> acceptanceReportGetter2 = acceptanceReportGetter;
+			Action<Action> uiConfirmationCallback2 = uiConfirmationCallback;
+			CompLaunchable representative2 = representative;
+			int destinationTile2 = destinationTile;
+			Func<T> arrivalActionGetter2 = arrivalActionGetter;
+			FloatMenuAcceptanceReport floatMenuAcceptanceReport = acceptanceReportGetter2();
+			if (!floatMenuAcceptanceReport.Accepted && floatMenuAcceptanceReport.FailReason.NullOrEmpty() && floatMenuAcceptanceReport.FailMessage.NullOrEmpty())
 			{
-				if (!floatMenuAcceptanceReport.FailReason.NullOrEmpty())
-				{
-					yield return new FloatMenuOption(label + " (" + floatMenuAcceptanceReport.FailReason + ")", null);
-				}
-				else
-				{
-					yield return new FloatMenuOption(label, delegate
-					{
-						FloatMenuAcceptanceReport floatMenuAcceptanceReport2 = acceptanceReportGetter();
-						if (floatMenuAcceptanceReport2.Accepted)
-						{
-							if (uiConfirmationCallback == null)
-							{
-								representative.TryLaunch(destinationTile, arrivalActionGetter());
-							}
-							else
-							{
-								uiConfirmationCallback(delegate
-								{
-									representative.TryLaunch(destinationTile, arrivalActionGetter());
-								});
-							}
-						}
-						else if (!floatMenuAcceptanceReport2.FailMessage.NullOrEmpty())
-						{
-							Messages.Message(floatMenuAcceptanceReport2.FailMessage, new GlobalTargetInfo(destinationTile), MessageTypeDefOf.RejectInput, historical: false);
-						}
-					});
-				}
+				yield break;
 			}
+			if (!floatMenuAcceptanceReport.FailReason.NullOrEmpty())
+			{
+				yield return new FloatMenuOption(label + " (" + floatMenuAcceptanceReport.FailReason + ")", null);
+				yield break;
+			}
+			yield return new FloatMenuOption(label, delegate
+			{
+				FloatMenuAcceptanceReport floatMenuAcceptanceReport2 = acceptanceReportGetter2();
+				if (floatMenuAcceptanceReport2.Accepted)
+				{
+					if (uiConfirmationCallback2 == null)
+					{
+						representative2.TryLaunch(destinationTile2, arrivalActionGetter2());
+					}
+					else
+					{
+						uiConfirmationCallback2(delegate
+						{
+							representative2.TryLaunch(destinationTile2, arrivalActionGetter2());
+						});
+					}
+				}
+				else if (!floatMenuAcceptanceReport2.FailMessage.NullOrEmpty())
+				{
+					Messages.Message(floatMenuAcceptanceReport2.FailMessage, new GlobalTargetInfo(destinationTile2), MessageTypeDefOf.RejectInput, historical: false);
+				}
+			});
 		}
 
 		public static bool AnyNonDownedColonist(IEnumerable<IThingHolder> pods)

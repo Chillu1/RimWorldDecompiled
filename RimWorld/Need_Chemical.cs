@@ -7,7 +7,7 @@ namespace RimWorld
 	{
 		private const float ThreshDesire = 0.01f;
 
-		private const float ThreshSatisfied = 0.3f;
+		private const float ThreshSatisfied = 0.1f;
 
 		public override int GUIChangeArrow => -1;
 
@@ -15,7 +15,7 @@ namespace RimWorld
 		{
 			get
 			{
-				if (CurLevel > 0.3f)
+				if (CurLevel > 0.1f)
 				{
 					return DrugDesireCategory.Satisfied;
 				}
@@ -67,7 +67,7 @@ namespace RimWorld
 			: base(pawn)
 		{
 			threshPercents = new List<float>();
-			threshPercents.Add(0.3f);
+			threshPercents.Add(0.1f);
 		}
 
 		public override void SetInitialLevel()

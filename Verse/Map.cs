@@ -134,6 +134,8 @@ namespace Verse
 
 		public ListerMergeables listerMergeables;
 
+		public ListerArtificialBuildingsForMeditation listerArtificialBuildingsForMeditation;
+
 		public ListerFilthInHomeArea listerFilthInHomeArea;
 
 		public Reachability reachability;
@@ -348,6 +350,7 @@ namespace Verse
 			listerHaulables = new ListerHaulables(this);
 			listerMergeables = new ListerMergeables(this);
 			listerFilthInHomeArea = new ListerFilthInHomeArea(this);
+			listerArtificialBuildingsForMeditation = new ListerArtificialBuildingsForMeditation(this);
 			reachability = new Reachability(this);
 			itemAvailability = new ItemAvailability(this);
 			autoBuildRoofAreaSetter = new AutoBuildRoofAreaSetter(this);
@@ -415,7 +418,7 @@ namespace Verse
 							}
 							catch (Exception ex2)
 							{
-								Log.Error("Exception saving " + allThing + ": " + ex2);
+								Log.Error(string.Concat("Exception saving ", allThing, ": ", ex2));
 							}
 						}
 					}
@@ -429,21 +432,23 @@ namespace Verse
 					Log.Error("Could not enter the things node while saving.");
 				}
 				compressor = null;
-				return;
 			}
-			if (Scribe.mode == LoadSaveMode.LoadingVars)
+			else
 			{
-				ConstructComponents();
-				regionAndRoomUpdater.Enabled = false;
-				compressor = new MapFileCompressor(this);
+				if (Scribe.mode == LoadSaveMode.LoadingVars)
+				{
+					ConstructComponents();
+					regionAndRoomUpdater.Enabled = false;
+					compressor = new MapFileCompressor(this);
+				}
+				ExposeComponents();
+				DeepProfiler.Start("Load compressed things");
+				compressor.ExposeData();
+				DeepProfiler.End();
+				DeepProfiler.Start("Load non-compressed things");
+				Scribe_Collections.Look(ref loadedFullThings, "things", LookMode.Deep);
+				DeepProfiler.End();
 			}
-			ExposeComponents();
-			DeepProfiler.Start("Load compressed things");
-			compressor.ExposeData();
-			DeepProfiler.End();
-			DeepProfiler.Start("Load non-compressed things");
-			Scribe_Collections.Look(ref loadedFullThings, "things", LookMode.Deep);
-			DeepProfiler.End();
 		}
 
 		private void FillComponents()
@@ -460,7 +465,7 @@ namespace Verse
 					}
 					catch (Exception ex)
 					{
-						Log.Error("Could not instantiate a MapComponent of type " + item2 + ": " + ex);
+						Log.Error(string.Concat("Could not instantiate a MapComponent of type ", item2, ": ", ex));
 					}
 				}
 			}
@@ -484,19 +489,20 @@ namespace Verse
 			BackCompatibility.PreCheckSpawnBackCompatibleThingAfterLoading(this);
 			foreach (Thing item2 in list2)
 			{
-				if (!(item2 is Building))
+				if (item2 is Building)
 				{
-					try
+					continue;
+				}
+				try
+				{
+					if (!BackCompatibility.CheckSpawnBackCompatibleThingAfterLoading(item2, this))
 					{
-						if (!BackCompatibility.CheckSpawnBackCompatibleThingAfterLoading(item2, this))
-						{
-							GenSpawn.Spawn(item2, item2.Position, this, item2.Rotation, WipeMode.FullRefund, respawningAfterLoad: true);
-						}
+						GenSpawn.Spawn(item2, item2.Position, this, item2.Rotation, WipeMode.FullRefund, respawningAfterLoad: true);
 					}
-					catch (Exception ex)
-					{
-						Log.Error("Exception spawning loaded thing " + item2.ToStringSafe() + ": " + ex);
-					}
+				}
+				catch (Exception ex)
+				{
+					Log.Error("Exception spawning loaded thing " + item2.ToStringSafe() + ": " + ex);
 				}
 			}
 			foreach (Building item3 in from t in list2.OfType<Building>()

@@ -226,10 +226,10 @@ namespace Verse
 		private static void SpawnWorldPawn()
 		{
 			List<DebugMenuOption> list = new List<DebugMenuOption>();
-			PawnKindDef kLocal = default(PawnKindDef);
 			Action<Pawn> act = delegate(Pawn p)
 			{
 				List<DebugMenuOption> list2 = new List<DebugMenuOption>();
+				PawnKindDef kLocal = default(PawnKindDef);
 				foreach (PawnKindDef item in DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef x) => x.race == p.def))
 				{
 					kLocal = item;
@@ -402,7 +402,6 @@ namespace Verse
 			}
 			List<SitePartDef> parts = new List<SitePartDef>();
 			Action addPart = null;
-			SitePartDef localPart = default(SitePartDef);
 			addPart = delegate
 			{
 				List<DebugMenuOption> list = new List<DebugMenuOption>
@@ -420,6 +419,7 @@ namespace Verse
 						}
 					})
 				};
+				SitePartDef localPart = default(SitePartDef);
 				foreach (SitePartDef allDef in DefDatabase<SitePartDef>.AllDefs)
 				{
 					localPart = allDef;
@@ -455,8 +455,6 @@ namespace Verse
 			}
 			List<SitePartDef> parts = new List<SitePartDef>();
 			Action addPart = null;
-			float localPoints = default(float);
-			SitePartDef localPart = default(SitePartDef);
 			addPart = delegate
 			{
 				List<DebugMenuOption> list = new List<DebugMenuOption>
@@ -464,6 +462,7 @@ namespace Verse
 					new DebugMenuOption("-Done (" + parts.Count + " parts)-", DebugMenuOptionMode.Action, delegate
 					{
 						List<DebugMenuOption> list2 = new List<DebugMenuOption>();
+						float localPoints = default(float);
 						foreach (float item in DebugActionsUtility.PointsOptions(extended: true))
 						{
 							localPoints = item;
@@ -483,6 +482,7 @@ namespace Verse
 						Find.WindowStack.Add(new Dialog_DebugOptionListLister(list2));
 					})
 				};
+				SitePartDef localPart = default(SitePartDef);
 				foreach (SitePartDef allDef in DefDatabase<SitePartDef>.AllDefs)
 				{
 					localPart = allDef;

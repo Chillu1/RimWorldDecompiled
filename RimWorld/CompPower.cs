@@ -203,16 +203,18 @@ namespace RimWorld
 		{
 			if (connectParent != null && (!reconnectingAfterLoading || connectParent != transmitter))
 			{
-				Log.Error("Tried to connect " + this + " to transmitter " + transmitter + " but it's already connected to " + connectParent + ".");
-				return;
+				Log.Error(string.Concat("Tried to connect ", this, " to transmitter ", transmitter, " but it's already connected to ", connectParent, "."));
 			}
-			connectParent = transmitter;
-			if (connectParent.connectChildren == null)
+			else
 			{
-				connectParent.connectChildren = new List<CompPower>();
+				connectParent = transmitter;
+				if (connectParent.connectChildren == null)
+				{
+					connectParent.connectChildren = new List<CompPower>();
+				}
+				transmitter.connectChildren.Add(this);
+				PowerNet?.RegisterConnector(this);
 			}
-			transmitter.connectChildren.Add(this);
-			PowerNet?.RegisterConnector(this);
 		}
 
 		public override string CompInspectStringExtra()

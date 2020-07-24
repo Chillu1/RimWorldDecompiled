@@ -76,6 +76,11 @@ namespace Verse
 			base.StanceTick();
 		}
 
+		public void Interrupt()
+		{
+			base.Expire();
+		}
+
 		protected override void Expire()
 		{
 			verb.WarmupComplete();

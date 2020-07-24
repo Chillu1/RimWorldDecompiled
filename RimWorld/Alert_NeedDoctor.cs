@@ -16,26 +16,28 @@ namespace RimWorld
 				List<Map> maps = Find.Maps;
 				for (int i = 0; i < maps.Count; i++)
 				{
-					if (maps[i].IsPlayerHome)
+					if (!maps[i].IsPlayerHome)
 					{
-						bool flag = false;
-						foreach (Pawn item in maps[i].mapPawns.FreeColonistsSpawned)
+						continue;
+					}
+					bool flag = false;
+					foreach (Pawn item in maps[i].mapPawns.FreeColonistsSpawned)
+					{
+						if (!item.Downed && item.workSettings != null && item.workSettings.WorkIsActive(WorkTypeDefOf.Doctor))
 						{
-							if (!item.Downed && item.workSettings != null && item.workSettings.WorkIsActive(WorkTypeDefOf.Doctor))
-							{
-								flag = true;
-								break;
-							}
+							flag = true;
+							break;
 						}
-						if (!flag)
+					}
+					if (flag)
+					{
+						continue;
+					}
+					foreach (Pawn item2 in maps[i].mapPawns.FreeColonistsSpawned)
+					{
+						if ((item2.Downed && (int)item2.needs.food.CurCategory < 0 && item2.InBed()) || HealthAIUtility.ShouldBeTendedNowByPlayer(item2))
 						{
-							foreach (Pawn item2 in maps[i].mapPawns.FreeColonistsSpawned)
-							{
-								if ((item2.Downed && (int)item2.needs.food.CurCategory < 0 && item2.InBed()) || HealthAIUtility.ShouldBeTendedNowByPlayer(item2))
-								{
-									patientsResult.Add(item2);
-								}
-							}
+							patientsResult.Add(item2);
 						}
 					}
 				}

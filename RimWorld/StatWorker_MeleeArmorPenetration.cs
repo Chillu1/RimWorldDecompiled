@@ -18,7 +18,7 @@ namespace RimWorld
 		{
 			if (req.Thing == null)
 			{
-				Log.Error("Getting MeleeArmorPenetration stat for " + req.Def + " without concrete pawn. This always returns 0.");
+				Log.Error(string.Concat("Getting MeleeArmorPenetration stat for ", req.Def, " without concrete pawn. This always returns 0."));
 			}
 			return GetArmorPenetration(req, applyPostProcess);
 		}

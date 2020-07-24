@@ -61,7 +61,7 @@ namespace RimWorld
 			case TechLevel.Archotech:
 				return gearLevel == TechLevel.Archotech;
 			default:
-				Log.Error("Unknown tech levels " + pawnLevel + ", " + gearLevel);
+				Log.Error(string.Concat("Unknown tech levels ", pawnLevel, ", ", gearLevel));
 				return true;
 			}
 		}

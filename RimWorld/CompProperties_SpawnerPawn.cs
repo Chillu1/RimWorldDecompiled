@@ -12,6 +12,10 @@ namespace RimWorld
 
 		public string spawnMessageKey;
 
+		public string noPawnsLeftToSpawnKey;
+
+		public string pawnsLeftToSpawnKey;
+
 		public bool showNextSpawnInInspect;
 
 		public bool shouldJoinParentLord;
@@ -30,9 +34,13 @@ namespace RimWorld
 
 		public int pawnSpawnRadius = 2;
 
+		public IntRange maxPawnsToSpawn = IntRange.zero;
+
 		public bool chooseSingleTypeToSpawn;
 
 		public string nextSpawnInspectStringKey;
+
+		public string nextSpawnInspectStringKeyDormant;
 
 		public CompProperties_SpawnerPawn()
 		{

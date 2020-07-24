@@ -21,15 +21,16 @@ namespace RimWorld
 				{
 					pawn.stances.StaggerFor(95);
 				}
-				if (def.projectile.extraDamages != null)
+				if (def.projectile.extraDamages == null)
 				{
-					foreach (ExtraDamage extraDamage in def.projectile.extraDamages)
+					return;
+				}
+				foreach (ExtraDamage extraDamage in def.projectile.extraDamages)
+				{
+					if (Rand.Chance(extraDamage.chance))
 					{
-						if (Rand.Chance(extraDamage.chance))
-						{
-							DamageInfo dinfo2 = new DamageInfo(extraDamage.def, extraDamage.amount, extraDamage.AdjustedArmorPenetration(), ExactRotation.eulerAngles.y, launcher, null, equipmentDef, DamageInfo.SourceCategory.ThingOrUnknown, intendedTarget.Thing);
-							hitThing.TakeDamage(dinfo2).AssociateWithLog(battleLogEntry_RangedImpact);
-						}
+						DamageInfo dinfo2 = new DamageInfo(extraDamage.def, extraDamage.amount, extraDamage.AdjustedArmorPenetration(), ExactRotation.eulerAngles.y, launcher, null, equipmentDef, DamageInfo.SourceCategory.ThingOrUnknown, intendedTarget.Thing);
+						hitThing.TakeDamage(dinfo2).AssociateWithLog(battleLogEntry_RangedImpact);
 					}
 				}
 			}

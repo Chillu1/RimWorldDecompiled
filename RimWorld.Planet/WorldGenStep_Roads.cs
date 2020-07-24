@@ -107,8 +107,7 @@ namespace RimWorld.Planet
 			}
 			List<Link> linkProspective = new List<Link>();
 			List<int> list = new List<int>();
-			int srcIndex = 0;
-			while (srcIndex < indexToTile.Count)
+			for (int srcIndex = 0; srcIndex < indexToTile.Count; srcIndex++)
 			{
 				int srcTile = indexToTile[srcIndex];
 				list.Clear();
@@ -118,7 +117,7 @@ namespace RimWorld.Planet
 				{
 					if (tile != srcTile && tileToIndexLookup.ContainsKey(tile))
 					{
-						int num2 = ++found;
+						found++;
 						linkProspective.Add(new Link
 						{
 							distance = distance,
@@ -128,7 +127,6 @@ namespace RimWorld.Planet
 					}
 					return found >= 8;
 				});
-				int num = ++srcIndex;
 			}
 			linkProspective.Sort((Link lhs, Link rhs) => lhs.distance.CompareTo(rhs.distance));
 			return linkProspective;

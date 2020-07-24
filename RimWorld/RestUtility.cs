@@ -98,7 +98,7 @@ namespace RimWorld
 			}
 			else if (building_Bed.OwnersForReading.Any() && !building_Bed.OwnersForReading.Contains(sleeper))
 			{
-				if (sleeper.IsPrisoner | sleeperWillBePrisoner)
+				if (sleeper.IsPrisoner || sleeperWillBePrisoner)
 				{
 					if (!building_Bed.AnyUnownedSleepingSlot)
 					{
@@ -251,7 +251,7 @@ namespace RimWorld
 					return bed.GetSleepingSlotPos(k);
 				}
 			}
-			Log.Error("Could not find good sleeping slot position for " + pawn + ". Perhaps AnyUnoccupiedSleepingSlot check is missing somewhere.");
+			Log.Error(string.Concat("Could not find good sleeping slot position for ", pawn, ". Perhaps AnyUnoccupiedSleepingSlot check is missing somewhere."));
 			return bed.GetSleepingSlotPos(0);
 		}
 

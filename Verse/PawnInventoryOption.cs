@@ -18,32 +18,34 @@ namespace Verse
 
 		public IEnumerable<Thing> GenerateThings()
 		{
-			if (!(Rand.Value < skipChance))
+			if (Rand.Value < skipChance)
 			{
-				if (thingDef != null && countRange.max > 0)
+				yield break;
+			}
+			if (thingDef != null && countRange.max > 0)
+			{
+				Thing thing = ThingMaker.MakeThing(thingDef);
+				thing.stackCount = countRange.RandomInRange;
+				yield return thing;
+			}
+			if (subOptionsTakeAll != null)
+			{
+				foreach (PawnInventoryOption item in subOptionsTakeAll)
 				{
-					Thing thing = ThingMaker.MakeThing(thingDef);
-					thing.stackCount = countRange.RandomInRange;
-					yield return thing;
-				}
-				if (subOptionsTakeAll != null)
-				{
-					foreach (PawnInventoryOption item in subOptionsTakeAll)
+					foreach (Thing item2 in item.GenerateThings())
 					{
-						foreach (Thing item2 in item.GenerateThings())
-						{
-							yield return item2;
-						}
+						yield return item2;
 					}
 				}
-				if (subOptionsChooseOne != null)
-				{
-					PawnInventoryOption pawnInventoryOption = subOptionsChooseOne.RandomElementByWeight((PawnInventoryOption o) => o.choiceChance);
-					foreach (Thing item3 in pawnInventoryOption.GenerateThings())
-					{
-						yield return item3;
-					}
-				}
+			}
+			if (subOptionsChooseOne == null)
+			{
+				yield break;
+			}
+			PawnInventoryOption pawnInventoryOption = subOptionsChooseOne.RandomElementByWeight((PawnInventoryOption o) => o.choiceChance);
+			foreach (Thing item3 in pawnInventoryOption.GenerateThings())
+			{
+				yield return item3;
 			}
 		}
 	}

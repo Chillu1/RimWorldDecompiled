@@ -16,7 +16,7 @@ namespace RimWorld
 			Pawn followee = GetFollowee(pawn);
 			if (followee == null)
 			{
-				Log.Error(GetType() + " has null followee. pawn=" + pawn.ToStringSafe());
+				Log.Error(string.Concat(GetType(), " has null followee. pawn=", pawn.ToStringSafe()));
 				return null;
 			}
 			if (!followee.Spawned || !pawn.CanReach(followee, PathEndMode.OnCell, Danger.Deadly))

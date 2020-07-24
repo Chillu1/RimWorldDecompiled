@@ -79,7 +79,7 @@ namespace RimWorld
 		{
 			if (!def.IsMemory)
 			{
-				Log.Error(def + " is not a memory thought.");
+				Log.Error(string.Concat(def, " is not a memory thought."));
 			}
 			else
 			{
@@ -95,7 +95,7 @@ namespace RimWorld
 			}
 			if (newThought is Thought_MemorySocial && newThought.otherPawn == null && otherPawn == null)
 			{
-				Log.Error("Can't gain social thought " + newThought.def + " because its otherPawn is null and otherPawn passed to this method is also null. Social thoughts must have otherPawn.");
+				Log.Error(string.Concat("Can't gain social thought ", newThought.def, " because its otherPawn is null and otherPawn passed to this method is also null. Social thoughts must have otherPawn."));
 				return;
 			}
 			newThought.pawn = pawn;
@@ -245,7 +245,7 @@ namespace RimWorld
 		{
 			if (!def.IsMemory)
 			{
-				Log.Warning(def + " is not a memory thought.");
+				Log.Warning(string.Concat(def, " is not a memory thought."));
 				return;
 			}
 			while (true)
@@ -264,7 +264,7 @@ namespace RimWorld
 		{
 			if (!def.IsMemory)
 			{
-				Log.Warning(def + " is not a memory thought.");
+				Log.Warning(string.Concat(def, " is not a memory thought."));
 				return;
 			}
 			while (true)

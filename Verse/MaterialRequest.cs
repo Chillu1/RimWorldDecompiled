@@ -96,7 +96,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return "MaterialRequest(" + shader.name + ", " + mainTex.name + ", " + color.ToString() + ", " + colorTwo.ToString() + ", " + maskTex.ToString() + ", " + renderQueue.ToString() + ")";
+			return "MaterialRequest(" + shader.name + ", " + mainTex.name + ", " + color.ToString() + ", " + colorTwo.ToString() + ", " + maskTex.ToString() + ", " + renderQueue + ")";
 		}
 	}
 }

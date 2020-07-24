@@ -47,6 +47,8 @@ namespace Verse
 
 		public RoyalTitleDef titleRequired;
 
+		public RoyalTitleDef minTitleRequired;
+
 		public List<RoyalTitleDef> titleSelectOne;
 
 		public bool allowRoyalRoomRequirements = true;
@@ -133,6 +135,8 @@ namespace Verse
 
 		public List<SkillRange> skills;
 
+		public WorkTags requiredWorkTags;
+
 		[MustTranslate]
 		public string labelMale;
 
@@ -216,10 +220,11 @@ namespace Verse
 			if (weaponMoney != FloatRange.Zero)
 			{
 				float num = 999999f;
-				int k;
-				for (k = 0; k < weaponTags.Count; k++)
+				PawnKindDef pawnKindDef = this;
+				int j;
+				for (j = 0; j < weaponTags.Count; j++)
 				{
-					IEnumerable<ThingDef> source = DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.weaponTags != null && d.weaponTags.Contains(weaponTags[k]));
+					IEnumerable<ThingDef> source = DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.weaponTags != null && d.weaponTags.Contains(pawnKindDef.weaponTags[j]));
 					if (source.Any())
 					{
 						num = Mathf.Min(num, source.Min((ThingDef d) => PawnWeaponGenerator.CheapestNonDerpPriceFor(d)));
@@ -236,25 +241,26 @@ namespace Verse
 			}
 			if (apparelRequired != null)
 			{
-				for (int j = 0; j < apparelRequired.Count; j++)
+				for (int i = 0; i < apparelRequired.Count; i++)
 				{
-					for (int i = j + 1; i < apparelRequired.Count; i++)
+					for (int k = i + 1; k < apparelRequired.Count; k++)
 					{
-						if (!ApparelUtility.CanWearTogether(apparelRequired[j], apparelRequired[i], race.race.body))
+						if (!ApparelUtility.CanWearTogether(apparelRequired[i], apparelRequired[k], race.race.body))
 						{
-							yield return "required apparel can't be worn together (" + apparelRequired[j] + ", " + apparelRequired[i] + ")";
+							yield return string.Concat("required apparel can't be worn together (", apparelRequired[i], ", ", apparelRequired[k], ")");
 						}
 					}
 				}
 			}
-			if (alternateGraphics != null)
+			if (alternateGraphics == null)
 			{
-				foreach (AlternateGraphic alternateGraphic in alternateGraphics)
+				yield break;
+			}
+			foreach (AlternateGraphic alternateGraphic in alternateGraphics)
+			{
+				if (alternateGraphic.Weight < 0f)
 				{
-					if (alternateGraphic.Weight < 0f)
-					{
-						yield return "alternate graphic has negative weight.";
-					}
+					yield return "alternate graphic has negative weight.";
 				}
 			}
 		}

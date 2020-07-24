@@ -26,6 +26,11 @@ namespace RimWorld
 			}
 		}
 
+		public virtual TaggedString ConfirmMessage(Pawn p)
+		{
+			return null;
+		}
+
 		public virtual bool SelectedUseOption(Pawn p)
 		{
 			return false;

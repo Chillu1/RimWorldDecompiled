@@ -34,7 +34,7 @@ namespace Verse
 		{
 			if (base.Pawn.health.hediffSet.hediffs.Where((Hediff hd) => hd.IsPermanent() || hd.def.chronic).TryRandomElement(out Hediff result))
 			{
-				result.Severity = 0f;
+				HealthUtility.CureHediff(result);
 				if (PawnUtility.ShouldSendNotificationAbout(base.Pawn))
 				{
 					Messages.Message("MessagePermanentWoundHealed".Translate(parent.LabelCap, base.Pawn.LabelShort, result.Label, base.Pawn.Named("PAWN")), base.Pawn, MessageTypeDefOf.PositiveEvent);

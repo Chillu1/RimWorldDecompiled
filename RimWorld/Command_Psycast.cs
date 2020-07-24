@@ -21,7 +21,7 @@ namespace RimWorld
 				Hediff hediff = pawn.health.hediffSet.hediffs.FirstOrDefault((Hediff h) => h.def == HediffDefOf.PsychicAmplifier);
 				if (hediff == null || hediff.Severity < (float)def.level)
 				{
-					DisableWithReason("CommandPsycastHigherLevelAmplifierRequired".Translate(def.level));
+					DisableWithReason("CommandPsycastHigherLevelPsylinkRequired".Translate(def.level));
 				}
 				else if (pawn.psychicEntropy.WouldOverflowEntropy(def.EntropyGain + PsycastUtility.TotalEntropyFromQueuedPsycasts(pawn)))
 				{
@@ -29,12 +29,26 @@ namespace RimWorld
 				}
 			}
 			GizmoResult result = base.GizmoOnGUI(topLeft, maxWidth);
+			float num = topLeft.y + 3f;
+			float num2 = ((def.EntropyGain > float.Epsilon) ? 15 : 0) + ((def.PsyfocusCost > float.Epsilon) ? 15 : 0);
+			if (num2 > 0f)
+			{
+				GUI.DrawTexture(new Rect(topLeft.x + GetWidth(maxWidth) - 38f, num, 43f, num2), TexUI.GrayTextBG);
+			}
+			Text.Font = GameFont.Tiny;
 			if (def.EntropyGain > float.Epsilon)
 			{
-				Text.Font = GameFont.Tiny;
-				string text = def.EntropyGain.ToString();
-				float x = Text.CalcSize(text).x;
-				Widgets.Label(new Rect(topLeft.x + GetWidth(maxWidth) - x - 5f, topLeft.y + 5f, x, 18f), text);
+				TaggedString taggedString = "NeuralHeatLetter".Translate() + ": " + def.EntropyGain.ToString();
+				float x = Text.CalcSize(taggedString).x;
+				Rect rect = new Rect(topLeft.x + GetWidth(maxWidth) - x - 2f, num, x, 18f);
+				Widgets.Label(rect, taggedString);
+				num += rect.height - 4f;
+			}
+			if (def.PsyfocusCost > float.Epsilon)
+			{
+				TaggedString taggedString2 = "PsyfocusLetter".Translate() + ": " + def.PsyfocusCost.ToStringPercent();
+				float x2 = Text.CalcSize(taggedString2).x;
+				Widgets.Label(new Rect(topLeft.x + GetWidth(maxWidth) - x2 - 2f, num, x2, 18f), taggedString2);
 			}
 			return result;
 		}

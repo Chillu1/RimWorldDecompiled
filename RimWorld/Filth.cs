@@ -111,12 +111,13 @@ namespace RimWorld
 
 		public void AddSources(IEnumerable<string> sources)
 		{
-			if (sources != null)
+			if (sources == null)
 			{
-				foreach (string source in sources)
-				{
-					AddSource(source);
-				}
+				return;
+			}
+			foreach (string source in sources)
+			{
+				AddSource(source);
 			}
 		}
 

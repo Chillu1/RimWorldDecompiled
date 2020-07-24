@@ -67,12 +67,13 @@ namespace RimWorld
 				{
 					num = Mathf.Max(num, options[i].weightIfPlayerHasNoItem.Value);
 				}
-				if (!(num <= 0f))
+				if (num <= 0f)
 				{
-					foreach (ThingDef item in options[i].thingSetMaker.AllGeneratableThingsDebug(parms))
-					{
-						yield return item;
-					}
+					continue;
+				}
+				foreach (ThingDef item in options[i].thingSetMaker.AllGeneratableThingsDebug(parms))
+				{
+					yield return item;
 				}
 			}
 		}

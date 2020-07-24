@@ -104,23 +104,25 @@ namespace Verse.AI
 			yield return Toils_Recipe.MakeUnfinishedThingIfNeeded();
 			yield return Toils_Recipe.DoRecipeWork().FailOnDespawnedNullOrForbiddenPlacedThings().FailOnCannotTouch(TargetIndex.A, PathEndMode.InteractionCell);
 			yield return Toils_Recipe.FinishRecipeAndStartStoringProduct();
-			if (!job.RecipeDef.products.NullOrEmpty() || !job.RecipeDef.specialProducts.NullOrEmpty())
+			if (job.RecipeDef.products.NullOrEmpty() && job.RecipeDef.specialProducts.NullOrEmpty())
 			{
-				yield return Toils_Reserve.Reserve(TargetIndex.B);
-				findPlaceTarget2 = Toils_Haul.CarryHauledThingToCell(TargetIndex.B);
-				yield return findPlaceTarget2;
-				yield return Toils_Haul.PlaceHauledThingInCell(TargetIndex.B, findPlaceTarget2, storageMode: true, tryStoreInSameStorageIfSpotCantHoldWholeStack: true);
-				Toil recount = new Toil();
-				recount.initAction = delegate
-				{
-					Bill_Production bill_Production = recount.actor.jobs.curJob.bill as Bill_Production;
-					if (bill_Production != null && bill_Production.repeatMode == BillRepeatModeDefOf.TargetCount)
-					{
-						base.Map.resourceCounter.UpdateResourceCounts();
-					}
-				};
-				yield return recount;
+				yield break;
 			}
+			JobDriver_DoBill jobDriver_DoBill = this;
+			yield return Toils_Reserve.Reserve(TargetIndex.B);
+			findPlaceTarget2 = Toils_Haul.CarryHauledThingToCell(TargetIndex.B);
+			yield return findPlaceTarget2;
+			yield return Toils_Haul.PlaceHauledThingInCell(TargetIndex.B, findPlaceTarget2, storageMode: true, tryStoreInSameStorageIfSpotCantHoldWholeStack: true);
+			Toil recount = new Toil();
+			recount.initAction = delegate
+			{
+				Bill_Production bill_Production = recount.actor.jobs.curJob.bill as Bill_Production;
+				if (bill_Production != null && bill_Production.repeatMode == BillRepeatModeDefOf.TargetCount)
+				{
+					jobDriver_DoBill.Map.resourceCounter.UpdateResourceCounts();
+				}
+			};
+			yield return recount;
 		}
 
 		private static Toil JumpToCollectNextIntoHandsForBill(Toil gotoGetTargetToil, TargetIndex ind)
@@ -131,7 +133,7 @@ namespace Verse.AI
 				Pawn actor = toil.actor;
 				if (actor.carryTracker.CarriedThing == null)
 				{
-					Log.Error("JumpToAlsoCollectTargetInQueue run on " + actor + " who is not carrying something.");
+					Log.Error(string.Concat("JumpToAlsoCollectTargetInQueue run on ", actor, " who is not carrying something."));
 				}
 				else if (!actor.carryTracker.Full)
 				{

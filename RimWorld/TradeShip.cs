@@ -146,6 +146,16 @@ namespace RimWorld
 			return name + " (" + def.label + ")";
 		}
 
+		protected override AcceptanceReport CanCommunicateWith_NewTemp(Pawn negotiator)
+		{
+			AcceptanceReport result = base.CanCommunicateWith_NewTemp(negotiator);
+			if (!result.Accepted)
+			{
+				return result;
+			}
+			return negotiator.CanTradeWith_NewTemp(base.Faction, TraderKind);
+		}
+
 		protected override bool CanCommunicateWith(Pawn negotiator)
 		{
 			if (base.CanCommunicateWith(negotiator))

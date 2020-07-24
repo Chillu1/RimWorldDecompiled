@@ -58,7 +58,7 @@ namespace RimWorld
 			List<Pawn> attackers = PawnGroupMakerUtility.GeneratePawns(defaultPawnGroupMakerParms).ToList();
 			if (attackers.Count == 0)
 			{
-				Log.Error("Caravan demand incident couldn't generate any enemies even though min points have been checked. faction=" + defaultPawnGroupMakerParms.faction + "(" + ((defaultPawnGroupMakerParms.faction != null) ? defaultPawnGroupMakerParms.faction.def.ToString() : "null") + ") parms=" + parms);
+				Log.Error(string.Concat("Caravan demand incident couldn't generate any enemies even though min points have been checked. faction=", defaultPawnGroupMakerParms.faction, "(", (defaultPawnGroupMakerParms.faction != null) ? defaultPawnGroupMakerParms.faction.def.ToString() : "null", ") parms=", parms));
 				return false;
 			}
 			CameraJumper.TryJumpAndSelect(caravan);

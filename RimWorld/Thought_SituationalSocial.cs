@@ -18,6 +18,30 @@ namespace RimWorld
 			}
 		}
 
+		public override string LabelCap
+		{
+			get
+			{
+				if (def.Worker == null)
+				{
+					return base.CurStage.LabelCap.Formatted(pawn.Named("PAWN"), otherPawn.Named("OTHERPAWN"));
+				}
+				return base.LabelCap;
+			}
+		}
+
+		public override string LabelCapSocial
+		{
+			get
+			{
+				if (base.CurStage.labelSocial != null)
+				{
+					return base.CurStage.LabelSocialCap.Formatted(pawn.Named("PAWN"), otherPawn.Named("OTHERPAWN"));
+				}
+				return base.LabelCapSocial;
+			}
+		}
+
 		public Pawn OtherPawn()
 		{
 			return otherPawn;

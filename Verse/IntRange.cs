@@ -47,7 +47,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return min.ToString() + "~" + max.ToString();
+			return min + "~" + max;
 		}
 
 		public override int GetHashCode()

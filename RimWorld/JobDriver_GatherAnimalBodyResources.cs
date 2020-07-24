@@ -30,6 +30,7 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
+			JobDriver_GatherAnimalBodyResources jobDriver_GatherAnimalBodyResources = this;
 			this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
 			this.FailOnDowned(TargetIndex.A);
 			this.FailOnNotCasualInterruptible(TargetIndex.A);
@@ -38,7 +39,7 @@ namespace RimWorld
 			wait.initAction = delegate
 			{
 				Pawn actor2 = wait.actor;
-				Pawn pawn2 = (Pawn)job.GetTarget(TargetIndex.A).Thing;
+				Pawn pawn2 = (Pawn)jobDriver_GatherAnimalBodyResources.job.GetTarget(TargetIndex.A).Thing;
 				actor2.pather.StopDead();
 				PawnUtility.ForceWait(pawn2, 15000, null, maintainPosture: true);
 			};
@@ -46,16 +47,16 @@ namespace RimWorld
 			{
 				Pawn actor = wait.actor;
 				actor.skills.Learn(SkillDefOf.Animals, 0.13f);
-				gatherProgress += actor.GetStatValue(StatDefOf.AnimalGatherSpeed);
-				if (gatherProgress >= WorkTotal)
+				jobDriver_GatherAnimalBodyResources.gatherProgress += actor.GetStatValue(StatDefOf.AnimalGatherSpeed);
+				if (jobDriver_GatherAnimalBodyResources.gatherProgress >= jobDriver_GatherAnimalBodyResources.WorkTotal)
 				{
-					GetComp((Pawn)(Thing)job.GetTarget(TargetIndex.A)).Gathered(pawn);
+					jobDriver_GatherAnimalBodyResources.GetComp((Pawn)(Thing)jobDriver_GatherAnimalBodyResources.job.GetTarget(TargetIndex.A)).Gathered(jobDriver_GatherAnimalBodyResources.pawn);
 					actor.jobs.EndCurrentJob(JobCondition.Succeeded);
 				}
 			};
 			wait.AddFinishAction(delegate
 			{
-				Pawn pawn = (Pawn)job.GetTarget(TargetIndex.A).Thing;
+				Pawn pawn = (Pawn)jobDriver_GatherAnimalBodyResources.job.GetTarget(TargetIndex.A).Thing;
 				if (pawn != null && pawn.CurJobDef == JobDefOf.Wait_MaintainPosture)
 				{
 					pawn.jobs.EndCurrentJob(JobCondition.InterruptForced);
@@ -63,9 +64,9 @@ namespace RimWorld
 			});
 			wait.FailOnDespawnedOrNull(TargetIndex.A);
 			wait.FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
-			wait.AddEndCondition(() => GetComp((Pawn)(Thing)job.GetTarget(TargetIndex.A)).ActiveAndFull ? JobCondition.Ongoing : JobCondition.Incompletable);
+			wait.AddEndCondition(() => jobDriver_GatherAnimalBodyResources.GetComp((Pawn)(Thing)jobDriver_GatherAnimalBodyResources.job.GetTarget(TargetIndex.A)).ActiveAndFull ? JobCondition.Ongoing : JobCondition.Incompletable);
 			wait.defaultCompleteMode = ToilCompleteMode.Never;
-			wait.WithProgressBar(TargetIndex.A, () => gatherProgress / WorkTotal);
+			wait.WithProgressBar(TargetIndex.A, () => jobDriver_GatherAnimalBodyResources.gatherProgress / jobDriver_GatherAnimalBodyResources.WorkTotal);
 			wait.activeSkill = (() => SkillDefOf.Animals);
 			yield return wait;
 		}

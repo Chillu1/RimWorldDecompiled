@@ -67,7 +67,7 @@ namespace RimWorld.QuestGen
 
 		public override string ToString()
 		{
-			return base.ToString() + " (" + def + ")";
+			return string.Concat(base.ToString(), " (", def, ")");
 		}
 	}
 }

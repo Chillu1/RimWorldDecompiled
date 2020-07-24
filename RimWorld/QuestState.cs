@@ -7,6 +7,7 @@ namespace RimWorld
 		EndedUnknownOutcome,
 		EndedOfferExpired,
 		EndedSuccess,
-		EndedFailed
+		EndedFailed,
+		EndedInvalid
 	}
 }

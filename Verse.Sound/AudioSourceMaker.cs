@@ -10,7 +10,7 @@ namespace Verse.Sound
 		{
 			if (go.GetComponent<AudioSource>() != null)
 			{
-				Log.Warning("Adding audio source on " + go + " that already has one.");
+				Log.Warning(string.Concat("Adding audio source on ", go, " that already has one."));
 				return go.GetComponent<AudioSource>();
 			}
 			AudioSource audioSource = go.AddComponent<AudioSource>();

@@ -115,6 +115,10 @@ namespace Verse
 		{
 		}
 
+		public virtual void PrePostIngested(Pawn ingester)
+		{
+		}
+
 		public virtual void PostIngested(Pawn ingester)
 		{
 		}
@@ -150,7 +154,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return GetType().Name + "(parent=" + parent + " at=" + ((parent != null) ? parent.Position : IntVec3.Invalid) + ")";
+			return string.Concat(GetType().Name, "(parent=", parent, " at=", (parent != null) ? parent.Position : IntVec3.Invalid, ")");
 		}
 	}
 }

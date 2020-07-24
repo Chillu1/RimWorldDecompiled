@@ -10,6 +10,7 @@ namespace RimWorld.SketchGen
 			bool num = parms.symmetryClear ?? true;
 			int origin = parms.symmetryOrigin ?? 0;
 			bool flag = parms.symmetryVertical ?? false;
+			bool flag2 = parms.requireFloor ?? false;
 			bool originIncluded = parms.symmetryOriginIncluded ?? false;
 			if (num)
 			{
@@ -17,25 +18,45 @@ namespace RimWorld.SketchGen
 			}
 			foreach (SketchBuildable item in parms.sketch.Buildables.ToList())
 			{
-				if (!ShouldKeepAlreadySymmetricalInTheMiddle(item, origin, flag, originIncluded))
+				if (ShouldKeepAlreadySymmetricalInTheMiddle(item, origin, flag, originIncluded))
 				{
-					SketchBuildable sketchBuildable = (SketchBuildable)item.DeepCopy();
-					SketchThing sketchThing = sketchBuildable as SketchThing;
-					if (sketchThing != null && sketchThing.def.rotatable)
+					continue;
+				}
+				SketchBuildable sketchBuildable = (SketchBuildable)item.DeepCopy();
+				SketchThing sketchThing = sketchBuildable as SketchThing;
+				if (sketchThing != null && sketchThing.def.rotatable)
+				{
+					if (flag)
 					{
-						if (flag)
-						{
-							if (!sketchThing.rot.IsHorizontal)
-							{
-								sketchThing.rot = sketchThing.rot.Opposite;
-							}
-						}
-						else if (sketchThing.rot.IsHorizontal)
+						if (!sketchThing.rot.IsHorizontal)
 						{
 							sketchThing.rot = sketchThing.rot.Opposite;
 						}
 					}
-					MoveUntilSymmetrical(sketchBuildable, item.OccupiedRect, origin, flag, originIncluded);
+					else if (sketchThing.rot.IsHorizontal)
+					{
+						sketchThing.rot = sketchThing.rot.Opposite;
+					}
+				}
+				MoveUntilSymmetrical(sketchBuildable, item.OccupiedRect, origin, flag, originIncluded);
+				if (flag2 && sketchBuildable.Buildable != ThingDefOf.Wall && sketchBuildable.Buildable != ThingDefOf.Door)
+				{
+					bool flag3 = true;
+					foreach (IntVec3 item2 in sketchBuildable.OccupiedRect)
+					{
+						if (!parms.sketch.AnyTerrainAt(item2))
+						{
+							flag3 = false;
+							break;
+						}
+					}
+					if (flag3)
+					{
+						parms.sketch.Add(sketchBuildable);
+					}
+				}
+				else
+				{
 					parms.sketch.Add(sketchBuildable);
 				}
 			}

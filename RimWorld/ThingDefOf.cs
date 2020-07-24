@@ -61,6 +61,8 @@ namespace RimWorld
 
 		public static ThingDef Uranium;
 
+		public static ThingDef Jade;
+
 		public static ThingDef Shell_HighExplosive;
 
 		public static ThingDef Shell_AntigrainWarhead;
@@ -122,6 +124,9 @@ namespace RimWorld
 		[MayRequireRoyalty]
 		public static ThingDef MonumentMarker;
 
+		[MayRequireRoyalty]
+		public static ThingDef PsychicAmplifier;
+
 		public static ThingDef Filth_Blood;
 
 		public static ThingDef Filth_AmnioticFluid;
@@ -150,6 +155,8 @@ namespace RimWorld
 
 		public static ThingDef Filth_MachineBits;
 
+		public static ThingDef Filth_Water;
+
 		public static ThingDef RectTrigger;
 
 		public static ThingDef TriggerUnfogged;
@@ -169,6 +176,9 @@ namespace RimWorld
 		public static ThingDef Tornado;
 
 		public static ThingDef TunnelHiveSpawner;
+
+		[MayRequireRoyalty]
+		public static ThingDef Flashstorm;
 
 		public static ThingDef Sandstone;
 
@@ -237,6 +247,9 @@ namespace RimWorld
 		public static ThingDef MarriageSpot;
 
 		public static ThingDef PartySpot;
+
+		[MayRequireRoyalty]
+		public static ThingDef MeditationSpot;
 
 		public static ThingDef RoyalBed;
 
@@ -346,6 +359,18 @@ namespace RimWorld
 
 		public static ThingDef BurnedTree;
 
+		[MayRequireRoyalty]
+		public static ThingDef Plant_TreeAnima;
+
+		[MayRequireRoyalty]
+		public static ThingDef AnimusStone;
+
+		[MayRequireRoyalty]
+		public static ThingDef NatureShrine_Small;
+
+		[MayRequireRoyalty]
+		public static ThingDef NatureShrine_Large;
+
 		public static ThingDef Human;
 
 		public static ThingDef Muffalo;
@@ -383,6 +408,8 @@ namespace RimWorld
 		public static ThingDef Mote_SleepZ;
 
 		public static ThingDef Mote_Heart;
+
+		public static ThingDef Mote_Meditating;
 
 		public static ThingDef Mote_IncapIcon;
 
@@ -455,6 +482,9 @@ namespace RimWorld
 		public static ThingDef Mote_LineEMP;
 
 		[MayRequireRoyalty]
+		public static ThingDef Mote_WaterskipSplashParticles;
+
+		[MayRequireRoyalty]
 		public static ThingDef Mote_CastPsycast;
 
 		[MayRequireRoyalty]
@@ -475,6 +505,9 @@ namespace RimWorld
 		[MayRequireRoyalty]
 		public static ThingDef Mote_PsychicLinkPulse;
 
+		[MayRequireRoyalty]
+		public static ThingDef Mote_PsyfocusPulse;
+
 		public static ThingDef Gas_Smoke;
 
 		[MayRequireRoyalty]
@@ -488,9 +521,6 @@ namespace RimWorld
 
 		[MayRequireRoyalty]
 		public static ThingDef Piano;
-
-		[MayRequireRoyalty]
-		public static ThingDef PsychicAmplifier;
 
 		[MayRequireRoyalty]
 		public static ThingDef ShipLandingBeacon;

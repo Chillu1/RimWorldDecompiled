@@ -74,6 +74,10 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (pawn.psychicEntropy != null && pawn.psychicEntropy.IsCurrentlyMeditating)
+			{
+				return false;
+			}
 			if (pawn.Spawned && !pawn.Downed)
 			{
 				return !pawn.InMentalState;

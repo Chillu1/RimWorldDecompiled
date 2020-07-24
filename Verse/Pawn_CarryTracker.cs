@@ -70,7 +70,7 @@ namespace Verse
 		{
 			if (pawn.Dead || pawn.Downed)
 			{
-				Log.Error("Dead/downed pawn " + pawn + " tried to start carry item.");
+				Log.Error(string.Concat("Dead/downed pawn ", pawn, " tried to start carry item."));
 				return false;
 			}
 			if (innerContainer.TryAdd(item))
@@ -85,7 +85,7 @@ namespace Verse
 		{
 			if (pawn.Dead || pawn.Downed)
 			{
-				Log.Error("Dead/downed pawn " + pawn + " tried to start carry " + item.ToStringSafe());
+				Log.Error(string.Concat("Dead/downed pawn ", pawn, " tried to start carry ", item.ToStringSafe()));
 				return 0;
 			}
 			count = Mathf.Min(count, AvailableStackSpace(item.def));

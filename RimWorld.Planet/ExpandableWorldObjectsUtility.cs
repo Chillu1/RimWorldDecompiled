@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
@@ -85,20 +86,27 @@ namespace RimWorld.Planet
 			}
 			for (int i = 0; i < tmpWorldObjects.Count; i++)
 			{
-				WorldObject worldObject = tmpWorldObjects[i];
-				if (worldObject.def.expandingIcon && !worldObject.HiddenBehindTerrainNow())
+				try
 				{
-					Color expandingIconColor = worldObject.ExpandingIconColor;
-					expandingIconColor.a = TransitionPct;
-					if (worldTargeter.IsTargetedNow(worldObject, worldObjectsUnderMouse))
+					WorldObject worldObject = tmpWorldObjects[i];
+					if (worldObject.def.expandingIcon && !worldObject.HiddenBehindTerrainNow())
 					{
-						float num = GenMath.LerpDouble(-1f, 1f, 0.7f, 1f, Mathf.Sin(Time.time * 8f));
-						expandingIconColor.r *= num;
-						expandingIconColor.g *= num;
-						expandingIconColor.b *= num;
+						Color expandingIconColor = worldObject.ExpandingIconColor;
+						expandingIconColor.a = TransitionPct;
+						if (worldTargeter.IsTargetedNow(worldObject, worldObjectsUnderMouse))
+						{
+							float num = GenMath.LerpDouble(-1f, 1f, 0.7f, 1f, Mathf.Sin(Time.time * 8f));
+							expandingIconColor.r *= num;
+							expandingIconColor.g *= num;
+							expandingIconColor.b *= num;
+						}
+						GUI.color = expandingIconColor;
+						GUI.DrawTexture(ExpandedIconScreenRect(worldObject), worldObject.ExpandingIcon);
 					}
-					GUI.color = expandingIconColor;
-					GUI.DrawTexture(ExpandedIconScreenRect(worldObject), worldObject.ExpandingIcon);
+				}
+				catch (Exception ex)
+				{
+					Log.Error("Error while drawing " + tmpWorldObjects[i].ToStringSafe() + ": " + ex);
 				}
 			}
 			tmpWorldObjects.Clear();

@@ -10,17 +10,14 @@ namespace RimWorld
 
 		public override void DoEditInterface(Listing_ScenEdit listing)
 		{
-			if (Widgets.ButtonText(listing.GetScenPartRect(this, ScenPart.RowHeight), project.LabelCap))
+			if (!Widgets.ButtonText(listing.GetScenPartRect(this, ScenPart.RowHeight), project.LabelCap))
 			{
-				FloatMenuUtility.MakeMenu(NonRedundantResearchProjects(), (ResearchProjectDef d) => d.LabelCap, delegate(ResearchProjectDef d)
-				{
-					ScenPart_StartingResearch scenPart_StartingResearch = this;
-					return delegate
-					{
-						scenPart_StartingResearch.project = d;
-					};
-				});
+				return;
 			}
+			FloatMenuUtility.MakeMenu(NonRedundantResearchProjects(), (ResearchProjectDef d) => d.LabelCap, (ResearchProjectDef d) => delegate
+			{
+				project = d;
+			});
 		}
 
 		public override void Randomize()

@@ -42,7 +42,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return "(glow=" + glow.ToString("F2") + ", colors=" + colors.ToString() + ", lightsourceShineSize=" + lightsourceShineSize.ToString() + ", lightsourceShineIntensity=" + lightsourceShineIntensity.ToString() + ")";
+			return "(glow=" + glow.ToString("F2") + ", colors=" + colors.ToString() + ", lightsourceShineSize=" + lightsourceShineSize + ", lightsourceShineIntensity=" + lightsourceShineIntensity + ")";
 		}
 	}
 }

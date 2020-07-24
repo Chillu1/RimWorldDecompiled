@@ -10,21 +10,27 @@ namespace RimWorld
 
 		public override IEnumerable<FloatMenuOption> CompFloatMenuOptions(Pawn selPawn)
 		{
+			Pawn selPawn2 = selPawn;
+			if (!ModLister.RoyaltyInstalled)
+			{
+				Log.ErrorOnce("Techprints are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it.", 657212);
+				yield break;
+			}
 			JobFailReason.Clear();
-			if (selPawn.WorkTypeIsDisabled(WorkTypeDefOf.Research) || selPawn.WorkTagIsDisabled(WorkTags.Intellectual))
+			if (selPawn2.WorkTypeIsDisabled(WorkTypeDefOf.Research) || selPawn2.WorkTagIsDisabled(WorkTags.Intellectual))
 			{
 				JobFailReason.Is("WillNever".Translate("Research".TranslateSimple().UncapitalizeFirst()));
 			}
-			else if (!selPawn.CanReach(parent, PathEndMode.ClosestTouch, Danger.Some))
+			else if (!selPawn2.CanReach(parent, PathEndMode.ClosestTouch, Danger.Some))
 			{
 				JobFailReason.Is("CannotReach".Translate());
 			}
-			else if (!selPawn.CanReserve(parent))
+			else if (!selPawn2.CanReserve(parent))
 			{
-				Pawn pawn = selPawn.Map.reservationManager.FirstRespectedReserver(parent, selPawn);
+				Pawn pawn = selPawn2.Map.reservationManager.FirstRespectedReserver(parent, selPawn2);
 				if (pawn == null)
 				{
-					pawn = selPawn.Map.physicalInteractionReservationManager.FirstReserverOf(selPawn);
+					pawn = selPawn2.Map.physicalInteractionReservationManager.FirstReserverOf(selPawn2);
 				}
 				if (pawn != null)
 				{
@@ -35,8 +41,8 @@ namespace RimWorld
 					JobFailReason.Is("Reserved".Translate());
 				}
 			}
-			HaulAIUtility.PawnCanAutomaticallyHaul(selPawn, parent, forced: true);
-			Thing thing2 = GenClosest.ClosestThingReachable(selPawn.Position, selPawn.Map, ThingRequest.ForGroup(ThingRequestGroup.ResearchBench), PathEndMode.InteractionCell, TraverseParms.For(selPawn, Danger.Some), 9999f, (Thing thing) => thing is Building_ResearchBench && selPawn.CanReserve(thing));
+			HaulAIUtility.PawnCanAutomaticallyHaul(selPawn2, parent, forced: true);
+			Thing thing2 = GenClosest.ClosestThingReachable(selPawn2.Position, selPawn2.Map, ThingRequest.ForGroup(ThingRequestGroup.ResearchBench), PathEndMode.InteractionCell, TraverseParms.For(selPawn2, Danger.Some), 9999f, (Thing thing) => thing is Building_ResearchBench && selPawn2.CanReserve(thing));
 			Job job = null;
 			if (thing2 != null)
 			{
@@ -49,21 +55,19 @@ namespace RimWorld
 			{
 				yield return new FloatMenuOption("CannotGenericWorkCustom".Translate("ApplyTechprint".Translate(parent.Label)) + ": " + JobFailReason.Reason.CapitalizeFirst(), null);
 				JobFailReason.Clear();
+				yield break;
 			}
-			else
+			yield return new FloatMenuOption("ApplyTechprint".Translate(parent.Label).CapitalizeFirst(), delegate
 			{
-				yield return new FloatMenuOption("ApplyTechprint".Translate(parent.Label).CapitalizeFirst(), delegate
+				if (job == null)
 				{
-					if (job == null)
-					{
-						Messages.Message("MessageNoResearchBenchForTechprint".Translate(), MessageTypeDefOf.RejectInput);
-					}
-					else
-					{
-						selPawn.jobs.TryTakeOrderedJob(job);
-					}
-				});
-			}
+					Messages.Message("MessageNoResearchBenchForTechprint".Translate(), MessageTypeDefOf.RejectInput);
+				}
+				else
+				{
+					selPawn2.jobs.TryTakeOrderedJob(job);
+				}
+			});
 		}
 	}
 }

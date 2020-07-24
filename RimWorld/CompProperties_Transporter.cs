@@ -16,6 +16,8 @@ namespace RimWorld
 
 		public SoundDef pawnLoadedSound;
 
+		public SoundDef pawnExitSound;
+
 		public CompProperties_Transporter()
 		{
 			compClass = typeof(CompTransporter);

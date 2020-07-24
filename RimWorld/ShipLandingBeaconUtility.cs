@@ -14,14 +14,16 @@ namespace RimWorld
 			foreach (Thing item in map.listerThings.ThingsOfDef(ThingDefOf.ShipLandingBeacon))
 			{
 				CompShipLandingBeacon compShipLandingBeacon = item.TryGetComp<CompShipLandingBeacon>();
-				if (compShipLandingBeacon != null && item.Faction == Faction.OfPlayer)
+				if (compShipLandingBeacon == null || item.Faction != Faction.OfPlayer)
 				{
-					foreach (ShipLandingArea landingArea in compShipLandingBeacon.LandingAreas)
+					continue;
+				}
+				foreach (ShipLandingArea landingArea in compShipLandingBeacon.LandingAreas)
+				{
+					if (landingArea.Active && !tmpShipLandingAreas.Contains(landingArea))
 					{
-						if (landingArea.Active && !tmpShipLandingAreas.Contains(landingArea))
-						{
-							tmpShipLandingAreas.Add(landingArea);
-						}
+						landingArea.RecalculateBlockingThing();
+						tmpShipLandingAreas.Add(landingArea);
 					}
 				}
 			}

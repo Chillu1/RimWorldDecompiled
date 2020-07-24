@@ -20,24 +20,23 @@ namespace RimWorld.QuestGen
 		protected override void RunInt()
 		{
 			Slate slate = QuestGen.slate;
-			if (targets.GetValue(slate) != null)
+			if (targets.GetValue(slate) == null)
 			{
-				string questTagToAdd = QuestGenUtility.HardcodedTargetQuestTagWithQuestID(tag.GetValue(slate));
-				foreach (object item in targets.GetValue(slate))
+				return;
+			}
+			string questTagToAdd = QuestGenUtility.HardcodedTargetQuestTagWithQuestID(tag.GetValue(slate));
+			foreach (object item in targets.GetValue(slate))
+			{
+				Thing thing = item as Thing;
+				if (thing != null)
 				{
-					Thing thing = item as Thing;
-					if (thing != null)
-					{
-						QuestUtility.AddQuestTag(ref thing.questTags, questTagToAdd);
-					}
-					else
-					{
-						WorldObject worldObject = item as WorldObject;
-						if (worldObject != null)
-						{
-							QuestUtility.AddQuestTag(ref worldObject.questTags, questTagToAdd);
-						}
-					}
+					QuestUtility.AddQuestTag(ref thing.questTags, questTagToAdd);
+					continue;
+				}
+				WorldObject worldObject = item as WorldObject;
+				if (worldObject != null)
+				{
+					QuestUtility.AddQuestTag(ref worldObject.questTags, questTagToAdd);
 				}
 			}
 		}

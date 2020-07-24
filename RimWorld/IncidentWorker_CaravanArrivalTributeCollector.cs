@@ -29,6 +29,11 @@ namespace RimWorld
 			return FactionCanBeGroupSource(Faction.Empire, (Map)parms.target);
 		}
 
+		protected override float TraderKindCommonality(TraderKindDef traderKind, Map map, Faction faction)
+		{
+			return traderKind.CalculatedCommonality;
+		}
+
 		protected override void SendLetter(IncidentParms parms, List<Pawn> pawns, TraderKindDef traderKind)
 		{
 			TaggedString letterLabel = "LetterLabelTributeCollectorArrival".Translate().CapitalizeFirst();

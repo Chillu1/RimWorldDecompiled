@@ -54,29 +54,30 @@ namespace RimWorld
 
 		public override void Generate(Map map, GenStepParams parms)
 		{
-			if (Find.World.HasCaves(map.Tile))
+			if (!Find.World.HasCaves(map.Tile))
 			{
-				directionNoise = new Perlin(0.0020500000100582838, 2.0, 0.5, 4, Rand.Int, QualityMode.Medium);
-				MapGenFloatGrid elevation = MapGenerator.Elevation;
-				BoolGrid visited = new BoolGrid(map);
-				List<IntVec3> group = new List<IntVec3>();
-				foreach (IntVec3 allCell in map.AllCells)
+				return;
+			}
+			directionNoise = new Perlin(0.0020500000100582838, 2.0, 0.5, 4, Rand.Int, QualityMode.Medium);
+			MapGenFloatGrid elevation = MapGenerator.Elevation;
+			BoolGrid visited = new BoolGrid(map);
+			List<IntVec3> group = new List<IntVec3>();
+			foreach (IntVec3 allCell in map.AllCells)
+			{
+				if (!visited[allCell] && IsRock(allCell, elevation, map))
 				{
-					if (!visited[allCell] && IsRock(allCell, elevation, map))
+					group.Clear();
+					map.floodFiller.FloodFill(allCell, (IntVec3 x) => IsRock(x, elevation, map), delegate(IntVec3 x)
 					{
-						group.Clear();
-						map.floodFiller.FloodFill(allCell, (IntVec3 x) => IsRock(x, elevation, map), delegate(IntVec3 x)
-						{
-							visited[x] = true;
-							group.Add(x);
-						});
-						Trim(group, map);
-						RemoveSmallDisconnectedSubGroups(group, map);
-						if (group.Count >= 300)
-						{
-							DoOpenTunnels(group, map);
-							DoClosedTunnels(group, map);
-						}
+						visited[x] = true;
+						group.Add(x);
+					});
+					Trim(group, map);
+					RemoveSmallDisconnectedSubGroups(group, map);
+					if (group.Count >= 300)
+					{
+						DoOpenTunnels(group, map);
+						DoClosedTunnels(group, map);
 					}
 				}
 			}

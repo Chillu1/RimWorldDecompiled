@@ -470,7 +470,11 @@ namespace RimWorld
 				Text.Anchor = TextAnchor.MiddleLeft;
 				for (int i = 0; i < visibleReqsCached.Count; i++)
 				{
-					DrawRequirementEntry(entryRect: new Rect(10f, num, width - 20f, 26f), entry: visibleReqsCached[i], y: ref num);
+					DrawRequirementEntry(entryRect: new Rect(11f, num, width - 20f - 1f, 26f), entry: visibleReqsCached[i], y: ref num);
+					if (i < visibleReqsCached.Count - 1)
+					{
+						num += 4f;
+					}
 				}
 				if (anyOrderingIssuesCached)
 				{
@@ -506,7 +510,7 @@ namespace RimWorld
 			position.height = 24f;
 			GUI.DrawTexture(position, entry.StatusIcon);
 			TooltipHandler.TipRegion(entryRect, new TipSignal(entry.Tooltip));
-			y += 30f;
+			y += 26f;
 		}
 
 		private void RecacheSelectedModRequirements()
@@ -540,7 +544,7 @@ namespace RimWorld
 			if (visibleReqsCached.Any() || anyOrderingIssuesCached)
 			{
 				anyReqsInfoToShowCached = true;
-				modRequirementsHeightCached = (float)visibleReqsCached.Count * 30f + 20f;
+				modRequirementsHeightCached = (float)visibleReqsCached.Count * 26f + (float)(visibleReqsCached.Count - 1) * 4f + 20f + 1f;
 				if (anyOrderingIssuesCached)
 				{
 					modRequirementsHeightCached += Text.LineHeight * 2f + 4f;

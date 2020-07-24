@@ -47,7 +47,7 @@ namespace RimWorld
 
 		public override string ToString()
 		{
-			return "(" + other + ", goodwill=" + goodwill.ToString("F1") + ", kind=" + kind + ")";
+			return string.Concat("(", other, ", goodwill=", goodwill.ToString("F1"), ", kind=", kind, ")");
 		}
 	}
 }

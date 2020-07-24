@@ -211,26 +211,27 @@ namespace Verse
 			}
 			foreach (Room item in reusedOldRooms.Concat(newRooms))
 			{
-				if (item.newOrReusedRoomGroupIndex < 0)
+				if (item.newOrReusedRoomGroupIndex >= 0)
 				{
-					tmpRoomStack.Clear();
-					tmpRoomStack.Push(item);
-					item.newOrReusedRoomGroupIndex = num;
-					while (tmpRoomStack.Count != 0)
+					continue;
+				}
+				tmpRoomStack.Clear();
+				tmpRoomStack.Push(item);
+				item.newOrReusedRoomGroupIndex = num;
+				while (tmpRoomStack.Count != 0)
+				{
+					Room room = tmpRoomStack.Pop();
+					foreach (Room neighbor in room.Neighbors)
 					{
-						Room room = tmpRoomStack.Pop();
-						foreach (Room neighbor in room.Neighbors)
+						if (neighbor.newOrReusedRoomGroupIndex < 0 && ShouldBeInTheSameRoomGroup(room, neighbor))
 						{
-							if (neighbor.newOrReusedRoomGroupIndex < 0 && ShouldBeInTheSameRoomGroup(room, neighbor))
-							{
-								neighbor.newOrReusedRoomGroupIndex = num;
-								tmpRoomStack.Push(neighbor);
-							}
+							neighbor.newOrReusedRoomGroupIndex = num;
+							tmpRoomStack.Push(neighbor);
 						}
 					}
-					tmpRoomStack.Clear();
-					num++;
 				}
+				tmpRoomStack.Clear();
+				num++;
 			}
 			return num;
 		}
@@ -334,19 +335,20 @@ namespace Verse
 			{
 				foreach (Region item in currentRegionGroup[i].NeighborsOfSameType)
 				{
-					if (item.Room != null && !reusedOldRooms.Contains(item.Room))
+					if (item.Room == null || reusedOldRooms.Contains(item.Room))
 					{
-						if (room == null)
+						continue;
+					}
+					if (room == null)
+					{
+						room = item.Room;
+					}
+					else if (item.Room != room)
+					{
+						multipleOldNeighborRooms = true;
+						if (item.Room.RegionCount > room.RegionCount)
 						{
 							room = item.Room;
-						}
-						else if (item.Room != room)
-						{
-							multipleOldNeighborRooms = true;
-							if (item.Room.RegionCount > room.RegionCount)
-							{
-								room = item.Room;
-							}
 						}
 					}
 				}
@@ -362,19 +364,20 @@ namespace Verse
 			{
 				foreach (Room neighbor in currentRoomGroup[i].Neighbors)
 				{
-					if (neighbor.Group != null && ShouldBeInTheSameRoomGroup(currentRoomGroup[i], neighbor) && !reusedOldRoomGroups.Contains(neighbor.Group))
+					if (neighbor.Group == null || !ShouldBeInTheSameRoomGroup(currentRoomGroup[i], neighbor) || reusedOldRoomGroups.Contains(neighbor.Group))
 					{
-						if (roomGroup == null)
+						continue;
+					}
+					if (roomGroup == null)
+					{
+						roomGroup = neighbor.Group;
+					}
+					else if (neighbor.Group != roomGroup)
+					{
+						multipleOldNeighborRoomGroups = true;
+						if (neighbor.Group.RegionCount > roomGroup.RegionCount)
 						{
 							roomGroup = neighbor.Group;
-						}
-						else if (neighbor.Group != roomGroup)
-						{
-							multipleOldNeighborRoomGroups = true;
-							if (neighbor.Group.RegionCount > roomGroup.RegionCount)
-							{
-								roomGroup = neighbor.Group;
-							}
 						}
 					}
 				}

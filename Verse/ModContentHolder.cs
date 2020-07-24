@@ -56,7 +56,7 @@ namespace Verse
 				}
 				if (contentList.ContainsKey(first))
 				{
-					Log.Warning("Tried to load duplicate " + typeof(T) + " with path: " + item.Second.internalFile + " and internal path: " + first);
+					Log.Warning(string.Concat("Tried to load duplicate ", typeof(T), " with path: ", item.Second.internalFile, " and internal path: ", first));
 				}
 				else
 				{

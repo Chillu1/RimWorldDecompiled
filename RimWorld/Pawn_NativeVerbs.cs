@@ -86,7 +86,7 @@ namespace RimWorld
 		{
 			if (IgniteVerb == null)
 			{
-				Log.ErrorOnce(pawn + " tried to ignite " + target + " but has no ignite verb.", 76453432);
+				Log.ErrorOnce(string.Concat(pawn, " tried to ignite ", target, " but has no ignite verb."), 76453432);
 				return false;
 			}
 			if (pawn.stances.FullBodyBusy)
@@ -100,7 +100,7 @@ namespace RimWorld
 		{
 			if (BeatFireVerb == null)
 			{
-				Log.ErrorOnce(pawn + " tried to beat fire " + targetFire + " but has no beat fire verb.", 935137531);
+				Log.ErrorOnce(string.Concat(pawn, " tried to beat fire ", targetFire, " but has no beat fire verb."), 935137531);
 				return false;
 			}
 			if (pawn.stances.FullBodyBusy)

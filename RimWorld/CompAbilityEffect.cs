@@ -35,7 +35,7 @@ namespace RimWorld
 			if (pawn2 != null)
 			{
 				Faction factionOrExtraHomeFaction = pawn2.FactionOrExtraHomeFaction;
-				if (Props.goodwillImpact != 0 && pawn.Faction != null && factionOrExtraHomeFaction != null && !factionOrExtraHomeFaction.HostileTo(pawn.Faction) && (Props.applyGoodwillImpactToLodgers || !pawn2.IsQuestLodger()))
+				if (Props.goodwillImpact != 0 && pawn.Faction != null && factionOrExtraHomeFaction != null && !factionOrExtraHomeFaction.HostileTo(pawn.Faction) && (Props.applyGoodwillImpactToLodgers || !pawn2.IsQuestLodger()) && !pawn2.IsQuestHelper())
 				{
 					factionOrExtraHomeFaction.TryAffectGoodwillWith(pawn.Faction, Props.goodwillImpact, canSendMessage: true, canSendHostilityLetter: true, "GoodwillChangedReason_UsedAbility".Translate(parent.def.LabelCap, pawn2.LabelShort), pawn2);
 				}

@@ -77,7 +77,11 @@ namespace RimWorld
 		{
 			if (selectedTarget.Pawn != null)
 			{
-				return !target.Cell.Impassable(parent.pawn.Map);
+				if (!target.Cell.Impassable(parent.pawn.Map))
+				{
+					return target.Cell.Walkable(parent.pawn.Map);
+				}
+				return false;
 			}
 			Building edifice = target.Cell.GetEdifice(parent.pawn.Map);
 			Building_Door building_Door;

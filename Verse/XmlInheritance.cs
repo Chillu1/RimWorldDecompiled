@@ -59,18 +59,19 @@ namespace Verse
 
 		public static void TryRegisterAllFrom(LoadableXmlAsset xmlAsset, ModContentPack mod)
 		{
-			if (xmlAsset.xmlDoc != null)
+			if (xmlAsset.xmlDoc == null)
 			{
-				DeepProfiler.Start("XmlInheritance.TryRegisterAllFrom");
-				foreach (XmlNode childNode in xmlAsset.xmlDoc.DocumentElement.ChildNodes)
-				{
-					if (childNode.NodeType == XmlNodeType.Element)
-					{
-						TryRegister(childNode, mod);
-					}
-				}
-				DeepProfiler.End();
+				return;
 			}
+			DeepProfiler.Start("XmlInheritance.TryRegisterAllFrom");
+			foreach (XmlNode childNode in xmlAsset.xmlDoc.DocumentElement.ChildNodes)
+			{
+				if (childNode.NodeType == XmlNodeType.Element)
+				{
+					TryRegister(childNode, mod);
+				}
+			}
+			DeepProfiler.End();
 		}
 
 		public static void TryRegister(XmlNode node, ModContentPack mod)
@@ -91,11 +92,9 @@ namespace Verse
 						if (mod == null)
 						{
 							Log.Error("XML error: Could not register node named \"" + xmlAttribute.Value + "\" because this name is already used.");
+							return;
 						}
-						else
-						{
-							Log.Error("XML error: Could not register node named \"" + xmlAttribute.Value + "\" in mod " + mod.ToString() + " because this name is already used in this mod.");
-						}
+						Log.Error("XML error: Could not register node named \"" + xmlAttribute.Value + "\" in mod " + mod.ToString() + " because this name is already used in this mod.");
 						return;
 					}
 				}
@@ -293,91 +292,85 @@ namespace Verse
 						XmlNode newChild = current.OwnerDocument.ImportNode(item, deep: true);
 						current.AppendChild(newChild);
 					}
+					return;
 				}
-				else
+				current.Attributes.RemoveAll();
+				XmlAttributeCollection attributes = child.Attributes;
+				for (int i = 0; i < attributes.Count; i++)
 				{
-					current.Attributes.RemoveAll();
-					XmlAttributeCollection attributes = child.Attributes;
-					for (int i = 0; i < attributes.Count; i++)
+					XmlAttribute node2 = (XmlAttribute)current.OwnerDocument.ImportNode(attributes[i], deep: true);
+					current.Attributes.Append(node2);
+				}
+				List<XmlElement> list = new List<XmlElement>();
+				XmlNode xmlNode = null;
+				foreach (XmlNode item2 in child)
+				{
+					if (item2.NodeType == XmlNodeType.Text)
 					{
-						XmlAttribute node2 = (XmlAttribute)current.OwnerDocument.ImportNode(attributes[i], deep: true);
-						current.Attributes.Append(node2);
+						xmlNode = item2;
 					}
-					List<XmlElement> list = new List<XmlElement>();
-					XmlNode xmlNode = null;
-					foreach (XmlNode item2 in child)
+					else if (item2.NodeType == XmlNodeType.Element)
 					{
-						if (item2.NodeType == XmlNodeType.Text)
-						{
-							xmlNode = item2;
-						}
-						else if (item2.NodeType == XmlNodeType.Element)
-						{
-							list.Add((XmlElement)item2);
-						}
+						list.Add((XmlElement)item2);
 					}
-					if (xmlNode != null)
+				}
+				if (xmlNode != null)
+				{
+					DeepProfiler.Start("RecursiveNodeCopyOverwriteElements - Remove all current nodes");
+					for (int num = current.ChildNodes.Count - 1; num >= 0; num--)
 					{
-						DeepProfiler.Start("RecursiveNodeCopyOverwriteElements - Remove all current nodes");
-						for (int num = current.ChildNodes.Count - 1; num >= 0; num--)
+						XmlNode xmlNode3 = current.ChildNodes[num];
+						if (xmlNode3.NodeType != XmlNodeType.Attribute)
 						{
-							XmlNode xmlNode3 = current.ChildNodes[num];
-							if (xmlNode3.NodeType != XmlNodeType.Attribute)
-							{
-								current.RemoveChild(xmlNode3);
-							}
-						}
-						DeepProfiler.End();
-						XmlNode newChild2 = current.OwnerDocument.ImportNode(xmlNode, deep: true);
-						current.AppendChild(newChild2);
-					}
-					else if (!list.Any())
-					{
-						bool flag = false;
-						foreach (XmlNode childNode in current.ChildNodes)
-						{
-							if (childNode.NodeType == XmlNodeType.Element)
-							{
-								flag = true;
-								break;
-							}
-						}
-						if (!flag)
-						{
-							foreach (XmlNode childNode2 in current.ChildNodes)
-							{
-								if (childNode2.NodeType != XmlNodeType.Attribute)
-								{
-									current.RemoveChild(childNode2);
-								}
-							}
+							current.RemoveChild(xmlNode3);
 						}
 					}
-					else
+					DeepProfiler.End();
+					XmlNode newChild2 = current.OwnerDocument.ImportNode(xmlNode, deep: true);
+					current.AppendChild(newChild2);
+					return;
+				}
+				if (!list.Any())
+				{
+					bool flag = false;
+					foreach (XmlNode childNode in current.ChildNodes)
 					{
-						for (int j = 0; j < list.Count; j++)
+						if (childNode.NodeType == XmlNodeType.Element)
 						{
-							XmlElement xmlElement = list[j];
-							if (IsListElement(xmlElement))
-							{
-								XmlNode newChild3 = current.OwnerDocument.ImportNode(xmlElement, deep: true);
-								current.AppendChild(newChild3);
-							}
-							else
-							{
-								XmlElement xmlElement2 = current[xmlElement.Name];
-								if (xmlElement2 != null)
-								{
-									RecursiveNodeCopyOverwriteElements(xmlElement, xmlElement2);
-								}
-								else
-								{
-									XmlNode newChild4 = current.OwnerDocument.ImportNode(xmlElement, deep: true);
-									current.AppendChild(newChild4);
-								}
-							}
+							flag = true;
+							break;
 						}
 					}
+					if (flag)
+					{
+						return;
+					}
+					foreach (XmlNode childNode2 in current.ChildNodes)
+					{
+						if (childNode2.NodeType != XmlNodeType.Attribute)
+						{
+							current.RemoveChild(childNode2);
+						}
+					}
+					return;
+				}
+				for (int j = 0; j < list.Count; j++)
+				{
+					XmlElement xmlElement = list[j];
+					if (IsListElement(xmlElement))
+					{
+						XmlNode newChild3 = current.OwnerDocument.ImportNode(xmlElement, deep: true);
+						current.AppendChild(newChild3);
+						continue;
+					}
+					XmlElement xmlElement2 = current[xmlElement.Name];
+					if (xmlElement2 != null)
+					{
+						RecursiveNodeCopyOverwriteElements(xmlElement, xmlElement2);
+						continue;
+					}
+					XmlNode newChild4 = current.OwnerDocument.ImportNode(xmlElement, deep: true);
+					current.AppendChild(newChild4);
 				}
 			}
 			finally

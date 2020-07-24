@@ -6,7 +6,7 @@ namespace Verse
 	{
 		public int level = 1;
 
-		public override string LabelBase => def.label + " (" + level + "x)";
+		public override string Label => (string)(def.label + " (" + "Level".Translate().ToLower() + " ") + level + ")";
 
 		public override bool ShouldRemove => level == 0;
 

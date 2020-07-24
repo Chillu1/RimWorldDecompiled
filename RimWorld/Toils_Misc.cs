@@ -66,7 +66,7 @@ namespace RimWorld
 				LocalTargetInfo target = curJob.GetTarget(adjacentToInd);
 				if (target.HasThing && (!target.Thing.Spawned || target.Thing.Map != actor.Map))
 				{
-					Log.Error(actor + " could not find standable cell adjacent to " + target + " because this thing is either unspawned or spawned somewhere else.");
+					Log.Error(string.Concat(actor, " could not find standable cell adjacent to ", target, " because this thing is either unspawned or spawned somewhere else."));
 					actor.jobs.curDriver.EndJobWith(JobCondition.Errored);
 				}
 				else
@@ -78,7 +78,7 @@ namespace RimWorld
 						num++;
 						if (num > 100)
 						{
-							Log.Error(actor + " could not find standable cell adjacent to " + target);
+							Log.Error(string.Concat(actor, " could not find standable cell adjacent to ", target));
 							actor.jobs.curDriver.EndJobWith(JobCondition.Errored);
 							return;
 						}

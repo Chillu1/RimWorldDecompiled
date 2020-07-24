@@ -66,7 +66,7 @@ namespace RimWorld
 				where (slot != BackstorySlot.Adulthood || !bs.requiredWorkTags.OverlapsWithOnAnyWorkType(pawn.story.childhood.workDisables)) ? true : false
 				select bs).TryRandomElementByWeight(BackstorySelectionWeight, out backstory))
 			{
-				Log.Error("No shuffled " + slot + " found for " + pawn.ToStringSafe() + " of " + factionType.ToStringSafe() + ". Choosing random.");
+				Log.Error(string.Concat("No shuffled ", slot, " found for ", pawn.ToStringSafe(), " of ", factionType.ToStringSafe(), ". Choosing random."));
 				backstory = BackstoryDatabase.allBackstories.Where((KeyValuePair<string, Backstory> kvp) => kvp.Value.slot == slot).RandomElement().Value;
 			}
 		}
@@ -119,6 +119,17 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (kind.requiredWorkTags != 0)
+			{
+				if (bio.childhood != null && (bio.childhood.workDisables & kind.requiredWorkTags) != 0)
+				{
+					return false;
+				}
+				if (bio.adulthood != null && (bio.adulthood.workDisables & kind.requiredWorkTags) != 0)
+				{
+					return false;
+				}
+			}
 			return true;
 		}
 
@@ -159,7 +170,7 @@ namespace RimWorld
 			List<NameTriple> list2 = (!(Rand.Value < num)) ? list : listForGender;
 			if (list2.Count == 0)
 			{
-				Log.Error("Empty solid pawn name list for gender: " + gender + ".");
+				Log.Error(string.Concat("Empty solid pawn name list for gender: ", gender, "."));
 				return null;
 			}
 			if (Rand.Value < 0.5f)
@@ -213,7 +224,7 @@ namespace RimWorld
 			{
 				return list;
 			}
-			Log.ErrorOnce("PawnKind " + pawn.kindDef + " generating with factionDef " + faction + ": no backstoryCategories in either.", 1871521);
+			Log.ErrorOnce(string.Concat("PawnKind ", pawn.kindDef, " generating with factionDef ", faction, ": no backstoryCategories in either."), 1871521);
 			return new List<BackstoryCategoryFilter>
 			{
 				FallbackCategoryGroup

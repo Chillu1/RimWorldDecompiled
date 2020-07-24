@@ -38,37 +38,38 @@ namespace RimWorld
 			base.DrawMouseAttachments();
 			Map currentMap = Find.CurrentMap;
 			ThingDef thingDef;
-			if (currentMap != null && (thingDef = (PlacingDef as ThingDef)) != null && !(thingDef.displayNumbersBetweenSameDefDistRange.max <= 0f))
+			if (currentMap == null || (thingDef = (PlacingDef as ThingDef)) == null || thingDef.displayNumbersBetweenSameDefDistRange.max <= 0f)
 			{
-				IntVec3 intVec = UI.MouseCell();
-				tmpThings.Clear();
-				tmpThings.AddRange(currentMap.listerThings.ThingsOfDef(thingDef));
-				tmpThings.AddRange(currentMap.listerThings.ThingsInGroup(ThingRequestGroup.Blueprint));
-				foreach (Thing tmpThing in tmpThings)
+				return;
+			}
+			IntVec3 intVec = UI.MouseCell();
+			tmpThings.Clear();
+			tmpThings.AddRange(currentMap.listerThings.ThingsOfDef(thingDef));
+			tmpThings.AddRange(currentMap.listerThings.ThingsInGroup(ThingRequestGroup.Blueprint));
+			foreach (Thing tmpThing in tmpThings)
+			{
+				if ((tmpThing.def == thingDef || tmpThing.def.entityDefToBuild == thingDef) && (tmpThing.Position.x == intVec.x || tmpThing.Position.z == intVec.z) && CanDrawNumbersBetween(tmpThing, thingDef, intVec, tmpThing.Position, currentMap))
 				{
-					if ((tmpThing.def == thingDef || tmpThing.def.entityDefToBuild == thingDef) && (tmpThing.Position.x == intVec.x || tmpThing.Position.z == intVec.z) && CanDrawNumbersBetween(tmpThing, thingDef, intVec, tmpThing.Position, currentMap))
+					IntVec3 intVec2 = tmpThing.Position - intVec;
+					intVec2.x = Mathf.Abs(intVec2.x) + 1;
+					intVec2.z = Mathf.Abs(intVec2.z) + 1;
+					if (intVec2.x >= 3)
 					{
-						IntVec3 intVec2 = tmpThing.Position - intVec;
-						intVec2.x = Mathf.Abs(intVec2.x) + 1;
-						intVec2.z = Mathf.Abs(intVec2.z) + 1;
-						if (intVec2.x >= 3)
-						{
-							Vector2 screenPos = (tmpThing.Position.ToUIPosition() + intVec.ToUIPosition()) / 2f;
-							screenPos.y = tmpThing.Position.ToUIPosition().y;
-							Color textColor = thingDef.displayNumbersBetweenSameDefDistRange.Includes(intVec2.x) ? Color.white : Color.red;
-							Widgets.DrawNumberOnMap(screenPos, intVec2.x, textColor);
-						}
-						if (intVec2.z >= 3)
-						{
-							Vector2 screenPos2 = (tmpThing.Position.ToUIPosition() + intVec.ToUIPosition()) / 2f;
-							screenPos2.x = tmpThing.Position.ToUIPosition().x;
-							Color textColor2 = thingDef.displayNumbersBetweenSameDefDistRange.Includes(intVec2.z) ? Color.white : Color.red;
-							Widgets.DrawNumberOnMap(screenPos2, intVec2.z, textColor2);
-						}
+						Vector2 screenPos = (tmpThing.Position.ToUIPosition() + intVec.ToUIPosition()) / 2f;
+						screenPos.y = tmpThing.Position.ToUIPosition().y;
+						Color textColor = thingDef.displayNumbersBetweenSameDefDistRange.Includes(intVec2.x) ? Color.white : Color.red;
+						Widgets.DrawNumberOnMap(screenPos, intVec2.x, textColor);
+					}
+					if (intVec2.z >= 3)
+					{
+						Vector2 screenPos2 = (tmpThing.Position.ToUIPosition() + intVec.ToUIPosition()) / 2f;
+						screenPos2.x = tmpThing.Position.ToUIPosition().x;
+						Color textColor2 = thingDef.displayNumbersBetweenSameDefDistRange.Includes(intVec2.z) ? Color.white : Color.red;
+						Widgets.DrawNumberOnMap(screenPos2, intVec2.z, textColor2);
 					}
 				}
-				tmpThings.Clear();
 			}
+			tmpThings.Clear();
 		}
 
 		protected virtual bool CanDrawNumbersBetween(Thing thing, ThingDef def, IntVec3 a, IntVec3 b, Map map)
@@ -79,38 +80,39 @@ namespace RimWorld
 		public override void DoExtraGuiControls(float leftX, float bottomY)
 		{
 			ThingDef thingDef = PlacingDef as ThingDef;
-			if (thingDef != null && thingDef.rotatable)
+			if (thingDef == null || !thingDef.rotatable)
 			{
-				Rect winRect = new Rect(leftX, bottomY - 90f, 200f, 90f);
-				Find.WindowStack.ImmediateWindow(73095, winRect, WindowLayer.GameUI, delegate
-				{
-					RotationDirection rotationDirection = RotationDirection.None;
-					Text.Anchor = TextAnchor.MiddleCenter;
-					Text.Font = GameFont.Medium;
-					Rect rect = new Rect(winRect.width / 2f - 64f - 5f, 15f, 64f, 64f);
-					if (Widgets.ButtonImage(rect, TexUI.RotLeftTex))
-					{
-						SoundDefOf.DragSlider.PlayOneShotOnCamera();
-						rotationDirection = RotationDirection.Counterclockwise;
-						Event.current.Use();
-					}
-					Widgets.Label(rect, KeyBindingDefOf.Designator_RotateLeft.MainKeyLabel);
-					Rect rect2 = new Rect(winRect.width / 2f + 5f, 15f, 64f, 64f);
-					if (Widgets.ButtonImage(rect2, TexUI.RotRightTex))
-					{
-						SoundDefOf.DragSlider.PlayOneShotOnCamera();
-						rotationDirection = RotationDirection.Clockwise;
-						Event.current.Use();
-					}
-					Widgets.Label(rect2, KeyBindingDefOf.Designator_RotateRight.MainKeyLabel);
-					if (rotationDirection != 0)
-					{
-						placingRot.Rotate(rotationDirection);
-					}
-					Text.Anchor = TextAnchor.UpperLeft;
-					Text.Font = GameFont.Small;
-				});
+				return;
 			}
+			Rect winRect = new Rect(leftX, bottomY - 90f, 200f, 90f);
+			Find.WindowStack.ImmediateWindow(73095, winRect, WindowLayer.GameUI, delegate
+			{
+				RotationDirection rotationDirection = RotationDirection.None;
+				Text.Anchor = TextAnchor.MiddleCenter;
+				Text.Font = GameFont.Medium;
+				Rect rect = new Rect(winRect.width / 2f - 64f - 5f, 15f, 64f, 64f);
+				if (Widgets.ButtonImage(rect, TexUI.RotLeftTex))
+				{
+					SoundDefOf.DragSlider.PlayOneShotOnCamera();
+					rotationDirection = RotationDirection.Counterclockwise;
+					Event.current.Use();
+				}
+				Widgets.Label(rect, KeyBindingDefOf.Designator_RotateLeft.MainKeyLabel);
+				Rect rect2 = new Rect(winRect.width / 2f + 5f, 15f, 64f, 64f);
+				if (Widgets.ButtonImage(rect2, TexUI.RotRightTex))
+				{
+					SoundDefOf.DragSlider.PlayOneShotOnCamera();
+					rotationDirection = RotationDirection.Clockwise;
+					Event.current.Use();
+				}
+				Widgets.Label(rect2, KeyBindingDefOf.Designator_RotateRight.MainKeyLabel);
+				if (rotationDirection != 0)
+				{
+					placingRot.Rotate(rotationDirection);
+				}
+				Text.Anchor = TextAnchor.UpperLeft;
+				Text.Font = GameFont.Small;
+			});
 		}
 
 		public override void SelectedProcessInput(Event ev)
@@ -147,6 +149,11 @@ namespace RimWorld
 
 		protected virtual void DrawGhost(Color ghostCol)
 		{
+			ThingDef def;
+			if ((def = (PlacingDef as ThingDef)) != null)
+			{
+				MeditationUtility.DrawMeditationFociAffectedByBuildingOverlay(base.Map, def, Faction.OfPlayer, UI.MouseCell(), placingRot);
+			}
 			GhostDrawer.DrawGhostThing(UI.MouseCell(), placingRot, (ThingDef)PlacingDef, null, ghostCol, AltitudeLayer.Blueprint);
 		}
 

@@ -49,6 +49,8 @@ namespace RimWorld
 
 		public bool onlyTargetControlledPawns;
 
+		public bool onlyTargetColonists;
+
 		public ThingCategory thingCategory;
 
 		public bool CanTarget(TargetInfo targ)
@@ -122,6 +124,10 @@ namespace RimWorld
 					return false;
 				}
 				if (onlyTargetControlledPawns && !pawn.IsColonistPlayerControlled)
+				{
+					return false;
+				}
+				if (onlyTargetColonists && (!pawn.IsColonist || pawn.HostFaction != null))
 				{
 					return false;
 				}

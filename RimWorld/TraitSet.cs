@@ -9,18 +9,31 @@ namespace RimWorld
 
 		public List<Trait> allTraits = new List<Trait>();
 
+		public float HungerRateFactor
+		{
+			get
+			{
+				float num = 1f;
+				foreach (Trait allTrait in allTraits)
+				{
+					num *= allTrait.CurrentData.hungerRateFactor;
+				}
+				return num;
+			}
+		}
+
 		public IEnumerable<MentalBreakDef> TheOnlyAllowedMentalBreaks
 		{
 			get
 			{
-				for (int j = 0; j < allTraits.Count; j++)
+				for (int i = 0; i < allTraits.Count; i++)
 				{
-					Trait trait = allTraits[j];
+					Trait trait = allTraits[i];
 					if (trait.CurrentData.theOnlyAllowedMentalBreaks != null)
 					{
-						for (int i = 0; i < trait.CurrentData.theOnlyAllowedMentalBreaks.Count; i++)
+						for (int j = 0; j < trait.CurrentData.theOnlyAllowedMentalBreaks.Count; j++)
 						{
-							yield return trait.CurrentData.theOnlyAllowedMentalBreaks[i];
+							yield return trait.CurrentData.theOnlyAllowedMentalBreaks[j];
 						}
 					}
 				}
@@ -41,7 +54,7 @@ namespace RimWorld
 		{
 			if (HasTrait(trait.def))
 			{
-				Log.Warning(pawn + " already has trait " + trait.def);
+				Log.Warning(string.Concat(pawn, " already has trait ", trait.def));
 				return;
 			}
 			allTraits.Add(trait);
@@ -54,6 +67,7 @@ namespace RimWorld
 			{
 				pawn.needs.mood.thoughts.situational.Notify_SituationalThoughtsDirty();
 			}
+			MeditationFocusTypeAvailabilityCache.ClearFor(pawn);
 		}
 
 		public bool HasTrait(TraitDef tDef)

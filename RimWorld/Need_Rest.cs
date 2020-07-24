@@ -141,7 +141,7 @@ namespace RimWorld
 			if (Rand.MTBEventOccurs(mtb, 60000f, 150f) && (pawn.CurJob == null || pawn.CurJob.def != JobDefOf.LayDown))
 			{
 				pawn.jobs.StartJob(JobMaker.MakeJob(JobDefOf.LayDown, pawn.Position), JobCondition.InterruptForced, null, resumeCurJobAfterwards: false, cancelBusyStances: true, null, JobTag.SatisfyingNeeds);
-				if (pawn.InMentalState)
+				if (pawn.InMentalState && pawn.MentalStateDef.recoverFromCollapsingExhausted)
 				{
 					pawn.mindState.mentalStateHandler.CurState.RecoverFromState();
 				}

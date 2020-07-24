@@ -43,28 +43,28 @@ namespace RimWorld
 
 		private bool ShouldAllowOperations()
 		{
-			Pawn pawnForHealth = PawnForHealth;
-			if (pawnForHealth.Dead)
+			Pawn pawn = PawnForHealth;
+			if (pawn.Dead)
 			{
 				return false;
 			}
-			if (!base.SelThing.def.AllRecipes.Any((RecipeDef x) => x.AvailableNow))
+			if (!base.SelThing.def.AllRecipes.Any((RecipeDef x) => x.AvailableNow && x.AvailableOnNow(pawn)))
 			{
 				return false;
 			}
-			if (pawnForHealth.Faction == Faction.OfPlayer)
+			if (pawn.Faction == Faction.OfPlayer)
 			{
 				return true;
 			}
-			if (pawnForHealth.IsPrisonerOfColony || (pawnForHealth.HostFaction == Faction.OfPlayer && !pawnForHealth.health.capacities.CapableOf(PawnCapacityDefOf.Moving)))
+			if (pawn.IsPrisonerOfColony || (pawn.HostFaction == Faction.OfPlayer && !pawn.health.capacities.CapableOf(PawnCapacityDefOf.Moving)))
 			{
 				return true;
 			}
-			if (pawnForHealth.RaceProps.IsFlesh && pawnForHealth.Faction != null && pawnForHealth.Faction.HostileTo(Faction.OfPlayer))
+			if (pawn.RaceProps.IsFlesh && pawn.Faction != null && pawn.Faction.HostileTo(Faction.OfPlayer))
 			{
 				return false;
 			}
-			if (!pawnForHealth.RaceProps.Humanlike && pawnForHealth.Downed)
+			if (!pawn.RaceProps.Humanlike && pawn.Downed)
 			{
 				return true;
 			}

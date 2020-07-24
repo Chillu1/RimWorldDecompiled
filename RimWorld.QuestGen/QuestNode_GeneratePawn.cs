@@ -1,5 +1,4 @@
 using RimWorld.Planet;
-using System;
 using System.Collections.Generic;
 using Verse;
 
@@ -19,8 +18,6 @@ namespace RimWorld.QuestGen
 		public SlateRef<PawnKindDef> kindDef;
 
 		public SlateRef<Faction> faction;
-
-		public SlateRef<PawnGenerationSpecialRequest?> specialRequest;
 
 		public SlateRef<bool> ensureNonNumericName;
 
@@ -48,12 +45,7 @@ namespace RimWorld.QuestGen
 		protected override void RunInt()
 		{
 			Slate slate = QuestGen.slate;
-			Predicate<Pawn> predicate = null;
-			if (specialRequest.GetValue(slate) == PawnGenerationSpecialRequest.ExpertFighter)
-			{
-				predicate = ((Pawn x) => !x.WorkTagIsDisabled(WorkTags.Violent) && (x.skills.GetSkill(SkillDefOf.Shooting).Level >= 11 || x.skills.GetSkill(SkillDefOf.Melee).Level >= 11));
-			}
-			PawnGenerationRequest request = new PawnGenerationRequest(kindDef.GetValue(slate), faction.GetValue(slate), PawnGenerationContext.NonPlayer, -1, forceGenerateNewPawn: false, newborn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, validatorPreGear: predicate, allowAddictions: allowAddictions.GetValue(slate) ?? true, forcedTraits: forcedTraits.GetValue(slate), biocodeWeaponChance: biocodeWeaponChance.GetValue(slate), mustBeCapableOfViolence: mustBeCapableOfViolence.GetValue(slate), colonistRelationChanceFactor: 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowFood: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, extraPawnForExtraRelationChance: extraPawnForExtraRelationChance.GetValue(slate), relationWithExtraPawnChanceFactor: relationWithExtraPawnChanceFactor.GetValue(slate));
+			PawnGenerationRequest request = new PawnGenerationRequest(kindDef.GetValue(slate), faction.GetValue(slate), PawnGenerationContext.NonPlayer, -1, forceGenerateNewPawn: false, newborn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, allowAddictions: allowAddictions.GetValue(slate) ?? true, forcedTraits: forcedTraits.GetValue(slate), biocodeWeaponChance: biocodeWeaponChance.GetValue(slate), mustBeCapableOfViolence: mustBeCapableOfViolence.GetValue(slate), colonistRelationChanceFactor: 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowFood: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, extraPawnForExtraRelationChance: extraPawnForExtraRelationChance.GetValue(slate), relationWithExtraPawnChanceFactor: relationWithExtraPawnChanceFactor.GetValue(slate));
 			request.BiocodeApparelChance = biocodeApparelChance.GetValue(slate);
 			Pawn pawn = PawnGenerator.GeneratePawn(request);
 			if (ensureNonNumericName.GetValue(slate) && (pawn.Name == null || pawn.Name.Numerical))

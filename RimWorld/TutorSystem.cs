@@ -48,20 +48,21 @@ namespace RimWorld
 			{
 				Log.Message("Notify_Event: " + ep);
 			}
-			if (Current.Game != null)
+			if (Current.Game == null)
 			{
-				Lesson current = Find.ActiveLesson.Current;
-				if (Find.ActiveLesson.Current != null)
+				return;
+			}
+			Lesson current = Find.ActiveLesson.Current;
+			if (Find.ActiveLesson.Current != null)
+			{
+				Find.ActiveLesson.Current.Notify_Event(ep);
+			}
+			foreach (InstructionDef allDef in DefDatabase<InstructionDef>.AllDefs)
+			{
+				if (allDef.eventTagInitiate == ep.Tag && (allDef.eventTagInitiateSource == null || (current != null && allDef.eventTagInitiateSource == current.Instruction)) && (TutorialMode || !allDef.tutorialModeOnly))
 				{
-					Find.ActiveLesson.Current.Notify_Event(ep);
-				}
-				foreach (InstructionDef allDef in DefDatabase<InstructionDef>.AllDefs)
-				{
-					if (allDef.eventTagInitiate == ep.Tag && (allDef.eventTagInitiateSource == null || (current != null && allDef.eventTagInitiateSource == current.Instruction)) && (TutorialMode || !allDef.tutorialModeOnly))
-					{
-						Find.ActiveLesson.Activate(allDef);
-						break;
-					}
+					Find.ActiveLesson.Activate(allDef);
+					break;
 				}
 			}
 		}

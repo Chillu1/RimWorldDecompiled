@@ -60,40 +60,41 @@ namespace RimWorld
 				}
 				foreach (Pawn assigningCandidate in assignable.AssigningCandidates)
 				{
-					if (!assignable.AssignedPawns.Contains(assigningCandidate))
+					if (assignable.AssignedPawns.Contains(assigningCandidate))
 					{
-						AcceptanceReport acceptanceReport = assignable.CanAssignTo(assigningCandidate);
-						bool accepted = acceptanceReport.Accepted;
-						string text = assigningCandidate.LabelCap + (accepted ? "" : (" (" + acceptanceReport.Reason.StripTags() + ")"));
-						float width = viewRect.width * 0.7f;
-						float num2 = Text.CalcHeight(text, width);
-						float num3 = (35f > num2) ? 35f : num2;
-						Rect rect2 = new Rect(0f, num, width, num3);
-						if (!accepted)
-						{
-							GUI.color = Color.gray;
-						}
-						Widgets.Label(rect2, text);
-						rect2.x = rect2.xMax;
-						rect2.width = viewRect.width * 0.3f;
-						rect2.height = 35f;
-						TaggedString taggedString = assignable.AssignedAnything(assigningCandidate) ? "BuildingReassign".Translate() : "BuildingAssign".Translate();
-						if (Widgets.ButtonText(rect2, taggedString, drawBackground: true, doMouseoverSound: true, accepted))
-						{
-							assignable.TryAssignPawn(assigningCandidate);
-							if (assignable.MaxAssignedPawnsCount == 1)
-							{
-								Close();
-							}
-							else
-							{
-								SoundDefOf.Click.PlayOneShotOnCamera();
-							}
-							break;
-						}
-						GUI.color = Color.white;
-						num += num3;
+						continue;
 					}
+					AcceptanceReport acceptanceReport = assignable.CanAssignTo(assigningCandidate);
+					bool accepted = acceptanceReport.Accepted;
+					string text = assigningCandidate.LabelCap + (accepted ? "" : (" (" + acceptanceReport.Reason.StripTags() + ")"));
+					float width = viewRect.width * 0.7f;
+					float num2 = Text.CalcHeight(text, width);
+					float num3 = (35f > num2) ? 35f : num2;
+					Rect rect2 = new Rect(0f, num, width, num3);
+					if (!accepted)
+					{
+						GUI.color = Color.gray;
+					}
+					Widgets.Label(rect2, text);
+					rect2.x = rect2.xMax;
+					rect2.width = viewRect.width * 0.3f;
+					rect2.height = 35f;
+					TaggedString taggedString = assignable.AssignedAnything(assigningCandidate) ? "BuildingReassign".Translate() : "BuildingAssign".Translate();
+					if (Widgets.ButtonText(rect2, taggedString, drawBackground: true, doMouseoverSound: true, accepted))
+					{
+						assignable.TryAssignPawn(assigningCandidate);
+						if (assignable.MaxAssignedPawnsCount == 1)
+						{
+							Close();
+						}
+						else
+						{
+							SoundDefOf.Click.PlayOneShotOnCamera();
+						}
+						break;
+					}
+					GUI.color = Color.white;
+					num += num3;
 				}
 			}
 			finally

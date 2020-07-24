@@ -32,7 +32,7 @@ namespace Verse
 		public static bool ConnectedToRoofHolder(IntVec3 c, Map map, bool assumeRoofAtRoot)
 		{
 			bool connected = false;
-			map.floodFiller.FloodFill(c, (IntVec3 x) => (x.Roofed(map) || ((x == c) & assumeRoofAtRoot)) && !connected, delegate(IntVec3 x)
+			map.floodFiller.FloodFill(c, (IntVec3 x) => (x.Roofed(map) || (x == c && assumeRoofAtRoot)) && !connected, delegate(IntVec3 x)
 			{
 				int num = 0;
 				while (true)

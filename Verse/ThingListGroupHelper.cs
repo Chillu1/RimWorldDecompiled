@@ -139,6 +139,10 @@ namespace Verse
 				return typeof(Building_Throne).IsAssignableFrom(def.thingClass);
 			case ThingRequestGroup.FoodDispenser:
 				return def.IsFoodDispenser;
+			case ThingRequestGroup.Projectile:
+				return def.projectile != null;
+			case ThingRequestGroup.MeditationFocus:
+				return def.HasComp(typeof(CompMeditationFocus));
 			default:
 				throw new ArgumentException("group");
 			}

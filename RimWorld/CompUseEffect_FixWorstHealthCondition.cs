@@ -246,28 +246,8 @@ namespace RimWorld
 
 		private void Cure(Hediff hediff)
 		{
-			Pawn pawn = hediff.pawn;
-			pawn.health.RemoveHediff(hediff);
-			if (hediff.def.cureAllAtOnceIfCuredByItem)
-			{
-				int num = 0;
-				while (true)
-				{
-					num++;
-					if (num > 10000)
-					{
-						Log.Error("Too many iterations.");
-						break;
-					}
-					Hediff firstHediffOfDef = pawn.health.hediffSet.GetFirstHediffOfDef(hediff.def);
-					if (firstHediffOfDef == null)
-					{
-						break;
-					}
-					pawn.health.RemoveHediff(firstHediffOfDef);
-				}
-			}
-			Messages.Message("MessageHediffCuredByItem".Translate(hediff.LabelBase.CapitalizeFirst()), pawn, MessageTypeDefOf.PositiveEvent);
+			HealthUtility.CureHediff(hediff);
+			Messages.Message("MessageHediffCuredByItem".Translate(hediff.LabelBase.CapitalizeFirst()), hediff.pawn, MessageTypeDefOf.PositiveEvent);
 		}
 
 		private void Cure(BodyPartRecord part, Pawn pawn)

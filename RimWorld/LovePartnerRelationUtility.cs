@@ -398,15 +398,16 @@ namespace RimWorld
 			List<DirectPawnRelation> directRelations = other.relations.DirectRelations;
 			for (int i = 0; i < directRelations.Count; i++)
 			{
-				if (IsLovePartnerRelation(directRelations[i].def) && directRelations[i].otherPawn != pawn && !directRelations[i].otherPawn.Dead)
+				if (!IsLovePartnerRelation(directRelations[i].def) || directRelations[i].otherPawn == pawn || directRelations[i].otherPawn.Dead)
 				{
-					foreach (PawnRelationDef relation in other.GetRelations(directRelations[i].otherPawn))
+					continue;
+				}
+				foreach (PawnRelationDef relation in other.GetRelations(directRelations[i].otherPawn))
+				{
+					float incestOpinionOffset = relation.incestOpinionOffset;
+					if (incestOpinionOffset < num)
 					{
-						float incestOpinionOffset = relation.incestOpinionOffset;
-						if (incestOpinionOffset < num)
-						{
-							num = incestOpinionOffset;
-						}
+						num = incestOpinionOffset;
 					}
 				}
 			}

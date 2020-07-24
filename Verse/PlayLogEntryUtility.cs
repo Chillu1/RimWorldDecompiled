@@ -7,24 +7,26 @@ namespace Verse
 	{
 		public static IEnumerable<Rule> RulesForOptionalWeapon(string prefix, ThingDef weaponDef, ThingDef projectileDef)
 		{
-			if (weaponDef != null)
+			if (weaponDef == null)
 			{
-				foreach (Rule item in GrammarUtility.RulesForDef(prefix, weaponDef))
-				{
-					yield return item;
-				}
-				ThingDef thingDef = projectileDef;
-				if (thingDef == null && !weaponDef.Verbs.NullOrEmpty())
-				{
-					thingDef = weaponDef.Verbs[0].defaultProjectile;
-				}
-				if (thingDef != null)
-				{
-					foreach (Rule item2 in GrammarUtility.RulesForDef(prefix + "_projectile", thingDef))
-					{
-						yield return item2;
-					}
-				}
+				yield break;
+			}
+			foreach (Rule item in GrammarUtility.RulesForDef(prefix, weaponDef))
+			{
+				yield return item;
+			}
+			ThingDef thingDef = projectileDef;
+			if (thingDef == null && !weaponDef.Verbs.NullOrEmpty())
+			{
+				thingDef = weaponDef.Verbs[0].defaultProjectile;
+			}
+			if (thingDef == null)
+			{
+				yield break;
+			}
+			foreach (Rule item2 in GrammarUtility.RulesForDef(prefix + "_projectile", thingDef))
+			{
+				yield return item2;
 			}
 		}
 

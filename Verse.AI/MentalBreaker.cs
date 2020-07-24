@@ -123,10 +123,11 @@ namespace Verse.AI
 		{
 			get
 			{
+				MentalBreaker mentalBreaker = this;
 				MentalBreakIntensity intensity;
 				for (intensity = CurrentDesiredMoodBreakIntensity; intensity != 0; intensity--)
 				{
-					IEnumerable<MentalBreakDef> enumerable = DefDatabase<MentalBreakDef>.AllDefsListForReading.Where((MentalBreakDef d) => d.intensity == intensity && d.Worker.BreakCanOccur(pawn));
+					IEnumerable<MentalBreakDef> enumerable = DefDatabase<MentalBreakDef>.AllDefsListForReading.Where((MentalBreakDef d) => d.intensity == intensity && d.Worker.BreakCanOccur(mentalBreaker.pawn));
 					bool flag = false;
 					foreach (MentalBreakDef item in enumerable)
 					{
@@ -324,14 +325,14 @@ namespace Verse.AI
 			stringBuilder.AppendLine("   ticksBelowSerious=" + ticksBelowMajor + "/" + 2000);
 			stringBuilder.AppendLine("   ticksBelowMinor=" + ticksBelowMinor + "/" + 2000);
 			stringBuilder.AppendLine();
-			stringBuilder.AppendLine("Current desired mood break intensity: " + CurrentDesiredMoodBreakIntensity.ToString());
+			stringBuilder.AppendLine("Current desired mood break intensity: " + CurrentDesiredMoodBreakIntensity);
 			stringBuilder.AppendLine();
 			stringBuilder.AppendLine("Current possible mood breaks:");
 			float num = CurrentPossibleMoodBreaks.Select((MentalBreakDef d) => d.Worker.CommonalityFor(pawn, moodCaused: true)).Sum();
 			foreach (MentalBreakDef currentPossibleMoodBreak in CurrentPossibleMoodBreaks)
 			{
 				float num2 = currentPossibleMoodBreak.Worker.CommonalityFor(pawn, moodCaused: true);
-				stringBuilder.AppendLine("   " + currentPossibleMoodBreak + "     " + (num2 / num).ToStringPercent());
+				stringBuilder.AppendLine(string.Concat("   ", currentPossibleMoodBreak, "     ", (num2 / num).ToStringPercent()));
 			}
 			return stringBuilder.ToString();
 		}
@@ -339,7 +340,7 @@ namespace Verse.AI
 		internal void LogPossibleMentalBreaks()
 		{
 			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.AppendLine(pawn + " current possible mood mental breaks:");
+			stringBuilder.AppendLine(string.Concat(pawn, " current possible mood mental breaks:"));
 			stringBuilder.AppendLine("CurrentDesiredMoodBreakIntensity: " + CurrentDesiredMoodBreakIntensity);
 			foreach (MentalBreakDef currentPossibleMoodBreak in CurrentPossibleMoodBreaks)
 			{

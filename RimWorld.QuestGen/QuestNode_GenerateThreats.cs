@@ -16,6 +16,9 @@ namespace RimWorld.QuestGen
 		[NoTranslate]
 		public SlateRef<string> storeThreatExampleAs;
 
+		[NoTranslate]
+		public SlateRef<int> threatStartTicks;
+
 		public SlateRef<ThreatsGeneratorParams> parms;
 
 		public SlateRef<Faction> faction;
@@ -34,6 +37,7 @@ namespace RimWorld.QuestGen
 			Slate slate = QuestGen.slate;
 			Map map = slate.Get<Map>("map");
 			QuestPart_ThreatsGenerator questPart_ThreatsGenerator = new QuestPart_ThreatsGenerator();
+			questPart_ThreatsGenerator.threatStartTicks = threatStartTicks.GetValue(slate);
 			questPart_ThreatsGenerator.inSignalEnable = (QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? slate.Get<string>("inSignal"));
 			questPart_ThreatsGenerator.inSignalDisable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalDisable.GetValue(slate));
 			ThreatsGeneratorParams value = parms.GetValue(slate);

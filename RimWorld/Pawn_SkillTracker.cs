@@ -65,7 +65,7 @@ namespace RimWorld
 					return skills[i];
 				}
 			}
-			Log.Error("Did not find skill of def " + skillDef + ", returning " + skills[0]);
+			Log.Error(string.Concat("Did not find skill of def ", skillDef, ", returning ", skills[0]));
 			return skills[0];
 		}
 

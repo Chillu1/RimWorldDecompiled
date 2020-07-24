@@ -34,12 +34,13 @@ namespace Verse.Sound
 		{
 			get
 			{
-				if (parameters != null)
+				if (parameters == null)
 				{
-					foreach (KeyValuePair<string, float> parameter in parameters)
-					{
-						yield return parameter;
-					}
+					yield break;
+				}
+				foreach (KeyValuePair<string, float> parameter in parameters)
+				{
+					yield return parameter;
 				}
 			}
 		}
@@ -93,7 +94,7 @@ namespace Verse.Sound
 				text = "parameters=";
 				foreach (KeyValuePair<string, float> parameter in parameters)
 				{
-					text = text + parameter.Key.ToString() + "-" + parameter.Value.ToString() + " ";
+					text = text + parameter.Key.ToString() + "-" + parameter.Value + " ";
 				}
 			}
 			string text2 = null;

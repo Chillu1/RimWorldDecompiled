@@ -7,7 +7,6 @@ namespace Verse
 		Faction,
 		Settlement,
 		DateTime,
-		Color,
 		ColonistCount
 	}
 }

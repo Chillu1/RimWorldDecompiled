@@ -20,6 +20,7 @@ namespace RimWorld
 			toil.FailOnCannotTouch(TargetIndex.A, PathEndMode.InteractionCell);
 			toil.WithProgressBarToilDelay(TargetIndex.A);
 			yield return toil;
+			JobDriver_EnterCryptosleepCasket jobDriver_EnterCryptosleepCasket = this;
 			Toil enter = new Toil();
 			enter.initAction = delegate
 			{
@@ -32,7 +33,7 @@ namespace RimWorld
 				};
 				if (!pod.def.building.isPlayerEjectable)
 				{
-					if (base.Map.mapPawns.FreeColonistsSpawnedOrInPlayerEjectablePodsCount <= 1)
+					if (jobDriver_EnterCryptosleepCasket.Map.mapPawns.FreeColonistsSpawnedOrInPlayerEjectablePodsCount <= 1)
 					{
 						Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("CasketWarning".Translate(actor.Named("PAWN")).AdjustedFor(actor), action));
 					}

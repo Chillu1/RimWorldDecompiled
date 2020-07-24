@@ -247,25 +247,26 @@ namespace Verse
 			{
 				yield return item;
 			}
-			if (BuildableByPlayer)
+			if (!BuildableByPlayer)
 			{
-				IEnumerable<TerrainAffordanceDef> enumerable = Enumerable.Empty<TerrainAffordanceDef>();
-				if (PlaceWorkers != null)
-				{
-					enumerable = enumerable.Concat(PlaceWorkers.SelectMany((PlaceWorker pw) => pw.DisplayAffordances()));
-				}
-				TerrainAffordanceDef terrainAffordanceNeed = this.GetTerrainAffordanceNeed(req.StuffDef);
-				if (terrainAffordanceNeed != null)
-				{
-					enumerable = enumerable.Concat(terrainAffordanceNeed);
-				}
-				string[] array = (from ta in enumerable.Distinct()
-					orderby ta.order
-					select ta.label).ToArray();
-				if (array.Length != 0)
-				{
-					yield return new StatDrawEntry(StatCategoryDefOf.Basics, "TerrainRequirement".Translate(), array.ToCommaList().CapitalizeFirst(), "Stat_Thing_TerrainRequirement_Desc".Translate(), 1101);
-				}
+				yield break;
+			}
+			IEnumerable<TerrainAffordanceDef> enumerable = Enumerable.Empty<TerrainAffordanceDef>();
+			if (PlaceWorkers != null)
+			{
+				enumerable = enumerable.Concat(PlaceWorkers.SelectMany((PlaceWorker pw) => pw.DisplayAffordances()));
+			}
+			TerrainAffordanceDef terrainAffordanceNeed = this.GetTerrainAffordanceNeed(req.StuffDef);
+			if (terrainAffordanceNeed != null)
+			{
+				enumerable = enumerable.Concat(terrainAffordanceNeed);
+			}
+			string[] array = (from ta in enumerable.Distinct()
+				orderby ta.order
+				select ta.label).ToArray();
+			if (array.Length != 0)
+			{
+				yield return new StatDrawEntry(StatCategoryDefOf.Basics, "TerrainRequirement".Translate(), array.ToCommaList().CapitalizeFirst(), "Stat_Thing_TerrainRequirement_Desc".Translate(), 1101);
 			}
 		}
 

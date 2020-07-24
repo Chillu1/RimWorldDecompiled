@@ -64,14 +64,14 @@ namespace Verse
 				{
 					if (failReportMode == FailMode.LogErrors && !BadCrossRefAllowed)
 					{
-						Log.Error("Could not resolve cross-reference: No " + type + " named " + defName.ToStringSafe() + " found to give to " + wanter.GetType() + " " + wanter.ToStringSafe());
+						Log.Error(string.Concat("Could not resolve cross-reference: No ", type, " named ", defName.ToStringSafe(), " found to give to ", wanter.GetType(), " ", wanter.ToStringSafe()));
 					}
 					return false;
 				}
 				SoundDef soundDef = resolvedDef as SoundDef;
 				if (soundDef != null && soundDef.isUndefined)
 				{
-					Log.Warning("Could not resolve cross-reference: No " + type + " named " + defName.ToStringSafe() + " found to give to " + wanter.GetType() + " " + wanter.ToStringSafe() + " (using undefined sound instead)");
+					Log.Warning(string.Concat("Could not resolve cross-reference: No ", type, " named ", defName.ToStringSafe(), " found to give to ", wanter.GetType(), " ", wanter.ToStringSafe(), " (using undefined sound instead)"));
 				}
 				fi.SetValue(wanter, resolvedDef);
 				return true;
@@ -120,6 +120,10 @@ namespace Verse
 					{
 						((List<T>)wanter).Add(val);
 						defNames.RemoveAt(i);
+						if (mayRequireMods != null && i < mayRequireMods.Count)
+						{
+							mayRequireMods.RemoveAt(i);
+						}
 						i--;
 					}
 					else
@@ -188,7 +192,7 @@ namespace Verse
 					}
 					catch
 					{
-						Log.Error("Failed to load key/value pair: " + makingDatum.First + ", " + makingDatum.Second);
+						Log.Error(string.Concat("Failed to load key/value pair: ", makingDatum.First, ", ", makingDatum.Second));
 					}
 				}
 			}
@@ -220,6 +224,21 @@ namespace Verse
 			try
 			{
 				WantedRefForObject item = new WantedRefForObject(wanter, wanter.GetType().GetField(fieldName), targetDefName, mayRequireMod, overrideFieldType);
+				wantedRefs.Add(item);
+			}
+			finally
+			{
+				DeepProfiler.End();
+			}
+		}
+
+		public static void RegisterObjectWantsCrossRef(object wanter, string fieldName, XmlNode parentNode, string mayRequireMod = null, Type overrideFieldType = null)
+		{
+			DeepProfiler.Start("RegisterObjectWantsCrossRef (object,string,XmlNode)");
+			try
+			{
+				string mayRequireMod2 = mayRequireMod ?? parentNode.Attributes?["MayRequire"]?.Value.ToLower();
+				WantedRefForObject item = new WantedRefForObject(wanter, wanter.GetType().GetField(fieldName), parentNode.Name, mayRequireMod2, overrideFieldType);
 				wantedRefs.Add(item);
 			}
 			finally
@@ -288,7 +307,7 @@ namespace Verse
 				}
 				if (failReportMode == FailMode.LogErrors)
 				{
-					string text = "Could not resolve cross-reference to " + typeof(T) + " named " + defName;
+					string text = string.Concat("Could not resolve cross-reference to ", typeof(T), " named ", defName);
 					if (debugWanterInfo != null)
 					{
 						text = text + " (wanter=" + debugWanterInfo.ToStringSafe() + ")";

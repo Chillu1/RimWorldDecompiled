@@ -223,11 +223,11 @@ namespace Verse
 			}
 			if (comps != null)
 			{
-				for (int m = 0; m < comps.Count; m++)
+				for (int l = 0; l < comps.Count; l++)
 				{
-					foreach (string item2 in comps[m].ConfigErrors(this))
+					foreach (string item2 in comps[l].ConfigErrors(this))
 					{
-						yield return comps[m] + ": " + item2;
+						yield return string.Concat(comps[l], ": ", item2);
 					}
 				}
 			}
@@ -235,52 +235,55 @@ namespace Verse
 			{
 				if (!typeof(Hediff_Addiction).IsAssignableFrom(hediffClass))
 				{
-					for (int m = 0; m < stages.Count; m++)
+					for (int l = 0; l < stages.Count; l++)
 					{
-						if (m >= 1 && stages[m].minSeverity <= stages[m - 1].minSeverity)
+						if (l >= 1 && stages[l].minSeverity <= stages[l - 1].minSeverity)
 						{
 							yield return "stages are not in order of minSeverity";
 						}
 					}
 				}
-				for (int m = 0; m < stages.Count; m++)
+				for (int l = 0; l < stages.Count; l++)
 				{
-					if (stages[m].makeImmuneTo != null && !stages[m].makeImmuneTo.Any((HediffDef im) => im.HasComp(typeof(HediffComp_Immunizable))))
+					if (stages[l].makeImmuneTo != null && !stages[l].makeImmuneTo.Any((HediffDef im) => im.HasComp(typeof(HediffComp_Immunizable))))
 					{
 						yield return "makes immune to hediff which doesn't have comp immunizable";
 					}
-					if (stages[m].hediffGivers != null)
+					if (stages[l].hediffGivers == null)
 					{
-						for (int j = 0; j < stages[m].hediffGivers.Count; j++)
+						continue;
+					}
+					for (int m = 0; m < stages[l].hediffGivers.Count; m++)
+					{
+						foreach (string item3 in stages[l].hediffGivers[m].ConfigErrors())
 						{
-							foreach (string item3 in stages[m].hediffGivers[j].ConfigErrors())
-							{
-								yield return item3;
-							}
+							yield return item3;
 						}
 					}
 				}
 			}
-			if (hediffGivers != null)
+			if (hediffGivers == null)
 			{
-				for (int m = 0; m < hediffGivers.Count; m++)
+				yield break;
+			}
+			for (int l = 0; l < hediffGivers.Count; l++)
+			{
+				foreach (string item4 in hediffGivers[l].ConfigErrors())
 				{
-					foreach (string item4 in hediffGivers[m].ConfigErrors())
-					{
-						yield return item4;
-					}
+					yield return item4;
 				}
 			}
 		}
 
 		public override IEnumerable<StatDrawEntry> SpecialDisplayStats(StatRequest req)
 		{
-			if (stages != null && stages.Count == 1)
+			if (stages == null || stages.Count != 1)
 			{
-				foreach (StatDrawEntry item in stages[0].SpecialDisplayStats())
-				{
-					yield return item;
-				}
+				yield break;
+			}
+			foreach (StatDrawEntry item in stages[0].SpecialDisplayStats())
+			{
+				yield return item;
 			}
 		}
 

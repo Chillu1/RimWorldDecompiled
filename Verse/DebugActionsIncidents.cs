@@ -12,15 +12,16 @@ namespace Verse
 		{
 			if (Current.ProgramState == ProgramState.Playing)
 			{
-				IIncidentTarget incidentTarget = WorldRendererUtility.WorldRenderedNow ? (Find.WorldSelector.SingleSelectedObject as IIncidentTarget) : null;
-				if (incidentTarget == null)
+				IIncidentTarget target = WorldRendererUtility.WorldRenderedNow ? (Find.WorldSelector.SingleSelectedObject as IIncidentTarget) : null;
+				if (target == null)
 				{
-					incidentTarget = Find.CurrentMap;
+					target = Find.CurrentMap;
 				}
-				if (incidentTarget != null)
+				if (target != null)
 				{
-					yield return GetIncidentDebugAction(Find.CurrentMap);
-					yield return GetIncidentWithPointsDebugAction(Find.CurrentMap);
+					yield return GetIncidentDebugAction(target);
+					yield return GetIncidents10DebugAction(target);
+					yield return GetIncidentWithPointsDebugAction(target);
 				}
 				if (WorldRendererUtility.WorldRenderedNow)
 				{
@@ -37,7 +38,7 @@ namespace Verse
 			foreach (float item in DebugActionsUtility.PointsOptions(extended: true))
 			{
 				float localP = item;
-				list.Add(new FloatMenuOption(localP.ToString() + " points", delegate
+				list.Add(new FloatMenuOption(localP + " points", delegate
 				{
 					IncidentParms parms = new IncidentParms
 					{
@@ -59,11 +60,11 @@ namespace Verse
 			foreach (Faction allFaction in Find.FactionManager.AllFactions)
 			{
 				Faction localFac = allFaction;
-				float localPoints = default(float);
 				list.Add(new DebugMenuOption(localFac.Name + " (" + localFac.def.defName + ")", DebugMenuOptionMode.Action, delegate
 				{
 					parms.faction = localFac;
 					List<DebugMenuOption> list2 = new List<DebugMenuOption>();
+					float localPoints = default(float);
 					foreach (float item in DebugActionsUtility.PointsOptions(extended: true))
 					{
 						localPoints = item;
@@ -96,13 +97,11 @@ namespace Verse
 			foreach (Faction allFaction in Find.FactionManager.AllFactions)
 			{
 				Faction localFac = allFaction;
-				float localPoints = default(float);
-				RaidStrategyDef localStrat = default(RaidStrategyDef);
-				PawnsArrivalModeDef localArrival = default(PawnsArrivalModeDef);
 				list.Add(new DebugMenuOption(localFac.Name + " (" + localFac.def.defName + ")", DebugMenuOptionMode.Action, delegate
 				{
 					parms.faction = localFac;
 					List<DebugMenuOption> list2 = new List<DebugMenuOption>();
+					float localPoints = default(float);
 					foreach (float item in DebugActionsUtility.PointsOptions(extended: true))
 					{
 						localPoints = item;
@@ -110,6 +109,7 @@ namespace Verse
 						{
 							parms.points = localPoints;
 							List<DebugMenuOption> list3 = new List<DebugMenuOption>();
+							RaidStrategyDef localStrat = default(RaidStrategyDef);
 							foreach (RaidStrategyDef allDef in DefDatabase<RaidStrategyDef>.AllDefs)
 							{
 								localStrat = allDef;
@@ -128,6 +128,7 @@ namespace Verse
 											DoRaid(parms);
 										})
 									};
+									PawnsArrivalModeDef localArrival = default(PawnsArrivalModeDef);
 									foreach (PawnsArrivalModeDef allDef2 in DefDatabase<PawnsArrivalModeDef>.AllDefs)
 									{
 										localArrival = allDef2;
@@ -188,7 +189,20 @@ namespace Verse
 			return result;
 		}
 
-		private static void DoIncidentDebugAction(IIncidentTarget target)
+		private static Dialog_DebugActionsMenu.DebugActionOption GetIncidents10DebugAction(IIncidentTarget target)
+		{
+			Dialog_DebugActionsMenu.DebugActionOption result = default(Dialog_DebugActionsMenu.DebugActionOption);
+			result.action = delegate
+			{
+				DoIncidentDebugAction(target, 10);
+			};
+			result.actionType = DebugActionType.Action;
+			result.category = "Incidents";
+			result.label = "Do incident x10 (" + GetIncidentTargetLabel(target) + ")...";
+			return result;
+		}
+
+		private static void DoIncidentDebugAction(IIncidentTarget target, int iterations = 1)
 		{
 			List<DebugMenuOption> list = new List<DebugMenuOption>();
 			foreach (IncidentDef item in from d in DefDatabase<IncidentDef>.AllDefs
@@ -205,12 +219,15 @@ namespace Verse
 				}
 				list.Add(new DebugMenuOption(text, DebugMenuOptionMode.Action, delegate
 				{
-					if (localDef.pointsScaleable)
+					for (int i = 0; i < iterations; i++)
 					{
-						StorytellerComp storytellerComp = Find.Storyteller.storytellerComps.First((StorytellerComp x) => x is StorytellerComp_OnOffCycle || x is StorytellerComp_RandomMain);
-						parms = storytellerComp.GenerateParms(localDef.category, parms.target);
+						IncidentParms parms2 = StorytellerUtility.DefaultParmsNow(localDef.category, target);
+						if (localDef.pointsScaleable)
+						{
+							parms2 = Find.Storyteller.storytellerComps.First((StorytellerComp x) => x is StorytellerComp_OnOffCycle || x is StorytellerComp_RandomMain).GenerateParms(localDef.category, parms.target);
+						}
+						localDef.Worker.TryExecute(parms2);
 					}
-					localDef.Worker.TryExecute(parms);
 				}));
 			}
 			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
@@ -244,10 +261,10 @@ namespace Verse
 				{
 					text += " [NO]";
 				}
-				float localPoints = default(float);
 				list.Add(new DebugMenuOption(text, DebugMenuOptionMode.Action, delegate
 				{
 					List<DebugMenuOption> list2 = new List<DebugMenuOption>();
+					float localPoints = default(float);
 					foreach (float item2 in DebugActionsUtility.PointsOptions(extended: true))
 					{
 						localPoints = item2;

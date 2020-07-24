@@ -5,6 +5,24 @@ namespace RimWorld
 {
 	public class Recipe_RemoveHediff : Recipe_Surgery
 	{
+		public override bool AvailableOnNow(Thing thing)
+		{
+			Pawn pawn;
+			if ((pawn = (thing as Pawn)) == null)
+			{
+				return false;
+			}
+			List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
+			for (int i = 0; i < hediffs.Count; i++)
+			{
+				if ((!recipe.targetsBodyPart || hediffs[i].Part != null) && hediffs[i].def == recipe.removesHediff && hediffs[i].Visible)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
 		public override IEnumerable<BodyPartRecord> GetPartsToApplyOn(Pawn pawn, RecipeDef recipe)
 		{
 			List<Hediff> allHediffs = pawn.health.hediffSet.hediffs;

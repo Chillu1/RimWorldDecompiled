@@ -32,7 +32,7 @@ namespace RimWorld
 					yield break;
 				}
 			}
-			if (!Props.skipThreatBigIfRaidBeacon || !flag || result.category != IncidentCategoryDefOf.ThreatBig)
+			if (!(Props.skipThreatBigIfRaidBeacon && flag) || result.category != IncidentCategoryDefOf.ThreatBig)
 			{
 				yield return new FiringIncident(result, this, parms);
 			}

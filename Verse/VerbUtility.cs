@@ -143,14 +143,15 @@ namespace Verse
 					yield return new VerbPropertiesWithSource(verbProps[j]);
 				}
 			}
-			if (tools != null)
+			if (tools == null)
 			{
-				for (int j = 0; j < tools.Count; j++)
+				yield break;
+			}
+			for (int j = 0; j < tools.Count; j++)
+			{
+				foreach (ManeuverDef maneuver in tools[j].Maneuvers)
 				{
-					foreach (ManeuverDef maneuver in tools[j].Maneuvers)
-					{
-						yield return new VerbPropertiesWithSource(maneuver.verb, tools[j], maneuver);
-					}
+					yield return new VerbPropertiesWithSource(maneuver.verb, tools[j], maneuver);
 				}
 			}
 		}

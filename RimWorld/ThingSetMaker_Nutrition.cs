@@ -53,7 +53,7 @@ namespace RimWorld
 			{
 				outThings.Add(list[i].MakeThing());
 			}
-			ThingSetMakerByTotalStatUtility.IncreaseStackCountsToTotalValue(outThings, totalNutrition, (Thing x) => x.GetStatValue(StatDefOf.Nutrition), maxMass);
+			ThingSetMakerByTotalStatUtility.IncreaseStackCountsToTotalValue_NewTemp(outThings, totalNutrition, (Thing x) => x.GetStatValue(StatDefOf.Nutrition), maxMass);
 			nextSeed++;
 		}
 
@@ -86,7 +86,7 @@ namespace RimWorld
 			totalNutrition = floatRange.RandomInRange;
 			int numMeats = enumerable.Count((ThingDef x) => x.IsMeat);
 			int numLeathers = enumerable.Count((ThingDef x) => x.IsLeather);
-			return ThingSetMakerByTotalStatUtility.GenerateDefsWithPossibleTotalValue(weightSelector: (ThingDef x) => ThingSetMakerUtility.AdjustedBigCategoriesSelectionWeight(x, numMeats, numLeathers), countRange: countRange, totalValue: totalNutrition, allowed: enumerable, techLevel: techLevel, qualityGenerator: qualityGenerator, getMinValue: (ThingStuffPairWithQuality x) => x.GetStatValue(StatDefOf.Nutrition), getMaxValue: (ThingStuffPairWithQuality x) => x.GetStatValue(StatDefOf.Nutrition) * (float)x.thing.stackLimit, tries: 100, maxMass: maxMass);
+			return ThingSetMakerByTotalStatUtility.GenerateDefsWithPossibleTotalValue_NewTmp3(weightSelector: (ThingDef x) => ThingSetMakerUtility.AdjustedBigCategoriesSelectionWeight(x, numMeats, numLeathers), countRange: countRange, totalValue: totalNutrition, allowed: enumerable, techLevel: techLevel, qualityGenerator: qualityGenerator, getMinValue: (ThingStuffPairWithQuality x) => x.GetStatValue(StatDefOf.Nutrition), getMaxValue: (ThingStuffPairWithQuality x) => x.GetStatValue(StatDefOf.Nutrition) * (float)x.thing.stackLimit, getSingleThingValue: (ThingStuffPairWithQuality x) => x.GetStatValue(StatDefOf.Nutrition), tries: 100, maxMass: maxMass);
 		}
 
 		protected override IEnumerable<ThingDef> AllGeneratableThingsDebugSub(ThingSetMakerParams parms)

@@ -64,7 +64,11 @@ namespace RimWorld
 
 		public string leaderTitleFemale;
 
+		[MustTranslate]
 		public string royalFavorLabel;
+
+		[NoTranslate]
+		public string royalFavorIconPath;
 
 		public List<PawnKindDef> fixedLeaderKinds;
 
@@ -141,6 +145,7 @@ namespace RimWorld
 
 		public List<RoyalImplantRule> royalImplantRules;
 
+		[Obsolete("Will be removed in the future")]
 		public RoyalTitleDef minTitleForBladelinkWeapons;
 
 		public string renounceTitleMessage;
@@ -150,6 +155,9 @@ namespace RimWorld
 
 		[Unsaved(false)]
 		private Texture2D settlementTexture;
+
+		[Unsaved(false)]
+		private Texture2D royalFavorIcon;
 
 		[Unsaved(false)]
 		private List<RoyalTitleDef> royalTitlesAwardableInSeniorityOrderForReading;
@@ -255,6 +263,18 @@ namespace RimWorld
 					}
 				}
 				return factionIcon;
+			}
+		}
+
+		public Texture2D RoyalFavorIcon
+		{
+			get
+			{
+				if (royalFavorIcon == null && !royalFavorIconPath.NullOrEmpty())
+				{
+					royalFavorIcon = ContentFinder<Texture2D>.Get(royalFavorIconPath);
+				}
+				return royalFavorIcon;
 			}
 		}
 

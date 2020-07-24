@@ -55,7 +55,7 @@ namespace RimWorld
 				{
 					continue;
 				}
-				IntVec3 intVec2 = RCellFinder.FindSiegePositionFrom(intVec, map);
+				IntVec3 intVec2 = RCellFinder.FindSiegePositionFrom_NewTemp(intVec, map);
 				if (intVec2.IsValid)
 				{
 					float clusterPositionScore2 = GetClusterPositionScore(intVec2, map, sketch);
@@ -200,7 +200,7 @@ namespace RimWorld
 		{
 			List<Thing> spawnedThings = new List<Thing>();
 			Sketch.SpawnMode spawnMode = (!dropInPods) ? Sketch.SpawnMode.Normal : Sketch.SpawnMode.TransportPod;
-			sketch.buildingsSketch.Spawn(map, center, Faction.OfMechanoids, Sketch.SpawnPosType.Unchanged, spawnMode, wipeIfCollides: false, clearEdificeWhereFloor: false, spawnedThings, sketch.startDormant, buildRoofsInstantly: false, delegate(IntVec3 spot, SketchEntity entity)
+			sketch.buildingsSketch.Spawn(map, center, Faction.OfMechanoids, Sketch.SpawnPosType.Unchanged, spawnMode, wipeIfCollides: false, clearEdificeWhereFloor: false, spawnedThings, sketch.startDormant, buildRoofsInstantly: false, null, delegate(IntVec3 spot, SketchEntity entity)
 			{
 				SketchThing sketchThing;
 				if ((sketchThing = (entity as SketchThing)) != null && sketchThing.def != ThingDefOf.Wall && sketchThing.def != ThingDefOf.Barricade)
@@ -244,37 +244,38 @@ namespace RimWorld
 				foreach (MechClusterSketch.Mech pawn2 in sketch.pawns)
 				{
 					IntVec3 result = pawn2.position + center;
-					if (result.Standable(map) || CellFinder.TryFindRandomCellNear(result, map, 12, (IntVec3 x) => x.Standable(map), out result))
+					if (!result.Standable(map) && !CellFinder.TryFindRandomCellNear(result, map, 12, (IntVec3 x) => x.Standable(map), out result))
 					{
-						Pawn pawn = PawnGenerator.GeneratePawn(pawn2.kindDef, Faction.OfMechanoids);
-						CompCanBeDormant compCanBeDormant = pawn.TryGetComp<CompCanBeDormant>();
-						if (compCanBeDormant != null)
+						continue;
+					}
+					Pawn pawn = PawnGenerator.GeneratePawn(pawn2.kindDef, Faction.OfMechanoids);
+					CompCanBeDormant compCanBeDormant = pawn.TryGetComp<CompCanBeDormant>();
+					if (compCanBeDormant != null)
+					{
+						if (sketch.startDormant)
 						{
-							if (sketch.startDormant)
-							{
-								compCanBeDormant.ToSleep();
-							}
-							else
-							{
-								compCanBeDormant.WakeUp();
-							}
-						}
-						lord.AddPawn(pawn);
-						spawnedThings.Add(pawn);
-						if (dropInPods)
-						{
-							ActiveDropPodInfo activeDropPodInfo = new ActiveDropPodInfo();
-							activeDropPodInfo.innerContainer.TryAdd(pawn, 1);
-							activeDropPodInfo.openDelay = 60;
-							activeDropPodInfo.leaveSlag = false;
-							activeDropPodInfo.despawnPodBeforeSpawningThing = true;
-							activeDropPodInfo.spawnWipeMode = WipeMode.Vanish;
-							DropPodUtility.MakeDropPodAt(result, map, activeDropPodInfo);
+							compCanBeDormant.ToSleep();
 						}
 						else
 						{
-							GenSpawn.Spawn(pawn, result, map);
+							compCanBeDormant.WakeUp();
 						}
+					}
+					lord.AddPawn(pawn);
+					spawnedThings.Add(pawn);
+					if (dropInPods)
+					{
+						ActiveDropPodInfo activeDropPodInfo = new ActiveDropPodInfo();
+						activeDropPodInfo.innerContainer.TryAdd(pawn, 1);
+						activeDropPodInfo.openDelay = 60;
+						activeDropPodInfo.leaveSlag = false;
+						activeDropPodInfo.despawnPodBeforeSpawningThing = true;
+						activeDropPodInfo.spawnWipeMode = WipeMode.Vanish;
+						DropPodUtility.MakeDropPodAt(result, map, activeDropPodInfo);
+					}
+					else
+					{
+						GenSpawn.Spawn(pawn, result, map);
 					}
 				}
 			}
@@ -295,7 +296,12 @@ namespace RimWorld
 			{
 				return true;
 			}
-			if (!b.def.building.IsTurret && b.TryGetComp<CompSpawnerPawn>() == null)
+			CompSpawnerPawn compSpawnerPawn = b.TryGetComp<CompSpawnerPawn>();
+			if (compSpawnerPawn != null && compSpawnerPawn.pawnsLeftToSpawn != 0)
+			{
+				return true;
+			}
+			if (!b.def.building.IsTurret)
 			{
 				return b.TryGetComp<CompCauseGameCondition>() != null;
 			}

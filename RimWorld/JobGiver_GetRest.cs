@@ -66,6 +66,14 @@ namespace RimWorld
 			{
 				return 0f;
 			}
+			if (timeAssignmentDef == TimeAssignmentDefOf.Meditate)
+			{
+				if (curLevel < 0.16f)
+				{
+					return 8f;
+				}
+				return 0f;
+			}
 			if (timeAssignmentDef == TimeAssignmentDefOf.Joy)
 			{
 				if (curLevel < 0.3f)

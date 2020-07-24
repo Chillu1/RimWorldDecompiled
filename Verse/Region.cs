@@ -229,7 +229,7 @@ namespace Verse
 				{
 					stringBuilder.AppendLine("  --" + link.ToString());
 				}
-				stringBuilder.AppendLine("valid: " + valid.ToString());
+				stringBuilder.AppendLine("valid: " + valid);
 				stringBuilder.AppendLine("makeTick: " + debug_makeTick);
 				stringBuilder.AppendLine("roomID: " + ((Room != null) ? Room.ID.ToString() : "null room!"));
 				stringBuilder.AppendLine("extentsClose: " + extentsClose);
@@ -474,7 +474,7 @@ namespace Verse
 		public override string ToString()
 		{
 			string str = (door == null) ? "null" : door.ToString();
-			return "Region(id=" + id + ", mapIndex=" + mapIndex + ", center=" + extentsClose.CenterCell + ", links=" + links.Count + ", cells=" + CellCount + ((door != null) ? (", portal=" + str) : null) + ")";
+			return string.Concat("Region(id=", id, ", mapIndex=", mapIndex, ", center=", extentsClose.CenterCell, ", links=", links.Count, ", cells=", CellCount, (door != null) ? (", portal=" + str) : null, ")");
 		}
 
 		public void DebugDraw()
@@ -501,21 +501,23 @@ namespace Verse
 			{
 				foreach (RegionLink link in links)
 				{
-					if (num == 1)
+					if (num != 1)
 					{
-						foreach (IntVec3 cell in link.span.Cells)
-						{
-							CellRenderer.RenderCell(cell, DebugSolidColorMats.MaterialOf(Color.magenta));
-						}
+						continue;
+					}
+					foreach (IntVec3 cell in link.span.Cells)
+					{
+						CellRenderer.RenderCell(cell, DebugSolidColorMats.MaterialOf(Color.magenta));
 					}
 				}
 			}
-			if (DebugViewSettings.drawRegionThings)
+			if (!DebugViewSettings.drawRegionThings)
 			{
-				foreach (Thing allThing in listerThings.AllThings)
-				{
-					CellRenderer.RenderSpot(allThing.TrueCenter(), (float)(allThing.thingIDNumber % 256) / 256f);
-				}
+				return;
+			}
+			foreach (Thing allThing in listerThings.AllThings)
+			{
+				CellRenderer.RenderSpot(allThing.TrueCenter(), (float)(allThing.thingIDNumber % 256) / 256f);
 			}
 		}
 

@@ -69,75 +69,74 @@ namespace Verse
 					if (!c.InBounds(base.Map))
 					{
 						array[i] = terrainDef;
+						continue;
 					}
-					else
+					TerrainDef terrainDef2 = terrainGrid.TerrainAt(c);
+					Thing edifice = c.GetEdifice(base.Map);
+					if (edifice != null && edifice.def.coversFloor)
 					{
-						TerrainDef terrainDef2 = terrainGrid.TerrainAt(c);
-						Thing edifice = c.GetEdifice(base.Map);
-						if (edifice != null && edifice.def.coversFloor)
-						{
-							terrainDef2 = TerrainDefOf.Underwall;
-						}
-						array[i] = terrainDef2;
-						if (terrainDef2 != terrainDef && terrainDef2.edgeType != 0 && terrainDef2.renderPrecedence >= terrainDef.renderPrecedence && !hashSet.Contains(terrainDef2))
-						{
-							hashSet.Add(terrainDef2);
-						}
+						terrainDef2 = TerrainDefOf.Underwall;
+					}
+					array[i] = terrainDef2;
+					if (terrainDef2 != terrainDef && terrainDef2.edgeType != 0 && terrainDef2.renderPrecedence >= terrainDef.renderPrecedence && !hashSet.Contains(terrainDef2))
+					{
+						hashSet.Add(terrainDef2);
 					}
 				}
 				foreach (TerrainDef item2 in hashSet)
 				{
 					LayerSubMesh subMesh2 = GetSubMesh(GetMaterialFor(item2));
-					if (subMesh2 != null && AllowRenderingFor(item2))
+					if (subMesh2 == null || !AllowRenderingFor(item2))
 					{
-						int count = subMesh2.verts.Count;
-						subMesh2.verts.Add(new Vector3((float)item.x + 0.5f, 0f, item.z));
-						subMesh2.verts.Add(new Vector3(item.x, 0f, item.z));
-						subMesh2.verts.Add(new Vector3(item.x, 0f, (float)item.z + 0.5f));
-						subMesh2.verts.Add(new Vector3(item.x, 0f, item.z + 1));
-						subMesh2.verts.Add(new Vector3((float)item.x + 0.5f, 0f, item.z + 1));
-						subMesh2.verts.Add(new Vector3(item.x + 1, 0f, item.z + 1));
-						subMesh2.verts.Add(new Vector3(item.x + 1, 0f, (float)item.z + 0.5f));
-						subMesh2.verts.Add(new Vector3(item.x + 1, 0f, item.z));
-						subMesh2.verts.Add(new Vector3((float)item.x + 0.5f, 0f, (float)item.z + 0.5f));
-						for (int j = 0; j < 8; j++)
+						continue;
+					}
+					int count = subMesh2.verts.Count;
+					subMesh2.verts.Add(new Vector3((float)item.x + 0.5f, 0f, item.z));
+					subMesh2.verts.Add(new Vector3(item.x, 0f, item.z));
+					subMesh2.verts.Add(new Vector3(item.x, 0f, (float)item.z + 0.5f));
+					subMesh2.verts.Add(new Vector3(item.x, 0f, item.z + 1));
+					subMesh2.verts.Add(new Vector3((float)item.x + 0.5f, 0f, item.z + 1));
+					subMesh2.verts.Add(new Vector3(item.x + 1, 0f, item.z + 1));
+					subMesh2.verts.Add(new Vector3(item.x + 1, 0f, (float)item.z + 0.5f));
+					subMesh2.verts.Add(new Vector3(item.x + 1, 0f, item.z));
+					subMesh2.verts.Add(new Vector3((float)item.x + 0.5f, 0f, (float)item.z + 0.5f));
+					for (int j = 0; j < 8; j++)
+					{
+						array2[j] = false;
+					}
+					for (int k = 0; k < 8; k++)
+					{
+						if (k % 2 == 0)
 						{
-							array2[j] = false;
-						}
-						for (int k = 0; k < 8; k++)
-						{
-							if (k % 2 == 0)
+							if (array[k] == item2)
 							{
-								if (array[k] == item2)
-								{
-									array2[(k - 1 + 8) % 8] = true;
-									array2[k] = true;
-									array2[(k + 1) % 8] = true;
-								}
-							}
-							else if (array[k] == item2)
-							{
+								array2[(k - 1 + 8) % 8] = true;
 								array2[k] = true;
+								array2[(k + 1) % 8] = true;
 							}
 						}
-						for (int l = 0; l < 8; l++)
+						else if (array[k] == item2)
 						{
-							if (array2[l])
-							{
-								subMesh2.colors.Add(ColorWhite);
-							}
-							else
-							{
-								subMesh2.colors.Add(ColorClear);
-							}
+							array2[k] = true;
 						}
-						subMesh2.colors.Add(ColorClear);
-						for (int m = 0; m < 8; m++)
+					}
+					for (int l = 0; l < 8; l++)
+					{
+						if (array2[l])
 						{
-							subMesh2.tris.Add(count + m);
-							subMesh2.tris.Add(count + (m + 1) % 8);
-							subMesh2.tris.Add(count + 8);
+							subMesh2.colors.Add(ColorWhite);
 						}
+						else
+						{
+							subMesh2.colors.Add(ColorClear);
+						}
+					}
+					subMesh2.colors.Add(ColorClear);
+					for (int m = 0; m < 8; m++)
+					{
+						subMesh2.tris.Add(count + m);
+						subMesh2.tris.Add(count + (m + 1) % 8);
+						subMesh2.tris.Add(count + 8);
 					}
 				}
 			}

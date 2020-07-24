@@ -36,40 +36,42 @@ namespace RimWorld.Planet
 					}
 				}
 			}
-			if (tmpEdgeTiles.Any())
+			if (!tmpEdgeTiles.Any())
 			{
-				tmpOutput.Clear();
-				Predicate<int> passCheck = (extraPredicate == null) ? ((Predicate<int>)((int x) => tilesSet.Contains(x))) : ((Predicate<int>)((int x) => tilesSet.Contains(x) && extraPredicate(x)));
-				Find.WorldFloodFiller.FloodFill(-1, passCheck, delegate(int tile, int traversalDist)
-				{
-					if (traversalDist >= count)
-					{
-						tmpOutput.Add(tile);
-					}
-					return false;
-				}, int.MaxValue, tmpEdgeTiles);
-				tiles.Clear();
-				tiles.AddRange(tmpOutput);
+				return;
 			}
+			tmpOutput.Clear();
+			Predicate<int> passCheck = (extraPredicate == null) ? ((Predicate<int>)((int x) => tilesSet.Contains(x))) : ((Predicate<int>)((int x) => tilesSet.Contains(x) && extraPredicate(x)));
+			Find.WorldFloodFiller.FloodFill(-1, passCheck, delegate(int tile, int traversalDist)
+			{
+				if (traversalDist >= count)
+				{
+					tmpOutput.Add(tile);
+				}
+				return false;
+			}, int.MaxValue, tmpEdgeTiles);
+			tiles.Clear();
+			tiles.AddRange(tmpOutput);
 		}
 
 		public static void Dilate(List<int> tiles, int count, Predicate<int> extraPredicate = null)
 		{
-			if (count > 0)
+			if (count <= 0)
 			{
-				Find.WorldFloodFiller.FloodFill(-1, extraPredicate ?? ((Predicate<int>)((int x) => true)), delegate(int tile, int traversalDist)
-				{
-					if (traversalDist > count)
-					{
-						return true;
-					}
-					if (traversalDist != 0)
-					{
-						tiles.Add(tile);
-					}
-					return false;
-				}, int.MaxValue, tiles);
+				return;
 			}
+			Find.WorldFloodFiller.FloodFill(-1, extraPredicate ?? ((Predicate<int>)((int x) => true)), delegate(int tile, int traversalDist)
+			{
+				if (traversalDist > count)
+				{
+					return true;
+				}
+				if (traversalDist != 0)
+				{
+					tiles.Add(tile);
+				}
+				return false;
+			}, int.MaxValue, tiles);
 		}
 
 		public static void Open(List<int> tiles, int count)

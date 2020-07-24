@@ -30,34 +30,36 @@ namespace RimWorld
 				for (int j = 0; j < objList.Count; j++)
 				{
 					Thing t = objList[j] as Thing;
-					if (t != null)
+					if (t == null)
 					{
-						List<Designator> allDesignators = Find.ReverseDesignatorDatabase.AllDesignators;
-						for (int k = 0; k < allDesignators.Count; k++)
+						continue;
+					}
+					List<Designator> allDesignators = Find.ReverseDesignatorDatabase.AllDesignators;
+					for (int k = 0; k < allDesignators.Count; k++)
+					{
+						Designator des = allDesignators[k];
+						if (!des.CanDesignateThing(t).Accepted)
 						{
-							Designator des = allDesignators[k];
-							if (des.CanDesignateThing(t).Accepted)
-							{
-								Command_Action command_Action = new Command_Action();
-								command_Action.defaultLabel = des.LabelCapReverseDesignating(t);
-								command_Action.icon = des.IconReverseDesignating(t, out float angle, out Vector2 offset);
-								command_Action.iconAngle = angle;
-								command_Action.iconOffset = offset;
-								command_Action.defaultDesc = des.DescReverseDesignating(t);
-								command_Action.order = ((des is Designator_Uninstall) ? (-11f) : (-20f));
-								command_Action.action = delegate
-								{
-									if (TutorSystem.AllowAction(des.TutorTagDesignate))
-									{
-										des.DesignateThing(t);
-										des.Finalize(somethingSucceeded: true);
-									}
-								};
-								command_Action.hotKey = des.hotKey;
-								command_Action.groupKey = des.groupKey;
-								gizmoList.Add(command_Action);
-							}
+							continue;
 						}
+						Command_Action command_Action = new Command_Action();
+						command_Action.defaultLabel = des.LabelCapReverseDesignating(t);
+						command_Action.icon = des.IconReverseDesignating(t, out float angle, out Vector2 offset);
+						command_Action.iconAngle = angle;
+						command_Action.iconOffset = offset;
+						command_Action.defaultDesc = des.DescReverseDesignating(t);
+						command_Action.order = ((des is Designator_Uninstall) ? (-11f) : (-20f));
+						command_Action.action = delegate
+						{
+							if (TutorSystem.AllowAction(des.TutorTagDesignate))
+							{
+								des.DesignateThing(t);
+								des.Finalize(somethingSucceeded: true);
+							}
+						};
+						command_Action.hotKey = des.hotKey;
+						command_Action.groupKey = des.groupKey;
+						gizmoList.Add(command_Action);
 					}
 				}
 				objList.Clear();

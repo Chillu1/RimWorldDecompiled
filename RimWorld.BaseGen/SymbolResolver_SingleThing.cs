@@ -72,7 +72,7 @@ namespace RimWorld.BaseGen
 				else
 				{
 					result = FindBestSpawnCellForNonItem(rp.rect, thingDef, ref rot, out bool hasToWipeBuilding, out bool doesntFit);
-					if ((hasToWipeBuilding | doesntFit) && rp.skipSingleThingIfHasToWipeBuildingOrDoesntFit.HasValue && rp.skipSingleThingIfHasToWipeBuildingOrDoesntFit.Value)
+					if ((hasToWipeBuilding || doesntFit) && rp.skipSingleThingIfHasToWipeBuildingOrDoesntFit.HasValue && rp.skipSingleThingIfHasToWipeBuildingOrDoesntFit.Value)
 					{
 						return;
 					}

@@ -32,7 +32,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return "(sky=" + sky + ", shadow=" + shadow + ", overlay=" + overlay + ", sat=" + saturation + ")";
+			return string.Concat("(sky=", sky, ", shadow=", shadow, ", overlay=", overlay, ", sat=", saturation, ")");
 		}
 	}
 }

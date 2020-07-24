@@ -18,11 +18,11 @@ namespace Verse
 				{
 					if (!saveDestroyedThings)
 					{
-						Log.Warning("Deep-saving destroyed thing " + thing + " with saveDestroyedThings==false. label=" + label);
+						Log.Warning(string.Concat("Deep-saving destroyed thing ", thing, " with saveDestroyedThings==false. label=", label));
 					}
 					else if (thing.Discarded)
 					{
-						Log.Warning("Deep-saving discarded thing " + thing + ". This mode means that the thing is no longer managed by anything in the code and should not be deep-saved anywhere. (even with saveDestroyedThings==true) , label=" + label);
+						Log.Warning(string.Concat("Deep-saving discarded thing ", thing, ". This mode means that the thing is no longer managed by anything in the code and should not be deep-saved anywhere. (even with saveDestroyedThings==true) , label=", label));
 					}
 				}
 				IExposable exposable = target as IExposable;

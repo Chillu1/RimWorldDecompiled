@@ -37,19 +37,19 @@ namespace Verse
 			{
 				workingBlockedArray[i] = !(shooterLoc + GenAdj.AdjacentCells[i]).CanBeSeenOver(map);
 			}
-			if (!workingBlockedArray[1] && (((workingBlockedArray[0] && !workingBlockedArray[5]) & flag) || ((workingBlockedArray[2] && !workingBlockedArray[4]) & flag2)))
+			if (!workingBlockedArray[1] && ((workingBlockedArray[0] && !workingBlockedArray[5] && flag) || (workingBlockedArray[2] && !workingBlockedArray[4] && flag2)))
 			{
 				listToFill.Add(shooterLoc + new IntVec3(1, 0, 0));
 			}
-			if (!workingBlockedArray[3] && (((workingBlockedArray[0] && !workingBlockedArray[6]) & flag) || ((workingBlockedArray[2] && !workingBlockedArray[7]) & flag2)))
+			if (!workingBlockedArray[3] && ((workingBlockedArray[0] && !workingBlockedArray[6] && flag) || (workingBlockedArray[2] && !workingBlockedArray[7] && flag2)))
 			{
 				listToFill.Add(shooterLoc + new IntVec3(-1, 0, 0));
 			}
-			if (!workingBlockedArray[2] && (((workingBlockedArray[3] && !workingBlockedArray[7]) & flag3) || ((workingBlockedArray[1] && !workingBlockedArray[4]) & flag4)))
+			if (!workingBlockedArray[2] && ((workingBlockedArray[3] && !workingBlockedArray[7] && flag3) || (workingBlockedArray[1] && !workingBlockedArray[4] && flag4)))
 			{
 				listToFill.Add(shooterLoc + new IntVec3(0, 0, -1));
 			}
-			if (!workingBlockedArray[0] && (((workingBlockedArray[3] && !workingBlockedArray[6]) & flag3) || ((workingBlockedArray[1] && !workingBlockedArray[5]) & flag4)))
+			if (!workingBlockedArray[0] && ((workingBlockedArray[3] && !workingBlockedArray[6] && flag3) || (workingBlockedArray[1] && !workingBlockedArray[5] && flag4)))
 			{
 				listToFill.Add(shooterLoc + new IntVec3(0, 0, 1));
 			}
@@ -77,19 +77,18 @@ namespace Verse
 						outCells.Add(intVec);
 					}
 				}
+				return;
 			}
-			else
+			outCells.Add(t.Position);
+			if (t.def.size.x == 1 && t.def.size.z == 1)
 			{
-				outCells.Add(t.Position);
-				if (t.def.size.x != 1 || t.def.size.z != 1)
+				return;
+			}
+			foreach (IntVec3 item in t.OccupiedRect())
+			{
+				if (item != t.Position)
 				{
-					foreach (IntVec3 item in t.OccupiedRect())
-					{
-						if (item != t.Position)
-						{
-							outCells.Add(item);
-						}
-					}
+					outCells.Add(item);
 				}
 			}
 		}

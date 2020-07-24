@@ -461,7 +461,7 @@ namespace Verse
 		{
 			if (Dead)
 			{
-				Log.Error(pawn + " set dead while already dead.");
+				Log.Error(string.Concat(pawn, " set dead while already dead."));
 			}
 			healthState = PawnHealthState.Dead;
 		}
@@ -470,7 +470,7 @@ namespace Verse
 		{
 			if (Downed)
 			{
-				Log.Error(this.pawn + " tried to do MakeDowned while already downed.");
+				Log.Error(string.Concat(this.pawn, " tried to do MakeDowned while already downed."));
 				return;
 			}
 			if (this.pawn.guilt != null && this.pawn.GetLord() != null && this.pawn.GetLord().LordJob != null && this.pawn.GetLord().LordJob.GuiltyOnDowned)
@@ -479,7 +479,7 @@ namespace Verse
 			}
 			healthState = PawnHealthState.Down;
 			PawnDiedOrDownedThoughtsUtility.TryGiveThoughts(this.pawn, dinfo, PawnDiedOrDownedThoughtsKind.Downed);
-			if (this.pawn.InMentalState)
+			if (this.pawn.InMentalState && this.pawn.MentalStateDef.recoverFromDowned)
 			{
 				this.pawn.mindState.mentalStateHandler.CurState.RecoverFromState();
 			}
@@ -488,7 +488,7 @@ namespace Verse
 				this.pawn.DropAndForbidEverything(keepInventoryAndEquipmentIfInBed: true);
 				this.pawn.stances.CancelBusyStanceSoft();
 			}
-			this.pawn.ClearMind(ifLayingKeepLaying: true);
+			this.pawn.ClearMind(ifLayingKeepLaying: true, clearInspiration: false, clearMentalState: false);
 			if (Current.ProgramState == ProgramState.Playing)
 			{
 				this.pawn.GetLord()?.Notify_PawnLost(this.pawn, PawnLostCondition.IncappedOrKilled, dinfo);
@@ -533,7 +533,7 @@ namespace Verse
 		{
 			if (!Downed)
 			{
-				Log.Error(pawn + " tried to do MakeUndowned when already undowned.");
+				Log.Error(string.Concat(pawn, " tried to do MakeUndowned when already undowned."));
 				return;
 			}
 			healthState = PawnHealthState.Mobile;

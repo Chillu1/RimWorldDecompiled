@@ -71,7 +71,8 @@ namespace RimWorld
 			PawnKindDef result;
 			for (pointsLeft = points; pointsLeft > 0f && Props.spawnablePawnKinds.Where((PawnKindDef p) => p.combatPower <= pointsLeft).TryRandomElement(out result); pointsLeft -= result.combatPower)
 			{
-				list.Add(PawnGenerator.GeneratePawn(result, parent.Faction));
+				int index = result.lifeStages.Count - 1;
+				list.Add(PawnGenerator.GeneratePawn(new PawnGenerationRequest(result, parent.Faction, PawnGenerationContext.NonPlayer, -1, forceGenerateNewPawn: false, newborn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: false, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowFood: true, allowAddictions: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, null, 1f, null, null, null, null, null, result.race.race.lifeStageAges[index].minAge)));
 			}
 			points = 0f;
 			return list;
@@ -85,44 +86,45 @@ namespace RimWorld
 				lord = CompSpawnerPawn.CreateNewLord(parent, Props.aggressive, Props.defendRadius, Props.lordJob);
 			}
 			IntVec3 spawnPosition = GetSpawnPosition();
-			if (spawnPosition.IsValid)
+			if (!spawnPosition.IsValid)
 			{
-				List<Thing> list = GeneratePawns();
-				if (Props.dropInPods)
+				return;
+			}
+			List<Thing> list = GeneratePawns();
+			if (Props.dropInPods)
+			{
+				DropPodUtility.DropThingsNear(spawnPosition, parent.MapHeld, list);
+			}
+			List<IntVec3> occupiedCells = new List<IntVec3>();
+			foreach (Thing item in list)
+			{
+				if (!Props.dropInPods)
 				{
-					DropPodUtility.DropThingsNear(spawnPosition, parent.MapHeld, list);
-				}
-				List<IntVec3> occupiedCells = new List<IntVec3>();
-				foreach (Thing item in list)
-				{
-					if (!Props.dropInPods)
+					IntVec3 intVec = CellFinder.RandomClosewalkCellNear(spawnPosition, parent.Map, Props.pawnSpawnRadius.RandomInRange, (IntVec3 c) => !occupiedCells.Contains(c));
+					if (!intVec.IsValid)
 					{
-						IntVec3 intVec = CellFinder.RandomClosewalkCellNear(spawnPosition, parent.Map, Props.pawnSpawnRadius.RandomInRange, (IntVec3 c) => !occupiedCells.Contains(c));
-						if (!intVec.IsValid)
-						{
-							intVec = CellFinder.RandomClosewalkCellNear(spawnPosition, parent.Map, Props.pawnSpawnRadius.RandomInRange);
-						}
-						GenSpawn.Spawn(item, intVec, parent.Map);
-						occupiedCells.Add(intVec);
+						intVec = CellFinder.RandomClosewalkCellNear(spawnPosition, parent.Map, Props.pawnSpawnRadius.RandomInRange);
 					}
-					lord.AddPawn((Pawn)item);
-					spawnedPawns.Add((Pawn)item);
-					item.TryGetComp<CompCanBeDormant>()?.WakeUp();
+					GenSpawn.Spawn(item, intVec, parent.Map);
+					occupiedCells.Add(intVec);
 				}
-				if (Props.spawnEffecter != null)
-				{
-					Effecter effecter = new Effecter(Props.spawnEffecter);
-					effecter.Trigger(parent, TargetInfo.Invalid);
-					effecter.Cleanup();
-				}
-				if (Props.spawnSound != null)
-				{
-					Props.spawnSound.PlayOneShot(parent);
-				}
-				if (Props.activatedMessageKey != null)
-				{
-					Messages.Message(Props.activatedMessageKey.Translate(), spawnedPawns, MessageTypeDefOf.ThreatBig);
-				}
+				lord.AddPawn((Pawn)item);
+				spawnedPawns.Add((Pawn)item);
+				item.TryGetComp<CompCanBeDormant>()?.WakeUp();
+			}
+			if (Props.spawnEffecter != null)
+			{
+				Effecter effecter = new Effecter(Props.spawnEffecter);
+				effecter.Trigger(parent, TargetInfo.Invalid);
+				effecter.Cleanup();
+			}
+			if (Props.spawnSound != null)
+			{
+				Props.spawnSound.PlayOneShot(parent);
+			}
+			if (Props.activatedMessageKey != null)
+			{
+				Messages.Message(Props.activatedMessageKey.Translate(), spawnedPawns, MessageTypeDefOf.ThreatBig);
 			}
 		}
 

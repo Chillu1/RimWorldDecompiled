@@ -262,7 +262,7 @@ namespace Verse.AI
 			{
 				return false;
 			}
-			if (haulable != null && haulable.def.BlockPlanting && worker.Map.zoneManager.ZoneAt(c) is Zone_Growing)
+			if (haulable != null && haulable.def.BlocksPlanting() && worker.Map.zoneManager.ZoneAt(c) is Zone_Growing)
 			{
 				return false;
 			}

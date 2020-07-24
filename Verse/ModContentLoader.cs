@@ -1,9 +1,10 @@
 using RimWorld.IO;
-using RuntimeAudioClipLoader;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace Verse
 {
@@ -66,7 +67,7 @@ namespace Verse
 
 		public static IEnumerable<Pair<string, LoadedContentItem<T>>> LoadAllForMod(ModContentPack mod)
 		{
-			DeepProfiler.Start("Loading assets of type " + typeof(T) + " for mod " + mod);
+			DeepProfiler.Start(string.Concat("Loading assets of type ", typeof(T), " for mod ", mod));
 			Dictionary<string, FileInfo> allFilesForMod = ModContentPack.GetAllFilesForMod(mod, GenFilePaths.ContentPath<T>(), IsAcceptableExtension);
 			foreach (KeyValuePair<string, FileInfo> item in allFilesForMod)
 			{
@@ -101,18 +102,20 @@ namespace Verse
 					T val;
 					try
 					{
-						bool doStream = ShouldStreamAudioClipFromFile(file);
-						Stream stream = file.CreateReadStream();
-						try
+						string uri = GenFilePaths.SafeURIForUnityWWWFromPath(file.FullPath);
+						using (UnityWebRequest unityWebRequest = UnityWebRequestMultimedia.GetAudioClip(uri, GetAudioTypeFromURI(uri)))
 						{
-							val = (T)(object)Manager.Load(stream, GetFormat(file.Name), file.Name, doStream);
+							unityWebRequest.SendWebRequest();
+							while (!unityWebRequest.isDone)
+							{
+								Thread.Sleep(1);
+							}
+							if (unityWebRequest.error != null)
+							{
+								throw new InvalidOperationException(unityWebRequest.error);
+							}
+							val = (T)(object)DownloadHandlerAudioClip.GetContent(unityWebRequest);
 						}
-						catch (Exception)
-						{
-							stream.Dispose();
-							throw;
-						}
-						extraDisposable = stream;
 					}
 					finally
 					{
@@ -129,34 +132,15 @@ namespace Verse
 					return new LoadedContentItem<T>(file, val, extraDisposable);
 				}
 			}
-			catch (Exception ex2)
+			catch (Exception ex)
 			{
-				Log.Error("Exception loading " + typeof(T) + " from file.\nabsFilePath: " + file.FullPath + "\nException: " + ex2.ToString());
+				Log.Error(string.Concat("Exception loading ", typeof(T), " from file.\nabsFilePath: ", file.FullPath, "\nException: ", ex.ToString()));
 			}
 			if (typeof(T) == typeof(Texture2D))
 			{
 				return (LoadedContentItem<T>)(object)new LoadedContentItem<Texture2D>(file, BaseContent.BadTex);
 			}
 			return null;
-		}
-
-		private static AudioFormat GetFormat(string filename)
-		{
-			switch (Path.GetExtension(filename))
-			{
-			case ".ogg":
-				return AudioFormat.ogg;
-			case ".mp3":
-				return AudioFormat.mp3;
-			case ".aiff":
-			case ".aif":
-			case ".aifc":
-				return AudioFormat.aiff;
-			case ".wav":
-				return AudioFormat.wav;
-			default:
-				return AudioFormat.unknown;
-			}
 		}
 
 		private static AudioType GetAudioTypeFromURI(string uri)

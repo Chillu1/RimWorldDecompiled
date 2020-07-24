@@ -49,6 +49,8 @@ namespace Verse
 
 		public bool anyError;
 
+		private string legacyFolderName;
+
 		private Dictionary<ModContentPack, HashSet<string>> tmpAlreadyLoadedFiles = new Dictionary<ModContentPack, HashSet<string>>();
 
 		public Texture2D icon = BaseContent.BadTex;
@@ -70,8 +72,6 @@ namespace Verse
 		public const string LanguagesFolderName = "Languages";
 
 		public const string PlaceholderText = "TODO";
-
-		private string legacyFolderName;
 
 		private bool infoIsRealMetadata;
 
@@ -114,14 +114,12 @@ namespace Verse
 						if (directory.Exists)
 						{
 							yield return new Tuple<VirtualDirectory, ModContentPack, string>(directory, mod, item);
+							continue;
 						}
-						else
+						directory = AbstractFilesystem.GetDirectory(Path.Combine(path, legacyFolderName));
+						if (directory.Exists)
 						{
-							directory = AbstractFilesystem.GetDirectory(Path.Combine(path, legacyFolderName));
-							if (directory.Exists)
-							{
-								yield return new Tuple<VirtualDirectory, ModContentPack, string>(directory, mod, item);
-							}
+							yield return new Tuple<VirtualDirectory, ModContentPack, string>(directory, mod, item);
 						}
 					}
 				}
@@ -140,6 +138,8 @@ namespace Verse
 			}
 		}
 
+		public string LegacyFolderName => legacyFolderName;
+
 		public LoadedLanguage(string folderName)
 		{
 			this.folderName = folderName;
@@ -148,36 +148,38 @@ namespace Verse
 
 		public void LoadMetadata()
 		{
-			if (info == null || !infoIsRealMetadata)
+			if (info != null && infoIsRealMetadata)
 			{
-				infoIsRealMetadata = true;
-				foreach (ModContentPack runningMod in LoadedModManager.RunningMods)
+				return;
+			}
+			infoIsRealMetadata = true;
+			foreach (ModContentPack runningMod in LoadedModManager.RunningMods)
+			{
+				foreach (string item in runningMod.foldersToLoadDescendingOrder)
 				{
-					foreach (string item in runningMod.foldersToLoadDescendingOrder)
+					string text = Path.Combine(item, "Languages");
+					if (!new DirectoryInfo(text).Exists)
 					{
-						string text = Path.Combine(item, "Languages");
-						if (new DirectoryInfo(text).Exists)
+						continue;
+					}
+					foreach (VirtualDirectory directory in AbstractFilesystem.GetDirectories(text, "*", SearchOption.TopDirectoryOnly))
+					{
+						if (directory.Name == folderName || directory.Name == legacyFolderName)
 						{
-							foreach (VirtualDirectory directory in AbstractFilesystem.GetDirectories(text, "*", SearchOption.TopDirectoryOnly))
+							info = DirectXmlLoader.ItemFromXmlFile<LanguageInfo>(directory, "LanguageInfo.xml", resolveCrossRefs: false);
+							if (info.friendlyNameNative.NullOrEmpty() && directory.FileExists("FriendlyName.txt"))
 							{
-								if (directory.Name == folderName || directory.Name == legacyFolderName)
-								{
-									info = DirectXmlLoader.ItemFromXmlFile<LanguageInfo>(directory, "LanguageInfo.xml", resolveCrossRefs: false);
-									if (info.friendlyNameNative.NullOrEmpty() && directory.FileExists("FriendlyName.txt"))
-									{
-										info.friendlyNameNative = directory.ReadAllText("FriendlyName.txt");
-									}
-									if (info.friendlyNameNative.NullOrEmpty())
-									{
-										info.friendlyNameNative = folderName;
-									}
-									if (info.friendlyNameEnglish.NullOrEmpty())
-									{
-										info.friendlyNameEnglish = folderName;
-									}
-									return;
-								}
+								info.friendlyNameNative = directory.ReadAllText("FriendlyName.txt");
 							}
+							if (info.friendlyNameNative.NullOrEmpty())
+							{
+								info.friendlyNameNative = folderName;
+							}
+							if (info.friendlyNameEnglish.NullOrEmpty())
+							{
+								info.friendlyNameEnglish = folderName;
+							}
+							return;
 						}
 					}
 				}
@@ -204,112 +206,111 @@ namespace Verse
 
 		public void LoadData()
 		{
-			if (!dataIsLoaded)
+			if (dataIsLoaded)
 			{
-				dataIsLoaded = true;
-				DeepProfiler.Start("Loading language data: " + folderName);
-				try
+				return;
+			}
+			dataIsLoaded = true;
+			DeepProfiler.Start("Loading language data: " + folderName);
+			try
+			{
+				tmpAlreadyLoadedFiles.Clear();
+				foreach (Tuple<VirtualDirectory, ModContentPack, string> allDirectory in AllDirectories)
 				{
-					tmpAlreadyLoadedFiles.Clear();
-					foreach (Tuple<VirtualDirectory, ModContentPack, string> allDirectory in AllDirectories)
+					Tuple<VirtualDirectory, ModContentPack, string> localDirectory = allDirectory;
+					if (!tmpAlreadyLoadedFiles.ContainsKey(localDirectory.Item2))
 					{
-						Tuple<VirtualDirectory, ModContentPack, string> localDirectory = allDirectory;
-						if (!tmpAlreadyLoadedFiles.ContainsKey(localDirectory.Item2))
-						{
-							tmpAlreadyLoadedFiles[localDirectory.Item2] = new HashSet<string>();
-						}
-						LongEventHandler.ExecuteWhenFinished(delegate
-						{
-							if (icon == BaseContent.BadTex)
-							{
-								VirtualFile file = localDirectory.Item1.GetFile("LangIcon.png");
-								if (file.Exists)
-								{
-									icon = ModContentLoader<Texture2D>.LoadItem(file).contentItem;
-								}
-							}
-						});
-						VirtualDirectory directory = localDirectory.Item1.GetDirectory("CodeLinked");
-						if (directory.Exists)
-						{
-							loadErrors.Add("Translations aren't called CodeLinked any more. Please rename to Keyed: " + directory);
-						}
-						else
-						{
-							directory = localDirectory.Item1.GetDirectory("Keyed");
-						}
-						if (directory.Exists)
-						{
-							foreach (VirtualFile file2 in directory.GetFiles("*.xml", SearchOption.AllDirectories))
-							{
-								if (TryRegisterFileIfNew(localDirectory, file2.FullPath))
-								{
-									LoadFromFile_Keyed(file2);
-								}
-							}
-						}
-						VirtualDirectory directory2 = localDirectory.Item1.GetDirectory("DefLinked");
-						if (directory2.Exists)
-						{
-							loadErrors.Add("Translations aren't called DefLinked any more. Please rename to DefInjected: " + directory2);
-						}
-						else
-						{
-							directory2 = localDirectory.Item1.GetDirectory("DefInjected");
-						}
-						if (directory2.Exists)
-						{
-							foreach (VirtualDirectory directory4 in directory2.GetDirectories("*", SearchOption.TopDirectoryOnly))
-							{
-								string name = directory4.Name;
-								Type typeInAnyAssembly = GenTypes.GetTypeInAnyAssembly(name);
-								if (typeInAnyAssembly == null && name.Length > 3)
-								{
-									typeInAnyAssembly = GenTypes.GetTypeInAnyAssembly(name.Substring(0, name.Length - 1));
-								}
-								if (typeInAnyAssembly == null)
-								{
-									loadErrors.Add("Error loading language from " + allDirectory + ": dir " + directory4.Name + " doesn't correspond to any def type. Skipping...");
-								}
-								else
-								{
-									foreach (VirtualFile file3 in directory4.GetFiles("*.xml", SearchOption.AllDirectories))
-									{
-										if (TryRegisterFileIfNew(localDirectory, file3.FullPath))
-										{
-											LoadFromFile_DefInject(file3, typeInAnyAssembly);
-										}
-									}
-								}
-							}
-						}
-						EnsureAllDefTypesHaveDefInjectionPackage();
-						VirtualDirectory directory3 = localDirectory.Item1.GetDirectory("Strings");
-						if (directory3.Exists)
-						{
-							foreach (VirtualDirectory directory5 in directory3.GetDirectories("*", SearchOption.TopDirectoryOnly))
-							{
-								foreach (VirtualFile file4 in directory5.GetFiles("*.txt", SearchOption.AllDirectories))
-								{
-									if (TryRegisterFileIfNew(localDirectory, file4.FullPath))
-									{
-										LoadFromFile_Strings(file4, directory3);
-									}
-								}
-							}
-						}
-						wordInfo.LoadFrom(localDirectory, this);
+						tmpAlreadyLoadedFiles[localDirectory.Item2] = new HashSet<string>();
 					}
+					LongEventHandler.ExecuteWhenFinished(delegate
+					{
+						if (icon == BaseContent.BadTex)
+						{
+							VirtualFile file = localDirectory.Item1.GetFile("LangIcon.png");
+							if (file.Exists)
+							{
+								icon = ModContentLoader<Texture2D>.LoadItem(file).contentItem;
+							}
+						}
+					});
+					VirtualDirectory directory = localDirectory.Item1.GetDirectory("CodeLinked");
+					if (directory.Exists)
+					{
+						loadErrors.Add("Translations aren't called CodeLinked any more. Please rename to Keyed: " + directory);
+					}
+					else
+					{
+						directory = localDirectory.Item1.GetDirectory("Keyed");
+					}
+					if (directory.Exists)
+					{
+						foreach (VirtualFile file2 in directory.GetFiles("*.xml", SearchOption.AllDirectories))
+						{
+							if (TryRegisterFileIfNew(localDirectory, file2.FullPath))
+							{
+								LoadFromFile_Keyed(file2);
+							}
+						}
+					}
+					VirtualDirectory directory2 = localDirectory.Item1.GetDirectory("DefLinked");
+					if (directory2.Exists)
+					{
+						loadErrors.Add("Translations aren't called DefLinked any more. Please rename to DefInjected: " + directory2);
+					}
+					else
+					{
+						directory2 = localDirectory.Item1.GetDirectory("DefInjected");
+					}
+					if (directory2.Exists)
+					{
+						foreach (VirtualDirectory directory4 in directory2.GetDirectories("*", SearchOption.TopDirectoryOnly))
+						{
+							string name = directory4.Name;
+							Type typeInAnyAssembly = GenTypes.GetTypeInAnyAssembly(name);
+							if (typeInAnyAssembly == null && name.Length > 3)
+							{
+								typeInAnyAssembly = GenTypes.GetTypeInAnyAssembly(name.Substring(0, name.Length - 1));
+							}
+							if (typeInAnyAssembly == null)
+							{
+								loadErrors.Add(string.Concat("Error loading language from ", allDirectory, ": dir ", directory4.Name, " doesn't correspond to any def type. Skipping..."));
+								continue;
+							}
+							foreach (VirtualFile file3 in directory4.GetFiles("*.xml", SearchOption.AllDirectories))
+							{
+								if (TryRegisterFileIfNew(localDirectory, file3.FullPath))
+								{
+									LoadFromFile_DefInject(file3, typeInAnyAssembly);
+								}
+							}
+						}
+					}
+					EnsureAllDefTypesHaveDefInjectionPackage();
+					VirtualDirectory directory3 = localDirectory.Item1.GetDirectory("Strings");
+					if (directory3.Exists)
+					{
+						foreach (VirtualDirectory directory5 in directory3.GetDirectories("*", SearchOption.TopDirectoryOnly))
+						{
+							foreach (VirtualFile file4 in directory5.GetFiles("*.txt", SearchOption.AllDirectories))
+							{
+								if (TryRegisterFileIfNew(localDirectory, file4.FullPath))
+								{
+									LoadFromFile_Strings(file4, directory3);
+								}
+							}
+						}
+					}
+					wordInfo.LoadFrom(localDirectory, this);
 				}
-				catch (Exception arg)
-				{
-					Log.Error("Exception loading language data. Rethrowing. Exception: " + arg);
-					throw;
-				}
-				finally
-				{
-					DeepProfiler.End();
-				}
+			}
+			catch (Exception arg)
+			{
+				Log.Error("Exception loading language data. Rethrowing. Exception: " + arg);
+				throw;
+			}
+			finally
+			{
+				DeepProfiler.End();
 			}
 		}
 
@@ -342,7 +343,7 @@ namespace Verse
 			}
 			catch (Exception ex)
 			{
-				loadErrors.Add("Exception loading from strings file " + file + ": " + ex);
+				loadErrors.Add(string.Concat("Exception loading from strings file ", file, ": ", ex));
 				return;
 			}
 			string text2 = file.FullPath;
@@ -381,17 +382,15 @@ namespace Verse
 					if (keyedReplacements.ContainsKey(item.key) || dictionary.ContainsKey(item.key))
 					{
 						loadErrors.Add("Duplicate keyed translation key: " + item.key + " in language " + folderName);
+						continue;
 					}
-					else
-					{
-						dictionary.Add(item.key, item.value);
-						dictionary2.Add(item.key, item.lineNumber);
-					}
+					dictionary.Add(item.key, item.value);
+					dictionary2.Add(item.key, item.lineNumber);
 				}
 			}
 			catch (Exception ex)
 			{
-				loadErrors.Add("Exception loading from translation file " + file + ": " + ex);
+				loadErrors.Add(string.Concat("Exception loading from translation file ", file, ": ", ex));
 				dictionary.Clear();
 				dictionary2.Clear();
 				anyKeyedReplacementsXmlParseError = true;

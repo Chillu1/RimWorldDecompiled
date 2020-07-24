@@ -214,48 +214,49 @@ namespace RimWorld
 		public static void InspectPaneOnGUI(Rect inRect, IInspectPane pane)
 		{
 			pane.RecentHeight = 165f;
-			if (pane.AnythingSelected)
+			if (!pane.AnythingSelected)
 			{
-				try
+				return;
+			}
+			try
+			{
+				Rect rect = inRect.ContractedBy(12f);
+				rect.yMin -= 4f;
+				rect.yMax += 6f;
+				GUI.BeginGroup(rect);
+				float lineEndWidth = 0f;
+				if (pane.ShouldShowSelectNextInCellButton)
 				{
-					Rect rect = inRect.ContractedBy(12f);
-					rect.yMin -= 4f;
-					rect.yMax += 6f;
-					GUI.BeginGroup(rect);
-					float lineEndWidth = 0f;
-					if (pane.ShouldShowSelectNextInCellButton)
+					Rect rect2 = new Rect(rect.width - 24f, 0f, 24f, 24f);
+					MouseoverSounds.DoRegion(rect2);
+					if (Widgets.ButtonImage(rect2, TexButton.SelectOverlappingNext))
 					{
-						Rect rect2 = new Rect(rect.width - 24f, 0f, 24f, 24f);
-						MouseoverSounds.DoRegion(rect2);
-						if (Widgets.ButtonImage(rect2, TexButton.SelectOverlappingNext))
-						{
-							pane.SelectNextInCell();
-						}
-						lineEndWidth += 24f;
-						TooltipHandler.TipRegionByKey(rect2, "SelectNextInSquareTip", KeyBindingDefOf.SelectNextInCell.MainKeyLabel);
+						pane.SelectNextInCell();
 					}
-					pane.DoInspectPaneButtons(rect, ref lineEndWidth);
-					Rect rect3 = new Rect(0f, 0f, rect.width - lineEndWidth, 50f);
-					string label = pane.GetLabel(rect3);
-					rect3.width += 300f;
-					Text.Font = GameFont.Medium;
-					Text.Anchor = TextAnchor.UpperLeft;
-					Widgets.Label(rect3, label);
-					if (pane.ShouldShowPaneContents)
-					{
-						Rect rect4 = rect.AtZero();
-						rect4.yMin += 26f;
-						pane.DoPaneContents(rect4);
-					}
+					lineEndWidth += 24f;
+					TooltipHandler.TipRegionByKey(rect2, "SelectNextInSquareTip", KeyBindingDefOf.SelectNextInCell.MainKeyLabel);
 				}
-				catch (Exception ex)
+				pane.DoInspectPaneButtons(rect, ref lineEndWidth);
+				Rect rect3 = new Rect(0f, 0f, rect.width - lineEndWidth, 50f);
+				string label = pane.GetLabel(rect3);
+				rect3.width += 300f;
+				Text.Font = GameFont.Medium;
+				Text.Anchor = TextAnchor.UpperLeft;
+				Widgets.Label(rect3, label);
+				if (pane.ShouldShowPaneContents)
 				{
-					Log.Error("Exception doing inspect pane: " + ex.ToString());
+					Rect rect4 = rect.AtZero();
+					rect4.yMin += 26f;
+					pane.DoPaneContents(rect4);
 				}
-				finally
-				{
-					GUI.EndGroup();
-				}
+			}
+			catch (Exception ex)
+			{
+				Log.Error("Exception doing inspect pane: " + ex.ToString());
+			}
+			finally
+			{
+				GUI.EndGroup();
 			}
 		}
 
@@ -344,7 +345,7 @@ namespace RimWorld
 		public static InspectTabBase OpenTab(Type inspectTabType)
 		{
 			MainTabWindow_Inspect mainTabWindow_Inspect = (MainTabWindow_Inspect)MainButtonDefOf.Inspect.TabWindow;
-			t = null;
+			InspectTabBase tab = null;
 			if (mainTabWindow_Inspect.CurTabs != null)
 			{
 				IList list = mainTabWindow_Inspect.CurTabs as IList;
@@ -364,22 +365,23 @@ namespace RimWorld
 					}
 				}
 			}
-			if (t != null)
+			if (tab != null)
 			{
 				if (Find.MainTabsRoot.OpenTab != MainButtonDefOf.Inspect)
 				{
 					Find.MainTabsRoot.SetCurrentTab(MainButtonDefOf.Inspect);
 				}
-				if (!IsOpen(t, mainTabWindow_Inspect))
+				if (!IsOpen(tab, mainTabWindow_Inspect))
 				{
-					ToggleTab(t, mainTabWindow_Inspect);
+					ToggleTab(tab, mainTabWindow_Inspect);
 				}
 			}
-			return t;
+			return tab;
 			bool Find(InspectTabBase t)
 			{
 				if (inspectTabType.IsAssignableFrom(t.GetType()))
 				{
+					tab = t;
 					return true;
 				}
 				return false;

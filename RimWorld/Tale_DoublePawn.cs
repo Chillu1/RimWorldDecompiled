@@ -66,7 +66,7 @@ namespace RimWorld
 		{
 			if (def.firstPawnSymbol.NullOrEmpty() || def.secondPawnSymbol.NullOrEmpty())
 			{
-				Log.Error(def + " uses DoublePawn tale class but firstPawnSymbol and secondPawnSymbol are not both set");
+				Log.Error(string.Concat(def, " uses DoublePawn tale class but firstPawnSymbol and secondPawnSymbol are not both set"));
 			}
 			foreach (Rule rule in firstPawnData.GetRules("ANYPAWN"))
 			{
@@ -76,16 +76,17 @@ namespace RimWorld
 			{
 				yield return rule2;
 			}
-			if (secondPawnData != null)
+			if (secondPawnData == null)
 			{
-				foreach (Rule rule3 in firstPawnData.GetRules("ANYPAWN"))
-				{
-					yield return rule3;
-				}
-				foreach (Rule rule4 in secondPawnData.GetRules(def.secondPawnSymbol))
-				{
-					yield return rule4;
-				}
+				yield break;
+			}
+			foreach (Rule rule3 in firstPawnData.GetRules("ANYPAWN"))
+			{
+				yield return rule3;
+			}
+			foreach (Rule rule4 in secondPawnData.GetRules(def.secondPawnSymbol))
+			{
+				yield return rule4;
 			}
 		}
 

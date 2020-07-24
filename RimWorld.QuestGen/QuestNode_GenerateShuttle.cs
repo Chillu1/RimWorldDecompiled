@@ -35,6 +35,11 @@ namespace RimWorld.QuestGen
 
 		protected override void RunInt()
 		{
+			if (!ModLister.RoyaltyInstalled)
+			{
+				Log.ErrorOnce("Shuttle is a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 8811221);
+				return;
+			}
 			Slate slate = QuestGen.slate;
 			Thing thing = ThingMaker.MakeThing(ThingDefOf.Shuttle);
 			if (owningFaction.GetValue(slate) != null)

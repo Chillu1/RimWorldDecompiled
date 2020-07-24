@@ -69,7 +69,7 @@ namespace RimWorld
 				List<Thing> thingList = item.GetThingList(map);
 				for (int i = 0; i < thingList.Count; i++)
 				{
-					if (!(thingList[i] is Pawn) && (thingList[i].def.Fillage != 0 || thingList[i].def.IsEdifice()))
+					if (!(thingList[i] is Pawn) && (thingList[i].def.Fillage != 0 || thingList[i].def.IsEdifice() || thingList[i] is Skyfaller))
 					{
 						firstBlockingThing = thingList[i];
 						return;

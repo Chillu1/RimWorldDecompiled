@@ -53,29 +53,30 @@ namespace RimWorld
 
 		private static void GiveDrugsIfAddicted(Pawn p)
 		{
-			if (p.RaceProps.Humanlike)
+			if (!p.RaceProps.Humanlike)
 			{
-				foreach (Hediff_Addiction addiction in p.health.hediffSet.GetHediffs<Hediff_Addiction>())
+				return;
+			}
+			foreach (Hediff_Addiction addiction in p.health.hediffSet.GetHediffs<Hediff_Addiction>())
+			{
+				if (DefDatabase<ThingDef>.AllDefsListForReading.Where(delegate(ThingDef x)
 				{
-					if (DefDatabase<ThingDef>.AllDefsListForReading.Where(delegate(ThingDef x)
+					if (x.category != ThingCategory.Item)
 					{
-						if (x.category != ThingCategory.Item)
-						{
-							return false;
-						}
-						if (p.Faction != null && (int)x.techLevel > (int)p.Faction.def.techLevel)
-						{
-							return false;
-						}
-						CompProperties_Drug compProperties = x.GetCompProperties<CompProperties_Drug>();
-						return compProperties != null && compProperties.chemical != null && compProperties.chemical.addictionHediff == addiction.def;
-					}).TryRandomElement(out ThingDef result))
-					{
-						int stackCount = Rand.RangeInclusive(2, 5);
-						Thing thing = ThingMaker.MakeThing(result);
-						thing.stackCount = stackCount;
-						p.inventory.TryAddItemNotForSale(thing);
+						return false;
 					}
+					if (p.Faction != null && (int)x.techLevel > (int)p.Faction.def.techLevel)
+					{
+						return false;
+					}
+					CompProperties_Drug compProperties = x.GetCompProperties<CompProperties_Drug>();
+					return compProperties != null && compProperties.chemical != null && compProperties.chemical.addictionHediff == addiction.def;
+				}).TryRandomElement(out ThingDef result))
+				{
+					int stackCount = Rand.RangeInclusive(2, 5);
+					Thing thing = ThingMaker.MakeThing(result);
+					thing.stackCount = stackCount;
+					p.inventory.TryAddItemNotForSale(thing);
 				}
 			}
 		}

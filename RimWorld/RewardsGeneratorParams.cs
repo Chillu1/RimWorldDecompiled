@@ -45,5 +45,10 @@ namespace RimWorld
 			}
 			return null;
 		}
+
+		public override string ToString()
+		{
+			return GenText.FieldsToString(this);
+		}
 	}
 }

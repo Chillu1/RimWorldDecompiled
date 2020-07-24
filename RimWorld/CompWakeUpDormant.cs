@@ -39,16 +39,17 @@ namespace RimWorld
 				for (int i = 0; i < num; i++)
 				{
 					IntVec3 intVec = parent.Position + GenRadial.RadialPattern[i];
-					if (intVec.InBounds(parent.Map) && GenSight.LineOfSight(parent.Position, intVec, parent.Map))
+					if (!intVec.InBounds(parent.Map) || !GenSight.LineOfSight(parent.Position, intVec, parent.Map))
 					{
-						foreach (Thing thing in intVec.GetThingList(parent.Map))
+						continue;
+					}
+					foreach (Thing thing in intVec.GetThingList(parent.Map))
+					{
+						Pawn pawn = thing as Pawn;
+						if (pawn != null && pawn.IsColonist)
 						{
-							Pawn pawn = thing as Pawn;
-							if (pawn != null && pawn.IsColonist)
-							{
-								Activate();
-								return;
-							}
+							Activate();
+							return;
 						}
 					}
 				}

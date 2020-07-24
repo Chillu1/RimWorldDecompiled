@@ -196,7 +196,7 @@ namespace RimWorld.Planet
 			Widgets.InfoCardButton(rect2.width - 24f, (rect.height - 24f) / 2f, p);
 			rect2.width -= 24f;
 			bool flag = draggedItem != null && rect2.Contains(Event.current.mousePosition) && CurrentWearerOf(draggedItem) != p;
-			if ((Mouse.IsOver(rect2) && draggedItem == null) | flag)
+			if ((Mouse.IsOver(rect2) && draggedItem == null) || flag)
 			{
 				Widgets.DrawHighlight(rect2);
 			}
@@ -326,7 +326,7 @@ namespace RimWorld.Planet
 			{
 				TooltipHandler.TipRegion(rect, t.LabelCap);
 			}
-			if ((Event.current.type == EventType.MouseDown && Event.current.button == 0) & flag)
+			if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && flag)
 			{
 				draggedItem = t;
 				droppedDraggedItem = false;
@@ -395,7 +395,7 @@ namespace RimWorld.Planet
 			}
 			else
 			{
-				Log.Warning("Could not find any pawn to move " + draggedItem + " to.");
+				Log.Warning(string.Concat("Could not find any pawn to move ", draggedItem, " to."));
 			}
 			draggedItem = null;
 		}
@@ -459,7 +459,7 @@ namespace RimWorld.Planet
 							pawn.inventory.innerContainer.TryAdd(tmpExistingApparel[i]);
 							continue;
 						}
-						Log.Warning("Could not find any pawn to move " + tmpExistingApparel[i] + " to.");
+						Log.Warning(string.Concat("Could not find any pawn to move ", tmpExistingApparel[i], " to."));
 						tmpExistingApparel[i].Destroy();
 					}
 				}
@@ -482,14 +482,14 @@ namespace RimWorld.Planet
 						pawn2.inventory.innerContainer.TryAdd(tmpExistingEquipment[j]);
 						continue;
 					}
-					Log.Warning("Could not find any pawn to move " + tmpExistingEquipment[j] + " to.");
+					Log.Warning(string.Concat("Could not find any pawn to move ", tmpExistingEquipment[j], " to."));
 					tmpExistingEquipment[j].Destroy();
 				}
 				p.equipment.AddEquipment((ThingWithComps)thingWithComps.SplitOff(1));
 			}
 			else
 			{
-				Log.Warning("Could not make " + p + " equip or wear " + draggedItem);
+				Log.Warning(string.Concat("Could not make ", p, " equip or wear ", draggedItem));
 			}
 			draggedItem = null;
 		}

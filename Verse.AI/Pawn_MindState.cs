@@ -574,17 +574,18 @@ namespace Verse.AI
 			{
 				pawn.jobs.StartJob(JobMaker.MakeJob(JobDefOf.Flee, fleeDest, instigator), JobCondition.InterruptOptional);
 			}
-			if (pawn.RaceProps.herdAnimal && Rand.Chance(0.1f))
+			if (!pawn.RaceProps.herdAnimal || !Rand.Chance(0.1f))
 			{
-				foreach (Pawn packmate in GetPackmates(pawn, 24f))
+				return;
+			}
+			foreach (Pawn packmate in GetPackmates(pawn, 24f))
+			{
+				if (CanStartFleeingBecauseOfPawnAction(packmate))
 				{
-					if (CanStartFleeingBecauseOfPawnAction(packmate))
+					IntVec3 fleeDest2 = CellFinderLoose.GetFleeDest(packmate, threats, packmate.Position.DistanceTo(instigator.Position) + 14f);
+					if (fleeDest2 != packmate.Position)
 					{
-						IntVec3 fleeDest2 = CellFinderLoose.GetFleeDest(packmate, threats, packmate.Position.DistanceTo(instigator.Position) + 14f);
-						if (fleeDest2 != packmate.Position)
-						{
-							packmate.jobs.StartJob(JobMaker.MakeJob(JobDefOf.Flee, fleeDest2, instigator), JobCondition.InterruptOptional);
-						}
+						packmate.jobs.StartJob(JobMaker.MakeJob(JobDefOf.Flee, fleeDest2, instigator), JobCondition.InterruptOptional);
 					}
 				}
 			}

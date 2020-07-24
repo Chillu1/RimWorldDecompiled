@@ -70,6 +70,16 @@ namespace RimWorld
 				{
 					return false;
 				}
+				if (entDef.PlaceWorkers != null)
+				{
+					foreach (PlaceWorker placeWorker in entDef.PlaceWorkers)
+					{
+						if (!placeWorker.IsBuildDesignatorVisible(entDef))
+						{
+							return false;
+						}
+					}
+				}
 				if (entDef.buildingPrerequisites != null)
 				{
 					for (int i = 0; i < entDef.buildingPrerequisites.Count; i++)
@@ -143,6 +153,16 @@ namespace RimWorld
 		protected override void DrawIcon(Rect rect, Material buttonMat = null)
 		{
 			Widgets.DefIcon(rect, PlacingDef, stuffDef, 0.85f);
+		}
+
+		public Texture2D ResolvedIcon()
+		{
+			Graphic_Appearances graphic_Appearances;
+			if (stuffDef != null && (graphic_Appearances = (entDef.graphic as Graphic_Appearances)) != null)
+			{
+				return (Texture2D)graphic_Appearances.SubGraphicFor(stuffDef).MatAt(entDef.defaultPlacingRot).mainTexture;
+			}
+			return icon;
 		}
 
 		public void ResetStuffToDefault()

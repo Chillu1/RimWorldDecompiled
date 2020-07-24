@@ -67,7 +67,7 @@ namespace RimWorld.Planet
 
 		public override string ToString()
 		{
-			return "(" + biome + " elev=" + elevation + "m hill=" + hilliness + " temp=" + temperature + "°C rain=" + rainfall + "mm swampiness=" + swampiness.ToStringPercent() + " potentialRoads=" + ((potentialRoads != null) ? potentialRoads.Count : 0) + " (allowed=" + biome.allowRoads.ToString() + ") potentialRivers=" + ((potentialRivers != null) ? potentialRivers.Count : 0) + " (allowed=" + biome.allowRivers.ToString() + "))";
+			return string.Concat("(", biome, " elev=", elevation, "m hill=", hilliness, " temp=", temperature, "°C rain=", rainfall, "mm swampiness=", swampiness.ToStringPercent(), " potentialRoads=", (potentialRoads != null) ? potentialRoads.Count : 0, " (allowed=", biome.allowRoads.ToString(), ") potentialRivers=", (potentialRivers != null) ? potentialRivers.Count : 0, " (allowed=", biome.allowRivers.ToString(), "))");
 		}
 	}
 }

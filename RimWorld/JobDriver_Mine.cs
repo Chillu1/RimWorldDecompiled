@@ -28,6 +28,7 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
+			JobDriver_Mine jobDriver_Mine = this;
 			this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
 			this.FailOnCellMissingDesignation(TargetIndex.A, DesignationDefOf.Mine);
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
@@ -35,24 +36,24 @@ namespace RimWorld
 			mine.tickAction = delegate
 			{
 				Pawn actor = mine.actor;
-				Thing mineTarget = MineTarget;
-				if (ticksToPickHit < -100)
+				Thing mineTarget = jobDriver_Mine.MineTarget;
+				if (jobDriver_Mine.ticksToPickHit < -100)
 				{
-					ResetTicksToPickHit();
+					jobDriver_Mine.ResetTicksToPickHit();
 				}
 				if (actor.skills != null && (mineTarget.Faction != actor.Faction || actor.Faction == null))
 				{
 					actor.skills.Learn(SkillDefOf.Mining, 0.07f);
 				}
-				ticksToPickHit--;
-				if (ticksToPickHit <= 0)
+				jobDriver_Mine.ticksToPickHit--;
+				if (jobDriver_Mine.ticksToPickHit <= 0)
 				{
 					IntVec3 position = mineTarget.Position;
-					if (effecter == null)
+					if (jobDriver_Mine.effecter == null)
 					{
-						effecter = EffecterDefOf.Mine.Spawn();
+						jobDriver_Mine.effecter = EffecterDefOf.Mine.Spawn();
 					}
-					effecter.Trigger(actor, mineTarget);
+					jobDriver_Mine.effecter.Trigger(actor, mineTarget);
 					int num = mineTarget.def.building.isNaturalRock ? 80 : 40;
 					Mineable mineable = mineTarget as Mineable;
 					if (mineable == null || mineTarget.HitPoints > num)
@@ -70,32 +71,32 @@ namespace RimWorld
 					{
 						actor.Map.mineStrikeManager.CheckStruckOre(position, mineTarget.def, actor);
 						actor.records.Increment(RecordDefOf.CellsMined);
-						if (pawn.Faction != Faction.OfPlayer)
+						if (jobDriver_Mine.pawn.Faction != Faction.OfPlayer)
 						{
-							List<Thing> thingList = position.GetThingList(base.Map);
+							List<Thing> thingList = position.GetThingList(jobDriver_Mine.Map);
 							for (int i = 0; i < thingList.Count; i++)
 							{
 								thingList[i].SetForbidden(value: true, warnOnFail: false);
 							}
 						}
-						if (pawn.Faction == Faction.OfPlayer && MineStrikeManager.MineableIsVeryValuable(mineTarget.def))
+						if (jobDriver_Mine.pawn.Faction == Faction.OfPlayer && MineStrikeManager.MineableIsVeryValuable(mineTarget.def))
 						{
-							TaleRecorder.RecordTale(TaleDefOf.MinedValuable, pawn, mineTarget.def.building.mineableThing);
+							TaleRecorder.RecordTale(TaleDefOf.MinedValuable, jobDriver_Mine.pawn, mineTarget.def.building.mineableThing);
 						}
-						if (pawn.Faction == Faction.OfPlayer && MineStrikeManager.MineableIsValuable(mineTarget.def) && !pawn.Map.IsPlayerHome)
+						if (jobDriver_Mine.pawn.Faction == Faction.OfPlayer && MineStrikeManager.MineableIsValuable(mineTarget.def) && !jobDriver_Mine.pawn.Map.IsPlayerHome)
 						{
-							TaleRecorder.RecordTale(TaleDefOf.CaravanRemoteMining, pawn, mineTarget.def.building.mineableThing);
+							TaleRecorder.RecordTale(TaleDefOf.CaravanRemoteMining, jobDriver_Mine.pawn, mineTarget.def.building.mineableThing);
 						}
-						ReadyForNextToil();
+						jobDriver_Mine.ReadyForNextToil();
 					}
 					else
 					{
-						ResetTicksToPickHit();
+						jobDriver_Mine.ResetTicksToPickHit();
 					}
 				}
 			};
 			mine.defaultCompleteMode = ToilCompleteMode.Never;
-			mine.WithProgressBar(TargetIndex.A, () => 1f - (float)MineTarget.HitPoints / (float)MineTarget.MaxHitPoints);
+			mine.WithProgressBar(TargetIndex.A, () => 1f - (float)jobDriver_Mine.MineTarget.HitPoints / (float)jobDriver_Mine.MineTarget.MaxHitPoints);
 			mine.FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
 			mine.activeSkill = (() => SkillDefOf.Mining);
 			yield return mine;

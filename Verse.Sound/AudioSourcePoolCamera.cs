@@ -18,7 +18,7 @@ namespace Verse.Sound
 			cameraSourcesContainer.transform.localPosition = Vector3.zero;
 			for (int i = 0; i < 16; i++)
 			{
-				GameObject gameObject = new GameObject("OneShotSourceCamera_" + i.ToString());
+				GameObject gameObject = new GameObject("OneShotSourceCamera_" + i);
 				gameObject.transform.parent = cameraSourcesContainer.transform;
 				gameObject.transform.localPosition = Vector3.zero;
 				AudioSource audioSource = AudioSourceMaker.NewAudioSourceOn(gameObject);

@@ -37,7 +37,7 @@ namespace Verse.AI
 					}
 					catch (Exception ex)
 					{
-						Log.Error("Exception in " + GetType() + " GetPriority: " + ex.ToString());
+						Log.Error(string.Concat("Exception in ", GetType(), " GetPriority: ", ex.ToString()));
 					}
 					if (!(num3 <= 0f) && !(num3 < minPriority) && num3 > num)
 					{
@@ -56,7 +56,7 @@ namespace Verse.AI
 				}
 				catch (Exception ex2)
 				{
-					Log.Error("Exception in " + GetType() + " TryIssueJobPackage: " + ex2.ToString());
+					Log.Error(string.Concat("Exception in ", GetType(), " TryIssueJobPackage: ", ex2.ToString()));
 				}
 				if (result.IsValid)
 				{

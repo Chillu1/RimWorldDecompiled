@@ -14,18 +14,19 @@ namespace RimWorld
 		{
 			get
 			{
-				if (base.Spawned)
+				if (!base.Spawned)
 				{
-					foreach (IntVec3 item in this.OccupiedRect())
+					yield break;
+				}
+				foreach (IntVec3 item in this.OccupiedRect())
+				{
+					List<Thing> thingList = base.Map.thingGrid.ThingsListAt(item);
+					for (int i = 0; i < thingList.Count; i++)
 					{
-						List<Thing> thingList = base.Map.thingGrid.ThingsListAt(item);
-						for (int i = 0; i < thingList.Count; i++)
+						Plant plant = thingList[i] as Plant;
+						if (plant != null)
 						{
-							Plant plant = thingList[i] as Plant;
-							if (plant != null)
-							{
-								yield return plant;
-							}
+							yield return plant;
 						}
 					}
 				}
@@ -64,13 +65,14 @@ namespace RimWorld
 
 		public override void TickRare()
 		{
-			if (compPower != null && !compPower.PowerOn)
+			if (compPower == null || compPower.PowerOn)
 			{
-				foreach (Plant item in PlantsOnMe)
-				{
-					DamageInfo dinfo = new DamageInfo(DamageDefOf.Rotting, 1f);
-					item.TakeDamage(dinfo);
-				}
+				return;
+			}
+			foreach (Plant item in PlantsOnMe)
+			{
+				DamageInfo dinfo = new DamageInfo(DamageDefOf.Rotting, 1f);
+				item.TakeDamage(dinfo);
 			}
 		}
 

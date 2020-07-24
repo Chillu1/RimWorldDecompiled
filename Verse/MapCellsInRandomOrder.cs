@@ -27,18 +27,19 @@ namespace Verse
 
 		private void CreateListIfShould()
 		{
-			if (randomizedCells == null)
+			if (randomizedCells != null)
 			{
-				randomizedCells = new List<IntVec3>(map.Area);
-				foreach (IntVec3 allCell in map.AllCells)
-				{
-					randomizedCells.Add(allCell);
-				}
-				Rand.PushState();
-				Rand.Seed = (Find.World.info.Seed ^ map.Tile);
-				randomizedCells.Shuffle();
-				Rand.PopState();
+				return;
 			}
+			randomizedCells = new List<IntVec3>(map.Area);
+			foreach (IntVec3 allCell in map.AllCells)
+			{
+				randomizedCells.Add(allCell);
+			}
+			Rand.PushState();
+			Rand.Seed = (Find.World.info.Seed ^ map.Tile);
+			randomizedCells.Shuffle();
+			Rand.PopState();
 		}
 	}
 }

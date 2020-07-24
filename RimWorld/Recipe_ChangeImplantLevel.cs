@@ -46,8 +46,7 @@ namespace RimWorld
 			{
 				if (IsViolationOnPawn(pawn, part, Faction.OfPlayer))
 				{
-					int goodwillImpact = (hediff_ImplantWithLevel.def == HediffDefOf.PsychicAmplifier) ? (-200) : (-70);
-					ReportViolation(pawn, billDoer, pawn.FactionOrExtraHomeFaction, goodwillImpact, "GoodwillChangedReason_DowngradedImplant".Translate(hediff_ImplantWithLevel.Label));
+					ReportViolation(pawn, billDoer, pawn.FactionOrExtraHomeFaction, -70, "GoodwillChangedReason_DowngradedImplant".Translate(hediff_ImplantWithLevel.Label));
 				}
 				hediff_ImplantWithLevel.ChangeLevel(recipe.hediffLevelOffset);
 			}

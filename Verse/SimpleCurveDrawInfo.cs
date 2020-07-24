@@ -10,6 +10,6 @@ namespace Verse
 
 		public Color color = Color.green;
 
-		public string labelY = "y";
+		public string valueFormat;
 	}
 }

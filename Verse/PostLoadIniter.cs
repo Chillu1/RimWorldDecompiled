@@ -11,7 +11,7 @@ namespace Verse
 		{
 			if (Scribe.mode != LoadSaveMode.LoadingVars)
 			{
-				Log.Error("Registered " + s + " for post load init, but current mode is " + Scribe.mode);
+				Log.Error(string.Concat("Registered ", s, " for post load init, but current mode is ", Scribe.mode));
 			}
 			else if (s == null)
 			{

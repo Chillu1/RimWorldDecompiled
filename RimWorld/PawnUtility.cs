@@ -746,6 +746,34 @@ namespace RimWorld
 			return false;
 		}
 
+		public static Hediff_Psylink GetMainPsylinkSource(this Pawn pawn)
+		{
+			return (Hediff_Psylink)pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.PsychicAmplifier);
+		}
+
+		public static int GetPsylinkLevel(this Pawn pawn)
+		{
+			return pawn.GetMainPsylinkSource()?.level ?? 0;
+		}
+
+		public static int GetMaxPsylinkLevel(this Pawn pawn)
+		{
+			return (int)HediffDefOf.PsychicAmplifier.maxSeverity;
+		}
+
+		public static void ChangePsylinkLevel(this Pawn pawn, int levelOffset)
+		{
+			Hediff_Psylink mainPsylinkSource = pawn.GetMainPsylinkSource();
+			if (mainPsylinkSource == null)
+			{
+				mainPsylinkSource = (Hediff_Psylink)pawn.health.AddHediff(HediffDefOf.PsychicAmplifier, pawn.health.hediffSet.GetBrain());
+			}
+			else
+			{
+				mainPsylinkSource.ChangeLevel(levelOffset);
+			}
+		}
+
 		public static float RecruitDifficulty(this Pawn pawn, Faction recruiterFaction)
 		{
 			float baseRecruitDifficulty = pawn.kindDef.baseRecruitDifficulty;
@@ -775,22 +803,23 @@ namespace RimWorld
 		{
 			foreach (Pawn startingAndOptionalPawn in Find.GameInitData.startingAndOptionalPawns)
 			{
-				if (startingAndOptionalPawn.needs.mood != null)
+				if (startingAndOptionalPawn.needs.mood == null)
 				{
-					if (thought.IsSocial)
+					continue;
+				}
+				if (thought.IsSocial)
+				{
+					foreach (Pawn startingAndOptionalPawn2 in Find.GameInitData.startingAndOptionalPawns)
 					{
-						foreach (Pawn startingAndOptionalPawn2 in Find.GameInitData.startingAndOptionalPawns)
+						if (startingAndOptionalPawn2 != startingAndOptionalPawn)
 						{
-							if (startingAndOptionalPawn2 != startingAndOptionalPawn)
-							{
-								startingAndOptionalPawn.needs.mood.thoughts.memories.TryGainMemory(thought, startingAndOptionalPawn2);
-							}
+							startingAndOptionalPawn.needs.mood.thoughts.memories.TryGainMemory(thought, startingAndOptionalPawn2);
 						}
 					}
-					else
-					{
-						startingAndOptionalPawn.needs.mood.thoughts.memories.TryGainMemory(thought);
-					}
+				}
+				else
+				{
+					startingAndOptionalPawn.needs.mood.thoughts.memories.TryGainMemory(thought);
 				}
 			}
 		}

@@ -14,17 +14,14 @@ namespace RimWorld
 
 		public override void DoEditInterface(Listing_ScenEdit listing)
 		{
-			if (Widgets.ButtonText(listing.GetScenPartRect(this, ScenPart.RowHeight), gameCondition.LabelCap))
+			if (!Widgets.ButtonText(listing.GetScenPartRect(this, ScenPart.RowHeight), gameCondition.LabelCap))
 			{
-				FloatMenuUtility.MakeMenu(AllowedGameConditions(), (GameConditionDef d) => d.LabelCap, delegate(GameConditionDef d)
-				{
-					ScenPart_PermaGameCondition scenPart_PermaGameCondition = this;
-					return delegate
-					{
-						scenPart_PermaGameCondition.gameCondition = d;
-					};
-				});
+				return;
 			}
+			FloatMenuUtility.MakeMenu(AllowedGameConditions(), (GameConditionDef d) => d.LabelCap, (GameConditionDef d) => delegate
+			{
+				gameCondition = d;
+			});
 		}
 
 		public override void ExposeData()

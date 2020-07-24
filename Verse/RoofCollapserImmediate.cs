@@ -155,21 +155,22 @@ namespace Verse
 		private static void DropRoofInCellPhaseTwo(IntVec3 c, Map map)
 		{
 			RoofDef roofDef = map.roofGrid.RoofAt(c);
-			if (roofDef != null)
+			if (roofDef == null)
 			{
-				if (roofDef.filthLeaving != null)
-				{
-					FilthMaker.TryMakeFilth(c, map, roofDef.filthLeaving);
-				}
-				if (roofDef.VanishOnCollapse)
-				{
-					map.roofGrid.SetRoof(c, null);
-				}
-				CellRect bound = CellRect.CenteredOn(c, 2);
-				foreach (Pawn item in map.mapPawns.AllPawnsSpawned.Where((Pawn pawn) => bound.Contains(pawn.Position)))
-				{
-					TaleRecorder.RecordTale(TaleDefOf.CollapseDodged, item);
-				}
+				return;
+			}
+			if (roofDef.filthLeaving != null)
+			{
+				FilthMaker.TryMakeFilth(c, map, roofDef.filthLeaving);
+			}
+			if (roofDef.VanishOnCollapse)
+			{
+				map.roofGrid.SetRoof(c, null);
+			}
+			CellRect bound = CellRect.CenteredOn(c, 2);
+			foreach (Pawn item in map.mapPawns.AllPawnsSpawned.Where((Pawn pawn) => bound.Contains(pawn.Position)))
+			{
+				TaleRecorder.RecordTale(TaleDefOf.CollapseDodged, item);
 			}
 		}
 

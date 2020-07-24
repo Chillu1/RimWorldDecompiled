@@ -153,17 +153,23 @@ namespace Verse
 		public virtual void DrawWorker(Vector3 loc, Rot4 rot, ThingDef thingDef, Thing thing, float extraRotation)
 		{
 			Mesh mesh = MeshAt(rot);
-			Quaternion rotation = QuatFromRot(rot);
+			Quaternion quat = QuatFromRot(rot);
 			if (extraRotation != 0f)
 			{
-				rotation *= Quaternion.Euler(Vector3.up * extraRotation);
+				quat *= Quaternion.Euler(Vector3.up * extraRotation);
 			}
 			loc += DrawOffset(rot);
-			Graphics.DrawMesh(material: MatAt(rot, thing), mesh: mesh, position: loc, rotation: rotation, layer: 0);
+			Material mat = MatAt(rot, thing);
+			DrawMeshInt(mesh, loc, quat, mat);
 			if (ShadowGraphic != null)
 			{
 				ShadowGraphic.DrawWorker(loc, rot, thingDef, thing, extraRotation);
 			}
+		}
+
+		protected virtual void DrawMeshInt(Mesh mesh, Vector3 loc, Quaternion quat, Material mat)
+		{
+			Graphics.DrawMesh(mesh, loc, quat, mat, 0);
 		}
 
 		public virtual void Print(SectionLayer layer, Thing thing)

@@ -28,7 +28,7 @@ namespace RimWorld
 			}
 			if (!thingDef.tradeability.TraderCanSell())
 			{
-				yield return thingDef + " tradeability doesn't allow traders to sell this thing";
+				yield return string.Concat(thingDef, " tradeability doesn't allow traders to sell this thing");
 			}
 		}
 	}

@@ -49,7 +49,7 @@ namespace Verse
 					SoundDefOf.MapSelected.PlayOneShotOnCamera();
 				}
 			}
-			if (flag | flag2)
+			if (flag || flag2)
 			{
 				Find.CameraDriver.JumpToCurrentMapLoc(thing.Position);
 			}

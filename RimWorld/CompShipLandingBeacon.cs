@@ -28,54 +28,55 @@ namespace RimWorld
 
 		public void EstablishConnections()
 		{
-			if (parent.Spawned)
+			if (!parent.Spawned)
 			{
-				List<CompShipLandingBeacon> list = new List<CompShipLandingBeacon>();
-				List<CompShipLandingBeacon> list2 = new List<CompShipLandingBeacon>();
-				List<Thing> list3 = parent.Map.listerThings.ThingsOfDef(ThingDefOf.ShipLandingBeacon);
-				foreach (Thing item in list3)
+				return;
+			}
+			List<CompShipLandingBeacon> list = new List<CompShipLandingBeacon>();
+			List<CompShipLandingBeacon> list2 = new List<CompShipLandingBeacon>();
+			List<Thing> list3 = parent.Map.listerThings.ThingsOfDef(ThingDefOf.ShipLandingBeacon);
+			foreach (Thing item in list3)
+			{
+				CompShipLandingBeacon compShipLandingBeacon = item.TryGetComp<CompShipLandingBeacon>();
+				if (compShipLandingBeacon != null && CanLinkTo(compShipLandingBeacon))
 				{
-					CompShipLandingBeacon compShipLandingBeacon = item.TryGetComp<CompShipLandingBeacon>();
-					if (compShipLandingBeacon != null && CanLinkTo(compShipLandingBeacon))
+					if (parent.Position.x == compShipLandingBeacon.parent.Position.x)
 					{
-						if (parent.Position.x == compShipLandingBeacon.parent.Position.x)
-						{
-							list2.Add(compShipLandingBeacon);
-						}
-						else if (parent.Position.z == compShipLandingBeacon.parent.Position.z)
-						{
-							list.Add(compShipLandingBeacon);
-						}
+						list2.Add(compShipLandingBeacon);
+					}
+					else if (parent.Position.z == compShipLandingBeacon.parent.Position.z)
+					{
+						list.Add(compShipLandingBeacon);
 					}
 				}
-				foreach (CompShipLandingBeacon h in list)
+			}
+			foreach (CompShipLandingBeacon h in list)
+			{
+				foreach (CompShipLandingBeacon v in list2)
 				{
-					foreach (CompShipLandingBeacon v in list2)
+					Thing thing = list3.FirstOrDefault((Thing x) => x.Position.x == h.parent.Position.x && x.Position.z == v.parent.Position.z);
+					if (thing != null)
 					{
-						Thing thing = list3.FirstOrDefault((Thing x) => x.Position.x == h.parent.Position.x && x.Position.z == v.parent.Position.z);
-						if (thing != null)
+						ShipLandingArea shipLandingArea = new ShipLandingArea(CellRect.FromLimits(thing.Position, parent.Position).ContractedBy(1), parent.Map);
+						shipLandingArea.beacons = new List<CompShipLandingBeacon>
 						{
-							ShipLandingArea shipLandingArea = new ShipLandingArea(CellRect.FromLimits(thing.Position, parent.Position).ContractedBy(1), parent.Map);
-							shipLandingArea.beacons = new List<CompShipLandingBeacon>
-							{
-								this,
-								thing.TryGetComp<CompShipLandingBeacon>(),
-								v,
-								h
-							};
-							TryAddArea(shipLandingArea);
-						}
+							this,
+							thing.TryGetComp<CompShipLandingBeacon>(),
+							v,
+							h
+						};
+						TryAddArea(shipLandingArea);
 					}
 				}
-				for (int num = landingAreas.Count - 1; num >= 0; num--)
+			}
+			for (int num = landingAreas.Count - 1; num >= 0; num--)
+			{
+				foreach (CompShipLandingBeacon beacon in landingAreas[num].beacons)
 				{
-					foreach (CompShipLandingBeacon beacon in landingAreas[num].beacons)
+					if (!beacon.TryAddArea(landingAreas[num]))
 					{
-						if (!beacon.TryAddArea(landingAreas[num]))
-						{
-							RemoveArea(landingAreas[num]);
-							break;
-						}
+						RemoveArea(landingAreas[num]);
+						break;
 					}
 				}
 			}

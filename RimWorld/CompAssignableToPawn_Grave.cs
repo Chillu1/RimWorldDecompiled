@@ -36,6 +36,21 @@ namespace RimWorld
 			pawn.ownership.UnclaimGrave();
 		}
 
+		protected override bool ShouldShowAssignmentGizmo()
+		{
+			return !((Building_Grave)parent).HasCorpse;
+		}
+
+		protected override string GetAssignmentGizmoLabel()
+		{
+			return "CommandGraveAssignColonistLabel".Translate();
+		}
+
+		protected override string GetAssignmentGizmoDesc()
+		{
+			return "CommandGraveAssignColonistDesc".Translate();
+		}
+
 		public override void PostExposeData()
 		{
 			base.PostExposeData();

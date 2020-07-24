@@ -483,25 +483,23 @@ namespace Verse
 			{
 				allowedHitPointsConfigurable = true;
 				allowedQualitiesConfigurable = true;
+				return;
 			}
-			else
+			allowedHitPointsConfigurable = false;
+			allowedQualitiesConfigurable = false;
+			foreach (ThingDef descendantThingDef in DisplayRootCategory.catDef.DescendantThingDefs)
 			{
-				allowedHitPointsConfigurable = false;
-				allowedQualitiesConfigurable = false;
-				foreach (ThingDef descendantThingDef in DisplayRootCategory.catDef.DescendantThingDefs)
+				if (descendantThingDef.useHitPoints)
 				{
-					if (descendantThingDef.useHitPoints)
-					{
-						allowedHitPointsConfigurable = true;
-					}
-					if (descendantThingDef.HasComp(typeof(CompQuality)))
-					{
-						allowedQualitiesConfigurable = true;
-					}
-					if (allowedHitPointsConfigurable && allowedQualitiesConfigurable)
-					{
-						break;
-					}
+					allowedHitPointsConfigurable = true;
+				}
+				if (descendantThingDef.HasComp(typeof(CompQuality)))
+				{
+					allowedQualitiesConfigurable = true;
+				}
+				if (allowedHitPointsConfigurable && allowedQualitiesConfigurable)
+				{
+					break;
 				}
 			}
 		}

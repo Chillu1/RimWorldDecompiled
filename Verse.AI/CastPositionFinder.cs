@@ -57,7 +57,7 @@ namespace Verse.AI
 			avoidGrid = newReq.caster.GetAvoidGrid(onlyIfLordAllows: false);
 			if (verb == null)
 			{
-				Log.Error(req.caster + " tried to find casting position without a verb.");
+				Log.Error(string.Concat(req.caster, " tried to find casting position without a verb."));
 				dest = IntVec3.Invalid;
 				return false;
 			}
@@ -77,7 +77,7 @@ namespace Verse.AI
 					Region locusReg = req.locus.GetRegion(req.caster.Map);
 					if (locusReg == null)
 					{
-						Log.Error("locus " + req.locus + " has no region");
+						Log.Error(string.Concat("locus ", req.locus, " has no region"));
 						dest = IntVec3.Invalid;
 						return false;
 					}

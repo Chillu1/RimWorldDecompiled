@@ -447,7 +447,7 @@ namespace RimWorld
 			}, map, 1000, out IntVec3 result))
 			{
 				result = CellFinder.RandomCell(map);
-				Log.Warning("RandomAnimalSpawnCell_MapGen failed: numStand=" + numStand + ", numRoom=" + numRoom + ", numTouch=" + numTouch + ". PlayerStartSpot=" + MapGenerator.PlayerStartSpot + ". Returning " + result);
+				Log.Warning(string.Concat("RandomAnimalSpawnCell_MapGen failed: numStand=", numStand, ", numRoom=", numRoom, ", numTouch=", numTouch, ". PlayerStartSpot=", MapGenerator.PlayerStartSpot, ". Returning ", result));
 			}
 			return result;
 		}
@@ -682,14 +682,15 @@ namespace RimWorld
 			for (int j = 0; j < 30; j++)
 			{
 				IntVec3 randomCell = CellFinder.RandomRegionNear(region, 15, TraverseParms.For(pawn)).RandomCell;
-				if (randomCell.Walkable(pawn.Map) && (float)(root - randomCell).LengthHorizontalSquared > dist * dist)
+				if (!randomCell.Walkable(pawn.Map) || !((float)(root - randomCell).LengthHorizontalSquared > dist * dist))
 				{
-					using (PawnPath path = pawn.Map.pathFinder.FindPath(pawn.Position, randomCell, pawn))
+					continue;
+				}
+				using (PawnPath path = pawn.Map.pathFinder.FindPath(pawn.Position, randomCell, pawn))
+				{
+					if (PawnPathUtility.TryFindCellAtIndex(path, (int)dist + 3, out result))
 					{
-						if (PawnPathUtility.TryFindCellAtIndex(path, (int)dist + 3, out result))
-						{
-							return true;
-						}
+						return true;
 					}
 				}
 			}
@@ -1024,7 +1025,7 @@ namespace RimWorld
 			{
 				return result2;
 			}
-			Log.Error("Could not find siege spot from " + entrySpot + ", using " + entrySpot);
+			Log.Error(string.Concat("Could not find siege spot from ", entrySpot, ", using ", entrySpot));
 			return entrySpot;
 		}
 
@@ -1065,22 +1066,23 @@ namespace RimWorld
 						break;
 					}
 				}
-				if (!flag && (allowRoofed || !randomCell.Roofed(map)))
+				if (flag || (!allowRoofed && randomCell.Roofed(map)))
 				{
-					int num3 = 0;
-					foreach (IntVec3 item2 in CellRect.CenteredOn(randomCell, 10).ClipInsideMap(map))
+					continue;
+				}
+				int num3 = 0;
+				foreach (IntVec3 item2 in CellRect.CenteredOn(randomCell, 10).ClipInsideMap(map))
+				{
+					_ = item2;
+					if (randomCell.SupportsStructureType(map, TerrainAffordanceDefOf.Heavy) && randomCell.SupportsStructureType(map, TerrainAffordanceDefOf.Light))
 					{
-						_ = item2;
-						if (randomCell.SupportsStructureType(map, TerrainAffordanceDefOf.Heavy) && randomCell.SupportsStructureType(map, TerrainAffordanceDefOf.Light))
-						{
-							num3++;
-						}
+						num3++;
 					}
-					if (num3 >= 35)
-					{
-						result = randomCell;
-						return true;
-					}
+				}
+				if (num3 >= 35)
+				{
+					result = randomCell;
+					return true;
 				}
 			}
 			result = IntVec3.Invalid;

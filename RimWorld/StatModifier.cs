@@ -25,7 +25,7 @@ namespace RimWorld
 			{
 				return "(null stat)";
 			}
-			return stat.defName + "-" + value.ToString();
+			return stat.defName + "-" + value;
 		}
 	}
 }

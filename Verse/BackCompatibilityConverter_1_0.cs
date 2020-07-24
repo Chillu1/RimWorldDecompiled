@@ -39,19 +39,16 @@ namespace Verse
 		{
 			if (defType == typeof(ThingDef))
 			{
-				if (defName == "CrashedPoisonShipPart" || defName == "CrashedPsychicEmanatorShipPart")
+				switch (defName)
 				{
+				case "CrashedPoisonShipPart":
+				case "CrashedPsychicEmanatorShipPart":
 					return "MechCapsule";
-				}
-				if (defName == "PoisonSpreader")
-				{
+				case "PoisonSpreader":
 					return "Defoliator";
-				}
-				if (defName == "PoisonSpreaderShipPart")
-				{
+				case "PoisonSpreaderShipPart":
 					return "DefoliatorShipPart";
-				}
-				if (defName == "MechSerumNeurotrainer")
+				case "MechSerumNeurotrainer":
 				{
 					XmlNode xmlNode = node?.ParentNode;
 					if (xmlNode != null && xmlNode.HasChildNodes)
@@ -65,6 +62,7 @@ namespace Verse
 						}
 					}
 					return DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef def) => def.thingCategories != null && def.thingCategories.Contains(ThingCategoryDefOf.Neurotrainers)).RandomElementWithFallback()?.defName;
+				}
 				}
 			}
 			else if ((defType == typeof(QuestScriptDef) || defType == typeof(TaleDef)) && defName == "JourneyOffer")

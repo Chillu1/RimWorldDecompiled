@@ -25,26 +25,25 @@ namespace RimWorld
 			{
 				items.Clear();
 				pawns.Clear();
-				if (value != null)
+				if (value == null)
 				{
-					foreach (Thing item in value)
+					return;
+				}
+				foreach (Thing item in value)
+				{
+					if (item.Destroyed)
 					{
-						if (item.Destroyed)
-						{
-							Log.Error("Tried to add a destroyed thing to QuestPart_AddContentsToShuttle: " + item.ToStringSafe());
-						}
-						else
-						{
-							Pawn pawn = item as Pawn;
-							if (pawn != null)
-							{
-								pawns.Add(pawn);
-							}
-							else
-							{
-								items.Add(item);
-							}
-						}
+						Log.Error("Tried to add a destroyed thing to QuestPart_AddContentsToShuttle: " + item.ToStringSafe());
+						continue;
+					}
+					Pawn pawn = item as Pawn;
+					if (pawn != null)
+					{
+						pawns.Add(pawn);
+					}
+					else
+					{
+						items.Add(item);
 					}
 				}
 			}

@@ -134,7 +134,7 @@ namespace RimWorld.Planet
 			}
 			else
 			{
-				Log.Error("Pawn " + pawn + " didn't find any caravan to join, and he can't create one.");
+				Log.Error(string.Concat("Pawn ", pawn, " didn't find any caravan to join, and he can't create one."));
 			}
 		}
 

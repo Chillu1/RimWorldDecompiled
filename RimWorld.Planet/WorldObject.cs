@@ -189,7 +189,7 @@ namespace RimWorld.Planet
 		{
 			if (!def.canHaveFaction && newFaction != null)
 			{
-				Log.Warning("Tried to set faction to " + newFaction + " but this world object (" + this + ") cannot have faction.");
+				Log.Warning(string.Concat("Tried to set faction to ", newFaction, " but this world object (", this, ") cannot have faction."));
 			}
 			else
 			{
@@ -211,7 +211,7 @@ namespace RimWorld.Planet
 				{
 					if (Prefs.DevMode && char.IsWhiteSpace(text[text.Length - 1]))
 					{
-						Log.ErrorOnce(comps[i].GetType() + " CompInspectStringExtra ended with whitespace: " + text, 25612);
+						Log.ErrorOnce(string.Concat(comps[i].GetType(), " CompInspectStringExtra ended with whitespace: ", text), 25612);
 						text = text.TrimEndNewlines();
 					}
 					if (stringBuilder.Length != 0)

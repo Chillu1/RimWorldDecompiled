@@ -70,11 +70,11 @@ namespace RimWorld
 				}
 				if (repeatMode == BillRepeatModeDefOf.RepeatCount)
 				{
-					return repeatCount.ToString() + "x";
+					return repeatCount + "x";
 				}
 				if (repeatMode == BillRepeatModeDefOf.TargetCount)
 				{
-					return recipe.WorkerCounter.CountProducts(this).ToString() + "/" + targetCount.ToString();
+					return recipe.WorkerCounter.CountProducts(this) + "/" + targetCount;
 				}
 				throw new InvalidOperationException();
 			}

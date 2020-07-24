@@ -22,7 +22,7 @@ namespace RimWorld
 			}
 			if (parentDef.tickerType != TickerType.Normal)
 			{
-				yield return "CompHibernatable needs tickerType " + TickerType.Normal + ", has " + parentDef.tickerType;
+				yield return string.Concat("CompHibernatable needs tickerType ", TickerType.Normal, ", has ", parentDef.tickerType);
 			}
 		}
 	}

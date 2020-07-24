@@ -46,7 +46,7 @@ namespace RimWorld
 		{
 			if (newFather != null && newFather.gender == Gender.Female)
 			{
-				Log.Warning("Tried to set " + newFather + " with gender " + newFather.gender + " as " + pawn + "'s father.");
+				Log.Warning(string.Concat("Tried to set ", newFather, " with gender ", newFather.gender, " as ", pawn, "'s father."));
 				return;
 			}
 			Pawn father = pawn.GetFather();
@@ -67,7 +67,7 @@ namespace RimWorld
 		{
 			if (newMother != null && newMother.gender != Gender.Female)
 			{
-				Log.Warning("Tried to set " + newMother + " with gender " + newMother.gender + " as " + pawn + "'s mother.");
+				Log.Warning(string.Concat("Tried to set ", newMother, " with gender ", newMother.gender, " as ", pawn, "'s mother."));
 				return;
 			}
 			Pawn mother = pawn.GetMother();

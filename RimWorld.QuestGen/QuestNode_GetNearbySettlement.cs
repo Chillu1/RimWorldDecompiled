@@ -1,4 +1,5 @@
 using RimWorld.Planet;
+using System.Collections.Generic;
 using System.Linq;
 using Verse;
 
@@ -23,9 +24,32 @@ namespace RimWorld.QuestGen
 		{
 			return Find.WorldObjects.SettlementBases.Where(delegate(Settlement settlement)
 			{
-				if (!settlement.Visitable || (!allowActiveTradeRequest.GetValue(slate) && settlement.GetComponent<TradeRequestComp>() != null && settlement.GetComponent<TradeRequestComp>().ActiveRequest))
+				if (!settlement.Visitable)
 				{
 					return false;
+				}
+				if (!allowActiveTradeRequest.GetValue(slate))
+				{
+					if (settlement.GetComponent<TradeRequestComp>() != null && settlement.GetComponent<TradeRequestComp>().ActiveRequest)
+					{
+						return false;
+					}
+					List<Quest> questsListForReading = Find.QuestManager.QuestsListForReading;
+					for (int i = 0; i < questsListForReading.Count; i++)
+					{
+						if (!questsListForReading[i].Historical)
+						{
+							List<QuestPart> partsListForReading = questsListForReading[i].PartsListForReading;
+							for (int j = 0; j < partsListForReading.Count; j++)
+							{
+								QuestPart_InitiateTradeRequest questPart_InitiateTradeRequest;
+								if ((questPart_InitiateTradeRequest = (partsListForReading[j] as QuestPart_InitiateTradeRequest)) != null && questPart_InitiateTradeRequest.settlement == settlement)
+								{
+									return false;
+								}
+							}
+						}
+					}
 				}
 				return Find.WorldGrid.ApproxDistanceInTiles(originTile, settlement.Tile) < maxTileDistance.GetValue(slate) && Find.WorldReachability.CanReach(originTile, settlement.Tile);
 			}).RandomElementWithFallback();

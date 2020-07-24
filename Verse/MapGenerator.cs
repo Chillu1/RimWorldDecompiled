@@ -68,7 +68,7 @@ namespace Verse
 			{
 				if (parent != null && parent.HasMap)
 				{
-					Log.Error("Tried to generate a new map and set " + parent + " as its parent, but this world object already has a map. One world object can't have more than 1 map.");
+					Log.Error(string.Concat("Tried to generate a new map and set ", parent, " as its parent, but this world object already has a map. One world object can't have more than 1 map."));
 					parent = null;
 				}
 				DeepProfiler.Start("Set up map");

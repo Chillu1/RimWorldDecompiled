@@ -68,7 +68,7 @@ namespace Verse.AI.Group
 				int num = lordToils.Where((LordToil s) => s == toil).Count();
 				if (num != 1)
 				{
-					Log.Error("Graph has lord toil " + toil + " registered " + num + " times.");
+					Log.Error(string.Concat("Graph has lord toil ", toil, " registered ", num, " times."));
 				}
 			}
 			foreach (Transition trans in transitions)
@@ -76,7 +76,7 @@ namespace Verse.AI.Group
 				int num2 = transitions.Where((Transition t) => t == trans).Count();
 				if (num2 != 1)
 				{
-					Log.Error("Graph has transition " + trans + " registered " + num2 + " times.");
+					Log.Error(string.Concat("Graph has transition ", trans, " registered ", num2, " times."));
 				}
 			}
 			checkedToils = new HashSet<LordToil>();

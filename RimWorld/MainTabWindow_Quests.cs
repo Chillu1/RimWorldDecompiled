@@ -78,6 +78,12 @@ namespace RimWorld
 
 		private static List<Quest> tmpQuestsToShow = new List<Quest>();
 
+		private static List<GenUI.AnonymousStackElement> tmpStackElements = new List<GenUI.AnonymousStackElement>();
+
+		private static List<Rect> layoutRewardsRects = new List<Rect>();
+
+		private static List<QuestPart> tmpRemainingQuestParts = new List<QuestPart>();
+
 		private static List<GlobalTargetInfo> tmpLookTargets = new List<GlobalTargetInfo>();
 
 		private static List<GlobalTargetInfo> tmpSelectTargets = new List<GlobalTargetInfo>();
@@ -374,9 +380,10 @@ namespace RimWorld
 				float curYBeforeAcceptButton = curY;
 				DoAcceptButton(rect3, ref curY);
 				DoRightAlignedInfo(rect3, ref curY, curYBeforeAcceptButton);
-				DoAcceptanceRequirementInfo(innerRect, flag, ref curY);
 				DoOutcomeInfo(rect3, ref curY);
 				DoDescription(rect3, ref curY);
+				DoAcceptanceRequirementInfo(innerRect, flag, ref curY);
+				DoRewards(rect3, ref curY);
 				DoLookTargets(rect3, ref curY);
 				DoSelectTargets(rect3, ref curY);
 				float num = curY;
@@ -450,89 +457,52 @@ namespace RimWorld
 
 		private void DoAcceptButton(Rect innerRect, ref float curY)
 		{
+			QuestPart_Choice questPart_Choice = null;
+			List<QuestPart> partsListForReading = selected.PartsListForReading;
+			for (int i = 0; i < partsListForReading.Count; i++)
+			{
+				questPart_Choice = (partsListForReading[i] as QuestPart_Choice);
+				if (questPart_Choice != null)
+				{
+					break;
+				}
+			}
+			if (questPart_Choice != null && !Prefs.DevMode)
+			{
+				return;
+			}
 			curY += 17f;
 			if (selected.State != 0)
 			{
 				return;
 			}
-			Rect rect = new Rect(innerRect.x, curY, 180f, 40f);
-			bool flag = QuestUtility.CanAcceptQuest(selected);
-			if (!flag)
+			float num = innerRect.x;
+			if (questPart_Choice == null)
 			{
-				GUI.color = Color.grey;
-			}
-			if (Widgets.ButtonText(rect, "AcceptQuest".Translate()))
-			{
-				if (flag)
+				Rect rect = new Rect(num, curY, 180f, 40f);
+				if (!QuestUtility.CanAcceptQuest(selected))
 				{
-					if (selected.RequiresAccepter)
-					{
-						List<FloatMenuOption> list = new List<FloatMenuOption>();
-						foreach (Pawn p2 in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep)
-						{
-							Pawn pLocal;
-							if (QuestUtility.CanPawnAcceptQuest(p2, selected))
-							{
-								pLocal = p2;
-								string text = "AcceptWith".Translate(p2);
-								if (p2.royalty != null && p2.royalty.AllTitlesInEffectForReading.Any())
-								{
-									text = text + " (" + p2.royalty.MostSeniorTitle.def.GetLabelFor(pLocal) + ")";
-								}
-								list.Add(new FloatMenuOption(text, delegate
-								{
-									if (QuestUtility.CanPawnAcceptQuest(pLocal, selected))
-									{
-										QuestPart_GiveRoyalFavor questPart_GiveRoyalFavor = selected.PartsListForReading.OfType<QuestPart_GiveRoyalFavor>().FirstOrDefault();
-										if (questPart_GiveRoyalFavor != null && questPart_GiveRoyalFavor.giveToAccepter && p2.skills.GetSkill(SkillDefOf.Social).TotallyDisabled && !PlayerKnowledgeDatabase.IsComplete(ConceptDefOf.RoyalIncapableOfSocial))
-										{
-											TutorUtility.DoModalDialogWithArgsIfNotKnown(ConceptDefOf.RoyalIncapableOfSocial, "Confirm".Translate(), AcceptAction, "GoBack".Translate(), null, p2.Named("PAWN"), questPart_GiveRoyalFavor.faction.Named("FACTION"));
-										}
-										else
-										{
-											AcceptAction();
-										}
-									}
-								}));
-							}
-							void AcceptAction()
-							{
-								SoundDefOf.Click.PlayOneShotOnCamera();
-								selected.Accept(pLocal);
-								Select(selected);
-								Messages.Message("MessageQuestAccepted".Translate(pLocal, selected.name), pLocal, MessageTypeDefOf.TaskCompletion, historical: false);
-							}
-						}
-						if (list.Count > 0)
-						{
-							Find.WindowStack.Add(new FloatMenu(list));
-						}
-						else
-						{
-							Messages.Message("MessageNoColonistCanAcceptQuest".Translate(Faction.OfPlayer.def.pawnsPlural), MessageTypeDefOf.RejectInput, historical: false);
-						}
-					}
-					else
-					{
-						SoundDefOf.Click.PlayOneShotOnCamera();
-						selected.Accept(null);
-						Select(selected);
-					}
+					GUI.color = Color.grey;
 				}
-				else
+				if (Widgets.ButtonText(rect, "AcceptQuest".Translate()))
 				{
-					Messages.Message("MessageCannotAcceptQuest".Translate(), MessageTypeDefOf.RejectInput, historical: false);
+					AcceptQuestByInterface(null, selected.RequiresAccepter);
 				}
+				num += rect.width + 10f;
+				GUI.color = Color.white;
 			}
-			GUI.color = Color.white;
-			if (Prefs.DevMode && Widgets.ButtonText(new Rect(innerRect.x + 190f, curY, 180f, 40f), "Dev: Accept instantly"))
+			if (Prefs.DevMode && Widgets.ButtonText(new Rect(num, curY, 180f, 40f), "Dev: Accept instantly"))
 			{
-				SoundDefOf.Click.PlayOneShotOnCamera();
+				SoundDefOf.Quest_Accepted.PlayOneShotOnCamera();
+				if (questPart_Choice.choices.Any())
+				{
+					questPart_Choice.Choose(questPart_Choice.choices.RandomElement());
+				}
 				selected.Accept(PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep.Where((Pawn p) => QuestUtility.CanPawnAcceptQuest(p, selected)).RandomElementWithFallback());
 				selected.dismissed = false;
 				Select(selected);
 			}
-			curY += rect.height + 4f;
+			curY += 44f;
 		}
 
 		private void DoRightAlignedInfo(Rect innerRect, ref float curY, float curYBeforeAcceptButton)
@@ -601,11 +571,11 @@ namespace RimWorld
 				Rect rect3 = new Rect(innerRect.x, num, innerRect.width, 25f);
 				GUI.color = TimeLimitColor;
 				Text.Anchor = TextAnchor.MiddleRight;
-				TaggedString taggedString2 = "QuestExpiresIn".Translate(selected.ticksUntilAcceptanceExpiry.ToStringTicksToPeriod());
-				Widgets.Label(rect3, taggedString2);
+				string text2 = "QuestExpiresIn".Translate(selected.ticksUntilAcceptanceExpiry.ToStringTicksToPeriod());
+				Widgets.Label(rect3, text2);
 				GUI.color = Color.white;
 				Text.Anchor = TextAnchor.UpperLeft;
-				rect3.xMin = rect3.xMax - Text.CalcSize(taggedString2).x;
+				rect3.xMin = rect3.xMax - Text.CalcSize(text2).x;
 				if (Mouse.IsOver(rect3))
 				{
 					TooltipHandler.TipRegion(rect3, "QuestExpiresOn".Translate(GenDate.DateFullStringWithHourAt(Find.TickManager.TicksAbs + selected.ticksUntilAcceptanceExpiry, locForDates)));
@@ -709,7 +679,7 @@ namespace RimWorld
 		{
 			if (selected.Historical)
 			{
-				string text = (selected.State == QuestState.EndedOfferExpired) ? ((string)"QuestOutcomeInfo_OfferExpired".Translate()) : ((selected.State == QuestState.EndedUnknownOutcome || selected.State == QuestState.EndedSuccess) ? ((string)"QuestOutcomeInfo_UnknownOrSuccess".Translate()) : ((selected.State != QuestState.EndedFailed) ? null : ((string)"QuestOutcomeInfo_Failed".Translate())));
+				string text = (selected.State == QuestState.EndedOfferExpired) ? ((string)"QuestOutcomeInfo_OfferExpired".Translate()) : ((selected.State == QuestState.EndedUnknownOutcome || selected.State == QuestState.EndedSuccess) ? ((string)"QuestOutcomeInfo_UnknownOrSuccess".Translate()) : ((selected.State == QuestState.EndedFailed) ? ((string)"QuestOutcomeInfo_Failed".Translate()) : ((selected.State != QuestState.EndedInvalid) ? null : ((string)"QuestOutcomeInfo_Invalid".Translate()))));
 				if (!text.NullOrEmpty())
 				{
 					curY += 17f;
@@ -756,6 +726,139 @@ namespace RimWorld
 				Widgets.Label(rect, stringBuilder.ToString());
 				curY += Text.CalcHeight(stringBuilder.ToString(), rect.width);
 			}
+		}
+
+		private void DoRewards(Rect innerRect, ref float curY)
+		{
+			QuestPart_Choice choice = null;
+			List<QuestPart> partsListForReading = selected.PartsListForReading;
+			for (int i = 0; i < partsListForReading.Count; i++)
+			{
+				choice = (partsListForReading[i] as QuestPart_Choice);
+				if (choice != null)
+				{
+					break;
+				}
+			}
+			if (choice == null)
+			{
+				return;
+			}
+			bool flag = selected.State == QuestState.NotYetAccepted;
+			bool flag2 = true;
+			if (Event.current.type == EventType.Layout)
+			{
+				layoutRewardsRects.Clear();
+			}
+			for (int j = 0; j < choice.choices.Count; j++)
+			{
+				tmpStackElements.Clear();
+				float num = 0f;
+				for (int k = 0; k < choice.choices[j].rewards.Count; k++)
+				{
+					tmpStackElements.AddRange(choice.choices[j].rewards[k].StackElements);
+					num += choice.choices[j].rewards[k].TotalMarketValue;
+				}
+				if (!tmpStackElements.Any())
+				{
+					continue;
+				}
+				if (num > 0f)
+				{
+					TaggedString totalValueStr = "TotalValue".Translate(num.ToStringMoney("F0"));
+					tmpStackElements.Add(new GenUI.AnonymousStackElement
+					{
+						drawer = delegate(Rect r)
+						{
+							GUI.color = new Color(0.7f, 0.7f, 0.7f);
+							Widgets.Label(new Rect(r.x + 5f, r.y, r.width - 10f, r.height), totalValueStr);
+							GUI.color = Color.white;
+						},
+						width = Text.CalcSize(totalValueStr).x + 10f
+					});
+				}
+				if (flag2)
+				{
+					curY += 17f;
+					flag2 = false;
+				}
+				else
+				{
+					curY += 10f;
+				}
+				Rect rect = new Rect(innerRect.x, curY, innerRect.width, 10000f);
+				Rect rect2 = rect.ContractedBy(10f);
+				if (flag)
+				{
+					rect2.xMin += 100f;
+				}
+				if (j < layoutRewardsRects.Count)
+				{
+					Widgets.DrawBoxSolid(layoutRewardsRects[j], new Color(0.13f, 0.13f, 0.13f));
+					GUI.color = new Color(1f, 1f, 1f, 0.3f);
+					Widgets.DrawHighlightIfMouseover(layoutRewardsRects[j]);
+					GUI.color = Color.white;
+				}
+				rect.height = GenUI.DrawElementStack(rect2, 24f, tmpStackElements, delegate(Rect r, GenUI.AnonymousStackElement obj)
+				{
+					obj.drawer(r);
+				}, (GenUI.AnonymousStackElement obj) => obj.width, 4f, 5f, allowOrderOptimization: false).height + 20f;
+				if (Event.current.type == EventType.Layout)
+				{
+					layoutRewardsRects.Add(rect);
+				}
+				if (flag)
+				{
+					if (!QuestUtility.CanAcceptQuest(selected))
+					{
+						GUI.color = Color.grey;
+					}
+					Rect rect3 = new Rect(rect.x, rect.y, 100f, rect.height);
+					if (Widgets.ButtonText(rect3, "AcceptQuestFor".Translate() + ":"))
+					{
+						tmpRemainingQuestParts.Clear();
+						tmpRemainingQuestParts.AddRange(selected.PartsListForReading);
+						for (int l = 0; l < choice.choices.Count; l++)
+						{
+							if (j == l)
+							{
+								continue;
+							}
+							for (int m = 0; m < choice.choices[l].questParts.Count; m++)
+							{
+								QuestPart item = choice.choices[l].questParts[m];
+								if (!choice.choices[j].questParts.Contains(item))
+								{
+									tmpRemainingQuestParts.Remove(item);
+								}
+							}
+						}
+						bool requiresAccepter = false;
+						for (int n = 0; n < tmpRemainingQuestParts.Count; n++)
+						{
+							if (tmpRemainingQuestParts[n].RequiresAccepter)
+							{
+								requiresAccepter = true;
+								break;
+							}
+						}
+						tmpRemainingQuestParts.Clear();
+						QuestPart_Choice.Choice localChoice = choice.choices[j];
+						AcceptQuestByInterface(delegate
+						{
+							choice.Choose(localChoice);
+						}, requiresAccepter);
+					}
+					TooltipHandler.TipRegionByKey(rect3, "AcceptQuestForTip");
+					GUI.color = Color.white;
+				}
+				curY += rect.height;
+			}
+			if (Event.current.type == EventType.Repaint)
+			{
+				layoutRewardsRects.Clear();
+			}
+			tmpStackElements.Clear();
 		}
 
 		private void DoLookTargets(Rect innerRect, ref float curY)
@@ -1029,6 +1132,121 @@ namespace RimWorld
 				return "AcceptedOnBy".Translate(value, quest.AccepterPawnLabelCap);
 			}
 			return "AcceptedOn".Translate(value);
+		}
+
+		private void AcceptQuestByInterface(Action preAcceptAction = null, bool requiresAccepter = false)
+		{
+			if (QuestUtility.CanAcceptQuest(selected))
+			{
+				if (requiresAccepter)
+				{
+					List<FloatMenuOption> list = new List<FloatMenuOption>();
+					foreach (Pawn p in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep)
+					{
+						if (!QuestUtility.CanPawnAcceptQuest(p, selected))
+						{
+							continue;
+						}
+						Pawn pLocal = p;
+						string text = "AcceptWith".Translate(p);
+						if (p.royalty != null && p.royalty.AllTitlesInEffectForReading.Any())
+						{
+							text = text + " (" + p.royalty.MostSeniorTitle.def.GetLabelFor(pLocal) + ")";
+						}
+						list.Add(new FloatMenuOption(text, delegate
+						{
+							if (QuestUtility.CanPawnAcceptQuest(pLocal, selected))
+							{
+								QuestPart_GiveRoyalFavor questPart_GiveRoyalFavor = selected.PartsListForReading.OfType<QuestPart_GiveRoyalFavor>().FirstOrDefault();
+								if (questPart_GiveRoyalFavor != null && questPart_GiveRoyalFavor.giveToAccepter)
+								{
+									IEnumerable<Trait> conceitedTraits = RoyalTitleUtility.GetConceitedTraits(p);
+									IEnumerable<Trait> traitsAffectingPsylinkNegatively = RoyalTitleUtility.GetTraitsAffectingPsylinkNegatively(p);
+									bool totallyDisabled = p.skills.GetSkill(SkillDefOf.Social).TotallyDisabled;
+									bool flag = conceitedTraits.Any();
+									bool flag2 = !p.HasPsylink && traitsAffectingPsylinkNegatively.Any();
+									if (totallyDisabled || flag || flag2)
+									{
+										NamedArgument arg = p.Named("PAWN");
+										NamedArgument arg2 = questPart_GiveRoyalFavor.faction.Named("FACTION");
+										TaggedString t2 = null;
+										if (totallyDisabled)
+										{
+											t2 = "RoyalIncapableOfSocial".Translate(arg, arg2);
+										}
+										TaggedString t3 = null;
+										if (flag)
+										{
+											t3 = "RoyalWithConceitedTrait".Translate(arg, arg2, conceitedTraits.Select((Trait t) => t.CurrentData.label).ToCommaList(useAnd: true));
+										}
+										TaggedString t4 = null;
+										if (flag2)
+										{
+											t4 = "RoyalWithTraitAffectingPsylinkNegatively".Translate(arg, arg2, traitsAffectingPsylinkNegatively.Select((Trait t) => t.Label).ToCommaList(useAnd: true));
+										}
+										TaggedString text2 = "QuestGivesRoyalFavor".Translate(arg, arg2);
+										if (totallyDisabled)
+										{
+											text2 += "\n\n" + t2;
+										}
+										if (flag)
+										{
+											text2 += "\n\n" + t3;
+										}
+										if (flag2)
+										{
+											text2 += "\n\n" + t4;
+										}
+										text2 += "\n\n" + "WantToContinue".Translate();
+										Find.WindowStack.Add(new Dialog_MessageBox(text2, "Confirm".Translate(), AcceptAction, "GoBack".Translate()));
+									}
+									else
+									{
+										AcceptAction();
+									}
+								}
+								else
+								{
+									AcceptAction();
+								}
+							}
+						}));
+						void AcceptAction()
+						{
+							SoundDefOf.Quest_Accepted.PlayOneShotOnCamera();
+							if (preAcceptAction != null)
+							{
+								preAcceptAction();
+							}
+							selected.Accept(pLocal);
+							Select(selected);
+							Messages.Message("MessageQuestAccepted".Translate(pLocal, selected.name), pLocal, MessageTypeDefOf.TaskCompletion, historical: false);
+						}
+					}
+					if (list.Count > 0)
+					{
+						Find.WindowStack.Add(new FloatMenu(list));
+					}
+					else
+					{
+						Messages.Message("MessageNoColonistCanAcceptQuest".Translate(Faction.OfPlayer.def.pawnsPlural), MessageTypeDefOf.RejectInput, historical: false);
+					}
+				}
+				else
+				{
+					SoundDefOf.Quest_Accepted.PlayOneShotOnCamera();
+					if (preAcceptAction != null)
+					{
+						preAcceptAction();
+					}
+					selected.Accept(null);
+					Select(selected);
+				}
+			}
+			else
+			{
+				Messages.Message("MessageCannotAcceptQuest".Translate(), MessageTypeDefOf.RejectInput, historical: false);
+			}
 		}
 	}
 }

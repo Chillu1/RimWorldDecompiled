@@ -12,11 +12,11 @@ namespace Verse.AI
 
 		public const float DrugPolicySchedule = 7.5f;
 
+		public const float Meditation = 7.1f;
+
 		public const float AssignedJoy = 7f;
 
 		public const float AnythingJoy = 6f;
-
-		public const float Reign = 6f;
 
 		public const float AnythingWork = 5.5f;
 

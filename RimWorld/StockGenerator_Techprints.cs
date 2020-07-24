@@ -15,16 +15,15 @@ namespace RimWorld
 			int countToGenerate = CountChanceUtility.RandomCount(countChances);
 			for (int i = 0; i < countToGenerate; i++)
 			{
-				if (TechprintUtility.TryGetTechprintDefToGenerate(faction, out ThingDef result, tmpGenerated))
+				if (!TechprintUtility.TryGetTechprintDefToGenerate(faction, out ThingDef result, tmpGenerated))
 				{
-					tmpGenerated.Add(result);
-					foreach (Thing item in StockGeneratorUtility.TryMakeForStock(result, 1))
-					{
-						yield return item;
-					}
-					continue;
+					yield break;
 				}
-				yield break;
+				tmpGenerated.Add(result);
+				foreach (Thing item in StockGeneratorUtility.TryMakeForStock(result, 1))
+				{
+					yield return item;
+				}
 			}
 			tmpGenerated.Clear();
 		}

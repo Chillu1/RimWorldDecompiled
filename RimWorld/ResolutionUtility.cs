@@ -79,13 +79,16 @@ namespace RimWorld
 
 		public static void SetResolutionRaw(int w, int h, bool fullScreen)
 		{
-			if (w <= 0 || h <= 0)
+			if (!Application.isBatchMode)
 			{
-				Log.Error("Tried to set resolution to " + w + "x" + h);
-			}
-			else if (Screen.width != w || Screen.height != h || Screen.fullScreen != fullScreen)
-			{
-				Screen.SetResolution(w, h, fullScreen);
+				if (w <= 0 || h <= 0)
+				{
+					Log.Error("Tried to set resolution to " + w + "x" + h);
+				}
+				else if (Screen.width != w || Screen.height != h || Screen.fullScreen != fullScreen)
+				{
+					Screen.SetResolution(w, h, fullScreen);
+				}
 			}
 		}
 

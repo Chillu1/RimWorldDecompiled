@@ -57,6 +57,8 @@ namespace RimWorld
 
 		public const string QuestTargetSignalPart_LaunchedShip = "LaunchedShip";
 
+		public const string QuestTargetSignalPart_ReactorDestroyed = "ReactorDestroyed";
+
 		public const string QuestTargetSignalPart_MonumentCompleted = "MonumentCompleted";
 
 		public const string QuestTargetSignalPart_MonumentDestroyed = "MonumentDestroyed";
@@ -226,48 +228,53 @@ namespace RimWorld
 
 		public static void AddQuestTag(object obj, string questTagToAdd)
 		{
-			if (!questTagToAdd.NullOrEmpty())
+			if (questTagToAdd.NullOrEmpty())
 			{
-				if (obj is Thing)
+				return;
+			}
+			if (obj is Thing)
+			{
+				AddQuestTag(ref ((Thing)obj).questTags, questTagToAdd);
+			}
+			else if (obj is WorldObject)
+			{
+				AddQuestTag(ref ((WorldObject)obj).questTags, questTagToAdd);
+			}
+			else if (obj is Map)
+			{
+				AddQuestTag(ref ((Map)obj).Parent.questTags, questTagToAdd);
+			}
+			else if (obj is Lord)
+			{
+				AddQuestTag(ref ((Lord)obj).questTags, questTagToAdd);
+			}
+			else if (obj is Faction)
+			{
+				AddQuestTag(ref ((Faction)obj).questTags, questTagToAdd);
+			}
+			else
+			{
+				if (!(obj is IEnumerable))
 				{
-					AddQuestTag(ref ((Thing)obj).questTags, questTagToAdd);
+					return;
 				}
-				else if (obj is WorldObject)
+				foreach (object item in (IEnumerable)obj)
 				{
-					AddQuestTag(ref ((WorldObject)obj).questTags, questTagToAdd);
-				}
-				else if (obj is Map)
-				{
-					AddQuestTag(ref ((Map)obj).Parent.questTags, questTagToAdd);
-				}
-				else if (obj is Lord)
-				{
-					AddQuestTag(ref ((Lord)obj).questTags, questTagToAdd);
-				}
-				else if (obj is Faction)
-				{
-					AddQuestTag(ref ((Faction)obj).questTags, questTagToAdd);
-				}
-				else if (obj is IEnumerable)
-				{
-					foreach (object item in (IEnumerable)obj)
+					if (item is Thing)
 					{
-						if (item is Thing)
-						{
-							AddQuestTag(ref ((Thing)item).questTags, questTagToAdd);
-						}
-						else if (item is WorldObject)
-						{
-							AddQuestTag(ref ((WorldObject)item).questTags, questTagToAdd);
-						}
-						else if (item is Map)
-						{
-							AddQuestTag(ref ((Map)item).Parent.questTags, questTagToAdd);
-						}
-						else if (item is Faction)
-						{
-							AddQuestTag(ref ((Faction)item).questTags, questTagToAdd);
-						}
+						AddQuestTag(ref ((Thing)item).questTags, questTagToAdd);
+					}
+					else if (item is WorldObject)
+					{
+						AddQuestTag(ref ((WorldObject)item).questTags, questTagToAdd);
+					}
+					else if (item is Map)
+					{
+						AddQuestTag(ref ((Map)item).Parent.questTags, questTagToAdd);
+					}
+					else if (item is Faction)
+					{
+						AddQuestTag(ref ((Faction)item).questTags, questTagToAdd);
 					}
 				}
 			}
@@ -301,6 +308,28 @@ namespace RimWorld
 			return true;
 		}
 
+		public static IEnumerable<QuestPart_WorkDisabled> GetWorkDisabledQuestPart(Pawn p)
+		{
+			List<Quest> quests = Find.QuestManager.QuestsListForReading;
+			for (int i = 0; i < quests.Count; i++)
+			{
+				if (quests[i].State != QuestState.Ongoing)
+				{
+					continue;
+				}
+				Quest quest = quests[i];
+				List<QuestPart> partList = quest.PartsListForReading;
+				for (int j = 0; j < partList.Count; j++)
+				{
+					QuestPart_WorkDisabled questPart_WorkDisabled;
+					if ((questPart_WorkDisabled = (partList[j] as QuestPart_WorkDisabled)) != null && questPart_WorkDisabled.pawns.Contains(p))
+					{
+						yield return questPart_WorkDisabled;
+					}
+				}
+			}
+		}
+
 		public static bool IsQuestLodger(this Pawn p)
 		{
 			return p.HasExtraHomeFaction();
@@ -324,6 +353,28 @@ namespace RimWorld
 				{
 					QuestPart_ExtraFaction questPart_ExtraFaction;
 					if ((questPart_ExtraFaction = (partsListForReading[j] as QuestPart_ExtraFaction)) != null && questPart_ExtraFaction.affectedPawns.Contains(p) && questPart_ExtraFaction.areHelpers)
+					{
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+		public static bool LodgerAllowedDecrees(this Pawn p)
+		{
+			List<Quest> questsListForReading = Find.QuestManager.QuestsListForReading;
+			for (int i = 0; i < questsListForReading.Count; i++)
+			{
+				if (questsListForReading[i].State != QuestState.Ongoing)
+				{
+					continue;
+				}
+				List<QuestPart> partsListForReading = questsListForReading[i].PartsListForReading;
+				for (int j = 0; j < partsListForReading.Count; j++)
+				{
+					QuestPart_AllowDecreesForLodger questPart_AllowDecreesForLodger;
+					if ((questPart_AllowDecreesForLodger = (partsListForReading[j] as QuestPart_AllowDecreesForLodger)) != null && questPart_AllowDecreesForLodger.lodger == p)
 					{
 						return true;
 					}
@@ -450,16 +501,16 @@ namespace RimWorld
 		public static IEnumerable<T> GetAllQuestPartsOfType<T>(bool ongoingOnly = true) where T : class
 		{
 			List<Quest> quests = Find.QuestManager.QuestsListForReading;
-			for (int j = 0; j < quests.Count; j++)
+			for (int i = 0; i < quests.Count; i++)
 			{
-				if (ongoingOnly && quests[j].State != QuestState.Ongoing)
+				if (ongoingOnly && quests[i].State != QuestState.Ongoing)
 				{
 					continue;
 				}
-				List<QuestPart> partList = quests[j].PartsListForReading;
-				for (int i = 0; i < partList.Count; i++)
+				List<QuestPart> partList = quests[i].PartsListForReading;
+				for (int j = 0; j < partList.Count; j++)
 				{
-					T val = partList[i] as T;
+					T val = partList[j] as T;
 					if (val != null)
 					{
 						yield return val;
@@ -518,22 +569,24 @@ namespace RimWorld
 
 		public static IEnumerable<Gizmo> GetQuestRelatedGizmos(Thing thing)
 		{
-			if (Find.Selector.SelectedObjects.Count == 1)
+			Thing thing2 = thing;
+			if (Find.Selector.SelectedObjects.Count != 1)
 			{
-				Quest linkedQuest = Find.QuestManager.QuestsListForReading.FirstOrDefault((Quest q) => !q.Historical && !q.dismissed && (q.QuestLookTargets.Contains(thing) || q.QuestSelectTargets.Contains(thing)));
-				if (linkedQuest != null)
+				yield break;
+			}
+			Quest linkedQuest = Find.QuestManager.QuestsListForReading.FirstOrDefault((Quest q) => !q.Historical && !q.dismissed && (q.QuestLookTargets.Contains(thing2) || q.QuestSelectTargets.Contains(thing2)));
+			if (linkedQuest != null)
+			{
+				Command_Action command_Action = new Command_Action();
+				command_Action.defaultLabel = "CommandOpenLinkedQuest".Translate(linkedQuest.name);
+				command_Action.defaultDesc = "CommandOpenLinkedQuestDesc".Translate();
+				command_Action.icon = TexCommand.OpenLinkedQuestTex;
+				command_Action.action = delegate
 				{
-					Command_Action command_Action = new Command_Action();
-					command_Action.defaultLabel = "CommandOpenLinkedQuest".Translate(linkedQuest.name);
-					command_Action.defaultDesc = "CommandOpenLinkedQuestDesc".Translate();
-					command_Action.icon = TexCommand.OpenLinkedQuestTex;
-					command_Action.action = delegate
-					{
-						Find.MainTabsRoot.SetCurrentTab(MainButtonDefOf.Quests);
-						((MainTabWindow_Quests)MainButtonDefOf.Quests.TabWindow).Select(linkedQuest);
-					};
-					yield return command_Action;
-				}
+					Find.MainTabsRoot.SetCurrentTab(MainButtonDefOf.Quests);
+					((MainTabWindow_Quests)MainButtonDefOf.Quests.TabWindow).Select(linkedQuest);
+				};
+				yield return command_Action;
 			}
 		}
 

@@ -68,14 +68,12 @@ namespace Verse
 			if (newReg.type.IsOneCellRegion())
 			{
 				AddCell(root);
+				return;
 			}
-			else
+			map.floodFiller.FloodFill(root, (IntVec3 x) => newReg.extentsLimit.Contains(x) && x.GetExpectedRegionType(map) == newReg.type, delegate(IntVec3 x)
 			{
-				map.floodFiller.FloodFill(root, (IntVec3 x) => newReg.extentsLimit.Contains(x) && x.GetExpectedRegionType(map) == newReg.type, delegate(IntVec3 x)
-				{
-					AddCell(x);
-				});
-			}
+				AddCell(x);
+			});
 		}
 
 		private void AddCell(IntVec3 c)

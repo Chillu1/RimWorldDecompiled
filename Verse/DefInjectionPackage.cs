@@ -119,59 +119,55 @@ namespace Verse
 						string translation = ProcessedTranslation(item.Elements("trans").First().Value);
 						TryAddInjection(file, key, translation);
 						usedOldRepSyntax = true;
+						continue;
+					}
+					string text = ProcessedPath(item.Name.ToString());
+					if (text.EndsWith(".slateRef"))
+					{
+						if (item.HasElements)
+						{
+							TryAddInjection(file, text, item.GetInnerXml());
+							continue;
+						}
+						string translation2 = ProcessedTranslation(item.Value);
+						TryAddInjection(file, text, translation2);
+					}
+					else if (item.HasElements)
+					{
+						List<string> list = new List<string>();
+						List<Pair<int, string>> list2 = null;
+						bool flag = false;
+						foreach (XNode item2 in item.DescendantNodes())
+						{
+							XElement xElement = item2 as XElement;
+							if (xElement != null)
+							{
+								if (xElement.Name == "li")
+								{
+									list.Add(ProcessedTranslation(xElement.Value));
+								}
+								else if (!flag)
+								{
+									loadErrors.Add(text + " has elements which are not 'li' (" + file.Name + ")");
+									flag = true;
+								}
+							}
+							XComment xComment = item2 as XComment;
+							if (xComment != null)
+							{
+								if (list2 == null)
+								{
+									list2 = new List<Pair<int, string>>();
+								}
+								list2.Add(new Pair<int, string>(list.Count, xComment.Value));
+							}
+						}
+						TryAddFullListInjection(file, text, list, list2);
 					}
 					else
 					{
-						string text = ProcessedPath(item.Name.ToString());
-						if (text.EndsWith(".slateRef"))
-						{
-							if (item.HasElements)
-							{
-								TryAddInjection(file, text, item.GetInnerXml());
-							}
-							else
-							{
-								string translation2 = ProcessedTranslation(item.Value);
-								TryAddInjection(file, text, translation2);
-							}
-						}
-						else if (item.HasElements)
-						{
-							List<string> list = new List<string>();
-							List<Pair<int, string>> list2 = null;
-							bool flag = false;
-							foreach (XNode item2 in item.DescendantNodes())
-							{
-								XElement xElement = item2 as XElement;
-								if (xElement != null)
-								{
-									if (xElement.Name == "li")
-									{
-										list.Add(ProcessedTranslation(xElement.Value));
-									}
-									else if (!flag)
-									{
-										loadErrors.Add(text + " has elements which are not 'li' (" + file.Name + ")");
-										flag = true;
-									}
-								}
-								XComment xComment = item2 as XComment;
-								if (xComment != null)
-								{
-									if (list2 == null)
-									{
-										list2 = new List<Pair<int, string>>();
-									}
-									list2.Add(new Pair<int, string>(list.Count, xComment.Value));
-								}
-							}
-							TryAddFullListInjection(file, text, list, list2);
-						}
-						else
-						{
-							string translation3 = ProcessedTranslation(item.Value);
-							TryAddInjection(file, text, translation3);
-						}
+						string translation3 = ProcessedTranslation(item.Value);
+						TryAddInjection(file, text, translation3);
 					}
 				}
 			}
@@ -276,6 +272,8 @@ namespace Verse
 
 		public void InjectIntoDefs(bool errorOnDefNotFound)
 		{
+			loadSyntaxSuggestions.Clear();
+			loadErrors.Clear();
 			foreach (KeyValuePair<string, DefInjection> injection in injections)
 			{
 				if (!injection.Value.injected)
@@ -301,19 +299,31 @@ namespace Verse
 		{
 			replacedString = null;
 			replacedStringsList = null;
-			normalizedPath = path;
-			suggestedPath = path;
+			string b = path;
+			string text = path;
+			bool flag = TKeySystem.TryGetNormalizedPath(path, out normalizedPath);
+			if (flag)
+			{
+				text = text + " (" + normalizedPath + ")";
+				suggestedPath = path;
+				path = normalizedPath;
+			}
+			else
+			{
+				normalizedPath = path;
+				suggestedPath = path;
+			}
 			string defName = path.Split('.')[0];
 			defName = BackCompatibility.BackCompatibleDefName(defType, defName, forDefInjections: true);
 			if (GenDefDatabase.GetDefSilentFail(defType, defName, specialCaseForSoundDefs: false) == null)
 			{
 				if (errorOnDefNotFound)
 				{
-					loadErrors.Add("Found no " + defType + " named " + defName + " to match " + path + " (" + fileSource + ")");
+					loadErrors.Add(string.Concat("Found no ", defType, " named ", defName, " to match ", text, " (", fileSource, ")"));
 				}
 				return false;
 			}
-			bool flag = false;
+			bool flag2 = false;
 			int num = 0;
 			List<object> list = new List<object>();
 			try
@@ -325,29 +335,29 @@ namespace Verse
 					throw new InvalidOperationException("Def named " + list2[0] + " not found.");
 				}
 				num++;
-				string text;
+				string text2;
 				int result;
 				DefInjectionPathPartKind defInjectionPathPartKind;
 				while (true)
 				{
-					text = list2[num];
+					text2 = list2[num];
 					list.Add(obj);
 					result = -1;
-					if (int.TryParse(text, out result))
+					if (int.TryParse(text2, out result))
 					{
 						defInjectionPathPartKind = DefInjectionPathPartKind.ListIndex;
 					}
-					else if (GetFieldNamed(obj.GetType(), text) != null)
+					else if (GetFieldNamed(obj.GetType(), text2) != null)
 					{
 						defInjectionPathPartKind = DefInjectionPathPartKind.Field;
 					}
 					else if (obj.GetType().GetProperty("Count") != null)
 					{
-						if (text.Contains('-'))
+						if (text2.Contains('-'))
 						{
 							defInjectionPathPartKind = DefInjectionPathPartKind.ListHandleWithIndex;
-							string[] array = text.Split('-');
-							text = array[0];
+							string[] array = text2.Split('-');
+							text2 = array[0];
 							result = ParseHelper.FromString<int>(array[1]);
 						}
 						else
@@ -367,45 +377,43 @@ namespace Verse
 					{
 					case DefInjectionPathPartKind.Field:
 					{
-						FieldInfo field = obj.GetType().GetField(text, BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+						FieldInfo field = obj.GetType().GetField(text2, BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 						if (field == null)
 						{
-							throw new InvalidOperationException("Field " + text + " does not exist.");
+							throw new InvalidOperationException("Field or TKey " + text2 + " does not exist.");
 						}
 						if (field.HasAttribute<NoTranslateAttribute>())
 						{
-							throw new InvalidOperationException("Translated untranslatable field " + field.Name + " of type " + field.FieldType + " at path " + path + ". Translating this field will break the game.");
+							throw new InvalidOperationException(string.Concat("Translated untranslatable field ", field.Name, " of type ", field.FieldType, " at path ", text, ". Translating this field will break the game."));
 						}
 						if (field.HasAttribute<UnsavedAttribute>())
 						{
-							throw new InvalidOperationException("Translated untranslatable field ([Unsaved] attribute) " + field.Name + " of type " + field.FieldType + " at path " + path + ". Translating this field will break the game.");
+							throw new InvalidOperationException(string.Concat("Translated untranslatable field ([Unsaved] attribute) ", field.Name, " of type ", field.FieldType, " at path ", text, ". Translating this field will break the game."));
 						}
 						if (field.HasAttribute<TranslationCanChangeCountAttribute>())
 						{
-							flag = true;
+							flag2 = true;
 						}
 						if (defInjectionPathPartKind == DefInjectionPathPartKind.Field)
 						{
 							obj = field.GetValue(obj);
+							break;
 						}
-						else
+						object value2 = field.GetValue(obj);
+						PropertyInfo property2 = value2.GetType().GetProperty("Item");
+						if (property2 == null)
 						{
-							object value2 = field.GetValue(obj);
-							PropertyInfo property2 = value2.GetType().GetProperty("Item");
-							if (property2 == null)
-							{
-								throw new InvalidOperationException("Tried to use index on non-list (missing 'Item' property).");
-							}
-							int num3 = (int)value2.GetType().GetProperty("Count").GetValue(value2, null);
-							if (result < 0 || result >= num3)
-							{
-								throw new InvalidOperationException("Index out of bounds (max index is " + (num3 - 1) + ")");
-							}
-							obj = property2.GetValue(value2, new object[1]
-							{
-								result
-							});
+							throw new InvalidOperationException("Tried to use index on non-list (missing 'Item' property).");
 						}
+						int num3 = (int)value2.GetType().GetProperty("Count").GetValue(value2, null);
+						if (result < 0 || result >= num3)
+						{
+							throw new InvalidOperationException("Index out of bounds (max index is " + (num3 - 1) + ")");
+						}
+						obj = property2.GetValue(value2, new object[1]
+						{
+							result
+						});
 						break;
 					}
 					case DefInjectionPathPartKind.ListIndex:
@@ -418,16 +426,16 @@ namespace Verse
 						{
 							throw new InvalidOperationException("Tried to use index on non-list (missing 'Item' property).");
 						}
-						bool flag2;
+						bool flag3;
 						if (defInjectionPathPartKind == DefInjectionPathPartKind.ListHandle || defInjectionPathPartKind == DefInjectionPathPartKind.ListHandleWithIndex)
 						{
-							result = TranslationHandleUtility.GetElementIndexByHandle(obj2, text, result);
+							result = TranslationHandleUtility.GetElementIndexByHandle(obj2, text2, result);
 							defInjectionPathPartKind = DefInjectionPathPartKind.ListIndex;
-							flag2 = true;
+							flag3 = true;
 						}
 						else
 						{
-							flag2 = false;
+							flag3 = false;
 						}
 						int num2 = (int)obj2.GetType().GetProperty("Count").GetValue(obj2, null);
 						if (result < 0 || result >= num2)
@@ -438,13 +446,13 @@ namespace Verse
 						{
 							result
 						});
-						if (flag2)
+						if (flag3)
 						{
 							string[] array2 = normalizedPath.Split('.');
 							array2[num] = result.ToString();
 							normalizedPath = string.Join(".", array2);
 						}
-						else
+						else if (!flag)
 						{
 							string bestHandleWithIndexForListElement = TranslationHandleUtility.GetBestHandleWithIndexForListElement(obj2, obj);
 							if (!bestHandleWithIndexForListElement.NullOrEmpty())
@@ -457,54 +465,54 @@ namespace Verse
 						break;
 					}
 					default:
-						loadErrors.Add("Can't enter node " + text + " at path " + path + ", element kind is " + defInjectionPathPartKind + ". (" + fileSource + ")");
+						loadErrors.Add(string.Concat("Can't enter node ", text2, " at path ", text, ", element kind is ", defInjectionPathPartKind, ". (", fileSource, ")"));
 						break;
 					}
 					num++;
 				}
-				bool flag3 = false;
+				bool flag4 = false;
 				foreach (KeyValuePair<string, DefInjection> injection in injections)
 				{
-					if (!(injection.Key == path) && injection.Value.injected && injection.Value.normalizedPath == normalizedPath)
+					if (!(injection.Key == b) && injection.Value.injected && injection.Value.normalizedPath == normalizedPath)
 					{
-						string text2 = "Duplicate def-injected translation key. Both " + injection.Value.path + " and " + path + " refer to the same field (" + suggestedPath + ")";
+						string text3 = "Duplicate def-injected translation key. Both " + injection.Value.path + " and " + text + " refer to the same field (" + suggestedPath + ")";
 						if (injection.Value.path != injection.Value.nonBackCompatiblePath)
 						{
-							text2 = text2 + " (" + injection.Value.nonBackCompatiblePath + " was auto-renamed to " + injection.Value.path + ")";
+							text3 = text3 + " (" + injection.Value.nonBackCompatiblePath + " was auto-renamed to " + injection.Value.path + ")";
 						}
-						text2 = text2 + " (" + injection.Value.fileSource + ")";
-						loadErrors.Add(text2);
-						flag3 = true;
+						text3 = text3 + " (" + injection.Value.fileSource + ")";
+						loadErrors.Add(text3);
+						flag4 = true;
 						break;
 					}
 				}
 				bool result2 = false;
-				if (!flag3)
+				if (!flag4)
 				{
 					switch (defInjectionPathPartKind)
 					{
 					case DefInjectionPathPartKind.Field:
 					{
-						FieldInfo fieldNamed = GetFieldNamed(obj.GetType(), text);
+						FieldInfo fieldNamed = GetFieldNamed(obj.GetType(), text2);
 						if (fieldNamed == null)
 						{
-							throw new InvalidOperationException("Field " + text + " does not exist in type " + obj.GetType() + ".");
+							throw new InvalidOperationException(string.Concat("Field ", text2, " does not exist in type ", obj.GetType(), "."));
 						}
 						if (fieldNamed.HasAttribute<NoTranslateAttribute>())
 						{
-							loadErrors.Add("Translated untranslatable field " + fieldNamed.Name + " of type " + fieldNamed.FieldType + " at path " + path + ". Translating this field will break the game. (" + fileSource + ")");
+							loadErrors.Add(string.Concat("Translated untranslatable field ", fieldNamed.Name, " of type ", fieldNamed.FieldType, " at path ", text, ". Translating this field will break the game. (", fileSource, ")"));
 						}
 						else if (fieldNamed.HasAttribute<UnsavedAttribute>())
 						{
-							loadErrors.Add("Translated untranslatable field (UnsavedAttribute) " + fieldNamed.Name + " of type " + fieldNamed.FieldType + " at path " + path + ". Translating this field will break the game. (" + fileSource + ")");
+							loadErrors.Add(string.Concat("Translated untranslatable field (UnsavedAttribute) ", fieldNamed.Name, " of type ", fieldNamed.FieldType, " at path ", text, ". Translating this field will break the game. (", fileSource, ")"));
 						}
 						else if (!isPlaceholder && fieldNamed.FieldType != ensureFieldType)
 						{
-							loadErrors.Add("Translated non-" + ensureFieldType + " field " + fieldNamed.Name + " of type " + fieldNamed.FieldType + " at path " + path + ". Expected " + ensureFieldType + ". (" + fileSource + ")");
+							loadErrors.Add(string.Concat("Translated non-", ensureFieldType, " field ", fieldNamed.Name, " of type ", fieldNamed.FieldType, " at path ", text, ". Expected ", ensureFieldType, ". (", fileSource, ")"));
 						}
 						else if (!isPlaceholder && ensureFieldType != typeof(string) && !fieldNamed.HasAttribute<TranslationCanChangeCountAttribute>())
 						{
-							loadErrors.Add("Tried to translate field " + fieldNamed.Name + " of type " + fieldNamed.FieldType + " at path " + path + ", but this field doesn't have [TranslationCanChangeCount] attribute so it doesn't allow this type of translation. (" + fileSource + ")");
+							loadErrors.Add(string.Concat("Tried to translate field ", fieldNamed.Name, " of type ", fieldNamed.FieldType, " at path ", text, ", but this field doesn't have [TranslationCanChangeCount] attribute so it doesn't allow this type of translation. (", fileSource, ")"));
 						}
 						else if (!isPlaceholder)
 						{
@@ -528,7 +536,7 @@ namespace Verse
 						object obj3 = obj;
 						if (obj3 == null)
 						{
-							throw new InvalidOperationException("Tried to use index on null list at " + path);
+							throw new InvalidOperationException("Tried to use index on null list at " + text);
 						}
 						Type type = obj3.GetType();
 						PropertyInfo property3 = type.GetProperty("Count");
@@ -538,13 +546,13 @@ namespace Verse
 						}
 						if (defInjectionPathPartKind == DefInjectionPathPartKind.ListHandle || defInjectionPathPartKind == DefInjectionPathPartKind.ListHandleWithIndex)
 						{
-							result = TranslationHandleUtility.GetElementIndexByHandle(obj3, text, result);
+							result = TranslationHandleUtility.GetElementIndexByHandle(obj3, text2, result);
 							defInjectionPathPartKind = DefInjectionPathPartKind.ListIndex;
 						}
 						int num4 = (int)property3.GetValue(obj3, null);
 						if (result >= num4)
 						{
-							throw new InvalidOperationException("Trying to translate " + defType + "." + path + " at index " + result + " but the list only has " + num4 + " entries (so max index is " + (num4 - 1).ToString() + ").");
+							throw new InvalidOperationException(string.Concat("Trying to translate ", defType, ".", text, " at index ", result, " but the list only has ", num4, " entries (so max index is ", (num4 - 1).ToString(), ")."));
 						}
 						PropertyInfo property4 = type.GetProperty("Item");
 						if (property4 == null)
@@ -554,11 +562,11 @@ namespace Verse
 						Type propertyType = property4.PropertyType;
 						if (!isPlaceholder && propertyType != ensureFieldType)
 						{
-							loadErrors.Add("Translated non-" + ensureFieldType + " list item of type " + propertyType + " at path " + path + ". Expected " + ensureFieldType + ". (" + fileSource + ")");
+							loadErrors.Add(string.Concat("Translated non-", ensureFieldType, " list item of type ", propertyType, " at path ", text, ". Expected ", ensureFieldType, ". (", fileSource, ")"));
 						}
-						else if (!isPlaceholder && ensureFieldType != typeof(string) && !flag)
+						else if (!isPlaceholder && ensureFieldType != typeof(string) && !flag2)
 						{
-							loadErrors.Add("Tried to translate field of type " + propertyType + " at path " + path + ", but this field doesn't have [TranslationCanChangeCount] attribute so it doesn't allow this type of translation. (" + fileSource + ")");
+							loadErrors.Add(string.Concat("Tried to translate field of type ", propertyType, " at path ", text, ", but this field doesn't have [TranslationCanChangeCount] attribute so it doesn't allow this type of translation. (", fileSource, ")"));
 						}
 						else if (result < 0 || result >= (int)type.GetProperty("Count").GetValue(obj3, null))
 						{
@@ -579,7 +587,7 @@ namespace Verse
 						break;
 					}
 					default:
-						loadErrors.Add("Translated " + text + " at path " + path + " but it's not a field, it's " + defInjectionPathPartKind + ". (" + fileSource + ")");
+						loadErrors.Add(string.Concat("Translated ", text2, " at path ", text, " but it's not a field, it's ", defInjectionPathPartKind, ". (", fileSource, ")"));
 						break;
 					}
 				}
@@ -594,22 +602,31 @@ namespace Verse
 						}
 					}
 				}
+				string tKeyPath;
+				if (flag)
+				{
+					path = suggestedPath;
+				}
+				else if (TKeySystem.TrySuggestTKeyPath(path, out tKeyPath))
+				{
+					suggestedPath = tKeyPath;
+				}
 				if (path != suggestedPath)
 				{
 					IList<string> list3 = value as IList<string>;
-					string text3 = (list3 == null) ? value.ToString() : list3.ToStringSafeEnumerable();
-					loadSyntaxSuggestions.Add("Consider using " + suggestedPath + " instead of " + path + " for translation '" + text3 + "' (" + fileSource + ")");
+					string text4 = (list3 == null) ? value.ToString() : list3.ToStringSafeEnumerable();
+					loadSyntaxSuggestions.Add("Consider using " + suggestedPath + " instead of " + text + " for translation '" + text4 + "' (" + fileSource + ")");
 				}
 				return result2;
 			}
 			catch (Exception ex)
 			{
-				string text4 = "Couldn't inject " + path + " into " + defType + " (" + fileSource + "): " + ex.Message;
+				string text5 = string.Concat("Couldn't inject ", text, " into ", defType, " (", fileSource, "): ", ex.Message);
 				if (ex.InnerException != null)
 				{
-					text4 = text4 + " -> " + ex.InnerException.Message;
+					text5 = text5 + " -> " + ex.InnerException.Message;
 				}
-				loadErrors.Add(text4);
+				loadErrors.Add(text5);
 				return false;
 			}
 		}

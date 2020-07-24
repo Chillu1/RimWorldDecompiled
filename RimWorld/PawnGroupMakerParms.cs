@@ -26,7 +26,7 @@ namespace RimWorld
 
 		public override string ToString()
 		{
-			return "groupKind=" + groupKind + ", tile=" + tile + ", inhabitants=" + inhabitants.ToString() + ", points=" + points + ", faction=" + faction + ", traderKind=" + traderKind + ", generateFightersOnly=" + generateFightersOnly.ToString() + ", dontUseSingleUseRocketLaunchers=" + dontUseSingleUseRocketLaunchers.ToString() + ", raidStrategy=" + raidStrategy + ", forceOneIncap=" + forceOneIncap.ToString() + ", seed=" + seed;
+			return string.Concat("groupKind=", groupKind, ", tile=", tile, ", inhabitants=", inhabitants.ToString(), ", points=", points, ", faction=", faction, ", traderKind=", traderKind, ", generateFightersOnly=", generateFightersOnly.ToString(), ", dontUseSingleUseRocketLaunchers=", dontUseSingleUseRocketLaunchers.ToString(), ", raidStrategy=", raidStrategy, ", forceOneIncap=", forceOneIncap.ToString(), ", seed=", seed);
 		}
 	}
 }

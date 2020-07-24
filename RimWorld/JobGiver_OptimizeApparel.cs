@@ -49,12 +49,12 @@ namespace RimWorld
 		{
 			if (pawn.outfits == null)
 			{
-				Log.ErrorOnce(pawn + " tried to run JobGiver_OptimizeApparel without an OutfitTracker", 5643897);
+				Log.ErrorOnce(string.Concat(pawn, " tried to run JobGiver_OptimizeApparel without an OutfitTracker"), 5643897);
 				return null;
 			}
 			if (pawn.Faction != Faction.OfPlayer)
 			{
-				Log.ErrorOnce("Non-colonist " + pawn + " tried to optimize apparel.", 764323);
+				Log.ErrorOnce(string.Concat("Non-colonist ", pawn, " tried to optimize apparel."), 764323);
 				return null;
 			}
 			if (pawn.IsQuestLodger())
@@ -71,7 +71,7 @@ namespace RimWorld
 			else
 			{
 				debugSb = new StringBuilder();
-				debugSb.AppendLine("Scanning for " + pawn + " at " + pawn.Position);
+				debugSb.AppendLine(string.Concat("Scanning for ", pawn, " at ", pawn.Position));
 			}
 			Outfit currentOutfit = pawn.outfits.CurrentOutfit;
 			List<Apparel> wornApparel = pawn.apparel.WornApparel;

@@ -43,22 +43,24 @@ namespace RimWorld
 			{
 				yield return item;
 			}
+			CompTempControl compTempControl = this;
 			float offset = RoundedToCurrentTempModeOffset(-10f);
 			Command_Action command_Action = new Command_Action();
 			command_Action.action = delegate
 			{
-				InterfaceChangeTargetTemperature(offset);
+				compTempControl.InterfaceChangeTargetTemperature(offset);
 			};
 			command_Action.defaultLabel = offset.ToStringTemperatureOffset("F0");
 			command_Action.defaultDesc = "CommandLowerTempDesc".Translate();
 			command_Action.hotKey = KeyBindingDefOf.Misc5;
 			command_Action.icon = ContentFinder<Texture2D>.Get("UI/Commands/TempLower");
 			yield return command_Action;
+			CompTempControl compTempControl2 = this;
 			float offset2 = RoundedToCurrentTempModeOffset(-1f);
 			Command_Action command_Action2 = new Command_Action();
 			command_Action2.action = delegate
 			{
-				InterfaceChangeTargetTemperature(offset2);
+				compTempControl2.InterfaceChangeTargetTemperature(offset2);
 			};
 			command_Action2.defaultLabel = offset2.ToStringTemperatureOffset("F0");
 			command_Action2.defaultDesc = "CommandLowerTempDesc".Translate();
@@ -77,22 +79,24 @@ namespace RimWorld
 			command_Action3.hotKey = KeyBindingDefOf.Misc1;
 			command_Action3.icon = ContentFinder<Texture2D>.Get("UI/Commands/TempReset");
 			yield return command_Action3;
+			CompTempControl compTempControl3 = this;
 			float offset3 = RoundedToCurrentTempModeOffset(1f);
 			Command_Action command_Action4 = new Command_Action();
 			command_Action4.action = delegate
 			{
-				InterfaceChangeTargetTemperature(offset3);
+				compTempControl3.InterfaceChangeTargetTemperature(offset3);
 			};
 			command_Action4.defaultLabel = "+" + offset3.ToStringTemperatureOffset("F0");
 			command_Action4.defaultDesc = "CommandRaiseTempDesc".Translate();
 			command_Action4.hotKey = KeyBindingDefOf.Misc2;
 			command_Action4.icon = ContentFinder<Texture2D>.Get("UI/Commands/TempRaise");
 			yield return command_Action4;
+			CompTempControl compTempControl4 = this;
 			float offset4 = RoundedToCurrentTempModeOffset(10f);
 			Command_Action command_Action5 = new Command_Action();
 			command_Action5.action = delegate
 			{
-				InterfaceChangeTargetTemperature(offset4);
+				compTempControl4.InterfaceChangeTargetTemperature(offset4);
 			};
 			command_Action5.defaultLabel = "+" + offset4.ToStringTemperatureOffset("F0");
 			command_Action5.defaultDesc = "CommandRaiseTempDesc".Translate();

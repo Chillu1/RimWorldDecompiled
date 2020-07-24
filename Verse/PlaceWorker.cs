@@ -5,6 +5,11 @@ namespace Verse
 {
 	public abstract class PlaceWorker
 	{
+		public virtual bool IsBuildDesignatorVisible(BuildableDef def)
+		{
+			return true;
+		}
+
 		public virtual AcceptanceReport AllowsPlacing(BuildableDef checkingDef, IntVec3 loc, Rot4 rot, Map map, Thing thingToIgnore = null, Thing thing = null)
 		{
 			return AcceptanceReport.WasAccepted;

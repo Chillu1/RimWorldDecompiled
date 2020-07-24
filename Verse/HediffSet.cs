@@ -112,12 +112,12 @@ namespace Verse
 		public void ExposeData()
 		{
 			Scribe_Collections.Look(ref hediffs, "hediffs", LookMode.Deep);
+			if ((Scribe.mode == LoadSaveMode.LoadingVars || Scribe.mode == LoadSaveMode.ResolvingCrossRefs) && hediffs.RemoveAll((Hediff x) => x == null) != 0)
+			{
+				Log.Error(pawn.ToStringSafe() + " had some null hediffs.");
+			}
 			if (Scribe.mode == LoadSaveMode.ResolvingCrossRefs)
 			{
-				if (hediffs.RemoveAll((Hediff x) => x == null) != 0)
-				{
-					Log.Error(pawn.ToStringSafe() + " had some null hediffs.");
-				}
 				if (hediffs.RemoveAll((Hediff x) => x.def == null) != 0)
 				{
 					Log.Error(pawn.ToStringSafe() + " had some hediffs with null defs.");
@@ -339,20 +339,20 @@ namespace Verse
 
 		public IEnumerable<Verb> GetHediffsVerbs()
 		{
-			int j = 0;
-			while (j < hediffs.Count)
+			int i = 0;
+			while (i < hediffs.Count)
 			{
-				HediffComp_VerbGiver hediffComp_VerbGiver = hediffs[j].TryGetComp<HediffComp_VerbGiver>();
+				HediffComp_VerbGiver hediffComp_VerbGiver = hediffs[i].TryGetComp<HediffComp_VerbGiver>();
 				if (hediffComp_VerbGiver != null)
 				{
 					List<Verb> verbList = hediffComp_VerbGiver.VerbTracker.AllVerbs;
-					for (int i = 0; i < verbList.Count; i++)
+					for (int j = 0; j < verbList.Count; j++)
 					{
-						yield return verbList[i];
+						yield return verbList[j];
 					}
 				}
-				int num = j + 1;
-				j = num;
+				int num = i + 1;
+				i = num;
 			}
 		}
 
@@ -384,12 +384,13 @@ namespace Verse
 			foreach (Hediff hediff in hediffs)
 			{
 				HediffWithComps hediffWithComps = hediff as HediffWithComps;
-				if (hediffWithComps != null)
+				if (hediffWithComps == null)
 				{
-					foreach (HediffComp comp in hediffWithComps.comps)
-					{
-						yield return comp;
-					}
+					continue;
+				}
+				foreach (HediffComp comp in hediffWithComps.comps)
+				{
+					yield return comp;
 				}
 			}
 		}

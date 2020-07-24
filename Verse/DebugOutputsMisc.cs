@@ -27,7 +27,7 @@ namespace Verse
 			Func<ThingDef, float> mineableCommonality = (ThingDef d) => (mineable(d) != null) ? mineable(d).building.mineableScatterCommonality : 0f;
 			Func<ThingDef, IntRange> mineableLumpSizeRange = (ThingDef d) => (mineable(d) != null) ? mineable(d).building.mineableScatterLumpSizeRange : IntRange.zero;
 			Func<ThingDef, float> mineableYield = (ThingDef d) => (mineable(d) != null) ? ((float)mineable(d).building.mineableYield) : 0f;
-			DebugTables.MakeTablesDialog(DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.deepCommonality > 0f || mineableCommonality(d) > 0f), new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("market value", (ThingDef d) => d.BaseMarketValue.ToString("F2")), new TableDataGetter<ThingDef>("stackLimit", (ThingDef d) => d.stackLimit), new TableDataGetter<ThingDef>("deep\ncommonality", (ThingDef d) => d.deepCommonality.ToString("F2")), new TableDataGetter<ThingDef>("deep\nlump size", (ThingDef d) => d.deepLumpSizeRange), new TableDataGetter<ThingDef>("deep count\nper cell", (ThingDef d) => d.deepCountPerCell), new TableDataGetter<ThingDef>("deep count\nper portion", (ThingDef d) => d.deepCountPerPortion), new TableDataGetter<ThingDef>("deep portion value", (ThingDef d) => ((float)d.deepCountPerPortion * d.BaseMarketValue).ToStringMoney()), new TableDataGetter<ThingDef>("mineable\ncommonality", (ThingDef d) => mineableCommonality(d).ToString("F2")), new TableDataGetter<ThingDef>("mineable\nlump size", (ThingDef d) => mineableLumpSizeRange(d)), new TableDataGetter<ThingDef>("mineable yield\nper cell", (ThingDef d) => mineableYield(d)));
+			DebugTables.MakeTablesDialog(DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.deepCommonality > 0f || mineableCommonality(d) > 0f), new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("market value", (ThingDef d) => d.BaseMarketValue.ToString("F2")), new TableDataGetter<ThingDef>("stackLimit", (ThingDef d) => d.stackLimit), new TableDataGetter<ThingDef>("deep\ncommonality", (ThingDef d) => d.deepCommonality.ToString("F2")), new TableDataGetter<ThingDef>("deep\nlump size", (ThingDef d) => d.deepLumpSizeRange), new TableDataGetter<ThingDef>("deep lump\nvalue min", (ThingDef d) => ((float)d.deepLumpSizeRange.min * d.BaseMarketValue * (float)d.deepCountPerCell).ToStringMoney()), new TableDataGetter<ThingDef>("deep lump\nvalue avg", (ThingDef d) => (d.deepLumpSizeRange.Average * d.BaseMarketValue * (float)d.deepCountPerCell).ToStringMoney()), new TableDataGetter<ThingDef>("deep lump\nvalue max", (ThingDef d) => ((float)d.deepLumpSizeRange.max * d.BaseMarketValue * (float)d.deepCountPerCell).ToStringMoney()), new TableDataGetter<ThingDef>("deep count\nper cell", (ThingDef d) => d.deepCountPerCell), new TableDataGetter<ThingDef>("deep count\nper portion", (ThingDef d) => d.deepCountPerPortion), new TableDataGetter<ThingDef>("deep portion\nvalue", (ThingDef d) => ((float)d.deepCountPerPortion * d.BaseMarketValue).ToStringMoney()), new TableDataGetter<ThingDef>("mineable\ncommonality", (ThingDef d) => mineableCommonality(d).ToString("F2")), new TableDataGetter<ThingDef>("mineable\nlump size", (ThingDef d) => mineableLumpSizeRange(d)), new TableDataGetter<ThingDef>("mineable yield\nper cell", (ThingDef d) => mineableYield(d)));
 		}
 
 		[DebugOutput]
@@ -38,6 +38,52 @@ namespace Verse
 				select d into x
 				orderby x.building.isNaturalRock descending, x.building.isResourceRock descending
 				select x, new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("isNaturalRock", (ThingDef d) => d.building.isNaturalRock.ToStringCheckBlank()), new TableDataGetter<ThingDef>("isResourceRock", (ThingDef d) => d.building.isResourceRock.ToStringCheckBlank()), new TableDataGetter<ThingDef>("smoothed", (ThingDef d) => (d.building.smoothedThing == null) ? "" : d.building.smoothedThing.defName), new TableDataGetter<ThingDef>("mineableThing", (ThingDef d) => (d.building.mineableThing == null) ? "" : d.building.mineableThing.defName), new TableDataGetter<ThingDef>("mineableYield", (ThingDef d) => d.building.mineableYield), new TableDataGetter<ThingDef>("mineableYieldWasteable", (ThingDef d) => d.building.mineableYieldWasteable), new TableDataGetter<ThingDef>("NaturalRockType\never possible", (ThingDef d) => d.IsNonResourceNaturalRock.ToStringCheckBlank()), new TableDataGetter<ThingDef>("NaturalRockType\nin CurrentMap", (ThingDef d) => (Find.CurrentMap == null) ? "" : Find.World.NaturalRockTypesIn(Find.CurrentMap.Tile).Contains(d).ToStringCheckBlank()));
+		}
+
+		[DebugOutput]
+		public static void MeditationFoci()
+		{
+			DebugTables.MakeTablesDialog(DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.StatBaseDefined(StatDefOf.MeditationFocusStrength)), new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("base", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.MeditationFocusStrength).ToStringPercent()), new TableDataGetter<ThingDef>("max\ntotal", (ThingDef d) => TotalMax(d).ToStringPercent()), new TableDataGetter<ThingDef>("offset 0\nname", (ThingDef d) => GetOffsetClassName(d, 0)), new TableDataGetter<ThingDef>("offset 0\nmax", (ThingDef d) => GetOffsetMax(d, 0).ToStringPercentEmptyZero()), new TableDataGetter<ThingDef>("offset 1\nname", (ThingDef d) => GetOffsetClassName(d, 1)), new TableDataGetter<ThingDef>("offset 1\nmax", (ThingDef d) => GetOffsetMax(d, 1).ToStringPercentEmptyZero()), new TableDataGetter<ThingDef>("offset 2\nname", (ThingDef d) => GetOffsetClassName(d, 2)), new TableDataGetter<ThingDef>("offset 2\nmax", (ThingDef d) => GetOffsetMax(d, 2).ToStringPercentEmptyZero()), new TableDataGetter<ThingDef>("offset 3\nname", (ThingDef d) => GetOffsetClassName(d, 3)), new TableDataGetter<ThingDef>("offset 3\nmax", (ThingDef d) => GetOffsetMax(d, 3).ToStringPercentEmptyZero()), new TableDataGetter<ThingDef>("offset 4\nname", (ThingDef d) => GetOffsetClassName(d, 4)), new TableDataGetter<ThingDef>("offset 4\nmax", (ThingDef d) => GetOffsetMax(d, 4).ToStringPercentEmptyZero()));
+			static string GetOffsetClassName(ThingDef d, int index)
+			{
+				if (!TryGetOffset(d, index, out FocusStrengthOffset result2))
+				{
+					return "";
+				}
+				return result2.GetType().Name;
+			}
+			static float GetOffsetMax(ThingDef d, int index)
+			{
+				if (!TryGetOffset(d, index, out FocusStrengthOffset result3))
+				{
+					return 0f;
+				}
+				return Mathf.Max(result3.MaxOffset(forAbstract: true), 0f);
+			}
+			static float TotalMax(ThingDef d)
+			{
+				float num = d.GetStatValueAbstract(StatDefOf.MeditationFocusStrength);
+				for (int i = 0; i < 5; i++)
+				{
+					num += GetOffsetMax(d, i);
+				}
+				return num;
+			}
+			static bool TryGetOffset(ThingDef d, int index, out FocusStrengthOffset result)
+			{
+				result = null;
+				CompProperties_MeditationFocus compProperties = d.GetCompProperties<CompProperties_MeditationFocus>();
+				if (compProperties == null)
+				{
+					return false;
+				}
+				if (compProperties.offsets.Count <= index)
+				{
+					return false;
+				}
+				result = compProperties.offsets[index];
+				return true;
+			}
 		}
 
 		[DebugOutput]
@@ -65,7 +111,7 @@ namespace Verse
 				where d.IsStuff
 				orderby getStatFactorVal(d, StatDefOf.Beauty) descending
 				select d, new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("beauty factor", (ThingDef d) => getStatFactorVal(d, StatDefOf.Beauty).ToString()), new TableDataGetter<ThingDef>("beauty offset", (ThingDef d) => getStatOffsetVal(d, StatDefOf.Beauty).ToString()), new TableDataGetter<ThingDef>("market value", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.MarketValue).ToString("F1")), new TableDataGetter<ThingDef>("beauty factor per market value", (ThingDef d) => (!(getStatFactorVal(d, StatDefOf.Beauty) > 0f)) ? "" : (getStatFactorVal(d, StatDefOf.Beauty) / d.GetStatValueAbstract(StatDefOf.MarketValue)).ToString("F5")));
-			float getStatFactorVal(ThingDef d, StatDef stat)
+			static float getStatFactorVal(ThingDef d, StatDef stat)
 			{
 				if (d.stuffProps.statFactors == null)
 				{
@@ -73,7 +119,7 @@ namespace Verse
 				}
 				return d.stuffProps.statFactors.FirstOrDefault((StatModifier fa) => fa.stat == stat)?.value ?? 0f;
 			}
-			float getStatOffsetVal(ThingDef d, StatDef stat)
+			static float getStatOffsetVal(ThingDef d, StatDef stat)
 			{
 				if (d.stuffProps.statOffsets == null)
 				{
@@ -136,7 +182,7 @@ namespace Verse
 				where d.IsStuff
 				orderby d.BaseMarketValue
 				select d, new TableDataGetter<ThingDef>("fabric", (ThingDef d) => d.stuffProps.categories.Contains(StuffCategoryDefOf.Fabric).ToStringCheckBlank()), new TableDataGetter<ThingDef>("leather", (ThingDef d) => d.stuffProps.categories.Contains(StuffCategoryDefOf.Leathery).ToStringCheckBlank()), new TableDataGetter<ThingDef>("metal", (ThingDef d) => d.stuffProps.categories.Contains(StuffCategoryDefOf.Metallic).ToStringCheckBlank()), new TableDataGetter<ThingDef>("stony", (ThingDef d) => d.stuffProps.categories.Contains(StuffCategoryDefOf.Stony).ToStringCheckBlank()), new TableDataGetter<ThingDef>("woody", (ThingDef d) => d.stuffProps.categories.Contains(StuffCategoryDefOf.Woody).ToStringCheckBlank()), new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("burnable", (ThingDef d) => d.burnableByRecipe.ToStringCheckBlank()), new TableDataGetter<ThingDef>("smeltable", (ThingDef d) => d.smeltable.ToStringCheckBlank()), new TableDataGetter<ThingDef>("base\nmarket\nvalue", (ThingDef d) => d.BaseMarketValue.ToStringMoney()), new TableDataGetter<ThingDef>("melee\ncooldown\nmultiplier", (ThingDef d) => getStatFactorString(d, StatDefOf.MeleeWeapon_CooldownMultiplier)), new TableDataGetter<ThingDef>("melee\nsharp\ndamage\nmultiplier", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.SharpDamageMultiplier).ToString("F2")), new TableDataGetter<ThingDef>("melee\nsharp\ndps factor\noverall", (ThingDef d) => meleeDpsSharpFactorOverall(d).ToString("F2")), new TableDataGetter<ThingDef>("melee\nblunt\ndamage\nmultiplier", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.BluntDamageMultiplier).ToString("F2")), new TableDataGetter<ThingDef>("melee\nblunt\ndps factor\noverall", (ThingDef d) => meleeDpsBluntFactorOverall(d).ToString("F2")), new TableDataGetter<ThingDef>("armor power\nsharp", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.StuffPower_Armor_Sharp).ToString("F2")), new TableDataGetter<ThingDef>("armor power\nblunt", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.StuffPower_Armor_Blunt).ToString("F2")), new TableDataGetter<ThingDef>("armor power\nheat", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.StuffPower_Armor_Heat).ToString("F2")), new TableDataGetter<ThingDef>("insulation\ncold", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.StuffPower_Insulation_Cold).ToString("F2")), new TableDataGetter<ThingDef>("insulation\nheat", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.StuffPower_Insulation_Heat).ToString("F2")), new TableDataGetter<ThingDef>("flammability", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.Flammability).ToString("F2")), new TableDataGetter<ThingDef>("factor\nFlammability", (ThingDef d) => getStatFactorString(d, StatDefOf.Flammability)), new TableDataGetter<ThingDef>("factor\nWorkToMake", (ThingDef d) => getStatFactorString(d, StatDefOf.WorkToMake)), new TableDataGetter<ThingDef>("factor\nWorkToBuild", (ThingDef d) => getStatFactorString(d, StatDefOf.WorkToBuild)), new TableDataGetter<ThingDef>("factor\nMaxHp", (ThingDef d) => getStatFactorString(d, StatDefOf.MaxHitPoints)), new TableDataGetter<ThingDef>("factor\nBeauty", (ThingDef d) => getStatFactorString(d, StatDefOf.Beauty)), new TableDataGetter<ThingDef>("factor\nDoorspeed", (ThingDef d) => getStatFactorString(d, StatDefOf.DoorOpenSpeed)));
-			string getStatFactorString(ThingDef d, StatDef stat)
+			static string getStatFactorString(ThingDef d, StatDef stat)
 			{
 				if (d.stuffProps.statFactors == null)
 				{
@@ -149,24 +195,18 @@ namespace Verse
 				}
 				return stat.ValueToString(statModifier.value);
 			}
-			float meleeDpsBluntFactorOverall(ThingDef d)
+			static float meleeDpsBluntFactorOverall(ThingDef d)
 			{
 				float statValueAbstract = d.GetStatValueAbstract(StatDefOf.BluntDamageMultiplier);
 				float statFactorFromList = d.stuffProps.statFactors.GetStatFactorFromList(StatDefOf.MeleeWeapon_CooldownMultiplier);
 				return statValueAbstract / statFactorFromList;
 			}
-			float meleeDpsSharpFactorOverall(ThingDef d)
+			static float meleeDpsSharpFactorOverall(ThingDef d)
 			{
 				float statValueAbstract2 = d.GetStatValueAbstract(StatDefOf.SharpDamageMultiplier);
 				float statFactorFromList2 = d.stuffProps.statFactors.GetStatFactorFromList(StatDefOf.MeleeWeapon_CooldownMultiplier);
 				return statValueAbstract2 / statFactorFromList2;
 			}
-		}
-
-		[DebugOutput]
-		public static void Drugs()
-		{
-			DebugTables.MakeTablesDialog(DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.IsDrug), new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("pleasure", (ThingDef d) => (!d.IsPleasureDrug) ? "" : "pleasure"), new TableDataGetter<ThingDef>("non-medical", (ThingDef d) => (!d.IsNonMedicalDrug) ? "" : "non-medical"));
 		}
 
 		[DebugOutput]
@@ -362,8 +402,6 @@ namespace Verse
 			foreach (ThingSetMakerDef allDef in DefDatabase<ThingSetMakerDef>.AllDefs)
 			{
 				ThingSetMakerDef localDef = allDef;
-				Faction localF = default(Faction);
-				TraderKindDef localKind = default(TraderKindDef);
 				DebugMenuOption item = new DebugMenuOption(localDef.defName, DebugMenuOptionMode.Action, delegate
 				{
 					Action<ThingSetMakerParams> generate = delegate(ThingSetMakerParams parms)
@@ -417,6 +455,7 @@ namespace Verse
 					if (localDef == ThingSetMakerDefOf.TraderStock)
 					{
 						List<DebugMenuOption> list2 = new List<DebugMenuOption>();
+						Faction localF = default(Faction);
 						foreach (Faction allFaction in Find.FactionManager.AllFactions)
 						{
 							if (allFaction != Faction.OfPlayer)
@@ -425,6 +464,7 @@ namespace Verse
 								list2.Add(new DebugMenuOption(localF.Name + " (" + localF.def.defName + ")", DebugMenuOptionMode.Action, delegate
 								{
 									List<DebugMenuOption> list3 = new List<DebugMenuOption>();
+									TraderKindDef localKind = default(TraderKindDef);
 									foreach (TraderKindDef item2 in DefDatabase<TraderKindDef>.AllDefs.Where((TraderKindDef x) => x.orbital).Concat(localF.def.caravanTraderKinds).Concat(localF.def.visitorTraderKinds)
 										.Concat(localF.def.baseTraderKinds))
 									{
@@ -466,6 +506,7 @@ namespace Verse
 			list.Add(new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName));
 			list.Add(new TableDataGetter<ThingDef>("market\nvalue", (ThingDef d) => d.BaseMarketValue.ToStringMoney()));
 			list.Add(new TableDataGetter<ThingDef>("mass", (ThingDef d) => d.BaseMass.ToStringMass()));
+			list.Add(new TableDataGetter<ThingDef>("min\ncount", (ThingDef d) => (d.stackLimit == 1) ? "" : d.minRewardCount.ToString()));
 			foreach (ThingSetMakerDef allDef2 in DefDatabase<ThingSetMakerDef>.AllDefs)
 			{
 				ThingSetMakerDef localDef = allDef2;
@@ -484,8 +525,6 @@ namespace Verse
 			foreach (ThingSetMakerDef allDef in DefDatabase<ThingSetMakerDef>.AllDefs)
 			{
 				ThingSetMakerDef localDef = allDef;
-				Faction localF = default(Faction);
-				TraderKindDef localKind = default(TraderKindDef);
 				DebugMenuOption item = new DebugMenuOption(localDef.defName, DebugMenuOptionMode.Action, delegate
 				{
 					Action<ThingSetMakerParams> generate = delegate(ThingSetMakerParams parms)
@@ -515,6 +554,7 @@ namespace Verse
 					if (localDef == ThingSetMakerDefOf.TraderStock)
 					{
 						List<DebugMenuOption> list2 = new List<DebugMenuOption>();
+						Faction localF = default(Faction);
 						foreach (Faction allFaction in Find.FactionManager.AllFactions)
 						{
 							if (allFaction != Faction.OfPlayer)
@@ -523,6 +563,7 @@ namespace Verse
 								list2.Add(new DebugMenuOption(localF.Name + " (" + localF.def.defName + ")", DebugMenuOptionMode.Action, delegate
 								{
 									List<DebugMenuOption> list3 = new List<DebugMenuOption>();
+									TraderKindDef localKind = default(TraderKindDef);
 									foreach (TraderKindDef item3 in DefDatabase<TraderKindDef>.AllDefs.Where((TraderKindDef x) => x.orbital).Concat(localF.def.caravanTraderKinds).Concat(localF.def.visitorTraderKinds)
 										.Concat(localF.def.baseTraderKinds))
 									{
@@ -557,38 +598,39 @@ namespace Verse
 			List<DebugMenuOption> list = new List<DebugMenuOption>();
 			foreach (Faction allFaction in Find.FactionManager.AllFactions)
 			{
-				if (allFaction != Faction.OfPlayer)
+				if (allFaction == Faction.OfPlayer)
 				{
-					Faction localF = allFaction;
-					float localPoints = default(float);
-					list.Add(new DebugMenuOption(localF.Name + " (" + localF.def.defName + ")", DebugMenuOptionMode.Action, delegate
-					{
-						List<DebugMenuOption> list2 = new List<DebugMenuOption>();
-						foreach (float item in DebugActionsUtility.PointsOptions(extended: false))
-						{
-							localPoints = item;
-							list2.Add(new DebugMenuOption(item.ToString("F0"), DebugMenuOptionMode.Action, delegate
-							{
-								StringBuilder stringBuilder = new StringBuilder();
-								for (int i = 0; i < 30; i++)
-								{
-									RewardsGeneratorParams parms = default(RewardsGeneratorParams);
-									parms.allowGoodwill = true;
-									parms.allowRoyalFavor = true;
-									parms.populationIntent = StorytellerUtilityPopulation.PopulationIntentForQuest;
-									parms.giverFaction = localF;
-									parms.rewardValue = localPoints;
-									float generatedRewardValue;
-									List<Reward> source = RewardsGenerator.Generate(parms, out generatedRewardValue);
-									stringBuilder.AppendLine("giver: " + parms.giverFaction.Name + ", input value: " + parms.rewardValue.ToStringMoney() + ", output value: " + generatedRewardValue.ToStringMoney() + "\n" + source.Select((Reward x) => "-" + x.ToString()).ToLineList().Indented("  "));
-									stringBuilder.AppendLine();
-								}
-								Log.Message(stringBuilder.ToString());
-							}));
-						}
-						Find.WindowStack.Add(new Dialog_DebugOptionListLister(list2));
-					}));
+					continue;
 				}
+				Faction localF = allFaction;
+				list.Add(new DebugMenuOption(localF.Name + " (" + localF.def.defName + ")", DebugMenuOptionMode.Action, delegate
+				{
+					List<DebugMenuOption> list2 = new List<DebugMenuOption>();
+					float localPoints = default(float);
+					foreach (float item in DebugActionsUtility.PointsOptions(extended: false))
+					{
+						localPoints = item;
+						list2.Add(new DebugMenuOption(item.ToString("F0"), DebugMenuOptionMode.Action, delegate
+						{
+							StringBuilder stringBuilder = new StringBuilder();
+							for (int i = 0; i < 30; i++)
+							{
+								RewardsGeneratorParams parms = default(RewardsGeneratorParams);
+								parms.allowGoodwill = true;
+								parms.allowRoyalFavor = true;
+								parms.populationIntent = StorytellerUtilityPopulation.PopulationIntentForQuest;
+								parms.giverFaction = localF;
+								parms.rewardValue = localPoints;
+								float generatedRewardValue;
+								List<Reward> source = RewardsGenerator.Generate(parms, out generatedRewardValue);
+								stringBuilder.AppendLine("giver: " + parms.giverFaction.Name + ", input value: " + parms.rewardValue.ToStringMoney() + ", output value: " + generatedRewardValue.ToStringMoney() + "\n" + source.Select((Reward x) => "-" + x.ToString()).ToLineList().Indented("  "));
+								stringBuilder.AppendLine();
+							}
+							Log.Message(stringBuilder.ToString());
+						}));
+					}
+					Find.WindowStack.Add(new Dialog_DebugOptionListLister(list2));
+				}));
 			}
 			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
 		}
@@ -706,7 +748,7 @@ namespace Verse
 								num3++;
 							}
 						}
-						stringBuilder.AppendLine("   " + value + ": " + num3 + "     " + ((float)num3 / (float)BackstoryDatabase.allBackstories.Count).ToStringPercent());
+						stringBuilder.AppendLine(string.Concat("   ", value, ": ", num3, "     ", ((float)num3 / (float)BackstoryDatabase.allBackstories.Count).ToStringPercent()));
 					}
 					Log.Message(stringBuilder.ToString());
 				});

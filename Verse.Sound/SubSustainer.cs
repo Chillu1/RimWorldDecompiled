@@ -54,7 +54,7 @@ namespace Verse.Sound
 			ResolvedGrain resolvedGrain = subDef.RandomizedResolvedGrain();
 			if (resolvedGrain == null)
 			{
-				Log.Error("SubSustainer for " + subDef + " of " + parent.def + " could not resolve any grains.");
+				Log.Error(string.Concat("SubSustainer for ", subDef, " of ", parent.def, " could not resolve any grains."));
 				parent.End();
 				return;
 			}

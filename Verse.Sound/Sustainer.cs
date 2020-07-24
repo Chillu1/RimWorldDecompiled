@@ -39,7 +39,7 @@ namespace Verse.Sound
 				{
 					if (Prefs.DevMode)
 					{
-						Log.Error("Sustainer " + def + " info is " + info + " but its worldRootObject is null");
+						Log.Error(string.Concat("Sustainer ", def, " info is ", info, " but its worldRootObject is null"));
 					}
 					return 0f;
 				}

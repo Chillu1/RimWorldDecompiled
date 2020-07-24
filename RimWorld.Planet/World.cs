@@ -50,6 +50,10 @@ namespace RimWorld.Planet
 
 		public WorldGenData genData;
 
+		private List<ThingDef> allNaturalRockDefs;
+
+		private static List<ThingDef> tmpNaturalRockDefs = new List<ThingDef>();
+
 		private static List<int> tmpNeighbors = new List<int>();
 
 		private static List<Rot4> tmpOceanDirs = new List<Rot4>();
@@ -162,7 +166,7 @@ namespace RimWorld.Planet
 					}
 					catch (Exception ex)
 					{
-						Log.Error("Could not instantiate a WorldComponent of type " + item2 + ": " + ex);
+						Log.Error(string.Concat("Could not instantiate a WorldComponent of type ", item2, ": ", ex));
 					}
 				}
 			}
@@ -293,21 +297,26 @@ namespace RimWorld.Planet
 		{
 			Rand.PushState();
 			Rand.Seed = tile;
-			List<ThingDef> list = DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.IsNonResourceNaturalRock).ToList();
-			int num = Rand.RangeInclusive(2, 3);
-			if (num > list.Count)
+			if (allNaturalRockDefs == null)
 			{
-				num = list.Count;
+				allNaturalRockDefs = DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.IsNonResourceNaturalRock).ToList();
 			}
-			List<ThingDef> list2 = new List<ThingDef>();
+			int num = Rand.RangeInclusive(2, 3);
+			if (num > allNaturalRockDefs.Count)
+			{
+				num = allNaturalRockDefs.Count;
+			}
+			tmpNaturalRockDefs.Clear();
+			tmpNaturalRockDefs.AddRange(allNaturalRockDefs);
+			List<ThingDef> list = new List<ThingDef>();
 			for (int i = 0; i < num; i++)
 			{
-				ThingDef item = list.RandomElement();
-				list.Remove(item);
-				list2.Add(item);
+				ThingDef item = tmpNaturalRockDefs.RandomElement();
+				tmpNaturalRockDefs.Remove(item);
+				list.Add(item);
 			}
 			Rand.PopState();
-			return list2;
+			return list;
 		}
 
 		public bool Impassable(int tileID)

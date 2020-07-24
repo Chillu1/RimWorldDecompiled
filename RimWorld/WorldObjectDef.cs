@@ -108,7 +108,7 @@ namespace RimWorld
 				}
 				catch (Exception ex)
 				{
-					Log.Error("Could not instantiate inspector tab of type " + inspectorTabs[i] + ": " + ex);
+					Log.Error(string.Concat("Could not instantiate inspector tab of type ", inspectorTabs[i], ": ", ex));
 				}
 			}
 		}

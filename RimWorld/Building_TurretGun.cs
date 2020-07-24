@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -30,6 +31,8 @@ namespace RimWorld
 		protected CompInitiatable initiatableComp;
 
 		protected CompMannable mannableComp;
+
+		protected Effecter progressBarEffecter;
 
 		private const int TryStartShootSomethingIntervalTicks = 10;
 
@@ -166,6 +169,7 @@ namespace RimWorld
 		{
 			base.DeSpawn(mode);
 			ResetCurrentTarget();
+			progressBarEffecter?.Cleanup();
 		}
 
 		public override void ExposeData()
@@ -281,6 +285,17 @@ namespace RimWorld
 					if (burstCooldownTicksLeft > 0)
 					{
 						burstCooldownTicksLeft--;
+						if (IsMortar)
+						{
+							if (progressBarEffecter == null)
+							{
+								progressBarEffecter = EffecterDefOf.ProgressBar.Spawn();
+							}
+							progressBarEffecter.EffectTick(this, TargetInfo.Invalid);
+							MoteProgressBar mote = ((SubEffecter_ProgressBar)progressBarEffecter.children[0]).mote;
+							mote.progress = 1f - (float)Math.Max(burstCooldownTicksLeft, 0) / (float)BurstCooldownTime().SecondsToTicks();
+							mote.offsetZ = -0.8f;
+						}
 					}
 					if (burstCooldownTicksLeft <= 0 && this.IsHashIntervalTick(10))
 					{
@@ -297,6 +312,11 @@ namespace RimWorld
 
 		protected void TryStartShootSomething(bool canBeginBurstImmediately)
 		{
+			if (progressBarEffecter != null)
+			{
+				progressBarEffecter.Cleanup();
+				progressBarEffecter = null;
+			}
 			if (!base.Spawned || (holdFire && CanToggleHoldFire) || (AttackVerb.ProjectileFliesOverhead() && base.Map.roofGrid.Roofed(base.Position)) || !AttackVerb.Available())
 			{
 				ResetCurrentTarget();
@@ -549,24 +569,25 @@ namespace RimWorld
 				command_Action2.hotKey = KeyBindingDefOf.Misc5;
 				yield return command_Action2;
 			}
-			if (CanToggleHoldFire)
+			if (!CanToggleHoldFire)
 			{
-				Command_Toggle command_Toggle = new Command_Toggle();
-				command_Toggle.defaultLabel = "CommandHoldFire".Translate();
-				command_Toggle.defaultDesc = "CommandHoldFireDesc".Translate();
-				command_Toggle.icon = ContentFinder<Texture2D>.Get("UI/Commands/HoldFire");
-				command_Toggle.hotKey = KeyBindingDefOf.Misc6;
-				command_Toggle.toggleAction = delegate
-				{
-					holdFire = !holdFire;
-					if (holdFire)
-					{
-						ResetForcedTarget();
-					}
-				};
-				command_Toggle.isActive = (() => holdFire);
-				yield return command_Toggle;
+				yield break;
 			}
+			Command_Toggle command_Toggle = new Command_Toggle();
+			command_Toggle.defaultLabel = "CommandHoldFire".Translate();
+			command_Toggle.defaultDesc = "CommandHoldFireDesc".Translate();
+			command_Toggle.icon = ContentFinder<Texture2D>.Get("UI/Commands/HoldFire");
+			command_Toggle.hotKey = KeyBindingDefOf.Misc6;
+			command_Toggle.toggleAction = delegate
+			{
+				holdFire = !holdFire;
+				if (holdFire)
+				{
+					ResetForcedTarget();
+				}
+			};
+			command_Toggle.isActive = (() => holdFire);
+			yield return command_Toggle;
 		}
 
 		private void ExtractShell()

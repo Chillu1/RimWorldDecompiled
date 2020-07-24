@@ -100,14 +100,15 @@ namespace RimWorld
 			for (int i = 0; i < allBuildingsColonist.Count; i++)
 			{
 				Building building = allBuildingsColonist[i];
-				if (building.def.IsTable)
+				if (!building.def.IsTable)
 				{
-					foreach (IntVec3 item in building.OccupiedRect())
+					continue;
+				}
+				foreach (IntVec3 item in building.OccupiedRect())
+				{
+					if (pawn.CanReserveAndReach(item, PathEndMode.OnCell, Danger.Deadly) && item.GetFirstItem(pawn.Map) == null)
 					{
-						if (pawn.CanReserveAndReach(item, PathEndMode.OnCell, Danger.Deadly) && item.GetFirstItem(pawn.Map) == null)
-						{
-							tmpCells.Add(item);
-						}
+						tmpCells.Add(item);
 					}
 				}
 			}

@@ -12,9 +12,8 @@ namespace Verse
 		private static void LoadedFilesForMod()
 		{
 			List<DebugMenuOption> list = new List<DebugMenuOption>();
-			foreach (ModContentPack item in LoadedModManager.RunningModsListForReading)
+			foreach (ModContentPack mod in LoadedModManager.RunningModsListForReading)
 			{
-				ModContentPack mod = item;
 				list.Add(new DebugMenuOption(mod.Name, DebugMenuOptionMode.Action, delegate
 				{
 					ModMetaData metaData = ModLister.GetModWithIdentifier(mod.PackageId);
@@ -35,17 +34,17 @@ namespace Verse
 				void ShowTable(List<string> loadFolders)
 				{
 					List<Pair<string, string>> list2 = new List<Pair<string, string>>();
-					list2.AddRange(from f in DirectXmlLoader.XmlAssetsInModFolder(mod, "Defs/", loadFolders)
+					list2.AddRange(from f in DirectXmlLoader.XmlAssetsInModFolder(base.mod, "Defs/", loadFolders)
 						select new Pair<string, string>(f.FullFilePath, "-"));
-					list2.AddRange(from f in DirectXmlLoader.XmlAssetsInModFolder(mod, "Patches/", loadFolders)
+					list2.AddRange(from f in DirectXmlLoader.XmlAssetsInModFolder(base.mod, "Patches/", loadFolders)
 						select new Pair<string, string>(f.FullFilePath, "-"));
-					list2.AddRange(from f in ModContentPack.GetAllFilesForMod(mod, GenFilePaths.ContentPath<Texture2D>(), ModContentLoader<Texture2D>.IsAcceptableExtension, loadFolders)
+					list2.AddRange(from f in ModContentPack.GetAllFilesForMod(base.mod, GenFilePaths.ContentPath<Texture2D>(), ModContentLoader<Texture2D>.IsAcceptableExtension, loadFolders)
 						select new Pair<string, string>(f.Value.FullName, f.Key));
-					list2.AddRange(from f in ModContentPack.GetAllFilesForMod(mod, GenFilePaths.ContentPath<AudioClip>(), ModContentLoader<AudioClip>.IsAcceptableExtension, loadFolders)
+					list2.AddRange(from f in ModContentPack.GetAllFilesForMod(base.mod, GenFilePaths.ContentPath<AudioClip>(), ModContentLoader<AudioClip>.IsAcceptableExtension, loadFolders)
 						select new Pair<string, string>(f.Value.FullName, f.Key));
-					list2.AddRange(from f in ModContentPack.GetAllFilesForMod(mod, GenFilePaths.ContentPath<string>(), ModContentLoader<string>.IsAcceptableExtension, loadFolders)
+					list2.AddRange(from f in ModContentPack.GetAllFilesForMod(base.mod, GenFilePaths.ContentPath<string>(), ModContentLoader<string>.IsAcceptableExtension, loadFolders)
 						select new Pair<string, string>(f.Value.FullName, f.Key));
-					list2.AddRange(from f in ModContentPack.GetAllFilesForModPreserveOrder(mod, "Assemblies/", (string e) => e.ToLower() == ".dll", loadFolders)
+					list2.AddRange(from f in ModContentPack.GetAllFilesForModPreserveOrder(base.mod, "Assemblies/", (string e) => e.ToLower() == ".dll", loadFolders)
 						select new Pair<string, string>(f.Item2.FullName, f.Item1));
 					DebugTables.MakeTablesDialog(list2, new List<TableDataGetter<Pair<string, string>>>
 					{

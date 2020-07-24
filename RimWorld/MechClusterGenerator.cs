@@ -23,22 +23,21 @@ namespace RimWorld
 
 		public static readonly SimpleCurve PointsToPawnsChanceCurve = new SimpleCurve
 		{
-			new CurvePoint(300f, 1f),
-			new CurvePoint(1200f, 0.9f),
-			new CurvePoint(3500f, 0.6f)
+			new CurvePoint(400f, 0.75f)
 		};
 
 		public static readonly SimpleCurve PawnPointsRandomPercentOfTotalCurve = new SimpleCurve
 		{
-			new CurvePoint(0f, 0f),
-			new CurvePoint(0.3f, 1f),
-			new CurvePoint(0.6f, 0f)
+			new CurvePoint(0.2f, 0f),
+			new CurvePoint(0.5f, 1f),
+			new CurvePoint(0.8f, 0f)
 		};
 
 		private static readonly FloatRange SizeRandomFactorRange = new FloatRange(0.8f, 2f);
 
 		private static readonly SimpleCurve PointsToSizeCurve = new SimpleCurve
 		{
+			new CurvePoint(400f, 7f),
 			new CurvePoint(1000f, 10f),
 			new CurvePoint(2000f, 20f),
 			new CurvePoint(5000f, 25f)
@@ -46,16 +45,15 @@ namespace RimWorld
 
 		private static readonly SimpleCurve ProblemCauserCountCurve = new SimpleCurve
 		{
-			new CurvePoint(400f, 0.1f),
-			new CurvePoint(800f, 0.6f),
-			new CurvePoint(1200f, 0.9f)
+			new CurvePoint(400f, 0.5f),
+			new CurvePoint(800f, 0.9f),
+			new CurvePoint(1200f, 0.95f)
 		};
 
 		private static readonly SimpleCurve WallsChanceCurve = new SimpleCurve
 		{
-			new CurvePoint(0f, 0f),
-			new CurvePoint(400f, 0.4f),
-			new CurvePoint(1000f, 1f)
+			new CurvePoint(400f, 0.35f),
+			new CurvePoint(1000f, 0.5f)
 		};
 
 		private const float ActivatorCountdownChance = 0.5f;
@@ -72,8 +70,7 @@ namespace RimWorld
 
 		private static readonly SimpleCurve GoodBuildingChanceCurve = new SimpleCurve
 		{
-			new CurvePoint(400f, 0f),
-			new CurvePoint(1000f, 0.5f)
+			new CurvePoint(400f, 0.5f)
 		};
 
 		private static readonly SimpleCurve GoodBuildingMaxCountCurve = new SimpleCurve
@@ -89,7 +86,6 @@ namespace RimWorld
 
 		private static readonly SimpleCurve BulletShieldChanceCurve = new SimpleCurve
 		{
-			new CurvePoint(0f, 0f),
 			new CurvePoint(400f, 0.1f),
 			new CurvePoint(1000f, 0.4f),
 			new CurvePoint(2200f, 0.5f)
@@ -107,7 +103,6 @@ namespace RimWorld
 
 		private static readonly SimpleCurve MortarShieldChanceCurve = new SimpleCurve
 		{
-			new CurvePoint(0f, 0f),
 			new CurvePoint(400f, 0.1f),
 			new CurvePoint(1000f, 0.4f),
 			new CurvePoint(2200f, 0.5f)
@@ -125,7 +120,7 @@ namespace RimWorld
 		{
 			if (!ModLister.RoyaltyInstalled)
 			{
-				Log.Error("MechClusterGenerator.GenerateClusterSketch() requires Royalty installed.");
+				Log.ErrorOnce("Mech clusters are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 657122);
 				return new MechClusterSketch(new Sketch(), new List<MechClusterSketch.Mech>(), startDormant);
 			}
 			points = Mathf.Min(points, 10000f);
@@ -149,6 +144,7 @@ namespace RimWorld
 			Sketch buildingsSketch = RimWorld.SketchGen.SketchGen.Generate(SketchResolverDefOf.MechCluster, new ResolveParams
 			{
 				points = num,
+				totalPoints = points,
 				mechClusterDormant = startDormant,
 				sketch = new Sketch(),
 				mechClusterForMap = map
@@ -180,7 +176,7 @@ namespace RimWorld
 		{
 			if (!ModLister.RoyaltyInstalled)
 			{
-				Log.Error("MechClusterGenerator.ResolveSketch() requires Royalty installed.");
+				Log.ErrorOnce("Mech clusters are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 673321);
 				return;
 			}
 			bool canBeDormant = !parms.mechClusterDormant.HasValue || parms.mechClusterDormant.Value;
@@ -194,6 +190,7 @@ namespace RimWorld
 				num = 2000f;
 				Log.Error("No points given for mech cluster generation. Default to " + num);
 			}
+			float value = parms.totalPoints.HasValue ? parms.totalPoints.Value : num;
 			IntVec2 intVec;
 			if (parms.mechClusterSize.HasValue)
 			{
@@ -219,19 +216,25 @@ namespace RimWorld
 				parms2.mechClusterSize = intVec;
 				SketchResolverDefOf.MechClusterWalls.Resolve(parms2);
 			}
-			List<ThingDef> buildingDefsForCluster = GetBuildingDefsForCluster(num, intVec, canBeDormant);
-			AddBuildingsToSketch(sketch, intVec, buildingDefsForCluster);
+			List<ThingDef> buildingDefsForCluster_NewTemp = GetBuildingDefsForCluster_NewTemp(num, intVec, canBeDormant, value);
+			AddBuildingsToSketch(sketch, intVec, buildingDefsForCluster_NewTemp);
 			parms.sketch.MergeAt(sketch, default(IntVec3), Sketch.SpawnPosType.OccupiedCenter);
 		}
 
+		[Obsolete("Only need this overload to not break mod compatibility.")]
 		private static List<ThingDef> GetBuildingDefsForCluster(float points, IntVec2 size, bool canBeDormant)
 		{
+			return GetBuildingDefsForCluster_NewTemp(points, size, canBeDormant, 0f);
+		}
+
+		private static List<ThingDef> GetBuildingDefsForCluster_NewTemp(float points, IntVec2 size, bool canBeDormant, float? totalPoints)
+		{
 			List<ThingDef> list = new List<ThingDef>();
-			List<ThingDef> source = DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef def) => def.building != null && def.building.buildingTags != null && def.building.buildingTags.Contains("MechClusterMember")).ToList();
+			List<ThingDef> source = DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef def) => def.building != null && def.building.buildingTags != null && def.building.buildingTags.Contains("MechClusterMember") && (!totalPoints.HasValue || (float)def.building.minMechClusterPoints <= totalPoints)).ToList();
 			int num = GenMath.RoundRandom(ProblemCauserCountCurve.Evaluate(points));
 			for (int i = 0; i < num; i++)
 			{
-				if (!source.Where((ThingDef x) => x.building.buildingTags.Contains("MechClusterProblemCauser")).TryRandomElement(out ThingDef result))
+				if (!source.Where((ThingDef x) => x.building.buildingTags.Contains("MechClusterProblemCauser")).TryRandomElementByWeight((ThingDef t) => t.generateCommonality, out ThingDef result))
 				{
 					break;
 				}
@@ -278,13 +281,12 @@ namespace RimWorld
 				points *= 0.9f;
 				list.Add(ThingDefOf.ShieldGeneratorMortar);
 			}
+			float pointsLeft = points;
 			ThingDef thingDef = source.Where((ThingDef x) => x.building.buildingTags.Contains("MechClusterCombatThreat")).MinBy((ThingDef x) => x.building.combatPower);
-			points = Mathf.Max(points, thingDef.building.combatPower);
 			ThingDef result3;
-			while (points > 0f && source.Where((ThingDef x) => x.building.combatPower <= points && x.building.buildingTags.Contains("MechClusterCombatThreat")).TryRandomElement(out result3))
+			for (pointsLeft = Mathf.Max(pointsLeft, thingDef.building.combatPower); pointsLeft > 0f && source.Where((ThingDef x) => x.building.combatPower <= pointsLeft && x.building.buildingTags.Contains("MechClusterCombatThreat")).TryRandomElement(out result3); pointsLeft -= result3.building.combatPower)
 			{
 				list.Add(result3);
-				points -= result3.building.combatPower;
 			}
 			return list;
 		}
@@ -306,39 +308,41 @@ namespace RimWorld
 			foreach (ThingDef item in buildings.OrderBy((ThingDef x) => x.building.IsTurret && !x.building.IsMortar))
 			{
 				bool flag = item.building.IsTurret && !item.building.IsMortar;
-				if (TryFindRandomPlaceFor(item, sketch, size, out IntVec3 pos, lowerLeftQuarterOnly: false, flag, flag, !flag, edgeWallRects) || TryFindRandomPlaceFor(item, sketch, size + new IntVec2(6, 6), out pos, lowerLeftQuarterOnly: false, flag, flag, !flag, edgeWallRects))
+				if (!TryFindRandomPlaceFor(item, sketch, size, out IntVec3 pos, lowerLeftQuarterOnly: false, flag, flag, !flag, edgeWallRects) && !TryFindRandomPlaceFor(item, sketch, size + new IntVec2(6, 6), out pos, lowerLeftQuarterOnly: false, flag, flag, !flag, edgeWallRects))
 				{
-					sketch.AddThing(item, pos, Rot4.North, GenStuff.RandomStuffByCommonalityFor(item));
-					if (item == ThingDefOf.Turret_AutoMiniTurret)
+					continue;
+				}
+				sketch.AddThing(item, pos, Rot4.North, GenStuff.RandomStuffByCommonalityFor(item));
+				if (item != ThingDefOf.Turret_AutoMiniTurret)
+				{
+					continue;
+				}
+				if (pos.x < size.x / 2)
+				{
+					if (pos.z < size.z / 2)
 					{
-						if (pos.x < size.x / 2)
-						{
-							if (pos.z < size.z / 2)
-							{
-								sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x - 1, 0, pos.z), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
-								sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x - 1, 0, pos.z - 1), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
-								sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x, 0, pos.z - 1), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
-							}
-							else
-							{
-								sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x - 1, 0, pos.z), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
-								sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x - 1, 0, pos.z + 1), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
-								sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x, 0, pos.z + 1), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
-							}
-						}
-						else if (pos.z < size.z / 2)
-						{
-							sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x + 1, 0, pos.z), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
-							sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x + 1, 0, pos.z - 1), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
-							sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x, 0, pos.z - 1), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
-						}
-						else
-						{
-							sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x + 1, 0, pos.z), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
-							sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x + 1, 0, pos.z + 1), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
-							sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x, 0, pos.z + 1), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
-						}
+						sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x - 1, 0, pos.z), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
+						sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x - 1, 0, pos.z - 1), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
+						sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x, 0, pos.z - 1), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
 					}
+					else
+					{
+						sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x - 1, 0, pos.z), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
+						sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x - 1, 0, pos.z + 1), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
+						sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x, 0, pos.z + 1), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
+					}
+				}
+				else if (pos.z < size.z / 2)
+				{
+					sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x + 1, 0, pos.z), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
+					sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x + 1, 0, pos.z - 1), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
+					sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x, 0, pos.z - 1), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
+				}
+				else
+				{
+					sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x + 1, 0, pos.z), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
+					sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x + 1, 0, pos.z + 1), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
+					sketch.AddThing(ThingDefOf.Barricade, new IntVec3(pos.x, 0, pos.z + 1), Rot4.North, ThingDefOf.Steel, 1, null, null, wipeIfCollides: false);
 				}
 			}
 		}
@@ -441,9 +445,9 @@ namespace RimWorld
 					for (int i = 0; i < 50; i++)
 					{
 						int num = Rand.Range(10, 20);
-						List<ThingDef> buildingDefsForCluster = GetBuildingDefsForCluster(localPoints, new IntVec2(num, num), canBeDormant: true);
+						List<ThingDef> buildingDefsForCluster_NewTemp = GetBuildingDefsForCluster_NewTemp(localPoints, new IntVec2(num, num), canBeDormant: true, localPoints);
 						text = text + "points: " + localPoints + " , size: " + num;
-						foreach (ThingDef item2 in buildingDefsForCluster)
+						foreach (ThingDef item2 in buildingDefsForCluster_NewTemp)
 						{
 							text = text + "\n- " + item2.defName;
 						}

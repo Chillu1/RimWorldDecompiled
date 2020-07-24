@@ -41,14 +41,15 @@ namespace RimWorld
 			{
 				num3 *= 0.4f;
 			}
-			if (!((double)num3 < 0.3))
+			if ((double)num3 < 0.3)
 			{
-				foreach (IntVec3 allCell in map.AllCells)
+				return;
+			}
+			foreach (IntVec3 allCell in map.AllCells)
+			{
+				if (!allCell.Roofed(map))
 				{
-					if (!allCell.Roofed(map))
-					{
-						map.steadyEnvironmentEffects.AddFallenSnowAt(allCell, num3);
-					}
+					map.steadyEnvironmentEffects.AddFallenSnowAt(allCell, num3);
 				}
 			}
 		}

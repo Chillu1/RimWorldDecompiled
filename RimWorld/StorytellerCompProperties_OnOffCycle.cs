@@ -17,6 +17,8 @@ namespace RimWorld
 
 		public SimpleCurve acceptPercentFactorPerThreatPointsCurve;
 
+		public SimpleCurve acceptPercentFactorPerProgressScoreCurve;
+
 		public IncidentDef incident;
 
 		private IncidentCategoryDef category;

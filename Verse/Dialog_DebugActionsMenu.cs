@@ -38,12 +38,13 @@ namespace Verse
 					{
 						GenerateCacheForMethod(methodInfo, customAttribute);
 					}
-					if (methodInfo.TryGetAttribute(out DebugActionYielderAttribute _))
+					if (!methodInfo.TryGetAttribute(out DebugActionYielderAttribute _))
 					{
-						foreach (DebugActionOption item in (IEnumerable<DebugActionOption>)methodInfo.Invoke(null, null))
-						{
-							debugActions.Add(item);
-						}
+						continue;
+					}
+					foreach (DebugActionOption item in (IEnumerable<DebugActionOption>)methodInfo.Invoke(null, null))
+					{
+						debugActions.Add(item);
 					}
 				}
 			}

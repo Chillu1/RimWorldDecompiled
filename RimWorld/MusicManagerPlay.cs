@@ -304,7 +304,7 @@ namespace RimWorld
 			stringBuilder.AppendLine("nextSongStartTime: " + nextSongStartTime);
 			stringBuilder.AppendLine("CurTime: " + CurTime);
 			stringBuilder.AppendLine("recentSongs: " + recentSongs.Select((SongDef s) => s.defName).ToCommaList(useAnd: true));
-			stringBuilder.AppendLine("disabled: " + disabled.ToString());
+			stringBuilder.AppendLine("disabled: " + disabled);
 			return stringBuilder.ToString();
 		}
 

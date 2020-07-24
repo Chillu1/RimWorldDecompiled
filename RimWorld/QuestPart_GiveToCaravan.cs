@@ -25,35 +25,21 @@ namespace RimWorld
 			{
 				items.Clear();
 				pawns.Clear();
-				if (value != null)
+				if (value == null)
 				{
-					foreach (Thing item in value)
+					return;
+				}
+				foreach (Thing item in value)
+				{
+					Pawn pawn = item as Pawn;
+					if (pawn != null)
 					{
-						Pawn pawn = item as Pawn;
-						if (pawn != null)
-						{
-							pawns.Add(pawn);
-						}
-						else
-						{
-							items.Add(item);
-						}
+						pawns.Add(pawn);
 					}
-				}
-			}
-		}
-
-		public override IEnumerable<Dialog_InfoCard.Hyperlink> Hyperlinks
-		{
-			get
-			{
-				foreach (Dialog_InfoCard.Hyperlink hyperlink in base.Hyperlinks)
-				{
-					yield return hyperlink;
-				}
-				foreach (Thing item in items)
-				{
-					yield return new Dialog_InfoCard.Hyperlink(item.GetInnerIfMinified().def);
+					else
+					{
+						items.Add(item);
+					}
 				}
 			}
 		}
@@ -109,6 +95,26 @@ namespace RimWorld
 				CaravanInventoryUtility.GiveThing(arg, items[j]);
 			}
 			items.Clear();
+		}
+
+		public override void PostQuestAdded()
+		{
+			base.PostQuestAdded();
+			int num = 0;
+			while (true)
+			{
+				if (num < items.Count)
+				{
+					if (items[num].def == ThingDefOf.PsychicAmplifier)
+					{
+						break;
+					}
+					num++;
+					continue;
+				}
+				return;
+			}
+			Find.History.Notify_PsylinkAvailable();
 		}
 
 		public override bool QuestPartReserves(Pawn p)

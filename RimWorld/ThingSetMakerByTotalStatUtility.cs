@@ -22,6 +22,11 @@ namespace RimWorld
 
 		public static List<ThingStuffPairWithQuality> GenerateDefsWithPossibleTotalValue_NewTmp2(IntRange countRange, float totalValue, IEnumerable<ThingDef> allowed, TechLevel techLevel, QualityGenerator qualityGenerator, Func<ThingStuffPairWithQuality, float> getMinValue, Func<ThingStuffPairWithQuality, float> getMaxValue, Func<ThingDef, float> weightSelector = null, int tries = 100, float maxMass = float.MaxValue, bool allowNonStackableDuplicates = true, float minSingleItemValue = 0f)
 		{
+			return GenerateDefsWithPossibleTotalValue_NewTmp3(countRange, totalValue, allowed, techLevel, qualityGenerator, getMinValue, getMaxValue, getMinValue, weightSelector, tries, maxMass, allowNonStackableDuplicates, minSingleItemValue);
+		}
+
+		public static List<ThingStuffPairWithQuality> GenerateDefsWithPossibleTotalValue_NewTmp3(IntRange countRange, float totalValue, IEnumerable<ThingDef> allowed, TechLevel techLevel, QualityGenerator qualityGenerator, Func<ThingStuffPairWithQuality, float> getMinValue, Func<ThingStuffPairWithQuality, float> getMaxValue, Func<ThingStuffPairWithQuality, float> getSingleThingValue, Func<ThingDef, float> weightSelector = null, int tries = 100, float maxMass = float.MaxValue, bool allowNonStackableDuplicates = true, float minSingleItemValue = 0f)
+		{
 			List<ThingStuffPairWithQuality> chosen = new List<ThingStuffPairWithQuality>();
 			if (countRange.max <= 0)
 			{
@@ -161,7 +166,13 @@ namespace RimWorld
 			return chosen;
 		}
 
+		[Obsolete]
 		public static void IncreaseStackCountsToTotalValue(List<Thing> things, float totalValue, Func<Thing, float> getValue, float maxMass = float.MaxValue)
+		{
+			IncreaseStackCountsToTotalValue_NewTemp(things, totalValue, getValue, maxMass);
+		}
+
+		public static void IncreaseStackCountsToTotalValue_NewTemp(List<Thing> things, float totalValue, Func<Thing, float> getValue, float maxMass = float.MaxValue, bool satisfyMinRewardCount = false)
 		{
 			float currentTotalValue = 0f;
 			float currentTotalMass = 0f;
@@ -179,13 +190,22 @@ namespace RimWorld
 			}
 			things.SortByDescending((Thing x) => getValue(x) / x.GetStatValue(StatDefOf.Mass));
 			DistributeEvenly(things, currentTotalValue + (totalValue - currentTotalValue) * 0.1f, ref currentTotalValue, ref currentTotalMass, getValue, (maxMass == float.MaxValue) ? float.MaxValue : (currentTotalMass + (maxMass - currentTotalMass) * 0.1f));
+			if (currentTotalValue >= totalValue || currentTotalMass >= maxMass)
+			{
+				return;
+			}
+			if (satisfyMinRewardCount)
+			{
+				SatisfyMinRewardCount(things, totalValue, ref currentTotalValue, ref currentTotalMass, getValue, maxMass);
+				if (currentTotalValue >= totalValue || currentTotalMass >= maxMass)
+				{
+					return;
+				}
+			}
+			DistributeEvenly(things, totalValue, ref currentTotalValue, ref currentTotalMass, getValue, maxMass, useValueMassRatio: true);
 			if (!(currentTotalValue >= totalValue) && !(currentTotalMass >= maxMass))
 			{
-				DistributeEvenly(things, totalValue, ref currentTotalValue, ref currentTotalMass, getValue, maxMass, useValueMassRatio: true);
-				if (!(currentTotalValue >= totalValue) && !(currentTotalMass >= maxMass))
-				{
-					GiveRemainingValueToAnything(things, totalValue, ref currentTotalValue, ref currentTotalMass, getValue, maxMass);
-				}
+				GiveRemainingValueToAnything(things, totalValue, ref currentTotalValue, ref currentTotalMass, getValue, maxMass);
 			}
 		}
 
@@ -217,6 +237,33 @@ namespace RimWorld
 					if (!(things[j] is Pawn))
 					{
 						currentTotalMass += things[j].GetStatValue(StatDefOf.Mass) * (float)num6;
+					}
+				}
+			}
+		}
+
+		private static void SatisfyMinRewardCount(List<Thing> things, float totalValue, ref float currentTotalValue, ref float currentTotalMass, Func<Thing, float> getValue, float maxMass)
+		{
+			for (int i = 0; i < things.Count; i++)
+			{
+				if (things[i].stackCount >= things[i].def.minRewardCount)
+				{
+					continue;
+				}
+				float num = getValue(things[i]);
+				int num2 = Mathf.FloorToInt((totalValue - currentTotalValue) / num);
+				int num3 = Mathf.Min(num2, things[i].def.stackLimit - things[i].stackCount, things[i].def.minRewardCount - things[i].stackCount);
+				if (maxMass != float.MaxValue && !(things[i] is Pawn))
+				{
+					num3 = Mathf.Min(num3, Mathf.FloorToInt((maxMass - currentTotalMass) / things[i].GetStatValue(StatDefOf.Mass)));
+				}
+				if (num3 > 0)
+				{
+					things[i].stackCount += num3;
+					currentTotalValue += num * (float)num3;
+					if (!(things[i] is Pawn))
+					{
+						currentTotalMass += things[i].GetStatValue(StatDefOf.Mass) * (float)num3;
 					}
 				}
 			}
@@ -267,20 +314,20 @@ namespace RimWorld
 			return totalValue / (float)num2 * 0.2f;
 		}
 
-		private static float GetNonTrashMass(ThingStuffPairWithQuality t, float trashThreshold, Func<ThingStuffPairWithQuality, float> getMinValue)
+		private static float GetNonTrashMass(ThingStuffPairWithQuality t, float trashThreshold, Func<ThingStuffPairWithQuality, float> getSingleThingValue)
 		{
-			int num = Mathf.Clamp(Mathf.CeilToInt(trashThreshold / getMinValue(t)), 1, t.thing.stackLimit);
+			int num = Mathf.Clamp(Mathf.CeilToInt(trashThreshold / getSingleThingValue(t)), 1, t.thing.stackLimit);
 			return t.GetStatValue(StatDefOf.Mass) * (float)num;
 		}
 
-		private static float GetMaxValueWithMaxMass(ThingStuffPairWithQuality t, float massSoFar, float maxMass, Func<ThingStuffPairWithQuality, float> getMinValue, Func<ThingStuffPairWithQuality, float> getMaxValue)
+		private static float GetMaxValueWithMaxMass(ThingStuffPairWithQuality t, float massSoFar, float maxMass, Func<ThingStuffPairWithQuality, float> getSingleThingValue, Func<ThingStuffPairWithQuality, float> getMaxValue)
 		{
 			if (maxMass == float.MaxValue)
 			{
 				return getMaxValue(t);
 			}
 			int num = Mathf.Clamp(Mathf.FloorToInt((maxMass - massSoFar) / t.GetStatValue(StatDefOf.Mass)), 1, t.thing.stackLimit);
-			return getMinValue(t) * (float)num;
+			return getSingleThingValue(t) * (float)num;
 		}
 	}
 }

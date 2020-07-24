@@ -28,12 +28,13 @@ namespace RimWorld
 
 		public override IEnumerable<StatDrawEntry> SpecialDisplayStats(ThingDef parentDef)
 		{
-			if (parentDef.IsDrug && chance >= 1f)
+			if (!parentDef.IsDrug || !(chance >= 1f))
 			{
-				foreach (StatDrawEntry item in hediffDef.SpecialDisplayStats(StatRequest.ForEmpty()))
-				{
-					yield return item;
-				}
+				yield break;
+			}
+			foreach (StatDrawEntry item in hediffDef.SpecialDisplayStats(StatRequest.ForEmpty()))
+			{
+				yield return item;
 			}
 		}
 	}

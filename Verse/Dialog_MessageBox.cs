@@ -72,7 +72,7 @@ namespace Verse
 			creationRealTime = RealTime.LastRealTime;
 			onlyOneOfTypeAllowed = false;
 			bool flag = buttonAAction == null && buttonBAction == null && buttonCAction == null;
-			forceCatchAcceptAndCancelEventEvenIfUnfocused = ((acceptAction != null || cancelAction != null) | flag);
+			forceCatchAcceptAndCancelEventEvenIfUnfocused = (acceptAction != null || cancelAction != null || flag);
 			closeOnAccept = flag;
 			closeOnCancel = flag;
 		}

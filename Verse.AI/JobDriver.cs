@@ -53,7 +53,7 @@ namespace Verse.AI
 				}
 				if (curToilIndex >= toils.Count)
 				{
-					Log.Error(pawn + " with job " + pawn.CurJob + " tried to get CurToil with curToilIndex=" + curToilIndex + " but only has " + toils.Count + " toils.");
+					Log.Error(string.Concat(pawn, " with job ", pawn.CurJob, " tried to get CurToil with curToilIndex=", curToilIndex, " but only has ", toils.Count, " toils."));
 					return null;
 				}
 				return toils[curToilIndex];
@@ -152,7 +152,7 @@ namespace Verse.AI
 			return ReportStringProcessed(job.def.reportString);
 		}
 
-		protected string ReportStringProcessed(string str)
+		protected virtual string ReportStringProcessed(string str)
 		{
 			LocalTargetInfo a = job.targetA.IsValid ? job.targetA : job.targetQueueA.FirstValid();
 			LocalTargetInfo b = job.targetB.IsValid ? job.targetB : job.targetQueueB.FirstValid();
@@ -248,8 +248,12 @@ namespace Verse.AI
 						ReadyForNextToil();
 					}
 				}
-				else if (!CheckCurrentToilEndOrFail())
+				else
 				{
+					if (CheckCurrentToilEndOrFail())
+					{
+						return;
+					}
 					if (curToilCompleteMode == ToilCompleteMode.Delay)
 					{
 						if (ticksLeftThisToil > 0)
@@ -266,6 +270,7 @@ namespace Verse.AI
 						}
 						ReadyForNextToil();
 					}
+					return;
 				}
 				goto end_IL_0000;
 				IL_01b8:
@@ -275,42 +280,39 @@ namespace Verse.AI
 				}
 				goto end_IL_0000;
 				IL_0099:
-				Job startingJob;
-				int startingJobId;
 				if (wantBeginNextToil)
 				{
 					TryActuallyStartNextToil();
+					return;
 				}
-				else if (curToilCompleteMode == ToilCompleteMode.Instant && debugTicksSpentThisToil > 300)
+				if (curToilCompleteMode == ToilCompleteMode.Instant && debugTicksSpentThisToil > 300)
 				{
-					Log.Error(pawn + " had to be broken from frozen state. He was doing job " + job + ", toilindex=" + curToilIndex);
+					Log.Error(string.Concat(pawn, " had to be broken from frozen state. He was doing job ", job, ", toilindex=", curToilIndex));
 					ReadyForNextToil();
+					return;
 				}
-				else
+				Job startingJob = pawn.CurJob;
+				int startingJobId = startingJob.loadID;
+				if (CurToil.preTickActions != null)
 				{
-					startingJob = pawn.CurJob;
-					startingJobId = startingJob.loadID;
-					if (CurToil.preTickActions != null)
+					Toil curToil = CurToil;
+					for (int i = 0; i < curToil.preTickActions.Count; i++)
 					{
-						Toil curToil = CurToil;
-						for (int i = 0; i < curToil.preTickActions.Count; i++)
+						curToil.preTickActions[i]();
+						if (JobChanged() || CurToil != curToil || wantBeginNextToil)
 						{
-							curToil.preTickActions[i]();
-							if (JobChanged() || CurToil != curToil || wantBeginNextToil)
-							{
-								return;
-							}
+							return;
 						}
 					}
-					if (CurToil.tickAction == null)
-					{
-						goto IL_01b8;
-					}
-					CurToil.tickAction();
-					if (!JobChanged())
-					{
-						goto IL_01b8;
-					}
+				}
+				if (CurToil.tickAction == null)
+				{
+					goto IL_01b8;
+				}
+				CurToil.tickAction();
+				if (!JobChanged())
+				{
+					goto IL_01b8;
 				}
 				end_IL_0000:
 				bool JobChanged()
@@ -390,24 +392,25 @@ namespace Verse.AI
 					}
 				}
 			}
-			if (CurToil == curToil)
+			if (CurToil != curToil)
 			{
-				if (CurToil.initAction != null)
+				return;
+			}
+			if (CurToil.initAction != null)
+			{
+				try
 				{
-					try
-					{
-						CurToil.initAction();
-					}
-					catch (Exception exception2)
-					{
-						JobUtility.TryStartErrorRecoverJob(pawn, "JobDriver threw exception in initAction for pawn " + pawn.ToStringSafe(), exception2, this);
-						return;
-					}
+					CurToil.initAction();
 				}
-				if (!ended && curToilCompleteMode == ToilCompleteMode.Instant && CurToil == curToil)
+				catch (Exception exception2)
 				{
-					ReadyForNextToil();
+					JobUtility.TryStartErrorRecoverJob(pawn, "JobDriver threw exception in initAction for pawn " + pawn.ToStringSafe(), exception2, this);
+					return;
 				}
+			}
+			if (!ended && curToilCompleteMode == ToilCompleteMode.Instant && CurToil == curToil)
+			{
+				ReadyForNextToil();
 			}
 		}
 

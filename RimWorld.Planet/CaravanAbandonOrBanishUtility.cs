@@ -18,26 +18,24 @@ namespace RimWorld.Planet
 				{
 					PawnBanishUtility.ShowBanishPawnConfirmationDialog(p);
 				}
+				return;
 			}
-			else
+			Dialog_MessageBox window = Dialog_MessageBox.CreateConfirmation("ConfirmAbandonItemDialog".Translate(t.Label), delegate
 			{
-				Dialog_MessageBox window = Dialog_MessageBox.CreateConfirmation("ConfirmAbandonItemDialog".Translate(t.Label), delegate
+				Pawn ownerOf = CaravanInventoryUtility.GetOwnerOf(caravan, t);
+				if (ownerOf == null)
 				{
-					Pawn ownerOf = CaravanInventoryUtility.GetOwnerOf(caravan, t);
-					if (ownerOf == null)
-					{
-						Log.Error("Could not find owner of " + t);
-					}
-					else
-					{
-						ownerOf.inventory.innerContainer.Remove(t);
-						t.Destroy();
-						caravan.RecacheImmobilizedNow();
-						caravan.RecacheDaysWorthOfFood();
-					}
-				}, destructive: true);
-				Find.WindowStack.Add(window);
-			}
+					Log.Error("Could not find owner of " + t);
+				}
+				else
+				{
+					ownerOf.inventory.innerContainer.Remove(t);
+					t.Destroy();
+					caravan.RecacheImmobilizedNow();
+					caravan.RecacheDaysWorthOfFood();
+				}
+			}, destructive: true);
+			Find.WindowStack.Add(window);
 		}
 
 		public static void TryAbandonOrBanishViaInterface(TransferableImmutable t, Caravan caravan)

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
+using Verse.Sound;
 
 namespace RimWorld
 {
@@ -13,25 +14,42 @@ namespace RimWorld
 
 		private const int RainDisableTicksAfterConditionEnds = 30000;
 
-		public IntVec2 centerLocation;
+		public IntVec2 centerLocation = IntVec2.Invalid;
+
+		public IntRange areaRadiusOverride = IntRange.zero;
+
+		public IntRange initialStrikeDelay = IntRange.zero;
+
+		public bool ambientSound;
 
 		private int areaRadius;
 
 		private int nextLightningTicks;
+
+		private Sustainer soundSustainer;
+
+		public int AreaRadius => areaRadius;
 
 		public override void ExposeData()
 		{
 			base.ExposeData();
 			Scribe_Values.Look(ref centerLocation, "centerLocation");
 			Scribe_Values.Look(ref areaRadius, "areaRadius", 0);
+			Scribe_Values.Look(ref areaRadiusOverride, "areaRadiusOverride");
 			Scribe_Values.Look(ref nextLightningTicks, "nextLightningTicks", 0);
+			Scribe_Values.Look(ref initialStrikeDelay, "initialStrikeDelay");
+			Scribe_Values.Look(ref ambientSound, "ambientSound", defaultValue: false);
 		}
 
 		public override void Init()
 		{
 			base.Init();
-			areaRadius = AreaRadiusRange.RandomInRange;
-			FindGoodCenterLocation();
+			areaRadius = ((areaRadiusOverride == IntRange.zero) ? AreaRadiusRange.RandomInRange : areaRadiusOverride.RandomInRange);
+			nextLightningTicks = Find.TickManager.TicksGame + initialStrikeDelay.RandomInRange;
+			if (centerLocation.IsInvalid)
+			{
+				FindGoodCenterLocation();
+			}
 		}
 
 		public override void GameConditionTick()
@@ -44,6 +62,17 @@ namespace RimWorld
 				{
 					base.SingleMap.weatherManager.eventHandler.AddEvent(new WeatherEvent_LightningStrike(base.SingleMap, intVec));
 					nextLightningTicks = Find.TickManager.TicksGame + TicksBetweenStrikes.RandomInRange;
+				}
+			}
+			if (ambientSound)
+			{
+				if (soundSustainer == null || soundSustainer.Ended)
+				{
+					soundSustainer = SoundDefOf.FlashstormAmbience.TrySpawnSustainer(SoundInfo.InMap(new TargetInfo(centerLocation.ToIntVec3, base.SingleMap), MaintenanceType.PerTick));
+				}
+				else
+				{
+					soundSustainer.Maintain();
 				}
 			}
 		}

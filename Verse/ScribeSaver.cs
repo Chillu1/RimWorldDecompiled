@@ -105,18 +105,16 @@ namespace Verse
 			if (writer == null)
 			{
 				Log.Error("Called WriteElemenet(), but writer is null.");
+				return;
 			}
-			else
+			try
 			{
-				try
-				{
-					writer.WriteElementString(elementName, value);
-				}
-				catch (Exception)
-				{
-					anyInternalException = true;
-					throw;
-				}
+				writer.WriteElementString(elementName, value);
+			}
+			catch (Exception)
+			{
+				anyInternalException = true;
+				throw;
 			}
 		}
 
@@ -125,18 +123,16 @@ namespace Verse
 			if (writer == null)
 			{
 				Log.Error("Called WriteAttribute(), but writer is null.");
+				return;
 			}
-			else
+			try
 			{
-				try
-				{
-					writer.WriteAttributeString(attributeName, value);
-				}
-				catch (Exception)
-				{
-					anyInternalException = true;
-					throw;
-				}
+				writer.WriteAttributeString(attributeName, value);
+			}
+			catch (Exception)
+			{
+				anyInternalException = true;
+				throw;
 			}
 		}
 

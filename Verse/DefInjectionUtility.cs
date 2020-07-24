@@ -30,57 +30,67 @@ namespace Verse
 
 		private static void ForEachPossibleDefInjectionInDefRecursive(object obj, string curNormalizedPath, string curSuggestedPath, HashSet<object> visited, bool translationAllowed, Def def, PossibleDefInjectionTraverser action)
 		{
-			if (obj != null && !visited.Contains(obj))
+			if (obj == null || (!obj.GetType().IsValueType && visited.Contains(obj)))
 			{
-				visited.Add(obj);
-				foreach (FieldInfo item in FieldsInDeterministicOrder(obj.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)))
+				return;
+			}
+			visited.Add(obj);
+			foreach (FieldInfo item in FieldsInDeterministicOrder(obj.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)))
+			{
+				object value = item.GetValue(obj);
+				bool flag = translationAllowed && !item.HasAttribute<NoTranslateAttribute>() && !item.HasAttribute<UnsavedAttribute>();
+				if (value is Def)
 				{
-					object value = item.GetValue(obj);
-					bool flag = translationAllowed && !item.HasAttribute<NoTranslateAttribute>() && !item.HasAttribute<UnsavedAttribute>();
-					if (!(value is Def))
+					continue;
+				}
+				if (typeof(string).IsAssignableFrom(item.FieldType))
+				{
+					string currentValue = (string)value;
+					string text = curNormalizedPath + "." + item.Name;
+					string suggestedPath = curSuggestedPath + "." + item.Name;
+					if (TKeySystem.TrySuggestTKeyPath(text, out string tKeyPath))
 					{
-						if (typeof(string).IsAssignableFrom(item.FieldType))
-						{
-							string currentValue = (string)value;
-							string normalizedPath = curNormalizedPath + "." + item.Name;
-							string suggestedPath = curSuggestedPath + "." + item.Name;
-							action(suggestedPath, normalizedPath, isCollection: false, currentValue, null, flag, fullListTranslationAllowed: false, item, def);
-						}
-						else if (value is IEnumerable<string>)
-						{
-							IEnumerable<string> currentValueCollection = (IEnumerable<string>)value;
-							bool flag2 = item.HasAttribute<TranslationCanChangeCountAttribute>();
-							string normalizedPath2 = curNormalizedPath + "." + item.Name;
-							string suggestedPath2 = curSuggestedPath + "." + item.Name;
-							action(suggestedPath2, normalizedPath2, isCollection: true, null, currentValueCollection, flag, flag && flag2, item, def);
-						}
-						else if (value is IEnumerable)
-						{
-							IEnumerable enumerable = (IEnumerable)value;
-							int num = 0;
-							foreach (object item2 in enumerable)
-							{
-								if (item2 != null && !(item2 is Def) && GenTypes.IsCustomType(item2.GetType()))
-								{
-									string text = TranslationHandleUtility.GetBestHandleWithIndexForListElement(enumerable, item2);
-									if (text.NullOrEmpty())
-									{
-										text = num.ToString();
-									}
-									string curNormalizedPath2 = curNormalizedPath + "." + item.Name + "." + num;
-									string curSuggestedPath2 = curSuggestedPath + "." + item.Name + "." + text;
-									ForEachPossibleDefInjectionInDefRecursive(item2, curNormalizedPath2, curSuggestedPath2, visited, flag, def, action);
-								}
-								num++;
-							}
-						}
-						else if (value != null && GenTypes.IsCustomType(value.GetType()))
-						{
-							string curNormalizedPath3 = curNormalizedPath + "." + item.Name;
-							string curSuggestedPath3 = curSuggestedPath + "." + item.Name;
-							ForEachPossibleDefInjectionInDefRecursive(value, curNormalizedPath3, curSuggestedPath3, visited, flag, def, action);
-						}
+						suggestedPath = tKeyPath;
 					}
+					action(suggestedPath, text, isCollection: false, currentValue, null, flag, fullListTranslationAllowed: false, item, def);
+				}
+				else if (value is IEnumerable<string>)
+				{
+					IEnumerable<string> currentValueCollection = (IEnumerable<string>)value;
+					bool flag2 = item.HasAttribute<TranslationCanChangeCountAttribute>();
+					string text2 = curNormalizedPath + "." + item.Name;
+					string suggestedPath2 = curSuggestedPath + "." + item.Name;
+					if (TKeySystem.TrySuggestTKeyPath(text2, out string tKeyPath2))
+					{
+						suggestedPath2 = tKeyPath2;
+					}
+					action(suggestedPath2, text2, isCollection: true, null, currentValueCollection, flag, flag && flag2, item, def);
+				}
+				else if (value is IEnumerable)
+				{
+					IEnumerable enumerable = (IEnumerable)value;
+					int num = 0;
+					foreach (object item2 in enumerable)
+					{
+						if (item2 != null && !(item2 is Def) && GenTypes.IsCustomType(item2.GetType()))
+						{
+							string text3 = TranslationHandleUtility.GetBestHandleWithIndexForListElement(enumerable, item2);
+							if (text3.NullOrEmpty())
+							{
+								text3 = num.ToString();
+							}
+							string curNormalizedPath2 = curNormalizedPath + "." + item.Name + "." + num;
+							string curSuggestedPath2 = curSuggestedPath + "." + item.Name + "." + text3;
+							ForEachPossibleDefInjectionInDefRecursive(item2, curNormalizedPath2, curSuggestedPath2, visited, flag, def, action);
+						}
+						num++;
+					}
+				}
+				else if (value != null && GenTypes.IsCustomType(value.GetType()))
+				{
+					string curNormalizedPath3 = curNormalizedPath + "." + item.Name;
+					string curSuggestedPath3 = curSuggestedPath + "." + item.Name;
+					ForEachPossibleDefInjectionInDefRecursive(value, curNormalizedPath3, curSuggestedPath3, visited, flag, def, action);
 				}
 			}
 		}

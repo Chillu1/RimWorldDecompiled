@@ -5,7 +5,7 @@ using Verse;
 
 namespace RimWorld
 {
-	public abstract class QuestPart : IExposable
+	public abstract class QuestPart : IExposable, ILoadReferenceable
 	{
 		public enum SignalListenMode
 		{
@@ -67,6 +67,8 @@ namespace RimWorld
 
 		public virtual bool RequiresAccepter => false;
 
+		public virtual bool PreventsAutoAccept => RequiresAccepter;
+
 		public virtual bool QuestPartReserves(Pawn p)
 		{
 			return false;
@@ -77,6 +79,10 @@ namespace RimWorld
 		}
 
 		public virtual void AssignDebugData()
+		{
+		}
+
+		public virtual void PreQuestAccept()
 		{
 		}
 
@@ -102,6 +108,14 @@ namespace RimWorld
 		{
 		}
 
+		public virtual void Notify_PreCleanup()
+		{
+		}
+
+		public virtual void PostQuestAdded()
+		{
+		}
+
 		public virtual void ReplacePawnReferences(Pawn replace, Pawn with)
 		{
 		}
@@ -118,6 +132,11 @@ namespace RimWorld
 				str = str + ", debugLabel=" + debugLabel;
 			}
 			return str + ")";
+		}
+
+		public string GetUniqueLoadID()
+		{
+			return "QuestPart_" + quest.id + "_" + Index;
 		}
 	}
 }

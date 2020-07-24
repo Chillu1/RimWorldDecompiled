@@ -12,11 +12,13 @@ namespace RimWorld
 
 		public MapParent mapParent;
 
+		public int threatStartTicks;
+
 		public IEnumerable<FiringIncident> MakeIntervalIncidents()
 		{
 			if (mapParent != null && mapParent.HasMap)
 			{
-				return ThreatsGenerator.MakeIntervalIncidents(parms, mapParent.Map, base.EnableTick);
+				return ThreatsGenerator.MakeIntervalIncidents(parms, mapParent.Map, base.EnableTick + threatStartTicks);
 			}
 			return Enumerable.Empty<FiringIncident>();
 		}
@@ -39,6 +41,7 @@ namespace RimWorld
 			base.ExposeData();
 			Scribe_Deep.Look(ref parms, "parms");
 			Scribe_References.Look(ref mapParent, "mapParent");
+			Scribe_Values.Look(ref threatStartTicks, "threatStartTicks", 0);
 		}
 	}
 }

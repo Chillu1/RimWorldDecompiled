@@ -38,8 +38,6 @@ namespace Verse
 
 		public int temp_partIndexToSetLater = -1;
 
-		public int lastPsychicAmplifierLevelBurnTick = -1;
-
 		[Unsaved(false)]
 		public Pawn pawn;
 
@@ -47,7 +45,7 @@ namespace Verse
 
 		public string LabelBaseCap => LabelBase.CapitalizeFirst(def);
 
-		public string Label
+		public virtual string Label
 		{
 			get
 			{
@@ -230,7 +228,7 @@ namespace Verse
 				bool flag2 = this is Hediff_Injury && value > severityInt && Mathf.RoundToInt(value) != Mathf.RoundToInt(severityInt);
 				int curStageIndex = CurStageIndex;
 				severityInt = Mathf.Clamp(value, def.minSeverity, def.maxSeverity);
-				if (((CurStageIndex != curStageIndex) | flag | flag2) && pawn.health.hediffSet.hediffs.Contains(this))
+				if ((CurStageIndex != curStageIndex || flag || flag2) && pawn.health.hediffSet.hediffs.Contains(this))
 				{
 					pawn.health.Notify_HediffChanged(this);
 					if (!pawn.Dead && pawn.needs.mood != null)
@@ -300,7 +298,6 @@ namespace Verse
 			Scribe_Values.Look(ref visible, "visible", defaultValue: false);
 			Scribe_References.Look(ref combatLogEntry, "combatLogEntry");
 			Scribe_Values.Look(ref combatLogText, "combatLogText");
-			Scribe_Values.Look(ref lastPsychicAmplifierLevelBurnTick, "lastPsychicAmplifierLevelBurnTick", 0);
 			BackCompatibility.PostExposeData(this);
 		}
 

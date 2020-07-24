@@ -17,6 +17,8 @@ namespace RimWorld.QuestGen
 
 		public SlateRef<int> amount;
 
+		public SlateRef<bool> isSingleReward;
+
 		protected override bool TestRunInt(Slate slate)
 		{
 			return true;
@@ -32,6 +34,20 @@ namespace RimWorld.QuestGen
 			questPart_GiveRoyalFavor.amount = amount.GetValue(slate);
 			questPart_GiveRoyalFavor.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
 			QuestGen.quest.AddPart(questPart_GiveRoyalFavor);
+			if (isSingleReward.GetValue(slate))
+			{
+				QuestPart_Choice questPart_Choice = new QuestPart_Choice();
+				questPart_Choice.inSignalChoiceUsed = questPart_GiveRoyalFavor.inSignal;
+				QuestPart_Choice.Choice choice = new QuestPart_Choice.Choice();
+				choice.questParts.Add(questPart_GiveRoyalFavor);
+				choice.rewards.Add(new Reward_RoyalFavor
+				{
+					faction = questPart_GiveRoyalFavor.faction,
+					amount = questPart_GiveRoyalFavor.amount
+				});
+				questPart_Choice.choices.Add(choice);
+				QuestGen.quest.AddPart(questPart_Choice);
+			}
 		}
 	}
 }

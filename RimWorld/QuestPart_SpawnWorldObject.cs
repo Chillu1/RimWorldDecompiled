@@ -29,50 +29,6 @@ namespace RimWorld
 			}
 		}
 
-		public override IEnumerable<Dialog_InfoCard.Hyperlink> Hyperlinks
-		{
-			get
-			{
-				foreach (Dialog_InfoCard.Hyperlink hyperlink in base.Hyperlinks)
-				{
-					yield return hyperlink;
-				}
-				if (worldObject != null)
-				{
-					ItemStashContentsComp component = worldObject.GetComponent<ItemStashContentsComp>();
-					if (component != null)
-					{
-						foreach (Thing item in (IEnumerable<Thing>)component.contents)
-						{
-							ThingDef def = item.GetInnerIfMinified().def;
-							if (defsToExcludeFromHyperlinks.NullOrEmpty() || !defsToExcludeFromHyperlinks.Contains(def))
-							{
-								yield return new Dialog_InfoCard.Hyperlink(def);
-							}
-						}
-					}
-				}
-				Site site;
-				if ((site = (worldObject as Site)) != null)
-				{
-					foreach (SitePart part in site.parts)
-					{
-						if (part.things != null)
-						{
-							foreach (Thing item2 in (IEnumerable<Thing>)part.things)
-							{
-								ThingDef def2 = item2.GetInnerIfMinified().def;
-								if (defsToExcludeFromHyperlinks.NullOrEmpty() || !defsToExcludeFromHyperlinks.Contains(def2))
-								{
-									yield return new Dialog_InfoCard.Hyperlink(def2);
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-
 		public override bool IncreasesPopulation
 		{
 			get
@@ -110,6 +66,31 @@ namespace RimWorld
 				worldObject.Tile = tile;
 				Find.WorldObjects.Add(worldObject);
 				spawned = true;
+			}
+		}
+
+		public override void PostQuestAdded()
+		{
+			base.PostQuestAdded();
+			Site site;
+			if ((site = (worldObject as Site)) == null)
+			{
+				return;
+			}
+			for (int i = 0; i < site.parts.Count; i++)
+			{
+				if (site.parts[i].things == null)
+				{
+					continue;
+				}
+				for (int j = 0; j < site.parts[i].things.Count; j++)
+				{
+					if (site.parts[i].things[j].def == ThingDefOf.PsychicAmplifier)
+					{
+						Find.History.Notify_PsylinkAvailable();
+						return;
+					}
+				}
 			}
 		}
 

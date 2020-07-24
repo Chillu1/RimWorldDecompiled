@@ -95,7 +95,7 @@ namespace Verse
 		{
 			bool num = (lineA - center).sqrMagnitude <= radius * radius;
 			bool flag = (lineB - center).sqrMagnitude <= radius * radius;
-			if (num & flag)
+			if (num && flag)
 			{
 				return false;
 			}

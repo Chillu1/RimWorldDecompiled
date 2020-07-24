@@ -120,20 +120,23 @@ namespace RimWorld
 				switch (delayedActions[i].type)
 				{
 				case DelayedActionType.RegisterTransmitter:
-					if (delayedAction.position == delayedAction.compPower.parent.Position)
+				{
+					if (!(delayedAction.position == delayedAction.compPower.parent.Position))
 					{
-						ThingWithComps parent = delayedAction.compPower.parent;
-						if (map.powerNetGrid.TransmittedPowerNetAt(parent.Position) != null)
-						{
-							Log.Warning("Tried to register trasmitter " + parent + " at " + parent.Position + ", but there is already a power net here. There can't be two transmitters on the same cell.");
-						}
-						delayedAction.compPower.SetUpPowerVars();
-						foreach (IntVec3 item in GenAdj.CellsAdjacentCardinal(parent))
-						{
-							TryDestroyNetAt(item);
-						}
+						break;
+					}
+					ThingWithComps parent = delayedAction.compPower.parent;
+					if (map.powerNetGrid.TransmittedPowerNetAt(parent.Position) != null)
+					{
+						Log.Warning(string.Concat("Tried to register trasmitter ", parent, " at ", parent.Position, ", but there is already a power net here. There can't be two transmitters on the same cell."));
+					}
+					delayedAction.compPower.SetUpPowerVars();
+					foreach (IntVec3 item in GenAdj.CellsAdjacentCardinal(parent))
+					{
+						TryDestroyNetAt(item);
 					}
 					break;
+				}
 				case DelayedActionType.DeregisterTransmitter:
 					TryDestroyNetAt(delayedAction.position);
 					PowerConnectionMaker.DisconnectAllFromTransmitterAndSetWantConnect(delayedAction.compPower, map);
@@ -144,13 +147,14 @@ namespace RimWorld
 			for (int j = 0; j < count; j++)
 			{
 				DelayedAction delayedAction2 = delayedActions[j];
-				if ((delayedAction2.type == DelayedActionType.RegisterTransmitter && delayedAction2.position == delayedAction2.compPower.parent.Position) || delayedAction2.type == DelayedActionType.DeregisterTransmitter)
+				if ((delayedAction2.type != 0 || !(delayedAction2.position == delayedAction2.compPower.parent.Position)) && delayedAction2.type != DelayedActionType.DeregisterTransmitter)
 				{
-					TryCreateNetAt(delayedAction2.position);
-					foreach (IntVec3 item2 in GenAdj.CellsAdjacentCardinal(delayedAction2.position, delayedAction2.rotation, delayedAction2.compPower.parent.def.size))
-					{
-						TryCreateNetAt(item2);
-					}
+					continue;
+				}
+				TryCreateNetAt(delayedAction2.position);
+				foreach (IntVec3 item2 in GenAdj.CellsAdjacentCardinal(delayedAction2.position, delayedAction2.rotation, delayedAction2.compPower.parent.def.size))
+				{
+					TryCreateNetAt(item2);
 				}
 			}
 			for (int k = 0; k < count; k++)
@@ -229,20 +233,21 @@ namespace RimWorld
 
 		private void DrawDebugPowerNets()
 		{
-			if (Current.ProgramState == ProgramState.Playing && Find.CurrentMap == map)
+			if (Current.ProgramState != ProgramState.Playing || Find.CurrentMap != map)
 			{
-				int num = 0;
-				foreach (PowerNet allNet in allNets)
+				return;
+			}
+			int num = 0;
+			foreach (PowerNet allNet in allNets)
+			{
+				foreach (CompPower item in allNet.transmitters.Concat(allNet.connectors))
 				{
-					foreach (CompPower item in allNet.transmitters.Concat(allNet.connectors))
+					foreach (IntVec3 item2 in GenAdj.CellsOccupiedBy(item.parent))
 					{
-						foreach (IntVec3 item2 in GenAdj.CellsOccupiedBy(item.parent))
-						{
-							CellRenderer.RenderCell(item2, (float)num * 0.44f);
-						}
+						CellRenderer.RenderCell(item2, (float)num * 0.44f);
 					}
-					num++;
 				}
+				num++;
 			}
 		}
 	}

@@ -75,7 +75,7 @@ namespace RimWorld
 					{
 						Messages.Message("ShuttleBlocked".Translate("BlockedBy".Translate(firstBlockingThing).CapitalizeFirst()), firstBlockingThing, MessageTypeDefOf.NeutralEvent);
 					}
-					result = DropCellFinder.TryFindSafeLandingSpotCloseToColony(mapParent.Map, thing.def.Size);
+					result = DropCellFinder.TryFindSafeLandingSpotCloseToColony(mapParent.Map, thing.def.Size, factionForFindingSpot);
 				}
 				if (!result.IsValid && (!lookForSafeSpot || !DropCellFinder.FindSafeLandingSpot(out result, factionForFindingSpot, mapParent.Map, 35, 15, 25, thing.def.size)))
 				{

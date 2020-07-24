@@ -15,7 +15,7 @@ namespace Verse.AI
 			{
 				if (!dest.HasThing)
 				{
-					Log.Error("Pathed to cell " + dest + " with PathEndMode.InteractionCell.");
+					Log.Error(string.Concat("Pathed to cell ", dest, " with PathEndMode.InteractionCell."));
 				}
 				peMode = PathEndMode.OnCell;
 				return new TargetInfo(dest.Thing.InteractionCell, dest.Thing.Map);

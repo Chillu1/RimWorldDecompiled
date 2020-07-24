@@ -69,85 +69,88 @@ namespace Verse
 			thickRoofCoverage = 0f;
 			noRoofCoverage = 0f;
 			equalizeCells.Clear();
-			if (roomGroup.RoomCount != 0)
+			if (roomGroup.RoomCount == 0)
 			{
-				Map map = Map;
-				if (!roomGroup.UsesOutdoorTemperature)
+				return;
+			}
+			Map map = Map;
+			if (roomGroup.UsesOutdoorTemperature)
+			{
+				return;
+			}
+			int num = 0;
+			foreach (IntVec3 cell in roomGroup.Cells)
+			{
+				RoofDef roof = cell.GetRoof(map);
+				if (roof == null)
 				{
-					int num = 0;
-					foreach (IntVec3 cell in roomGroup.Cells)
+					noRoofCoverage += 1f;
+				}
+				else if (roof.isThickRoof)
+				{
+					thickRoofCoverage += 1f;
+				}
+				num++;
+			}
+			thickRoofCoverage /= num;
+			noRoofCoverage /= num;
+			foreach (IntVec3 cell2 in roomGroup.Cells)
+			{
+				for (int i = 0; i < 4; i++)
+				{
+					IntVec3 intVec = cell2 + GenAdj.CardinalDirections[i];
+					IntVec3 intVec2 = cell2 + GenAdj.CardinalDirections[i] * 2;
+					if (intVec.InBounds(map))
 					{
-						RoofDef roof = cell.GetRoof(map);
-						if (roof == null)
+						Region region = intVec.GetRegion(map);
+						if (region != null)
 						{
-							noRoofCoverage += 1f;
-						}
-						else if (roof.isThickRoof)
-						{
-							thickRoofCoverage += 1f;
-						}
-						num++;
-					}
-					thickRoofCoverage /= num;
-					noRoofCoverage /= num;
-					foreach (IntVec3 cell2 in roomGroup.Cells)
-					{
-						for (int i = 0; i < 4; i++)
-						{
-							IntVec3 intVec = cell2 + GenAdj.CardinalDirections[i];
-							IntVec3 intVec2 = cell2 + GenAdj.CardinalDirections[i] * 2;
-							if (intVec.InBounds(map))
+							if (region.type != RegionType.Portal)
 							{
-								Region region = intVec.GetRegion(map);
-								if (region != null)
+								continue;
+							}
+							bool flag = false;
+							for (int j = 0; j < region.links.Count; j++)
+							{
+								Region regionA = region.links[j].RegionA;
+								Region regionB = region.links[j].RegionB;
+								if (regionA.Room.Group != roomGroup && !regionA.IsDoorway)
 								{
-									if (region.type != RegionType.Portal)
-									{
-										continue;
-									}
-									bool flag = false;
-									for (int j = 0; j < region.links.Count; j++)
-									{
-										Region regionA = region.links[j].RegionA;
-										Region regionB = region.links[j].RegionB;
-										if (regionA.Room.Group != roomGroup && !regionA.IsDoorway)
-										{
-											flag = true;
-											break;
-										}
-										if (regionB.Room.Group != roomGroup && !regionB.IsDoorway)
-										{
-											flag = true;
-											break;
-										}
-									}
-									if (flag)
-									{
-										continue;
-									}
+									flag = true;
+									break;
+								}
+								if (regionB.Room.Group != roomGroup && !regionB.IsDoorway)
+								{
+									flag = true;
+									break;
 								}
 							}
-							if (intVec2.InBounds(map) && intVec2.GetRoomGroup(map) != roomGroup)
+							if (flag)
 							{
-								bool flag2 = false;
-								for (int k = 0; k < 4; k++)
-								{
-									if ((intVec2 + GenAdj.CardinalDirections[k]).GetRoomGroup(map) == roomGroup)
-									{
-										flag2 = true;
-										break;
-									}
-								}
-								if (!flag2)
-								{
-									equalizeCells.Add(intVec2);
-								}
+								continue;
 							}
 						}
 					}
-					equalizeCells.Shuffle();
+					if (!intVec2.InBounds(map) || intVec2.GetRoomGroup(map) == roomGroup)
+					{
+						continue;
+					}
+					bool flag2 = false;
+					for (int k = 0; k < 4; k++)
+					{
+						if ((intVec2 + GenAdj.CardinalDirections[k]).GetRoomGroup(map) == roomGroup)
+						{
+							flag2 = true;
+							break;
+						}
+					}
+					if (!flag2)
+					{
+						equalizeCells.Add(intVec2);
+					}
 				}
 			}
+			equalizeCells.Shuffle();
 		}
 
 		public void EqualizeTemperature()

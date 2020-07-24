@@ -13,7 +13,7 @@ namespace RimWorld
 			}
 			bool flag = StatPart_WorkTableOutdoors.Applies(thingDef, map, loc);
 			bool flag2 = StatPart_WorkTableTemperature.Applies(thingDef, map, loc);
-			if (!(flag | flag2))
+			if (!(flag || flag2))
 			{
 				return;
 			}
@@ -31,7 +31,7 @@ namespace RimWorld
 				}
 				text += "BadTemperature".Translate();
 			}
-			Messages.Message(str + text.CapitalizeFirst() + ".", new TargetInfo(loc, map), MessageTypeDefOf.CautionInput, historical: false);
+			Messages.Message(string.Concat(str + text.CapitalizeFirst(), "."), new TargetInfo(loc, map), MessageTypeDefOf.CautionInput, historical: false);
 		}
 	}
 }

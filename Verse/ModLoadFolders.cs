@@ -31,44 +31,46 @@ namespace Verse
 		{
 			foreach (XmlNode childNode in xmlRoot.ChildNodes)
 			{
-				if (!(childNode is XmlComment))
+				if (childNode is XmlComment)
 				{
-					string text = childNode.Name.ToLower();
-					if (text.StartsWith("v"))
+					continue;
+				}
+				string text = childNode.Name.ToLower();
+				if (text.StartsWith("v"))
+				{
+					text = text.Substring(1);
+				}
+				if (!foldersForVersion.ContainsKey(text))
+				{
+					foldersForVersion.Add(text, new List<LoadFolder>());
+				}
+				foreach (XmlNode childNode2 in childNode.ChildNodes)
+				{
+					if (childNode2 is XmlComment)
 					{
-						text = text.Substring(1);
+						continue;
 					}
-					if (!foldersForVersion.ContainsKey(text))
+					XmlAttribute xmlAttribute = childNode2.Attributes?["IfModActive"];
+					List<string> requiredPackageIds = null;
+					if (xmlAttribute != null)
 					{
-						foldersForVersion.Add(text, new List<LoadFolder>());
+						requiredPackageIds = (from s in xmlAttribute.Value.Split(',')
+							select s.Trim()).ToList();
 					}
-					foreach (XmlNode childNode2 in childNode.ChildNodes)
+					XmlAttribute xmlAttribute2 = childNode2.Attributes?["IfModNotActive"];
+					List<string> disallowedPackageIds = null;
+					if (xmlAttribute2 != null)
 					{
-						if (!(childNode2 is XmlComment))
-						{
-							XmlAttribute xmlAttribute = childNode2.Attributes?["IfModActive"];
-							List<string> requiredPackageIds = null;
-							if (xmlAttribute != null)
-							{
-								requiredPackageIds = (from s in xmlAttribute.Value.Split(',')
-									select s.Trim()).ToList();
-							}
-							XmlAttribute xmlAttribute2 = childNode2.Attributes?["IfModNotActive"];
-							List<string> disallowedPackageIds = null;
-							if (xmlAttribute2 != null)
-							{
-								disallowedPackageIds = (from s in xmlAttribute2.Value.Split(',')
-									select s.Trim()).ToList();
-							}
-							if (childNode2.InnerText == "/" || childNode2.InnerText == "\\")
-							{
-								foldersForVersion[text].Add(new LoadFolder("", requiredPackageIds, disallowedPackageIds));
-							}
-							else
-							{
-								foldersForVersion[text].Add(new LoadFolder(childNode2.InnerText, requiredPackageIds, disallowedPackageIds));
-							}
-						}
+						disallowedPackageIds = (from s in xmlAttribute2.Value.Split(',')
+							select s.Trim()).ToList();
+					}
+					if (childNode2.InnerText == "/" || childNode2.InnerText == "\\")
+					{
+						foldersForVersion[text].Add(new LoadFolder("", requiredPackageIds, disallowedPackageIds));
+					}
+					else
+					{
+						foldersForVersion[text].Add(new LoadFolder(childNode2.InnerText, requiredPackageIds, disallowedPackageIds));
 					}
 				}
 			}

@@ -209,7 +209,7 @@ namespace RimWorld
 			Thing thing = obj as Thing;
 			if (thing == null && !(obj is Zone))
 			{
-				Log.Error("Tried to select " + obj + " which is neither a Thing nor a Zone.");
+				Log.Error(string.Concat("Tried to select ", obj, " which is neither a Thing nor a Zone."));
 				return;
 			}
 			if (thing != null && thing.Destroyed)
@@ -343,17 +343,18 @@ namespace RimWorld
 				return;
 			}
 			Predicate<Thing> arg4 = (Thing t) => t.def.category == ThingCategory.Pawn;
-			if (!func(arg4) && !func((Thing t) => t.def.selectable))
+			if (func(arg4) || func((Thing t) => t.def.selectable))
 			{
-				foreach (Zone item2 in ThingSelectionUtility.MultiSelectableZonesInScreenRectDistinct(dragBox.ScreenRect).ToList())
-				{
-					selectedSomething = true;
-					Select(item2);
-				}
-				if (!selectedSomething)
-				{
-					SelectUnderMouse();
-				}
+				return;
+			}
+			foreach (Zone item2 in ThingSelectionUtility.MultiSelectableZonesInScreenRectDistinct(dragBox.ScreenRect).ToList())
+			{
+				selectedSomething = true;
+				Select(item2);
+			}
+			if (!selectedSomething)
+			{
+				SelectUnderMouse();
 			}
 		}
 
@@ -476,15 +477,13 @@ namespace RimWorld
 						}
 						ClearSelection();
 						Select(list[num]);
+						return;
 					}
-					else
+					foreach (object item in list)
 					{
-						foreach (object item in list)
+						if (selected.Contains(item))
 						{
-							if (selected.Contains(item))
-							{
-								Deselect(item);
-							}
+							Deselect(item);
 						}
 					}
 				}
@@ -532,47 +531,46 @@ namespace RimWorld
 			Rect rect = new Rect(0f, 0f, UI.screenWidth, UI.screenHeight);
 			if (clickedThing == null)
 			{
-				if (list.FirstOrDefault((object o) => o is Zone && ((Zone)o).IsMultiselectable) != null)
+				if (list.FirstOrDefault((object o) => o is Zone && ((Zone)o).IsMultiselectable) == null)
 				{
-					foreach (Zone item in ThingSelectionUtility.MultiSelectableZonesInScreenRectDistinct(rect))
+					return;
+				}
+				foreach (Zone item in ThingSelectionUtility.MultiSelectableZonesInScreenRectDistinct(rect))
+				{
+					if (!IsSelected(item))
 					{
-						if (!IsSelected(item))
-						{
-							Select(item);
-						}
+						Select(item);
 					}
 				}
+				return;
 			}
-			else
+			IEnumerable<Thing> enumerable = ThingSelectionUtility.MultiSelectableThingsInScreenRectDistinct(rect);
+			Predicate<Thing> predicate = delegate(Thing t)
 			{
-				IEnumerable<Thing> enumerable = ThingSelectionUtility.MultiSelectableThingsInScreenRectDistinct(rect);
-				Predicate<Thing> predicate = delegate(Thing t)
+				if (t.def != clickedThing.GetInnerIfMinified().def || t.Faction != clickedThing.Faction || IsSelected(t))
 				{
-					if (t.def != clickedThing.GetInnerIfMinified().def || t.Faction != clickedThing.Faction || IsSelected(t))
+					return false;
+				}
+				Pawn pawn = clickedThing as Pawn;
+				if (pawn != null)
+				{
+					Pawn pawn2 = t as Pawn;
+					if (pawn2.RaceProps != pawn.RaceProps)
 					{
 						return false;
 					}
-					Pawn pawn = clickedThing as Pawn;
-					if (pawn != null)
+					if (pawn2.HostFaction != pawn.HostFaction)
 					{
-						Pawn pawn2 = t as Pawn;
-						if (pawn2.RaceProps != pawn.RaceProps)
-						{
-							return false;
-						}
-						if (pawn2.HostFaction != pawn.HostFaction)
-						{
-							return false;
-						}
+						return false;
 					}
-					return true;
-				};
-				foreach (Thing item2 in (IEnumerable)enumerable)
+				}
+				return true;
+			};
+			foreach (Thing item2 in (IEnumerable)enumerable)
+			{
+				if (predicate(item2.GetInnerIfMinified()))
 				{
-					if (predicate(item2.GetInnerIfMinified()))
-					{
-						Select(item2);
-					}
+					Select(item2);
 				}
 			}
 		}

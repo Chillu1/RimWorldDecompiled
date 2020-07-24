@@ -17,6 +17,8 @@ namespace RimWorld
 
 		public float listOrder;
 
+		public bool neverDisabledBasedOnWorkTypes;
+
 		public override void PostLoad()
 		{
 			if (label == null)
@@ -30,6 +32,10 @@ namespace RimWorld
 			if ((combinedDisabledWorkTags & disablingWorkTags) != 0)
 			{
 				return true;
+			}
+			if (neverDisabledBasedOnWorkTypes)
+			{
+				return false;
 			}
 			List<WorkTypeDef> allDefsListForReading = DefDatabase<WorkTypeDef>.AllDefsListForReading;
 			bool flag = false;

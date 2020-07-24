@@ -68,7 +68,7 @@ namespace Verse
 					}
 					catch (Exception ex)
 					{
-						Log.ErrorOnce("Exception filling tab " + GetType() + ": " + ex, 49827);
+						Log.ErrorOnce(string.Concat("Exception filling tab ", GetType(), ": ", ex), 49827);
 					}
 				}
 			});

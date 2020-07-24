@@ -35,6 +35,7 @@ namespace RimWorld.Planet
 			}
 			part.things = new ThingOwner<Thing>(part, oneStackOnly: false);
 			part.things.TryAddRangeOrTransfer(list, canMergeWithExistingStacks: false);
+			slate.Set("generatedItemStashThings", list);
 			outExtraDescriptionRules.Add(new Rule_String("itemStashContents", GenLabel.ThingsLabel(list)));
 			outExtraDescriptionRules.Add(new Rule_String("itemStashContentsValue", GenThing.GetMarketValue(list).ToStringMoney()));
 		}

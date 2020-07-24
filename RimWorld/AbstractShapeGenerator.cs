@@ -9,9 +9,9 @@ namespace RimWorld
 	{
 		private const int MaxIterations = 500;
 
-		private const float MinTruesPct = 0.25f;
+		private const float MinTruesPct = 0.6f;
 
-		private const float MaxTruesPct = 0.8f;
+		private const float MaxTruesPct = 0.85f;
 
 		private const float MinTruesPct_PreferOutlines = 0.24f;
 
@@ -258,8 +258,8 @@ namespace RimWorld
 					num2 = 1f - Mathf.Clamp01(num4 / (float)(grid.GetLength(0) * grid.GetLength(1)));
 				}
 				int num5 = grid.GetLength(0) * grid.GetLength(1);
-				int num6 = Mathf.FloorToInt((float)num5 * (preferOutlines ? 0.24f : 0.25f) * num2);
-				int num7 = Mathf.CeilToInt((float)num5 * (preferOutlines ? 0.53f : 0.8f) * num2);
+				int num6 = Mathf.FloorToInt((float)num5 * (preferOutlines ? 0.24f : 0.6f) * num2);
+				int num7 = Mathf.CeilToInt((float)num5 * (preferOutlines ? 0.53f : 0.85f) * num2);
 				if (num < num6 || num > num7)
 				{
 					return false;

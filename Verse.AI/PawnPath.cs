@@ -97,7 +97,7 @@ namespace Verse.AI
 			{
 				return "PawnPath(not in use)";
 			}
-			return "PawnPath(nodeCount= " + nodes.Count + ((nodes.Count > 0) ? (" first=" + FirstNode + " last=" + LastNode) : "") + " cost=" + totalCostInt + " )";
+			return "PawnPath(nodeCount= " + nodes.Count + ((nodes.Count > 0) ? string.Concat(" first=", FirstNode, " last=", LastNode) : "") + " cost=" + totalCostInt + " )";
 		}
 
 		public void DrawPath(Pawn pathingPawn)

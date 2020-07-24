@@ -85,7 +85,7 @@ namespace Verse
 			}
 			catch (Exception ex)
 			{
-				Log.Error("Exception getting " + graphicClass + " at " + path + ": " + ex.ToString());
+				Log.Error(string.Concat("Exception getting ", graphicClass, " at ", path, ": ", ex.ToString()));
 			}
 			return BaseContent.BadGraphic;
 		}

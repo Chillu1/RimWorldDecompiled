@@ -26,7 +26,7 @@ namespace Verse
 				}
 				catch (Exception ex)
 				{
-					Log.Error("Exception parsing node " + subNode.OuterXml + " into a " + typeof(T) + ":\n" + ex.ToString());
+					Log.Error(string.Concat("Exception parsing node ", subNode.OuterXml, " into a ", typeof(T), ":\n", ex.ToString()));
 				}
 				return default(T);
 			}
@@ -45,15 +45,15 @@ namespace Verse
 			}
 			string text = BackCompatibility.BackCompatibleDefName(typeof(T), subNode.InnerText, forDefInjections: false, subNode);
 			T namedSilentFail = DefDatabase<T>.GetNamedSilentFail(text);
-			if (namedSilentFail == null)
+			if (namedSilentFail == null && !BackCompatibility.WasDefRemoved(subNode.InnerText, typeof(T)))
 			{
 				if (text == subNode.InnerText)
 				{
-					Log.Error("Could not load reference to " + typeof(T) + " named " + subNode.InnerText);
+					Log.Error(string.Concat("Could not load reference to ", typeof(T), " named ", subNode.InnerText));
 				}
 				else
 				{
-					Log.Error("Could not load reference to " + typeof(T) + " named " + subNode.InnerText + " after compatibility-conversion to " + text);
+					Log.Error(string.Concat("Could not load reference to ", typeof(T), " named ", subNode.InnerText, " after compatibility-conversion to ", text));
 				}
 				BackCompatibility.PostCouldntLoadDef(subNode.InnerText);
 			}
@@ -89,7 +89,7 @@ namespace Verse
 				if (type == null)
 				{
 					Type bestFallbackType = GetBestFallbackType<T>(subNode);
-					Log.Error("Could not find class " + text + " while resolving node " + subNode.Name + ". Trying to use " + bestFallbackType + " instead. Full node: " + subNode.OuterXml);
+					Log.Error(string.Concat("Could not find class ", text, " while resolving node ", subNode.Name, ". Trying to use ", bestFallbackType, " instead. Full node: ", subNode.OuterXml));
 					type = bestFallbackType;
 				}
 				if (type.IsAbstract)
@@ -127,7 +127,7 @@ namespace Verse
 			catch (Exception ex)
 			{
 				T result = default(T);
-				Log.Error("SaveableFromNode exception: " + ex + "\nSubnode:\n" + subNode.OuterXml);
+				Log.Error(string.Concat("SaveableFromNode exception: ", ex, "\nSubnode:\n", subNode.OuterXml));
 				return result;
 			}
 		}

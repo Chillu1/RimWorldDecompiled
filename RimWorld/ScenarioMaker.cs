@@ -97,12 +97,13 @@ namespace RimWorld
 
 		private static IEnumerable<ScenPart> RandomScenPartsOfCategory(Scenario scen, ScenPartCategory cat, int count)
 		{
+			ScenPartCategory cat2 = cat;
 			if (count <= 0)
 			{
 				yield break;
 			}
 			IEnumerable<ScenPartDef> allowedParts = from d in AddableParts(scen)
-				where d.category == cat
+				where d.category == cat2
 				select d;
 			int numYielded = 0;
 			int numTries = 0;
@@ -121,7 +122,7 @@ namespace RimWorld
 				numTries++;
 			}
 			while (numTries <= 100);
-			Log.Error("Could not add ScenPart of category " + cat + " to scenario " + scen + " after 50 tries.");
+			Log.Error(string.Concat("Could not add ScenPart of category ", cat2, " to scenario ", scen, " after 50 tries."));
 		}
 
 		public static IEnumerable<ScenPartDef> AddableParts(Scenario scen)

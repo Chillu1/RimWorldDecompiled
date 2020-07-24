@@ -57,7 +57,7 @@ namespace RimWorld
 
 		public override void DrawGUIOverlay()
 		{
-			if (Props.drawAssignmentOverlay && Find.CameraDriver.CurrentZoom == CameraZoomRange.Closest && PlayerCanSeeAssignments)
+			if (Props.drawAssignmentOverlay && (Props.drawUnownedAssignmentOverlay || assignedPawns.Any()) && Find.CameraDriver.CurrentZoom == CameraZoomRange.Closest && PlayerCanSeeAssignments)
 			{
 				Color defaultThingLabelColor = GenMapUI.DefaultThingLabelColor;
 				if (!assignedPawns.Any())
@@ -123,6 +123,38 @@ namespace RimWorld
 		public virtual bool AssignedAnything(Pawn pawn)
 		{
 			return assignedPawns.Contains(pawn);
+		}
+
+		protected virtual bool ShouldShowAssignmentGizmo()
+		{
+			return parent.Faction == Faction.OfPlayer;
+		}
+
+		protected virtual string GetAssignmentGizmoLabel()
+		{
+			return "CommandThingSetOwnerLabel".Translate();
+		}
+
+		protected virtual string GetAssignmentGizmoDesc()
+		{
+			return "CommandThroneSetOwnerDesc".Translate();
+		}
+
+		public override IEnumerable<Gizmo> CompGetGizmosExtra()
+		{
+			if (ShouldShowAssignmentGizmo())
+			{
+				Command_Action command_Action = new Command_Action();
+				command_Action.defaultLabel = GetAssignmentGizmoLabel();
+				command_Action.icon = ContentFinder<Texture2D>.Get("UI/Commands/AssignOwner");
+				command_Action.defaultDesc = GetAssignmentGizmoDesc();
+				command_Action.action = delegate
+				{
+					Find.WindowStack.Add(new Dialog_AssignBuildingOwner(this));
+				};
+				command_Action.hotKey = KeyBindingDefOf.Misc3;
+				yield return command_Action;
+			}
 		}
 
 		public override void PostExposeData()

@@ -87,7 +87,7 @@ namespace RimWorld.Planet
 
 		public override string ToString()
 		{
-			return GetType().Name + "(parent=" + parent + " at=" + ((parent != null) ? parent.Tile : (-1)) + ")";
+			return string.Concat(GetType().Name, "(parent=", parent, " at=", (parent != null) ? parent.Tile : (-1), ")");
 		}
 	}
 }

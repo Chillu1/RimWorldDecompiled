@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -126,9 +127,13 @@ namespace RimWorld
 		public override void SpawnSetup(Map map, bool respawningAfterLoad)
 		{
 			base.SpawnSetup(map, respawningAfterLoad);
+			if (!respawningAfterLoad)
+			{
+				sketch.Rotate(base.Rotation);
+			}
 			if (!ModLister.RoyaltyInstalled)
 			{
-				Log.Error("MonumentMarker requires Royalty installed.");
+				Log.ErrorOnce("Monuments are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 774341);
 				Destroy();
 			}
 		}
@@ -185,13 +190,20 @@ namespace RimWorld
 
 		public override void DrawAt(Vector3 drawLoc, bool flip = false)
 		{
-			DrawGhost(drawLoc.ToIntVec3(), placingMode: false);
+			DrawGhost_NewTmp(drawLoc.ToIntVec3(), placingMode: false, base.Rotation);
 		}
 
+		[Obsolete]
 		public void DrawGhost(IntVec3 at, bool placingMode)
+		{
+			DrawGhost_NewTmp(at, placingMode, base.Rotation);
+		}
+
+		public void DrawGhost_NewTmp(IntVec3 at, bool placingMode, Rot4 rotation)
 		{
 			CellRect rect = sketch.OccupiedRect.MovedBy(at);
 			Blueprint_Install thingToIgnore = FindMyBlueprint(rect, Find.CurrentMap);
+			sketch.Rotate(rotation);
 			sketch.DrawGhost(at, Sketch.SpawnPosType.Unchanged, placingMode, thingToIgnore);
 		}
 
@@ -199,16 +211,17 @@ namespace RimWorld
 		{
 			foreach (IntVec3 item in rect)
 			{
-				if (item.InBounds(map))
+				if (!item.InBounds(map))
 				{
-					List<Thing> thingList = item.GetThingList(map);
-					for (int i = 0; i < thingList.Count; i++)
+					continue;
+				}
+				List<Thing> thingList = item.GetThingList(map);
+				for (int i = 0; i < thingList.Count; i++)
+				{
+					Blueprint_Install blueprint_Install = thingList[i] as Blueprint_Install;
+					if (blueprint_Install != null && blueprint_Install.ThingToInstall == this)
 					{
-						Blueprint_Install blueprint_Install = thingList[i] as Blueprint_Install;
-						if (blueprint_Install != null && blueprint_Install.ThingToInstall == this)
-						{
-							return blueprint_Install;
-						}
+						return blueprint_Install;
 					}
 				}
 			}
@@ -254,8 +267,6 @@ namespace RimWorld
 				command_Action2.defaultLabel = "CommandPlaceBlueprints".Translate();
 				command_Action2.defaultDesc = "CommandPlaceBlueprintsDesc".Translate();
 				command_Action2.icon = PlaceBlueprintsCommandTex;
-				MonumentMarker monumentMarker = default(MonumentMarker);
-				ThingDef stuffLocal = default(ThingDef);
 				command_Action2.action = delegate
 				{
 					IEnumerable<ThingDef> enumerable = AllowedStuffs();
@@ -272,19 +283,21 @@ namespace RimWorld
 					else
 					{
 						List<FloatMenuOption> list = new List<FloatMenuOption>();
-						bool flag3 = false;
+						bool flag4 = false;
 						foreach (ThingDef item in enumerable)
 						{
 							if (base.Map.listerThings.ThingsOfDef(item).Count > 0)
 							{
-								flag3 = true;
+								flag4 = true;
 								break;
 							}
 						}
+						MonumentMarker monumentMarker = default(MonumentMarker);
+						ThingDef stuffLocal = default(ThingDef);
 						foreach (ThingDef item2 in enumerable)
 						{
 							monumentMarker = this;
-							if (!flag3 || base.Map.listerThings.ThingsOfDef(item2).Count != 0)
+							if (!flag4 || base.Map.listerThings.ThingsOfDef(item2).Count != 0)
 							{
 								stuffLocal = item2;
 								list.Add(new FloatMenuOption(stuffLocal.LabelCap, delegate
@@ -329,12 +342,55 @@ namespace RimWorld
 			foreach (SketchEntity entity3 in sketch.Entities)
 			{
 				SketchBuildable sketchBuildable2 = entity3 as SketchBuildable;
-				if (sketchBuildable2 != null && !entity3.IsSameSpawnedOrBlueprintOrFrame(entity3.pos + base.Position, base.Map) && tmpUniqueBuildableDefs.Add(new Pair<BuildableDef, ThingDef>(sketchBuildable2.Buildable, sketchBuildable2.Stuff)))
+				if (sketchBuildable2 == null || entity3.IsSameSpawnedOrBlueprintOrFrame(entity3.pos + base.Position, base.Map) || !tmpUniqueBuildableDefs.Add(new Pair<BuildableDef, ThingDef>(sketchBuildable2.Buildable, sketchBuildable2.Stuff)))
 				{
-					Command command = BuildCopyCommandUtility.BuildCommand(sketchBuildable2.Buildable, sketchBuildable2.Stuff, entity3.Label, sketchBuildable2.Buildable.description, allowHotKey: false);
-					if (command != null)
+					continue;
+				}
+				SketchTerrain sketchTerrain;
+				if ((sketchTerrain = (sketchBuildable2 as SketchTerrain)) != null && sketchTerrain.treatSimilarAsSame)
+				{
+					TerrainDef terrain = sketchBuildable2.Buildable as TerrainDef;
+					if (terrain.designatorDropdown != null)
 					{
-						yield return command;
+						Designator designator = BuildCopyCommandUtility.FindAllowedDesignatorRoot(sketchBuildable2.Buildable);
+						if (designator != null)
+						{
+							yield return designator;
+						}
+						continue;
+					}
+					IEnumerable<TerrainDef> allDefs = DefDatabase<TerrainDef>.AllDefs;
+					foreach (TerrainDef item3 in allDefs)
+					{
+						if (!item3.BuildableByPlayer || item3.designatorDropdown != null)
+						{
+							continue;
+						}
+						bool flag3 = true;
+						for (int i = 0; i < terrain.affordances.Count; i++)
+						{
+							if (!item3.affordances.Contains(terrain.affordances[i]))
+							{
+								flag3 = false;
+								break;
+							}
+						}
+						if (flag3)
+						{
+							Command command = BuildCopyCommandUtility.BuildCommand(item3, null, item3.label, item3.description, allowHotKey: false);
+							if (command != null)
+							{
+								yield return command;
+							}
+						}
+					}
+				}
+				else
+				{
+					Command command2 = BuildCopyCommandUtility.BuildCommand(sketchBuildable2.Buildable, sketchBuildable2.Stuff, entity3.Label, sketchBuildable2.Buildable.description, allowHotKey: false);
+					if (command2 != null)
+					{
+						yield return command2;
 					}
 				}
 			}
@@ -354,11 +410,18 @@ namespace RimWorld
 				if (sketchBuildable != null && !entity.IsSameSpawnedOrBlueprintOrFrame(entity.pos + base.Position, base.Map) && !entity.IsSpawningBlocked(entity.pos + base.Position, base.Map) && BuildCopyCommandUtility.FindAllowedDesignator(sketchBuildable.Buildable) != null)
 				{
 					SketchThing sketchThing;
+					SketchTerrain sketchTerrain;
 					if ((sketchThing = (entity as SketchThing)) != null && sketchThing.def.MadeFromStuff && sketchThing.stuff == null && preferredStuffIfNone != null && preferredStuffIfNone.stuffProps.CanMake(sketchThing.def))
 					{
 						sketchThing.stuff = preferredStuffIfNone;
 						entity.Spawn(entity.pos + base.Position, base.Map, Faction.OfPlayer, Sketch.SpawnMode.Blueprint);
 						sketchThing.stuff = null;
+					}
+					else if ((sketchTerrain = (entity as SketchTerrain)) != null && sketchTerrain.stuffForComparingSimilar == null && preferredStuffIfNone != null)
+					{
+						sketchTerrain.stuffForComparingSimilar = preferredStuffIfNone;
+						entity.Spawn(entity.pos + base.Position, base.Map, Faction.OfPlayer, Sketch.SpawnMode.Blueprint);
+						sketchTerrain.stuffForComparingSimilar = null;
 					}
 					else
 					{
@@ -404,12 +467,13 @@ namespace RimWorld
 
 		private void RemovePossiblyRelatedBlueprints()
 		{
-			if (base.Spawned)
+			if (!base.Spawned)
 			{
-				foreach (SketchBuildable buildable in sketch.Buildables)
-				{
-					(buildable.GetSpawnedBlueprintOrFrame(base.Position + buildable.pos, base.Map) as Blueprint)?.Destroy();
-				}
+				return;
+			}
+			foreach (SketchBuildable buildable in sketch.Buildables)
+			{
+				(buildable.GetSpawnedBlueprintOrFrame(base.Position + buildable.pos, base.Map) as Blueprint)?.Destroy();
 			}
 		}
 
@@ -469,12 +533,11 @@ namespace RimWorld
 
 		public bool AllowsPlacingBlueprint(BuildableDef buildable, IntVec3 pos, Rot4 rot, ThingDef stuff)
 		{
-			Rot4 rot2 = rot;
 			if (!base.Spawned)
 			{
 				return true;
 			}
-			CellRect newRect = GenAdj.OccupiedRect(pos, rot2, buildable.Size);
+			CellRect newRect = GenAdj.OccupiedRect(pos, rot, buildable.Size);
 			if (!sketch.OccupiedRect.MovedBy(base.Position).Overlaps(newRect))
 			{
 				return true;
@@ -515,12 +578,21 @@ namespace RimWorld
 					collided = true;
 				}
 				SketchThing sketchThing = entity as SketchThing;
-				if (entity.OccupiedRect.MovedBy(base.Position).Equals(newRect) && buildable == entity.Buildable && (stuff == null || entity.Stuff == null || stuff == entity.Stuff))
+				if (entity.OccupiedRect.MovedBy(base.Position).Equals(newRect) && IsSameOrSimilar(entity) && (stuff == null || entity.Stuff == null || stuff == entity.Stuff))
 				{
-					if (sketchThing != null && !(sketchThing.rot == rot2) && !(sketchThing.rot == rot2.Opposite))
+					if (sketchThing != null && !(sketchThing.rot == rot) && !(sketchThing.rot == rot.Opposite))
 					{
 						return !sketchThing.def.rotatable;
 					}
+					return true;
+				}
+				return false;
+			}
+			bool IsSameOrSimilar(SketchBuildable entity)
+			{
+				SketchTerrain sketchTerrain2;
+				if (buildable == entity.Buildable || ((sketchTerrain2 = (entity as SketchTerrain)) != null && sketchTerrain2.IsSameOrSimilar(buildable)))
+				{
 					return true;
 				}
 				return false;

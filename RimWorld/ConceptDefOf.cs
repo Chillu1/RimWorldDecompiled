@@ -97,6 +97,12 @@ namespace RimWorld
 
 		public static ConceptDef QueueOrders;
 
+		[MayRequireRoyalty]
+		public static ConceptDef MeditationSchedule;
+
+		[MayRequireRoyalty]
+		public static ConceptDef MeditationDesiredPsyfocus;
+
 		public static ConceptDef ArrestingCreatesEnemies;
 
 		public static ConceptDef TradeGoodsMustBeNearBeacon;
@@ -106,9 +112,6 @@ namespace RimWorld
 		public static ConceptDef MaxNumberOfPlayerSettlements;
 
 		public static ConceptDef TradingRequiresPermit;
-
-		[MayRequireRoyalty]
-		public static ConceptDef RoyalIncapableOfSocial;
 
 		static ConceptDefOf()
 		{

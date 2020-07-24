@@ -51,43 +51,44 @@ namespace RimWorld
 			{
 				yield return item2;
 			}
-			if (parent.Faction == Faction.OfPlayer)
+			if (parent.Faction != Faction.OfPlayer)
 			{
-				ThingDef mineableThing = targetMineable.building.mineableThing;
-				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "CommandSelectMineralToScanFor".Translate() + ": " + mineableThing.LabelCap;
-				command_Action.icon = mineableThing.uiIcon;
-				command_Action.iconAngle = mineableThing.uiIconAngle;
-				command_Action.iconOffset = mineableThing.uiIconOffset;
+				yield break;
+			}
+			ThingDef mineableThing = targetMineable.building.mineableThing;
+			Command_Action command_Action = new Command_Action();
+			command_Action.defaultLabel = "CommandSelectMineralToScanFor".Translate() + ": " + mineableThing.LabelCap;
+			command_Action.icon = mineableThing.uiIcon;
+			command_Action.iconAngle = mineableThing.uiIconAngle;
+			command_Action.iconOffset = mineableThing.uiIconOffset;
+			command_Action.action = delegate
+			{
+				List<ThingDef> mineables = ((GenStep_PreciousLump)GenStepDefOf.PreciousLump.genStep).mineables;
+				List<FloatMenuOption> list = new List<FloatMenuOption>();
 				ThingDef localD = default(ThingDef);
-				command_Action.action = delegate
+				foreach (ThingDef item3 in mineables)
 				{
-					List<ThingDef> mineables = ((GenStep_PreciousLump)GenStepDefOf.PreciousLump.genStep).mineables;
-					List<FloatMenuOption> list = new List<FloatMenuOption>();
-					foreach (ThingDef item3 in mineables)
+					localD = item3;
+					FloatMenuOption item = new FloatMenuOption(localD.building.mineableThing.LabelCap, delegate
 					{
-						localD = item3;
-						FloatMenuOption item = new FloatMenuOption(localD.building.mineableThing.LabelCap, delegate
+						foreach (object selectedObject in Find.Selector.SelectedObjects)
 						{
-							foreach (object selectedObject in Find.Selector.SelectedObjects)
+							Thing thing = selectedObject as Thing;
+							if (thing != null)
 							{
-								Thing thing = selectedObject as Thing;
-								if (thing != null)
+								CompLongRangeMineralScanner compLongRangeMineralScanner = thing.TryGetComp<CompLongRangeMineralScanner>();
+								if (compLongRangeMineralScanner != null)
 								{
-									CompLongRangeMineralScanner compLongRangeMineralScanner = thing.TryGetComp<CompLongRangeMineralScanner>();
-									if (compLongRangeMineralScanner != null)
-									{
-										compLongRangeMineralScanner.targetMineable = localD;
-									}
+									compLongRangeMineralScanner.targetMineable = localD;
 								}
 							}
-						}, MenuOptionPriority.Default, null, null, 29f, (Rect rect) => Widgets.InfoCardButton(rect.x + 5f, rect.y + (rect.height - 24f) / 2f, localD.building.mineableThing));
-						list.Add(item);
-					}
-					Find.WindowStack.Add(new FloatMenu(list));
-				};
-				yield return command_Action;
-			}
+						}
+					}, MenuOptionPriority.Default, null, null, 29f, (Rect rect) => Widgets.InfoCardButton(rect.x + 5f, rect.y + (rect.height - 24f) / 2f, localD.building.mineableThing));
+					list.Add(item);
+				}
+				Find.WindowStack.Add(new FloatMenu(list));
+			};
+			yield return command_Action;
 		}
 	}
 }

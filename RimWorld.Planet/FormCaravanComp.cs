@@ -81,19 +81,20 @@ namespace RimWorld.Planet
 				}
 				yield return command_Action2;
 			}
-			if (Prefs.DevMode)
+			if (!Prefs.DevMode)
 			{
-				Command_Action command_Action3 = new Command_Action();
-				command_Action3.defaultLabel = "Dev: Show available exits";
-				command_Action3.action = delegate
-				{
-					foreach (int item in CaravanExitMapUtility.AvailableExitTilesAt(mapParent.Map))
-					{
-						Find.WorldDebugDrawer.FlashTile(item, 0f, null, 10);
-					}
-				};
-				yield return command_Action3;
+				yield break;
 			}
+			Command_Action command_Action3 = new Command_Action();
+			command_Action3.defaultLabel = "Dev: Show available exits";
+			command_Action3.action = delegate
+			{
+				foreach (int item in CaravanExitMapUtility.AvailableExitTilesAt(mapParent.Map))
+				{
+					Find.WorldDebugDrawer.FlashTile(item, 0f, null, 10);
+				}
+			};
+			yield return command_Action3;
 		}
 	}
 }

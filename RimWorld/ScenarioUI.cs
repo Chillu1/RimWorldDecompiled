@@ -30,29 +30,30 @@ namespace RimWorld
 		{
 			Widgets.DrawMenuSection(rect);
 			rect = rect.GetInnerRect();
-			if (scen != null)
+			if (scen == null)
 			{
-				Rect viewRect = new Rect(0f, 0f, rect.width - 16f, editViewHeight);
-				Widgets.BeginScrollView(rect, ref infoScrollPosition, viewRect);
-				Rect rect2 = new Rect(0f, 0f, viewRect.width, 99999f);
-				Listing_ScenEdit listing_ScenEdit = new Listing_ScenEdit(scen);
-				listing_ScenEdit.ColumnWidth = rect2.width;
-				listing_ScenEdit.Begin(rect2);
-				listing_ScenEdit.Label("Title".Translate());
-				scen.name = listing_ScenEdit.TextEntry(scen.name).TrimmedToLength(55);
-				listing_ScenEdit.Label("Summary".Translate());
-				scen.summary = listing_ScenEdit.TextEntry(scen.summary, 2).TrimmedToLength(300);
-				listing_ScenEdit.Label("Description".Translate());
-				scen.description = listing_ScenEdit.TextEntry(scen.description, 4).TrimmedToLength(1000);
-				listing_ScenEdit.Gap();
-				foreach (ScenPart allPart in scen.AllParts)
-				{
-					allPart.DoEditInterface(listing_ScenEdit);
-				}
-				listing_ScenEdit.End();
-				editViewHeight = listing_ScenEdit.CurHeight + 100f;
-				Widgets.EndScrollView();
+				return;
 			}
+			Rect viewRect = new Rect(0f, 0f, rect.width - 16f, editViewHeight);
+			Widgets.BeginScrollView(rect, ref infoScrollPosition, viewRect);
+			Rect rect2 = new Rect(0f, 0f, viewRect.width, 99999f);
+			Listing_ScenEdit listing_ScenEdit = new Listing_ScenEdit(scen);
+			listing_ScenEdit.ColumnWidth = rect2.width;
+			listing_ScenEdit.Begin(rect2);
+			listing_ScenEdit.Label("Title".Translate());
+			scen.name = listing_ScenEdit.TextEntry(scen.name).TrimmedToLength(55);
+			listing_ScenEdit.Label("Summary".Translate());
+			scen.summary = listing_ScenEdit.TextEntry(scen.summary, 2).TrimmedToLength(300);
+			listing_ScenEdit.Label("Description".Translate());
+			scen.description = listing_ScenEdit.TextEntry(scen.description, 4).TrimmedToLength(1000);
+			listing_ScenEdit.Gap();
+			foreach (ScenPart allPart in scen.AllParts)
+			{
+				allPart.DoEditInterface(listing_ScenEdit);
+			}
+			listing_ScenEdit.End();
+			editViewHeight = listing_ScenEdit.CurHeight + 100f;
+			Widgets.EndScrollView();
 		}
 	}
 }

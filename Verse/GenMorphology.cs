@@ -33,40 +33,42 @@ namespace Verse
 					}
 				}
 			}
-			if (tmpEdgeCells.Any())
+			if (!tmpEdgeCells.Any())
 			{
-				tmpOutput.Clear();
-				Predicate<IntVec3> passCheck = (extraPredicate == null) ? ((Predicate<IntVec3>)((IntVec3 x) => cellsSet.Contains(x))) : ((Predicate<IntVec3>)((IntVec3 x) => cellsSet.Contains(x) && extraPredicate(x)));
-				map.floodFiller.FloodFill(IntVec3.Invalid, passCheck, delegate(IntVec3 cell, int traversalDist)
-				{
-					if (traversalDist >= count)
-					{
-						tmpOutput.Add(cell);
-					}
-					return false;
-				}, int.MaxValue, rememberParents: false, tmpEdgeCells);
-				cells.Clear();
-				cells.AddRange(tmpOutput);
+				return;
 			}
+			tmpOutput.Clear();
+			Predicate<IntVec3> passCheck = (extraPredicate == null) ? ((Predicate<IntVec3>)((IntVec3 x) => cellsSet.Contains(x))) : ((Predicate<IntVec3>)((IntVec3 x) => cellsSet.Contains(x) && extraPredicate(x)));
+			map.floodFiller.FloodFill(IntVec3.Invalid, passCheck, delegate(IntVec3 cell, int traversalDist)
+			{
+				if (traversalDist >= count)
+				{
+					tmpOutput.Add(cell);
+				}
+				return false;
+			}, int.MaxValue, rememberParents: false, tmpEdgeCells);
+			cells.Clear();
+			cells.AddRange(tmpOutput);
 		}
 
 		public static void Dilate(List<IntVec3> cells, int count, Map map, Predicate<IntVec3> extraPredicate = null)
 		{
-			if (count > 0)
+			if (count <= 0)
 			{
-				map.floodFiller.FloodFill(IntVec3.Invalid, extraPredicate ?? ((Predicate<IntVec3>)((IntVec3 x) => true)), delegate(IntVec3 cell, int traversalDist)
-				{
-					if (traversalDist > count)
-					{
-						return true;
-					}
-					if (traversalDist != 0)
-					{
-						cells.Add(cell);
-					}
-					return false;
-				}, int.MaxValue, rememberParents: false, cells);
+				return;
 			}
+			map.floodFiller.FloodFill(IntVec3.Invalid, extraPredicate ?? ((Predicate<IntVec3>)((IntVec3 x) => true)), delegate(IntVec3 cell, int traversalDist)
+			{
+				if (traversalDist > count)
+				{
+					return true;
+				}
+				if (traversalDist != 0)
+				{
+					cells.Add(cell);
+				}
+				return false;
+			}, int.MaxValue, rememberParents: false, cells);
 		}
 
 		public static void Open(List<IntVec3> cells, int count, Map map)

@@ -203,7 +203,7 @@ namespace RimWorld
 					List<RecipeDef> allRecipes = building_WorkTable.def.AllRecipes;
 					for (int num10 = 0; num10 < allRecipes.Count; num10++)
 					{
-						if (!allRecipes[num10].AvailableNow || !allRecipes[num10].products.Any() || allRecipes[num10].PotentiallyMissingIngredients(null, building_WorkTable.Map).Any())
+						if (!allRecipes[num10].AvailableNow || !allRecipes[num10].AvailableOnNow(building_WorkTable) || !allRecipes[num10].products.Any() || allRecipes[num10].PotentiallyMissingIngredients(null, building_WorkTable.Map).Any())
 						{
 							continue;
 						}
@@ -263,27 +263,30 @@ namespace RimWorld
 			List<Site> sites = Find.WorldObjects.Sites;
 			for (int m = 0; m < sites.Count; m++)
 			{
-				ItemStashContentsComp component = sites[m].GetComponent<ItemStashContentsComp>();
-				if (component != null)
+				for (int n = 0; n < sites[m].parts.Count; n++)
 				{
-					ThingOwner contents = component.contents;
-					for (int n = 0; n < contents.Count; n++)
+					SitePart sitePart = sites[m].parts[n];
+					if (sitePart.things == null)
 					{
-						if (thingFilter.Allows(contents[n]))
+						continue;
+					}
+					for (int num = 0; num < sitePart.things.Count; num++)
+					{
+						if (thingFilter.Allows(sitePart.things[num]))
 						{
 							return true;
 						}
 					}
 				}
-				DefeatAllEnemiesQuestComp component2 = sites[m].GetComponent<DefeatAllEnemiesQuestComp>();
-				if (component2 == null)
+				DefeatAllEnemiesQuestComp component = sites[m].GetComponent<DefeatAllEnemiesQuestComp>();
+				if (component == null)
 				{
 					continue;
 				}
-				ThingOwner rewards = component2.rewards;
-				for (int num = 0; num < rewards.Count; num++)
+				ThingOwner rewards = component.rewards;
+				for (int num2 = 0; num2 < rewards.Count; num2++)
 				{
-					if (thingFilter.Allows(rewards[num]))
+					if (thingFilter.Allows(rewards[num2]))
 					{
 						return true;
 					}
@@ -339,15 +342,18 @@ namespace RimWorld
 			List<Site> sites = Find.WorldObjects.Sites;
 			for (int l = 0; l < sites.Count; l++)
 			{
-				ItemStashContentsComp component = sites[l].GetComponent<ItemStashContentsComp>();
-				if (component != null)
+				for (int m = 0; m < sites[l].parts.Count; m++)
 				{
-					ThingOwner contents = component.contents;
-					for (int m = 0; m < contents.Count; m++)
+					SitePart sitePart = sites[l].parts[m];
+					if (sitePart.things == null)
 					{
-						if (contents[m].def == thingDef)
+						continue;
+					}
+					for (int n = 0; n < sitePart.things.Count; n++)
+					{
+						if (sitePart.things[n].def == thingDef)
 						{
-							num += contents[m].stackCount;
+							num += sitePart.things[n].stackCount;
 							if (num >= count)
 							{
 								return true;
@@ -355,17 +361,17 @@ namespace RimWorld
 						}
 					}
 				}
-				DefeatAllEnemiesQuestComp component2 = sites[l].GetComponent<DefeatAllEnemiesQuestComp>();
-				if (component2 == null)
+				DefeatAllEnemiesQuestComp component = sites[l].GetComponent<DefeatAllEnemiesQuestComp>();
+				if (component == null)
 				{
 					continue;
 				}
-				ThingOwner rewards = component2.rewards;
-				for (int n = 0; n < rewards.Count; n++)
+				ThingOwner rewards = component.rewards;
+				for (int num2 = 0; num2 < rewards.Count; num2++)
 				{
-					if (rewards[n].def == thingDef)
+					if (rewards[num2].def == thingDef)
 					{
-						num += rewards[n].stackCount;
+						num += rewards[num2].stackCount;
 						if (num >= count)
 						{
 							return true;
@@ -378,20 +384,23 @@ namespace RimWorld
 
 		public static bool ItemStashHas(ThingDef thingDef)
 		{
-			List<WorldObject> allWorldObjects = Find.WorldObjects.AllWorldObjects;
-			for (int i = 0; i < allWorldObjects.Count; i++)
+			List<Site> sites = Find.WorldObjects.Sites;
+			for (int i = 0; i < sites.Count; i++)
 			{
-				ItemStashContentsComp component = allWorldObjects[i].GetComponent<ItemStashContentsComp>();
-				if (component == null)
+				Site site = sites[i];
+				for (int j = 0; j < site.parts.Count; j++)
 				{
-					continue;
-				}
-				ThingOwner contents = component.contents;
-				for (int j = 0; j < contents.Count; j++)
-				{
-					if (contents[j].def == thingDef)
+					SitePart sitePart = site.parts[j];
+					if (sitePart.things == null)
 					{
-						return true;
+						continue;
+					}
+					for (int k = 0; k < sitePart.things.Count; k++)
+					{
+						if (sitePart.things[k].def == thingDef)
+						{
+							return true;
+						}
 					}
 				}
 			}

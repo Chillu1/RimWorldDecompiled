@@ -99,6 +99,7 @@ namespace RimWorld
 			}
 			targetingSource = null;
 			action = null;
+			targetParams = null;
 		}
 
 		public void ProcessInputEvents()
@@ -284,18 +285,7 @@ namespace RimWorld
 				return LocalTargetInfo.Invalid;
 			}
 			TargetingParameters targetingParameters = (targetingSource != null) ? targetingSource.targetParams : targetParams;
-			LocalTargetInfo localTargetInfo = LocalTargetInfo.Invalid;
-			using (IEnumerator<LocalTargetInfo> enumerator = GenUI.TargetsAtMouse(targetingParameters).GetEnumerator())
-			{
-				if (enumerator.MoveNext())
-				{
-					localTargetInfo = enumerator.Current;
-				}
-			}
-			if (localTargetInfo.Pawn != null && localTargetInfo.Pawn.IsInvisible())
-			{
-				localTargetInfo = LocalTargetInfo.Invalid;
-			}
+			LocalTargetInfo localTargetInfo = GenUI.TargetsAtMouse_NewTemp(targetingParameters, thingsOnly: false, targetingSource).FirstOrFallback(LocalTargetInfo.Invalid);
 			if (localTargetInfo.IsValid && targetingSource != null)
 			{
 				if (mustBeHittableNowIfNotMelee && !(localTargetInfo.Thing is Pawn) && !targetingSource.IsMeleeAttack)

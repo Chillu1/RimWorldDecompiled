@@ -105,12 +105,10 @@ namespace RimWorld
 				if (creditRecord_Role == null)
 				{
 					text = string.Empty;
+					continue;
 				}
-				else
-				{
-					creditRecord_Role.displayKey = (text.NullOrEmpty() || creditRecord_Role.roleKey != text);
-					text = creditRecord_Role.roleKey;
-				}
+				creditRecord_Role.displayKey = (text.NullOrEmpty() || creditRecord_Role.roleKey != text);
+				text = creditRecord_Role.roleKey;
 			}
 		}
 

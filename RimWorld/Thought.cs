@@ -37,7 +37,7 @@ namespace RimWorld
 
 		protected virtual float BaseMoodOffset => CurStage.baseMoodEffect;
 
-		public string LabelCapSocial
+		public virtual string LabelCapSocial
 		{
 			get
 			{
@@ -59,7 +59,8 @@ namespace RimWorld
 					description = def.description;
 				}
 				Thought_Memory thought_Memory;
-				description = ((def.Worker != null) ? def.Worker.PostProcessDescription(pawn, description) : (((thought_Memory = (this as Thought_Memory)) == null || thought_Memory.otherPawn == null) ? ((string)description.Formatted(pawn.Named("PAWN"))) : ((string)description.Formatted(pawn.Named("PAWN"), thought_Memory.otherPawn.Named("OTHERPAWN")))));
+				ISocialThought socialThought;
+				description = ((def.Worker != null) ? def.Worker.PostProcessDescription(pawn, description) : (((thought_Memory = (this as Thought_Memory)) != null && thought_Memory.otherPawn != null) ? ((string)description.Formatted(pawn.Named("PAWN"), thought_Memory.otherPawn.Named("OTHERPAWN"))) : (((socialThought = (this as ISocialThought)) == null || socialThought.OtherPawn() == null) ? ((string)description.Formatted(pawn.Named("PAWN"))) : ((string)description.Formatted(pawn.Named("PAWN"), socialThought.OtherPawn().Named("OTHERPAWN"))))));
 				string text = ThoughtUtility.ThoughtNullifiedMessage(pawn, def);
 				if (!string.IsNullOrEmpty(text))
 				{

@@ -274,7 +274,7 @@ namespace RimWorld
 				Building correctlyRotatedChairAt = GetCorrectlyRotatedChairAt(cell, map, spectateRect);
 				foreach (SpectateRectSide allSelectedItem in spectateRectSide.GetAllSelectedItems<SpectateRectSide>())
 				{
-					if (allSelectedItem > SpectateRectSide.None && allSelectedItem < SpectateRectSide.Vertical && allowedSides.HasFlag(allSelectedItem))
+					if (allSelectedItem.ValidSingleSide() && allowedSides.HasFlag(allSelectedItem))
 					{
 						scorePerSide[allSelectedItem.AsInt()] += num3;
 						if (correctlyRotatedChairAt != null && correctlyRotatedChairAt.Rotation == allSelectedItem.AsRot4())
@@ -296,6 +296,23 @@ namespace RimWorld
 			}
 			usedCells.Clear();
 			return num5.ToSpectatorSide();
+		}
+
+		public static bool ValidSingleSide(this SpectateRectSide side)
+		{
+			switch (side)
+			{
+			case SpectateRectSide.Up:
+				return true;
+			case SpectateRectSide.Right:
+				return true;
+			case SpectateRectSide.Down:
+				return true;
+			case SpectateRectSide.Left:
+				return true;
+			default:
+				return false;
+			}
 		}
 
 		public static Rot4 AsRot4(this SpectateRectSide side)

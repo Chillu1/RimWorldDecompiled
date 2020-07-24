@@ -19,7 +19,7 @@ namespace Verse
 			}
 			if (!start.InBounds(map))
 			{
-				Log.Error("Did FindClosestThing with start out of bounds (" + start + "), thingReq=" + thingReq);
+				Log.Error(string.Concat("Did FindClosestThing with start out of bounds (", start, "), thingReq=", thingReq));
 				return true;
 			}
 			if (thingReq.group == ThingRequestGroup.Nothing)
@@ -35,14 +35,14 @@ namespace Verse
 
 		public static Thing ClosestThingReachable(IntVec3 root, Map map, ThingRequest thingReq, PathEndMode peMode, TraverseParms traverseParams, float maxDistance = 9999f, Predicate<Thing> validator = null, IEnumerable<Thing> customGlobalSearchSet = null, int searchRegionsMin = 0, int searchRegionsMax = -1, bool forceAllowGlobalSearch = false, RegionType traversableRegionTypes = RegionType.Set_Passable, bool ignoreEntirelyForbiddenRegions = false)
 		{
-			bool flag = (searchRegionsMax < 0) | forceAllowGlobalSearch;
+			bool flag = searchRegionsMax < 0 || forceAllowGlobalSearch;
 			if (!flag && customGlobalSearchSet != null)
 			{
 				Log.ErrorOnce("searchRegionsMax >= 0 && customGlobalSearchSet != null && !forceAllowGlobalSearch. customGlobalSearchSet will never be used.", 634984);
 			}
 			if (!flag && !thingReq.IsUndefined && !thingReq.CanBeFoundInRegion)
 			{
-				Log.ErrorOnce("ClosestThingReachable with thing request group " + thingReq.group + " and global search not allowed. This will never find anything because this group is never stored in regions. Either allow global search or don't call this method at all.", 518498981);
+				Log.ErrorOnce(string.Concat("ClosestThingReachable with thing request group ", thingReq.group, " and global search not allowed. This will never find anything because this group is never stored in regions. Either allow global search or don't call this method at all."), 518498981);
 				return null;
 			}
 			if (EarlyOutSearch(root, map, thingReq, customGlobalSearchSet, validator))
@@ -81,7 +81,7 @@ namespace Verse
 		{
 			if (!thingReq.IsUndefined && !thingReq.CanBeFoundInRegion)
 			{
-				Log.ErrorOnce("ClosestThing_Regionwise_ReachablePrioritized with thing request group " + thingReq.group + ". This will never find anything because this group is never stored in regions. Most likely a global search should have been used.", 738476712);
+				Log.ErrorOnce(string.Concat("ClosestThing_Regionwise_ReachablePrioritized with thing request group ", thingReq.group, ". This will never find anything because this group is never stored in regions. Most likely a global search should have been used."), 738476712);
 				return null;
 			}
 			if (EarlyOutSearch(root, map, thingReq, null, validator))
@@ -115,7 +115,7 @@ namespace Verse
 			}
 			if (!req.IsUndefined && !req.CanBeFoundInRegion)
 			{
-				Log.ErrorOnce("RegionwiseBFSWorker with thing request group " + req.group + ". This group is never stored in regions. Most likely a global search should have been used.", 385766189);
+				Log.ErrorOnce(string.Concat("RegionwiseBFSWorker with thing request group ", req.group, ". This group is never stored in regions. Most likely a global search should have been used."), 385766189);
 				return null;
 			}
 			Region region = root.GetRegion(map, traversableRegionTypes);
@@ -182,7 +182,7 @@ namespace Verse
 				return null;
 			}
 			float closestDistSquared = 2.14748365E+09f;
-			t = null;
+			Thing chosen = null;
 			float bestPrio = float.MinValue;
 			float maxDistanceSquared = maxDistance * maxDistance;
 			IList<Thing> list;
@@ -224,7 +224,7 @@ namespace Verse
 					Process(item);
 				}
 			}
-			return t;
+			return chosen;
 			void Process(Thing t)
 			{
 				if (t.Spawned)
@@ -241,6 +241,7 @@ namespace Verse
 								return;
 							}
 						}
+						chosen = t;
 						closestDistSquared = num;
 						bestPrio = num2;
 					}
@@ -256,7 +257,7 @@ namespace Verse
 			}
 			int debug_changeCount = 0;
 			int debug_scanCount = 0;
-			t = null;
+			Thing bestThing = null;
 			float bestPrio = float.MinValue;
 			float maxDistanceSquared = maxDistance * maxDistance;
 			float closestDistSquared = 2.14748365E+09f;
@@ -291,7 +292,7 @@ namespace Verse
 					Process(item);
 				}
 			}
-			return t;
+			return bestThing;
 			void Process(Thing t)
 			{
 				if (t.Spawned)
@@ -309,6 +310,7 @@ namespace Verse
 								return;
 							}
 						}
+						bestThing = t;
 						closestDistSquared = num;
 						bestPrio = num2;
 						debug_changeCount++;

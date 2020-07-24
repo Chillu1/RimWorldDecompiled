@@ -15,15 +15,16 @@ namespace RimWorld
 
 		public static void Notify_BuildingSpawned(Building b)
 		{
-			if (!CanSmoothFloorUnder(b))
+			if (CanSmoothFloorUnder(b))
 			{
-				foreach (IntVec3 item in b.OccupiedRect())
+				return;
+			}
+			foreach (IntVec3 item in b.OccupiedRect())
+			{
+				Designation designation = b.Map.designationManager.DesignationAt(item, DesignationDefOf.SmoothFloor);
+				if (designation != null)
 				{
-					Designation designation = b.Map.designationManager.DesignationAt(item, DesignationDefOf.SmoothFloor);
-					if (designation != null)
-					{
-						b.Map.designationManager.RemoveDesignation(designation);
-					}
+					b.Map.designationManager.RemoveDesignation(designation);
 				}
 			}
 		}

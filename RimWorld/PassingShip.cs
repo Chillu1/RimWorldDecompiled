@@ -89,16 +89,32 @@ namespace RimWorld
 			return null;
 		}
 
+		protected virtual AcceptanceReport CanCommunicateWith_NewTemp(Pawn negotiator)
+		{
+			return AcceptanceReport.WasAccepted;
+		}
+
 		protected virtual bool CanCommunicateWith(Pawn negotiator)
 		{
-			return true;
+			return CanCommunicateWith_NewTemp(negotiator).Accepted;
 		}
 
 		public FloatMenuOption CommFloatMenuOption(Building_CommsConsole console, Pawn negotiator)
 		{
 			string label = "CallOnRadio".Translate(GetCallLabel());
 			Action action = null;
-			if (CanCommunicateWith(negotiator))
+			AcceptanceReport canCommunicate = CanCommunicateWith_NewTemp(negotiator);
+			if (!canCommunicate.Accepted)
+			{
+				if (!canCommunicate.Reason.NullOrEmpty())
+				{
+					action = delegate
+					{
+						Messages.Message(canCommunicate.Reason, console, MessageTypeDefOf.RejectInput, historical: false);
+					};
+				}
+			}
+			else
 			{
 				action = delegate
 				{

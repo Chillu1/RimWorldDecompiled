@@ -61,7 +61,7 @@ namespace RimWorld
 			}
 			if (!CanUseCommsNow)
 			{
-				Log.Error(myPawn + " could not use comm console for unknown reason.");
+				Log.Error(string.Concat(myPawn, " could not use comm console for unknown reason."));
 				return new FloatMenuOption("Cannot use now", null);
 			}
 			return null;
@@ -78,16 +78,14 @@ namespace RimWorld
 			if (failureReason != null)
 			{
 				yield return failureReason;
+				yield break;
 			}
-			else
+			foreach (ICommunicable commTarget in GetCommTargets(myPawn))
 			{
-				foreach (ICommunicable commTarget in GetCommTargets(myPawn))
+				FloatMenuOption floatMenuOption = commTarget.CommFloatMenuOption(this, myPawn);
+				if (floatMenuOption != null)
 				{
-					FloatMenuOption floatMenuOption = commTarget.CommFloatMenuOption(this, myPawn);
-					if (floatMenuOption != null)
-					{
-						yield return floatMenuOption;
-					}
+					yield return floatMenuOption;
 				}
 			}
 		}

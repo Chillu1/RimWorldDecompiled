@@ -269,8 +269,21 @@ namespace Verse
 			{
 				if (rpDefs[i] != this && rpDefs[i].tab == tab && rpDefs[i].ResearchViewX == ResearchViewX && rpDefs[i].ResearchViewY == ResearchViewY)
 				{
-					yield return "same research view coords and tab as " + rpDefs[i] + ": " + ResearchViewX + ", " + ResearchViewY + "(" + tab + ")";
+					yield return string.Concat("same research view coords and tab as ", rpDefs[i], ": ", ResearchViewX, ", ", ResearchViewY, "(", tab, ")");
 				}
+			}
+			if (!ModLister.RoyaltyInstalled && techprintCount > 0)
+			{
+				yield return "defines techprintCount, but techprints are a Royalty-specific game system and only work with Royalty installed.";
+			}
+		}
+
+		public override void PostLoad()
+		{
+			base.PostLoad();
+			if (!ModLister.RoyaltyInstalled)
+			{
+				techprintCount = 0;
 			}
 		}
 
@@ -330,18 +343,19 @@ namespace Verse
 
 		public void ReapplyAllMods()
 		{
-			if (researchMods != null)
+			if (researchMods == null)
 			{
-				for (int i = 0; i < researchMods.Count; i++)
+				return;
+			}
+			for (int i = 0; i < researchMods.Count; i++)
+			{
+				try
 				{
-					try
-					{
-						researchMods[i].Apply();
-					}
-					catch (Exception ex)
-					{
-						Log.Error("Exception applying research mod for project " + this + ": " + ex.ToString());
-					}
+					researchMods[i].Apply();
+				}
+				catch (Exception ex)
+				{
+					Log.Error(string.Concat("Exception applying research mod for project ", this, ": ", ex.ToString()));
 				}
 			}
 		}
@@ -366,40 +380,41 @@ namespace Verse
 				{
 					foreach (ResearchProjectDef item3 in DefDatabase<ResearchProjectDef>.AllDefsListForReading)
 					{
-						if (item2 != item3 && item2.tab == item3.tab)
+						if (item2 == item3 || item2.tab != item3.tab)
 						{
-							bool num2 = Mathf.Abs(item2.x - item3.x) < 0.5f;
-							bool flag2 = Mathf.Abs(item2.y - item3.y) < 0.25f;
-							if (num2 & flag2)
+							continue;
+						}
+						bool num2 = Mathf.Abs(item2.x - item3.x) < 0.5f;
+						bool flag2 = Mathf.Abs(item2.y - item3.y) < 0.25f;
+						if (num2 && flag2)
+						{
+							flag = true;
+							if (item2.x <= item3.x)
 							{
-								flag = true;
-								if (item2.x <= item3.x)
-								{
-									item2.x -= 0.1f;
-									item3.x += 0.1f;
-								}
-								else
-								{
-									item2.x += 0.1f;
-									item3.x -= 0.1f;
-								}
-								if (item2.y <= item3.y)
-								{
-									item2.y -= 0.1f;
-									item3.y += 0.1f;
-								}
-								else
-								{
-									item2.y += 0.1f;
-									item3.y -= 0.1f;
-								}
-								item2.x += 0.001f;
-								item2.y += 0.001f;
-								item3.x -= 0.001f;
-								item3.y -= 0.001f;
-								ClampInCoordinateLimits(item2);
-								ClampInCoordinateLimits(item3);
+								item2.x -= 0.1f;
+								item3.x += 0.1f;
 							}
+							else
+							{
+								item2.x += 0.1f;
+								item3.x -= 0.1f;
+							}
+							if (item2.y <= item3.y)
+							{
+								item2.y -= 0.1f;
+								item3.y += 0.1f;
+							}
+							else
+							{
+								item2.y += 0.1f;
+								item3.y -= 0.1f;
+							}
+							item2.x += 0.001f;
+							item2.y += 0.001f;
+							item3.x -= 0.001f;
+							item3.y -= 0.001f;
+							ClampInCoordinateLimits(item2);
+							ClampInCoordinateLimits(item3);
 						}
 					}
 				}

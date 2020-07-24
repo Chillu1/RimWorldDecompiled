@@ -110,24 +110,25 @@ namespace RimWorld.Planet
 			EnsureSpecificHealthTabForPawnValid();
 			base.ExtraOnGUI();
 			Pawn localSpecificHealthTabForPawn = specificHealthTabForPawn;
-			if (localSpecificHealthTabForPawn != null)
+			if (localSpecificHealthTabForPawn == null)
 			{
-				Rect tabRect = base.TabRect;
-				float specificHealthTabWidth = SpecificHealthTabWidth;
-				Rect rect = new Rect(tabRect.xMax - 1f, tabRect.yMin, specificHealthTabWidth, tabRect.height);
-				Find.WindowStack.ImmediateWindow(1439870015, rect, WindowLayer.GameUI, delegate
-				{
-					if (!localSpecificHealthTabForPawn.DestroyedOrNull())
-					{
-						HealthCardUtility.DrawPawnHealthCard(new Rect(0f, 20f, rect.width, rect.height - 20f), localSpecificHealthTabForPawn, allowOperations: false, showBloodLoss: true, localSpecificHealthTabForPawn);
-						if (Widgets.CloseButtonFor(rect.AtZero()))
-						{
-							specificHealthTabForPawn = null;
-							SoundDefOf.TabClose.PlayOneShotOnCamera();
-						}
-					}
-				});
+				return;
 			}
+			Rect tabRect = base.TabRect;
+			float specificHealthTabWidth = SpecificHealthTabWidth;
+			Rect rect = new Rect(tabRect.xMax - 1f, tabRect.yMin, specificHealthTabWidth, tabRect.height);
+			Find.WindowStack.ImmediateWindow(1439870015, rect, WindowLayer.GameUI, delegate
+			{
+				if (!localSpecificHealthTabForPawn.DestroyedOrNull())
+				{
+					HealthCardUtility.DrawPawnHealthCard(new Rect(0f, 20f, rect.width, rect.height - 20f), localSpecificHealthTabForPawn, allowOperations: false, showBloodLoss: true, localSpecificHealthTabForPawn);
+					if (Widgets.CloseButtonFor(rect.AtZero()))
+					{
+						specificHealthTabForPawn = null;
+						SoundDefOf.TabClose.PlayOneShotOnCamera();
+					}
+				}
+			});
 		}
 
 		private void DoColumnHeaders(ref float curY)

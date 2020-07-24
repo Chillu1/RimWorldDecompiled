@@ -55,12 +55,13 @@ namespace Verse.Grammar
 
 		private void LoadStringsFromFile(string filePath)
 		{
-			if (Translator.TryGetTranslatedStringsForFile(filePath, out List<string> stringList))
+			if (!Translator.TryGetTranslatedStringsForFile(filePath, out List<string> stringList))
 			{
-				foreach (string item in stringList)
-				{
-					cachedStrings.Add(item);
-				}
+				return;
+			}
+			foreach (string item in stringList)
+			{
+				cachedStrings.Add(item);
 			}
 		}
 

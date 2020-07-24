@@ -34,17 +34,14 @@ namespace RimWorld
 		{
 			Rect scenPartRect = listing.GetScenPartRect(this, ScenPart.RowHeight * 2f);
 			Widgets.TextFieldNumericLabeled(scenPartRect.TopHalf(), "radius".Translate(), ref radius, ref radiusBuf);
-			if (Widgets.ButtonText(scenPartRect.BottomHalf(), damage.LabelCap))
+			if (!Widgets.ButtonText(scenPartRect.BottomHalf(), damage.LabelCap))
 			{
-				FloatMenuUtility.MakeMenu(PossibleDamageDefs(), (DamageDef d) => d.LabelCap, delegate(DamageDef d)
-				{
-					ScenPart_OnPawnDeathExplode scenPart_OnPawnDeathExplode = this;
-					return delegate
-					{
-						scenPart_OnPawnDeathExplode.damage = d;
-					};
-				});
+				return;
 			}
+			FloatMenuUtility.MakeMenu(PossibleDamageDefs(), (DamageDef d) => d.LabelCap, (DamageDef d) => delegate
+			{
+				damage = d;
+			});
 		}
 
 		public override void Notify_PawnDied(Corpse corpse)

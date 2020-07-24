@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Verse;
 
 namespace RimWorld.Planet
@@ -6,28 +7,13 @@ namespace RimWorld.Planet
 	[StaticConstructorOnStartup]
 	public class EscapeShipComp : WorldObjectComp
 	{
-		public override void CompTick()
+		public override void PostMapGenerate()
 		{
-			MapParent mapParent = (MapParent)parent;
-			if (!mapParent.HasMap)
+			Building building = ((MapParent)parent).Map.listerBuildings.AllBuildingsColonistOfDef(ThingDefOf.Ship_Reactor).FirstOrDefault();
+			Building_ShipReactor building_ShipReactor;
+			if (building != null && (building_ShipReactor = (building as Building_ShipReactor)) != null)
 			{
-				return;
-			}
-			List<Pawn> allPawnsSpawned = mapParent.Map.mapPawns.AllPawnsSpawned;
-			bool flag = mapParent.Map.mapPawns.FreeColonistsSpawnedOrInPlayerEjectablePodsCount != 0;
-			bool flag2 = false;
-			for (int i = 0; i < allPawnsSpawned.Count; i++)
-			{
-				Pawn pawn = allPawnsSpawned[i];
-				if (pawn.RaceProps.Humanlike && pawn.HostFaction == null && !pawn.Downed && pawn.Faction != null && pawn.Faction.HostileTo(Faction.OfPlayer))
-				{
-					flag2 = true;
-				}
-			}
-			if (flag2 && !flag)
-			{
-				Find.LetterStack.ReceiveLetter("EscapeShipLostLabel".Translate(), "EscapeShipLost".Translate(), LetterDefOf.NegativeEvent);
-				parent.Destroy();
+				building_ShipReactor.charlonsReactor = true;
 			}
 		}
 

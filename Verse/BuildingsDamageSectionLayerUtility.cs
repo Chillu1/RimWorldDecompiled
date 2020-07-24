@@ -9,9 +9,9 @@ namespace Verse
 	{
 		private static readonly Material[] DefaultScratchMats = new Material[3]
 		{
-			MaterialPool.MatFrom("Damage/Scratch1"),
-			MaterialPool.MatFrom("Damage/Scratch2"),
-			MaterialPool.MatFrom("Damage/Scratch3")
+			MaterialPool.MatFrom("Damage/Scratch1", ShaderDatabase.Transparent),
+			MaterialPool.MatFrom("Damage/Scratch2", ShaderDatabase.Transparent),
+			MaterialPool.MatFrom("Damage/Scratch3", ShaderDatabase.Transparent)
 		};
 
 		private static List<DamageOverlay> availableOverlays = new List<DamageOverlay>();

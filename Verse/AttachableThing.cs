@@ -39,7 +39,7 @@ namespace Verse
 			CompAttachBase compAttachBase = parent.TryGetComp<CompAttachBase>();
 			if (compAttachBase == null)
 			{
-				Log.Error("Cannot attach " + this + " to " + parent + ": parent has no CompAttachBase.");
+				Log.Error(string.Concat("Cannot attach ", this, " to ", parent, ": parent has no CompAttachBase."));
 			}
 			else
 			{

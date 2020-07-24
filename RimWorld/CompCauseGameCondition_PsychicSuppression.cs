@@ -22,41 +22,44 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (Prefs.DevMode)
+			if (!Prefs.DevMode)
 			{
-				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = gender.GetLabel();
-				command_Action.action = delegate
-				{
-					if (gender == Gender.Female)
-					{
-						gender = Gender.Male;
-					}
-					else
-					{
-						gender = Gender.Female;
-					}
-					ReSetupAllConditions();
-				};
-				command_Action.hotKey = KeyBindingDefOf.Misc1;
-				yield return command_Action;
+				yield break;
 			}
+			Command_Action command_Action = new Command_Action();
+			command_Action.defaultLabel = gender.GetLabel();
+			command_Action.action = delegate
+			{
+				if (gender == Gender.Female)
+				{
+					gender = Gender.Male;
+				}
+				else
+				{
+					gender = Gender.Female;
+				}
+				ReSetupAllConditions();
+			};
+			command_Action.hotKey = KeyBindingDefOf.Misc1;
+			yield return command_Action;
 		}
 
 		public override void CompTick()
 		{
 			base.CompTick();
-			if (base.Active && base.MyTile != -1)
+			if (!base.Active || base.MyTile == -1)
 			{
-				foreach (Caravan caravan in Find.World.worldObjects.Caravans)
+				return;
+			}
+			foreach (Caravan caravan in Find.World.worldObjects.Caravans)
+			{
+				if (!(Find.WorldGrid.ApproxDistanceInTiles(caravan.Tile, base.MyTile) < (float)base.Props.worldRange))
 				{
-					if (Find.WorldGrid.ApproxDistanceInTiles(caravan.Tile, base.MyTile) < (float)base.Props.worldRange)
-					{
-						foreach (Pawn pawn in caravan.pawns)
-						{
-							GameCondition_PsychicSuppression.CheckPawn(pawn, gender);
-						}
-					}
+					continue;
+				}
+				foreach (Pawn pawn in caravan.pawns)
+				{
+					GameCondition_PsychicSuppression.CheckPawn(pawn, gender);
 				}
 			}
 		}

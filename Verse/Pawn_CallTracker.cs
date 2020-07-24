@@ -97,16 +97,17 @@ namespace Verse
 
 		public void DoCall()
 		{
-			if (pawn.Spawned)
+			if (!pawn.Spawned)
 			{
-				if (PawnAggressive)
-				{
-					LifeStageUtility.PlayNearestLifestageSound(pawn, (LifeStageAge ls) => ls.soundAngry);
-				}
-				else
-				{
-					LifeStageUtility.PlayNearestLifestageSound(pawn, (LifeStageAge ls) => ls.soundCall, IdleCallVolumeFactor);
-				}
+				return;
+			}
+			if (PawnAggressive)
+			{
+				LifeStageUtility.PlayNearestLifestageSound(pawn, (LifeStageAge ls) => ls.soundAngry);
+			}
+			else
+			{
+				LifeStageUtility.PlayNearestLifestageSound(pawn, (LifeStageAge ls) => ls.soundCall, IdleCallVolumeFactor);
 			}
 		}
 

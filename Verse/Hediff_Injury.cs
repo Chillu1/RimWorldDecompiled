@@ -74,7 +74,7 @@ namespace Verse
 					{
 						stringBuilder.Append(", ");
 					}
-					stringBuilder.Append(("PainCategory_" + hediffComp_GetsPermanent.PainCategory.ToString()).Translate());
+					stringBuilder.Append(("PainCategory_" + hediffComp_GetsPermanent.PainCategory).Translate());
 				}
 				return stringBuilder.ToString();
 			}
@@ -212,7 +212,7 @@ namespace Verse
 			base.PostAdd(dinfo);
 			if (base.Part != null && base.Part.coverageAbs <= 0f)
 			{
-				Log.Error("Added injury to " + base.Part.def + " but it should be impossible to hit it. pawn=" + pawn.ToStringSafe() + " dinfo=" + dinfo.ToStringSafe());
+				Log.Error(string.Concat("Added injury to ", base.Part.def, " but it should be impossible to hit it. pawn=", pawn.ToStringSafe(), " dinfo=", dinfo.ToStringSafe()));
 			}
 		}
 

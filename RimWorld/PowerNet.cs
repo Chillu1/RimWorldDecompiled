@@ -152,7 +152,7 @@ namespace RimWorld
 			{
 				if (powerComps.Contains(comp))
 				{
-					Log.Error("PowerNet adding powerComp " + comp + " which it already has.");
+					Log.Error(string.Concat("PowerNet adding powerComp ", comp, " which it already has."));
 				}
 				else
 				{
@@ -164,7 +164,7 @@ namespace RimWorld
 			{
 				if (batteryComps.Contains(comp2))
 				{
-					Log.Error("PowerNet adding batteryComp " + comp2 + " which it already has.");
+					Log.Error(string.Concat("PowerNet adding batteryComp ", comp2, " which it already has."));
 				}
 				else
 				{
@@ -382,7 +382,7 @@ namespace RimWorld
 			stringBuilder.AppendLine("  Created energy: " + debugLastCreatedEnergy);
 			stringBuilder.AppendLine("  Raw stored energy: " + debugLastRawStoredEnergy);
 			stringBuilder.AppendLine("  Apparent stored energy: " + debugLastApparentStoredEnergy);
-			stringBuilder.AppendLine("  hasPowerSource: " + hasPowerSource.ToString());
+			stringBuilder.AppendLine("  hasPowerSource: " + hasPowerSource);
 			stringBuilder.AppendLine("  Connectors: ");
 			foreach (CompPower connector in connectors)
 			{

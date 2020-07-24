@@ -22,6 +22,12 @@ namespace RimWorld
 			DrawTimeAssignmentSelectorFor(rect2, TimeAssignmentDefOf.Joy);
 			rect2.x += rect2.width;
 			DrawTimeAssignmentSelectorFor(rect2, TimeAssignmentDefOf.Sleep);
+			if (ModsConfig.RoyaltyActive)
+			{
+				rect2.x += rect2.width;
+				rect2.y -= rect2.height;
+				DrawTimeAssignmentSelectorFor(rect2, TimeAssignmentDefOf.Meditate);
+			}
 		}
 
 		private static void DrawTimeAssignmentSelectorFor(Rect rect, TimeAssignmentDef ta)
@@ -46,6 +52,10 @@ namespace RimWorld
 			if (selectedAssignment == ta)
 			{
 				Widgets.DrawBox(rect, 2);
+			}
+			else
+			{
+				UIHighlighter.HighlightOpportunity(rect, ta.cachedHighlightNotSelectedTag);
 			}
 		}
 	}

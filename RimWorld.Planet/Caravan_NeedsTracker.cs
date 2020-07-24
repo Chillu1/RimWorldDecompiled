@@ -70,6 +70,11 @@ namespace RimWorld.Planet
 					TrySatisfyJoyNeed(pawn, need_Joy);
 				}
 			}
+			Pawn_PsychicEntropyTracker psychicEntropy = pawn.psychicEntropy;
+			if (psychicEntropy.Psylink != null)
+			{
+				TryGainPsyfocus(psychicEntropy);
+			}
 		}
 
 		private void TrySatisfyRestNeed(Pawn pawn, Need_Rest rest)
@@ -166,6 +171,14 @@ namespace RimWorld.Planet
 				return 0f;
 			}
 			return 4E-05f;
+		}
+
+		public void TryGainPsyfocus(Pawn_PsychicEntropyTracker tracker)
+		{
+			if (!caravan.pather.MovingNow && !caravan.NightResting)
+			{
+				tracker.GainPsyfocus();
+			}
 		}
 
 		public bool AnyPawnOutOfFood(out string malnutritionHediff)

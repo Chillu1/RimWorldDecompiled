@@ -59,6 +59,18 @@ namespace RimWorld
 			}
 		}
 
+		public override string LabelCapSocial
+		{
+			get
+			{
+				if (base.CurStage.labelSocial != null)
+				{
+					return base.CurStage.LabelSocialCap.Formatted(pawn.Named("PAWN"), otherPawn.Named("OTHERPAWN"));
+				}
+				return base.LabelCapSocial;
+			}
+		}
+
 		public void SetForcedStage(int stageIndex)
 		{
 			forcedStage = stageIndex;

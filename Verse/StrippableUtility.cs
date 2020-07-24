@@ -34,5 +34,14 @@ namespace Verse
 			}
 			return false;
 		}
+
+		public static void CheckSendStrippingImpactsGoodwillMessage(Thing th)
+		{
+			Pawn pawn;
+			if ((pawn = (th as Pawn)) != null && !pawn.Dead && pawn.Faction != null && pawn.Faction != Faction.OfPlayer && !pawn.Faction.HostileTo(Faction.OfPlayer) && !pawn.Faction.def.hidden)
+			{
+				Messages.Message("MessageStrippingWillAngerFaction".Translate(pawn.Named("PAWN")), pawn, MessageTypeDefOf.CautionInput, historical: false);
+			}
+		}
 	}
 }

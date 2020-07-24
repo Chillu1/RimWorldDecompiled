@@ -282,6 +282,25 @@ namespace Verse
 			}
 		}
 
+		public IEnumerable<IntVec3> AdjacentCells
+		{
+			get
+			{
+				if (IsEmpty)
+				{
+					yield break;
+				}
+				foreach (IntVec3 item in AdjacentCellsCardinal)
+				{
+					yield return item;
+				}
+				yield return new IntVec3(minX - 1, 0, minZ - 1);
+				yield return new IntVec3(maxX + 1, 0, minZ - 1);
+				yield return new IntVec3(minX - 1, 0, maxZ + 1);
+				yield return new IntVec3(maxX + 1, 0, maxZ + 1);
+			}
+		}
+
 		[Obsolete("Use foreach on the cellrect instead")]
 		public CellRectIterator GetIterator()
 		{

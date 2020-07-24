@@ -65,7 +65,7 @@ namespace Verse
 		{
 			if (newTerr == null)
 			{
-				Log.Error("Tried to set terrain at " + c + " to null.");
+				Log.Error(string.Concat("Tried to set terrain at ", c, " to null."));
 				return;
 			}
 			if (Current.ProgramState == ProgramState.Playing)
@@ -220,7 +220,7 @@ namespace Verse
 					TerrainDef terrainDef2 = BackCompatibility.BackCompatibleTerrainWithShortHash(val);
 					if (terrainDef2 == null)
 					{
-						Log.Error("Did not find terrain def with short hash " + val + " for cell " + c + ".");
+						Log.Error(string.Concat("Did not find terrain def with short hash ", val, " for cell ", c, "."));
 						terrainDef2 = TerrainDefOf.Soil;
 					}
 					terrainDef = terrainDef2;

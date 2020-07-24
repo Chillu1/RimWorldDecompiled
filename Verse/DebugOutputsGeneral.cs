@@ -99,7 +99,7 @@ namespace Verse
 		public static void Turrets()
 		{
 			DebugTables.MakeTablesDialog(DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.category == ThingCategory.Building && d.building.IsTurret), new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("market\nvalue", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.MarketValue).ToString("F0")), new TableDataGetter<ThingDef>("cost\nlist", (ThingDef d) => (!d.costList.NullOrEmpty()) ? d.costList.Select((ThingDefCountClass x) => x.Summary).ToCommaList() : ""), new TableDataGetter<ThingDef>("cost\nstuff\ncount", (ThingDef d) => (!d.MadeFromStuff) ? "" : d.costStuffCount.ToString()), new TableDataGetter<ThingDef>("work", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.WorkToBuild).ToString("F0")), new TableDataGetter<ThingDef>("hp", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.MaxHitPoints).ToString("F0")), new TableDataGetter<ThingDef>("damage", (ThingDef d) => damage(d.building.turretGunDef).ToString()), new TableDataGetter<ThingDef>("AP", (ThingDef d) => armorPenetration(d.building.turretGunDef).ToStringPercent()), new TableDataGetter<ThingDef>("stop\npower", (ThingDef d) => (!(stoppingPower(d.building.turretGunDef) > 0f)) ? "" : stoppingPower(d.building.turretGunDef).ToString("F1")), new TableDataGetter<ThingDef>("warmup", (ThingDef d) => warmup(d.building.turretGunDef).ToString("F2")), new TableDataGetter<ThingDef>("burst\nshots", (ThingDef d) => burstShots(d.building.turretGunDef).ToString()), new TableDataGetter<ThingDef>("cooldown", (ThingDef d) => cooldown(d.building.turretGunDef).ToString("F2")), new TableDataGetter<ThingDef>("full\ncycle", (ThingDef d) => fullcycle(d.building.turretGunDef).ToString("F2")), new TableDataGetter<ThingDef>("range", (ThingDef d) => d.building.turretGunDef.Verbs[0].range.ToString("F1")), new TableDataGetter<ThingDef>("projectile\nspeed", (ThingDef d) => (d.building.turretGunDef.projectile == null) ? "" : d.building.turretGunDef.projectile.speed.ToString("F0")), new TableDataGetter<ThingDef>("dps\nmissless", (ThingDef d) => dpsMissless(d.building.turretGunDef).ToString("F2")), new TableDataGetter<ThingDef>("accuracy\ntouch (" + 3f + ")", (ThingDef d) => accTouch(d.building.turretGunDef).ToStringPercent()), new TableDataGetter<ThingDef>("accuracy\nshort (" + 12f + ")", (ThingDef d) => accShort(d.building.turretGunDef).ToStringPercent()), new TableDataGetter<ThingDef>("accuracy\nmed (" + 25f + ")", (ThingDef d) => accMed(d.building.turretGunDef).ToStringPercent()), new TableDataGetter<ThingDef>("accuracy\nlong (" + 40f + ")", (ThingDef d) => accLong(d.building.turretGunDef).ToStringPercent()), new TableDataGetter<ThingDef>("accuracy\navg", (ThingDef d) => accAvg(d.building.turretGunDef).ToString("F2")), new TableDataGetter<ThingDef>("forced\nmiss\nradius", (ThingDef d) => (!(d.building.turretGunDef.Verbs[0].forcedMissRadius > 0f)) ? "" : d.building.turretGunDef.Verbs[0].forcedMissRadius.ToString()), new TableDataGetter<ThingDef>("dps\ntouch", (ThingDef d) => (dpsMissless(d.building.turretGunDef) * accTouch(d.building.turretGunDef)).ToString("F2")), new TableDataGetter<ThingDef>("dps\nshort", (ThingDef d) => (dpsMissless(d.building.turretGunDef) * accShort(d.building.turretGunDef)).ToString("F2")), new TableDataGetter<ThingDef>("dps\nmed", (ThingDef d) => (dpsMissless(d.building.turretGunDef) * accMed(d.building.turretGunDef)).ToString("F2")), new TableDataGetter<ThingDef>("dps\nlong", (ThingDef d) => (dpsMissless(d.building.turretGunDef) * accLong(d.building.turretGunDef)).ToString("F2")), new TableDataGetter<ThingDef>("dps\navg", (ThingDef d) => dpsAvg(d.building.turretGunDef).ToString("F2")), new TableDataGetter<ThingDef>("dpsAvg / $100", (ThingDef d) => (dpsAvg(d.building.turretGunDef) / (d.GetStatValueAbstract(StatDefOf.MarketValue) / 100f)).ToString("F3")), new TableDataGetter<ThingDef>("fuel\nshot capacity", (ThingDef d) => fuelCapacity(d).ToString()), new TableDataGetter<ThingDef>("fuel\ntype", (ThingDef d) => fuelType(d)), new TableDataGetter<ThingDef>("fuel to\nreload", (ThingDef d) => fuelToReload(d).ToString()));
-			string fuelCapacity(ThingDef d)
+			static string fuelCapacity(ThingDef d)
 			{
 				if (!d.HasComp(typeof(CompRefuelable)))
 				{
@@ -107,7 +107,7 @@ namespace Verse
 				}
 				return d.GetCompProperties<CompProperties_Refuelable>().fuelCapacity.ToString();
 			}
-			string fuelToReload(ThingDef d)
+			static string fuelToReload(ThingDef d)
 			{
 				if (!d.HasComp(typeof(CompRefuelable)))
 				{
@@ -115,7 +115,7 @@ namespace Verse
 				}
 				return (d.GetCompProperties<CompProperties_Refuelable>().fuelCapacity / d.GetCompProperties<CompProperties_Refuelable>().FuelMultiplierCurrentDifficulty).ToString();
 			}
-			string fuelType(ThingDef d)
+			static string fuelType(ThingDef d)
 			{
 				if (!d.HasComp(typeof(CompRefuelable)))
 				{
@@ -381,7 +381,7 @@ namespace Verse
 				{
 					StringBuilder stringBuilder = new StringBuilder();
 					List<Thing> list2 = Find.CurrentMap.listerThings.ThingsInGroup(localRg);
-					stringBuilder.AppendLine("Global things in group " + localRg + " (count " + list2.Count + ")");
+					stringBuilder.AppendLine(string.Concat("Global things in group ", localRg, " (count ", list2.Count, ")"));
 					Log.Message(DebugLogsUtility.ThingListToUniqueCountString(list2));
 				});
 				list.Add(item);
@@ -453,7 +453,7 @@ namespace Verse
 				}
 				return text;
 			}), new TableDataGetter<ThingDef>("mass", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.Mass).ToString()), new TableDataGetter<ThingDef>("per human", (ThingDef d) => perPawn(d, ThingDefOf.Human.race.baseBodySize)), new TableDataGetter<ThingDef>("per muffalo", (ThingDef d) => perPawn(d, ThingDefOf.Muffalo.race.baseBodySize)), new TableDataGetter<ThingDef>("per dromedary", (ThingDef d) => perPawn(d, ThingDefOf.Dromedary.race.baseBodySize)), new TableDataGetter<ThingDef>("per nutrition", (ThingDef d) => perNutrition(d)), new TableDataGetter<ThingDef>("small volume", (ThingDef d) => (!d.smallVolume) ? "" : "small"));
-			string perNutrition(ThingDef d)
+			static string perNutrition(ThingDef d)
 			{
 				if (d.ingestible == null || d.GetStatValueAbstract(StatDefOf.Nutrition) == 0f)
 				{

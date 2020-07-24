@@ -201,35 +201,36 @@ namespace RimWorld
 					}
 				}
 			}
-			if (flag)
+			if (!flag)
 			{
-				Command_Toggle command_Toggle = new Command_Toggle();
-				command_Toggle.defaultLabel = "CommandReleaseAnimalsLabel".Translate() + ((num != 0) ? (" (" + num + ")") : "");
-				command_Toggle.defaultDesc = "CommandReleaseAnimalsDesc".Translate();
-				command_Toggle.icon = TexCommand.ReleaseAnimals;
-				command_Toggle.hotKey = KeyBindingDefOf.Misc7;
-				command_Toggle.isActive = (() => animalsReleased);
-				command_Toggle.toggleAction = delegate
-				{
-					animalsReleased = !animalsReleased;
-					if (animalsReleased)
-					{
-						foreach (Pawn item2 in PawnUtility.SpawnedMasteredPawns(pawn))
-						{
-							if (item2.caller != null)
-							{
-								item2.caller.Notify_Released();
-							}
-							item2.jobs.EndCurrentJob(JobCondition.InterruptForced);
-						}
-					}
-				};
-				if (num == 0)
-				{
-					command_Toggle.Disable("CommandReleaseAnimalsFail_NoAnimals".Translate());
-				}
-				yield return command_Toggle;
+				yield break;
 			}
+			Command_Toggle command_Toggle = new Command_Toggle();
+			command_Toggle.defaultLabel = "CommandReleaseAnimalsLabel".Translate() + ((num != 0) ? (" (" + num + ")") : "");
+			command_Toggle.defaultDesc = "CommandReleaseAnimalsDesc".Translate();
+			command_Toggle.icon = TexCommand.ReleaseAnimals;
+			command_Toggle.hotKey = KeyBindingDefOf.Misc7;
+			command_Toggle.isActive = (() => animalsReleased);
+			command_Toggle.toggleAction = delegate
+			{
+				animalsReleased = !animalsReleased;
+				if (animalsReleased)
+				{
+					foreach (Pawn item2 in PawnUtility.SpawnedMasteredPawns(pawn))
+					{
+						if (item2.caller != null)
+						{
+							item2.caller.Notify_Released();
+						}
+						item2.jobs.EndCurrentJob(JobCondition.InterruptForced);
+					}
+				}
+			};
+			if (num == 0)
+			{
+				command_Toggle.Disable("CommandReleaseAnimalsFail_NoAnimals".Translate());
+			}
+			yield return command_Toggle;
 		}
 
 		public void Notify_FactionChanged()

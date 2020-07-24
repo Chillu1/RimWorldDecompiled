@@ -202,38 +202,39 @@ namespace RimWorld
 			{
 				yield return item;
 			}
-			if (LoadingInProgressOrReadyToLaunch)
+			if (!LoadingInProgressOrReadyToLaunch)
 			{
-				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "CommandLaunchGroup".Translate();
-				command_Action.defaultDesc = "CommandLaunchGroupDesc".Translate();
-				command_Action.icon = LaunchCommandTex;
-				command_Action.alsoClickIfOtherInGroupClicked = false;
-				command_Action.action = delegate
-				{
-					if (AnyInGroupHasAnythingLeftToLoad)
-					{
-						Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("ConfirmSendNotCompletelyLoadedPods".Translate(FirstThingLeftToLoadInGroup.LabelCapNoCount, FirstThingLeftToLoadInGroup), StartChoosingDestination));
-					}
-					else
-					{
-						StartChoosingDestination();
-					}
-				};
-				if (!AllInGroupConnectedToFuelingPort)
-				{
-					command_Action.Disable("CommandLaunchGroupFailNotConnectedToFuelingPort".Translate());
-				}
-				else if (!AllFuelingPortSourcesInGroupHaveAnyFuel)
-				{
-					command_Action.Disable("CommandLaunchGroupFailNoFuel".Translate());
-				}
-				else if (AnyInGroupIsUnderRoof)
-				{
-					command_Action.Disable("CommandLaunchGroupFailUnderRoof".Translate());
-				}
-				yield return command_Action;
+				yield break;
 			}
+			Command_Action command_Action = new Command_Action();
+			command_Action.defaultLabel = "CommandLaunchGroup".Translate();
+			command_Action.defaultDesc = "CommandLaunchGroupDesc".Translate();
+			command_Action.icon = LaunchCommandTex;
+			command_Action.alsoClickIfOtherInGroupClicked = false;
+			command_Action.action = delegate
+			{
+				if (AnyInGroupHasAnythingLeftToLoad)
+				{
+					Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("ConfirmSendNotCompletelyLoadedPods".Translate(FirstThingLeftToLoadInGroup.LabelCapNoCount, FirstThingLeftToLoadInGroup), StartChoosingDestination));
+				}
+				else
+				{
+					StartChoosingDestination();
+				}
+			};
+			if (!AllInGroupConnectedToFuelingPort)
+			{
+				command_Action.Disable("CommandLaunchGroupFailNotConnectedToFuelingPort".Translate());
+			}
+			else if (!AllFuelingPortSourcesInGroupHaveAnyFuel)
+			{
+				command_Action.Disable("CommandLaunchGroupFailNoFuel".Translate());
+			}
+			else if (AnyInGroupIsUnderRoof)
+			{
+				command_Action.Disable("CommandLaunchGroupFailUnderRoof".Translate());
+			}
+			yield return command_Action;
 		}
 
 		public override string CompInspectStringExtra()
@@ -343,13 +344,13 @@ namespace RimWorld
 		{
 			if (!parent.Spawned)
 			{
-				Log.Error("Tried to launch " + parent + ", but it's unspawned.");
+				Log.Error(string.Concat("Tried to launch ", parent, ", but it's unspawned."));
 				return;
 			}
 			List<CompTransporter> transportersInGroup = TransportersInGroup;
 			if (transportersInGroup == null)
 			{
-				Log.Error("Tried to launch " + parent + ", but it's not in any group.");
+				Log.Error(string.Concat("Tried to launch ", parent, ", but it's not in any group."));
 			}
 			else
 			{
@@ -405,32 +406,35 @@ namespace RimWorld
 
 		public IEnumerable<FloatMenuOption> GetTransportPodsFloatMenuOptionsAt(int tile)
 		{
+			CompLaunchable compLaunchable = this;
+			int tile2 = tile;
 			bool anything = false;
-			if (TransportPodsArrivalAction_FormCaravan.CanFormCaravanAt(TransportersInGroup.Cast<IThingHolder>(), tile) && !Find.WorldObjects.AnySettlementBaseAt(tile) && !Find.WorldObjects.AnySiteAt(tile))
+			if (TransportPodsArrivalAction_FormCaravan.CanFormCaravanAt(TransportersInGroup.Cast<IThingHolder>(), tile2) && !Find.WorldObjects.AnySettlementBaseAt(tile2) && !Find.WorldObjects.AnySiteAt(tile2))
 			{
 				anything = true;
 				yield return new FloatMenuOption("FormCaravanHere".Translate(), delegate
 				{
-					TryLaunch(tile, new TransportPodsArrivalAction_FormCaravan());
+					compLaunchable.TryLaunch(tile2, new TransportPodsArrivalAction_FormCaravan());
 				});
 			}
 			List<WorldObject> worldObjects = Find.WorldObjects.AllWorldObjects;
 			for (int i = 0; i < worldObjects.Count; i++)
 			{
-				if (worldObjects[i].Tile == tile)
+				if (worldObjects[i].Tile != tile2)
 				{
-					foreach (FloatMenuOption transportPodsFloatMenuOption in worldObjects[i].GetTransportPodsFloatMenuOptions(TransportersInGroup.Cast<IThingHolder>(), this))
-					{
-						anything = true;
-						yield return transportPodsFloatMenuOption;
-					}
+					continue;
+				}
+				foreach (FloatMenuOption transportPodsFloatMenuOption in worldObjects[i].GetTransportPodsFloatMenuOptions(TransportersInGroup.Cast<IThingHolder>(), this))
+				{
+					anything = true;
+					yield return transportPodsFloatMenuOption;
 				}
 			}
-			if (!anything && !Find.World.Impassable(tile))
+			if (!anything && !Find.World.Impassable(tile2))
 			{
 				yield return new FloatMenuOption("TransportPodsContentsWillBeLost".Translate(), delegate
 				{
-					TryLaunch(tile, null);
+					compLaunchable.TryLaunch(tile2, null);
 				});
 			}
 		}

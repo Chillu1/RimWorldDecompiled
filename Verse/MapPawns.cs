@@ -496,15 +496,15 @@ namespace Verse
 		{
 			if (p.Dead)
 			{
-				Log.Warning("Tried to register dead pawn " + p + " in " + GetType() + ".");
+				Log.Warning(string.Concat("Tried to register dead pawn ", p, " in ", GetType(), "."));
 			}
 			else if (!p.Spawned)
 			{
-				Log.Warning("Tried to register despawned pawn " + p + " in " + GetType() + ".");
+				Log.Warning(string.Concat("Tried to register despawned pawn ", p, " in ", GetType(), "."));
 			}
 			else if (p.Map != map)
 			{
-				Log.Warning("Tried to register pawn " + p + " but his Map is not this one.");
+				Log.Warning(string.Concat("Tried to register pawn ", p, " but his Map is not this one."));
 			}
 			else
 			{

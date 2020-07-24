@@ -6,15 +6,16 @@ namespace RimWorld
 	{
 		public static void DebugDrawInteractionCells()
 		{
-			if (Find.CurrentMap != null && DebugViewSettings.drawInteractionCells)
+			if (Find.CurrentMap == null || !DebugViewSettings.drawInteractionCells)
 			{
-				foreach (object selectedObject in Find.Selector.SelectedObjects)
+				return;
+			}
+			foreach (object selectedObject in Find.Selector.SelectedObjects)
+			{
+				Thing thing = selectedObject as Thing;
+				if (thing != null)
 				{
-					Thing thing = selectedObject as Thing;
-					if (thing != null)
-					{
-						CellRenderer.RenderCell(thing.InteractionCell);
-					}
+					CellRenderer.RenderCell(thing.InteractionCell);
 				}
 			}
 		}

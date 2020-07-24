@@ -48,14 +48,15 @@ namespace RimWorld
 
 		public static void AddHealthyPrisonerReleasedThoughts(Pawn prisoner)
 		{
-			if (!prisoner.IsColonist)
+			if (prisoner.IsColonist)
 			{
-				foreach (Pawn allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners)
+				return;
+			}
+			foreach (Pawn allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners)
+			{
+				if (allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner.needs.mood != null && allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner != prisoner)
 				{
-					if (allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner.needs.mood != null && allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner != prisoner)
-					{
-						allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.ReleasedHealthyPrisoner, prisoner);
-					}
+					allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.ReleasedHealthyPrisoner, prisoner);
 				}
 			}
 		}

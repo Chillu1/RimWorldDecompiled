@@ -79,7 +79,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return string.Format("(" + def.defName + " target=" + target + ")");
+			return string.Format(string.Concat("(", def.defName, " target=", target, ")"));
 		}
 	}
 }

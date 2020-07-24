@@ -99,6 +99,10 @@ namespace RimWorld
 				thingClass = typeof(ThingWithComps),
 				comps = new List<CompProperties>
 				{
+					new CompProperties_UseEffectPlaySound
+					{
+						soundOnUsed = SoundDefOf.MechSerumUsed
+					},
 					new CompProperties_UseEffect
 					{
 						compClass = typeof(CompUseEffect_DestroySelf)

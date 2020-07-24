@@ -91,12 +91,12 @@ namespace RimWorld.Planet
 		{
 			get
 			{
-				for (int j = 0; j < pods.Count; j++)
+				for (int i = 0; i < pods.Count; i++)
 				{
-					ThingOwner things = pods[j].innerContainer;
-					for (int i = 0; i < things.Count; i++)
+					ThingOwner things = pods[i].innerContainer;
+					for (int j = 0; j < things.Count; j++)
 					{
-						Pawn pawn = things[i] as Pawn;
+						Pawn pawn = things[j] as Pawn;
 						if (pawn != null)
 						{
 							yield return pawn;
@@ -153,7 +153,7 @@ namespace RimWorld.Planet
 				{
 					if (!base.Spawned)
 					{
-						Log.Warning("Passing pawn " + pawn + " to world, but the TravelingTransportPod is not spawned. This means that WorldPawns can discard this pawn which can cause bugs.");
+						Log.Warning(string.Concat("Passing pawn ", pawn, " to world, but the TravelingTransportPod is not spawned. This means that WorldPawns can discard this pawn which can cause bugs."));
 					}
 					if (justLeftTheMap)
 					{

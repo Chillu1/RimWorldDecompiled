@@ -45,7 +45,7 @@ namespace RimWorld
 				GUI.color = Color.white;
 				TooltipHandler.TipRegionByKey(rect2, "PasteBillTip");
 			}
-			else if (!SelTable.def.AllRecipes.Contains(BillUtility.Clipboard.recipe) || !BillUtility.Clipboard.recipe.AvailableNow)
+			else if (!SelTable.def.AllRecipes.Contains(BillUtility.Clipboard.recipe) || !BillUtility.Clipboard.recipe.AvailableNow || !BillUtility.Clipboard.recipe.AvailableOnNow(SelTable))
 			{
 				GUI.color = Color.gray;
 				Widgets.DrawTextureFitted(rect2, TexButton.Paste, 1f);
@@ -77,22 +77,20 @@ namespace RimWorld
 			Func<List<FloatMenuOption>> recipeOptionsMaker = delegate
 			{
 				List<FloatMenuOption> list = new List<FloatMenuOption>();
-				ITab_Bills tab_Bills = default(ITab_Bills);
 				RecipeDef recipe = default(RecipeDef);
 				for (int i = 0; i < SelTable.def.AllRecipes.Count; i++)
 				{
-					tab_Bills = this;
-					if (SelTable.def.AllRecipes[i].AvailableNow)
+					if (SelTable.def.AllRecipes[i].AvailableNow && SelTable.def.AllRecipes[i].AvailableOnNow(SelTable))
 					{
 						recipe = SelTable.def.AllRecipes[i];
 						list.Add(new FloatMenuOption(recipe.LabelCap, delegate
 						{
-							if (!tab_Bills.SelTable.Map.mapPawns.FreeColonists.Any((Pawn col) => recipe.PawnSatisfiesSkillRequirements(col)))
+							if (!SelTable.Map.mapPawns.FreeColonists.Any((Pawn col) => recipe.PawnSatisfiesSkillRequirements(col)))
 							{
 								Bill.CreateNoPawnsWithSkillDialog(recipe);
 							}
 							Bill bill2 = recipe.MakeNewBill();
-							tab_Bills.SelTable.billStack.AddBill(bill2);
+							SelTable.billStack.AddBill(bill2);
 							if (recipe.conceptLearned != null)
 							{
 								PlayerKnowledgeDatabase.KnowledgeDemonstrated(recipe.conceptLearned, KnowledgeAmount.Total);
@@ -101,15 +99,7 @@ namespace RimWorld
 							{
 								TutorSystem.Notify_Event("AddBill-" + recipe.LabelCap.Resolve());
 							}
-						}, recipe.ProducedThingDef, MenuOptionPriority.Default, null, null, 29f, delegate(Rect rect)
-						{
-							if (recipe.products.Count == 1)
-							{
-								ThingDef thingDef = recipe.products[0].thingDef;
-								return Widgets.InfoCardButton(rect.x + 5f, rect.y + (rect.height - 24f) / 2f, thingDef, GenStuff.DefaultStuffFor(thingDef));
-							}
-							return Widgets.InfoCardButton(rect.x + 5f, rect.y + (rect.height - 24f) / 2f, recipe);
-						}));
+						}, recipe.ProducedThingDef, MenuOptionPriority.Default, null, null, 29f, (Rect rect) => Widgets.InfoCardButton(rect.x + 5f, rect.y + (rect.height - 24f) / 2f, recipe)));
 					}
 				}
 				if (!list.Any())

@@ -16,6 +16,8 @@ namespace RimWorld
 
 		private Faction faction;
 
+		private Pawn pawn;
+
 		public Thing Thing => thingInt;
 
 		public Def Def => defInt;
@@ -25,6 +27,8 @@ namespace RimWorld
 		public AbilityDef AbilityDef => (AbilityDef)defInt;
 
 		public Faction Faction => faction;
+
+		public Pawn Pawn => pawn;
 
 		public bool ForAbility => defInt is AbilityDef;
 
@@ -59,6 +63,22 @@ namespace RimWorld
 			result.thingInt = thing;
 			result.defInt = thing.def;
 			result.stuffDefInt = thing.Stuff;
+			thing.TryGetQuality(out result.qualityCategoryInt);
+			return result;
+		}
+
+		public static StatRequest For(Thing thing, Pawn pawn)
+		{
+			if (thing == null)
+			{
+				Log.Error("StatRequest for null thing.");
+				return ForEmpty();
+			}
+			StatRequest result = default(StatRequest);
+			result.thingInt = thing;
+			result.defInt = thing.def;
+			result.stuffDefInt = thing.Stuff;
+			result.pawn = pawn;
 			thing.TryGetQuality(out result.qualityCategoryInt);
 			return result;
 		}
@@ -123,9 +143,9 @@ namespace RimWorld
 		{
 			if (Thing != null)
 			{
-				return "(" + Thing + ")";
+				return string.Concat("(", Thing, ")");
 			}
-			return "(" + Thing + ", " + ((StuffDef != null) ? StuffDef.defName : "null") + ")";
+			return string.Concat("(", Thing, ", ", (StuffDef != null) ? StuffDef.defName : "null", ")");
 		}
 
 		public override int GetHashCode()

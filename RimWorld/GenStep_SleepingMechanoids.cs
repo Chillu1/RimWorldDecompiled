@@ -28,41 +28,43 @@ namespace RimWorld
 				}
 				else
 				{
-					Log.ErrorOnce("Tried spawning sleeping mechanoid " + spawnedMechanoids[i] + " without CompCanBeDormant!", 0x12EA9A79 ^ spawnedMechanoids[i].def.defName.GetHashCode());
+					Log.ErrorOnce(string.Concat("Tried spawning sleeping mechanoid ", spawnedMechanoids[i], " without CompCanBeDormant!"), 0x12EA9A79 ^ spawnedMechanoids[i].def.defName.GetHashCode());
 				}
 			}
 		}
 
 		public override void Generate(Map map, GenStepParams parms)
 		{
-			if (SiteGenStepUtility.TryFindRootToSpawnAroundRectOfInterest(out CellRect rectToDefend, out IntVec3 singleCellToSpawnNear, map))
+			if (!SiteGenStepUtility.TryFindRootToSpawnAroundRectOfInterest(out CellRect rectToDefend, out IntVec3 singleCellToSpawnNear, map))
 			{
-				List<Pawn> list = new List<Pawn>();
-				foreach (Pawn item in GeneratePawns(parms, map))
+				return;
+			}
+			List<Pawn> list = new List<Pawn>();
+			foreach (Pawn item in GeneratePawns(parms, map))
+			{
+				if (!SiteGenStepUtility.TryFindSpawnCellAroundOrNear(rectToDefend, singleCellToSpawnNear, map, out IntVec3 spawnCell))
 				{
-					if (!SiteGenStepUtility.TryFindSpawnCellAroundOrNear(rectToDefend, singleCellToSpawnNear, map, out IntVec3 spawnCell))
-					{
-						Find.WorldPawns.PassToWorld(item);
-						break;
-					}
-					GenSpawn.Spawn(item, spawnCell, map);
-					list.Add(item);
+					Find.WorldPawns.PassToWorld(item);
+					break;
 				}
-				if (list.Any())
+				GenSpawn.Spawn(item, spawnCell, map);
+				list.Add(item);
+			}
+			if (!list.Any())
+			{
+				return;
+			}
+			bool @bool = Rand.Bool;
+			foreach (Pawn item2 in list)
+			{
+				CompWakeUpDormant comp = item2.GetComp<CompWakeUpDormant>();
+				if (comp != null)
 				{
-					bool @bool = Rand.Bool;
-					foreach (Pawn item2 in list)
-					{
-						CompWakeUpDormant comp = item2.GetComp<CompWakeUpDormant>();
-						if (comp != null)
-						{
-							comp.wakeUpIfColonistClose = @bool;
-						}
-					}
-					LordMaker.MakeNewLord(Faction.OfMechanoids, new LordJob_SleepThenAssaultColony(Faction.OfMechanoids), map, list);
-					SendMechanoidsToSleepImmediately(list);
+					comp.wakeUpIfColonistClose = @bool;
 				}
 			}
+			LordMaker.MakeNewLord(Faction.OfMechanoids, new LordJob_SleepThenAssaultColony(Faction.OfMechanoids), map, list);
+			SendMechanoidsToSleepImmediately(list);
 		}
 
 		private IEnumerable<Pawn> GeneratePawns(GenStepParams parms, Map map)

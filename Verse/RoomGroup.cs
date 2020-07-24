@@ -165,7 +165,7 @@ namespace Verse
 		{
 			if (rooms.Contains(room))
 			{
-				Log.Error("Tried to add the same room twice to RoomGroup. room=" + room + ", roomGroup=" + this);
+				Log.Error(string.Concat("Tried to add the same room twice to RoomGroup. room=", room, ", roomGroup=", this));
 			}
 			else
 			{
@@ -177,7 +177,7 @@ namespace Verse
 		{
 			if (!rooms.Contains(room))
 			{
-				Log.Error("Tried to remove room from RoomGroup but this room is not here. room=" + room + ", roomGroup=" + this);
+				Log.Error(string.Concat("Tried to remove room from RoomGroup but this room is not here. room=", room, ", roomGroup=", this));
 			}
 			else
 			{
@@ -210,7 +210,7 @@ namespace Verse
 
 		public string DebugString()
 		{
-			return "RoomGroup ID=" + ID + "\n  first cell=" + Cells.FirstOrDefault() + "\n  RoomCount=" + RoomCount + "\n  RegionCount=" + RegionCount + "\n  CellCount=" + CellCount + "\n  OpenRoofCount=" + OpenRoofCount + "\n  " + tempTracker.DebugString();
+			return string.Concat("RoomGroup ID=", ID, "\n  first cell=", Cells.FirstOrDefault(), "\n  RoomCount=", RoomCount, "\n  RegionCount=", RegionCount, "\n  CellCount=", CellCount, "\n  OpenRoofCount=", OpenRoofCount, "\n  ", tempTracker.DebugString());
 		}
 
 		internal void DebugDraw()

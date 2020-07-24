@@ -123,32 +123,35 @@ namespace RimWorld
 		{
 			foreach (IntVec3 item in GenAdj.CellsAdjacent8Way(parent).InRandomOrder())
 			{
-				if (item.Walkable(parent.Map))
+				if (!item.Walkable(parent.Map))
 				{
-					Building edifice = item.GetEdifice(parent.Map);
-					if (edifice == null || !thingToSpawn.IsEdifice())
+					continue;
+				}
+				Building edifice = item.GetEdifice(parent.Map);
+				if (edifice != null && thingToSpawn.IsEdifice())
+				{
+					continue;
+				}
+				Building_Door building_Door = edifice as Building_Door;
+				if ((building_Door != null && !building_Door.FreePassage) || (parent.def.passability != Traversability.Impassable && !GenSight.LineOfSight(parent.Position, item, parent.Map)))
+				{
+					continue;
+				}
+				bool flag = false;
+				List<Thing> thingList = item.GetThingList(parent.Map);
+				for (int i = 0; i < thingList.Count; i++)
+				{
+					Thing thing = thingList[i];
+					if (thing.def.category == ThingCategory.Item && (thing.def != thingToSpawn || thing.stackCount > thingToSpawn.stackLimit - spawnCount))
 					{
-						Building_Door building_Door = edifice as Building_Door;
-						if ((building_Door == null || building_Door.FreePassage) && (parent.def.passability == Traversability.Impassable || GenSight.LineOfSight(parent.Position, item, parent.Map)))
-						{
-							bool flag = false;
-							List<Thing> thingList = item.GetThingList(parent.Map);
-							for (int i = 0; i < thingList.Count; i++)
-							{
-								Thing thing = thingList[i];
-								if (thing.def.category == ThingCategory.Item && (thing.def != thingToSpawn || thing.stackCount > thingToSpawn.stackLimit - spawnCount))
-								{
-									flag = true;
-									break;
-								}
-							}
-							if (!flag)
-							{
-								result = item;
-								return true;
-							}
-						}
+						flag = true;
+						break;
 					}
+				}
+				if (!flag)
+				{
+					result = item;
+					return true;
 				}
 			}
 			result = IntVec3.Invalid;

@@ -12,17 +12,17 @@ namespace RimWorld
 		{
 			if (pawn.GetLord() == null)
 			{
-				Log.Error(pawn + " doing ThinkNode_DutyConstant with no Lord.");
+				Log.Error(string.Concat(pawn, " doing ThinkNode_DutyConstant with no Lord."));
 				return ThinkResult.NoJob;
 			}
 			if (pawn.mindState.duty == null)
 			{
-				Log.Error(pawn + " doing ThinkNode_DutyConstant with no duty.");
+				Log.Error(string.Concat(pawn, " doing ThinkNode_DutyConstant with no duty."));
 				return ThinkResult.NoJob;
 			}
 			if (dutyDefToSubNode == null)
 			{
-				Log.Error(pawn + " has null dutyDefToSubNode. Recovering by calling ResolveSubnodes() (though that should have been called already).");
+				Log.Error(string.Concat(pawn, " has null dutyDefToSubNode. Recovering by calling ResolveSubnodes() (though that should have been called already)."));
 				ResolveSubnodes();
 			}
 			int num = dutyDefToSubNode[pawn.mindState.duty.def];

@@ -99,7 +99,7 @@ namespace RimWorld.Planet
 		{
 			if (Goods.Contains(toGive))
 			{
-				Log.Error("Tried to add " + toGive + " to stock (pawn's trader tracker), but it's already here.");
+				Log.Error(string.Concat("Tried to add ", toGive, " to stock (pawn's trader tracker), but it's already here."));
 				return;
 			}
 			Caravan caravan = playerNegotiator.GetCaravan();

@@ -49,23 +49,24 @@ namespace RimWorld
 			listing_Standard.ColumnWidth = scenPartRect.width;
 			listing_Standard.TextFieldNumeric(ref count, ref countBuf, 1f);
 			listing_Standard.End();
-			if (Widgets.ButtonText(scenPartRect.BottomHalf(), CurrentAnimalLabel().CapitalizeFirst()))
+			if (!Widgets.ButtonText(scenPartRect.BottomHalf(), CurrentAnimalLabel().CapitalizeFirst()))
 			{
-				List<FloatMenuOption> list = new List<FloatMenuOption>();
-				list.Add(new FloatMenuOption("RandomPet".Translate().CapitalizeFirst(), delegate
-				{
-					animalKind = null;
-				}));
-				foreach (PawnKindDef item in PossibleAnimals(checkForTamer: false))
-				{
-					PawnKindDef localKind = item;
-					list.Add(new FloatMenuOption(localKind.LabelCap, delegate
-					{
-						animalKind = localKind;
-					}));
-				}
-				Find.WindowStack.Add(new FloatMenu(list));
+				return;
 			}
+			List<FloatMenuOption> list = new List<FloatMenuOption>();
+			list.Add(new FloatMenuOption("RandomPet".Translate().CapitalizeFirst(), delegate
+			{
+				animalKind = null;
+			}));
+			foreach (PawnKindDef item in PossibleAnimals(checkForTamer: false))
+			{
+				PawnKindDef localKind = item;
+				list.Add(new FloatMenuOption(localKind.LabelCap, delegate
+				{
+					animalKind = localKind;
+				}));
+			}
+			Find.WindowStack.Add(new FloatMenu(list));
 		}
 
 		private IEnumerable<PawnKindDef> PossibleAnimals(bool checkForTamer = true)

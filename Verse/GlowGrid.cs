@@ -113,29 +113,30 @@ namespace Verse
 
 		private void RecalculateAllGlow()
 		{
-			if (Current.ProgramState == ProgramState.Playing)
+			if (Current.ProgramState != ProgramState.Playing)
 			{
-				if (initialGlowerLocs != null)
+				return;
+			}
+			if (initialGlowerLocs != null)
+			{
+				foreach (IntVec3 initialGlowerLoc in initialGlowerLocs)
 				{
-					foreach (IntVec3 initialGlowerLoc in initialGlowerLocs)
-					{
-						MarkGlowGridDirty(initialGlowerLoc);
-					}
-					initialGlowerLocs = null;
+					MarkGlowGridDirty(initialGlowerLoc);
 				}
-				int numGridCells = map.cellIndices.NumGridCells;
-				for (int i = 0; i < numGridCells; i++)
+				initialGlowerLocs = null;
+			}
+			int numGridCells = map.cellIndices.NumGridCells;
+			for (int i = 0; i < numGridCells; i++)
+			{
+				glowGrid[i] = new Color32(0, 0, 0, 0);
+				glowGridNoCavePlants[i] = new Color32(0, 0, 0, 0);
+			}
+			foreach (CompGlower litGlower in litGlowers)
+			{
+				map.glowFlooder.AddFloodGlowFor(litGlower, glowGrid);
+				if (litGlower.parent.def.category != ThingCategory.Plant || !litGlower.parent.def.plant.cavePlant)
 				{
-					glowGrid[i] = new Color32(0, 0, 0, 0);
-					glowGridNoCavePlants[i] = new Color32(0, 0, 0, 0);
-				}
-				foreach (CompGlower litGlower in litGlowers)
-				{
-					map.glowFlooder.AddFloodGlowFor(litGlower, glowGrid);
-					if (litGlower.parent.def.category != ThingCategory.Plant || !litGlower.parent.def.plant.cavePlant)
-					{
-						map.glowFlooder.AddFloodGlowFor(litGlower, glowGridNoCavePlants);
-					}
+					map.glowFlooder.AddFloodGlowFor(litGlower, glowGridNoCavePlants);
 				}
 			}
 		}

@@ -12,6 +12,11 @@ namespace Verse
 			{
 				return graphic_Random.SubGraphicFor(thing);
 			}
+			Graphic_Appearances graphic_Appearances = outerGraphic as Graphic_Appearances;
+			if (graphic_Appearances != null)
+			{
+				return graphic_Appearances.SubGraphicFor(thing);
+			}
 			return outerGraphic;
 		}
 

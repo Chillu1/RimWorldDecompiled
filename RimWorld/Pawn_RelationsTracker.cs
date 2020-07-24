@@ -101,68 +101,69 @@ namespace RimWorld
 		{
 			get
 			{
-				if (RelatedToAnyoneOrAnyoneRelatedToMe)
+				if (!RelatedToAnyoneOrAnyoneRelatedToMe)
 				{
-					List<Pawn> familyStack = null;
-					List<Pawn> familyChildrenStack = null;
-					HashSet<Pawn> familyVisited = null;
-					try
+					yield break;
+				}
+				List<Pawn> familyStack = null;
+				List<Pawn> familyChildrenStack = null;
+				HashSet<Pawn> familyVisited = null;
+				try
+				{
+					familyStack = SimplePool<List<Pawn>>.Get();
+					familyChildrenStack = SimplePool<List<Pawn>>.Get();
+					familyVisited = SimplePool<HashSet<Pawn>>.Get();
+					familyStack.Add(pawn);
+					familyVisited.Add(pawn);
+					while (familyStack.Any())
 					{
-						familyStack = SimplePool<List<Pawn>>.Get();
-						familyChildrenStack = SimplePool<List<Pawn>>.Get();
-						familyVisited = SimplePool<HashSet<Pawn>>.Get();
-						familyStack.Add(pawn);
-						familyVisited.Add(pawn);
-						while (familyStack.Any())
+						Pawn p = familyStack[familyStack.Count - 1];
+						familyStack.RemoveLast();
+						if (p != pawn)
 						{
-							Pawn p = familyStack[familyStack.Count - 1];
-							familyStack.RemoveLast();
-							if (p != pawn)
+							yield return p;
+						}
+						Pawn father = p.GetFather();
+						if (father != null && !familyVisited.Contains(father))
+						{
+							familyStack.Add(father);
+							familyVisited.Add(father);
+						}
+						Pawn mother = p.GetMother();
+						if (mother != null && !familyVisited.Contains(mother))
+						{
+							familyStack.Add(mother);
+							familyVisited.Add(mother);
+						}
+						familyChildrenStack.Clear();
+						familyChildrenStack.Add(p);
+						while (familyChildrenStack.Any())
+						{
+							Pawn child = familyChildrenStack[familyChildrenStack.Count - 1];
+							familyChildrenStack.RemoveLast();
+							if (child != p && child != pawn)
 							{
-								yield return p;
+								yield return child;
 							}
-							Pawn father = p.GetFather();
-							if (father != null && !familyVisited.Contains(father))
+							foreach (Pawn child2 in child.relations.Children)
 							{
-								familyStack.Add(father);
-								familyVisited.Add(father);
-							}
-							Pawn mother = p.GetMother();
-							if (mother != null && !familyVisited.Contains(mother))
-							{
-								familyStack.Add(mother);
-								familyVisited.Add(mother);
-							}
-							familyChildrenStack.Clear();
-							familyChildrenStack.Add(p);
-							while (familyChildrenStack.Any())
-							{
-								Pawn child = familyChildrenStack[familyChildrenStack.Count - 1];
-								familyChildrenStack.RemoveLast();
-								if (child != p && child != pawn)
+								if (!familyVisited.Contains(child2))
 								{
-									yield return child;
-								}
-								foreach (Pawn child2 in child.relations.Children)
-								{
-									if (!familyVisited.Contains(child2))
-									{
-										familyChildrenStack.Add(child2);
-										familyVisited.Add(child2);
-									}
+									familyChildrenStack.Add(child2);
+									familyVisited.Add(child2);
 								}
 							}
 						}
 					}
-					finally
-					{
-						familyStack.Clear();
-						SimplePool<List<Pawn>>.Return(familyStack);
-						familyChildrenStack.Clear();
-						SimplePool<List<Pawn>>.Return(familyChildrenStack);
-						familyVisited.Clear();
-						SimplePool<HashSet<Pawn>>.Return(familyVisited);
-					}
+				}
+				finally
+				{
+					familyStack.Clear();
+					SimplePool<List<Pawn>>.Return(familyStack);
+					familyChildrenStack.Clear();
+					SimplePool<List<Pawn>>.Return(familyChildrenStack);
+					familyVisited.Clear();
+					SimplePool<HashSet<Pawn>>.Return(familyVisited);
 				}
 			}
 		}
@@ -171,50 +172,51 @@ namespace RimWorld
 		{
 			get
 			{
-				if (RelatedToAnyoneOrAnyoneRelatedToMe)
+				if (!RelatedToAnyoneOrAnyoneRelatedToMe)
 				{
-					List<Pawn> stack = null;
-					HashSet<Pawn> visited = null;
-					try
+					yield break;
+				}
+				List<Pawn> stack = null;
+				HashSet<Pawn> visited = null;
+				try
+				{
+					stack = SimplePool<List<Pawn>>.Get();
+					visited = SimplePool<HashSet<Pawn>>.Get();
+					stack.Add(pawn);
+					visited.Add(pawn);
+					while (stack.Any())
 					{
-						stack = SimplePool<List<Pawn>>.Get();
-						visited = SimplePool<HashSet<Pawn>>.Get();
-						stack.Add(pawn);
-						visited.Add(pawn);
-						while (stack.Any())
+						Pawn p = stack[stack.Count - 1];
+						stack.RemoveLast();
+						if (p != pawn)
 						{
-							Pawn p = stack[stack.Count - 1];
-							stack.RemoveLast();
-							if (p != pawn)
+							yield return p;
+						}
+						for (int i = 0; i < p.relations.directRelations.Count; i++)
+						{
+							Pawn otherPawn = p.relations.directRelations[i].otherPawn;
+							if (!visited.Contains(otherPawn))
 							{
-								yield return p;
+								stack.Add(otherPawn);
+								visited.Add(otherPawn);
 							}
-							for (int i = 0; i < p.relations.directRelations.Count; i++)
+						}
+						foreach (Pawn item in p.relations.pawnsWithDirectRelationsWithMe)
+						{
+							if (!visited.Contains(item))
 							{
-								Pawn otherPawn = p.relations.directRelations[i].otherPawn;
-								if (!visited.Contains(otherPawn))
-								{
-									stack.Add(otherPawn);
-									visited.Add(otherPawn);
-								}
-							}
-							foreach (Pawn item in p.relations.pawnsWithDirectRelationsWithMe)
-							{
-								if (!visited.Contains(item))
-								{
-									stack.Add(item);
-									visited.Add(item);
-								}
+								stack.Add(item);
+								visited.Add(item);
 							}
 						}
 					}
-					finally
-					{
-						stack.Clear();
-						SimplePool<List<Pawn>>.Return(stack);
-						visited.Clear();
-						SimplePool<HashSet<Pawn>>.Return(visited);
-					}
+				}
+				finally
+				{
+					stack.Clear();
+					SimplePool<List<Pawn>>.Return(stack);
+					visited.Clear();
+					SimplePool<HashSet<Pawn>>.Return(visited);
 				}
 			}
 		}
@@ -259,7 +261,7 @@ namespace RimWorld
 				{
 					if (directRelations[i].otherPawn == null)
 					{
-						Log.Warning("Pawn " + pawn + " has relation \"" + directRelations[i].def.defName + "\" with null pawn after loading. This means that we forgot to serialize pawns somewhere (e.g. pawns from passing trade ships).");
+						Log.Warning(string.Concat("Pawn ", pawn, " has relation \"", directRelations[i].def.defName, "\" with null pawn after loading. This means that we forgot to serialize pawns somewhere (e.g. pawns from passing trade ships)."));
 					}
 				}
 				directRelations.RemoveAll((DirectPawnRelation x) => x.otherPawn == null);
@@ -287,7 +289,7 @@ namespace RimWorld
 		{
 			if (def.implied)
 			{
-				Log.Warning(def + " is not a direct relation.");
+				Log.Warning(string.Concat(def, " is not a direct relation."));
 				return null;
 			}
 			return directRelations.Find((DirectPawnRelation x) => x.def == def && x.otherPawn == otherPawn);
@@ -297,7 +299,7 @@ namespace RimWorld
 		{
 			if (def.implied)
 			{
-				Log.Warning(def + " is not a direct relation.");
+				Log.Warning(string.Concat(def, " is not a direct relation."));
 				return null;
 			}
 			for (int i = 0; i < directRelations.Count; i++)
@@ -315,7 +317,7 @@ namespace RimWorld
 		{
 			if (def.implied)
 			{
-				Log.Warning(def + " is not a direct relation.");
+				Log.Warning(string.Concat(def, " is not a direct relation."));
 				return false;
 			}
 			for (int i = 0; i < directRelations.Count; i++)
@@ -333,17 +335,17 @@ namespace RimWorld
 		{
 			if (def.implied)
 			{
-				Log.Warning("Tried to directly add implied pawn relation " + def + ", pawn=" + pawn + ", otherPawn=" + otherPawn);
+				Log.Warning(string.Concat("Tried to directly add implied pawn relation ", def, ", pawn=", pawn, ", otherPawn=", otherPawn));
 				return;
 			}
 			if (otherPawn == pawn)
 			{
-				Log.Warning("Tried to add pawn relation " + def + " with self, pawn=" + pawn);
+				Log.Warning(string.Concat("Tried to add pawn relation ", def, " with self, pawn=", pawn));
 				return;
 			}
 			if (DirectRelationExists(def, otherPawn))
 			{
-				Log.Warning("Tried to add the same relation twice: " + def + ", pawn=" + pawn + ", otherPawn=" + otherPawn);
+				Log.Warning(string.Concat("Tried to add the same relation twice: ", def, ", pawn=", pawn, ", otherPawn=", otherPawn));
 				return;
 			}
 			int startTicks = (Current.ProgramState == ProgramState.Playing) ? Find.TickManager.TicksGame : 0;
@@ -368,7 +370,7 @@ namespace RimWorld
 		{
 			if (!TryRemoveDirectRelation(def, otherPawn))
 			{
-				Log.Warning("Could not remove relation " + def + " because it's not here. pawn=" + pawn + ", otherPawn=" + otherPawn);
+				Log.Warning(string.Concat("Could not remove relation ", def, " because it's not here. pawn=", pawn, ", otherPawn=", otherPawn));
 			}
 		}
 
@@ -376,7 +378,7 @@ namespace RimWorld
 		{
 			if (def.implied)
 			{
-				Log.Warning("Tried to remove implied pawn relation " + def + ", pawn=" + pawn + ", otherPawn=" + otherPawn);
+				Log.Warning(string.Concat("Tried to remove implied pawn relation ", def, ", pawn=", pawn, ", otherPawn=", otherPawn));
 				return false;
 			}
 			for (int i = 0; i < directRelations.Count; i++)
@@ -689,20 +691,22 @@ namespace RimWorld
 		{
 			foreach (Pawn potentiallyRelatedPawn in PotentiallyRelatedPawns)
 			{
-				if (!potentiallyRelatedPawn.Dead && potentiallyRelatedPawn.needs.mood != null)
+				if (potentiallyRelatedPawn.Dead || potentiallyRelatedPawn.needs.mood == null)
 				{
-					PawnRelationDef mostImportantRelation = potentiallyRelatedPawn.GetMostImportantRelation(pawn);
-					if (mostImportantRelation != null && mostImportantRelation.soldThoughts != null)
-					{
-						if (mostImportantRelation == PawnRelationDefOf.Bond)
-						{
-							pawn.relations.RemoveDirectRelation(mostImportantRelation, potentiallyRelatedPawn);
-						}
-						foreach (ThoughtDef soldThought in mostImportantRelation.soldThoughts)
-						{
-							potentiallyRelatedPawn.needs.mood.thoughts.memories.TryGainMemory(soldThought, playerNegotiator);
-						}
-					}
+					continue;
+				}
+				PawnRelationDef mostImportantRelation = potentiallyRelatedPawn.GetMostImportantRelation(pawn);
+				if (mostImportantRelation == null || mostImportantRelation.soldThoughts == null)
+				{
+					continue;
+				}
+				if (mostImportantRelation == PawnRelationDefOf.Bond)
+				{
+					pawn.relations.RemoveDirectRelation(mostImportantRelation, potentiallyRelatedPawn);
+				}
+				foreach (ThoughtDef soldThought in mostImportantRelation.soldThoughts)
+				{
+					potentiallyRelatedPawn.needs.mood.thoughts.memories.TryGainMemory(soldThought, playerNegotiator);
 				}
 			}
 			RemoveMySpouseMarriageRelatedThoughts();
@@ -866,7 +870,7 @@ namespace RimWorld
 			if (pawn.Spawned && pawn.RaceProps.Animal && pawn.Faction == Faction.OfPlayer && pawn.playerSettings.RespectedMaster != null)
 			{
 				Pawn respectedMaster = pawn.playerSettings.RespectedMaster;
-				if (pawn.IsHashIntervalTick(2500) && pawn.Position.InHorDistOf(respectedMaster.Position, 12f) && GenSight.LineOfSight(pawn.Position, respectedMaster.Position, pawn.Map))
+				if (pawn.IsHashIntervalTick(2500) && pawn.Map == respectedMaster.Map && pawn.Position.InHorDistOf(respectedMaster.Position, 12f) && GenSight.LineOfSight(pawn.Position, respectedMaster.Position, pawn.Map))
 				{
 					RelationsUtility.TryDevelopBondRelation(respectedMaster, pawn, 0.001f);
 				}

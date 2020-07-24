@@ -55,6 +55,8 @@ namespace RimWorld
 
 		public LetterDef letterDef;
 
+		public List<HediffDef> letterHyperlinkHediffDefs;
+
 		public PawnKindDef pawnKind;
 
 		public bool pawnMustBeCapableOfViolence;

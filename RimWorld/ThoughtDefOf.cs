@@ -219,6 +219,8 @@ namespace RimWorld
 
 		public static ThoughtDef DefeatedHostileFactionLeader;
 
+		public static ThoughtDef DefeatedMechCluster;
+
 		public static ThoughtDef ForcedMeToTakeDrugs;
 
 		public static ThoughtDef ForcedMeToTakeLuciferium;

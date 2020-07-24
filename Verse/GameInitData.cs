@@ -85,26 +85,25 @@ namespace Verse
 					{
 						item3.workSettings.SetPriority(w, 3);
 					}
+					continue;
 				}
-				else
+				bool flag = false;
+				foreach (Pawn item4 in list)
 				{
-					bool flag = false;
-					foreach (Pawn item4 in list)
+					if (!item4.WorkTypeIsDisabled(w) && item4.skills.AverageOfRelevantSkillsFor(w) >= 6f)
 					{
-						if (!item4.WorkTypeIsDisabled(w) && item4.skills.AverageOfRelevantSkillsFor(w) >= 6f)
-						{
-							item4.workSettings.SetPriority(w, 3);
-							flag = true;
-						}
+						item4.workSettings.SetPriority(w, 3);
+						flag = true;
 					}
-					if (!flag)
-					{
-						IEnumerable<Pawn> source = list.Where((Pawn col) => !col.WorkTypeIsDisabled(w));
-						if (source.Any())
-						{
-							source.InRandomOrder().MaxBy((Pawn c) => c.skills.AverageOfRelevantSkillsFor(w)).workSettings.SetPriority(w, 3);
-						}
-					}
+				}
+				if (flag)
+				{
+					continue;
+				}
+				IEnumerable<Pawn> source = list.Where((Pawn col) => !col.WorkTypeIsDisabled(w));
+				if (source.Any())
+				{
+					source.InRandomOrder().MaxBy((Pawn c) => c.skills.AverageOfRelevantSkillsFor(w)).workSettings.SetPriority(w, 3);
 				}
 			}
 		}

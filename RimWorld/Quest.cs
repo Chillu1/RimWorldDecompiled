@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Verse;
+using Verse.Sound;
 
 namespace RimWorld
 {
@@ -145,6 +146,10 @@ namespace RimWorld
 					{
 						return QuestState.EndedFailed;
 					}
+					if (endOutcome == QuestEndOutcome.InvalidPreAcceptance)
+					{
+						return QuestState.EndedInvalid;
+					}
 					return QuestState.EndedUnknownOutcome;
 				}
 				if (acceptanceTick < 0)
@@ -258,10 +263,25 @@ namespace RimWorld
 			parts.Add(part);
 		}
 
+		public void RemovePart(QuestPart part)
+		{
+			if (!parts.Contains(part))
+			{
+				Log.Error("Tried to remove QuestPart which doesn't exist: " + part.ToStringSafe() + ", quest=" + this.ToStringSafe());
+				return;
+			}
+			part.quest = null;
+			parts.Remove(part);
+		}
+
 		public void Accept(Pawn by)
 		{
 			if (State == QuestState.NotYetAccepted)
 			{
+				for (int i = 0; i < parts.Count; i++)
+				{
+					parts[i].PreQuestAccept();
+				}
 				acceptanceTick = Find.TickManager.TicksGame;
 				accepterPawn = by;
 				dismissed = false;
@@ -290,16 +310,19 @@ namespace RimWorld
 					key2 = "LetterQuestFailedLabel";
 					key = "LetterQuestCompletedFail";
 					textLetterDef = LetterDefOf.NegativeEvent;
+					SoundDefOf.Quest_Failed.PlayOneShotOnCamera();
 					break;
 				case QuestState.EndedSuccess:
 					key2 = "LetterQuestCompletedLabel";
 					key = "LetterQuestCompletedSuccess";
 					textLetterDef = LetterDefOf.PositiveEvent;
+					SoundDefOf.Quest_Succeded.PlayOneShotOnCamera();
 					break;
 				case QuestState.EndedUnknownOutcome:
 					key2 = "LetterQuestConcludedLabel";
 					key = "LetterQuestCompletedConcluded";
 					textLetterDef = LetterDefOf.NeutralEvent;
+					SoundDefOf.Quest_Concluded.PlayOneShotOnCamera();
 					break;
 				}
 				Find.LetterStack.ReceiveLetter(key2.Translate(), key.Translate(name.CapitalizeFirst()), textLetterDef, null, null, this);
@@ -350,7 +373,7 @@ namespace RimWorld
 			Scribe_Values.Look(ref lastSlateStateDebug, "lastSlateStateDebug");
 			Scribe_Defs.Look(ref root, "root");
 			Scribe_Collections.Look(ref signalsReceivedDebug, "signalsReceivedDebug", LookMode.Undefined);
-			Scribe_Collections.Look(ref parts, "parts", LookMode.Undefined);
+			Scribe_Collections.Look(ref parts, "parts", LookMode.Deep);
 			Scribe_Collections.Look(ref tags, "tags", LookMode.Value);
 			if (Scribe.mode == LoadSaveMode.LoadingVars)
 			{
@@ -376,43 +399,44 @@ namespace RimWorld
 
 		public void Notify_SignalReceived(Signal signal)
 		{
-			if (signal.tag.StartsWith("Quest" + id + "."))
+			if (!signal.tag.StartsWith("Quest" + id + "."))
 			{
-				for (int i = 0; i < parts.Count; i++)
+				return;
+			}
+			for (int i = 0; i < parts.Count; i++)
+			{
+				try
 				{
-					try
+					bool flag;
+					switch (parts[i].signalListenMode)
 					{
-						bool flag;
-						switch (parts[i].signalListenMode)
-						{
-						case QuestPart.SignalListenMode.OngoingOnly:
-							flag = (State == QuestState.Ongoing);
-							break;
-						case QuestPart.SignalListenMode.NotYetAcceptedOnly:
-							flag = (State == QuestState.NotYetAccepted);
-							break;
-						case QuestPart.SignalListenMode.OngoingOrNotYetAccepted:
-							flag = (State == QuestState.Ongoing || State == QuestState.NotYetAccepted);
-							break;
-						case QuestPart.SignalListenMode.HistoricalOnly:
-							flag = Historical;
-							break;
-						case QuestPart.SignalListenMode.Always:
-							flag = true;
-							break;
-						default:
-							flag = false;
-							break;
-						}
-						if (flag)
-						{
-							parts[i].Notify_QuestSignalReceived(signal);
-						}
+					case QuestPart.SignalListenMode.OngoingOnly:
+						flag = (State == QuestState.Ongoing);
+						break;
+					case QuestPart.SignalListenMode.NotYetAcceptedOnly:
+						flag = (State == QuestState.NotYetAccepted);
+						break;
+					case QuestPart.SignalListenMode.OngoingOrNotYetAccepted:
+						flag = (State == QuestState.Ongoing || State == QuestState.NotYetAccepted);
+						break;
+					case QuestPart.SignalListenMode.HistoricalOnly:
+						flag = Historical;
+						break;
+					case QuestPart.SignalListenMode.Always:
+						flag = true;
+						break;
+					default:
+						flag = false;
+						break;
 					}
-					catch (Exception arg)
+					if (flag)
 					{
-						Log.Error("Error while processing a quest signal: " + arg);
+						parts[i].Notify_QuestSignalReceived(signal);
 					}
+				}
+				catch (Exception arg)
+				{
+					Log.Error("Error while processing a quest signal: " + arg);
 				}
 			}
 		}
@@ -424,22 +448,34 @@ namespace RimWorld
 
 		public void CleanupQuestParts()
 		{
-			if (!cleanedUp)
+			if (cleanedUp)
 			{
-				cleanupTick = Find.TickManager.TicksGame;
-				for (int i = 0; i < parts.Count; i++)
-				{
-					try
-					{
-						parts[i].Cleanup();
-					}
-					catch (Exception arg)
-					{
-						Log.Error("Error in QuestPart cleanup: " + arg);
-					}
-				}
-				cleanedUp = true;
+				return;
 			}
+			cleanupTick = Find.TickManager.TicksGame;
+			for (int i = 0; i < parts.Count; i++)
+			{
+				try
+				{
+					parts[i].Notify_PreCleanup();
+				}
+				catch (Exception arg)
+				{
+					Log.Error("Error in QuestPart Notify_PreCleanup: " + arg);
+				}
+			}
+			for (int j = 0; j < parts.Count; j++)
+			{
+				try
+				{
+					parts[j].Cleanup();
+				}
+				catch (Exception arg2)
+				{
+					Log.Error("Error in QuestPart cleanup: " + arg2);
+				}
+			}
+			cleanedUp = true;
 		}
 
 		public void Notify_ThingsProduced(Pawn worker, List<Thing> things)

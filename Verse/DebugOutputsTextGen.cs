@@ -43,7 +43,7 @@ namespace Verse
 					{
 						StringBuilder stringBuilder7 = new StringBuilder();
 						ManeuverDef maneuver = default(ManeuverDef);
-						for (int num3 = 0; num3 < 100; num3++)
+						for (int num2 = 0; num2 < 100; num2++)
 						{
 							maneuver = maneuverresult.First;
 							if (maneuver == null)
@@ -65,7 +65,7 @@ namespace Verse
 								where ttp.Second.capacities.Contains(maneuver.requiredCapacity)
 								select ttp).TryRandomElement(out Pair<ThingDef, Tool> result))
 							{
-								Log.Warning("Melee weapon with tool with capacity " + maneuver.requiredCapacity + " not found.");
+								Log.Warning(string.Concat("Melee weapon with tool with capacity ", maneuver.requiredCapacity, " not found."));
 								implementOwnerTypeDef = ImplementOwnerTypeDefOf.Bodypart;
 								toolLabel = "(" + implementOwnerTypeDef.defName + ")";
 							}
@@ -84,13 +84,13 @@ namespace Verse
 				});
 				list.Add(item);
 			}
-			int rf = 0;
-			while (rf < 2)
+			int rf;
+			for (rf = 0; rf < 2; rf++)
 			{
 				list.Add(new DebugMenuOption((rf == 0) ? "Ranged fire singleshot" : "Ranged fire burst", DebugMenuOptionMode.Action, delegate
 				{
 					StringBuilder stringBuilder6 = new StringBuilder();
-					for (int num2 = 0; num2 < 100; num2++)
+					for (int num = 0; num < 100; num++)
 					{
 						ThingDef thingDef = DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef td) => td.IsRangedWeapon && td.IsWeaponUsingProjectiles && !td.menuHidden).RandomElement();
 						bool flag = Rand.Value < 0.2f;
@@ -101,7 +101,6 @@ namespace Verse
 					}
 					Log.Message(stringBuilder6.ToString());
 				}));
-				int num = ++rf;
 			}
 			list.Add(new DebugMenuOption("Ranged impact hit", DebugMenuOptionMode.Action, delegate
 			{

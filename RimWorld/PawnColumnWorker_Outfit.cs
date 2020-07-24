@@ -84,16 +84,23 @@ namespace RimWorld
 
 		private IEnumerable<Widgets.DropdownMenuElement<Outfit>> Button_GenerateMenu(Pawn pawn)
 		{
-			foreach (Outfit outfit in Current.Game.outfitDatabase.AllOutfits)
+			_003C_003Ec__DisplayClass4_0 _003C_003Ec__DisplayClass4_ = new _003C_003Ec__DisplayClass4_0();
+			_003C_003Ec__DisplayClass4_.pawn = pawn;
+			using (List<Outfit>.Enumerator enumerator = Current.Game.outfitDatabase.AllOutfits.GetEnumerator())
 			{
-				yield return new Widgets.DropdownMenuElement<Outfit>
+				while (enumerator.MoveNext())
 				{
-					option = new FloatMenuOption(outfit.label, delegate
+					_003C_003Ec__DisplayClass4_0 _003C_003Ec__DisplayClass4_2 = _003C_003Ec__DisplayClass4_;
+					Outfit outfit = enumerator.Current;
+					yield return new Widgets.DropdownMenuElement<Outfit>
 					{
-						pawn.outfits.CurrentOutfit = outfit;
-					}),
-					payload = outfit
-				};
+						option = new FloatMenuOption(outfit.label, delegate
+						{
+							_003C_003Ec__DisplayClass4_2.pawn.outfits.CurrentOutfit = outfit;
+						}),
+						payload = outfit
+					};
+				}
 			}
 		}
 

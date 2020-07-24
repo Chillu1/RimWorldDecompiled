@@ -16,6 +16,7 @@ namespace RimWorld.SketchGen
 		{
 			CellRect outerRect = parms.rect ?? parms.sketch.OccupiedRect;
 			bool allowWood = parms.allowWood ?? true;
+			bool flag = parms.requireFloor ?? false;
 			rects.Clear();
 			processed.Clear();
 			foreach (IntVec3 item2 in outerRect.Cells.InRandomOrder())
@@ -41,7 +42,10 @@ namespace RimWorld.SketchGen
 					int num = (cellRect.Width >= 4) ? Rand.Element(2, 3) : 2;
 					for (int j = cellRect.minX; j <= cellRect.maxX; j += num)
 					{
-						sketch.AddThing(ThingDefOf.Column, new IntVec3(j, 0, newZ), Rot4.North, stuff);
+						if (!flag || parms.sketch.AnyTerrainAt(new IntVec3(j, 0, newZ)))
+						{
+							sketch.AddThing(ThingDefOf.Column, new IntVec3(j, 0, newZ), Rot4.North, stuff);
+						}
 					}
 					ResolveParams parms2 = parms;
 					parms2.sketch = sketch;
@@ -55,7 +59,10 @@ namespace RimWorld.SketchGen
 					int num2 = (cellRect.Height >= 4) ? Rand.Element(2, 3) : 2;
 					for (int k = cellRect.minZ; k <= cellRect.maxZ; k += num2)
 					{
-						sketch.AddThing(ThingDefOf.Column, new IntVec3(newX, 0, k), Rot4.North, stuff);
+						if (!flag || parms.sketch.AnyTerrainAt(new IntVec3(newX, 0, k)))
+						{
+							sketch.AddThing(ThingDefOf.Column, new IntVec3(newX, 0, k), Rot4.North, stuff);
+						}
 					}
 					ResolveParams parms3 = parms;
 					parms3.sketch = sketch;

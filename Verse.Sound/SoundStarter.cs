@@ -23,7 +23,7 @@ namespace Verse.Sound
 				}
 				if (!flag)
 				{
-					Log.Error("Tried to play " + soundDef + " on camera but it has no on-camera subSounds.");
+					Log.Error(string.Concat("Tried to play ", soundDef, " on camera but it has no on-camera subSounds."));
 				}
 			}
 			soundDef.PlayOneShot(SoundInfo.OnCamera());
@@ -60,7 +60,7 @@ namespace Verse.Sound
 			}
 			else if (soundDef.sustain)
 			{
-				Log.Error("Tried to play sustainer SoundDef " + soundDef + " as a one-shot sound.");
+				Log.Error(string.Concat("Tried to play sustainer SoundDef ", soundDef, " as a one-shot sound."));
 			}
 			else if (SoundSlotManager.CanPlayNow(soundDef.slot))
 			{
@@ -94,7 +94,7 @@ namespace Verse.Sound
 			}
 			if (!soundDef.sustain)
 			{
-				Log.Error("Tried to spawn a sustainer from non-sustainer sound " + soundDef + ".");
+				Log.Error(string.Concat("Tried to spawn a sustainer from non-sustainer sound ", soundDef, "."));
 				return null;
 			}
 			if (!info.IsOnCamera && info.Maker.Thing != null && info.Maker.Thing.Destroyed)

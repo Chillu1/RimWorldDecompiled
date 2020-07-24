@@ -25,7 +25,7 @@ namespace Verse
 			stringBuilder.AppendLine("Registered things in dynamic draw list:");
 			foreach (KeyValuePair<ThingDef, int> item in dictionary.OrderByDescending((KeyValuePair<ThingDef, int> k) => k.Value))
 			{
-				stringBuilder.AppendLine(item.Key + " - " + item.Value);
+				stringBuilder.AppendLine(string.Concat(item.Key, " - ", item.Value));
 			}
 			return stringBuilder.ToString();
 		}

@@ -20,12 +20,23 @@ namespace RimWorld
 				return 0f;
 			}
 			int num = Mathf.RoundToInt(points / animal.combatPower);
-			return Mathf.Clamp01(Mathf.InverseLerp(30f, 10f, num) + 0.001f);
+			return Mathf.Clamp01(Mathf.InverseLerp(100f, 10f, num));
 		}
 
 		public static bool TryFindManhunterAnimalKind(float points, int tile, out PawnKindDef animalKind)
 		{
-			return DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef k) => k.RaceProps.Animal && k.canArriveManhunter && (tile == -1 || Find.World.tileTemperatures.SeasonAndOutdoorTemperatureAcceptableFor(tile, k.race))).TryRandomElementByWeight((PawnKindDef k) => ManhunterAnimalWeight(k, points), out animalKind);
+			IEnumerable<PawnKindDef> source = DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef k) => k.RaceProps.Animal && k.canArriveManhunter && (tile == -1 || Find.World.tileTemperatures.SeasonAndOutdoorTemperatureAcceptableFor(tile, k.race)));
+			if (source.TryRandomElementByWeight((PawnKindDef a) => ManhunterAnimalWeight(a, points), out animalKind))
+			{
+				return true;
+			}
+			if (points > source.Min((PawnKindDef a) => a.combatPower) * 2f)
+			{
+				animalKind = source.MaxBy((PawnKindDef a) => a.combatPower);
+				return true;
+			}
+			animalKind = null;
+			return false;
 		}
 
 		public static int GetAnimalsCount(PawnKindDef animalKind, float points)

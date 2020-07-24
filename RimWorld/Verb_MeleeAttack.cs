@@ -23,7 +23,7 @@ namespace RimWorld
 			Thing thing = currentTarget.Thing;
 			if (!CanHitTarget(thing))
 			{
-				Log.Warning(casterPawn + " meleed " + thing + " from out of melee position.");
+				Log.Warning(string.Concat(casterPawn, " meleed ", thing, " from out of melee position."));
 			}
 			casterPawn.rotationTracker.Face(thing.DrawPos);
 			if (!IsTargetImmobile(currentTarget) && casterPawn.skills != null)
@@ -69,7 +69,7 @@ namespace RimWorld
 				else
 				{
 					result = false;
-					soundDef = SoundMiss();
+					soundDef = SoundDodge(thing);
 					MoteMaker.ThrowText(drawPos, map, "TextMote_Dodge".Translate(), 1.9f);
 					CreateCombatLog((ManeuverDef maneuver) => maneuver.combatLogRulesDodge, alwaysShow: false);
 				}
@@ -170,6 +170,10 @@ namespace RimWorld
 			{
 				return base.EquipmentSource.def.meleeHitSound;
 			}
+			if (tool != null && !tool.soundMeleeHit.NullOrUndefined())
+			{
+				return tool.soundMeleeHit;
+			}
 			if (base.EquipmentSource != null && base.EquipmentSource.Stuff != null)
 			{
 				if (verbProps.meleeDamageDef.armorCategory == DamageArmorCategoryDefOf.Sharp)
@@ -197,6 +201,10 @@ namespace RimWorld
 			{
 				return base.EquipmentSource.def.meleeHitSound;
 			}
+			if (tool != null && !tool.soundMeleeHit.NullOrUndefined())
+			{
+				return tool.soundMeleeHit;
+			}
 			if (base.EquipmentSource != null && base.EquipmentSource.Stuff != null)
 			{
 				if (verbProps.meleeDamageDef.armorCategory == DamageArmorCategoryDefOf.Sharp)
@@ -220,11 +228,27 @@ namespace RimWorld
 
 		private SoundDef SoundMiss()
 		{
-			if (CasterPawn != null && !CasterPawn.def.race.soundMeleeMiss.NullOrUndefined())
+			if (CasterPawn != null)
 			{
-				return CasterPawn.def.race.soundMeleeMiss;
+				if (tool != null && !tool.soundMeleeMiss.NullOrUndefined())
+				{
+					return tool.soundMeleeMiss;
+				}
+				if (!CasterPawn.def.race.soundMeleeMiss.NullOrUndefined())
+				{
+					return CasterPawn.def.race.soundMeleeMiss;
+				}
 			}
 			return SoundDefOf.Pawn_Melee_Punch_Miss;
+		}
+
+		private SoundDef SoundDodge(Thing target)
+		{
+			if (target.def.race != null && target.def.race.soundMeleeDodge != null)
+			{
+				return target.def.race.soundMeleeDodge;
+			}
+			return SoundMiss();
 		}
 	}
 }

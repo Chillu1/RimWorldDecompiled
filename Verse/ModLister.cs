@@ -40,7 +40,17 @@ namespace Verse
 			}
 		}
 
-		public static bool RoyaltyInstalled => royaltyInstalled;
+		public static bool RoyaltyInstalled
+		{
+			get
+			{
+				if (royaltyInstalled)
+				{
+					return !Prefs.SimulateNotOwningRoyalty;
+				}
+				return false;
+			}
+		}
 
 		public static bool ShouldLogIssues
 		{
@@ -106,6 +116,10 @@ namespace Verse
 			{
 				s = s + "\n   " + log;
 			});
+			if (Prefs.SimulateNotOwningRoyalty)
+			{
+				ModsConfig.SetActive(ModContentPack.RoyaltyModPackageId, active: false);
+			}
 			if (mods.Count((ModMetaData m) => m.Active) == 0)
 			{
 				s += "\nThere are no active mods. Activating Core mod.";

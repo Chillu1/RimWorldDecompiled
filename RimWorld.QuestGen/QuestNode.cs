@@ -37,7 +37,7 @@ namespace RimWorld.QuestGen
 			}
 			catch (Exception ex)
 			{
-				Log.Error("Exception running " + GetType().Name + ": " + ex + "\n\nSlate vars:\n" + QuestGen.slate.ToString());
+				Log.Error(string.Concat("Exception running ", GetType().Name, ": ", ex, "\n\nSlate vars:\n", QuestGen.slate.ToString()));
 			}
 			if (DeepProfiler.enabled)
 			{
@@ -57,7 +57,7 @@ namespace RimWorld.QuestGen
 			}
 			catch (Exception ex)
 			{
-				Log.Error("Exception test running " + GetType().Name + ": " + ex + "\n\nSlate vars:\n" + slate.ToString());
+				Log.Error(string.Concat("Exception test running ", GetType().Name, ": ", ex, "\n\nSlate vars:\n", slate.ToString()));
 				return false;
 			}
 		}

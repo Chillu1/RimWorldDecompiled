@@ -250,7 +250,7 @@ namespace RimWorld
 			bool getterCanManipulate = getter.RaceProps.ToolUser && getter.health.capacities.CapableOf(PawnCapacityDefOf.Manipulation);
 			if (!getterCanManipulate && getter != eater)
 			{
-				Log.Error(getter + " tried to find food to bring to " + eater + " but " + getter + " is incapable of Manipulation.");
+				Log.Error(string.Concat(getter, " tried to find food to bring to ", eater, " but ", getter, " is incapable of Manipulation."));
 				return null;
 			}
 			FoodPreferability minPref;
@@ -298,12 +298,12 @@ namespace RimWorld
 				}
 				return true;
 			};
-			ThingRequest thingRequest = ((eater.RaceProps.foodType & (FoodTypeFlags.Plant | FoodTypeFlags.Tree)) == 0 || !allowPlant) ? ThingRequest.ForGroup(ThingRequestGroup.FoodSourceNotPlantOrTree) : ThingRequest.ForGroup(ThingRequestGroup.FoodSource);
+			ThingRequest thingRequest = (!((eater.RaceProps.foodType & (FoodTypeFlags.Plant | FoodTypeFlags.Tree)) != 0 && allowPlant)) ? ThingRequest.ForGroup(ThingRequestGroup.FoodSourceNotPlantOrTree) : ThingRequest.ForGroup(ThingRequestGroup.FoodSource);
 			Thing bestThing;
 			if (getter.RaceProps.Humanlike)
 			{
 				bestThing = SpawnedFoodSearchInnerScan(eater, getter.Position, getter.Map.listerThings.ThingsMatching(thingRequest), PathEndMode.ClosestTouch, TraverseParms.For(getter), 9999f, foodValidator);
-				if (allowHarvest & getterCanManipulate)
+				if (allowHarvest && getterCanManipulate)
 				{
 					Thing thing = GenClosest.ClosestThingReachable(searchRegionsMax: (!forceScanWholeMap || bestThing != null) ? 30 : (-1), root: getter.Position, map: getter.Map, thingReq: ThingRequest.ForGroup(ThingRequestGroup.HarvestablePlant), peMode: PathEndMode.Touch, traverseParams: TraverseParms.For(getter), maxDistance: 9999f, validator: delegate(Thing x)
 					{
@@ -517,26 +517,27 @@ namespace RimWorld
 		{
 			IntVec3 a = UI.MouseCell();
 			Pawn pawn = Find.Selector.SingleSelectedThing as Pawn;
-			if (pawn != null && pawn.Map == Find.CurrentMap)
+			if (pawn == null || pawn.Map != Find.CurrentMap)
 			{
-				Text.Anchor = TextAnchor.MiddleCenter;
-				Text.Font = GameFont.Tiny;
-				foreach (Thing item in Find.CurrentMap.listerThings.ThingsInGroup(ThingRequestGroup.FoodSourceNotPlantOrTree))
-				{
-					ThingDef finalIngestibleDef = GetFinalIngestibleDef(item);
-					float num = FoodOptimality(pawn, item, finalIngestibleDef, (a - item.Position).LengthHorizontal);
-					Vector2 vector = item.DrawPos.MapToUIPosition();
-					Rect rect = new Rect(vector.x - 100f, vector.y - 100f, 200f, 200f);
-					string text = num.ToString("F0");
-					List<ThoughtDef> list = ThoughtsFromIngesting(pawn, item, finalIngestibleDef);
-					for (int i = 0; i < list.Count; i++)
-					{
-						text = text + "\n" + list[i].defName + "(" + FoodOptimalityEffectFromMoodCurve.Evaluate(list[i].stages[0].baseMoodEffect).ToString("F0") + ")";
-					}
-					Widgets.Label(rect, text);
-				}
-				Text.Anchor = TextAnchor.UpperLeft;
+				return;
 			}
+			Text.Anchor = TextAnchor.MiddleCenter;
+			Text.Font = GameFont.Tiny;
+			foreach (Thing item in Find.CurrentMap.listerThings.ThingsInGroup(ThingRequestGroup.FoodSourceNotPlantOrTree))
+			{
+				ThingDef finalIngestibleDef = GetFinalIngestibleDef(item);
+				float num = FoodOptimality(pawn, item, finalIngestibleDef, (a - item.Position).LengthHorizontal);
+				Vector2 vector = item.DrawPos.MapToUIPosition();
+				Rect rect = new Rect(vector.x - 100f, vector.y - 100f, 200f, 200f);
+				string text = num.ToString("F0");
+				List<ThoughtDef> list = ThoughtsFromIngesting(pawn, item, finalIngestibleDef);
+				for (int i = 0; i < list.Count; i++)
+				{
+					text = text + "\n" + list[i].defName + "(" + FoodOptimalityEffectFromMoodCurve.Evaluate(list[i].stages[0].baseMoodEffect).ToString("F0") + ")";
+				}
+				Widgets.Label(rect, text);
+			}
+			Text.Anchor = TextAnchor.UpperLeft;
 		}
 
 		private static Pawn BestPawnToHuntForPredator(Pawn predator, bool forceScanWholeMap)

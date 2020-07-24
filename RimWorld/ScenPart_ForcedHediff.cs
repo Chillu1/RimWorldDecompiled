@@ -28,21 +28,17 @@ namespace RimWorld
 			Rect scenPartRect = listing.GetScenPartRect(this, ScenPart.RowHeight * 3f + 31f);
 			if (Widgets.ButtonText(scenPartRect.TopPartPixels(ScenPart.RowHeight), hediff.LabelCap))
 			{
-				FloatMenuUtility.MakeMenu(PossibleHediffs(), (HediffDef hd) => hd.LabelCap, delegate(HediffDef hd)
+				FloatMenuUtility.MakeMenu(PossibleHediffs(), (HediffDef hd) => hd.LabelCap, (HediffDef hd) => delegate
 				{
-					ScenPart_ForcedHediff scenPart_ForcedHediff = this;
-					return delegate
+					hediff = hd;
+					if (severityRange.max > MaxSeverity)
 					{
-						scenPart_ForcedHediff.hediff = hd;
-						if (scenPart_ForcedHediff.severityRange.max > scenPart_ForcedHediff.MaxSeverity)
-						{
-							scenPart_ForcedHediff.severityRange.max = scenPart_ForcedHediff.MaxSeverity;
-						}
-						if (scenPart_ForcedHediff.severityRange.min > scenPart_ForcedHediff.MaxSeverity)
-						{
-							scenPart_ForcedHediff.severityRange.min = scenPart_ForcedHediff.MaxSeverity;
-						}
-					};
+						severityRange.max = MaxSeverity;
+					}
+					if (severityRange.min > MaxSeverity)
+					{
+						severityRange.min = MaxSeverity;
+					}
 				});
 			}
 			Widgets.FloatRange(new Rect(scenPartRect.x, scenPartRect.y + ScenPart.RowHeight, scenPartRect.width, 31f), listing.CurHeight.GetHashCode(), ref severityRange, 0f, MaxSeverity, "ConfigurableSeverity");

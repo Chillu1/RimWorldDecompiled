@@ -85,12 +85,13 @@ namespace RimWorld
 						if (num3 > 0 && mode == DestroyMode.KillFinalize && thingDefCountClass.thingDef.slagDef != null)
 						{
 							int count = thingDefCountClass.thingDef.slagDef.smeltProducts.First((ThingDefCountClass pro) => pro.thingDef == ThingDefOf.Steel).count;
-							int num4 = num3 / 2 / 8;
-							for (int m = 0; m < num4; m++)
+							int a = num3 / count;
+							a = Mathf.Min(a, diedThing.def.Size.Area / 2);
+							for (int m = 0; m < a; m++)
 							{
 								thingOwner.TryAdd(ThingMaker.MakeThing(thingDefCountClass.thingDef.slagDef));
 							}
-							num3 -= num4 * count;
+							num3 -= a * count;
 						}
 						if (num3 > 0)
 						{
@@ -102,30 +103,30 @@ namespace RimWorld
 				}
 			}
 			List<IntVec3> list2 = leavingsRect.Cells.InRandomOrder().ToList();
-			int num5 = 0;
+			int num4 = 0;
 			while (true)
 			{
 				if (thingOwner.Count > 0)
 				{
-					if (mode == DestroyMode.KillFinalize && !map.areaManager.Home[list2[num5]])
+					if (mode == DestroyMode.KillFinalize && !map.areaManager.Home[list2[num4]])
 					{
 						thingOwner[0].SetForbidden(value: true, warnOnFail: false);
 					}
-					if (!thingOwner.TryDrop(thingOwner[0], list2[num5], map, ThingPlaceMode.Near, out Thing lastResultingThing, null, nearPlaceValidator))
+					if (!thingOwner.TryDrop(thingOwner[0], list2[num4], map, ThingPlaceMode.Near, out Thing lastResultingThing, null, nearPlaceValidator))
 					{
 						break;
 					}
 					listOfLeavingsOut?.Add(lastResultingThing);
-					num5++;
-					if (num5 >= list2.Count)
+					num4++;
+					if (num4 >= list2.Count)
 					{
-						num5 = 0;
+						num4 = 0;
 					}
 					continue;
 				}
 				return;
 			}
-			Log.Warning("Failed to place all leavings for destroyed thing " + diedThing + " at " + leavingsRect.CenterCell);
+			Log.Warning(string.Concat("Failed to place all leavings for destroyed thing ", diedThing, " at ", leavingsRect.CenterCell));
 		}
 
 		public static void DoLeavingsFor(TerrainDef terrain, IntVec3 cell, Map map)
@@ -156,7 +157,7 @@ namespace RimWorld
 				}
 			}
 			while (thingOwner.TryDrop(thingOwner[0], cell, map, ThingPlaceMode.Near, out lastResultingThing));
-			Log.Warning("Failed to place all leavings for removed terrain " + terrain + " at " + cell);
+			Log.Warning(string.Concat("Failed to place all leavings for removed terrain ", terrain, " at ", cell));
 		}
 
 		public static bool CanBuildingLeaveResources(Thing destroyedThing, DestroyMode mode)

@@ -73,7 +73,7 @@ namespace RimWorld
 			Room room = c.GetRoom(map, RegionType.Set_All);
 			bool flag = map.roofGrid.Roofed(c);
 			bool flag2 = room?.UsesOutdoorTemperature ?? false;
-			if ((room == null) | flag2)
+			if (room == null || flag2)
 			{
 				if (outdoorMeltAmount > 0f)
 				{

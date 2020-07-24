@@ -1,15 +1,32 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 using Verse;
 
 namespace RimWorld.SketchGen
 {
 	public class SketchResolver_Monument : SketchResolver
 	{
-		private const int MaxOpenSize = 15;
-
-		private const int MinClosedSize = 8;
+		private static readonly SimpleCurve OpenChancePerSizeCurve = new SimpleCurve
+		{
+			{
+				0f,
+				1f
+			},
+			{
+				3f,
+				0.85f
+			},
+			{
+				6f,
+				0.2f
+			},
+			{
+				8f,
+				0f
+			}
+		};
 
 		protected override void ResolveInt(ResolveParams parms)
 		{
@@ -25,7 +42,7 @@ namespace RimWorld.SketchGen
 			}
 			int width = intVec.x;
 			int height = intVec.z;
-			bool flag = parms.monumentOpen.HasValue ? parms.monumentOpen.Value : (width < 8 || height < 8 || (width <= 15 && height <= 15 && Rand.Bool));
+			bool flag = (!parms.monumentOpen.HasValue) ? Rand.Chance(OpenChancePerSizeCurve.Evaluate(Mathf.Max(width, height))) : parms.monumentOpen.Value;
 			Sketch monument = new Sketch();
 			bool onlyBuildableByPlayer = parms.onlyBuildableByPlayer ?? false;
 			bool filterAllowsAll = parms.allowedMonumentThings == null;
@@ -87,71 +104,33 @@ namespace RimWorld.SketchGen
 			parms2.connectedGroupsSameStuff = true;
 			parms2.assignRandomStuffTo = ThingDefOf.Wall;
 			SketchResolverDefOf.AssignRandomStuff.Resolve(parms2);
-			ResolveParams parms3 = parms;
-			parms3.sketch = monument;
-			parms3.floorFillRoomsOnly = !flag;
-			parms3.allowConcrete = (parms.allowConcrete ?? false);
-			parms3.rect = new CellRect(0, 0, width, height);
-			SketchResolverDefOf.FloorFill.Resolve(parms3);
+			if (parms.addFloors ?? true)
+			{
+				ResolveParams parms3 = parms;
+				parms3.singleFloorType = true;
+				parms3.sketch = monument;
+				parms3.floorFillRoomsOnly = !flag;
+				parms3.onlyStoneFloors = (parms.onlyStoneFloors ?? true);
+				parms3.allowConcrete = (parms.allowConcrete ?? false);
+				parms3.rect = new CellRect(0, 0, width, height);
+				SketchResolverDefOf.FloorFill.Resolve(parms3);
+			}
 			if (CanUse(ThingDefOf.Column))
 			{
 				ResolveParams parms4 = parms;
 				parms4.rect = new CellRect(0, 0, width, height);
 				parms4.sketch = monument;
+				parms4.requireFloor = true;
 				SketchResolverDefOf.AddColumns.Resolve(parms4);
 			}
-			if (CanUse(ThingDefOf.Urn))
-			{
-				ResolveParams parms5 = parms;
-				parms5.sketch = monument;
-				parms5.cornerThing = ThingDefOf.Urn;
-				SketchResolverDefOf.AddCornerThings.Resolve(parms5);
-			}
-			if (CanUse(ThingDefOf.SteleLarge))
-			{
-				ResolveParams parms6 = parms;
-				parms6.sketch = monument;
-				parms6.thingCentral = ThingDefOf.SteleLarge;
-				SketchResolverDefOf.AddThingsCentral.Resolve(parms6);
-			}
-			if (CanUse(ThingDefOf.SteleGrand))
-			{
-				ResolveParams parms7 = parms;
-				parms7.sketch = monument;
-				parms7.thingCentral = ThingDefOf.SteleGrand;
-				SketchResolverDefOf.AddThingsCentral.Resolve(parms7);
-			}
-			if (CanUse(ThingDefOf.Table1x2c))
-			{
-				ResolveParams parms8 = parms;
-				parms8.sketch = monument;
-				parms8.wallEdgeThing = ThingDefOf.Table1x2c;
-				parms8.requireFloor = true;
-				SketchResolverDefOf.AddWallEdgeThings.Resolve(parms8);
-			}
-			if (CanUse(ThingDefOf.Sarcophagus))
-			{
-				ResolveParams parms9 = parms;
-				parms9.sketch = monument;
-				parms9.wallEdgeThing = ThingDefOf.Sarcophagus;
-				parms9.requireFloor = true;
-				SketchResolverDefOf.AddWallEdgeThings.Resolve(parms9);
-			}
+			TryPlaceFurniture(parms, monument, CanUse);
 			for (int num4 = 0; num4 < 2; num4++)
 			{
-				ApplySymmetry(parms, horizontalSymmetry, verticalSymmetry, monument, width, height);
-				ResolveParams parms10 = parms;
-				parms10.sketch = monument;
-				parms10.rect = new CellRect(0, 0, width, height);
-				SketchResolverDefOf.AddInnerMonuments.Resolve(parms10);
-			}
-			if (CanUse(ThingDefOf.Table2x2c))
-			{
-				ResolveParams parms11 = parms;
-				parms11.sketch = monument;
-				parms11.thingCentral = ThingDefOf.Table2x2c;
-				parms11.requireFloor = true;
-				SketchResolverDefOf.AddThingsCentral.Resolve(parms11);
+				ResolveParams parms5 = parms;
+				parms5.addFloors = false;
+				parms5.sketch = monument;
+				parms5.rect = new CellRect(0, 0, width, height);
+				SketchResolverDefOf.AddInnerMonuments.Resolve(parms5);
 			}
 			bool num5 = parms.allowMonumentDoors ?? (filterAllowsAll || parms.allowedMonumentThings.Allows(ThingDefOf.Door));
 			if (num5 && list.Where((IntVec3 x) => (!horizontalSymmetry || x.x < width / 2) && (!verticalSymmetry || x.z < height / 2) && monument.ThingsAt(x).Any((SketchThing y) => y.def == ThingDefOf.Wall) && ((!monument.ThingsAt(new IntVec3(x.x - 1, x.y, x.z)).Any() && !monument.ThingsAt(new IntVec3(x.x + 1, x.y, x.z)).Any()) || (!monument.ThingsAt(new IntVec3(x.x, x.y, x.z - 1)).Any() && !monument.ThingsAt(new IntVec3(x.x, x.y, x.z + 1)).Any()))).TryRandomElement(out IntVec3 result))
@@ -163,6 +142,7 @@ namespace RimWorld.SketchGen
 					monument.AddThing(ThingDefOf.Door, result, Rot4.North, sketchThing.Stuff);
 				}
 			}
+			TryPlaceFurniture(parms, monument, CanUse);
 			ApplySymmetry(parms, horizontalSymmetry, verticalSymmetry, monument, width, height);
 			if (num5 && !flag && !monument.Things.Any((SketchThing x) => x.def == ThingDefOf.Door) && monument.Things.Where((SketchThing x) => x.def == ThingDefOf.Wall && ((monument.Passable(x.pos.x - 1, x.pos.z) && monument.Passable(x.pos.x + 1, x.pos.z) && monument.AnyTerrainAt(x.pos.x - 1, x.pos.z) != monument.AnyTerrainAt(x.pos.x + 1, x.pos.z)) || (monument.Passable(x.pos.x, x.pos.z - 1) && monument.Passable(x.pos.x, x.pos.z + 1) && monument.AnyTerrainAt(x.pos.x, x.pos.z - 1) != monument.AnyTerrainAt(x.pos.x, x.pos.z + 1)))).TryRandomElement(out SketchThing result2))
 			{
@@ -220,6 +200,60 @@ namespace RimWorld.SketchGen
 				parms3.symmetryOrigin = height / 2;
 				parms3.symmetryOriginIncluded = (height % 2 == 1);
 				SketchResolverDefOf.Symmetry.Resolve(parms3);
+			}
+		}
+
+		private void TryPlaceFurniture(ResolveParams parms, Sketch monument, Func<ThingDef, bool> canUseValidator)
+		{
+			if (canUseValidator == null || canUseValidator(ThingDefOf.Urn))
+			{
+				ResolveParams parms2 = parms;
+				parms2.sketch = monument;
+				parms2.cornerThing = ThingDefOf.Urn;
+				parms2.requireFloor = true;
+				SketchResolverDefOf.AddCornerThings.Resolve(parms2);
+			}
+			if (canUseValidator == null || canUseValidator(ThingDefOf.SteleLarge))
+			{
+				ResolveParams parms3 = parms;
+				parms3.sketch = monument;
+				parms3.thingCentral = ThingDefOf.SteleLarge;
+				parms3.requireFloor = true;
+				SketchResolverDefOf.AddThingsCentral.Resolve(parms3);
+			}
+			if (canUseValidator == null || canUseValidator(ThingDefOf.SteleGrand))
+			{
+				ResolveParams parms4 = parms;
+				parms4.sketch = monument;
+				parms4.thingCentral = ThingDefOf.SteleGrand;
+				parms4.requireFloor = true;
+				SketchResolverDefOf.AddThingsCentral.Resolve(parms4);
+			}
+			if (canUseValidator == null || canUseValidator(ThingDefOf.Table1x2c))
+			{
+				ResolveParams parms5 = parms;
+				parms5.sketch = monument;
+				parms5.wallEdgeThing = ThingDefOf.Table1x2c;
+				parms5.requireFloor = true;
+				SketchResolverDefOf.AddWallEdgeThings.Resolve(parms5);
+			}
+			if (canUseValidator == null || canUseValidator(ThingDefOf.Table2x2c))
+			{
+				ResolveParams parms6 = parms;
+				parms6.sketch = monument;
+				parms6.thingCentral = ThingDefOf.Table2x2c;
+				parms6.requireFloor = true;
+				SketchResolverDefOf.AddThingsCentral.Resolve(parms6);
+			}
+			if (canUseValidator == null || canUseValidator(ThingDefOf.Sarcophagus))
+			{
+				ResolveParams parms7 = parms;
+				parms7.sketch = monument;
+				parms7.wallEdgeThing = ThingDefOf.Sarcophagus;
+				parms7.requireFloor = true;
+				parms7.thingCentral = ThingDefOf.Sarcophagus;
+				SketchResolverDefOf.AddWallEdgeThings.Resolve(parms7);
+				SketchResolverDefOf.AddThingsCentral.Resolve(parms7);
 			}
 		}
 	}

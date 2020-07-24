@@ -18,22 +18,23 @@ namespace RimWorld
 
 		public override void Generate(Map map, GenStepParams parms)
 		{
-			if (!map.TileInfo.WaterCovered)
+			if (map.TileInfo.WaterCovered)
 			{
-				freqFactorNoise = new Perlin(0.014999999664723873, 2.0, 0.5, 6, Rand.Range(0, 999999), QualityMode.Medium);
-				freqFactorNoise = new ScaleBias(1.0, 1.0, freqFactorNoise);
-				NoiseDebugUI.StoreNoiseRender(freqFactorNoise, "rock_chunks_freq_factor");
-				MapGenFloatGrid elevation = MapGenerator.Elevation;
-				foreach (IntVec3 allCell in map.AllCells)
-				{
-					float num = 0.006f * freqFactorNoise.GetValue(allCell);
-					if (elevation[allCell] < 0.55f && Rand.Value < num)
-					{
-						GrowLowRockFormationFrom(allCell, map);
-					}
-				}
-				freqFactorNoise = null;
+				return;
 			}
+			freqFactorNoise = new Perlin(0.014999999664723873, 2.0, 0.5, 6, Rand.Range(0, 999999), QualityMode.Medium);
+			freqFactorNoise = new ScaleBias(1.0, 1.0, freqFactorNoise);
+			NoiseDebugUI.StoreNoiseRender(freqFactorNoise, "rock_chunks_freq_factor");
+			MapGenFloatGrid elevation = MapGenerator.Elevation;
+			foreach (IntVec3 allCell in map.AllCells)
+			{
+				float num = 0.006f * freqFactorNoise.GetValue(allCell);
+				if (elevation[allCell] < 0.55f && Rand.Value < num)
+				{
+					GrowLowRockFormationFrom(allCell, map);
+				}
+			}
+			freqFactorNoise = null;
 		}
 
 		private void GrowLowRockFormationFrom(IntVec3 root, Map map)

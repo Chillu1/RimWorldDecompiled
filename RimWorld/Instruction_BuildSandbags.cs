@@ -40,16 +40,17 @@ namespace RimWorld
 			}
 			foreach (IntVec3 item in Find.TutorialState.sandbagsRect.ContractedBy(1))
 			{
-				if (!Find.TutorialState.sandbagsRect.ContractedBy(2).Contains(item))
+				if (Find.TutorialState.sandbagsRect.ContractedBy(2).Contains(item))
 				{
-					List<Thing> thingList = item.GetThingList(base.Map);
-					for (int num = thingList.Count - 1; num >= 0; num--)
+					continue;
+				}
+				List<Thing> thingList = item.GetThingList(base.Map);
+				for (int num = thingList.Count - 1; num >= 0; num--)
+				{
+					Thing thing = thingList[num];
+					if (thing.def.passability != 0 && (thing.def.category == ThingCategory.Plant || thing.def.category == ThingCategory.Item))
 					{
-						Thing thing = thingList[num];
-						if (thing.def.passability != 0 && (thing.def.category == ThingCategory.Plant || thing.def.category == ThingCategory.Item))
-						{
-							thing.Destroy();
-						}
+						thing.Destroy();
 					}
 				}
 			}

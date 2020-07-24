@@ -57,18 +57,19 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
+			JobDriver_PredatorHunt jobDriver_PredatorHunt = this;
 			AddFinishAction(delegate
 			{
-				base.Map.attackTargetsCache.UpdateTarget(pawn);
+				jobDriver_PredatorHunt.Map.attackTargetsCache.UpdateTarget(jobDriver_PredatorHunt.pawn);
 			});
 			Toil prepareToEatCorpse = new Toil();
 			prepareToEatCorpse.initAction = delegate
 			{
 				Pawn actor = prepareToEatCorpse.actor;
-				Corpse corpse = Corpse;
+				Corpse corpse = jobDriver_PredatorHunt.Corpse;
 				if (corpse == null)
 				{
-					Pawn prey2 = Prey;
+					Pawn prey2 = jobDriver_PredatorHunt.Prey;
 					if (prey2 == null)
 					{
 						actor.jobs.EndCurrentJob(JobCondition.Incompletable);
@@ -93,25 +94,25 @@ namespace RimWorld
 			};
 			yield return Toils_General.DoAtomic(delegate
 			{
-				base.Map.attackTargetsCache.UpdateTarget(pawn);
+				jobDriver_PredatorHunt.Map.attackTargetsCache.UpdateTarget(jobDriver_PredatorHunt.pawn);
 			});
 			Action hitAction = delegate
 			{
-				Pawn prey = Prey;
-				bool surpriseAttack = firstHit && !prey.IsColonist;
-				if (pawn.meleeVerbs.TryMeleeAttack(prey, job.verbToUse, surpriseAttack))
+				Pawn prey = jobDriver_PredatorHunt.Prey;
+				bool surpriseAttack = jobDriver_PredatorHunt.firstHit && !prey.IsColonist;
+				if (jobDriver_PredatorHunt.pawn.meleeVerbs.TryMeleeAttack(prey, jobDriver_PredatorHunt.job.verbToUse, surpriseAttack))
 				{
-					if (!notifiedPlayerAttacked && PawnUtility.ShouldSendNotificationAbout(prey))
+					if (!jobDriver_PredatorHunt.notifiedPlayerAttacked && PawnUtility.ShouldSendNotificationAbout(prey))
 					{
-						notifiedPlayerAttacked = true;
-						Messages.Message("MessageAttackedByPredator".Translate(prey.LabelShort, pawn.LabelIndefinite(), prey.Named("PREY"), pawn.Named("PREDATOR")).CapitalizeFirst(), prey, MessageTypeDefOf.ThreatSmall);
+						jobDriver_PredatorHunt.notifiedPlayerAttacked = true;
+						Messages.Message("MessageAttackedByPredator".Translate(prey.LabelShort, jobDriver_PredatorHunt.pawn.LabelIndefinite(), prey.Named("PREY"), jobDriver_PredatorHunt.pawn.Named("PREDATOR")).CapitalizeFirst(), prey, MessageTypeDefOf.ThreatSmall);
 					}
-					base.Map.attackTargetsCache.UpdateTarget(pawn);
-					firstHit = false;
+					jobDriver_PredatorHunt.Map.attackTargetsCache.UpdateTarget(jobDriver_PredatorHunt.pawn);
+					jobDriver_PredatorHunt.firstHit = false;
 				}
 			};
-			Toil toil = Toils_Combat.FollowAndMeleeAttack(TargetIndex.A, hitAction).JumpIfDespawnedOrNull(TargetIndex.A, prepareToEatCorpse).JumpIf(() => Corpse != null, prepareToEatCorpse)
-				.FailOn(() => Find.TickManager.TicksGame > startTick + 5000 && (float)(job.GetTarget(TargetIndex.A).Cell - pawn.Position).LengthHorizontalSquared > 4f);
+			Toil toil = Toils_Combat.FollowAndMeleeAttack(TargetIndex.A, hitAction).JumpIfDespawnedOrNull(TargetIndex.A, prepareToEatCorpse).JumpIf(() => jobDriver_PredatorHunt.Corpse != null, prepareToEatCorpse)
+				.FailOn(() => Find.TickManager.TicksGame > jobDriver_PredatorHunt.startTick + 5000 && (float)(jobDriver_PredatorHunt.job.GetTarget(TargetIndex.A).Cell - jobDriver_PredatorHunt.pawn.Position).LengthHorizontalSquared > 4f);
 			toil.AddPreTickAction(CheckWarnPlayer);
 			yield return toil;
 			yield return prepareToEatCorpse;
@@ -120,7 +121,7 @@ namespace RimWorld
 			float durationMultiplier = 1f / pawn.GetStatValue(StatDefOf.EatingSpeed);
 			yield return Toils_Ingest.ChewIngestible(pawn, durationMultiplier, TargetIndex.A).FailOnDespawnedOrNull(TargetIndex.A).FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
 			yield return Toils_Ingest.FinalizeIngest(pawn, TargetIndex.A);
-			yield return Toils_Jump.JumpIf(gotoCorpse, () => pawn.needs.food.CurLevelPercentage < 0.9f);
+			yield return Toils_Jump.JumpIf(gotoCorpse, () => jobDriver_PredatorHunt.pawn.needs.food.CurLevelPercentage < 0.9f);
 		}
 
 		public override void Notify_DamageTaken(DamageInfo dinfo)

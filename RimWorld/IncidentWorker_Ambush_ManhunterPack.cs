@@ -22,7 +22,7 @@ namespace RimWorld
 		{
 			if (!ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(AdjustedPoints(parms.points), parms.target.Tile, out PawnKindDef animalKind) && !ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(AdjustedPoints(parms.points), -1, out animalKind))
 			{
-				Log.Error("Could not find any valid animal kind for " + def + " incident.");
+				Log.Error(string.Concat("Could not find any valid animal kind for ", def, " incident."));
 				return new List<Pawn>();
 			}
 			return ManhunterPackIncidentUtility.GenerateAnimals_NewTmp(animalKind, parms.target.Tile, AdjustedPoints(parms.points));
@@ -32,6 +32,7 @@ namespace RimWorld
 		{
 			for (int i = 0; i < generatedPawns.Count; i++)
 			{
+				generatedPawns[i].health.AddHediff(HediffDefOf.Scaria);
 				generatedPawns[i].mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.ManhunterPermanent);
 			}
 		}

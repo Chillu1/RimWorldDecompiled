@@ -192,7 +192,7 @@ namespace RimWorld
 			{
 				return true;
 			}
-			Log.Error("Unknown TransferAsOne pair: " + a + ", " + b);
+			Log.Error(string.Concat("Unknown TransferAsOne pair: ", a, ", ", b));
 			return false;
 		}
 
@@ -334,8 +334,12 @@ namespace RimWorld
 						outThingsAfterTransfer.Add(new ThingCount(originalThing, toTake));
 					}, removeIfTakingEntireThing: false, errorIfNotEnoughThings: false);
 				}
-				else if (countToTransferToDestination > 0)
+				else
 				{
+					if (countToTransferToDestination <= 0)
+					{
+						continue;
+					}
 					TransferNoSplit(tradeables[j].thingsColony, countToTransferToDestination, delegate(Thing originalThing, int toTake)
 					{
 						int num = 0;

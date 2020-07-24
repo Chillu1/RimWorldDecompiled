@@ -39,6 +39,18 @@ namespace RimWorld
 			{
 				source = source.Where((ThingDef x) => (int)x.techLevel <= (int)techLevel);
 			}
+			RoyalTitleDef highestTitle = null;
+			if (parms.makingFaction != null && parms.makingFaction.def.HasRoyalTitles)
+			{
+				foreach (Pawn allMapsCaravansAndTravelingTransportPods_Alive_Colonist in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_Colonists)
+				{
+					RoyalTitleDef royalTitleDef = (allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty != null) ? allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty.GetCurrentTitle(parms.makingFaction) : null;
+					if (royalTitleDef != null && (highestTitle == null || royalTitleDef.seniority > highestTitle.seniority))
+					{
+						highestTitle = royalTitleDef;
+					}
+				}
+			}
 			source = source.Where(delegate(ThingDef x)
 			{
 				CompProperties_Techprint compProperties = x.GetCompProperties<CompProperties_Techprint>();
@@ -49,6 +61,14 @@ namespace RimWorld
 						return false;
 					}
 					if (compProperties.project.IsFinished || compProperties.project.TechprintRequirementMet)
+					{
+						return false;
+					}
+				}
+				if (parms.makingFaction != null && parms.makingFaction.def.HasRoyalTitles)
+				{
+					RoyalTitleDef minTitleToUse = ThingRequiringRoyalPermissionUtility.GetMinTitleToUse(x, parms.makingFaction);
+					if (minTitleToUse != null && (highestTitle == null || highestTitle.seniority < minTitleToUse.seniority))
 					{
 						return false;
 					}

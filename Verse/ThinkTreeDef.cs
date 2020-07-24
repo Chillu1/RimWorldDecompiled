@@ -36,15 +36,15 @@ namespace Verse
 				int key = node.UniqueSaveKey;
 				if (key == -1)
 				{
-					yield return "Thinknode " + node.GetType() + " has invalid save key " + key;
+					yield return string.Concat("Thinknode ", node.GetType(), " has invalid save key ", key);
 				}
 				else if (instances.Contains(node))
 				{
-					yield return "There are two same ThinkNode instances in one think tree (their type is " + node.GetType() + ")";
+					yield return string.Concat("There are two same ThinkNode instances in one think tree (their type is ", node.GetType(), ")");
 				}
 				else if (usedKeys.Contains(key))
 				{
-					yield return "Two ThinkNodes have the same unique save key " + key + " (one of the nodes is " + node.GetType() + ")";
+					yield return string.Concat("Two ThinkNodes have the same unique save key ", key, " (one of the nodes is ", node.GetType(), ")");
 				}
 				if (key != -1)
 				{
@@ -83,11 +83,13 @@ namespace Verse
 			{
 				if (node.subNodes[i].parent != null)
 				{
-					Log.Warning("Think node " + node.subNodes[i] + " from think tree " + defName + " already has a parent node (" + node.subNodes[i].parent + "). This means that it's referenced by more than one think tree (should have been copied instead).");
-					continue;
+					Log.Warning(string.Concat("Think node ", node.subNodes[i], " from think tree ", defName, " already has a parent node (", node.subNodes[i].parent, "). This means that it's referenced by more than one think tree (should have been copied instead)."));
 				}
-				node.subNodes[i].parent = node;
-				ResolveParentNodes(node.subNodes[i]);
+				else
+				{
+					node.subNodes[i].parent = node;
+					ResolveParentNodes(node.subNodes[i]);
+				}
 			}
 		}
 	}

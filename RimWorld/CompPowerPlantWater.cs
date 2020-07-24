@@ -82,15 +82,16 @@ namespace RimWorld
 			IEnumerable<Building> enumerable = parent.Map.listerBuildings.AllBuildingsColonistOfDef(ThingDefOf.WatermillGenerator);
 			foreach (IntVec3 item2 in WaterUseCells())
 			{
-				if (item2.InBounds(parent.Map))
+				if (!item2.InBounds(parent.Map))
 				{
-					foreach (Building item3 in enumerable)
+					continue;
+				}
+				foreach (Building item3 in enumerable)
+				{
+					if (item3 != parent && item3.GetComp<CompPowerPlantWater>().WaterUseRect().Contains(item2))
 					{
-						if (item3 != parent && item3.GetComp<CompPowerPlantWater>().WaterUseRect().Contains(item2))
-						{
-							waterDoubleUsed = true;
-							break;
-						}
+						waterDoubleUsed = true;
+						break;
 					}
 				}
 			}

@@ -206,7 +206,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return "(def=" + defInt + ", amount= " + amountInt + ", instigator=" + ((instigatorInt != null) ? instigatorInt.ToString() : categoryInt.ToString()) + ", angle=" + angleInt.ToString("F1") + ")";
+			return string.Concat("(def=", defInt, ", amount= ", amountInt, ", instigator=", (instigatorInt != null) ? instigatorInt.ToString() : categoryInt.ToString(), ", angle=", angleInt.ToString("F1"), ")");
 		}
 	}
 }

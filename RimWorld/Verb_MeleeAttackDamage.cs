@@ -60,28 +60,29 @@ namespace RimWorld
 					}
 				}
 			}
-			if (surpriseAttack && ((verbProps.surpriseAttack != null && !verbProps.surpriseAttack.extraMeleeDamages.NullOrEmpty()) || (tool != null && tool.surpriseAttack != null && !tool.surpriseAttack.extraMeleeDamages.NullOrEmpty())))
+			if (!surpriseAttack || ((verbProps.surpriseAttack == null || verbProps.surpriseAttack.extraMeleeDamages.NullOrEmpty()) && (tool == null || tool.surpriseAttack == null || tool.surpriseAttack.extraMeleeDamages.NullOrEmpty())))
 			{
-				IEnumerable<ExtraDamage> enumerable = Enumerable.Empty<ExtraDamage>();
-				if (verbProps.surpriseAttack != null && verbProps.surpriseAttack.extraMeleeDamages != null)
-				{
-					enumerable = enumerable.Concat(verbProps.surpriseAttack.extraMeleeDamages);
-				}
-				if (tool != null && tool.surpriseAttack != null && !tool.surpriseAttack.extraMeleeDamages.NullOrEmpty())
-				{
-					enumerable = enumerable.Concat(tool.surpriseAttack.extraMeleeDamages);
-				}
-				foreach (ExtraDamage item in enumerable)
-				{
-					int num2 = GenMath.RoundRandom(item.AdjustedDamageAmount(this, CasterPawn));
-					float armorPenetration2 = item.AdjustedArmorPenetration(this, CasterPawn);
-					DamageInfo damageInfo2 = new DamageInfo(item.def, num2, armorPenetration2, -1f, caster, null, source);
-					damageInfo2.SetBodyRegion(BodyPartHeight.Undefined, BodyPartDepth.Outside);
-					damageInfo2.SetWeaponBodyPartGroup(bodyPartGroupDef);
-					damageInfo2.SetWeaponHediff(hediffDef);
-					damageInfo2.SetAngle(direction);
-					yield return damageInfo2;
-				}
+				yield break;
+			}
+			IEnumerable<ExtraDamage> enumerable = Enumerable.Empty<ExtraDamage>();
+			if (verbProps.surpriseAttack != null && verbProps.surpriseAttack.extraMeleeDamages != null)
+			{
+				enumerable = enumerable.Concat(verbProps.surpriseAttack.extraMeleeDamages);
+			}
+			if (tool != null && tool.surpriseAttack != null && !tool.surpriseAttack.extraMeleeDamages.NullOrEmpty())
+			{
+				enumerable = enumerable.Concat(tool.surpriseAttack.extraMeleeDamages);
+			}
+			foreach (ExtraDamage item in enumerable)
+			{
+				int num2 = GenMath.RoundRandom(item.AdjustedDamageAmount(this, CasterPawn));
+				float armorPenetration2 = item.AdjustedArmorPenetration(this, CasterPawn);
+				DamageInfo damageInfo2 = new DamageInfo(item.def, num2, armorPenetration2, -1f, caster, null, source);
+				damageInfo2.SetBodyRegion(BodyPartHeight.Undefined, BodyPartDepth.Outside);
+				damageInfo2.SetWeaponBodyPartGroup(bodyPartGroupDef);
+				damageInfo2.SetWeaponHediff(hediffDef);
+				damageInfo2.SetAngle(direction);
+				yield return damageInfo2;
 			}
 		}
 
@@ -90,11 +91,12 @@ namespace RimWorld
 			DamageWorker.DamageResult result = new DamageWorker.DamageResult();
 			foreach (DamageInfo item in DamageInfosToApply(target))
 			{
-				if (target.ThingDestroyed)
+				if (!target.ThingDestroyed)
 				{
-					return result;
+					result = target.Thing.TakeDamage(item);
+					continue;
 				}
-				result = target.Thing.TakeDamage(item);
+				return result;
 			}
 			return result;
 		}

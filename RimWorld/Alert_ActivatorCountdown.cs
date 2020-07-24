@@ -15,15 +15,16 @@ namespace RimWorld
 				activatorCountdownsResult.Clear();
 				foreach (Map map in Find.Maps)
 				{
-					if (map.mapPawns.AnyColonistSpawned)
+					if (!map.mapPawns.AnyColonistSpawned)
 					{
-						foreach (Thing item in map.listerThings.ThingsMatching(ThingRequest.ForDef(ThingDefOf.ActivatorCountdown)))
+						continue;
+					}
+					foreach (Thing item in map.listerThings.ThingsMatching(ThingRequest.ForDef(ThingDefOf.ActivatorCountdown)))
+					{
+						CompSendSignalOnCountdown compSendSignalOnCountdown = item.TryGetComp<CompSendSignalOnCountdown>();
+						if (compSendSignalOnCountdown != null && compSendSignalOnCountdown.ticksLeft > 0)
 						{
-							CompSendSignalOnCountdown compSendSignalOnCountdown = item.TryGetComp<CompSendSignalOnCountdown>();
-							if (compSendSignalOnCountdown != null && compSendSignalOnCountdown.ticksLeft > 0)
-							{
-								activatorCountdownsResult.Add(item);
-							}
+							activatorCountdownsResult.Add(item);
 						}
 					}
 				}

@@ -30,7 +30,6 @@ namespace RimWorld
 				ThingSetMakerParams parms2 = ApplyFixedParams(parms);
 				Generate(parms2, list);
 				PostProcess(list);
-				return list;
 			}
 			catch (Exception arg)
 			{
@@ -40,12 +39,12 @@ namespace RimWorld
 					list[num].Destroy();
 					list.RemoveAt(num);
 				}
-				return list;
 			}
 			finally
 			{
 				thingsBeingGeneratedNow.Remove(list);
 			}
+			return list;
 		}
 
 		public bool CanGenerate(ThingSetMakerParams parms)
@@ -68,13 +67,14 @@ namespace RimWorld
 
 		public IEnumerable<ThingDef> AllGeneratableThingsDebug(ThingSetMakerParams parms)
 		{
-			if (CanGenerate(parms))
+			if (!CanGenerate(parms))
 			{
-				ThingSetMakerParams parms2 = ApplyFixedParams(parms);
-				foreach (ThingDef item in AllGeneratableThingsDebugSub(parms2).Distinct())
-				{
-					yield return item;
-				}
+				yield break;
+			}
+			ThingSetMakerParams parms2 = ApplyFixedParams(parms);
+			foreach (ThingDef item in AllGeneratableThingsDebugSub(parms2).Distinct())
+			{
+				yield return item;
 			}
 		}
 
@@ -89,19 +89,19 @@ namespace RimWorld
 		{
 			if (things.RemoveAll((Thing x) => x == null) != 0)
 			{
-				Log.Error(GetType() + " generated null things.");
+				Log.Error(string.Concat(GetType(), " generated null things."));
 			}
 			ChangeDeadPawnsToTheirCorpses(things);
 			for (int num = things.Count - 1; num >= 0; num--)
 			{
 				if (things[num].Destroyed)
 				{
-					Log.Error(GetType() + " generated destroyed thing " + things[num].ToStringSafe());
+					Log.Error(string.Concat(GetType(), " generated destroyed thing ", things[num].ToStringSafe()));
 					things.RemoveAt(num);
 				}
 				else if (things[num].stackCount <= 0)
 				{
-					Log.Error(GetType() + " generated " + things[num].ToStringSafe() + " with stackCount=" + things[num].stackCount);
+					Log.Error(string.Concat(GetType(), " generated ", things[num].ToStringSafe(), " with stackCount=", things[num].stackCount));
 					things.RemoveAt(num);
 				}
 			}

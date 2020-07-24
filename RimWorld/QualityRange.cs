@@ -48,7 +48,7 @@ namespace RimWorld
 
 		public override string ToString()
 		{
-			return min.ToString() + "~" + max.ToString();
+			return min.ToString() + "~" + max;
 		}
 
 		public override int GetHashCode()

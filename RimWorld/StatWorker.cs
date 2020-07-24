@@ -21,6 +21,11 @@ namespace RimWorld
 			return GetValue(StatRequest.For(thing));
 		}
 
+		public float GetValue(Thing thing, Pawn pawn, bool applyPostProcess = true)
+		{
+			return GetValue(StatRequest.For(thing, pawn));
+		}
+
 		public float GetValue(StatRequest req, bool applyPostProcess = true)
 		{
 			if (stat.minifiedThingInherits)
@@ -239,7 +244,7 @@ namespace RimWorld
 						float level2 = pawn.health.capacities.GetLevel(item.capacity);
 						float offset = item.GetOffset(pawn.health.capacities.GetLevel(item.capacity));
 						string text2 = ValueToString(offset, finalized: false);
-						string text3 = Mathf.Min(level2, item.max).ToStringPercent() + ", " + "HealthOffsetScale".Translate(item.scale.ToString() + "x");
+						string text3 = Mathf.Min(level2, item.max).ToStringPercent() + ", " + "HealthOffsetScale".Translate(item.scale + "x");
 						if (item.max < 999f)
 						{
 							text3 += ", " + "HealthFactorMaxImpact".Translate(item.max.ToStringPercent());
@@ -537,11 +542,16 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!stat.showIfModsLoaded.NullOrEmpty())
+			if (!stat.CanShowWithLoadedMods())
 			{
-				for (int i = 0; i < stat.showIfModsLoaded.Count; i++)
+				return false;
+			}
+			Pawn pawn;
+			if ((pawn = (req.Thing as Pawn)) != null && pawn.health != null && !stat.showIfHediffsPresent.NullOrEmpty())
+			{
+				for (int i = 0; i < stat.showIfHediffsPresent.Count; i++)
 				{
-					if (!ModsConfig.IsActive(stat.showIfModsLoaded[i]))
+					if (!pawn.health.hediffSet.HasHediff(stat.showIfHediffsPresent[i]))
 					{
 						return false;
 					}
@@ -662,7 +672,7 @@ namespace RimWorld
 			{
 				return true;
 			}
-			Log.Error("Unhandled case: " + stat + ", " + def);
+			Log.Error(string.Concat("Unhandled case: ", stat, ", ", def));
 			return false;
 		}
 
@@ -727,14 +737,15 @@ namespace RimWorld
 					}
 				}
 			}
-			if (pawn.equipment != null)
+			if (pawn.equipment == null)
 			{
-				foreach (ThingWithComps item2 in pawn.equipment.AllEquipmentListForReading)
+				yield break;
+			}
+			foreach (ThingWithComps item2 in pawn.equipment.AllEquipmentListForReading)
+			{
+				if (GearAffectsStat(item2.def, stat))
 				{
-					if (GearAffectsStat(item2.def, stat))
-					{
-						yield return item2;
-					}
+					yield return item2;
 				}
 			}
 		}
@@ -771,18 +782,23 @@ namespace RimWorld
 			return result;
 		}
 
-		public string ValueToString(float val, bool finalized, ToStringNumberSense numberSense = ToStringNumberSense.Absolute)
+		public virtual string ValueToString(float val, bool finalized, ToStringNumberSense numberSense = ToStringNumberSense.Absolute)
 		{
 			if (!finalized)
 			{
-				return val.ToStringByStyle(stat.ToStringStyleUnfinalized, numberSense);
+				string text = val.ToStringByStyle(stat.ToStringStyleUnfinalized, numberSense);
+				if (numberSense != ToStringNumberSense.Factor && !stat.formatStringUnfinalized.NullOrEmpty())
+				{
+					text = string.Format(stat.formatStringUnfinalized, text);
+				}
+				return text;
 			}
-			string text = val.ToStringByStyle(stat.toStringStyle, numberSense);
+			string text2 = val.ToStringByStyle(stat.toStringStyle, numberSense);
 			if (numberSense != ToStringNumberSense.Factor && !stat.formatString.NullOrEmpty())
 			{
-				text = string.Format(stat.formatString, text);
+				text2 = string.Format(stat.formatString, text2);
 			}
-			return text;
+			return text2;
 		}
 
 		public virtual IEnumerable<Dialog_InfoCard.Hyperlink> GetInfoCardHyperlinks(StatRequest statRequest)
@@ -818,14 +834,15 @@ namespace RimWorld
 			{
 				yield return new Dialog_InfoCard.Hyperlink(item);
 			}
-			if (stat.parts != null)
+			if (stat.parts == null)
 			{
-				foreach (StatPart part in stat.parts)
+				yield break;
+			}
+			foreach (StatPart part in stat.parts)
+			{
+				foreach (Dialog_InfoCard.Hyperlink infoCardHyperlink in part.GetInfoCardHyperlinks(statRequest))
 				{
-					foreach (Dialog_InfoCard.Hyperlink infoCardHyperlink in part.GetInfoCardHyperlinks(statRequest))
-					{
-						yield return infoCardHyperlink;
-					}
+					yield return infoCardHyperlink;
 				}
 			}
 		}

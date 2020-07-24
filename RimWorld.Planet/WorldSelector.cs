@@ -338,15 +338,13 @@ namespace RimWorld.Planet
 				{
 					int tile = canSelectTile ? GenWorld.MouseTile() : (-1);
 					SelectFirstOrNextFrom(list, tile);
+					return;
 				}
-				else
+				foreach (WorldObject item in list)
 				{
-					foreach (WorldObject item in list)
+					if (selected.Contains(item))
 					{
-						if (selected.Contains(item))
-						{
-							Deselect(item);
-						}
+						Deselect(item);
 					}
 				}
 			}
@@ -385,19 +383,20 @@ namespace RimWorld.Planet
 
 		private void AutoOrderToTile(Caravan c, int tile)
 		{
-			if (tile >= 0)
+			if (tile < 0)
 			{
-				if (c.autoJoinable && CaravanExitMapUtility.AnyoneTryingToJoinCaravan(c))
-				{
-					CaravanExitMapUtility.OpenSomeoneTryingToJoinCaravanDialog(c, delegate
-					{
-						AutoOrderToTileNow(c, tile);
-					});
-				}
-				else
+				return;
+			}
+			if (c.autoJoinable && CaravanExitMapUtility.AnyoneTryingToJoinCaravan(c))
+			{
+				CaravanExitMapUtility.OpenSomeoneTryingToJoinCaravanDialog(c, delegate
 				{
 					AutoOrderToTileNow(c, tile);
-				}
+				});
+			}
+			else
+			{
+				AutoOrderToTileNow(c, tile);
 			}
 		}
 

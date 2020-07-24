@@ -236,41 +236,42 @@ namespace Verse
 
 		public static void DrawWorldRadiusRing(int center, int radius)
 		{
-			if (radius >= 0)
+			if (radius < 0)
 			{
-				if (cachedEdgeTilesForCenter != center || cachedEdgeTilesForRadius != radius || cachedEdgeTilesForWorldSeed != Find.World.info.Seed)
-				{
-					cachedEdgeTilesForCenter = center;
-					cachedEdgeTilesForRadius = radius;
-					cachedEdgeTilesForWorldSeed = Find.World.info.Seed;
-					cachedEdgeTiles.Clear();
-					Find.WorldFloodFiller.FloodFill(center, (int tile) => true, delegate(int tile, int dist)
-					{
-						if (dist > radius + 1)
-						{
-							return true;
-						}
-						if (dist == radius + 1)
-						{
-							cachedEdgeTiles.Add(tile);
-						}
-						return false;
-					});
-					WorldGrid worldGrid = Find.WorldGrid;
-					Vector3 c = worldGrid.GetTileCenter(center);
-					Vector3 i = c.normalized;
-					cachedEdgeTiles.Sort(delegate(int a, int b)
-					{
-						float num = Vector3.Dot(i, Vector3.Cross(worldGrid.GetTileCenter(a) - c, worldGrid.GetTileCenter(b) - c));
-						if (Mathf.Abs(num) < 0.0001f)
-						{
-							return 0;
-						}
-						return (!(num < 0f)) ? 1 : (-1);
-					});
-				}
-				DrawWorldLineStrip(cachedEdgeTiles, OneSidedWorldLineMatWhite, 5f);
+				return;
 			}
+			if (cachedEdgeTilesForCenter != center || cachedEdgeTilesForRadius != radius || cachedEdgeTilesForWorldSeed != Find.World.info.Seed)
+			{
+				cachedEdgeTilesForCenter = center;
+				cachedEdgeTilesForRadius = radius;
+				cachedEdgeTilesForWorldSeed = Find.World.info.Seed;
+				cachedEdgeTiles.Clear();
+				Find.WorldFloodFiller.FloodFill(center, (int tile) => true, delegate(int tile, int dist)
+				{
+					if (dist > radius + 1)
+					{
+						return true;
+					}
+					if (dist == radius + 1)
+					{
+						cachedEdgeTiles.Add(tile);
+					}
+					return false;
+				});
+				WorldGrid worldGrid = Find.WorldGrid;
+				Vector3 c = worldGrid.GetTileCenter(center);
+				Vector3 i = c.normalized;
+				cachedEdgeTiles.Sort(delegate(int a, int b)
+				{
+					float num = Vector3.Dot(i, Vector3.Cross(worldGrid.GetTileCenter(a) - c, worldGrid.GetTileCenter(b) - c));
+					if (Mathf.Abs(num) < 0.0001f)
+					{
+						return 0;
+					}
+					return (!(num < 0f)) ? 1 : (-1);
+				});
+			}
+			DrawWorldLineStrip(cachedEdgeTiles, OneSidedWorldLineMatWhite, 5f);
 		}
 
 		public static void DrawWorldLineStrip(List<int> edgeTiles, Material material, float widthFactor)
@@ -311,8 +312,18 @@ namespace Verse
 
 		private static void DrawTargetingHighlight_Cell(IntVec3 c)
 		{
-			Vector3 position = c.ToVector3ShiftedWithAltitude(AltitudeLayer.Building);
+			DrawTargetHighlightWithLayer(c, AltitudeLayer.Building);
+		}
+
+		public static void DrawTargetHighlightWithLayer(IntVec3 c, AltitudeLayer layer)
+		{
+			Vector3 position = c.ToVector3ShiftedWithAltitude(layer);
 			Graphics.DrawMesh(MeshPool.plane10, position, Quaternion.identity, CurTargetingMat, 0);
+		}
+
+		public static void DrawTargetHighlightWithLayer(Vector3 c, AltitudeLayer layer)
+		{
+			Graphics.DrawMesh(position: new Vector3(c.x, layer.AltitudeFor(), c.z), mesh: MeshPool.plane10, rotation: Quaternion.identity, material: CurTargetingMat, layer: 0);
 		}
 
 		private static void DrawTargetingHighlight_Thing(Thing t)

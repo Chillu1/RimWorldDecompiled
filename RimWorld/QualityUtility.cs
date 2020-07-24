@@ -323,10 +323,11 @@ namespace RimWorld
 			foreach (PawnKindDef item in DefDatabase<PawnKindDef>.AllDefs.OrderBy((PawnKindDef k) => k.combatPower))
 			{
 				PawnKindDef localPk = item;
-				if (localPk.RaceProps.Humanlike)
+				if (!localPk.RaceProps.Humanlike)
 				{
-					list.Add(new TableDataGetter<QualityCategory>("Gear for\n" + localPk.defName + "\nPower " + localPk.combatPower.ToString("F0") + "\nitemQuality:\n" + localPk.itemQuality, (QualityCategory q) => DebugQualitiesStringSingle(q, () => GenerateQualityGeneratingPawn(localPk))));
+					continue;
 				}
+				list.Add(new TableDataGetter<QualityCategory>("Gear for\n" + localPk.defName + "\nPower " + localPk.combatPower.ToString("F0") + "\nitemQuality:\n" + localPk.itemQuality, (QualityCategory q) => DebugQualitiesStringSingle(q, () => GenerateQualityGeneratingPawn(localPk))));
 			}
 			DebugTables.MakeTablesDialog(AllQualityCategories, list.ToArray());
 		}

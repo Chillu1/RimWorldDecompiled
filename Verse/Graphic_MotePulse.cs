@@ -16,7 +16,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return "Graphic_MotePulse(path=" + path + ", shader=" + base.Shader + ", color=" + color + ", colorTwo=unsupported)";
+			return string.Concat("Graphic_MotePulse(path=", path, ", shader=", base.Shader, ", color=", color, ", colorTwo=unsupported)");
 		}
 	}
 }

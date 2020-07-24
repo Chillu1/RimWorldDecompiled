@@ -124,43 +124,45 @@ namespace RimWorld
 
 		public static IEnumerable<Gizmo> ShipStartupGizmos(Building building)
 		{
-			if (HasHibernatingParts(building))
+			Building building2 = building;
+			if (!HasHibernatingParts(building2))
 			{
-				Command_Action command_Action = new Command_Action();
-				command_Action.action = delegate
-				{
-					string text = "HibernateWarning";
-					if (building.Map.info.parent.GetComponent<EscapeShipComp>() == null)
-					{
-						text += "Standalone";
-					}
-					if (!Find.Storyteller.difficulty.allowBigThreats)
-					{
-						text += "Pacifist";
-					}
-					DiaNode diaNode = new DiaNode(text.Translate());
-					DiaOption item = new DiaOption("Confirm".Translate())
-					{
-						action = delegate
-						{
-							StartupHibernatingParts(building);
-						},
-						resolveTree = true
-					};
-					diaNode.options.Add(item);
-					DiaOption item2 = new DiaOption("GoBack".Translate())
-					{
-						resolveTree = true
-					};
-					diaNode.options.Add(item2);
-					Find.WindowStack.Add(new Dialog_NodeTree(diaNode, delayInteractivity: true));
-				};
-				command_Action.defaultLabel = "CommandShipStartup".Translate();
-				command_Action.defaultDesc = "CommandShipStartupDesc".Translate();
-				command_Action.hotKey = KeyBindingDefOf.Misc1;
-				command_Action.icon = ContentFinder<Texture2D>.Get("UI/Commands/DesirePower");
-				yield return command_Action;
+				yield break;
 			}
+			Command_Action command_Action = new Command_Action();
+			command_Action.action = delegate
+			{
+				string text = "HibernateWarning";
+				if (building2.Map.info.parent.GetComponent<EscapeShipComp>() == null)
+				{
+					text += "Standalone";
+				}
+				if (!Find.Storyteller.difficulty.allowBigThreats)
+				{
+					text += "Pacifist";
+				}
+				DiaNode diaNode = new DiaNode(text.Translate());
+				DiaOption item = new DiaOption("Confirm".Translate())
+				{
+					action = delegate
+					{
+						StartupHibernatingParts(building2);
+					},
+					resolveTree = true
+				};
+				diaNode.options.Add(item);
+				DiaOption item2 = new DiaOption("GoBack".Translate())
+				{
+					resolveTree = true
+				};
+				diaNode.options.Add(item2);
+				Find.WindowStack.Add(new Dialog_NodeTree(diaNode, delayInteractivity: true));
+			};
+			command_Action.defaultLabel = "CommandShipStartup".Translate();
+			command_Action.defaultDesc = "CommandShipStartupDesc".Translate();
+			command_Action.hotKey = KeyBindingDefOf.Misc1;
+			command_Action.icon = ContentFinder<Texture2D>.Get("UI/Commands/DesirePower");
+			yield return command_Action;
 		}
 	}
 }

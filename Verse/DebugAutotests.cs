@@ -45,7 +45,7 @@ namespace Verse
 				}
 				return;
 			}
-			Log.Error("Pawn died while force downing: " + pawn + " at " + pawn.Position);
+			Log.Error(string.Concat("Pawn died while force downing: ", pawn, " at ", pawn.Position));
 		}
 
 		[DebugAction("Autotests", "Test force kill x100", allowedGameStates = AllowedGameStates.PlayingOnMap)]
@@ -70,7 +70,7 @@ namespace Verse
 				}
 				return;
 			}
-			Log.Error("Pawn died not die: " + pawn + " at " + pawn.Position);
+			Log.Error(string.Concat("Pawn died not die: ", pawn, " at ", pawn.Position));
 		}
 
 		[DebugAction("Autotests", "Test Surgery fail catastrophic x100", allowedGameStates = AllowedGameStates.PlayingOnMap)]
@@ -87,7 +87,7 @@ namespace Verse
 				pawn.health.forceIncap = false;
 				if (pawn.Dead)
 				{
-					Log.Error("Pawn died: " + pawn + " at " + pawn.Position);
+					Log.Error(string.Concat("Pawn died: ", pawn, " at ", pawn.Position));
 				}
 			}
 		}
@@ -105,7 +105,7 @@ namespace Verse
 				pawn.health.forceIncap = false;
 				if (pawn.Dead)
 				{
-					Log.Error("Pawn died: " + pawn + " at " + pawn.Position);
+					Log.Error(string.Concat("Pawn died: ", pawn, " at ", pawn.Position));
 				}
 			}
 		}

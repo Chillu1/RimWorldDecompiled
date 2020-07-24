@@ -69,7 +69,10 @@ namespace RimWorld.Planet
 		{
 			for (int i = 0; i < layers.Count; i++)
 			{
-				if (layers[i].Dirty)
+				if (!layers[i].Dirty)
+				{
+					continue;
+				}
 				{
 					IEnumerator enumerator = layers[i].Regenerate().GetEnumerator();
 					try
@@ -100,7 +103,6 @@ namespace RimWorld.Planet
 						}
 					}
 				}
-				continue;
 				IL_00ca:
 				yield return null;
 			}

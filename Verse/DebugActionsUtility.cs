@@ -27,24 +27,32 @@ namespace Verse
 				yield return 2000f;
 				yield return 3000f;
 				yield return 4000f;
-				yield break;
+				yield return 5000f;
 			}
-			for (int l = 20; l < 100; l += 10)
+			else
 			{
-				yield return l;
+				for (int l = 20; l < 100; l += 10)
+				{
+					yield return l;
+				}
+				for (int l = 100; l < 500; l += 25)
+				{
+					yield return l;
+				}
+				for (int l = 500; l < 1500; l += 50)
+				{
+					yield return l;
+				}
+				for (int l = 1500; l <= 5000; l += 100)
+				{
+					yield return l;
+				}
 			}
-			for (int l = 100; l < 500; l += 25)
-			{
-				yield return l;
-			}
-			for (int l = 500; l < 1500; l += 50)
-			{
-				yield return l;
-			}
-			for (int l = 1500; l <= 5000; l += 100)
-			{
-				yield return l;
-			}
+			yield return 6000f;
+			yield return 7000f;
+			yield return 8000f;
+			yield return 9000f;
+			yield return 10000f;
 		}
 	}
 }

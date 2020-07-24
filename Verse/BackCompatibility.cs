@@ -22,6 +22,12 @@ namespace Verse
 			new BackCompatibilityConverter_Universal()
 		};
 
+		private static readonly List<Tuple<string, Type>> RemovedDefs = new List<Tuple<string, Type>>
+		{
+			new Tuple<string, Type>("PsychicSilencer", typeof(ThingDef)),
+			new Tuple<string, Type>("PsychicSilencer", typeof(HediffDef))
+		};
+
 		private static List<Thing> tmpThingsToSpawnLater = new List<Thing>();
 
 		public static bool IsSaveCompatibleWith(string version)
@@ -61,7 +67,7 @@ namespace Verse
 					}
 					catch (Exception ex)
 					{
-						Log.Error("Error in PreLoadSavegame of " + conversionChain[i].GetType() + "\n" + ex);
+						Log.Error(string.Concat("Error in PreLoadSavegame of ", conversionChain[i].GetType(), "\n", ex));
 					}
 				}
 			}
@@ -79,7 +85,7 @@ namespace Verse
 					}
 					catch (Exception ex)
 					{
-						Log.Error("Error in PostLoadSavegame of " + conversionChain[i].GetType() + "\n" + ex);
+						Log.Error(string.Concat("Error in PostLoadSavegame of ", conversionChain[i].GetType(), "\n", ex));
 					}
 				}
 			}
@@ -94,20 +100,21 @@ namespace Verse
 			string text = defName;
 			for (int i = 0; i < conversionChain.Count; i++)
 			{
-				if (Scribe.mode == LoadSaveMode.Inactive || conversionChain[i].AppliesToLoadedGameVersion())
+				if (Scribe.mode != 0 && !conversionChain[i].AppliesToLoadedGameVersion())
 				{
-					try
+					continue;
+				}
+				try
+				{
+					string text2 = conversionChain[i].BackCompatibleDefName(defType, text, forDefInjections, node);
+					if (text2 != null)
 					{
-						string text2 = conversionChain[i].BackCompatibleDefName(defType, text, forDefInjections, node);
-						if (text2 != null)
-						{
-							text = text2;
-						}
+						text = text2;
 					}
-					catch (Exception ex)
-					{
-						Log.Error("Error in BackCompatibleDefName of " + conversionChain[i].GetType() + "\n" + ex);
-					}
+				}
+				catch (Exception ex)
+				{
+					Log.Error(string.Concat("Error in BackCompatibleDefName of ", conversionChain[i].GetType(), "\n", ex));
 				}
 			}
 			return text;
@@ -133,20 +140,21 @@ namespace Verse
 		{
 			for (int i = 0; i < conversionChain.Count; i++)
 			{
-				if (conversionChain[i].AppliesToLoadedGameVersion())
+				if (!conversionChain[i].AppliesToLoadedGameVersion())
 				{
-					try
+					continue;
+				}
+				try
+				{
+					Type backCompatibleType = conversionChain[i].GetBackCompatibleType(baseType, providedClassName, node);
+					if (backCompatibleType != null)
 					{
-						Type backCompatibleType = conversionChain[i].GetBackCompatibleType(baseType, providedClassName, node);
-						if (backCompatibleType != null)
-						{
-							return backCompatibleType;
-						}
+						return backCompatibleType;
 					}
-					catch (Exception ex)
-					{
-						Log.Error("Error in GetBackCompatibleType of " + conversionChain[i].GetType() + "\n" + ex);
-					}
+				}
+				catch (Exception ex)
+				{
+					Log.Error(string.Concat("Error in GetBackCompatibleType of ", conversionChain[i].GetType(), "\n", ex));
 				}
 			}
 			return GenTypes.GetTypeInAnyAssembly(providedClassName);
@@ -164,11 +172,23 @@ namespace Verse
 					}
 					catch (Exception ex)
 					{
-						Log.Error("Error in GetBackCompatibleBodyPartIndex of " + body + "\n" + ex);
+						Log.Error(string.Concat("Error in GetBackCompatibleBodyPartIndex of ", body, "\n", ex));
 					}
 				}
 			}
 			return index;
+		}
+
+		public static bool WasDefRemoved(string defName, Type type)
+		{
+			foreach (Tuple<string, Type> removedDef in RemovedDefs)
+			{
+				if (removedDef.Item1 == defName && removedDef.Item2 == type)
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 
 		public static void PostExposeData(object obj)
@@ -187,7 +207,7 @@ namespace Verse
 					}
 					catch (Exception ex)
 					{
-						Log.Error("Error in PostExposeData of " + conversionChain[i].GetType() + "\n" + ex);
+						Log.Error(string.Concat("Error in PostExposeData of ", conversionChain[i].GetType(), "\n", ex));
 					}
 				}
 			}
@@ -205,7 +225,7 @@ namespace Verse
 					}
 					catch (Exception ex)
 					{
-						Log.Error("Error in PostCouldntLoadDef of " + conversionChain[i].GetType() + "\n" + ex);
+						Log.Error(string.Concat("Error in PostCouldntLoadDef of ", conversionChain[i].GetType(), "\n", ex));
 					}
 				}
 			}

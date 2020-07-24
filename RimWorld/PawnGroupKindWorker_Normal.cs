@@ -31,25 +31,23 @@ namespace RimWorld
 			{
 				if (errorOnZeroResults)
 				{
-					Log.Error("Cannot generate pawns for " + parms.faction + " with " + parms.points + ". Defaulting to a single random cheap group.");
+					Log.Error(string.Concat("Cannot generate pawns for ", parms.faction, " with ", parms.points, ". Defaulting to a single random cheap group."));
 				}
+				return;
 			}
-			else
+			bool allowFood = parms.raidStrategy == null || parms.raidStrategy.pawnsCanBringFood || (parms.faction != null && !parms.faction.HostileTo(Faction.OfPlayer));
+			Predicate<Pawn> validatorPostGear = (parms.raidStrategy != null) ? ((Predicate<Pawn>)((Pawn p) => parms.raidStrategy.Worker.CanUsePawn(p, outPawns))) : null;
+			bool flag = false;
+			foreach (PawnGenOption item in PawnGroupMakerUtility.ChoosePawnGenOptionsByPoints(parms.points, groupMaker.options, parms))
 			{
-				bool allowFood = parms.raidStrategy == null || parms.raidStrategy.pawnsCanBringFood || (parms.faction != null && !parms.faction.HostileTo(Faction.OfPlayer));
-				Predicate<Pawn> validatorPostGear = (parms.raidStrategy != null) ? ((Predicate<Pawn>)((Pawn p) => parms.raidStrategy.Worker.CanUsePawn(p, outPawns))) : null;
-				bool flag = false;
-				foreach (PawnGenOption item in PawnGroupMakerUtility.ChoosePawnGenOptionsByPoints(parms.points, groupMaker.options, parms))
+				Pawn pawn = PawnGenerator.GeneratePawn(new PawnGenerationRequest(item.kind, parms.faction, PawnGenerationContext.NonPlayer, parms.tile, forceGenerateNewPawn: false, newborn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: true, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowFood, allowAddictions: true, parms.inhabitants, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, null, 1f, null, validatorPostGear));
+				if (parms.forceOneIncap && !flag)
 				{
-					Pawn pawn = PawnGenerator.GeneratePawn(new PawnGenerationRequest(item.kind, parms.faction, PawnGenerationContext.NonPlayer, parms.tile, forceGenerateNewPawn: false, newborn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: true, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowFood, allowAddictions: true, parms.inhabitants, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, null, 1f, null, validatorPostGear));
-					if (parms.forceOneIncap && !flag)
-					{
-						pawn.health.forceIncap = true;
-						pawn.mindState.canFleeIndividual = false;
-						flag = true;
-					}
-					outPawns.Add(pawn);
+					pawn.health.forceIncap = true;
+					pawn.mindState.canFleeIndividual = false;
+					flag = true;
 				}
+				outPawns.Add(pawn);
 			}
 		}
 

@@ -20,6 +20,8 @@ namespace RimWorld
 
 		public List<RoyalTitleDef> titleRequiredAny;
 
+		public List<HediffDef> hediffRequiredAny;
+
 		public bool showOnNeedList = true;
 
 		public float baseLevel = 0.5f;

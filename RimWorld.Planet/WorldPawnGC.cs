@@ -77,12 +77,14 @@ namespace RimWorld.Planet
 
 		private IEnumerable AccumulatePawnGCData(Dictionary<Pawn, string> keptPawns)
 		{
+			WorldPawnGC worldPawnGC = this;
+			Dictionary<Pawn, string> keptPawns2 = keptPawns;
 			foreach (Pawn item in PawnsFinder.AllMapsWorldAndTemporary_AliveOrDead)
 			{
 				string criticalPawnReason = GetCriticalPawnReason(item);
 				if (!criticalPawnReason.NullOrEmpty())
 				{
-					keptPawns[item] = criticalPawnReason;
+					keptPawns2[item] = criticalPawnReason;
 					if (logDotgraph != null)
 					{
 						logDotgraph.AppendLine(string.Format("{0} [label=<{0}<br/><font point-size=\"10\">{1}</font>> color=\"{2}\" shape=\"{3}\"];", DotgraphIdentifier(item), criticalPawnReason, (item.relations != null && item.relations.everSeenByPlayer) ? "black" : "grey", item.RaceProps.Humanlike ? "oval" : "box"));
@@ -94,23 +96,23 @@ namespace RimWorld.Planet
 				}
 			}
 			foreach (Pawn item2 in (from pawn in PawnsFinder.AllMapsWorldAndTemporary_Alive
-				where AllowedAsStoryPawn(pawn) && !keptPawns.ContainsKey(pawn)
+				where worldPawnGC.AllowedAsStoryPawn(pawn) && !keptPawns2.ContainsKey(pawn)
 				orderby pawn.records.StoryRelevance descending
 				select pawn).Take(20))
 			{
-				keptPawns[item2] = "StoryRelevant";
+				keptPawns2[item2] = "StoryRelevant";
 			}
-			Pawn[] criticalPawns = keptPawns.Keys.ToArray();
+			Pawn[] criticalPawns = keptPawns2.Keys.ToArray();
 			Pawn[] array = criticalPawns;
 			foreach (Pawn pawn2 in array)
 			{
-				AddAllRelationships(pawn2, keptPawns);
+				AddAllRelationships(pawn2, keptPawns2);
 				yield return null;
 			}
 			Pawn[] array2 = criticalPawns;
 			foreach (Pawn pawn3 in array2)
 			{
-				AddAllMemories(pawn3, keptPawns);
+				AddAllMemories(pawn3, keptPawns2);
 			}
 		}
 
@@ -136,7 +138,7 @@ namespace RimWorld.Planet
 				{
 					dictionary2[key] = 0;
 				}
-				int num = ++dictionary2[key];
+				dictionary2[key]++;
 			}
 			return (from kvp in dictionary2
 				orderby kvp.Value descending
@@ -240,49 +242,52 @@ namespace RimWorld.Planet
 
 		public void AddAllRelationships(Pawn pawn, Dictionary<Pawn, string> keptPawns)
 		{
-			if (pawn.relations != null)
+			if (pawn.relations == null)
 			{
-				foreach (Pawn relatedPawn in pawn.relations.RelatedPawns)
+				return;
+			}
+			foreach (Pawn relatedPawn in pawn.relations.RelatedPawns)
+			{
+				if (logDotgraph != null)
 				{
-					if (logDotgraph != null)
+					string text = $"{DotgraphIdentifier(pawn)}->{DotgraphIdentifier(relatedPawn)} [label=<{pawn.GetRelations(relatedPawn).FirstOrDefault().ToString()}> color=\"purple\"];";
+					if (!logDotgraphUniqueLinks.Contains(text))
 					{
-						string text = $"{DotgraphIdentifier(pawn)}->{DotgraphIdentifier(relatedPawn)} [label=<{pawn.GetRelations(relatedPawn).FirstOrDefault().ToString()}> color=\"purple\"];";
-						if (!logDotgraphUniqueLinks.Contains(text))
-						{
-							logDotgraphUniqueLinks.Add(text);
-							logDotgraph.AppendLine(text);
-						}
+						logDotgraphUniqueLinks.Add(text);
+						logDotgraph.AppendLine(text);
 					}
-					if (!keptPawns.ContainsKey(relatedPawn))
-					{
-						keptPawns[relatedPawn] = "Relationship";
-					}
+				}
+				if (!keptPawns.ContainsKey(relatedPawn))
+				{
+					keptPawns[relatedPawn] = "Relationship";
 				}
 			}
 		}
 
 		public void AddAllMemories(Pawn pawn, Dictionary<Pawn, string> keptPawns)
 		{
-			if (pawn.needs != null && pawn.needs.mood != null && pawn.needs.mood.thoughts != null && pawn.needs.mood.thoughts.memories != null)
+			if (pawn.needs == null || pawn.needs.mood == null || pawn.needs.mood.thoughts == null || pawn.needs.mood.thoughts.memories == null)
 			{
-				foreach (Thought_Memory memory in pawn.needs.mood.thoughts.memories.Memories)
+				return;
+			}
+			foreach (Thought_Memory memory in pawn.needs.mood.thoughts.memories.Memories)
+			{
+				if (memory.otherPawn == null)
 				{
-					if (memory.otherPawn != null)
+					continue;
+				}
+				if (logDotgraph != null)
+				{
+					string text = $"{DotgraphIdentifier(pawn)}->{DotgraphIdentifier(memory.otherPawn)} [label=<{memory.def}> color=\"orange\"];";
+					if (!logDotgraphUniqueLinks.Contains(text))
 					{
-						if (logDotgraph != null)
-						{
-							string text = $"{DotgraphIdentifier(pawn)}->{DotgraphIdentifier(memory.otherPawn)} [label=<{memory.def}> color=\"orange\"];";
-							if (!logDotgraphUniqueLinks.Contains(text))
-							{
-								logDotgraphUniqueLinks.Add(text);
-								logDotgraph.AppendLine(text);
-							}
-						}
-						if (!keptPawns.ContainsKey(memory.otherPawn))
-						{
-							keptPawns[memory.otherPawn] = "Memory";
-						}
+						logDotgraphUniqueLinks.Add(text);
+						logDotgraph.AppendLine(text);
 					}
+				}
+				if (!keptPawns.ContainsKey(memory.otherPawn))
+				{
+					keptPawns[memory.otherPawn] = "Memory";
 				}
 			}
 		}
@@ -329,7 +334,7 @@ namespace RimWorld.Planet
 
 		public static string DotgraphIdentifier(Pawn pawn)
 		{
-			return new string(pawn.LabelShort.Where((char ch) => char.IsLetter(ch)).ToArray()) + "_" + pawn.thingIDNumber.ToString();
+			return new string(pawn.LabelShort.Where((char ch) => char.IsLetter(ch)).ToArray()) + "_" + pawn.thingIDNumber;
 		}
 	}
 }

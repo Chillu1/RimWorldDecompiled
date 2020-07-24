@@ -48,7 +48,7 @@ namespace RimWorld
 			return true;
 		}
 
-		protected float TraderKindCommonality(TraderKindDef traderKind, Map map, Faction faction)
+		protected virtual float TraderKindCommonality(TraderKindDef traderKind, Map map, Faction faction)
 		{
 			if (traderKind.faction != null)
 			{

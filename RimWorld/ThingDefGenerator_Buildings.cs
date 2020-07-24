@@ -195,6 +195,7 @@ namespace RimWorld
 			thingDef.building.watchBuildingInSameRoom = def.building.watchBuildingInSameRoom;
 			thingDef.building.watchBuildingStandDistanceRange = def.building.watchBuildingStandDistanceRange;
 			thingDef.building.watchBuildingStandRectWidth = def.building.watchBuildingStandRectWidth;
+			thingDef.building.artificialForMeditationPurposes = def.building.artificialForMeditationPurposes;
 			thingDef.constructionSkillPrerequisite = def.constructionSkillPrerequisite;
 			thingDef.artisticSkillPrerequisite = def.artisticSkillPrerequisite;
 			thingDef.clearBuildingArea = def.clearBuildingArea;
@@ -236,6 +237,7 @@ namespace RimWorld
 		private static ThingDef NewFrameDef_Terrain(TerrainDef terrDef)
 		{
 			ThingDef thingDef = BaseFrameDef();
+			thingDef.building.artificialForMeditationPurposes = false;
 			thingDef.defName = BuildingFrameDefNamePrefix + terrDef.defName;
 			thingDef.label = terrDef.label + "FrameLabelExtra".Translate();
 			thingDef.entityDefToBuild = terrDef;

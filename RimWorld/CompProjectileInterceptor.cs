@@ -48,7 +48,17 @@ namespace RimWorld
 
 		public bool OnCooldown => Find.TickManager.TicksGame < lastInterceptTicks + Props.cooldownTicks;
 
-		public bool Charging => Find.TickManager.TicksGame > nextChargeTick;
+		public bool Charging
+		{
+			get
+			{
+				if (nextChargeTick >= 0)
+				{
+					return Find.TickManager.TicksGame > nextChargeTick;
+				}
+				return false;
+			}
+		}
 
 		public int ChargeCycleStartTick
 		{
@@ -91,12 +101,20 @@ namespace RimWorld
 		public override void PostPostMake()
 		{
 			base.PostPostMake();
-			nextChargeTick = Find.TickManager.TicksGame + Rand.Range(0, Props.chargeIntervalTicks);
+			if (Props.chargeIntervalTicks > 0)
+			{
+				nextChargeTick = Find.TickManager.TicksGame + Rand.Range(0, Props.chargeIntervalTicks);
+			}
 			stunner = new StunHandler(parent);
 		}
 
 		public bool CheckIntercept(Projectile projectile, Vector3 lastExactPos, Vector3 newExactPos)
 		{
+			if (!ModLister.RoyaltyInstalled)
+			{
+				Log.ErrorOnce("Shields are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it.", 657212);
+				return false;
+			}
 			Vector3 vector = parent.Position.ToVector3Shifted();
 			float num = Props.radius + projectile.def.projectile.SpeedTilesPerTick + 0.1f;
 			if ((newExactPos.x - vector.x) * (newExactPos.x - vector.x) + (newExactPos.z - vector.z) * (newExactPos.z - vector.z) > num * num)
@@ -111,11 +129,11 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if ((projectile.Launcher == null || !projectile.Launcher.HostileTo(parent)) && !debugInterceptNonHostileProjectiles)
+			if ((projectile.Launcher == null || !projectile.Launcher.HostileTo(parent)) && !debugInterceptNonHostileProjectiles && !Props.interceptNonHostileProjectiles)
 			{
 				return false;
 			}
-			if ((new Vector2(vector.x, vector.z) - new Vector2(lastExactPos.x, lastExactPos.z)).sqrMagnitude <= Props.radius * Props.radius)
+			if (!Props.interceptOutgoingProjectiles && (new Vector2(vector.x, vector.z) - new Vector2(lastExactPos.x, lastExactPos.z)).sqrMagnitude <= Props.radius * Props.radius)
 			{
 				return false;
 			}
@@ -129,7 +147,7 @@ namespace RimWorld
 			{
 				BreakShield(new DamageInfo(projectile.def.projectile.damageDef, projectile.def.projectile.damageDef.defaultDamage));
 			}
-			Effecter effecter = new Effecter(EffecterDefOf.Interceptor_BlockedProjectile);
+			Effecter effecter = new Effecter(Props.interceptEffect ?? EffecterDefOf.Interceptor_BlockedProjectile);
 			effecter.Trigger(new TargetInfo(newExactPos.ToIntVec3(), parent.Map), TargetInfo.Invalid);
 			effecter.Cleanup();
 			return true;
@@ -185,7 +203,7 @@ namespace RimWorld
 
 		private float GetCurrentAlpha()
 		{
-			return Mathf.Max(Mathf.Max(Mathf.Max(GetCurrentAlpha_Idle(), GetCurrentAlpha_Selected()), GetCurrentAlpha_RecentlyIntercepted()), GetCurrentAlpha_RecentlyActivated());
+			return Mathf.Max(Mathf.Max(Mathf.Max(Mathf.Max(GetCurrentAlpha_Idle(), GetCurrentAlpha_Selected()), GetCurrentAlpha_RecentlyIntercepted()), GetCurrentAlpha_RecentlyActivated()), Props.minAlpha);
 		}
 
 		private float GetCurrentAlpha_Idle()
@@ -242,27 +260,28 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (Prefs.DevMode)
+			if (!Prefs.DevMode)
 			{
-				if (OnCooldown)
-				{
-					Command_Action command_Action = new Command_Action();
-					command_Action.defaultLabel = "Dev: Reset cooldown";
-					command_Action.action = delegate
-					{
-						lastInterceptTicks = Find.TickManager.TicksGame - Props.cooldownTicks;
-					};
-					yield return command_Action;
-				}
-				Command_Toggle command_Toggle = new Command_Toggle();
-				command_Toggle.defaultLabel = "Dev: Intercept non-hostile";
-				command_Toggle.isActive = (() => debugInterceptNonHostileProjectiles);
-				command_Toggle.toggleAction = delegate
-				{
-					debugInterceptNonHostileProjectiles = !debugInterceptNonHostileProjectiles;
-				};
-				yield return command_Toggle;
+				yield break;
 			}
+			if (OnCooldown)
+			{
+				Command_Action command_Action = new Command_Action();
+				command_Action.defaultLabel = "Dev: Reset cooldown";
+				command_Action.action = delegate
+				{
+					lastInterceptTicks = Find.TickManager.TicksGame - Props.cooldownTicks;
+				};
+				yield return command_Action;
+			}
+			Command_Toggle command_Toggle = new Command_Toggle();
+			command_Toggle.defaultLabel = "Dev: Intercept non-hostile";
+			command_Toggle.isActive = (() => debugInterceptNonHostileProjectiles);
+			command_Toggle.toggleAction = delegate
+			{
+				debugInterceptNonHostileProjectiles = !debugInterceptNonHostileProjectiles;
+			};
+			yield return command_Toggle;
 		}
 
 		public override string CompInspectStringExtra()

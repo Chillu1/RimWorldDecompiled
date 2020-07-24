@@ -26,31 +26,32 @@ namespace RimWorld.SketchGen
 				foreach (IntVec3 item in outerRect.Cells.InRandomOrder())
 				{
 					CellRect cellRect3 = SketchGenUtility.FindBiggestRectAt(item, outerRect, parms.sketch, processed, (IntVec3 x) => !parms.sketch.ThingsAt(x).Any() && (!requireFloor || (parms.sketch.TerrainAt(x) != null && parms.sketch.TerrainAt(x).layerable)));
-					if (cellRect3.Width >= cellRect.Width && cellRect3.Height >= cellRect.Height && cellRect3.Width >= cellRect2.Width && cellRect3.Height >= cellRect2.Height && Rand.Chance(0.2f))
+					if (cellRect3.Width < cellRect.Width || cellRect3.Height < cellRect.Height || cellRect3.Width < cellRect2.Width || cellRect3.Height < cellRect2.Height || !Rand.Chance(0.2f))
 					{
-						CellRect rect = new CellRect(cellRect3.minX, cellRect3.CenterCell.z - cellRect.Height / 2, cellRect.Width, cellRect.Height);
-						CellRect rect2 = new CellRect(cellRect3.maxX - (cellRect.Width - 1), cellRect3.CenterCell.z - cellRect.Height / 2, cellRect.Width, cellRect.Height);
-						CellRect rect3 = new CellRect(cellRect3.CenterCell.x - cellRect2.Width / 2, cellRect3.maxZ - (cellRect2.Height - 1), cellRect2.Width, cellRect2.Height);
-						CellRect rect4 = new CellRect(cellRect3.CenterCell.x - cellRect2.Width / 2, cellRect3.minZ, cellRect2.Width, cellRect2.Height);
-						if ((Rand.Bool && CanPlaceAt(rect, Rot4.West, parms.sketch)) || CanPlaceAt(rect2, Rot4.East, parms.sketch))
+						continue;
+					}
+					CellRect rect = new CellRect(cellRect3.minX, cellRect3.CenterCell.z - cellRect.Height / 2, cellRect.Width, cellRect.Height);
+					CellRect rect2 = new CellRect(cellRect3.maxX - (cellRect.Width - 1), cellRect3.CenterCell.z - cellRect.Height / 2, cellRect.Width, cellRect.Height);
+					CellRect rect3 = new CellRect(cellRect3.CenterCell.x - cellRect2.Width / 2, cellRect3.maxZ - (cellRect2.Height - 1), cellRect2.Width, cellRect2.Height);
+					CellRect rect4 = new CellRect(cellRect3.CenterCell.x - cellRect2.Width / 2, cellRect3.minZ, cellRect2.Width, cellRect2.Height);
+					if ((Rand.Bool && CanPlaceAt(rect, Rot4.West, parms.sketch)) || CanPlaceAt(rect2, Rot4.East, parms.sketch))
+					{
+						if (Rand.Bool && CanPlaceAt(rect, Rot4.West, parms.sketch))
 						{
-							if (Rand.Bool && CanPlaceAt(rect, Rot4.West, parms.sketch))
-							{
-								parms.sketch.AddThing(parms.wallEdgeThing, new IntVec3(rect.minX - cellRect.minX, 0, rect.minZ - cellRect.minZ), rot, stuff, 1, null, null, wipeIfCollides: false);
-							}
-							else if (CanPlaceAt(rect2, Rot4.East, parms.sketch))
-							{
-								parms.sketch.AddThing(parms.wallEdgeThing, new IntVec3(rect2.minX - cellRect.minX, 0, rect2.minZ - cellRect.minZ), rot, stuff, 1, null, null, wipeIfCollides: false);
-							}
+							parms.sketch.AddThing(parms.wallEdgeThing, new IntVec3(rect.minX - cellRect.minX, 0, rect.minZ - cellRect.minZ), rot, stuff, 1, null, null, wipeIfCollides: false);
 						}
-						else if (Rand.Bool && CanPlaceAt(rect3, Rot4.North, parms.sketch))
+						else if (CanPlaceAt(rect2, Rot4.East, parms.sketch))
 						{
-							parms.sketch.AddThing(parms.wallEdgeThing, new IntVec3(rect3.minX - cellRect2.minX, 0, rect3.minZ - cellRect2.minZ), rot2, stuff, 1, null, null, wipeIfCollides: false);
+							parms.sketch.AddThing(parms.wallEdgeThing, new IntVec3(rect2.minX - cellRect.minX, 0, rect2.minZ - cellRect.minZ), rot, stuff, 1, null, null, wipeIfCollides: false);
 						}
-						else if (CanPlaceAt(rect4, Rot4.South, parms.sketch))
-						{
-							parms.sketch.AddThing(parms.wallEdgeThing, new IntVec3(rect4.minX - cellRect2.minX, 0, rect4.minZ - cellRect2.minZ), rot2, stuff, 1, null, null, wipeIfCollides: false);
-						}
+					}
+					else if (Rand.Bool && CanPlaceAt(rect3, Rot4.North, parms.sketch))
+					{
+						parms.sketch.AddThing(parms.wallEdgeThing, new IntVec3(rect3.minX - cellRect2.minX, 0, rect3.minZ - cellRect2.minZ), rot2, stuff, 1, null, null, wipeIfCollides: false);
+					}
+					else if (CanPlaceAt(rect4, Rot4.South, parms.sketch))
+					{
+						parms.sketch.AddThing(parms.wallEdgeThing, new IntVec3(rect4.minX - cellRect2.minX, 0, rect4.minZ - cellRect2.minZ), rot2, stuff, 1, null, null, wipeIfCollides: false);
 					}
 				}
 			}

@@ -651,9 +651,24 @@ namespace Verse
 							workTags |= curStage.disabledWorkTags;
 						}
 					}
-					return workTags;
+				}
+				foreach (QuestPart_WorkDisabled item2 in QuestUtility.GetWorkDisabledQuestPart(this))
+				{
+					workTags |= item2.disabledWorkTags;
 				}
 				return workTags;
+			}
+		}
+
+		public bool HasPsylink
+		{
+			get
+			{
+				if (psychicEntropy != null)
+				{
+					return psychicEntropy.Psylink != null;
+				}
+				return false;
 			}
 		}
 
@@ -989,7 +1004,7 @@ namespace Verse
 				{
 					relations.RelationsTrackerTick();
 				}
-				if (psychicEntropy != null)
+				if (ModsConfig.RoyaltyActive && psychicEntropy != null)
 				{
 					psychicEntropy.PsychicEntropyTrackerTick();
 				}
@@ -1225,7 +1240,7 @@ namespace Verse
 				health.hediffSet.hediffs[i].Notify_PawnKilled();
 			}
 			Pawn_CarryTracker pawn_CarryTracker = base.ParentHolder as Pawn_CarryTracker;
-			if (pawn_CarryTracker != null && holdingOwner.TryDrop(this, pawn_CarryTracker.pawn.Position, pawn_CarryTracker.pawn.Map, ThingPlaceMode.Near, out Thing _))
+			if (pawn_CarryTracker != null && holdingOwner.TryDrop_NewTmp(this, pawn_CarryTracker.pawn.Position, pawn_CarryTracker.pawn.Map, ThingPlaceMode.Near, out Thing _))
 			{
 				map = pawn_CarryTracker.pawn.Map;
 				flag = true;
@@ -1315,10 +1330,11 @@ namespace Verse
 			if (corpse != null)
 			{
 				Hediff firstHediffOfDef = health.hediffSet.GetFirstHediffOfDef(HediffDefOf.ToxicBuildup);
+				Hediff firstHediffOfDef2 = health.hediffSet.GetFirstHediffOfDef(HediffDefOf.Scaria);
 				CompRottable comp = corpse.GetComp<CompRottable>();
-				if (firstHediffOfDef != null && Rand.Value < firstHediffOfDef.Severity)
+				if ((firstHediffOfDef != null && Rand.Value < firstHediffOfDef.Severity && comp != null) || (firstHediffOfDef2 != null && Rand.Chance(Find.Storyteller.difficulty.scariaRotChance)))
 				{
-					comp?.RotImmediately();
+					comp.RotImmediately();
 				}
 			}
 			if (!base.Destroyed)
@@ -1328,9 +1344,9 @@ namespace Verse
 			PawnComponentsUtility.RemoveComponentsOnKilled(this);
 			health.hediffSet.DirtyCache();
 			PortraitsCache.SetDirty(this);
-			for (int j = 0; j < health.hediffSet.hediffs.Count; j++)
+			for (int num2 = health.hediffSet.hediffs.Count - 1; num2 >= 0; num2--)
 			{
-				health.hediffSet.hediffs[j].Notify_PawnDied();
+				health.hediffSet.hediffs[num2].Notify_PawnDied();
 			}
 			FactionOrExtraHomeFaction?.Notify_MemberDied(this, dinfo, wasWorldPawn, mapHeld);
 			if (corpse != null)
@@ -1356,6 +1372,7 @@ namespace Verse
 			{
 				Find.ColonistBar.MarkColonistsDirty();
 			}
+			psychicEntropy?.Notify_PawnDied();
 			if (flag5)
 			{
 				health.NotifyPlayerOfKilled(dinfo, exactCulprit, caravan);
@@ -1367,7 +1384,7 @@ namespace Verse
 		{
 			if (mode != 0 && mode != DestroyMode.KillFinalize)
 			{
-				Log.Error("Destroyed pawn " + this + " with unsupported mode " + mode + ".");
+				Log.Error(string.Concat("Destroyed pawn ", this, " with unsupported mode ", mode, "."));
 			}
 			base.Destroy(mode);
 			Find.WorldPawns.Notify_PawnDestroyed(this);
@@ -1444,7 +1461,7 @@ namespace Verse
 		{
 			if (Find.WorldPawns.Contains(this))
 			{
-				Log.Warning("Tried to discard a world pawn " + this + ".");
+				Log.Warning(string.Concat("Tried to discard a world pawn ", this, "."));
 				return;
 			}
 			base.Discard(silentlyRemoveReferences);
@@ -1879,7 +1896,7 @@ namespace Verse
 
 		public Verb TryGetAttackVerb(Thing target, bool allowManualCastWeapons = false)
 		{
-			if (equipment != null && equipment.Primary != null && equipment.PrimaryEq.PrimaryVerb.Available() && ((!equipment.PrimaryEq.PrimaryVerb.verbProps.onlyManualCast || (CurJob != null && CurJob.def != JobDefOf.Wait_Combat)) | allowManualCastWeapons))
+			if (equipment != null && equipment.Primary != null && equipment.PrimaryEq.PrimaryVerb.Available() && (!equipment.PrimaryEq.PrimaryVerb.verbProps.onlyManualCast || (CurJob != null && CurJob.def != JobDefOf.Wait_Combat) || allowManualCastWeapons))
 			{
 				return equipment.PrimaryEq.PrimaryVerb;
 			}
@@ -1970,7 +1987,7 @@ namespace Verse
 				}
 				text += "AgeIndicator".Translate(ageTracker.AgeNumberString);
 			}
-			if ((!RaceProps.Animal && !RaceProps.IsMechanoid) & flag)
+			if (!RaceProps.Animal && !RaceProps.IsMechanoid && flag)
 			{
 				if (text.Length > 0)
 				{
@@ -2168,19 +2185,21 @@ namespace Verse
 				}
 				foreach (RoyalTitle item in royalty.AllTitlesForReading)
 				{
-					if (item.def.permits != null)
+					if (item.def.permits == null)
 					{
-						Faction faction = item.faction;
-						foreach (RoyalTitlePermitDef permit in item.def.permits)
+						continue;
+					}
+					Faction faction = item.faction;
+					foreach (RoyalTitlePermitDef permit in item.def.permits)
+					{
+						IEnumerable<Gizmo> pawnGizmos = permit.Worker.GetPawnGizmos(this, faction);
+						if (pawnGizmos == null)
 						{
-							IEnumerable<Gizmo> pawnGizmos = permit.Worker.GetPawnGizmos(this, faction);
-							if (pawnGizmos != null)
-							{
-								foreach (Gizmo item2 in pawnGizmos)
-								{
-									yield return item2;
-								}
-							}
+							continue;
+						}
+						foreach (Gizmo item2 in pawnGizmos)
+						{
+							yield return item2;
 						}
 					}
 				}
@@ -2224,6 +2243,10 @@ namespace Verse
 			if (this.IsWildMan())
 			{
 				yield return new StatDrawEntry(StatCategoryDefOf.BasicsPawn, "Wildness".Translate(), 0.75f.ToStringPercent(), TrainableUtility.GetWildnessExplanation(def), 2050);
+			}
+			if (ModsConfig.RoyaltyActive && RaceProps.intelligence == Intelligence.Humanlike)
+			{
+				yield return new StatDrawEntry(StatCategoryDefOf.BasicsPawn, "MeditationFocuses".Translate(), MeditationUtility.FocusTypesAvailableForPawnString(this).CapitalizeFirst(), ("MeditationFocusesPawnDesc".Translate() + "\n\n" + MeditationUtility.FocusTypeAvailableExplanation(this)).Resolve(), 99995);
 			}
 		}
 
@@ -2288,20 +2311,26 @@ namespace Verse
 				{
 					CaravanInventoryUtility.MoveAllEquipmentToSomeonesInventory(this, caravan.PawnsListForReading);
 				}
-				return;
 			}
-			IntVec3 pos = (Corpse != null) ? Corpse.PositionHeld : base.PositionHeld;
-			if (equipment != null)
+			else
 			{
-				equipment.DropAllEquipment(pos, forbid: false);
+				IntVec3 pos = (Corpse != null) ? Corpse.PositionHeld : base.PositionHeld;
+				if (equipment != null)
+				{
+					equipment.DropAllEquipment(pos, forbid: false);
+				}
+				if (apparel != null)
+				{
+					apparel.DropAll(pos, forbid: false, base.Destroyed);
+				}
+				if (inventory != null)
+				{
+					inventory.DropAllNearPawn(pos);
+				}
 			}
-			if (apparel != null)
+			if (base.Faction != null)
 			{
-				apparel.DropAll(pos, forbid: false, base.Destroyed);
-			}
-			if (inventory != null)
-			{
-				inventory.DropAllNearPawn(pos);
+				base.Faction.Notify_MemberStripped(this, Faction.OfPlayer);
 			}
 		}
 
@@ -2526,6 +2555,16 @@ namespace Verse
 									list.Add(disabledWorkType3);
 								}
 							}
+						}
+					}
+				}
+				foreach (QuestPart_WorkDisabled item2 in QuestUtility.GetWorkDisabledQuestPart(this))
+				{
+					foreach (WorkTypeDef disabledWorkType4 in item2.DisabledWorkTypes)
+					{
+						if (!list.Contains(disabledWorkType4))
+						{
+							list.Add(disabledWorkType4);
 						}
 					}
 				}

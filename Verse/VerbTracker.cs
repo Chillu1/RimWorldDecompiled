@@ -128,26 +128,27 @@ namespace Verse
 		public void ExposeData()
 		{
 			Scribe_Collections.Look(ref verbs, "verbs", LookMode.Deep);
-			if (Scribe.mode == LoadSaveMode.ResolvingCrossRefs && verbs != null)
+			if (Scribe.mode != LoadSaveMode.ResolvingCrossRefs || verbs == null)
 			{
-				if (verbs.RemoveAll((Verb x) => x == null) != 0)
-				{
-					Log.Error("Some verbs were null after loading. directOwner=" + directOwner.ToStringSafe());
-				}
-				List<Verb> sources = verbs;
-				verbs = new List<Verb>();
-				InitVerbs(delegate(Type type, string id)
-				{
-					Verb verb = sources.FirstOrDefault((Verb v) => v.loadID == id && v.GetType() == type);
-					if (verb == null)
-					{
-						Log.Warning($"Replaced verb {type}/{id}; may have been changed through a version update or a mod change");
-						verb = (Verb)Activator.CreateInstance(type);
-					}
-					verbs.Add(verb);
-					return verb;
-				});
+				return;
 			}
+			if (verbs.RemoveAll((Verb x) => x == null) != 0)
+			{
+				Log.Error("Some verbs were null after loading. directOwner=" + directOwner.ToStringSafe());
+			}
+			List<Verb> sources = verbs;
+			verbs = new List<Verb>();
+			InitVerbs(delegate(Type type, string id)
+			{
+				Verb verb = sources.FirstOrDefault((Verb v) => v.loadID == id && v.GetType() == type);
+				if (verb == null)
+				{
+					Log.Warning($"Replaced verb {type}/{id}; may have been changed through a version update or a mod change");
+					verb = (Verb)Activator.CreateInstance(type);
+				}
+				verbs.Add(verb);
+				return verb;
+			});
 		}
 
 		private void InitVerbsFromZero()
@@ -181,23 +182,24 @@ namespace Verse
 				}
 			}
 			List<Tool> tools = directOwner.Tools;
-			if (tools != null)
+			if (tools == null)
 			{
-				for (int j = 0; j < tools.Count; j++)
+				return;
+			}
+			for (int j = 0; j < tools.Count; j++)
+			{
+				Tool tool = tools[j];
+				foreach (ManeuverDef maneuver in tool.Maneuvers)
 				{
-					Tool tool = tools[j];
-					foreach (ManeuverDef maneuver in tool.Maneuvers)
+					try
 					{
-						try
-						{
-							VerbProperties verb = maneuver.verb;
-							string text2 = Verb.CalculateUniqueLoadID(directOwner, tool, maneuver);
-							InitVerb(creator(verb.verbClass, text2), verb, tool, maneuver, text2);
-						}
-						catch (Exception ex2)
-						{
-							Log.Error("Could not instantiate Verb (directOwner=" + directOwner.ToStringSafe() + "): " + ex2);
-						}
+						VerbProperties verb = maneuver.verb;
+						string text2 = Verb.CalculateUniqueLoadID(directOwner, tool, maneuver);
+						InitVerb(creator(verb.verbClass, text2), verb, tool, maneuver, text2);
+					}
+					catch (Exception ex2)
+					{
+						Log.Error("Could not instantiate Verb (directOwner=" + directOwner.ToStringSafe() + "): " + ex2);
 					}
 				}
 			}

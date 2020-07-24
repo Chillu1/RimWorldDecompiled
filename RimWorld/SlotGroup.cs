@@ -17,14 +17,14 @@ namespace RimWorld
 			{
 				List<IntVec3> cellsList = CellsList;
 				Map map = Map;
-				for (int j = 0; j < cellsList.Count; j++)
+				for (int i = 0; i < cellsList.Count; i++)
 				{
-					List<Thing> thingList = map.thingGrid.ThingsListAt(cellsList[j]);
-					for (int i = 0; i < thingList.Count; i++)
+					List<Thing> thingList = map.thingGrid.ThingsListAt(cellsList[i]);
+					for (int j = 0; j < thingList.Count; j++)
 					{
-						if (thingList[i].def.EverStorable(willMinifyIfPossible: false))
+						if (thingList[j].def.EverStorable(willMinifyIfPossible: false))
 						{
-							yield return thingList[i];
+							yield return thingList[j];
 						}
 					}
 				}

@@ -182,7 +182,8 @@ namespace RimWorld
 
 		public static IEnumerable<LogLineDisplayable> GenerateLogLinesFor(Pawn pawn, bool showAll, bool showCombat, bool showSocial)
 		{
-			LogEntry[] nonCombatLines = showSocial ? Find.PlayLog.AllEntries.Where((LogEntry e) => e.Concerns(pawn)).ToArray() : new LogEntry[0];
+			Pawn pawn2 = pawn;
+			LogEntry[] nonCombatLines = showSocial ? Find.PlayLog.AllEntries.Where((LogEntry e) => e.Concerns(pawn2)).ToArray() : new LogEntry[0];
 			int nonCombatIndex = 0;
 			Battle currentBattle = null;
 			if (showCombat)
@@ -190,35 +191,37 @@ namespace RimWorld
 				bool atTop = true;
 				foreach (Battle battle in Find.BattleLog.Battles)
 				{
-					if (battle.Concerns(pawn))
+					if (!battle.Concerns(pawn2))
 					{
-						foreach (LogEntry entry in battle.Entries)
+						continue;
+					}
+					foreach (LogEntry entry in battle.Entries)
+					{
+						if (!entry.Concerns(pawn2) || (!showAll && !entry.ShowInCompactView()))
 						{
-							if (entry.Concerns(pawn) && (showAll || entry.ShowInCompactView()))
-							{
-								while (nonCombatIndex < nonCombatLines.Length && nonCombatLines[nonCombatIndex].Age < entry.Age)
-								{
-									if (currentBattle != null && currentBattle != battle)
-									{
-										yield return new LogLineDisplayableGap(BattleBottomPadding);
-										currentBattle = null;
-									}
-									yield return new LogLineDisplayableLog(nonCombatLines[nonCombatIndex++], pawn);
-									atTop = false;
-								}
-								if (currentBattle != battle)
-								{
-									if (!atTop)
-									{
-										yield return new LogLineDisplayableGap(BattleBottomPadding);
-									}
-									yield return new LogLineDisplayableHeader(battle.GetName());
-									currentBattle = battle;
-									atTop = false;
-								}
-								yield return new LogLineDisplayableLog(entry, pawn);
-							}
+							continue;
 						}
+						while (nonCombatIndex < nonCombatLines.Length && nonCombatLines[nonCombatIndex].Age < entry.Age)
+						{
+							if (currentBattle != null && currentBattle != battle)
+							{
+								yield return new LogLineDisplayableGap(BattleBottomPadding);
+								currentBattle = null;
+							}
+							yield return new LogLineDisplayableLog(nonCombatLines[nonCombatIndex++], pawn2);
+							atTop = false;
+						}
+						if (currentBattle != battle)
+						{
+							if (!atTop)
+							{
+								yield return new LogLineDisplayableGap(BattleBottomPadding);
+							}
+							yield return new LogLineDisplayableHeader(battle.GetName());
+							currentBattle = battle;
+							atTop = false;
+						}
+						yield return new LogLineDisplayableLog(entry, pawn2);
 					}
 				}
 			}
@@ -229,7 +232,7 @@ namespace RimWorld
 					yield return new LogLineDisplayableGap(BattleBottomPadding);
 					currentBattle = null;
 				}
-				yield return new LogLineDisplayableLog(nonCombatLines[nonCombatIndex++], pawn);
+				yield return new LogLineDisplayableLog(nonCombatLines[nonCombatIndex++], pawn2);
 			}
 		}
 	}

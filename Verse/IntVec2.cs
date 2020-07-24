@@ -67,12 +67,12 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return "(" + x.ToString() + ", " + z.ToString() + ")";
+			return "(" + x + ", " + z + ")";
 		}
 
 		public string ToStringCross()
 		{
-			return x.ToString() + " x " + z.ToString();
+			return x + " x " + z;
 		}
 
 		public static IntVec2 FromString(string str)

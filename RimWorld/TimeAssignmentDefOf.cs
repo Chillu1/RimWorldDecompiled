@@ -11,6 +11,9 @@ namespace RimWorld
 
 		public static TimeAssignmentDef Sleep;
 
+		[MayRequireRoyalty]
+		public static TimeAssignmentDef Meditate;
+
 		static TimeAssignmentDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(TimeAssignmentDefOf));

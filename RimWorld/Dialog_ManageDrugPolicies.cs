@@ -275,9 +275,13 @@ namespace RimWorld
 				x += moodThresholdWidth;
 				entry.onlyIfJoyBelow = Widgets.HorizontalSlider(label: (!(entry.onlyIfJoyBelow < 1f)) ? ((string)"NoDrugUseRequirement".Translate()) : entry.onlyIfJoyBelow.ToStringPercent(), rect: new Rect(x, rect.y, joyThresholdWidth, rect.height).ContractedBy(4f), value: entry.onlyIfJoyBelow, leftValue: 0.01f, rightValue: 1f, middleAlignment: true);
 				x += joyThresholdWidth;
-				Widgets.TextFieldNumeric(new Rect(x, rect.y, takeToInventoryWidth, rect.height).ContractedBy(4f), ref entry.takeToInventory, ref entry.takeToInventoryTempBuffer, 0f, 15f);
-				x += takeToInventoryWidth;
 			}
+			else
+			{
+				x += frequencyWidth + moodThresholdWidth + joyThresholdWidth;
+			}
+			Widgets.TextFieldNumeric(new Rect(x, rect.y, takeToInventoryWidth, rect.height).ContractedBy(4f), ref entry.takeToInventory, ref entry.takeToInventoryTempBuffer, 0f, 15f);
+			x += takeToInventoryWidth;
 			Text.Anchor = TextAnchor.UpperLeft;
 		}
 	}

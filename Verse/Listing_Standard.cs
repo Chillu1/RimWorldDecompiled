@@ -115,7 +115,13 @@ namespace Verse
 			Gap(verticalSpacing);
 		}
 
+		[Obsolete]
 		public bool RadioButton(string label, bool active, float tabIn = 0f, string tooltip = null)
+		{
+			return RadioButton_NewTemp(label, active, tabIn, tooltip);
+		}
+
+		public bool RadioButton_NewTemp(string label, bool active, float tabIn = 0f, string tooltip = null, float? tooltipDelay = null)
 		{
 			float lineHeight = Text.LineHeight;
 			Rect rect = GetRect(lineHeight);
@@ -126,7 +132,8 @@ namespace Verse
 				{
 					Widgets.DrawHighlight(rect);
 				}
-				TooltipHandler.TipRegion(rect, tooltip);
+				TipSignal tip = tooltipDelay.HasValue ? new TipSignal(tooltip, tooltipDelay.Value) : new TipSignal(tooltip);
+				TooltipHandler.TipRegion(rect, tip);
 			}
 			bool result = Widgets.RadioButtonLabeled(rect, label, active);
 			Gap(verticalSpacing);

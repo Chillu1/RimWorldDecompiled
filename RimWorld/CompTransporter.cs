@@ -418,6 +418,14 @@ namespace RimWorld
 			}
 		}
 
+		public void Notify_ThingRemoved(Thing t)
+		{
+			if (Props.pawnExitSound != null && t is Pawn)
+			{
+				Props.pawnExitSound.PlayOneShot(new TargetInfo(parent.Position, parent.Map));
+			}
+		}
+
 		public void Notify_ThingAddedAndMergedWith(Thing t, int mergedCount)
 		{
 			SubtractFromToLoadList(t, mergedCount);

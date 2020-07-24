@@ -90,8 +90,12 @@ namespace Verse
 				{
 					yield return $"part {allPart} is tagged conceptual, but has nonzero coverage";
 				}
-				else if (Prefs.DevMode && !allPart.def.conceptual)
+				else
 				{
+					if (!Prefs.DevMode || allPart.def.conceptual)
+					{
+						continue;
+					}
 					float num = 0f;
 					foreach (BodyPartRecord part in allPart.parts)
 					{

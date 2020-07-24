@@ -376,6 +376,12 @@ namespace Verse
 		{
 			if (!(thingDef.uiIcon == null) && !(thingDef.uiIcon == BaseContent.BadTex))
 			{
+				Texture2D resolvedIcon = thingDef.uiIcon;
+				Graphic_Appearances graphic_Appearances;
+				if ((graphic_Appearances = (thingDef.graphic as Graphic_Appearances)) != null)
+				{
+					resolvedIcon = (Texture2D)graphic_Appearances.SubGraphicFor(stuffDef).MatAt(thingDef.defaultPlacingRot).mainTexture;
+				}
 				if (stuffDef != null)
 				{
 					GUI.color = thingDef.GetColorForStuff(stuffDef);
@@ -384,7 +390,7 @@ namespace Verse
 				{
 					GUI.color = (thingDef.MadeFromStuff ? thingDef.GetColorForStuff(GenStuff.DefaultStuffFor(thingDef)) : thingDef.uiIconColor);
 				}
-				ThingIconWorker(rect, thingDef, thingDef.uiIcon, thingDef.uiIconAngle, scale);
+				ThingIconWorker(rect, thingDef, resolvedIcon, thingDef.uiIconAngle, scale);
 				GUI.color = Color.white;
 			}
 		}

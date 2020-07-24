@@ -16,6 +16,8 @@ namespace RimWorld.QuestGen
 
 		public SlateRef<bool> checkDiseaseContractChance;
 
+		public SlateRef<bool> addToHyperlinks;
+
 		protected override bool TestRunInt(Slate slate)
 		{
 			return true;
@@ -36,6 +38,7 @@ namespace RimWorld.QuestGen
 					questPart_AddHediff.partsToAffect = new List<BodyPartDef>();
 					questPart_AddHediff.partsToAffect.AddRange(partsToAffect.GetValue(slate));
 				}
+				questPart_AddHediff.addToHyperlinks = addToHyperlinks.GetValue(slate);
 				QuestGen.quest.AddPart(questPart_AddHediff);
 			}
 		}

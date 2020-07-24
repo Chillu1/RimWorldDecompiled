@@ -198,11 +198,11 @@ namespace RimWorld
 				{
 					if (!silentlyRemoveReferences)
 					{
-						Log.Warning("Discarding pawn " + p + ", but he is referenced by a tale " + tales[num] + ".");
+						Log.Warning(string.Concat("Discarding pawn ", p, ", but he is referenced by a tale ", tales[num], "."));
 					}
 					else if (!tales[num].Unused)
 					{
-						Log.Warning("Discarding pawn " + p + ", but he is referenced by an active tale " + tales[num] + ".");
+						Log.Warning(string.Concat("Discarding pawn ", p, ", but he is referenced by an active tale ", tales[num], "."));
 					}
 					RemoveTale(tales[num]);
 				}

@@ -20,6 +20,7 @@ namespace RimWorld.QuestGen
 			}
 			name = xmlRoot.Name;
 			value = new SlateRef<object>(DirectXmlToObject.InnerTextWithReplacedNewlinesOrXML(xmlRoot));
+			TKeySystem.MarkTreatAsList(xmlRoot.ParentNode);
 		}
 	}
 }

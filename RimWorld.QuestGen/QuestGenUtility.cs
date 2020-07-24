@@ -282,7 +282,7 @@ namespace RimWorld.QuestGen
 				}
 				if (ConvertHelper.CanConvert<float>(obj))
 				{
-					req.Rules.Add(new Rule_String(absoluteName + "_money", ConvertHelper.Convert<float>(obj).ToStringMoney("F0")));
+					req.Rules.Add(new Rule_String(absoluteName + "_money", ConvertHelper.Convert<float>(obj).ToStringMoney()));
 				}
 				if (ConvertHelper.CanConvert<float>(obj))
 				{
@@ -511,6 +511,15 @@ namespace RimWorld.QuestGen
 				var.AddRange(objs);
 				slate.Set(name, var);
 			}
+		}
+
+		public static bool IsInList(Slate slate, string name, object obj)
+		{
+			if (!slate.TryGet(name, out List<object> var) || var == null)
+			{
+				return false;
+			}
+			return var.Contains(obj);
 		}
 
 		public static List<Slate.VarRestoreInfo> SetVarsForPrefix(List<PrefixCapturedVar> capturedVars, string prefix, Slate slate)

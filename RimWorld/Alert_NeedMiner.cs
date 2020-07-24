@@ -32,21 +32,22 @@ namespace RimWorld
 						break;
 					}
 				}
-				if (designation != null)
+				if (designation == null)
 				{
-					bool flag = false;
-					foreach (Pawn item in map.mapPawns.FreeColonistsSpawned)
+					continue;
+				}
+				bool flag = false;
+				foreach (Pawn item in map.mapPawns.FreeColonistsSpawned)
+				{
+					if (!item.Downed && item.workSettings != null && item.workSettings.GetPriority(WorkTypeDefOf.Mining) > 0)
 					{
-						if (!item.Downed && item.workSettings != null && item.workSettings.GetPriority(WorkTypeDefOf.Mining) > 0)
-						{
-							flag = true;
-							break;
-						}
+						flag = true;
+						break;
 					}
-					if (!flag)
-					{
-						return AlertReport.CulpritIs(designation.target.Thing);
-					}
+				}
+				if (!flag)
+				{
+					return AlertReport.CulpritIs(designation.target.Thing);
 				}
 			}
 			return false;

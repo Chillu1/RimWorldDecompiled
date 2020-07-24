@@ -15,6 +15,7 @@ namespace Verse
 		PercentTwo,
 		Temperature,
 		TemperatureOffset,
-		WorkAmount
+		WorkAmount,
+		Money
 	}
 }

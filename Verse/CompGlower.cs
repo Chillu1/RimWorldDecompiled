@@ -80,9 +80,19 @@ namespace Verse
 
 		public override void ReceiveCompSignal(string signal)
 		{
-			if (signal == "PowerTurnedOn" || signal == "PowerTurnedOff" || signal == "FlickedOn" || signal == "FlickedOff" || signal == "Refueled" || signal == "RanOutOfFuel" || signal == "ScheduledOn" || signal == "ScheduledOff" || signal == "MechClusterDefeated")
+			switch (signal)
 			{
+			case "PowerTurnedOn":
+			case "PowerTurnedOff":
+			case "FlickedOn":
+			case "FlickedOff":
+			case "Refueled":
+			case "RanOutOfFuel":
+			case "ScheduledOn":
+			case "ScheduledOff":
+			case "MechClusterDefeated":
 				UpdateLit(parent.Map);
+				break;
 			}
 		}
 

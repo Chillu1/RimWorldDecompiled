@@ -49,6 +49,12 @@ namespace RimWorld
 
 		public const float FutureResearchProjectTechprintSelectionWeightFactor = 0.02f;
 
+		public static readonly SimpleCurve DaysSincePsylinkAvailableToGuaranteedNeuroformerChance = new SimpleCurve
+		{
+			new CurvePoint(45f, 0f),
+			new CurvePoint(60f, 1f)
+		};
+
 		public const float MinDaysBetweenRaidSourceRaids = 1.5f;
 
 		public const float RaidSourceRaidThreatPointsFactor = 0.6f;

@@ -85,7 +85,7 @@ namespace Verse
 					curTitle = text3;
 				}
 			}
-			if (Widgets.ButtonText(new Rect(inRect.width / 2f + 20f, inRect.height - 35f, inRect.width / 2f - 20f, 35f), "OK") | flag)
+			if (Widgets.ButtonText(new Rect(inRect.width / 2f + 20f, inRect.height - 35f, inRect.width / 2f - 20f, 35f), "OK") || flag)
 			{
 				if (string.IsNullOrEmpty(curName))
 				{

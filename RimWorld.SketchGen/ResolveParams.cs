@@ -13,6 +13,8 @@ namespace RimWorld.SketchGen
 
 		public float? points;
 
+		public float? totalPoints;
+
 		public int? symmetryOrigin;
 
 		public bool? symmetryVertical;
@@ -28,6 +30,10 @@ namespace RimWorld.SketchGen
 		public ThingDef cornerThing;
 
 		public bool? floorFillRoomsOnly;
+
+		public bool? singleFloorType;
+
+		public bool? onlyStoneFloors;
 
 		public ThingDef thingCentral;
 
@@ -48,6 +54,8 @@ namespace RimWorld.SketchGen
 		public bool? allowFlammableWalls;
 
 		public bool? onlyBuildableByPlayer;
+
+		public bool? addFloors;
 
 		public bool? requireFloor;
 
@@ -81,7 +89,7 @@ namespace RimWorld.SketchGen
 
 		public override string ToString()
 		{
-			return "sketch=" + ((sketch != null) ? sketch.ToString() : "null") + ", rect=" + (rect.HasValue ? rect.ToString() : "null") + ", allowWood=" + (allowWood.HasValue ? allowWood.ToString() : "null") + ", custom=" + ((custom != null) ? custom.Count.ToString() : "null") + ", symmetryOrigin=" + (symmetryOrigin.HasValue ? symmetryOrigin.ToString() : "null") + ", symmetryVertical=" + (symmetryVertical.HasValue ? symmetryVertical.ToString() : "null") + ", symmetryOriginIncluded=" + (symmetryOriginIncluded.HasValue ? symmetryOriginIncluded.ToString() : "null") + ", symmetryClear=" + (symmetryClear.HasValue ? symmetryClear.ToString() : "null") + ", connectedGroupsSameStuff=" + (connectedGroupsSameStuff.HasValue ? connectedGroupsSameStuff.ToString() : "null") + ", assignRandomStuffTo=" + ((assignRandomStuffTo != null) ? assignRandomStuffTo.ToString() : "null") + ", cornerThing=" + ((cornerThing != null) ? cornerThing.ToString() : "null") + ", floorFillRoomsOnly=" + (floorFillRoomsOnly.HasValue ? floorFillRoomsOnly.ToString() : "null") + ", thingCentral=" + ((thingCentral != null) ? thingCentral.ToString() : "null") + ", wallEdgeThing=" + ((wallEdgeThing != null) ? wallEdgeThing.ToString() : "null") + ", monumentSize=" + (monumentSize.HasValue ? monumentSize.ToString() : "null") + ", monumentOpen=" + (monumentOpen.HasValue ? monumentOpen.ToString() : "null") + ", allowMonumentDoors=" + (allowMonumentDoors.HasValue ? allowMonumentDoors.ToString() : "null") + ", allowedMonumentThings=" + ((allowedMonumentThings != null) ? allowedMonumentThings.ToString() : "null") + ", useOnlyStonesAvailableOnMap=" + ((useOnlyStonesAvailableOnMap != null) ? useOnlyStonesAvailableOnMap.ToString() : "null") + ", allowConcrete=" + (allowConcrete.HasValue ? allowConcrete.ToString() : "null") + ", allowFlammableWalls=" + (allowFlammableWalls.HasValue ? allowFlammableWalls.ToString() : "null") + ", onlyBuildableByPlayer=" + (onlyBuildableByPlayer.HasValue ? onlyBuildableByPlayer.ToString() : "null") + ", requireFloor=" + (requireFloor.HasValue ? requireFloor.ToString() : "null") + ", mechClusterSize=" + (mechClusterSize.HasValue ? mechClusterSize.ToString() : "null") + ", mechClusterDormant=" + (mechClusterDormant.HasValue ? mechClusterDormant.ToString() : "null") + ", mechClusterForMap=" + ((mechClusterForMap != null) ? mechClusterForMap.ToString() : "null");
+			return "sketch=" + ((sketch != null) ? sketch.ToString() : "null") + ", rect=" + (rect.HasValue ? rect.ToString() : "null") + ", allowWood=" + (allowWood.HasValue ? allowWood.ToString() : "null") + ", custom=" + ((custom != null) ? custom.Count.ToString() : "null") + ", symmetryOrigin=" + (symmetryOrigin.HasValue ? symmetryOrigin.ToString() : "null") + ", symmetryVertical=" + (symmetryVertical.HasValue ? symmetryVertical.ToString() : "null") + ", symmetryOriginIncluded=" + (symmetryOriginIncluded.HasValue ? symmetryOriginIncluded.ToString() : "null") + ", symmetryClear=" + (symmetryClear.HasValue ? symmetryClear.ToString() : "null") + ", connectedGroupsSameStuff=" + (connectedGroupsSameStuff.HasValue ? connectedGroupsSameStuff.ToString() : "null") + ", assignRandomStuffTo=" + ((assignRandomStuffTo != null) ? assignRandomStuffTo.ToString() : "null") + ", cornerThing=" + ((cornerThing != null) ? cornerThing.ToString() : "null") + ", floorFillRoomsOnly=" + (floorFillRoomsOnly.HasValue ? floorFillRoomsOnly.ToString() : "null") + ", singleFloorType=" + (singleFloorType.HasValue ? singleFloorType.ToString() : "null") + ", onlyStoneFloors=" + (onlyStoneFloors.HasValue ? onlyStoneFloors.ToString() : "null") + ", thingCentral=" + ((thingCentral != null) ? thingCentral.ToString() : "null") + ", wallEdgeThing=" + ((wallEdgeThing != null) ? wallEdgeThing.ToString() : "null") + ", monumentSize=" + (monumentSize.HasValue ? monumentSize.ToString() : "null") + ", monumentOpen=" + (monumentOpen.HasValue ? monumentOpen.ToString() : "null") + ", allowMonumentDoors=" + (allowMonumentDoors.HasValue ? allowMonumentDoors.ToString() : "null") + ", allowedMonumentThings=" + ((allowedMonumentThings != null) ? allowedMonumentThings.ToString() : "null") + ", useOnlyStonesAvailableOnMap=" + ((useOnlyStonesAvailableOnMap != null) ? useOnlyStonesAvailableOnMap.ToString() : "null") + ", allowConcrete=" + (allowConcrete.HasValue ? allowConcrete.ToString() : "null") + ", allowFlammableWalls=" + (allowFlammableWalls.HasValue ? allowFlammableWalls.ToString() : "null") + ", onlyBuildableByPlayer=" + (onlyBuildableByPlayer.HasValue ? onlyBuildableByPlayer.ToString() : "null") + ", addFloor=" + (addFloors.HasValue ? addFloors.ToString() : "null") + ", requireFloor=" + (requireFloor.HasValue ? requireFloor.ToString() : "null") + ", mechClusterSize=" + (mechClusterSize.HasValue ? mechClusterSize.ToString() : "null") + ", mechClusterDormant=" + (mechClusterDormant.HasValue ? mechClusterDormant.ToString() : "null") + ", mechClusterForMap=" + ((mechClusterForMap != null) ? mechClusterForMap.ToString() : "null");
 		}
 	}
 }

@@ -15,7 +15,7 @@ namespace RimWorld
 
 		public override string ToString()
 		{
-			return GetType().Name + "(parent=" + parent + " at=" + ((parent != null) ? parent.pawn.Position : IntVec3.Invalid) + ")";
+			return string.Concat(GetType().Name, "(parent=", parent, " at=", (parent != null) ? parent.pawn.Position : IntVec3.Invalid, ")");
 		}
 
 		public virtual bool GizmoDisabled(out string reason)

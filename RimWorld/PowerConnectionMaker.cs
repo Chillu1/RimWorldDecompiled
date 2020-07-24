@@ -78,7 +78,7 @@ namespace RimWorld
 		{
 			if (!b.parent.Spawned)
 			{
-				Log.Warning("Can't check potential connectors for " + b + " because it's unspawned.");
+				Log.Warning(string.Concat("Can't check potential connectors for ", b, " because it's unspawned."));
 				yield break;
 			}
 			CellRect rect = b.parent.OccupiedRect().ExpandedBy(6).ClipInsideMap(b.parent.Map);

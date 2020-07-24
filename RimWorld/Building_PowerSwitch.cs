@@ -36,9 +36,14 @@ namespace RimWorld
 
 		protected override void ReceiveCompSignal(string signal)
 		{
-			if (signal == "FlickedOff" || signal == "FlickedOn" || signal == "ScheduledOn" || signal == "ScheduledOff")
+			switch (signal)
 			{
+			case "FlickedOff":
+			case "FlickedOn":
+			case "ScheduledOn":
+			case "ScheduledOff":
 				UpdatePowerGrid();
+				break;
 			}
 		}
 

@@ -43,17 +43,5 @@ namespace RimWorld
 				yield return "addictive but chemical is null";
 			}
 		}
-
-		public override IEnumerable<StatDrawEntry> SpecialDisplayStats(StatRequest req)
-		{
-			foreach (StatDrawEntry item in base.SpecialDisplayStats(req))
-			{
-				yield return item;
-			}
-			if (Addictive)
-			{
-				yield return new StatDrawEntry(StatCategoryDefOf.Basics, "Addictiveness".Translate(), addictiveness.ToStringPercent(), "Stat_Thing_Drug_Addictiveness_Desc".Translate(), 2500);
-			}
-		}
 	}
 }

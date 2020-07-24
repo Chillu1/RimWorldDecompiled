@@ -118,7 +118,7 @@ namespace RimWorld
 		{
 			if (uses == 0)
 			{
-				Log.Warning("Called reference destroyed method on tale " + this + " but uses count is 0.");
+				Log.Warning(string.Concat("Called reference destroyed method on tale ", this, " but uses count is 0."));
 			}
 			else
 			{

@@ -130,7 +130,7 @@ namespace Verse
 				{
 					if (!silentlyRemoveReferences)
 					{
-						Log.Warning("Discarding pawn " + p + ", but he is referenced by a battle log entry " + entries[num] + ".");
+						Log.Warning(string.Concat("Discarding pawn ", p, ", but he is referenced by a battle log entry ", entries[num], "."));
 					}
 					entries.RemoveAt(num);
 				}
@@ -145,13 +145,14 @@ namespace Verse
 			Scribe_Collections.Look(ref entries, "entries", LookMode.Deep);
 			Scribe_References.Look(ref absorbedBy, "absorbedBy");
 			Scribe_Values.Look(ref battleName, "battleName");
-			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			if (Scribe.mode != LoadSaveMode.PostLoadInit)
 			{
-				concerns.Clear();
-				foreach (Pawn item in entries.SelectMany((LogEntry e) => e.GetConcerns()).OfType<Pawn>())
-				{
-					concerns.Add(item);
-				}
+				return;
+			}
+			concerns.Clear();
+			foreach (Pawn item in entries.SelectMany((LogEntry e) => e.GetConcerns()).OfType<Pawn>())
+			{
+				concerns.Add(item);
 			}
 		}
 

@@ -19,7 +19,7 @@ namespace Verse
 			}
 			catch (Exception ex)
 			{
-				Log.Error("Exception printing " + t + " at " + t.Position + ": " + ex.ToString());
+				Log.Error(string.Concat("Exception printing ", t, " at ", t.Position, ": ", ex.ToString()));
 			}
 		}
 	}

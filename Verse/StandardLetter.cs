@@ -24,6 +24,14 @@ namespace Verse
 						yield return Option_ViewInfoCard(i);
 					}
 				}
+				if (!hyperlinkHediffDefs.NullOrEmpty())
+				{
+					int i = (hyperlinkThingDefs != null) ? hyperlinkThingDefs.Count : 0;
+					for (int j = 0; j < hyperlinkHediffDefs.Count; j++)
+					{
+						yield return Option_ViewInfoCard(i + j);
+					}
+				}
 			}
 		}
 	}

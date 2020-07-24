@@ -135,7 +135,7 @@ namespace RimWorld
 			for (int j = 0; j < thingList.Count; j++)
 			{
 				Thing thing3 = thingList[j];
-				if (!thing3.def.BlockPlanting)
+				if (!thing3.def.BlocksPlanting())
 				{
 					continue;
 				}
@@ -157,7 +157,7 @@ namespace RimWorld
 				}
 				return null;
 			}
-			if (!WorkGiver_Grower.wantedPlantDef.CanEverPlantAt(c, map) || !PlantUtility.GrowthSeasonNow(c, map, forSowing: true) || !pawn.CanReserve(c, 1, -1, null, forced))
+			if (!WorkGiver_Grower.wantedPlantDef.CanEverPlantAt_NewTemp(c, map) || !PlantUtility.GrowthSeasonNow(c, map, forSowing: true) || !pawn.CanReserve(c, 1, -1, null, forced))
 			{
 				return null;
 			}

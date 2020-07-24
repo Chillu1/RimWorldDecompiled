@@ -12,16 +12,17 @@ namespace RimWorld
 			int dist = Mathf.Max(Mathf.CeilToInt(skyfaller.skyfaller.explosionRadius) + 7, 14);
 			foreach (IntVec3 item in cellRect.ExpandedBy(dist))
 			{
-				if (item.InBounds(map))
+				if (!item.InBounds(map))
 				{
-					List<Thing> thingList = item.GetThingList(map);
-					for (int i = 0; i < thingList.Count; i++)
+					continue;
+				}
+				List<Thing> thingList = item.GetThingList(map);
+				for (int i = 0; i < thingList.Count; i++)
+				{
+					Pawn pawn = thingList[i] as Pawn;
+					if (pawn != null && pawn.IsColonist)
 					{
-						Pawn pawn = thingList[i] as Pawn;
-						if (pawn != null && pawn.IsColonist)
-						{
-							return true;
-						}
+						return true;
 					}
 				}
 			}

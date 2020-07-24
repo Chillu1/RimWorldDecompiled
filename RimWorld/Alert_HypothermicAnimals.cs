@@ -36,7 +36,7 @@ namespace RimWorld
 			stringBuilder.AppendLine("Debug alert:\n\nThese wild animals are hypothermic. This may indicate a bug (but it may not, if the animals are trapped or in some other wierd but legitimate situation):");
 			foreach (Pawn hypothermicAnimal in HypothermicAnimals)
 			{
-				stringBuilder.AppendLine("    " + hypothermicAnimal + " at " + hypothermicAnimal.Position);
+				stringBuilder.AppendLine(string.Concat("    ", hypothermicAnimal, " at ", hypothermicAnimal.Position));
 			}
 			return stringBuilder.ToString();
 		}

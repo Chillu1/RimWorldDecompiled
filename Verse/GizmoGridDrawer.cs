@@ -176,44 +176,47 @@ namespace Verse
 					list4.Add(rightClickFloatMenuOption);
 				}
 				List<Gizmo> list5 = FindMatchingGroup(gizmo4);
-				Action prevAction;
-				Action localOptionAction;
 				for (int num4 = 0; num4 < list5.Count; num4++)
 				{
 					Gizmo gizmo7 = list5[num4];
-					if (gizmo7 != gizmo4 && !gizmo7.disabled && gizmo4.InheritFloatMenuInteractionsFrom(gizmo7))
+					if (gizmo7 == gizmo4 || gizmo7.disabled || !gizmo4.InheritFloatMenuInteractionsFrom(gizmo7))
 					{
-						foreach (FloatMenuOption rightClickFloatMenuOption2 in gizmo7.RightClickFloatMenuOptions)
+						continue;
+					}
+					foreach (FloatMenuOption rightClickFloatMenuOption2 in gizmo7.RightClickFloatMenuOptions)
+					{
+						FloatMenuOption floatMenuOption = null;
+						for (int num5 = 0; num5 < list4.Count; num5++)
 						{
-							FloatMenuOption floatMenuOption = null;
-							for (int num5 = 0; num5 < list4.Count; num5++)
+							if (list4[num5].Label == rightClickFloatMenuOption2.Label)
 							{
-								if (list4[num5].Label == rightClickFloatMenuOption2.Label)
-								{
-									floatMenuOption = list4[num5];
-									break;
-								}
+								floatMenuOption = list4[num5];
+								break;
 							}
-							if (floatMenuOption == null)
+						}
+						if (floatMenuOption == null)
+						{
+							list4.Add(rightClickFloatMenuOption2);
+						}
+						else
+						{
+							if (rightClickFloatMenuOption2.Disabled)
 							{
-								list4.Add(rightClickFloatMenuOption2);
+								continue;
 							}
-							else if (!rightClickFloatMenuOption2.Disabled)
+							if (!floatMenuOption.Disabled)
 							{
-								if (!floatMenuOption.Disabled)
+								Action prevAction = floatMenuOption.action;
+								Action localOptionAction = rightClickFloatMenuOption2.action;
+								floatMenuOption.action = delegate
 								{
-									prevAction = floatMenuOption.action;
-									localOptionAction = rightClickFloatMenuOption2.action;
-									floatMenuOption.action = delegate
-									{
-										prevAction();
-										localOptionAction();
-									};
-								}
-								else if (floatMenuOption.Disabled)
-								{
-									list4[list4.IndexOf(floatMenuOption)] = rightClickFloatMenuOption2;
-								}
+									prevAction();
+									localOptionAction();
+								};
+							}
+							else if (floatMenuOption.Disabled)
+							{
+								list4[list4.IndexOf(floatMenuOption)] = rightClickFloatMenuOption2;
 							}
 						}
 					}
@@ -232,7 +235,7 @@ namespace Verse
 			gizmoGroups.Clear();
 			firstGizmos.Clear();
 			tmpAllGizmos.Clear();
-			List<Gizmo> FindMatchingGroup(Gizmo toMatch)
+			static List<Gizmo> FindMatchingGroup(Gizmo toMatch)
 			{
 				for (int num7 = 0; num7 < gizmoGroups.Count; num7++)
 				{

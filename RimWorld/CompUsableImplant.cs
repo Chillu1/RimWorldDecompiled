@@ -12,7 +12,7 @@ namespace RimWorld
 				Hediff_ImplantWithLevel hediff_ImplantWithLevel = compUseEffect_InstallImplant.GetExistingImplant(pawn) as Hediff_ImplantWithLevel;
 				if (hediff_ImplantWithLevel != null && compUseEffect_InstallImplant.Props.canUpgrade && (float)hediff_ImplantWithLevel.level < hediff_ImplantWithLevel.def.maxSeverity)
 				{
-					return "UpgradeImplant".Translate(parent.LabelShort, hediff_ImplantWithLevel.level + 1);
+					return "UpgradeImplant".Translate(hediff_ImplantWithLevel.def.label, hediff_ImplantWithLevel.level + 1);
 				}
 			}
 			return base.FloatMenuOptionLabel(pawn);
@@ -41,7 +41,7 @@ namespace RimWorld
 			base.TryStartUseJob(pawn, extraTarget);
 			if (hediff == HediffDefOf.PsychicAmplifier && pawn.GetStatValue(StatDefOf.PsychicSensitivity) < float.Epsilon)
 			{
-				Messages.Message("MessagePsychicAmplifierNoSensitivity".Translate(pawn.Named("PAWN")), pawn, MessageTypeDefOf.CautionInput, historical: false);
+				Messages.Message("MessagePsylinkNoSensitivity".Translate(pawn.Named("PAWN")), pawn, MessageTypeDefOf.CautionInput, historical: false);
 			}
 		}
 	}

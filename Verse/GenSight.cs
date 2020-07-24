@@ -158,5 +158,21 @@ namespace Verse
 			}
 			return false;
 		}
+
+		public static bool LineOfSightToThing(IntVec3 start, Thing t, Map map, bool skipFirstCell = false, Func<IntVec3, bool> validator = null)
+		{
+			if (t.def.size == IntVec2.One)
+			{
+				return LineOfSight(start, t.Position, map);
+			}
+			foreach (IntVec3 item in t.OccupiedRect())
+			{
+				if (LineOfSight(start, item, map, skipFirstCell, validator))
+				{
+					return true;
+				}
+			}
+			return false;
+		}
 	}
 }

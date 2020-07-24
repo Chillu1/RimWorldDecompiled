@@ -18,15 +18,16 @@ namespace RimWorld
 			}
 			for (int i = 0; i < pawns.Count; i++)
 			{
-				if (pawns[i].equipment != null)
+				if (pawns[i].equipment == null)
 				{
-					foreach (ThingWithComps item in pawns[i].equipment.AllEquipmentListForReading)
+					continue;
+				}
+				foreach (ThingWithComps item in pawns[i].equipment.AllEquipmentListForReading)
+				{
+					CompBiocodableWeapon comp = item.GetComp<CompBiocodableWeapon>();
+					if (comp != null && !comp.Biocoded)
 					{
-						CompBiocodableWeapon comp = item.GetComp<CompBiocodableWeapon>();
-						if (comp != null && !comp.Biocoded)
-						{
-							comp.CodeFor(pawns[i]);
-						}
+						comp.CodeFor(pawns[i]);
 					}
 				}
 			}

@@ -66,7 +66,7 @@ namespace RimWorld
 			{
 				return value;
 			}
-			Log.Error("Looked for nonexistent key " + rDef + " in counted resources.");
+			Log.Error(string.Concat("Looked for nonexistent key ", rDef, " in counted resources."));
 			countedAmounts.Add(rDef, 0);
 			return 0;
 		}

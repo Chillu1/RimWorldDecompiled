@@ -35,21 +35,22 @@ namespace Verse
 
 		public static void WriteMetaHeader()
 		{
-			if (Scribe.EnterNode("meta"))
+			if (!Scribe.EnterNode("meta"))
 			{
-				try
-				{
-					string value = VersionControl.CurrentVersionStringWithRev;
-					Scribe_Values.Look(ref value, "gameVersion");
-					List<string> list = LoadedModManager.RunningMods.Select((ModContentPack mod) => mod.PackageId).ToList();
-					Scribe_Collections.Look(ref list, "modIds", LookMode.Undefined);
-					List<string> list2 = LoadedModManager.RunningMods.Select((ModContentPack mod) => mod.Name).ToList();
-					Scribe_Collections.Look(ref list2, "modNames", LookMode.Undefined);
-				}
-				finally
-				{
-					Scribe.ExitNode();
-				}
+				return;
+			}
+			try
+			{
+				string value = VersionControl.CurrentVersionStringWithRev;
+				Scribe_Values.Look(ref value, "gameVersion");
+				List<string> list = LoadedModManager.RunningMods.Select((ModContentPack mod) => mod.PackageId).ToList();
+				Scribe_Collections.Look(ref list, "modIds", LookMode.Undefined);
+				List<string> list2 = LoadedModManager.RunningMods.Select((ModContentPack mod) => mod.Name).ToList();
+				Scribe_Collections.Look(ref list2, "modNames", LookMode.Undefined);
+			}
+			finally
+			{
+				Scribe.ExitNode();
 			}
 		}
 
@@ -74,7 +75,7 @@ namespace Verse
 			}
 			if (logVersionConflictWarning && (mode == ScribeHeaderMode.Map || !UnityData.isEditor) && !VersionsMatch())
 			{
-				Log.Warning("Loaded file (" + mode + ") is from version " + loadedGameVersion + ", we are running version " + VersionControl.CurrentVersionStringWithRev + ".");
+				Log.Warning(string.Concat("Loaded file (", mode, ") is from version ", loadedGameVersion, ", we are running version ", VersionControl.CurrentVersionStringWithRev, "."));
 			}
 		}
 
@@ -113,21 +114,20 @@ namespace Verse
 					dialog.buttonCText = "ChangeLoadedMods".Translate();
 					dialog.buttonCAction = delegate
 					{
-						int num = ModLister.InstalledModsListHash(activeOnly: false);
-						ModsConfig.SetActiveToList(loadedModIdsList);
-						ModsConfig.Save();
-						if (num == ModLister.InstalledModsListHash(activeOnly: false))
+						if (Current.ProgramState == ProgramState.Entry)
 						{
-							IEnumerable<string> items = from id in Enumerable.Range(0, loadedModIdsList.Count)
-								where ModLister.GetModWithIdentifier(loadedModIdsList[id]) == null
-								select loadedModNamesList[id];
-							Messages.Message(string.Format("{0}: {1}", "MissingMods".Translate(), items.ToCommaList()), MessageTypeDefOf.RejectInput, historical: false);
+							ModsConfig.SetActiveToList(loadedModIdsList);
+						}
+						ModsConfig.SaveFromList(loadedModIdsList);
+						IEnumerable<string> enumerable = from id in Enumerable.Range(0, loadedModIdsList.Count)
+							where ModLister.GetModWithIdentifier(loadedModIdsList[id]) == null
+							select loadedModNamesList[id];
+						if (enumerable.Any())
+						{
+							Messages.Message(string.Format("{0}: {1}", "MissingMods".Translate(), enumerable.ToCommaList()), MessageTypeDefOf.RejectInput, historical: false);
 							dialog.buttonCClose = false;
 						}
-						else
-						{
-							ModsConfig.RestartFromChangedMods();
-						}
+						ModsConfig.RestartFromChangedMods();
 					};
 				}
 				Find.WindowStack.Add(dialog);

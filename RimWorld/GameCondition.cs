@@ -131,7 +131,7 @@ namespace RimWorld
 				t += "\n";
 				if (conditionCauser != null && CameraJumper.CanJump(conditionCauser))
 				{
-					return t + "ClickToJumpToSource".Translate();
+					return t + def.jumpToSourceKey.Translate();
 				}
 				if (quest != null)
 				{

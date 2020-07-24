@@ -145,16 +145,17 @@ namespace Verse
 			foreach (Lord lord in Find.CurrentMap.lordManager.lords)
 			{
 				LordToil_Stage lordToil_Stage = lord.CurLordToil as LordToil_Stage;
-				if (lordToil_Stage != null)
+				if (lordToil_Stage == null)
 				{
-					foreach (Transition transition in lord.Graph.transitions)
+					continue;
+				}
+				foreach (Transition transition in lord.Graph.transitions)
+				{
+					if (transition.sources.Contains(lordToil_Stage) && transition.target is LordToil_AssaultColony)
 					{
-						if (transition.sources.Contains(lordToil_Stage) && transition.target is LordToil_AssaultColony)
-						{
-							Messages.Message("Debug forcing to assault toil: " + lord.faction, MessageTypeDefOf.TaskCompletion, historical: false);
-							lord.GotoToil(transition.target);
-							return;
-						}
+						Messages.Message("Debug forcing to assault toil: " + lord.faction, MessageTypeDefOf.TaskCompletion, historical: false);
+						lord.GotoToil(transition.target);
+						return;
 					}
 				}
 			}
@@ -315,7 +316,7 @@ namespace Verse
 				foreach (FactionRelationKind value in Enum.GetValues(typeof(FactionRelationKind)))
 				{
 					FactionRelationKind localRk = value;
-					FloatMenuOption item = new FloatMenuOption(localFac + " - " + localRk, delegate
+					FloatMenuOption item = new FloatMenuOption(string.Concat(localFac, " - ", localRk), delegate
 					{
 						localFac.TrySetRelationKind(Faction.OfPlayer, localRk);
 					});
@@ -417,7 +418,6 @@ namespace Verse
 			foreach (ResearchProjectDef item in DefDatabase<ResearchProjectDef>.AllDefsListForReading.Where((ResearchProjectDef p) => !p.TechprintRequirementMet))
 			{
 				ResearchProjectDef localProject = item;
-				Pawn localColonist = default(Pawn);
 				list.Add(new DebugMenuOption(localProject.LabelCap, DebugMenuOptionMode.Action, delegate
 				{
 					List<DebugMenuOption> list2 = new List<DebugMenuOption>
@@ -427,6 +427,7 @@ namespace Verse
 							Find.ResearchManager.ApplyTechprint(localProject, null);
 						})
 					};
+					Pawn localColonist = default(Pawn);
 					foreach (Pawn allMapsCaravansAndTravelingTransportPods_Alive_Colonist in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_Colonists)
 					{
 						localColonist = allMapsCaravansAndTravelingTransportPods_Alive_Colonist;
@@ -445,24 +446,25 @@ namespace Verse
 		{
 			foreach (Building_Bed item in Find.CurrentMap.listerBuildings.AllBuildingsColonistOfClass<Building_Bed>())
 			{
-				if (item.ForPrisoners == prisoner && (!item.OwnersForReading.Any() || (prisoner && item.AnyUnownedSleepingSlot)))
+				if (item.ForPrisoners != prisoner || (item.OwnersForReading.Any() && (!prisoner || !item.AnyUnownedSleepingSlot)))
 				{
-					PawnKindDef pawnKindDef = prisoner ? DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef pk) => pk.defaultFactionType != null && !pk.defaultFactionType.isPlayer && pk.RaceProps.Humanlike).RandomElement() : PawnKindDefOf.SpaceRefugee;
-					Faction faction = FactionUtility.DefaultFactionFrom(pawnKindDef.defaultFactionType);
-					Pawn pawn = PawnGenerator.GeneratePawn(pawnKindDef, faction);
-					GenSpawn.Spawn(pawn, item.Position, Find.CurrentMap);
-					foreach (ThingWithComps item2 in pawn.equipment.AllEquipmentListForReading.ToList())
-					{
-						if (pawn.equipment.TryDropEquipment(item2, out ThingWithComps resultingEq, pawn.Position))
-						{
-							resultingEq.Destroy();
-						}
-					}
-					pawn.inventory.innerContainer.Clear();
-					pawn.ownership.ClaimBedIfNonMedical(item);
-					pawn.guest.SetGuestStatus(Faction.OfPlayer, prisoner);
-					break;
+					continue;
 				}
+				PawnKindDef pawnKindDef = prisoner ? DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef pk) => pk.defaultFactionType != null && !pk.defaultFactionType.isPlayer && pk.RaceProps.Humanlike).RandomElement() : PawnKindDefOf.SpaceRefugee;
+				Faction faction = FactionUtility.DefaultFactionFrom(pawnKindDef.defaultFactionType);
+				Pawn pawn = PawnGenerator.GeneratePawn(pawnKindDef, faction);
+				GenSpawn.Spawn(pawn, item.Position, Find.CurrentMap);
+				foreach (ThingWithComps item2 in pawn.equipment.AllEquipmentListForReading.ToList())
+				{
+					if (pawn.equipment.TryDropEquipment(item2, out ThingWithComps resultingEq, pawn.Position))
+					{
+						resultingEq.Destroy();
+					}
+				}
+				pawn.inventory.innerContainer.Clear();
+				pawn.ownership.ClaimBedIfNonMedical(item);
+				pawn.guest.SetGuestStatus(Faction.OfPlayer, prisoner);
+				break;
 			}
 		}
 
@@ -510,15 +512,16 @@ namespace Verse
 		{
 			foreach (Pawn allMap in PawnsFinder.AllMaps)
 			{
-				if (allMap.RaceProps.Humanlike)
+				if (!allMap.RaceProps.Humanlike)
 				{
-					for (int num = allMap.apparel.WornApparel.Count - 1; num >= 0; num--)
+					continue;
+				}
+				for (int num = allMap.apparel.WornApparel.Count - 1; num >= 0; num--)
+				{
+					Apparel apparel = allMap.apparel.WornApparel[num];
+					if (apparel.def.apparel.bodyPartGroups.Contains(BodyPartGroupDefOf.FullHead) || apparel.def.apparel.bodyPartGroups.Contains(BodyPartGroupDefOf.UpperHead))
 					{
-						Apparel apparel = allMap.apparel.WornApparel[num];
-						if (apparel.def.apparel.bodyPartGroups.Contains(BodyPartGroupDefOf.FullHead) || apparel.def.apparel.bodyPartGroups.Contains(BodyPartGroupDefOf.UpperHead))
-						{
-							apparel.Destroy();
-						}
+						apparel.Destroy();
 					}
 				}
 			}
@@ -550,7 +553,7 @@ namespace Verse
 								{
 									if (!mostSeniorTitle2.def.requiredApparel[l].IsMet(pawn2))
 									{
-										Log.Error(localKindDef + " (" + mostSeniorTitle2.def.label + ")  does not have its title requirements met. index=" + l + logApparel(pawn2));
+										Log.Error(string.Concat(localKindDef, " (", mostSeniorTitle2.def.label, ")  does not have its title requirements met. index=", l, logApparel(pawn2)));
 										flag = true;
 									}
 								}
@@ -575,7 +578,7 @@ namespace Verse
 				}));
 			}
 			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
-			string apparelOkayToWear(Pawn pawn, Apparel apparel)
+			static string apparelOkayToWear(Pawn pawn, Apparel apparel)
 			{
 				ApparelProperties app = apparel.def.apparel;
 				if (!pawn.kindDef.apparelRequired.NullOrEmpty() && pawn.kindDef.apparelRequired.Contains(apparel.def))
@@ -591,7 +594,7 @@ namespace Verse
 				{
 					for (int i = 0; i < specificApparelRequirements.Count; i++)
 					{
-						if (PawnApparelGenerator.ApparelRequirementHandlesThing(specificApparelRequirements[i], apparel.def))
+						if (PawnApparelGenerator.ApparelRequirementHandlesThing(specificApparelRequirements[i], apparel.def) && PawnApparelGenerator.ApparelRequirementTagsMatch(specificApparelRequirements[i], apparel.def))
 						{
 							return "OK";
 						}
@@ -622,7 +625,7 @@ namespace Verse
 				}
 				return "OK";
 			}
-			string logApparel(Pawn p)
+			static string logApparel(Pawn p)
 			{
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.AppendLine();
@@ -665,26 +668,26 @@ namespace Verse
 						RoyalTitle mostSeniorTitle = pawn.royalty.MostSeniorTitle;
 						if (mostSeniorTitle != null)
 						{
-							Hediff_PsychicAmplifier hediff_PsychicAmplifier = (Hediff_PsychicAmplifier)pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.PsychicAmplifier);
-							if (hediff_PsychicAmplifier == null)
+							Hediff_Psylink mainPsylinkSource = pawn.GetMainPsylinkSource();
+							if (mainPsylinkSource == null)
 							{
-								if (mostSeniorTitle.def.MaxAllowedPsychicAmplifierLevel(faction.def) > 0)
+								if (mostSeniorTitle.def.MaxAllowedPsylinkLevel(faction.def) > 0)
 								{
-									string text = mostSeniorTitle.def.LabelCap + " - No amplifier.";
+									string text = mostSeniorTitle.def.LabelCap + " - No psylink.";
 									if (pawn.abilities.abilities.Any((Ability x) => x.def.level > 0))
 									{
-										text += " Has psycasts without amplifier.";
+										text += " Has psycasts without psylink.";
 									}
 									sb.AppendLine(text);
 								}
 							}
-							else if (hediff_PsychicAmplifier.level < mostSeniorTitle.def.MaxAllowedPsychicAmplifierLevel(faction.def))
+							else if (mainPsylinkSource.level < mostSeniorTitle.def.MaxAllowedPsylinkLevel(faction.def))
 							{
-								sb.AppendLine("Amplifier at level " + hediff_PsychicAmplifier.level + ", but requires " + mostSeniorTitle.def.MaxAllowedPsychicAmplifierLevel(faction.def));
+								sb.AppendLine("Psylink at level " + mainPsylinkSource.level + ", but requires " + mostSeniorTitle.def.MaxAllowedPsylinkLevel(faction.def));
 							}
-							else if (hediff_PsychicAmplifier.level > mostSeniorTitle.def.MaxAllowedPsychicAmplifierLevel(faction.def))
+							else if (mainPsylinkSource.level > mostSeniorTitle.def.MaxAllowedPsylinkLevel(faction.def))
 							{
-								sb.AppendLine("Amplifier at level " + hediff_PsychicAmplifier.level + ". Max is " + mostSeniorTitle.def.MaxAllowedPsychicAmplifierLevel(faction.def));
+								sb.AppendLine("Psylink at level " + mainPsylinkSource.level + ". Max is " + mostSeniorTitle.def.MaxAllowedPsylinkLevel(faction.def));
 							}
 						}
 						Find.WorldPawns.PassToWorld(pawn, PawnDiscardDecideMode.Discard);

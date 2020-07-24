@@ -29,8 +29,8 @@ namespace RimWorld
 		public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth)
 		{
 			defaultDesc = Tooltip;
-			disabled = false;
-			if (ability.GizmoDisabled(out string reason))
+			disabled = ability.GizmoDisabled(out string reason);
+			if (disabled)
 			{
 				DisableWithReason(reason.CapitalizeFirst());
 			}

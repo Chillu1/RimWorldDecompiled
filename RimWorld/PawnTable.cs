@@ -138,6 +138,10 @@ namespace RimWorld
 					GUI.color = new Color(1f, 1f, 1f, 0.2f);
 					Widgets.DrawLineHorizontal(0f, num4, viewRect.width);
 					GUI.color = Color.white;
+					if (!CanAssignPawn(cachedPawns[j]))
+					{
+						GUI.color = Color.gray;
+					}
 					Rect rect2 = new Rect(0f, num4, viewRect.width, (int)cachedRowHeights[j]);
 					if (Mouse.IsOver(rect2))
 					{
@@ -155,8 +159,8 @@ namespace RimWorld
 					{
 						GUI.color = new Color(1f, 0f, 0f, 0.5f);
 						Widgets.DrawLineHorizontal(0f, rect2.center.y, viewRect.width);
-						GUI.color = Color.white;
 					}
+					GUI.color = Color.white;
 				}
 				num4 += (int)cachedRowHeights[j];
 			}
@@ -190,6 +194,11 @@ namespace RimWorld
 			sortByColumn = column;
 			sortDescending = descending;
 			SetDirty();
+		}
+
+		protected virtual bool CanAssignPawn(Pawn p)
+		{
+			return true;
 		}
 
 		private void RecacheIfDirty()

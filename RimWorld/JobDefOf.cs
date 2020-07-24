@@ -247,7 +247,13 @@ namespace RimWorld
 		public static JobDef Reign;
 
 		[MayRequireRoyalty]
+		public static JobDef Meditate;
+
+		[MayRequireRoyalty]
 		public static JobDef Play_MusicalInstrument;
+
+		[MayRequireRoyalty]
+		public static JobDef LinkPsylinkable;
 
 		static JobDefOf()
 		{

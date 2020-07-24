@@ -28,7 +28,7 @@ namespace RimWorld
 				IntVec3 position = building.Position;
 				if (!TryFindDropSpotNear(position, map, out IntVec3 result, allowFogged: false, canRoofPunch: false))
 				{
-					Log.Error("Could find no good TradeDropSpot near dropCenter " + position + ". Using a random standable unfogged cell.");
+					Log.Error(string.Concat("Could find no good TradeDropSpot near dropCenter ", position, ". Using a random standable unfogged cell."));
 					return CellFinderLoose.RandomCellWith((IntVec3 c) => c.Standable(map) && !c.Fogged(map), map);
 				}
 				return result;
@@ -70,59 +70,78 @@ namespace RimWorld
 
 		public static IntVec3 TryFindSafeLandingSpotCloseToColony(Map map, IntVec2 size, Faction faction = null, int borderWidth = 2)
 		{
+			size.x += borderWidth;
+			size.z += borderWidth;
 			tmpColonyBuildings.Clear();
 			tmpColonyBuildings.AddRange(map.listerBuildings.allBuildingsColonist);
 			if (!tmpColonyBuildings.Any())
 			{
-				return CellFinderLoose.RandomCellWith(spotValidator, map);
+				return CellFinderLoose.RandomCellWith(SpotValidator, map);
 			}
 			tmpColonyBuildings.Shuffle();
-			size.x += borderWidth;
-			size.z += borderWidth;
 			for (int i = 0; i < tmpColonyBuildings.Count; i++)
 			{
-				if (TryFindDropSpotNear(tmpColonyBuildings[i].Position, map, out IntVec3 result, allowFogged: false, canRoofPunch: false, allowIndoors: false, size) && CanLandAt(result))
+				if (TryFindDropSpotNear(tmpColonyBuildings[i].Position, map, out IntVec3 result, allowFogged: false, canRoofPunch: false, allowIndoors: false, size) && SkyfallerCanLandAt(result, map, size, faction))
 				{
 					tmpColonyBuildings.Clear();
 					return result;
 				}
 			}
 			tmpColonyBuildings.Clear();
-			return CellFinderLoose.RandomCellWith(spotValidator, map);
-			bool CanLandAt(IntVec3 c)
+			return CellFinderLoose.RandomCellWith(SpotValidator, map);
+			bool SpotValidator(IntVec3 c)
 			{
-				if (!IsSafeDropSpot(c, map, faction, size))
+				if (!SkyfallerCanLandAt(c, map, size, faction))
 				{
 					return false;
 				}
-				foreach (IntVec3 item in GenAdj.OccupiedRect(c, Rot4.North, size))
+				if (ModsConfig.RoyaltyActive)
 				{
-					_ = item;
-					List<Thing> thingList = c.GetThingList(map);
-					for (int j = 0; j < thingList.Count; j++)
+					List<Thing> list = map.listerThings.ThingsOfDef(ThingDefOf.ActivatorProximity);
+					for (int j = 0; j < list.Count; j++)
 					{
-						Thing thing = thingList[j];
-						if (thing is IActiveDropPod || thing is Skyfaller)
+						if (list[j].Faction != null && list[j].Faction.HostileTo(faction))
 						{
-							return false;
-						}
-						PlantProperties plant = thing.def.plant;
-						if (plant != null && plant.IsTree)
-						{
-							return false;
-						}
-						if (thing.def.category == ThingCategory.Item || thing.def.category == ThingCategory.Building)
-						{
-							return false;
+							CompSendSignalOnPawnProximity compSendSignalOnPawnProximity = list[j].TryGetComp<CompSendSignalOnPawnProximity>();
+							if (compSendSignalOnPawnProximity != null && c.InHorDistOf(list[j].Position, compSendSignalOnPawnProximity.Props.radius + 10f))
+							{
+								return false;
+							}
 						}
 					}
 				}
 				return true;
 			}
-			bool spotValidator(IntVec3 c)
+		}
+
+		public static bool SkyfallerCanLandAt(IntVec3 c, Map map, IntVec2 size, Faction faction = null)
+		{
+			if (!IsSafeDropSpot(c, map, faction, size))
 			{
-				return IsGoodDropSpot(c, map, allowFogged: false, canRoofPunch: false, allowIndoors: false);
+				return false;
 			}
+			foreach (IntVec3 item in GenAdj.OccupiedRect(c, Rot4.North, size))
+			{
+				List<Thing> thingList = item.GetThingList(map);
+				for (int i = 0; i < thingList.Count; i++)
+				{
+					Thing thing = thingList[i];
+					if (thing is IActiveDropPod || thing is Skyfaller)
+					{
+						return false;
+					}
+					PlantProperties plant = thing.def.plant;
+					if (plant != null && plant.IsTree)
+					{
+						return false;
+					}
+					if (thing.def.category == ThingCategory.Item || thing.def.category == ThingCategory.Building)
+					{
+						return false;
+					}
+				}
+			}
+			return true;
 		}
 
 		public static bool TryFindShipLandingArea(Map map, out IntVec3 result, out Thing firstBlockingThing)
@@ -162,6 +181,7 @@ namespace RimWorld
 			{
 				map.debugDrawer.FlashCell(center, 1f, "center");
 			}
+			Room centerRoom = center.GetRoom(map);
 			Predicate<IntVec3> validator = delegate(IntVec3 c)
 			{
 				if (size.HasValue)
@@ -180,18 +200,43 @@ namespace RimWorld
 				}
 				return map.reachability.CanReach(center, c, PathEndMode.OnCell, TraverseMode.PassDoors, Danger.Deadly) ? true : false;
 			};
-			int num = 5;
-			do
+			if (allowIndoors && canRoofPunch && centerRoom != null && !centerRoom.PsychologicallyOutdoors)
 			{
-				if (CellFinder.TryFindRandomCellNear(center, map, num, validator, out result))
+				Predicate<IntVec3> v2 = (IntVec3 c) => validator(c) && c.GetRoom(map) == centerRoom;
+				if (TryFindCell(v2, out result))
 				{
 					return true;
 				}
-				num += 3;
+				Predicate<IntVec3> v3 = delegate(IntVec3 c)
+				{
+					if (!validator(c))
+					{
+						return false;
+					}
+					Room room = c.GetRoom(map);
+					return room != null && !room.PsychologicallyOutdoors;
+				};
+				if (TryFindCell(v3, out result))
+				{
+					return true;
+				}
 			}
-			while (num <= 16);
-			result = center;
-			return false;
+			return TryFindCell(validator, out result);
+			bool TryFindCell(Predicate<IntVec3> v, out IntVec3 r)
+			{
+				int num = 5;
+				do
+				{
+					if (CellFinder.TryFindRandomCellNear(center, map, num, v, out r))
+					{
+						return true;
+					}
+					num += 3;
+				}
+				while (num <= 16);
+				r = center;
+				return false;
+			}
 		}
 
 		public static bool IsGoodDropSpot(IntVec3 c, Map map, bool allowFogged, bool canRoofPunch, bool allowIndoors = true)
@@ -269,22 +314,23 @@ namespace RimWorld
 				{
 					return intVec;
 				}
-				if (allowRoofed || !intVec.Roofed(map))
+				if (!allowRoofed && intVec.Roofed(map))
 				{
-					num2 -= 0.2f;
-					bool flag = false;
-					foreach (Thing item in first)
+					continue;
+				}
+				num2 -= 0.2f;
+				bool flag = false;
+				foreach (Thing item in first)
+				{
+					if ((float)(intVec - item.Position).LengthHorizontalSquared < num2 * num2)
 					{
-						if ((float)(intVec - item.Position).LengthHorizontalSquared < num2 * num2)
-						{
-							flag = true;
-							break;
-						}
-					}
-					if (!flag && map.reachability.CanReachFactionBase(intVec, hostFaction))
-					{
+						flag = true;
 						break;
 					}
+				}
+				if (!flag && map.reachability.CanReachFactionBase(intVec, hostFaction))
+				{
+					break;
 				}
 			}
 			return intVec;
@@ -362,7 +408,7 @@ namespace RimWorld
 			return false;
 		}
 
-		private static bool CanPhysicallyDropInto(IntVec3 c, Map map, bool canRoofPunch, bool allowedIndoors = true)
+		public static bool CanPhysicallyDropInto(IntVec3 c, Map map, bool canRoofPunch, bool allowedIndoors = true)
 		{
 			if (!c.Walkable(map))
 			{

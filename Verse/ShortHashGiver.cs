@@ -33,7 +33,7 @@ namespace Verse
 		{
 			if (def.shortHash != 0)
 			{
-				Log.Error(def + " already has short hash.");
+				Log.Error(string.Concat(def, " already has short hash."));
 				return;
 			}
 			if (!takenHashesPerDeftype.TryGetValue(defType, out HashSet<ushort> value))

@@ -77,7 +77,7 @@ namespace RimWorld
 
 		public static bool TryDropAndSetForbidden(Thing th, IntVec3 pos, Map map, ThingPlaceMode mode, out Thing resultingThing, bool forbidden)
 		{
-			if (GenDrop.TryDropSpawn(th, pos, map, ThingPlaceMode.Near, out resultingThing))
+			if (GenDrop.TryDropSpawn_NewTmp(th, pos, map, ThingPlaceMode.Near, out resultingThing))
 			{
 				if (resultingThing != null)
 				{
@@ -159,14 +159,15 @@ namespace RimWorld
 		{
 			foreach (IntVec3 item in CellRect.FromLimits(a, b))
 			{
-				if (!(item == a) && !(item == b) && item.InBounds(map))
+				if (item == a || item == b || !item.InBounds(map))
 				{
-					foreach (Thing thing in item.GetThingList(map))
+					continue;
+				}
+				foreach (Thing thing in item.GetThingList(map))
+				{
+					if ((thingToIgnore == null || thingToIgnore != thing) && (thing.def == thingDef || thing.def.entityDefToBuild == thingDef))
 					{
-						if ((thingToIgnore == null || thingToIgnore != thing) && (thing.def == thingDef || thing.def.entityDefToBuild == thingDef))
-						{
-							return true;
-						}
+						return true;
 					}
 				}
 			}

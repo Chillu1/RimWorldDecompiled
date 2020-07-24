@@ -261,31 +261,32 @@ namespace RimWorld
 				return;
 			}
 			CellRect cr = this.OccupiedRect();
-			if (cr.Cells.Any((IntVec3 x) => x.Roofed(base.Map)))
+			if (!cr.Cells.Any((IntVec3 x) => x.Roofed(base.Map)))
 			{
-				RoofDef roof = cr.Cells.First((IntVec3 x) => x.Roofed(base.Map)).GetRoof(base.Map);
-				if (!roof.soundPunchThrough.NullOrUndefined())
-				{
-					roof.soundPunchThrough.PlayOneShot(new TargetInfo(base.Position, base.Map));
-				}
-				RoofCollapserImmediate.DropRoofInCells(cr.ExpandedBy(1).ClipInsideMap(base.Map).Cells.Where(delegate(IntVec3 c)
-				{
-					if (!c.InBounds(base.Map))
-					{
-						return false;
-					}
-					if (cr.Contains(c))
-					{
-						return true;
-					}
-					if (c.GetFirstPawn(base.Map) != null)
-					{
-						return false;
-					}
-					Building edifice = c.GetEdifice(base.Map);
-					return (edifice == null || !edifice.def.holdsRoof) ? true : false;
-				}), base.Map);
+				return;
 			}
+			RoofDef roof = cr.Cells.First((IntVec3 x) => x.Roofed(base.Map)).GetRoof(base.Map);
+			if (!roof.soundPunchThrough.NullOrUndefined())
+			{
+				roof.soundPunchThrough.PlayOneShot(new TargetInfo(base.Position, base.Map));
+			}
+			RoofCollapserImmediate.DropRoofInCells(cr.ExpandedBy(1).ClipInsideMap(base.Map).Cells.Where(delegate(IntVec3 c)
+			{
+				if (!c.InBounds(base.Map))
+				{
+					return false;
+				}
+				if (cr.Contains(c))
+				{
+					return true;
+				}
+				if (c.GetFirstPawn(base.Map) != null)
+				{
+					return false;
+				}
+				Building edifice = c.GetEdifice(base.Map);
+				return (edifice == null || !edifice.def.holdsRoof) ? true : false;
+			}), base.Map);
 		}
 
 		protected virtual void SpawnThings()

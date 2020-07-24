@@ -40,7 +40,7 @@ namespace Verse
 
 		private bool loadedAnyPatches;
 
-		public static readonly string Ludeon = "ludeon";
+		public static readonly string LudeonPackageIdAuthor = "ludeon";
 
 		public static readonly string CoreModPackageId = "ludeon.rimworld";
 
@@ -146,48 +146,50 @@ namespace Verse
 			return null;
 		}
 
+		private void ReloadContentInt()
+		{
+			DeepProfiler.Start("Reload audio clips");
+			try
+			{
+				audioClips.ReloadAll();
+			}
+			finally
+			{
+				DeepProfiler.End();
+			}
+			DeepProfiler.Start("Reload textures");
+			try
+			{
+				textures.ReloadAll();
+			}
+			finally
+			{
+				DeepProfiler.End();
+			}
+			DeepProfiler.Start("Reload strings");
+			try
+			{
+				strings.ReloadAll();
+			}
+			finally
+			{
+				DeepProfiler.End();
+			}
+			DeepProfiler.Start("Reload asset bundles");
+			try
+			{
+				assetBundles.ReloadAll();
+				allAssetNamesInBundleCached = null;
+			}
+			finally
+			{
+				DeepProfiler.End();
+			}
+		}
+
 		public void ReloadContent()
 		{
-			LongEventHandler.ExecuteWhenFinished(delegate
-			{
-				DeepProfiler.Start("Reload audio clips");
-				try
-				{
-					audioClips.ReloadAll();
-				}
-				finally
-				{
-					DeepProfiler.End();
-				}
-				DeepProfiler.Start("Reload textures");
-				try
-				{
-					textures.ReloadAll();
-				}
-				finally
-				{
-					DeepProfiler.End();
-				}
-				DeepProfiler.Start("Reload strings");
-				try
-				{
-					strings.ReloadAll();
-				}
-				finally
-				{
-					DeepProfiler.End();
-				}
-				DeepProfiler.Start("Reload asset bundles");
-				try
-				{
-					assetBundles.ReloadAll();
-					allAssetNamesInBundleCached = null;
-				}
-				finally
-				{
-					DeepProfiler.End();
-				}
-			});
+			LongEventHandler.ExecuteWhenFinished(ReloadContentInt);
 			assemblies.ReloadAll();
 		}
 
@@ -320,25 +322,21 @@ namespace Verse
 				if (documentElement.Name != "Patch")
 				{
 					Log.Error($"Unexpected document element in patch XML; got {documentElement.Name}, expected 'Patch'");
+					continue;
 				}
-				else
+				foreach (XmlNode childNode in documentElement.ChildNodes)
 				{
-					foreach (XmlNode childNode in documentElement.ChildNodes)
+					if (childNode.NodeType == XmlNodeType.Element)
 					{
-						if (childNode.NodeType == XmlNodeType.Element)
+						if (childNode.Name != "Operation")
 						{
-							if (childNode.Name != "Operation")
-							{
-								Log.Error($"Unexpected element in patch XML; got {childNode.Name}, expected 'Operation'");
-							}
-							else
-							{
-								PatchOperation patchOperation = DirectXmlToObject.ObjectFromXml<PatchOperation>(childNode, doPostLoad: false);
-								patchOperation.sourceFile = list[i].FullFilePath;
-								patches.Add(patchOperation);
-								loadedAnyPatches = true;
-							}
+							Log.Error($"Unexpected element in patch XML; got {childNode.Name}, expected 'Operation'");
+							continue;
 						}
+						PatchOperation patchOperation = DirectXmlToObject.ObjectFromXml<PatchOperation>(childNode, doPostLoad: false);
+						patchOperation.sourceFile = list[i].FullFilePath;
+						patches.Add(patchOperation);
+						loadedAnyPatches = true;
 					}
 				}
 			}

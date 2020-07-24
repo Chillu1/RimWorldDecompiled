@@ -19,6 +19,10 @@ namespace RimWorld
 					num += num2;
 				}
 				GUI.color = Color.white;
+				if (TimeAssignmentSelector.selectedAssignment != null)
+				{
+					UIHighlighter.HighlightOpportunity(rect, "TimeAssignmentTableRow-If" + TimeAssignmentSelector.selectedAssignment.defName + "Selected");
+				}
 			}
 		}
 
@@ -81,14 +85,19 @@ namespace RimWorld
 			{
 				MouseoverSounds.DoRegion(rect);
 			}
-			if (Mouse.IsOver(rect))
+			if (!Mouse.IsOver(rect))
 			{
-				Widgets.DrawBox(rect, 2);
-				if ((assignment != TimeAssignmentSelector.selectedAssignment && TimeAssignmentSelector.selectedAssignment != null) & mouseButton)
+				return;
+			}
+			Widgets.DrawBox(rect, 2);
+			if (mouseButton && assignment != TimeAssignmentSelector.selectedAssignment && TimeAssignmentSelector.selectedAssignment != null)
+			{
+				SoundDefOf.Designate_DragStandard_Changed.PlayOneShotOnCamera();
+				p.timetable.SetAssignment(hour, TimeAssignmentSelector.selectedAssignment);
+				PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.TimeAssignments, KnowledgeAmount.SmallInteraction);
+				if (TimeAssignmentSelector.selectedAssignment == TimeAssignmentDefOf.Meditate)
 				{
-					SoundDefOf.Designate_DragStandard_Changed.PlayOneShotOnCamera();
-					p.timetable.SetAssignment(hour, TimeAssignmentSelector.selectedAssignment);
-					PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.TimeAssignments, KnowledgeAmount.SmallInteraction);
+					PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.MeditationSchedule, KnowledgeAmount.Total);
 				}
 			}
 		}

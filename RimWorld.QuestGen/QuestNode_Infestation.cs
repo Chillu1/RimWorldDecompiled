@@ -44,29 +44,30 @@ namespace RimWorld.QuestGen
 		{
 			Slate slate = QuestGen.slate;
 			Map map = QuestGen.slate.Get<Map>("map");
-			if (map != null)
+			if (map == null)
 			{
-				QuestPart_Infestation questPart = new QuestPart_Infestation();
-				questPart.mapParent = map.Parent;
-				questPart.hivesCount = hivesCount.GetValue(slate);
-				questPart.tag = QuestGenUtility.HardcodedTargetQuestTagWithQuestID(tag.GetValue(slate));
-				if (!customLetterLabel.GetValue(slate).NullOrEmpty() || customLetterLabelRules.GetValue(slate) != null)
-				{
-					QuestGen.AddTextRequest("root", delegate(string x)
-					{
-						questPart.customLetterLabel = x;
-					}, QuestGenUtility.MergeRules(customLetterLabelRules.GetValue(slate), customLetterLabel.GetValue(slate), "root"));
-				}
-				if (!customLetterText.GetValue(slate).NullOrEmpty() || customLetterTextRules.GetValue(slate) != null)
-				{
-					QuestGen.AddTextRequest("root", delegate(string x)
-					{
-						questPart.customLetterText = x;
-					}, QuestGenUtility.MergeRules(customLetterTextRules.GetValue(slate), customLetterText.GetValue(slate), "root"));
-				}
-				questPart.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
-				QuestGen.quest.AddPart(questPart);
+				return;
 			}
+			QuestPart_Infestation questPart = new QuestPart_Infestation();
+			questPart.mapParent = map.Parent;
+			questPart.hivesCount = hivesCount.GetValue(slate);
+			questPart.tag = QuestGenUtility.HardcodedTargetQuestTagWithQuestID(tag.GetValue(slate));
+			if (!customLetterLabel.GetValue(slate).NullOrEmpty() || customLetterLabelRules.GetValue(slate) != null)
+			{
+				QuestGen.AddTextRequest("root", delegate(string x)
+				{
+					questPart.customLetterLabel = x;
+				}, QuestGenUtility.MergeRules(customLetterLabelRules.GetValue(slate), customLetterLabel.GetValue(slate), "root"));
+			}
+			if (!customLetterText.GetValue(slate).NullOrEmpty() || customLetterTextRules.GetValue(slate) != null)
+			{
+				QuestGen.AddTextRequest("root", delegate(string x)
+				{
+					questPart.customLetterText = x;
+				}, QuestGenUtility.MergeRules(customLetterTextRules.GetValue(slate), customLetterText.GetValue(slate), "root"));
+			}
+			questPart.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			QuestGen.quest.AddPart(questPart);
 		}
 	}
 }

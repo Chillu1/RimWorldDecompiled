@@ -435,24 +435,24 @@ namespace RimWorld
 
 		private void SetLoadedItemsToLoad()
 		{
-			for (int j = 0; j < transporters.Count; j++)
+			for (int i = 0; i < transporters.Count; i++)
 			{
-				int i;
-				for (i = 0; i < transporters[j].innerContainer.Count; i++)
+				int j;
+				for (j = 0; j < transporters[i].innerContainer.Count; j++)
 				{
-					TransferableOneWay transferableOneWay = transferables.Find((TransferableOneWay x) => x.things.Contains(transporters[j].innerContainer[i]));
-					if (transferableOneWay != null && transferableOneWay.CanAdjustBy(transporters[j].innerContainer[i].stackCount).Accepted)
+					TransferableOneWay transferableOneWay = transferables.Find((TransferableOneWay x) => x.things.Contains(transporters[i].innerContainer[j]));
+					if (transferableOneWay != null && transferableOneWay.CanAdjustBy(transporters[i].innerContainer[j].stackCount).Accepted)
 					{
-						transferableOneWay.AdjustBy(transporters[j].innerContainer[i].stackCount);
+						transferableOneWay.AdjustBy(transporters[i].innerContainer[j].stackCount);
 					}
 				}
-				if (transporters[j].leftToLoad == null)
+				if (transporters[i].leftToLoad == null)
 				{
 					continue;
 				}
-				for (int k = 0; k < transporters[j].leftToLoad.Count; k++)
+				for (int k = 0; k < transporters[i].leftToLoad.Count; k++)
 				{
-					TransferableOneWay transferableOneWay2 = transporters[j].leftToLoad[k];
+					TransferableOneWay transferableOneWay2 = transporters[i].leftToLoad[k];
 					if (transferableOneWay2.CountToTransfer != 0 && transferableOneWay2.HasAnyThing)
 					{
 						TransferableOneWay transferableOneWay3 = TransferableUtility.TransferableMatchingDesperate(transferableOneWay2.AnyThing, transferables, TransferAsOneMode.PodsOrCaravanPacking);

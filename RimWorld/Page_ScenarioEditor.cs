@@ -168,13 +168,9 @@ namespace RimWorld
 			FloatMenuUtility.MakeMenu(from p in ScenarioMaker.AddableParts(curScen)
 				where p.category != ScenPartCategory.Fixed
 				orderby p.label
-				select p, (ScenPartDef p) => p.LabelCap, delegate(ScenPartDef p)
+				select p, (ScenPartDef p) => p.LabelCap, (ScenPartDef p) => delegate
 			{
-				Page_ScenarioEditor page_ScenarioEditor = this;
-				return delegate
-				{
-					page_ScenarioEditor.AddScenPart(p);
-				};
+				AddScenPart(p);
 			});
 		}
 

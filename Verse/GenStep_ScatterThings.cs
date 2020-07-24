@@ -147,15 +147,16 @@ namespace Verse
 			{
 				foreach (IntVec3 item in GenRadial.RadialCellsAround(loc, terrainValidationRadius, useCenter: true))
 				{
-					if (item.InBounds(map))
+					if (!item.InBounds(map))
 					{
-						TerrainDef terrain = item.GetTerrain(map);
-						for (int i = 0; i < terrainValidationDisallowed.Count; i++)
+						continue;
+					}
+					TerrainDef terrain = item.GetTerrain(map);
+					for (int i = 0; i < terrainValidationDisallowed.Count; i++)
+					{
+						if (terrain.HasTag(terrainValidationDisallowed[i]))
 						{
-							if (terrain.HasTag(terrainValidationDisallowed[i]))
-							{
-								return false;
-							}
+							return false;
 						}
 					}
 				}

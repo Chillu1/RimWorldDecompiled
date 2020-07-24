@@ -16,13 +16,9 @@ namespace RimWorld
 			Rect scenPartRect = listing.GetScenPartRect(this, ScenPart.RowHeight * 3f + 31f);
 			if (Widgets.ButtonText(scenPartRect.TopPartPixels(ScenPart.RowHeight), need.LabelCap))
 			{
-				FloatMenuUtility.MakeMenu(PossibleNeeds(), (NeedDef hd) => hd.LabelCap, delegate(NeedDef n)
+				FloatMenuUtility.MakeMenu(PossibleNeeds(), (NeedDef hd) => hd.LabelCap, (NeedDef n) => delegate
 				{
-					ScenPart_SetNeedLevel scenPart_SetNeedLevel = this;
-					return delegate
-					{
-						scenPart_SetNeedLevel.need = n;
-					};
+					need = n;
 				});
 			}
 			Widgets.FloatRange(new Rect(scenPartRect.x, scenPartRect.y + ScenPart.RowHeight, scenPartRect.width, 31f), listing.CurHeight.GetHashCode(), ref levelRange, 0f, 1f, "ConfigurableLevel");

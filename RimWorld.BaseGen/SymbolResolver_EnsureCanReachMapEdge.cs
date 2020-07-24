@@ -59,18 +59,19 @@ namespace RimWorld.BaseGen
 					}
 				}
 				room = intVec.GetRoom(map);
-				if (room != null)
+				if (room == null)
 				{
-					RegionTraverser.BreadthFirstTraverse(room.Regions[0], (Region from, Region r) => r.Allows(traverseParms, isDestination: false), delegate(Region r)
-					{
-						if (r.Room.TouchesMapEdge)
-						{
-							MapGenerator.rootsToUnfog.Add(r.AnyCell);
-							return true;
-						}
-						return false;
-					}, 9999);
+					continue;
 				}
+				RegionTraverser.BreadthFirstTraverse(room.Regions[0], (Region from, Region r) => r.Allows(traverseParms, isDestination: false), delegate(Region r)
+				{
+					if (r.Room.TouchesMapEdge)
+					{
+						MapGenerator.rootsToUnfog.Add(r.AnyCell);
+						return true;
+					}
+					return false;
+				}, 9999);
 			}
 			visited.Clear();
 		}

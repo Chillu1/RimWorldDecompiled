@@ -60,6 +60,8 @@ namespace RimWorld
 
 		private static Dictionary<Faction, List<Pawn>> allMaps_SpawnedPawnsInFaction_Result = new Dictionary<Faction, List<Pawn>>();
 
+		private static List<Pawn> homeMaps_FreeColonistsSpawned_Result = new List<Pawn>();
+
 		public static List<Pawn> AllMapsWorldAndTemporary_AliveOrDead
 		{
 			get
@@ -595,6 +597,34 @@ namespace RimWorld
 			}
 		}
 
+		public static List<Pawn> HomeMaps_FreeColonistsSpawned
+		{
+			get
+			{
+				homeMaps_FreeColonistsSpawned_Result.Clear();
+				if (Current.ProgramState != 0)
+				{
+					List<Map> maps = Find.Maps;
+					if (maps.Count == 1)
+					{
+						if (!maps[0].IsPlayerHome)
+						{
+							return homeMaps_FreeColonistsSpawned_Result;
+						}
+						return maps[0].mapPawns.FreeColonistsSpawned;
+					}
+					for (int i = 0; i < maps.Count; i++)
+					{
+						if (maps[i].IsPlayerHome)
+						{
+							homeMaps_FreeColonistsSpawned_Result.AddRange(maps[i].mapPawns.FreeColonistsSpawned);
+						}
+					}
+				}
+				return homeMaps_FreeColonistsSpawned_Result;
+			}
+		}
+
 		public static List<Pawn> AllMaps_SpawnedPawnsInFaction(Faction faction)
 		{
 			if (!allMaps_SpawnedPawnsInFaction_Result.TryGetValue(faction, out List<Pawn> value))
@@ -647,6 +677,7 @@ namespace RimWorld
 			allMaps_FreeColonistsAndPrisonersSpawned_Result.Clear();
 			allMaps_FreeColonistsAndPrisoners_Result.Clear();
 			allMaps_SpawnedPawnsInFaction_Result.Clear();
+			homeMaps_FreeColonistsSpawned_Result.Clear();
 		}
 	}
 }

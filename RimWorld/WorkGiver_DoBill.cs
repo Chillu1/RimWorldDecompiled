@@ -172,7 +172,7 @@ namespace RimWorld
 		{
 			if (uft.Creator != pawn)
 			{
-				Log.Error("Tried to get FinishUftJob for " + pawn + " finishing " + uft + " but its creator is " + uft.Creator);
+				Log.Error(string.Concat("Tried to get FinishUftJob for ", pawn, " finishing ", uft, " but its creator is ", uft.Creator));
 				return null;
 			}
 			Job job = WorkGiverUtility.HaulStuffOffBillGiverJob(pawn, bill.billStack.billGiver, uft);
@@ -361,13 +361,13 @@ namespace RimWorld
 						return false;
 					}
 					CellRect extentsClose = r.extentsClose;
-					int num2 = Math.Abs(billGiver.Position.x - Math.Max(extentsClose.minX, Math.Min(billGiver.Position.x, extentsClose.maxX)));
-					if ((float)num2 > bill.ingredientSearchRadius)
+					int num = Math.Abs(billGiver.Position.x - Math.Max(extentsClose.minX, Math.Min(billGiver.Position.x, extentsClose.maxX)));
+					if ((float)num > bill.ingredientSearchRadius)
 					{
 						return false;
 					}
-					int num3 = Math.Abs(billGiver.Position.z - Math.Max(extentsClose.minZ, Math.Min(billGiver.Position.z, extentsClose.maxZ)));
-					return !((float)num3 > bill.ingredientSearchRadius) && (float)(num2 * num2 + num3 * num3) <= radiusSq;
+					int num2 = Math.Abs(billGiver.Position.z - Math.Max(extentsClose.minZ, Math.Min(billGiver.Position.z, extentsClose.maxZ)));
+					return !((float)num2 > bill.ingredientSearchRadius) && (float)(num * num + num2 * num2) <= radiusSq;
 				};
 			}
 			else
@@ -383,13 +383,13 @@ namespace RimWorld
 				for (int i = 0; i < list.Count; i++)
 				{
 					Thing thing = list[i];
-					if (!processedThings.Contains(thing) && ReachabilityWithinRegion.ThingFromRegionListerReachable(thing, r, PathEndMode.ClosestTouch, pawn) && baseValidator(thing) && !(thing.def.IsMedicine & billGiverIsPawn))
+					if (!processedThings.Contains(thing) && ReachabilityWithinRegion.ThingFromRegionListerReachable(thing, r, PathEndMode.ClosestTouch, pawn) && baseValidator(thing) && !(thing.def.IsMedicine && billGiverIsPawn))
 					{
 						newRelevantThings.Add(thing);
 						processedThings.Add(thing);
 					}
 				}
-				int num = ++regionsProcessed;
+				regionsProcessed++;
 				if (newRelevantThings.Count > 0 && regionsProcessed > adjacentRegionsAvailable)
 				{
 					relevantThings.AddRange(newRelevantThings);
@@ -419,7 +419,7 @@ namespace RimWorld
 				{
 					return building.InteractionCell;
 				}
-				Log.Error("Tried to find bill ingredients for " + billGiver + " which has no interaction cell.");
+				Log.Error(string.Concat("Tried to find bill ingredients for ", billGiver, " which has no interaction cell."));
 				return forPawn.Position;
 			}
 			return billGiver.Position;

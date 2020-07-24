@@ -40,7 +40,14 @@ namespace RimWorld
 
 		public void StartPlaying(Pawn player)
 		{
-			currentPlayer = player;
+			if (!ModLister.RoyaltyInstalled)
+			{
+				Log.ErrorOnce("Musical instruments are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 19285);
+			}
+			else
+			{
+				currentPlayer = player;
+			}
 		}
 
 		public override void Tick()
@@ -76,6 +83,11 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> GetGizmos()
 		{
+			if (!ModLister.RoyaltyInstalled)
+			{
+				Log.ErrorOnce("Musical instruments are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 19285);
+				yield break;
+			}
 			foreach (Gizmo gizmo in base.GetGizmos())
 			{
 				yield return gizmo;

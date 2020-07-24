@@ -351,24 +351,24 @@ namespace Verse
 					}
 					catch (ArgumentException innerException)
 					{
-						throw new ArgumentException("'" + str + "' is not a valid value for " + itemType + ". Valid values are: \n" + GenText.StringFromEnumerable(Enum.GetValues(itemType)), innerException);
+						throw new ArgumentException(string.Concat(string.Concat("'", str, "' is not a valid value for ", itemType, ". Valid values are: \n"), GenText.StringFromEnumerable(Enum.GetValues(itemType))), innerException);
 					}
 				}
 				if (parsers.TryGetValue(itemType, out Func<string, object> value))
 				{
 					return value(str);
 				}
-				if (!typeof(ISlateRef).IsAssignableFrom(itemType))
+				if (typeof(ISlateRef).IsAssignableFrom(itemType))
 				{
-					throw new ArgumentException("Trying to parse to unknown data type " + itemType.Name + ". Content is '" + str + "'.");
+					ISlateRef obj2 = (ISlateRef)Activator.CreateInstance(itemType);
+					obj2.SlateRef = str;
+					return obj2;
 				}
-				ISlateRef obj2 = (ISlateRef)Activator.CreateInstance(itemType);
-				obj2.SlateRef = str;
-				return obj2;
+				throw new ArgumentException("Trying to parse to unknown data type " + itemType.Name + ". Content is '" + str + "'.");
 			}
 			catch (Exception innerException2)
 			{
-				throw new ArgumentException("Exception parsing " + itemType + " from \"" + str + "\"", innerException2);
+				throw new ArgumentException(string.Concat("Exception parsing ", itemType, " from \"", str, "\""), innerException2);
 			}
 		}
 

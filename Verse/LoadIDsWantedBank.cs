@@ -56,7 +56,7 @@ namespace Verse
 					stringBuilder.AppendLine("Singles:");
 					for (int i = 0; i < idsRead.Count; i++)
 					{
-						stringBuilder.AppendLine("  " + idsRead[i].targetLoadID.ToStringSafe() + " of type " + idsRead[i].targetType + ". pathRelToParent=" + idsRead[i].pathRelToParent + ", parent=" + idsRead[i].parent.ToStringSafe());
+						stringBuilder.AppendLine(string.Concat("  ", idsRead[i].targetLoadID.ToStringSafe(), " of type ", idsRead[i].targetType, ". pathRelToParent=", idsRead[i].pathRelToParent, ", parent=", idsRead[i].parent.ToStringSafe()));
 					}
 				}
 				if (idListsRead.Count > 0)
@@ -133,7 +133,7 @@ namespace Verse
 					string targetLoadID = idsRead[i].targetLoadID;
 					if (typeof(T) != idsRead[i].targetType)
 					{
-						Log.Error("Trying to get load ID of object of type " + typeof(T) + ", but it was registered as " + idsRead[i].targetType + ". pathRelToParent=" + pathRelToParent + ", parent=" + parent.ToStringSafe());
+						Log.Error(string.Concat("Trying to get load ID of object of type ", typeof(T), ", but it was registered as ", idsRead[i].targetType, ". pathRelToParent=", pathRelToParent, ", parent=", parent.ToStringSafe()));
 					}
 					idsRead.RemoveAt(i);
 					return targetLoadID;

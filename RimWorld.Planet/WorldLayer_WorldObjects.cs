@@ -24,7 +24,7 @@ namespace RimWorld.Planet
 					Material material = worldObject.Material;
 					if (material == null)
 					{
-						Log.ErrorOnce("World object " + worldObject + " returned null material.", Gen.HashCombineInt(1948576891, worldObject.ID));
+						Log.ErrorOnce(string.Concat("World object ", worldObject, " returned null material."), Gen.HashCombineInt(1948576891, worldObject.ID));
 						continue;
 					}
 					LayerSubMesh subMesh = GetSubMesh(material);

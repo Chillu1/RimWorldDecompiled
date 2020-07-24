@@ -55,6 +55,11 @@ namespace RimWorld
 
 		public void ApplyTechprint(ResearchProjectDef proj, Pawn applyingPawn)
 		{
+			if (!ModLister.RoyaltyInstalled)
+			{
+				Log.ErrorOnce("Techprints are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it.", 657212);
+				return;
+			}
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.AppendLine("LetterTechprintAppliedPartIntro".Translate(NamedArgumentUtility.Named(proj, "PROJECT")));
 			stringBuilder.AppendLine();

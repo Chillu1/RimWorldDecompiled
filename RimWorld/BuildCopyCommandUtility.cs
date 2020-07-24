@@ -35,7 +35,7 @@ namespace RimWorld
 			};
 			command_Action.defaultLabel = label;
 			command_Action.defaultDesc = description;
-			command_Action.icon = des.icon;
+			command_Action.icon = des.ResolvedIcon();
 			command_Action.iconProportions = des.iconProportions;
 			command_Action.iconDrawScale = des.iconDrawScale;
 			command_Action.iconTexCoords = des.iconTexCoords;
@@ -96,6 +96,19 @@ namespace RimWorld
 			if (!cache.ContainsKey(buildable))
 			{
 				cache.Add(buildable, null);
+			}
+			return null;
+		}
+
+		public static Designator FindAllowedDesignatorRoot(BuildableDef buildable, bool mustBeVisible = true)
+		{
+			List<Designator> allResolvedDesignators = buildable.designationCategory.AllResolvedDesignators;
+			for (int i = 0; i < allResolvedDesignators.Count; i++)
+			{
+				if (FindAllowedDesignatorRecursive(allResolvedDesignators[i], buildable, mustBeVisible) != null)
+				{
+					return allResolvedDesignators[i];
+				}
 			}
 			return null;
 		}

@@ -108,7 +108,7 @@ namespace RimWorld
 				float num = 0f;
 				foreach (RoyalTitle item in pawn.royalty.AllTitlesInEffectForReading)
 				{
-					num += item.def.needFallPerDayAuthority;
+					_ = item;
 				}
 				int num2 = pawn.Map.mapPawns.SpawnedPawnsInFaction(pawn.Faction).Count();
 				return num * FallFactorCurve.Evaluate(num2);

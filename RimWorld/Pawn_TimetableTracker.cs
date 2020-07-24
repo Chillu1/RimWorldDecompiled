@@ -35,6 +35,17 @@ namespace RimWorld
 		public void ExposeData()
 		{
 			Scribe_Collections.Look(ref times, "times", LookMode.Undefined);
+			if (Scribe.mode != LoadSaveMode.PostLoadInit || ModsConfig.RoyaltyActive)
+			{
+				return;
+			}
+			for (int i = 0; i < times.Count; i++)
+			{
+				if (times[i] == TimeAssignmentDefOf.Meditate)
+				{
+					times[i] = TimeAssignmentDefOf.Anything;
+				}
+			}
 		}
 
 		public TimeAssignmentDef GetAssignment(int hour)

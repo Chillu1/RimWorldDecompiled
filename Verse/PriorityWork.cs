@@ -74,25 +74,26 @@ namespace Verse
 
 		public IEnumerable<Gizmo> GetGizmos()
 		{
-			if ((IsPrioritized || (pawn.CurJob != null && pawn.CurJob.playerForced) || pawn.jobs.jobQueue.AnyPlayerForced) && !pawn.Drafted)
+			if ((!IsPrioritized && (pawn.CurJob == null || !pawn.CurJob.playerForced) && !pawn.jobs.jobQueue.AnyPlayerForced) || pawn.Drafted)
 			{
-				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "CommandClearPrioritizedWork".Translate();
-				command_Action.defaultDesc = "CommandClearPrioritizedWorkDesc".Translate();
-				command_Action.icon = TexCommand.ClearPrioritizedWork;
-				command_Action.activateSound = SoundDefOf.Tick_Low;
-				command_Action.action = delegate
-				{
-					ClearPrioritizedWorkAndJobQueue();
-					if (pawn.CurJob.playerForced)
-					{
-						pawn.jobs.EndCurrentJob(JobCondition.InterruptForced);
-					}
-				};
-				command_Action.hotKey = KeyBindingDefOf.Designator_Cancel;
-				command_Action.groupKey = 6165612;
-				yield return command_Action;
+				yield break;
 			}
+			Command_Action command_Action = new Command_Action();
+			command_Action.defaultLabel = "CommandClearPrioritizedWork".Translate();
+			command_Action.defaultDesc = "CommandClearPrioritizedWorkDesc".Translate();
+			command_Action.icon = TexCommand.ClearPrioritizedWork;
+			command_Action.activateSound = SoundDefOf.Tick_Low;
+			command_Action.action = delegate
+			{
+				ClearPrioritizedWorkAndJobQueue();
+				if (pawn.CurJob.playerForced)
+				{
+					pawn.jobs.EndCurrentJob(JobCondition.InterruptForced);
+				}
+			};
+			command_Action.hotKey = KeyBindingDefOf.Designator_Cancel;
+			command_Action.groupKey = 6165612;
+			yield return command_Action;
 		}
 	}
 }

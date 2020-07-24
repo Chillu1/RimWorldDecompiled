@@ -23,7 +23,7 @@ namespace RimWorld
 		public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
 			Pawn pawn2 = t as Pawn;
-			if (pawn2 == null || (def.tendToHumanlikesOnly && !pawn2.RaceProps.Humanlike) || (def.tendToAnimalsOnly && !pawn2.RaceProps.Animal) || !GoodLayingStatusForTend(pawn2, pawn) || !HealthAIUtility.ShouldBeTendedNowByPlayer(pawn2) || !pawn.CanReserve(pawn2, 1, -1, null, forced))
+			if (pawn2 == null || pawn.WorkTypeIsDisabled(WorkTypeDefOf.Doctor) || (def.tendToHumanlikesOnly && !pawn2.RaceProps.Humanlike) || (def.tendToAnimalsOnly && !pawn2.RaceProps.Animal) || !GoodLayingStatusForTend(pawn2, pawn) || !HealthAIUtility.ShouldBeTendedNowByPlayer(pawn2) || !pawn.CanReserve(pawn2, 1, -1, null, forced))
 			{
 				return false;
 			}

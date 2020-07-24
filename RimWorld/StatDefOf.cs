@@ -43,12 +43,6 @@ namespace RimWorld
 
 		public static StatDef PsychicSensitivity;
 
-		public static StatDef PsychicEntropyMax;
-
-		public static StatDef PsychicEntropyRecoveryRate;
-
-		public static StatDef PsychicEntropyGain;
-
 		public static StatDef ToxicSensitivity;
 
 		public static StatDef MentalBreakThreshold;
@@ -73,9 +67,23 @@ namespace RimWorld
 
 		public static StatDef ForagedNutritionPerDay;
 
+		[MayRequireRoyalty]
+		public static StatDef PsychicEntropyMax;
+
+		[MayRequireRoyalty]
+		public static StatDef PsychicEntropyRecoveryRate;
+
+		[MayRequireRoyalty]
+		public static StatDef PsychicEntropyGain;
+
+		[MayRequireRoyalty]
+		public static StatDef MeditationFocusGain;
+
 		public static StatDef WorkSpeedGlobal;
 
 		public static StatDef MiningSpeed;
+
+		public static StatDef DeepDrillingSpeed;
 
 		public static StatDef MiningYield;
 
@@ -233,19 +241,24 @@ namespace RimWorld
 
 		public static StatDef Ability_EntropyGain;
 
+		public static StatDef Ability_PsyfocusCost;
+
 		public static StatDef Ability_Duration;
 
 		public static StatDef Ability_Range;
 
 		public static StatDef Ability_EffectRadius;
 
-		public static StatDef Ability_RequiredAmplifier;
+		public static StatDef Ability_RequiredPsylink;
 
 		public static StatDef Ability_GoodwillImpact;
 
 		public static StatDef Ability_DetectChancePerEntropy;
 
+		[Obsolete("Will be removed in the future")]
 		public static StatDef Bladelink_DetectionChance;
+
+		public static StatDef MeditationFocusStrength;
 
 		static StatDefOf()
 		{

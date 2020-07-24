@@ -31,6 +31,7 @@ namespace RimWorld
 				{
 					IntVec3 loc = CellFinder.RandomSpawnCellForPawnNear(result, map, 10);
 					GenSpawn.Spawn(list[i], loc, map, Rot4.Random);
+					list[i].health.AddHediff(HediffDefOf.Scaria);
 					list[i].mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.ManhunterPermanent);
 				}
 			}

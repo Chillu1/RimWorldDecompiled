@@ -257,6 +257,7 @@ namespace RimWorld
 				}
 				else
 				{
+					toil.actor.pather.StopDead();
 					actor.jobs.curDriver.ticksLeftThisToil = Mathf.RoundToInt((float)thing4.def.ingestible.baseIngestTicks * durationMultiplier);
 					if (thing4.Spawned)
 					{

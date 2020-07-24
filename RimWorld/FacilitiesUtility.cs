@@ -18,67 +18,70 @@ namespace RimWorld
 
 		public static void NotifyFacilitiesAboutChangedLOSBlockers(List<Region> affectedRegions)
 		{
-			if (affectedRegions.Any())
+			if (!affectedRegions.Any())
 			{
-				if (working)
+				return;
+			}
+			if (working)
+			{
+				Log.Warning("Tried to update facilities while already updating.");
+				return;
+			}
+			working = true;
+			try
+			{
+				visited.Clear();
+				processed.Clear();
+				int facilitiesToProcess = affectedRegions[0].Map.listerThings.ThingsInGroup(ThingRequestGroup.Facility).Count;
+				int affectedByFacilitiesToProcess = affectedRegions[0].Map.listerThings.ThingsInGroup(ThingRequestGroup.AffectedByFacilities).Count;
+				int facilitiesProcessed = 0;
+				int affectedByFacilitiesProcessed = 0;
+				if (facilitiesToProcess <= 0 || affectedByFacilitiesToProcess <= 0)
 				{
-					Log.Warning("Tried to update facilities while already updating.");
 					return;
 				}
-				working = true;
-				try
+				for (int i = 0; i < affectedRegions.Count; i++)
 				{
-					visited.Clear();
-					processed.Clear();
-					int facilitiesToProcess = affectedRegions[0].Map.listerThings.ThingsInGroup(ThingRequestGroup.Facility).Count;
-					int affectedByFacilitiesToProcess = affectedRegions[0].Map.listerThings.ThingsInGroup(ThingRequestGroup.AffectedByFacilities).Count;
-					int facilitiesProcessed = 0;
-					int affectedByFacilitiesProcessed = 0;
-					if (facilitiesToProcess > 0 && affectedByFacilitiesToProcess > 0)
+					if (visited.Contains(affectedRegions[i]))
 					{
-						for (int i = 0; i < affectedRegions.Count; i++)
+						continue;
+					}
+					RegionTraverser.BreadthFirstTraverse(affectedRegions[i], (Region from, Region r) => !visited.Contains(r), delegate(Region x)
+					{
+						visited.Add(x);
+						List<Thing> list = x.ListerThings.ThingsInGroup(ThingRequestGroup.BuildingArtificial);
+						for (int j = 0; j < list.Count; j++)
 						{
-							if (!visited.Contains(affectedRegions[i]))
+							if (!processed.Contains(list[j]))
 							{
-								RegionTraverser.BreadthFirstTraverse(affectedRegions[i], (Region from, Region r) => !visited.Contains(r), delegate(Region x)
+								processed.Add(list[j]);
+								CompFacility compFacility = list[j].TryGetComp<CompFacility>();
+								CompAffectedByFacilities compAffectedByFacilities = list[j].TryGetComp<CompAffectedByFacilities>();
+								if (compFacility != null)
 								{
-									visited.Add(x);
-									List<Thing> list = x.ListerThings.ThingsInGroup(ThingRequestGroup.BuildingArtificial);
-									for (int j = 0; j < list.Count; j++)
-									{
-										if (!processed.Contains(list[j]))
-										{
-											processed.Add(list[j]);
-											CompFacility compFacility = list[j].TryGetComp<CompFacility>();
-											CompAffectedByFacilities compAffectedByFacilities = list[j].TryGetComp<CompAffectedByFacilities>();
-											if (compFacility != null)
-											{
-												compFacility.Notify_LOSBlockerSpawnedOrDespawned();
-												facilitiesProcessed++;
-											}
-											if (compAffectedByFacilities != null)
-											{
-												compAffectedByFacilities.Notify_LOSBlockerSpawnedOrDespawned();
-												affectedByFacilitiesProcessed++;
-											}
-										}
-									}
-									return facilitiesProcessed >= facilitiesToProcess && affectedByFacilitiesProcessed >= affectedByFacilitiesToProcess;
-								}, RegionsToSearch);
-								if (facilitiesProcessed >= facilitiesToProcess && affectedByFacilitiesProcessed >= affectedByFacilitiesToProcess)
+									compFacility.Notify_LOSBlockerSpawnedOrDespawned();
+									facilitiesProcessed++;
+								}
+								if (compAffectedByFacilities != null)
 								{
-									break;
+									compAffectedByFacilities.Notify_LOSBlockerSpawnedOrDespawned();
+									affectedByFacilitiesProcessed++;
 								}
 							}
 						}
+						return facilitiesProcessed >= facilitiesToProcess && affectedByFacilitiesProcessed >= affectedByFacilitiesToProcess;
+					}, RegionsToSearch);
+					if (facilitiesProcessed >= facilitiesToProcess && affectedByFacilitiesProcessed >= affectedByFacilitiesToProcess)
+					{
+						break;
 					}
 				}
-				finally
-				{
-					working = false;
-					visited.Clear();
-					processed.Clear();
-				}
+			}
+			finally
+			{
+				working = false;
+				visited.Clear();
+				processed.Clear();
 			}
 		}
 	}

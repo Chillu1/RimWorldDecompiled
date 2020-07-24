@@ -73,7 +73,7 @@ namespace Verse.AI
 			string text = focus.IsValid ? focus.ToString() : "";
 			string text2 = focusSecond.IsValid ? (", second=" + focusSecond.ToString()) : "";
 			string text3 = (radius > 0f) ? (", rad=" + radius.ToString("F2")) : "";
-			return "(" + def + " " + text + text2 + text3 + ")";
+			return string.Concat("(", def, " ", text, text2, text3, ")");
 		}
 
 		internal void DrawDebug(Pawn pawn)

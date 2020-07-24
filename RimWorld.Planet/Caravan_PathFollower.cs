@@ -239,12 +239,12 @@ namespace RimWorld.Planet
 		{
 			if (GenWorldClosest.TryFindClosestTile(caravan.Tile, (int t) => IsPassable(t), out int foundTile))
 			{
-				Log.Warning(caravan + " on unwalkable tile " + caravan.Tile + ". Teleporting to " + foundTile);
+				Log.Warning(string.Concat(caravan, " on unwalkable tile ", caravan.Tile, ". Teleporting to ", foundTile));
 				caravan.Tile = foundTile;
 				caravan.Notify_Teleported();
 				return true;
 			}
-			Log.Error(caravan + " on unwalkable tile " + caravan.Tile + ". Could not find walkable position nearby. Removed.");
+			Log.Error(string.Concat(caravan, " on unwalkable tile ", caravan.Tile, ". Could not find walkable position nearby. Removed."));
 			caravan.Destroy();
 			return false;
 		}
@@ -284,7 +284,7 @@ namespace RimWorld.Planet
 				}
 				else if (curPath.NodesLeftCount == 0)
 				{
-					Log.Error(caravan + " ran out of path nodes. Force-arriving.");
+					Log.Error(string.Concat(caravan, " ran out of path nodes. Force-arriving."));
 					PatherArrived();
 				}
 				else
@@ -298,7 +298,7 @@ namespace RimWorld.Planet
 		{
 			if (curPath.NodesLeftCount < 2)
 			{
-				Log.Error(caravan + " at " + caravan.Tile + " ran out of path nodes while pathing to " + destTile + ".");
+				Log.Error(string.Concat(caravan, " at ", caravan.Tile, " ran out of path nodes while pathing to ", destTile, "."));
 				PatherFailed();
 				return;
 			}
@@ -306,7 +306,7 @@ namespace RimWorld.Planet
 			previousTileForDrawingIfInDoubt = -1;
 			if (Find.World.Impassable(nextTile))
 			{
-				Log.Error(caravan + " entering " + nextTile + " which is unwalkable.");
+				Log.Error(string.Concat(caravan, " entering ", nextTile, " which is unwalkable."));
 			}
 			int num = CostToMove(caravan.Tile, nextTile);
 			nextTileCostTotal = num;

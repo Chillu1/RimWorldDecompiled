@@ -83,12 +83,12 @@ namespace Verse
 			get
 			{
 				ThingGrid grids = Map.thingGrid;
-				for (int j = 0; j < cells.Count; j++)
+				for (int i = 0; i < cells.Count; i++)
 				{
-					List<Thing> thingList = grids.ThingsListAt(cells[j]);
-					for (int i = 0; i < thingList.Count; i++)
+					List<Thing> thingList = grids.ThingsListAt(cells[i]);
+					for (int j = 0; j < thingList.Count; j++)
 					{
-						yield return thingList[i];
+						yield return thingList[j];
 					}
 				}
 			}
@@ -161,7 +161,7 @@ namespace Verse
 		{
 			if (cells.Contains(c))
 			{
-				Log.Error("Adding cell to zone which already has it. c=" + c + ", zone=" + this);
+				Log.Error(string.Concat("Adding cell to zone which already has it. c=", c, ", zone=", this));
 				return;
 			}
 			List<Thing> list = Map.thingGrid.ThingsListAt(c);
@@ -185,7 +185,7 @@ namespace Verse
 		{
 			if (!cells.Contains(c))
 			{
-				Log.Error("Cannot remove cell from zone which doesn't have it. c=" + c + ", zone=" + this);
+				Log.Error(string.Concat("Cannot remove cell from zone which doesn't have it. c=", c, ", zone=", this));
 				return;
 			}
 			cells.Remove(c);
@@ -313,52 +313,54 @@ namespace Verse
 
 		public void CheckContiguous()
 		{
-			if (cells.Count != 0)
+			if (cells.Count == 0)
 			{
-				if (extantGrid == null)
+				return;
+			}
+			if (extantGrid == null)
+			{
+				extantGrid = new BoolGrid(Map);
+			}
+			else
+			{
+				extantGrid.ClearAndResizeTo(Map);
+			}
+			if (foundGrid == null)
+			{
+				foundGrid = new BoolGrid(Map);
+			}
+			else
+			{
+				foundGrid.ClearAndResizeTo(Map);
+			}
+			for (int i = 0; i < cells.Count; i++)
+			{
+				extantGrid.Set(cells[i], value: true);
+			}
+			Predicate<IntVec3> passCheck = delegate(IntVec3 c)
+			{
+				if (!extantGrid[c])
 				{
-					extantGrid = new BoolGrid(Map);
+					return false;
 				}
-				else
+				return (!foundGrid[c]) ? true : false;
+			};
+			int numFound = 0;
+			Action<IntVec3> processor = delegate(IntVec3 c)
+			{
+				foundGrid.Set(c, value: true);
+				numFound++;
+			};
+			Map.floodFiller.FloodFill(cells[0], passCheck, processor);
+			if (numFound >= cells.Count)
+			{
+				return;
+			}
+			foreach (IntVec3 allCell in Map.AllCells)
+			{
+				if (extantGrid[allCell] && !foundGrid[allCell])
 				{
-					extantGrid.ClearAndResizeTo(Map);
-				}
-				if (foundGrid == null)
-				{
-					foundGrid = new BoolGrid(Map);
-				}
-				else
-				{
-					foundGrid.ClearAndResizeTo(Map);
-				}
-				for (int i = 0; i < cells.Count; i++)
-				{
-					extantGrid.Set(cells[i], value: true);
-				}
-				Predicate<IntVec3> passCheck = delegate(IntVec3 c)
-				{
-					if (!extantGrid[c])
-					{
-						return false;
-					}
-					return (!foundGrid[c]) ? true : false;
-				};
-				int numFound = 0;
-				Action<IntVec3> processor = delegate(IntVec3 c)
-				{
-					foundGrid.Set(c, value: true);
-					numFound++;
-				};
-				Map.floodFiller.FloodFill(cells[0], passCheck, processor);
-				if (numFound < cells.Count)
-				{
-					foreach (IntVec3 allCell in Map.AllCells)
-					{
-						if (extantGrid[allCell] && !foundGrid[allCell])
-						{
-							RemoveCell(allCell);
-						}
-					}
+					RemoveCell(allCell);
 				}
 			}
 		}

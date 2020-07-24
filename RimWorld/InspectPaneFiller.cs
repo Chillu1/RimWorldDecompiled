@@ -53,7 +53,7 @@ namespace RimWorld
 			}
 			catch (Exception ex)
 			{
-				Log.ErrorOnce("Error in DoPaneContentsFor " + Find.Selector.FirstSelectedObject + ": " + ex.ToString(), 754672);
+				Log.ErrorOnce(string.Concat("Error in DoPaneContentsFor ", Find.Selector.FirstSelectedObject, ": ", ex.ToString()), 754672);
 			}
 			finally
 			{

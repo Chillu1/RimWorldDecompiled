@@ -23,12 +23,12 @@ namespace RimWorld
 		{
 			if (father != null && father.gender != Gender.Male)
 			{
-				Log.Warning("Tried to calculate chance for father with gender \"" + father.gender + "\".");
+				Log.Warning(string.Concat("Tried to calculate chance for father with gender \"", father.gender, "\"."));
 				return 0f;
 			}
 			if (mother != null && mother.gender != Gender.Female)
 			{
-				Log.Warning("Tried to calculate chance for mother with gender \"" + mother.gender + "\".");
+				Log.Warning(string.Concat("Tried to calculate chance for mother with gender \"", mother.gender, "\"."));
 				return 0f;
 			}
 			if (father != null && child.GetFather() != null && child.GetFather() != father)

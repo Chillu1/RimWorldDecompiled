@@ -196,7 +196,22 @@ namespace RimWorld
 				list2.Add(taggedString2.Named("BASELABEL"));
 				label = parms.customLetterLabel.Formatted(list2.ToArray());
 			}
-			Find.LetterStack.ReceiveLetter(label, text, parms.customLetterDef ?? baseLetterDef, lookTargets, parms.faction, parms.quest, parms.letterHyperlinkThingDefs);
+			ChoiceLetter choiceLetter = LetterMaker.MakeLetter(label, text, parms.customLetterDef ?? baseLetterDef, lookTargets, parms.faction, parms.quest, parms.letterHyperlinkThingDefs);
+			List<HediffDef> list3 = new List<HediffDef>();
+			if (!parms.letterHyperlinkHediffDefs.NullOrEmpty())
+			{
+				list3.AddRange(parms.letterHyperlinkHediffDefs);
+			}
+			if (!def.letterHyperlinkHediffDefs.NullOrEmpty())
+			{
+				if (list3 == null)
+				{
+					list3 = new List<HediffDef>();
+				}
+				list3.AddRange(def.letterHyperlinkHediffDefs);
+			}
+			choiceLetter.hyperlinkHediffDefs = list3;
+			Find.LetterStack.ReceiveLetter(choiceLetter);
 		}
 	}
 }

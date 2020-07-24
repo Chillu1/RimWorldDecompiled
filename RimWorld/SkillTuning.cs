@@ -14,6 +14,8 @@ namespace RimWorld
 
 		public const float XpPerTickScanning = 0.035f;
 
+		public const float XpPerTickMeditating = 0.0180000011f;
+
 		public const float XpPerTickConstruction = 0.25f;
 
 		public const float XpPerTickRepair = 0.05f;

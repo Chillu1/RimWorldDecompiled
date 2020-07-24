@@ -266,7 +266,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return "(" + x.ToString() + ", " + y.ToString() + ", " + z.ToString() + ")";
+			return "(" + x + ", " + y + ", " + z + ")";
 		}
 	}
 }

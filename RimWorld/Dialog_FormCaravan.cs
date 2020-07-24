@@ -659,22 +659,23 @@ namespace RimWorld
 			}
 			for (int l = 0; l < transferables.Count; l++)
 			{
-				if (transferables[l].AnyThing is Corpse)
+				if (!(transferables[l].AnyThing is Corpse))
 				{
-					TransferableUtility.TransferNoSplit(transferables[l].things, transferables[l].CountToTransfer, delegate(Thing originalThing, int numToTake)
-					{
-						if (AutoStripSpawnedCorpses)
-						{
-							Corpse corpse = originalThing as Corpse;
-							if (corpse != null && corpse.Spawned)
-							{
-								corpse.Strip();
-							}
-						}
-						Thing item = originalThing.SplitOff(numToTake);
-						CaravanInventoryUtility.FindPawnToMoveInventoryTo(item, pawns, null).inventory.innerContainer.TryAdd(item);
-					});
+					continue;
 				}
+				TransferableUtility.TransferNoSplit(transferables[l].things, transferables[l].CountToTransfer, delegate(Thing originalThing, int numToTake)
+				{
+					if (AutoStripSpawnedCorpses)
+					{
+						Corpse corpse = originalThing as Corpse;
+						if (corpse != null && corpse.Spawned)
+						{
+							corpse.Strip();
+						}
+					}
+					Thing item = originalThing.SplitOff(numToTake);
+					CaravanInventoryUtility.FindPawnToMoveInventoryTo(item, pawns, null).inventory.innerContainer.TryAdd(item);
+				});
 			}
 		}
 
@@ -788,21 +789,22 @@ namespace RimWorld
 			int num = -1;
 			foreach (IntVec3 item in CellRect.WholeMap(map).GetEdgeCells(exitDirection).InRandomOrder())
 			{
-				if (validator(item))
+				if (!validator(item))
 				{
-					int num2 = 0;
-					for (int i = 0; i < pawns.Count; i++)
+					continue;
+				}
+				int num2 = 0;
+				for (int i = 0; i < pawns.Count; i++)
+				{
+					if (pawns[i].IsColonist && !pawns[i].Downed && pawns[i].CanReach(item, PathEndMode.Touch, Danger.Deadly))
 					{
-						if (pawns[i].IsColonist && !pawns[i].Downed && pawns[i].CanReach(item, PathEndMode.Touch, Danger.Deadly))
-						{
-							num2++;
-						}
+						num2++;
 					}
-					if (num2 > num)
-					{
-						num = num2;
-						intVec = item;
-					}
+				}
+				if (num2 > num)
+				{
+					num = num2;
+					intVec = item;
 				}
 			}
 			spot = intVec;

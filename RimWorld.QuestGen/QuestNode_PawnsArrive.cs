@@ -25,6 +25,10 @@ namespace RimWorld.QuestGen
 
 		public SlateRef<RulePack> customLetterTextRules;
 
+		public SlateRef<bool> isSingleReward;
+
+		public SlateRef<bool> rewardDetailsHidden;
+
 		private const string RootSymbol = "root";
 
 		protected override bool TestRunInt(Slate slate)
@@ -65,6 +69,24 @@ namespace RimWorld.QuestGen
 				}, QuestGenUtility.MergeRules(customLetterTextRules.GetValue(slate), customLetterText.GetValue(slate), "root"));
 			}
 			QuestGen.quest.AddPart(pawnsArrive);
+			if (!isSingleReward.GetValue(slate))
+			{
+				return;
+			}
+			QuestPart_Choice questPart_Choice = new QuestPart_Choice();
+			questPart_Choice.inSignalChoiceUsed = pawnsArrive.inSignal;
+			QuestPart_Choice.Choice choice = new QuestPart_Choice.Choice();
+			choice.questParts.Add(pawnsArrive);
+			foreach (Pawn pawn in pawnsArrive.pawns)
+			{
+				choice.rewards.Add(new Reward_Pawn
+				{
+					pawn = pawn,
+					detailsHidden = rewardDetailsHidden.GetValue(slate)
+				});
+			}
+			questPart_Choice.choices.Add(choice);
+			QuestGen.quest.AddPart(questPart_Choice);
 		}
 	}
 }

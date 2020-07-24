@@ -148,24 +148,25 @@ namespace Verse
 
 		public void InitializeComps()
 		{
-			if (def.comps.Any())
+			if (!def.comps.Any())
 			{
-				comps = new List<ThingComp>();
-				for (int i = 0; i < def.comps.Count; i++)
+				return;
+			}
+			comps = new List<ThingComp>();
+			for (int i = 0; i < def.comps.Count; i++)
+			{
+				ThingComp thingComp = null;
+				try
 				{
-					ThingComp thingComp = null;
-					try
-					{
-						thingComp = (ThingComp)Activator.CreateInstance(def.comps[i].compClass);
-						thingComp.parent = this;
-						comps.Add(thingComp);
-						thingComp.Initialize(def.comps[i]);
-					}
-					catch (Exception arg)
-					{
-						Log.Error("Could not instantiate or initialize a ThingComp: " + arg);
-						comps.Remove(thingComp);
-					}
+					thingComp = (ThingComp)Activator.CreateInstance(def.comps[i].compClass);
+					thingComp.parent = this;
+					comps.Add(thingComp);
+					thingComp.Initialize(def.comps[i]);
+				}
+				catch (Exception arg)
+				{
+					Log.Error("Could not instantiate or initialize a ThingComp: " + arg);
+					comps.Remove(thingComp);
 				}
 			}
 		}
@@ -362,14 +363,15 @@ namespace Verse
 
 		public override IEnumerable<Gizmo> GetGizmos()
 		{
-			if (comps != null)
+			if (comps == null)
 			{
-				for (int i = 0; i < comps.Count; i++)
+				yield break;
+			}
+			for (int i = 0; i < comps.Count; i++)
+			{
+				foreach (Gizmo item in comps[i].CompGetGizmosExtra())
 				{
-					foreach (Gizmo item in comps[i].CompGetGizmosExtra())
-					{
-						yield return item;
-					}
+					yield return item;
 				}
 			}
 		}
@@ -453,7 +455,7 @@ namespace Verse
 				{
 					if (Prefs.DevMode && char.IsWhiteSpace(text[text.Length - 1]))
 					{
-						Log.ErrorOnce(comps[i].GetType() + " CompInspectStringExtra ended with whitespace: " + text, 25612);
+						Log.ErrorOnce(string.Concat(comps[i].GetType(), " CompInspectStringExtra ended with whitespace: ", text), 25612);
 						text = text.TrimEndNewlines();
 					}
 					if (stringBuilder.Length != 0)
@@ -484,14 +486,15 @@ namespace Verse
 			{
 				yield return floatMenuOption;
 			}
-			if (comps != null)
+			if (comps == null)
 			{
-				for (int i = 0; i < comps.Count; i++)
+				yield break;
+			}
+			for (int i = 0; i < comps.Count; i++)
+			{
+				foreach (FloatMenuOption item in comps[i].CompFloatMenuOptions(selPawn))
 				{
-					foreach (FloatMenuOption item in comps[i].CompFloatMenuOptions(selPawn))
-					{
-						yield return item;
-					}
+					yield return item;
 				}
 			}
 		}
@@ -516,6 +519,18 @@ namespace Verse
 				for (int i = 0; i < comps.Count; i++)
 				{
 					comps[i].PostPostGeneratedForTrader(trader, forTile, forFaction);
+				}
+			}
+		}
+
+		protected override void PrePostIngested(Pawn ingester)
+		{
+			base.PrePostIngested(ingester);
+			if (comps != null)
+			{
+				for (int i = 0; i < comps.Count; i++)
+				{
+					comps[i].PrePostIngested(ingester);
 				}
 			}
 		}
@@ -593,12 +608,13 @@ namespace Verse
 			for (int i = 0; i < comps.Count; i++)
 			{
 				IEnumerable<StatDrawEntry> enumerable = comps[i].SpecialDisplayStats();
-				if (enumerable != null)
+				if (enumerable == null)
 				{
-					foreach (StatDrawEntry item2 in enumerable)
-					{
-						yield return item2;
-					}
+					continue;
+				}
+				foreach (StatDrawEntry item2 in enumerable)
+				{
+					yield return item2;
 				}
 			}
 		}

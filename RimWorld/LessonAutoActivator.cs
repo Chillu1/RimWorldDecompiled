@@ -217,11 +217,9 @@ namespace RimWorld
 				if (PlayerKnowledgeDatabase.IsComplete(item))
 				{
 					stringBuilder.AppendLine(item.defName + " complete");
+					continue;
 				}
-				else
-				{
-					stringBuilder.AppendLine(item.defName + "\n   know " + PlayerKnowledgeDatabase.GetKnowledge(item).ToString("F3") + "\n   need " + opportunities[item].ToString("F3") + "\n   des " + GetDesire(item).ToString("F3"));
-				}
+				stringBuilder.AppendLine(item.defName + "\n   know " + PlayerKnowledgeDatabase.GetKnowledge(item).ToString("F3") + "\n   need " + opportunities[item].ToString("F3") + "\n   des " + GetDesire(item).ToString("F3"));
 			}
 			return stringBuilder.ToString();
 		}

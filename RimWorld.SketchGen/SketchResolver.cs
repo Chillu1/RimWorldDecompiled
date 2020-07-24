@@ -13,7 +13,7 @@ namespace RimWorld.SketchGen
 			}
 			catch (Exception ex)
 			{
-				Log.Error("Exception resolving " + GetType().Name + ": " + ex + "\n\nParms:\n" + parms.ToString());
+				Log.Error(string.Concat("Exception resolving ", GetType().Name, ": ", ex, "\n\nParms:\n", parms.ToString()));
 			}
 		}
 
@@ -25,7 +25,7 @@ namespace RimWorld.SketchGen
 			}
 			catch (Exception ex)
 			{
-				Log.Error("Exception test running " + GetType().Name + ": " + ex + "\n\nParms:\n" + parms.ToString());
+				Log.Error(string.Concat("Exception test running ", GetType().Name, ": ", ex, "\n\nParms:\n", parms.ToString()));
 				return false;
 			}
 		}

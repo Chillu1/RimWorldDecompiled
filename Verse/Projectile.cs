@@ -11,9 +11,9 @@ namespace Verse
 
 		protected Vector3 destination;
 
-		protected LocalTargetInfo usedTarget;
+		public LocalTargetInfo usedTarget;
 
-		protected LocalTargetInfo intendedTarget;
+		public LocalTargetInfo intendedTarget;
 
 		protected ThingDef equipmentDef;
 

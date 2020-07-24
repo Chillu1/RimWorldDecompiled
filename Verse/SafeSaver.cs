@@ -33,42 +33,40 @@ namespace Verse
 				if (!File.Exists(GetFileFullPath(path)))
 				{
 					DoSave(GetFileFullPath(path), documentElementName, saveAction);
+					return;
 				}
-				else
+				DoSave(GetNewFileFullPath(path), documentElementName, saveAction);
+				try
 				{
-					DoSave(GetNewFileFullPath(path), documentElementName, saveAction);
+					SafeMove(GetFileFullPath(path), GetOldFileFullPath(path));
+				}
+				catch (Exception ex)
+				{
+					Log.Warning("Could not move file from \"" + GetFileFullPath(path) + "\" to \"" + GetOldFileFullPath(path) + "\": " + ex);
+					throw;
+				}
+				try
+				{
+					SafeMove(GetNewFileFullPath(path), GetFileFullPath(path));
+				}
+				catch (Exception ex2)
+				{
+					Log.Warning("Could not move file from \"" + GetNewFileFullPath(path) + "\" to \"" + GetFileFullPath(path) + "\": " + ex2);
+					RemoveFileIfExists(GetFileFullPath(path), rethrow: false);
+					RemoveFileIfExists(GetNewFileFullPath(path), rethrow: false);
 					try
 					{
-						SafeMove(GetFileFullPath(path), GetOldFileFullPath(path));
+						SafeMove(GetOldFileFullPath(path), GetFileFullPath(path));
 					}
-					catch (Exception ex)
+					catch (Exception ex3)
 					{
-						Log.Warning("Could not move file from \"" + GetFileFullPath(path) + "\" to \"" + GetOldFileFullPath(path) + "\": " + ex);
-						throw;
+						Log.Warning("Could not move file from \"" + GetOldFileFullPath(path) + "\" back to \"" + GetFileFullPath(path) + "\": " + ex3);
 					}
-					try
-					{
-						SafeMove(GetNewFileFullPath(path), GetFileFullPath(path));
-					}
-					catch (Exception ex2)
-					{
-						Log.Warning("Could not move file from \"" + GetNewFileFullPath(path) + "\" to \"" + GetFileFullPath(path) + "\": " + ex2);
-						RemoveFileIfExists(GetFileFullPath(path), rethrow: false);
-						RemoveFileIfExists(GetNewFileFullPath(path), rethrow: false);
-						try
-						{
-							SafeMove(GetOldFileFullPath(path), GetFileFullPath(path));
-						}
-						catch (Exception ex3)
-						{
-							Log.Warning("Could not move file from \"" + GetOldFileFullPath(path) + "\" back to \"" + GetFileFullPath(path) + "\": " + ex3);
-						}
-						throw;
-					}
-					if (!leaveOldFile)
-					{
-						RemoveFileIfExists(GetOldFileFullPath(path), rethrow: true);
-					}
+					throw;
+				}
+				if (!leaveOldFile)
+				{
+					RemoveFileIfExists(GetOldFileFullPath(path), rethrow: true);
 				}
 			}
 			catch (Exception ex4)

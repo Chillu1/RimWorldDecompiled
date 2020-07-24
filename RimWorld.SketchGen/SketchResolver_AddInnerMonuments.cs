@@ -14,9 +14,9 @@ namespace RimWorld.SketchGen
 		{
 			CellRect outerRect = parms.rect ?? parms.sketch.OccupiedRect;
 			HashSet<IntVec3> processed = new HashSet<IntVec3>();
-			foreach (IntVec3 item in outerRect.Cells.InRandomOrder())
+			foreach (IntVec3 c in outerRect.Cells.InRandomOrder())
 			{
-				CellRect cellRect = SketchGenUtility.FindBiggestRectAt(item, outerRect, parms.sketch, processed, (IntVec3 x) => !parms.sketch.ThingsAt(x).Any());
+				CellRect cellRect = SketchGenUtility.FindBiggestRectAt(c, outerRect, parms.sketch, processed, (IntVec3 x) => !parms.sketch.ThingsAt(x).Any() && parms.sketch.AnyTerrainAt(c));
 				if (cellRect.Width >= 7 && cellRect.Height >= 7)
 				{
 					int newX = Rand.RangeInclusive(5, cellRect.Width - 2);
@@ -27,7 +27,7 @@ namespace RimWorld.SketchGen
 					parms2.monumentSize = new IntVec2(newX, newZ);
 					parms2.rect = null;
 					SketchResolverDefOf.Monument.Resolve(parms2);
-					parms.sketch.MergeAt(sketch, cellRect.CenterCell, Sketch.SpawnPosType.OccupiedCenter);
+					parms.sketch.MergeAt(sketch, cellRect.CenterCell, Sketch.SpawnPosType.OccupiedCenter, wipeIfCollides: false);
 				}
 			}
 		}

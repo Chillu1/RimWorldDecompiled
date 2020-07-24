@@ -198,7 +198,7 @@ namespace RimWorld
 			}
 			if (pawn.RaceProps.Humanlike)
 			{
-				if ((flag | flag2) && pawn.foodRestriction == null)
+				if ((flag || flag2) && pawn.foodRestriction == null)
 				{
 					pawn.foodRestriction = new Pawn_FoodRestrictionTracker(pawn);
 				}
@@ -216,7 +216,7 @@ namespace RimWorld
 					{
 						pawn.timetable = new Pawn_TimetableTracker(pawn);
 					}
-					if ((pawn.Spawned | actAsIfSpawned) && pawn.drafter == null)
+					if ((pawn.Spawned || actAsIfSpawned) && pawn.drafter == null)
 					{
 						pawn.drafter = new Pawn_DraftController(pawn);
 					}
@@ -226,7 +226,7 @@ namespace RimWorld
 					pawn.drafter = null;
 				}
 			}
-			if ((flag | flag2) && pawn.playerSettings == null)
+			if ((flag || flag2) && pawn.playerSettings == null)
 			{
 				pawn.playerSettings = new Pawn_PlayerSettings(pawn);
 			}

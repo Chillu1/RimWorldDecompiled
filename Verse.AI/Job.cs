@@ -65,6 +65,8 @@ namespace Verse.AI
 
 		public bool canBash;
 
+		public bool canUseRangedWeapon = true;
+
 		public bool haulDroppedApparel;
 
 		public bool restUntilHealed;
@@ -158,6 +160,7 @@ namespace Verse.AI
 			ignoreForbidden = false;
 			ignoreDesignations = false;
 			canBash = false;
+			canUseRangedWeapon = true;
 			haulDroppedApparel = false;
 			restUntilHealed = false;
 			ignoreJoyTimeAssignment = false;
@@ -328,6 +331,7 @@ namespace Verse.AI
 			Scribe_Values.Look(ref locomotionUrgency, "locomotionUrgency", LocomotionUrgency.Jog);
 			Scribe_Values.Look(ref ignoreDesignations, "ignoreDesignations", defaultValue: false);
 			Scribe_Values.Look(ref canBash, "canBash", defaultValue: false);
+			Scribe_Values.Look(ref canUseRangedWeapon, "canUseRangedWeapon", defaultValue: true);
 			Scribe_Values.Look(ref haulDroppedApparel, "haulDroppedApparel", defaultValue: false);
 			Scribe_Values.Look(ref restUntilHealed, "restUntilHealed", defaultValue: false);
 			Scribe_Values.Look(ref ignoreJoyTimeAssignment, "ignoreJoyTimeAssignment", defaultValue: false);
@@ -358,7 +362,7 @@ namespace Verse.AI
 			if (Scribe.mode == LoadSaveMode.PostLoadInit && verbToUse != null && verbToUse.BuggedAfterLoading)
 			{
 				verbToUse = null;
-				Log.Warning(GetType() + " had a bugged verbToUse after loading.");
+				Log.Warning(string.Concat(GetType(), " had a bugged verbToUse after loading."));
 			}
 		}
 

@@ -354,18 +354,31 @@ namespace Verse
 			}
 		}
 
+		[Obsolete("Only need this overload to not break mod compatibility.")]
 		public static IEnumerable<LocalTargetInfo> TargetsAtMouse(TargetingParameters clickParams, bool thingsOnly = false)
 		{
-			return TargetsAt(UI.MouseMapPosition(), clickParams, thingsOnly);
+			return TargetsAtMouse_NewTemp(clickParams, thingsOnly);
 		}
 
+		public static IEnumerable<LocalTargetInfo> TargetsAtMouse_NewTemp(TargetingParameters clickParams, bool thingsOnly = false, ITargetingSource source = null)
+		{
+			return TargetsAt_NewTemp(UI.MouseMapPosition(), clickParams, thingsOnly, source);
+		}
+
+		[Obsolete("Only need this overload to not break mod compatibility.")]
 		public static IEnumerable<LocalTargetInfo> TargetsAt(Vector3 clickPos, TargetingParameters clickParams, bool thingsOnly = false)
 		{
+			return TargetsAt_NewTemp(clickPos, clickParams, thingsOnly);
+		}
+
+		public static IEnumerable<LocalTargetInfo> TargetsAt_NewTemp(Vector3 clickPos, TargetingParameters clickParams, bool thingsOnly = false, ITargetingSource source = null)
+		{
 			List<Thing> clickableList = ThingsUnderMouse(clickPos, 0.8f, clickParams);
+			Thing caster = source?.Caster;
 			for (int i = 0; i < clickableList.Count; i++)
 			{
 				Pawn pawn = clickableList[i] as Pawn;
-				if (pawn == null || !pawn.IsInvisible())
+				if (pawn == null || !pawn.IsInvisible() || (caster != null && caster.Faction == pawn.Faction))
 				{
 					yield return clickableList[i];
 				}

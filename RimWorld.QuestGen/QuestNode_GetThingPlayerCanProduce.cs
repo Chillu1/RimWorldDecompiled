@@ -82,36 +82,39 @@ namespace RimWorld.QuestGen
 				List<RecipeDef> recipes = allWorkTables[j].AllRecipes;
 				for (int i = 0; i < recipes.Count; i++)
 				{
-					if (recipes[i].AvailableNow && recipes[i].products.Any() && !recipes[i].PotentiallyMissingIngredients(null, map).Any())
+					if (!recipes[i].AvailableNow || !recipes[i].products.Any() || recipes[i].PotentiallyMissingIngredients(null, map).Any())
 					{
-						foreach (ThingDef stuff in recipes[i].products[0].thingDef.MadeFromStuff ? GenStuff.AllowedStuffsFor(recipes[i].products[0].thingDef) : Gen.YieldSingle<ThingDef>(null))
+						continue;
+					}
+					foreach (ThingDef stuff in recipes[i].products[0].thingDef.MadeFromStuff ? GenStuff.AllowedStuffsFor(recipes[i].products[0].thingDef) : Gen.YieldSingle<ThingDef>(null))
+					{
+						if (stuff != null && (!map.listerThings.ThingsOfDef(stuff).Any() || stuff.stuffProps.commonality < minStuffCommonality.GetValue(slate)))
 						{
-							if (stuff == null || (map.listerThings.ThingsOfDef(stuff).Any() && !(stuff.stuffProps.commonality < minStuffCommonality.GetValue(slate))))
+							continue;
+						}
+						int num3 = 0;
+						if (stuff != null)
+						{
+							List<Thing> list = map.listerThings.ThingsOfDef(stuff);
+							for (int k = 0; k < list.Count; k++)
 							{
-								int num3 = 0;
-								if (stuff != null)
-								{
-									List<Thing> list = map.listerThings.ThingsOfDef(stuff);
-									for (int k = 0; k < list.Count; k++)
-									{
-										num3 += list[k].stackCount;
-									}
-								}
-								float num4 = recipes[i].WorkAmountTotal(stuff);
-								if (num4 > 0f)
-								{
-									int num5 = Mathf.FloorToInt(num2 / num4);
-									if (stuff != null)
-									{
-										IngredientCount ingredientCount = recipes[i].ingredients.Where((IngredientCount x) => x.filter.Allows(stuff)).MaxByWithFallback((IngredientCount x) => x.CountRequiredOfFor(stuff, recipes[i]));
-										num5 = Mathf.Min(num5, Mathf.FloorToInt((float)num3 / (float)ingredientCount.CountRequiredOfFor(stuff, recipes[i])));
-									}
-									if (num5 > 0)
-									{
-										tmpCandidates.Add(new Pair<ThingStuffPair, int>(new ThingStuffPair(recipes[i].products[0].thingDef, stuff), recipes[i].products[0].count * num5));
-									}
-								}
+								num3 += list[k].stackCount;
 							}
+						}
+						float num4 = recipes[i].WorkAmountTotal(stuff);
+						if (!(num4 > 0f))
+						{
+							continue;
+						}
+						int num5 = Mathf.FloorToInt(num2 / num4);
+						if (stuff != null)
+						{
+							IngredientCount ingredientCount = recipes[i].ingredients.Where((IngredientCount x) => x.filter.Allows(stuff)).MaxByWithFallback((IngredientCount x) => x.CountRequiredOfFor(stuff, recipes[i]));
+							num5 = Mathf.Min(num5, Mathf.FloorToInt((float)num3 / (float)ingredientCount.CountRequiredOfFor(stuff, recipes[i])));
+						}
+						if (num5 > 0)
+						{
+							tmpCandidates.Add(new Pair<ThingStuffPair, int>(new ThingStuffPair(recipes[i].products[0].thingDef, stuff), recipes[i].products[0].count * num5));
 						}
 					}
 				}

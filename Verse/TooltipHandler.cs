@@ -12,8 +12,6 @@ namespace Verse
 
 		private static List<int> dyingTips = new List<int>(32);
 
-		private static float TooltipDelay = 0.45f;
-
 		private const float SpaceBetweenTooltips = 2f;
 
 		private static List<ActiveTip> drawingTips = new List<ActiveTip>();
@@ -22,20 +20,21 @@ namespace Verse
 
 		public static void ClearTooltipsFrom(Rect rect)
 		{
-			if (Event.current.type == EventType.Repaint && Mouse.IsOver(rect))
+			if (Event.current.type != EventType.Repaint || !Mouse.IsOver(rect))
 			{
-				dyingTips.Clear();
-				foreach (KeyValuePair<int, ActiveTip> activeTip in activeTips)
+				return;
+			}
+			dyingTips.Clear();
+			foreach (KeyValuePair<int, ActiveTip> activeTip in activeTips)
+			{
+				if (activeTip.Value.lastTriggerFrame == frame)
 				{
-					if (activeTip.Value.lastTriggerFrame == frame)
-					{
-						dyingTips.Add(activeTip.Key);
-					}
+					dyingTips.Add(activeTip.Key);
 				}
-				for (int i = 0; i < dyingTips.Count; i++)
-				{
-					activeTips.Remove(dyingTips[i]);
-				}
+			}
+			for (int i = 0; i < dyingTips.Count; i++)
+			{
+				activeTips.Remove(dyingTips[i]);
 			}
 		}
 
@@ -113,11 +112,11 @@ namespace Verse
 				return;
 			}
 			drawingTips.Clear();
-			foreach (KeyValuePair<int, ActiveTip> activeTip in activeTips)
+			foreach (ActiveTip value in activeTips.Values)
 			{
-				if ((double)Time.realtimeSinceStartup > activeTip.Value.firstTriggerTime + (double)TooltipDelay)
+				if ((double)Time.realtimeSinceStartup > value.firstTriggerTime + (double)value.signal.delay)
 				{
-					drawingTips.Add(activeTip.Value);
+					drawingTips.Add(value);
 				}
 			}
 			if (drawingTips.Any())

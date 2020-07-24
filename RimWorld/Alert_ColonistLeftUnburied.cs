@@ -14,16 +14,17 @@ namespace RimWorld
 				unburiedColonistCorpsesResult.Clear();
 				foreach (Map map in Find.Maps)
 				{
-					if (map.mapPawns.AnyFreeColonistSpawned)
+					if (!map.mapPawns.AnyFreeColonistSpawned)
 					{
-						List<Thing> list = map.listerThings.ThingsMatching(ThingRequest.ForGroup(ThingRequestGroup.Corpse));
-						for (int i = 0; i < list.Count; i++)
+						continue;
+					}
+					List<Thing> list = map.listerThings.ThingsMatching(ThingRequest.ForGroup(ThingRequestGroup.Corpse));
+					for (int i = 0; i < list.Count; i++)
+					{
+						Corpse corpse = (Corpse)list[i];
+						if (IsCorpseOfColonist(corpse))
 						{
-							Corpse corpse = (Corpse)list[i];
-							if (IsCorpseOfColonist(corpse))
-							{
-								unburiedColonistCorpsesResult.Add(corpse);
-							}
+							unburiedColonistCorpsesResult.Add(corpse);
 						}
 					}
 				}

@@ -165,15 +165,13 @@ namespace Verse
 			if (root == null)
 			{
 				Log.ErrorOnce("Attempted to call AllRegionsNear with an invalid root", 9107839);
+				return;
 			}
-			else
+			RegionTraverser.BreadthFirstTraverse(root, (Region from, Region r) => (validator == null || validator(r)) && r.Allows(traverseParms, isDestination: true) && (pawnToAllow == null || !r.IsForbiddenEntirely(pawnToAllow)), delegate(Region r)
 			{
-				RegionTraverser.BreadthFirstTraverse(root, (Region from, Region r) => (validator == null || validator(r)) && r.Allows(traverseParms, isDestination: true) && (pawnToAllow == null || !r.IsForbiddenEntirely(pawnToAllow)), delegate(Region r)
-				{
-					results.Add(r);
-					return false;
-				}, maxRegions, traversableRegionTypes);
-			}
+				results.Add(r);
+				return false;
+			}, maxRegions, traversableRegionTypes);
 		}
 
 		public static bool TryFindRandomReachableCellNear(IntVec3 root, Map map, float radius, TraverseParms traverseParms, Predicate<IntVec3> cellValidator, Predicate<Region> regionValidator, out IntVec3 result, int maxRegions = 999999)
@@ -398,7 +396,7 @@ namespace Verse
 				}
 				catch (Exception ex)
 				{
-					Log.Error("TryFindRandomEdgeCellWith exception validating " + mapEdgeCells[j] + ": " + ex.ToString());
+					Log.Error(string.Concat("TryFindRandomEdgeCellWith exception validating ", mapEdgeCells[j], ": ", ex.ToString()));
 				}
 			}
 			result = IntVec3.Invalid;
@@ -448,7 +446,7 @@ namespace Verse
 				}
 				catch (Exception ex)
 				{
-					Log.Error("TryFindRandomEdgeCellWith exception validating " + list[j] + ": " + ex.ToString());
+					Log.Error(string.Concat("TryFindRandomEdgeCellWith exception validating ", list[j], ": ", ex.ToString()));
 				}
 			}
 			result = IntVec3.Invalid;

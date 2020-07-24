@@ -101,7 +101,7 @@ namespace Verse
 				}
 				catch (Exception ex)
 				{
-					Log.Error("Exception in custom XML loader for " + typeof(T) + ". Node is:\n " + xmlRoot.OuterXml + "\n\nException is:\n " + ex.ToString());
+					Log.Error(string.Concat("Exception in custom XML loader for ", typeof(T), ". Node is:\n ", xmlRoot.OuterXml, "\n\nException is:\n ", ex.ToString()));
 					val = default(T);
 				}
 				if (doPostLoad)
@@ -118,7 +118,7 @@ namespace Verse
 				}
 				catch (Exception ex2)
 				{
-					Log.Error("Exception parsing " + xmlRoot.OuterXml + " to type " + typeof(T) + ": " + ex2);
+					Log.Error(string.Concat("Exception parsing ", xmlRoot.OuterXml, " to type ", typeof(T), ": ", ex2));
 				}
 				return default(T);
 			}
@@ -139,7 +139,7 @@ namespace Verse
 				}
 				catch (Exception ex3)
 				{
-					Log.Error("Exception parsing " + xmlRoot.OuterXml + " to type " + typeof(T) + ": " + ex3);
+					Log.Error(string.Concat("Exception parsing ", xmlRoot.OuterXml, " to type ", typeof(T), ": ", ex3));
 				}
 				return default(T);
 			}
@@ -227,7 +227,7 @@ namespace Verse
 				{
 					if (hashSet.Contains(xmlNode.Name))
 					{
-						Log.Error("XML " + typeof(T) + " defines the same field twice: " + xmlNode.Name + ".\n\nField contents: " + xmlNode.InnerText + ".\n\nWhole XML:\n\n" + xmlRoot.OuterXml);
+						Log.Error(string.Concat("XML ", typeof(T), " defines the same field twice: ", xmlNode.Name, ".\n\nField contents: ", xmlNode.InnerText, ".\n\nWhole XML:\n\n", xmlRoot.OuterXml));
 					}
 					else
 					{
@@ -280,9 +280,8 @@ namespace Verse
 				if (value3 != null && value3.TryGetAttribute<UnsavedAttribute>() != null && !value3.TryGetAttribute<UnsavedAttribute>().allowLoading)
 				{
 					Log.Error("XML error: " + xmlNode.OuterXml + " corresponds to a field in type " + val2.GetType().Name + " which has an Unsaved attribute. Context: " + xmlRoot.OuterXml);
-					continue;
 				}
-				if (value3 == null)
+				else if (value3 == null)
 				{
 					DeepProfiler.Start("Field search 2");
 					try
@@ -314,9 +313,8 @@ namespace Verse
 					{
 						DeepProfiler.End();
 					}
-					continue;
 				}
-				if (typeof(Def).IsAssignableFrom(value3.FieldType))
+				else if (typeof(Def).IsAssignableFrom(value3.FieldType))
 				{
 					if (xmlNode.InnerText.NullOrEmpty())
 					{
@@ -325,26 +323,28 @@ namespace Verse
 					}
 					XmlAttribute xmlAttribute3 = xmlNode.Attributes["MayRequire"];
 					DirectXmlCrossRefLoader.RegisterObjectWantsCrossRef(val2, value3, xmlNode.InnerText, xmlAttribute3?.Value.ToLower());
-					continue;
 				}
-				object obj = null;
-				try
+				else
 				{
-					obj = GetObjectFromXmlMethod(value3.FieldType)(xmlNode, doPostLoad);
+					object obj = null;
+					try
+					{
+						obj = GetObjectFromXmlMethod(value3.FieldType)(xmlNode, doPostLoad);
+					}
+					catch (Exception ex4)
+					{
+						Log.Error("Exception loading from " + xmlNode.ToString() + ": " + ex4.ToString());
+						continue;
+					}
+					if (!typeof(T).IsValueType)
+					{
+						value3.SetValue(val2, obj);
+						continue;
+					}
+					object obj2 = val2;
+					value3.SetValue(obj2, obj);
+					val2 = (T)obj2;
 				}
-				catch (Exception ex4)
-				{
-					Log.Error("Exception loading from " + xmlNode.ToString() + ": " + ex4.ToString());
-					continue;
-				}
-				if (!typeof(T).IsValueType)
-				{
-					value3.SetValue(val2, obj);
-					continue;
-				}
-				object obj2 = val2;
-				value3.SetValue(obj2, obj);
-				val2 = (T)obj2;
 			}
 			if (doPostLoad)
 			{
@@ -403,31 +403,33 @@ namespace Verse
 				bool flag = typeof(Def).IsAssignableFrom(typeof(T));
 				foreach (XmlNode childNode in listRootNode.ChildNodes)
 				{
-					if (ValidateListNode(childNode, listRootNode, typeof(T)))
+					if (!ValidateListNode(childNode, listRootNode, typeof(T)))
 					{
-						if (flag)
+						continue;
+					}
+					XmlAttribute xmlAttribute = childNode.Attributes["MayRequire"];
+					if (flag)
+					{
+						DirectXmlCrossRefLoader.RegisterListWantsCrossRef(list, childNode.InnerText, listRootNode.Name, xmlAttribute?.Value);
+						continue;
+					}
+					try
+					{
+						if (xmlAttribute == null || xmlAttribute.Value.NullOrEmpty() || ModsConfig.IsActive(xmlAttribute.Value))
 						{
-							XmlAttribute xmlAttribute = childNode.Attributes["MayRequire"];
-							DirectXmlCrossRefLoader.RegisterListWantsCrossRef(list, childNode.InnerText, listRootNode.Name, xmlAttribute?.Value);
+							list.Add(ObjectFromXml<T>(childNode, doPostLoad: true));
 						}
-						else
-						{
-							try
-							{
-								list.Add(ObjectFromXml<T>(childNode, doPostLoad: true));
-							}
-							catch (Exception ex)
-							{
-								Log.Error("Exception loading list element from XML: " + ex + "\nXML:\n" + listRootNode.OuterXml);
-							}
-						}
+					}
+					catch (Exception ex)
+					{
+						Log.Error(string.Concat("Exception loading list element from XML: ", ex, "\nXML:\n", listRootNode.OuterXml));
 					}
 				}
 				return list;
 			}
 			catch (Exception ex2)
 			{
-				Log.Error("Exception loading list from XML: " + ex2 + "\nXML:\n" + listRootNode.OuterXml);
+				Log.Error(string.Concat("Exception loading list from XML: ", ex2, "\nXML:\n", listRootNode.OuterXml));
 				return list;
 			}
 		}

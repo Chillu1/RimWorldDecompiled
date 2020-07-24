@@ -108,7 +108,7 @@ namespace Verse.AI.Group
 				}
 				if (DebugViewSettings.logLordToilTransitions)
 				{
-					Log.Message("Transitioning " + sources + " to " + target + " by trigger " + triggers[i] + " on signal " + signal);
+					Log.Message(string.Concat("Transitioning ", sources, " to ", target, " by trigger ", triggers[i], " on signal ", signal));
 				}
 				Execute(lord);
 				return true;

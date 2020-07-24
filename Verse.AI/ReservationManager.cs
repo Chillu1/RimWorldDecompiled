@@ -94,22 +94,22 @@ namespace Verse.AI
 				Reservation reservation = reservations[num];
 				if (reservation.Target.Thing != null && reservation.Target.Thing.Destroyed)
 				{
-					Log.Error("Loaded reservation with destroyed target: " + reservation + ". Deleting it...");
+					Log.Error(string.Concat("Loaded reservation with destroyed target: ", reservation, ". Deleting it..."));
 					reservations.Remove(reservation);
 				}
 				if (reservation.Claimant != null && reservation.Claimant.Destroyed)
 				{
-					Log.Error("Loaded reservation with destroyed claimant: " + reservation + ". Deleting it...");
+					Log.Error(string.Concat("Loaded reservation with destroyed claimant: ", reservation, ". Deleting it..."));
 					reservations.Remove(reservation);
 				}
 				if (reservation.Claimant == null)
 				{
-					Log.Error("Loaded reservation with null claimant: " + reservation + ". Deleting it...");
+					Log.Error(string.Concat("Loaded reservation with null claimant: ", reservation, ". Deleting it..."));
 					reservations.Remove(reservation);
 				}
 				if (reservation.Job == null)
 				{
-					Log.Error("Loaded reservation with null job: " + reservation + ". Deleting it...");
+					Log.Error(string.Concat("Loaded reservation with null job: ", reservation, ". Deleting it..."));
 					reservations.Remove(reservation);
 				}
 			}
@@ -279,7 +279,7 @@ namespace Verse.AI
 		{
 			if (target.ThingDestroyed)
 			{
-				Log.Warning("Releasing destroyed thing " + target + " for " + claimant);
+				Log.Warning(string.Concat("Releasing destroyed thing ", target, " for ", claimant));
 			}
 			Reservation reservation = null;
 			for (int i = 0; i < reservations.Count; i++)
@@ -293,7 +293,7 @@ namespace Verse.AI
 			}
 			if (reservation == null && !target.ThingDestroyed)
 			{
-				Log.Error("Tried to release " + target + " that wasn't reserved by " + claimant + ".");
+				Log.Error(string.Concat("Tried to release ", target, " that wasn't reserved by ", claimant, "."));
 			}
 			else
 			{

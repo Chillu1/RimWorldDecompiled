@@ -61,7 +61,7 @@ namespace Verse
 			if (Scribe.mode == LoadSaveMode.PostLoadInit && verb != null && verb.BuggedAfterLoading)
 			{
 				verb = null;
-				Log.Warning(GetType() + " had a bugged verb after loading.");
+				Log.Warning(string.Concat(GetType(), " had a bugged verb after loading."));
 			}
 		}
 

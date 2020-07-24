@@ -16,10 +16,11 @@ namespace RimWorld
 			SkyfallerMaker.SpawnSkyfaller(ThingDefOf.DropPodIncoming, activeDropPod, c, map);
 			foreach (Thing item in (IEnumerable<Thing>)activeDropPod.Contents.innerContainer)
 			{
-				Pawn p;
-				if ((p = (item as Pawn)) != null && p.IsWorldPawn())
+				Pawn pawn;
+				if ((pawn = (item as Pawn)) != null && pawn.IsWorldPawn())
 				{
-					Find.WorldPawns.RemovePawn(p);
+					Find.WorldPawns.RemovePawn(pawn);
+					pawn.psychicEntropy?.SetInitialPsyfocusLevel();
 				}
 			}
 		}
@@ -43,7 +44,7 @@ namespace RimWorld
 			{
 				if (!DropCellFinder.TryFindDropSpotNear(dropCenter, map, out IntVec3 result, allowFogged, canRoofPunch) && (canRoofPunch || !DropCellFinder.TryFindDropSpotNear(dropCenter, map, out result, allowFogged, canRoofPunch: true)))
 				{
-					Log.Warning("DropThingsNear failed to find a place to drop " + thingsGroup.FirstOrDefault() + " near " + dropCenter + ". Dropping on random square instead.");
+					Log.Warning(string.Concat("DropThingsNear failed to find a place to drop ", thingsGroup.FirstOrDefault(), " near ", dropCenter, ". Dropping on random square instead."));
 					result = CellFinderLoose.RandomCellWith((IntVec3 c) => c.Walkable(map), map);
 				}
 				if (forbid)
@@ -59,18 +60,16 @@ namespace RimWorld
 					{
 						GenPlace.TryPlaceThing(item, result, map, ThingPlaceMode.Near);
 					}
+					continue;
 				}
-				else
+				ActiveDropPodInfo activeDropPodInfo = new ActiveDropPodInfo();
+				foreach (Thing item2 in thingsGroup)
 				{
-					ActiveDropPodInfo activeDropPodInfo = new ActiveDropPodInfo();
-					foreach (Thing item2 in thingsGroup)
-					{
-						activeDropPodInfo.innerContainer.TryAdd(item2);
-					}
-					activeDropPodInfo.openDelay = openDelay;
-					activeDropPodInfo.leaveSlag = leaveSlag;
-					MakeDropPodAt(result, map, activeDropPodInfo);
+					activeDropPodInfo.innerContainer.TryAdd(item2);
 				}
+				activeDropPodInfo.openDelay = openDelay;
+				activeDropPodInfo.leaveSlag = leaveSlag;
+				MakeDropPodAt(result, map, activeDropPodInfo);
 			}
 		}
 

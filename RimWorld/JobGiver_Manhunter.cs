@@ -41,7 +41,7 @@ namespace RimWorld
 					}
 					if (!pawnPath.TryFindLastCellBeforeBlockingDoor(pawn, out IntVec3 result))
 					{
-						Log.Error(pawn + " did TryFindLastCellBeforeDoor but found none when it should have been one. Target: " + pawn2.LabelCap);
+						Log.Error(string.Concat(pawn, " did TryFindLastCellBeforeDoor but found none when it should have been one. Target: ", pawn2.LabelCap));
 						return null;
 					}
 					IntVec3 randomCell = CellFinder.RandomRegionNear(result.GetRegion(pawn.Map), 9, TraverseParms.For(pawn)).RandomCell;

@@ -230,7 +230,7 @@ namespace Verse.Steam
 		public static void GetUpdateStatus(out EItemUpdateStatus updateStatus, out float progPercent)
 		{
 			updateStatus = SteamUGC.GetItemUpdateProgress(curUpdateHandle, out ulong punBytesProcessed, out ulong punBytesTotal);
-			progPercent = (float)(double)punBytesProcessed / (float)(double)punBytesTotal;
+			progPercent = (float)punBytesProcessed / (float)punBytesTotal;
 		}
 
 		public static string UploadButtonLabel(PublishedFileId_t pfid)
@@ -305,12 +305,12 @@ namespace Verse.Steam
 			{
 				return "[unpublished]";
 			}
-			string str = "[" + pfid + "] ";
+			string str = string.Concat("[", pfid, "] ");
 			if (SteamUGC.GetItemInstallInfo(pfid, out ulong punSizeOnDisk, out string pchFolder, 257u, out uint _))
 			{
 				str += "\n      installed";
 				str = str + "\n      folder=" + pchFolder;
-				return str + "\n      sizeOnDisk=" + ((float)(double)punSizeOnDisk / 1024f).ToString("F2") + "Kb";
+				return str + "\n      sizeOnDisk=" + ((float)punSizeOnDisk / 1024f).ToString("F2") + "Kb";
 			}
 			return str + "\n      not installed";
 		}

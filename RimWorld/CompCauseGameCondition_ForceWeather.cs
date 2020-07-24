@@ -22,25 +22,26 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (Prefs.DevMode)
+			if (!Prefs.DevMode)
 			{
-				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = weather.LabelCap;
-				command_Action.action = delegate
-				{
-					List<WeatherDef> allDefsListForReading = DefDatabase<WeatherDef>.AllDefsListForReading;
-					int num = allDefsListForReading.FindIndex((WeatherDef w) => w == weather);
-					num++;
-					if (num >= allDefsListForReading.Count)
-					{
-						num = 0;
-					}
-					weather = allDefsListForReading[num];
-					ReSetupAllConditions();
-				};
-				command_Action.hotKey = KeyBindingDefOf.Misc1;
-				yield return command_Action;
+				yield break;
 			}
+			Command_Action command_Action = new Command_Action();
+			command_Action.defaultLabel = weather.LabelCap;
+			command_Action.action = delegate
+			{
+				List<WeatherDef> allDefsListForReading = DefDatabase<WeatherDef>.AllDefsListForReading;
+				int num = allDefsListForReading.FindIndex((WeatherDef w) => w == weather);
+				num++;
+				if (num >= allDefsListForReading.Count)
+				{
+					num = 0;
+				}
+				weather = allDefsListForReading[num];
+				ReSetupAllConditions();
+			};
+			command_Action.hotKey = KeyBindingDefOf.Misc1;
+			yield return command_Action;
 		}
 
 		protected override void SetupCondition(GameCondition condition, Map map)

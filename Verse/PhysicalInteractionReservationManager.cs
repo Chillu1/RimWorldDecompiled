@@ -46,7 +46,7 @@ namespace Verse
 					return;
 				}
 			}
-			Log.Warning(claimant + " tried to release reservation on target " + target + ", but it's not reserved by him.");
+			Log.Warning(string.Concat(claimant, " tried to release reservation on target ", target, ", but it's not reserved by him."));
 		}
 
 		public bool IsReservedBy(Pawn claimant, LocalTargetInfo target)

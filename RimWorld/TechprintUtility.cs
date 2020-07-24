@@ -77,12 +77,13 @@ namespace RimWorld
 				stringBuilder.AppendLine(item.Name);
 				for (int i = 0; i < 30; i++)
 				{
-					if (!TryGetTechprintDefToGenerate(item, out ThingDef result))
+					if (TryGetTechprintDefToGenerate(item, out ThingDef result))
 					{
-						stringBuilder.AppendLine("    none possible");
-						break;
+						stringBuilder.AppendLine("    " + result.LabelCap);
+						continue;
 					}
-					stringBuilder.AppendLine("    " + result.LabelCap);
+					stringBuilder.AppendLine("    none possible");
+					break;
 				}
 			}
 			Log.Message(stringBuilder.ToString());

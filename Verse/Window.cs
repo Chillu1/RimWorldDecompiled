@@ -216,7 +216,7 @@ namespace Verse
 			}
 			catch (Exception ex)
 			{
-				Log.Error("Exception filling window for " + GetType() + ": " + ex);
+				Log.Error(string.Concat("Exception filling window for ", GetType(), ": ", ex));
 			}
 			GUI.EndGroup();
 			if (resizeable && Event.current.type == EventType.Repaint)

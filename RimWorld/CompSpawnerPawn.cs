@@ -12,6 +12,8 @@ namespace RimWorld
 	{
 		public int nextPawnSpawnTick = -1;
 
+		public int pawnsLeftToSpawn = -1;
+
 		public List<Pawn> spawnedPawns = new List<Pawn>();
 
 		public bool aggressive = true;
@@ -19,6 +21,8 @@ namespace RimWorld
 		public bool canSpawnPawns = true;
 
 		private PawnKindDef chosenKind;
+
+		private CompCanBeDormant dormancyCompCached;
 
 		private CompProperties_SpawnerPawn Props => (CompProperties_SpawnerPawn)props;
 
@@ -38,7 +42,31 @@ namespace RimWorld
 			}
 		}
 
-		public bool Active => parent.GetComp<CompCanBeDormant>()?.Awake ?? true;
+		public bool Active
+		{
+			get
+			{
+				if (pawnsLeftToSpawn == 0)
+				{
+					return false;
+				}
+				return !Dormant;
+			}
+		}
+
+		public CompCanBeDormant DormancyComp => dormancyCompCached ?? (dormancyCompCached = parent.TryGetComp<CompCanBeDormant>());
+
+		public bool Dormant
+		{
+			get
+			{
+				if (DormancyComp != null)
+				{
+					return !DormancyComp.Awake;
+				}
+				return false;
+			}
+		}
 
 		public override void Initialize(CompProperties props)
 		{
@@ -46,6 +74,10 @@ namespace RimWorld
 			if (chosenKind == null)
 			{
 				chosenKind = RandomPawnKindDef();
+			}
+			if (Props.maxPawnsToSpawn != IntRange.zero)
+			{
+				pawnsLeftToSpawn = Props.maxPawnsToSpawn.RandomInRange;
 			}
 		}
 
@@ -200,7 +232,8 @@ namespace RimWorld
 				pawn = null;
 				return false;
 			}
-			pawn = PawnGenerator.GeneratePawn(chosenKind, parent.Faction);
+			int index = chosenKind.lifeStages.Count - 1;
+			pawn = PawnGenerator.GeneratePawn(new PawnGenerationRequest(chosenKind, parent.Faction, PawnGenerationContext.NonPlayer, -1, forceGenerateNewPawn: false, newborn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: false, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowFood: true, allowAddictions: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, null, 1f, null, null, null, null, null, chosenKind.race.race.lifeStageAges[index].minAge));
 			spawnedPawns.Add(pawn);
 			GenSpawn.Spawn(pawn, CellFinder.RandomClosewalkCellNear(parent.Position, parent.Map, Props.pawnSpawnRadius), parent.Map);
 			Lord lord = Lord;
@@ -212,6 +245,10 @@ namespace RimWorld
 			if (Props.spawnSound != null)
 			{
 				Props.spawnSound.PlayOneShot(parent);
+			}
+			if (pawnsLeftToSpawn > 0)
+			{
+				pawnsLeftToSpawn--;
 			}
 			SendMessage();
 			return true;
@@ -239,7 +276,7 @@ namespace RimWorld
 			FilterOutUnspawnedPawns();
 			if (Active && Find.TickManager.TicksGame >= nextPawnSpawnTick)
 			{
-				if (SpawnedPawnsPoints < Props.maxSpawnedPawnsPoints && TrySpawnPawn(out Pawn pawn) && pawn.caller != null)
+				if ((Props.maxSpawnedPawnsPoints < 0f || SpawnedPawnsPoints < Props.maxSpawnedPawnsPoints) && TrySpawnPawn(out Pawn pawn) && pawn.caller != null)
 				{
 					pawn.caller.DoCall();
 				}
@@ -276,13 +313,35 @@ namespace RimWorld
 			{
 				return null;
 			}
-			return (Props.nextSpawnInspectStringKey ?? "SpawningNextPawnIn").Translate(chosenKind.LabelCap, (nextPawnSpawnTick - Find.TickManager.TicksGame).ToStringTicksToDays());
+			if (pawnsLeftToSpawn == 0 && !Props.noPawnsLeftToSpawnKey.NullOrEmpty())
+			{
+				return Props.noPawnsLeftToSpawnKey.Translate();
+			}
+			string text;
+			if (!Dormant)
+			{
+				text = (Props.nextSpawnInspectStringKey ?? "SpawningNextPawnIn").Translate(chosenKind.LabelCap, (nextPawnSpawnTick - Find.TickManager.TicksGame).ToStringTicksToDays());
+			}
+			else
+			{
+				if (Props.nextSpawnInspectStringKeyDormant == null)
+				{
+					return null;
+				}
+				text = Props.nextSpawnInspectStringKeyDormant.Translate() + ": " + chosenKind.LabelCap;
+			}
+			if (pawnsLeftToSpawn > 0 && !Props.pawnsLeftToSpawnKey.NullOrEmpty())
+			{
+				text = text + (string)("\n" + Props.pawnsLeftToSpawnKey.Translate() + ": ") + pawnsLeftToSpawn;
+			}
+			return text;
 		}
 
 		public override void PostExposeData()
 		{
 			base.PostExposeData();
 			Scribe_Values.Look(ref nextPawnSpawnTick, "nextPawnSpawnTick", 0);
+			Scribe_Values.Look(ref pawnsLeftToSpawn, "pawnsLeftToSpawn", -1);
 			Scribe_Collections.Look(ref spawnedPawns, "spawnedPawns", LookMode.Reference);
 			Scribe_Values.Look(ref aggressive, "aggressive", defaultValue: false);
 			Scribe_Values.Look(ref canSpawnPawns, "canSpawnPawns", defaultValue: true);
@@ -290,6 +349,10 @@ namespace RimWorld
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				spawnedPawns.RemoveAll((Pawn x) => x == null);
+				if (pawnsLeftToSpawn == -1 && Props.maxPawnsToSpawn != IntRange.zero)
+				{
+					pawnsLeftToSpawn = Props.maxPawnsToSpawn.RandomInRange;
+				}
 			}
 		}
 	}

@@ -6,6 +6,8 @@ namespace Verse
 
 		public bool showDaysToRecover;
 
+		public bool showHoursToRecover;
+
 		public HediffCompProperties_SeverityPerDay()
 		{
 			compClass = typeof(HediffComp_SeverityPerDay);

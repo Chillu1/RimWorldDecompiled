@@ -9,6 +9,10 @@ namespace RimWorld
 
 		public static IEnumerable<ThingDef> ImpliedTechprintDefs()
 		{
+			if (!ModLister.RoyaltyInstalled)
+			{
+				yield break;
+			}
 			foreach (ResearchProjectDef item in DefDatabase<ResearchProjectDef>.AllDefsListForReading)
 			{
 				if (item.techprintCount > 0)

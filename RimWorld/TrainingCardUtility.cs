@@ -40,6 +40,21 @@ namespace RimWorld
 				Widgets.Label(rect3, "Master".Translate() + ": ");
 				rect3.xMin = rect3.center.x;
 				TrainableUtility.MasterSelectButton(rect3, pawn, paintable: false);
+				listing_Standard.Gap();
+				Rect rect4 = listing_Standard.GetRect(25f);
+				bool checkOn = pawn.playerSettings.followDrafted;
+				Widgets.CheckboxLabeled(rect4, "CreatureFollowDrafted".Translate(), ref checkOn);
+				if (checkOn != pawn.playerSettings.followDrafted)
+				{
+					pawn.playerSettings.followDrafted = checkOn;
+				}
+				Rect rect5 = listing_Standard.GetRect(25f);
+				bool checkOn2 = pawn.playerSettings.followFieldwork;
+				Widgets.CheckboxLabeled(rect5, "CreatureFollowFieldwork".Translate(), ref checkOn2);
+				if (checkOn2 != pawn.playerSettings.followFieldwork)
+				{
+					pawn.playerSettings.followFieldwork = checkOn2;
+				}
 			}
 			listing_Standard.Gap();
 			float num = 50f;
@@ -72,7 +87,8 @@ namespace RimWorld
 			float num2 = 112f + 28f * (float)num;
 			if (p.training.HasLearned(TrainableDefOf.Obedience))
 			{
-				num2 += 25f;
+				num2 += 75f;
+				num2 += 12f;
 			}
 			return num2;
 		}
@@ -143,29 +159,30 @@ namespace RimWorld
 
 		private static void DoTrainableTooltip(Rect rect, Pawn pawn, TrainableDef td, AcceptanceReport canTrain)
 		{
-			if (Mouse.IsOver(rect))
+			if (!Mouse.IsOver(rect))
 			{
-				TooltipHandler.TipRegion(rect, delegate
+				return;
+			}
+			TooltipHandler.TipRegion(rect, delegate
+			{
+				string text = td.LabelCap + "\n\n" + td.description;
+				if (!canTrain.Accepted)
 				{
-					string text = td.LabelCap + "\n\n" + td.description;
-					if (!canTrain.Accepted)
+					text = text + "\n\n" + canTrain.Reason;
+				}
+				else if (!td.prerequisites.NullOrEmpty())
+				{
+					text += "\n";
+					for (int i = 0; i < td.prerequisites.Count; i++)
 					{
-						text = text + "\n\n" + canTrain.Reason;
-					}
-					else if (!td.prerequisites.NullOrEmpty())
-					{
-						text += "\n";
-						for (int i = 0; i < td.prerequisites.Count; i++)
+						if (!pawn.training.HasLearned(td.prerequisites[i]))
 						{
-							if (!pawn.training.HasLearned(td.prerequisites[i]))
-							{
-								text += "\n" + "TrainingNeedsPrerequisite".Translate(td.prerequisites[i].LabelCap);
-							}
+							text += "\n" + "TrainingNeedsPrerequisite".Translate(td.prerequisites[i].LabelCap);
 						}
 					}
-					return text;
-				}, (int)(rect.y * 612f + rect.x));
-			}
+				}
+				return text;
+			}, (int)(rect.y * 612f + rect.x));
 		}
 	}
 }

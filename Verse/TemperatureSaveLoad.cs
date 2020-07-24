@@ -28,13 +28,14 @@ namespace Verse
 				}
 				foreach (Region item in map.regionGrid.AllRegions_NoRebuild_InvalidAllowed)
 				{
-					if (item.Room != null)
+					if (item.Room == null)
 					{
-						ushort num3 = TempFloatToShort(item.Room.Temperature);
-						foreach (IntVec3 cell in item.Cells)
-						{
-							tempGrid[map.cellIndices.CellToIndex(cell)] = num3;
-						}
+						continue;
+					}
+					ushort num3 = TempFloatToShort(item.Room.Temperature);
+					foreach (IntVec3 cell in item.Cells)
+					{
+						tempGrid[map.cellIndices.CellToIndex(cell)] = num3;
 					}
 				}
 				arr = MapSerializeUtility.SerializeUshort(map, (IntVec3 c) => tempGrid[map.cellIndices.CellToIndex(c)]);
@@ -52,18 +53,19 @@ namespace Verse
 
 		public void ApplyLoadedDataToRegions()
 		{
-			if (tempGrid != null)
+			if (tempGrid == null)
 			{
-				CellIndices cellIndices = map.cellIndices;
-				foreach (Region item in map.regionGrid.AllRegions_NoRebuild_InvalidAllowed)
-				{
-					if (item.Room != null)
-					{
-						item.Room.Group.Temperature = TempShortToFloat(tempGrid[cellIndices.CellToIndex(item.Cells.First())]);
-					}
-				}
-				tempGrid = null;
+				return;
 			}
+			CellIndices cellIndices = map.cellIndices;
+			foreach (Region item in map.regionGrid.AllRegions_NoRebuild_InvalidAllowed)
+			{
+				if (item.Room != null)
+				{
+					item.Room.Group.Temperature = TempShortToFloat(tempGrid[cellIndices.CellToIndex(item.Cells.First())]);
+				}
+			}
+			tempGrid = null;
 		}
 
 		private ushort TempFloatToShort(float temp)

@@ -199,7 +199,7 @@ namespace RimWorld
 				}
 				Apparel apparel;
 				bool flag3 = (apparel = (thing as Apparel)) != null && SelPawnForGear.apparel != null && SelPawnForGear.apparel.IsLocked(apparel);
-				flag = (flag2 | flag3);
+				flag = (flag2 || flag3);
 				if (Mouse.IsOver(rect2))
 				{
 					if (flag3)

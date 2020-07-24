@@ -345,12 +345,12 @@ namespace RimWorld
 			string text = count.ToString();
 			bool flag = countInMentalState > 0;
 			bool flag2 = count > 0 && countPackAnimals >= 0;
-			if (flag | flag2)
+			if (flag || flag2)
 			{
 				text += " (";
 				if (flag2)
 				{
-					text += countPackAnimals.ToString() + " " + "PackAnimalsCountLower".Translate();
+					text += countPackAnimals + " " + "PackAnimalsCountLower".Translate();
 				}
 				if (flag)
 				{
@@ -358,7 +358,7 @@ namespace RimWorld
 					{
 						text += ", ";
 					}
-					text += countInMentalState.ToString() + " " + "InMentalStateCountLower".Translate();
+					text += countInMentalState + " " + "InMentalStateCountLower".Translate();
 				}
 				text += ")";
 			}

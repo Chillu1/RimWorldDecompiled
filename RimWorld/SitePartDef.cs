@@ -47,6 +47,8 @@ namespace RimWorld
 		[MustTranslate]
 		public string arrivedLetterLabelPart;
 
+		public List<HediffDef> arrivedLetterHediffHyperlinks;
+
 		public LetterDef arrivedLetterDef;
 
 		public bool wantsThreatPoints;

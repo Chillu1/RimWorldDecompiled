@@ -25,7 +25,7 @@ namespace RimWorld
 			}
 			if (!RCellFinder.TryFindTravelDestFrom(parms.spawnCenter, map, out IntVec3 travelDest))
 			{
-				Log.Warning("Failed to do traveler incident from " + parms.spawnCenter + ": Couldn't find anywhere for the traveler to go.");
+				Log.Warning(string.Concat("Failed to do traveler incident from ", parms.spawnCenter, ": Couldn't find anywhere for the traveler to go."));
 				return false;
 			}
 			List<Pawn> list = SpawnPawns(parms);

@@ -40,7 +40,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return "Mote(path=" + path + ", shader=" + base.Shader + ", color=" + color + ", colorTwo=unsupported)";
+			return string.Concat("Mote(path=", path, ", shader=", base.Shader, ", color=", color, ", colorTwo=unsupported)");
 		}
 	}
 }

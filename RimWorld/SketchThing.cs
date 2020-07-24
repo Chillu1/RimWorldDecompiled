@@ -119,7 +119,7 @@ namespace RimWorld
 			{
 				return true;
 			}
-			if (!GenConstruct.CanBuildOnTerrain(def, at, map, rot, null, stuff ?? GenStuff.DefaultStuffFor(def)))
+			if (!CanBuildOnTerrain(at, map))
 			{
 				return true;
 			}
@@ -139,6 +139,11 @@ namespace RimWorld
 				}
 			}
 			return false;
+		}
+
+		public override bool CanBuildOnTerrain(IntVec3 at, Map map)
+		{
+			return GenConstruct.CanBuildOnTerrain(def, at, map, rot, null, stuff ?? GenStuff.DefaultStuffFor(def));
 		}
 
 		public override bool Spawn(IntVec3 at, Map map, Faction faction, Sketch.SpawnMode spawnMode = Sketch.SpawnMode.Normal, bool wipeIfCollides = false, List<Thing> spawnedThings = null, bool dormant = false)
@@ -187,7 +192,7 @@ namespace RimWorld
 				break;
 			}
 			default:
-				throw new NotImplementedException("Spawn mode " + spawnMode + " not implemented!");
+				throw new NotImplementedException(string.Concat("Spawn mode ", spawnMode, " not implemented!"));
 			}
 			return true;
 		}

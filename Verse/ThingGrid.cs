@@ -42,7 +42,7 @@ namespace Verse
 		{
 			if (!c.InBounds(map))
 			{
-				Log.Warning(t + " tried to register out of bounds at " + c + ". Destroying.");
+				Log.Warning(string.Concat(t, " tried to register out of bounds at ", c, ". Destroying."));
 				t.Destroy();
 			}
 			else
@@ -76,7 +76,7 @@ namespace Verse
 		{
 			if (!c.InBounds(map))
 			{
-				Log.Error(t + " tried to de-register out of bounds at " + c);
+				Log.Error(string.Concat(t, " tried to de-register out of bounds at ", c));
 				return;
 			}
 			int num = map.cellIndices.CellToIndex(c);

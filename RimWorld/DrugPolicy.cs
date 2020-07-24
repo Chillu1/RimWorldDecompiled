@@ -82,7 +82,7 @@ namespace RimWorld
 
 		public string GetUniqueLoadID()
 		{
-			return "DrugPolicy_" + label + uniqueId.ToString();
+			return "DrugPolicy_" + label + uniqueId;
 		}
 	}
 }

@@ -521,7 +521,7 @@ namespace RimWorld
 					{
 						if (item != pawn)
 						{
-							stringBuilder5.AppendLine(item.LabelShort + " (" + item.gender + ", age: " + item.ageTracker.AgeBiologicalYears + ", compat: " + pawn.relations.CompatibilityWith(item).ToString("F2") + "): " + pawn.relations.SecondaryRomanceChanceFactor(item).ToStringPercent("F0") + "        [vs " + item.relations.SecondaryRomanceChanceFactor(pawn).ToStringPercent("F0") + "]");
+							stringBuilder5.AppendLine(string.Concat(item.LabelShort, " (", item.gender, ", age: ", item.ageTracker.AgeBiologicalYears, ", compat: ", pawn.relations.CompatibilityWith(item).ToString("F2"), "): ", pawn.relations.SecondaryRomanceChanceFactor(item).ToStringPercent("F0"), "        [vs ", item.relations.SecondaryRomanceChanceFactor(pawn).ToStringPercent("F0"), "]"));
 						}
 					}
 					Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder5.ToString()));
@@ -559,7 +559,7 @@ namespace RimWorld
 							if (c != pawn)
 							{
 								stringBuilder3.AppendLine();
-								stringBuilder3.AppendLine(c.LabelShort + " (" + c.KindLabel + ", " + c.gender + ", age: " + c.ageTracker.AgeBiologicalYears + ", compat: " + pawn.relations.CompatibilityWith(c).ToString("F2") + ", romCh: " + pawn.relations.SecondaryRomanceChanceFactor(c).ToStringPercent("F0") + "):");
+								stringBuilder3.AppendLine(string.Concat(c.LabelShort, " (", c.KindLabel, ", ", c.gender, ", age: ", c.ageTracker.AgeBiologicalYears, ", compat: ", pawn.relations.CompatibilityWith(c).ToString("F2"), ", romCh: ", pawn.relations.SecondaryRomanceChanceFactor(c).ToStringPercent("F0"), "):"));
 								List<InteractionDef> list2 = (from x in DefDatabase<InteractionDef>.AllDefs
 									where x.Worker.RandomSelectionWeight(pawn, c) > 0f
 									orderby x.Worker.RandomSelectionWeight(pawn, c) descending

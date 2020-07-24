@@ -70,6 +70,8 @@ namespace Verse
 
 		public bool resetModsConfigOnCrash = true;
 
+		public bool simulateNotOwningRoyalty;
+
 		public void Apply()
 		{
 			if (UnityData.IsInMainThread)

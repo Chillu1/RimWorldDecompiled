@@ -1,4 +1,3 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -93,29 +92,21 @@ namespace Verse
 			{
 				Widgets.FillableBar(bgRect.ContractedBy(1f), summaryHealthPercent, OverlayHealthTex, BaseContent.ClearTex, doBorder: false);
 			}
-			Pawn_PsychicEntropyTracker psychicEntropy = pawn.psychicEntropy;
-			if (psychicEntropy != null && psychicEntropy.EntropyValue > float.Epsilon)
-			{
-				Rect rect = new Rect(bgRect.ContractedBy(1f));
-				rect.y = bgRect.y + bgRect.height;
-				rect.height = 4f;
-				Widgets.FillableBar(rect, Mathf.Min(psychicEntropy.EntropyRelativeValue, 1f), OverlayEntropyTex, BaseContent.ClearTex, doBorder: false);
-			}
 			Color color = PawnNameColorUtility.PawnNameColorOf(pawn);
 			color.a = alpha;
 			GUI.color = color;
-			Rect rect2;
+			Rect rect;
 			if (alignCenter)
 			{
 				Text.Anchor = TextAnchor.UpperCenter;
-				rect2 = new Rect(bgRect.center.x - pawnLabelNameWidth / 2f, bgRect.y - 2f, pawnLabelNameWidth, 100f);
+				rect = new Rect(bgRect.center.x - pawnLabelNameWidth / 2f, bgRect.y - 2f, pawnLabelNameWidth, 100f);
 			}
 			else
 			{
 				Text.Anchor = TextAnchor.UpperLeft;
-				rect2 = new Rect(bgRect.x + 2f, bgRect.center.y - Text.CalcSize(pawnLabel).y / 2f, pawnLabelNameWidth, 100f);
+				rect = new Rect(bgRect.x + 2f, bgRect.center.y - Text.CalcSize(pawnLabel).y / 2f, pawnLabelNameWidth, 100f);
 			}
-			Widgets.Label(rect2, pawnLabel);
+			Widgets.Label(rect, pawnLabel);
 			if (pawn.Drafted)
 			{
 				Widgets.DrawLineHorizontal(bgRect.center.x - pawnLabelNameWidth / 2f, bgRect.y + 11f, pawnLabelNameWidth);

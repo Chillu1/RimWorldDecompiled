@@ -18,7 +18,7 @@ namespace Verse
 		{
 			if (!typeof(ChoiceLetter).IsAssignableFrom(def.letterClass))
 			{
-				Log.Error(def + " is not a choice letter.");
+				Log.Error(string.Concat(def, " is not a choice letter."));
 				return null;
 			}
 			ChoiceLetter obj = (ChoiceLetter)MakeLetter(def);

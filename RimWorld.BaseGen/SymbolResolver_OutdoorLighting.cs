@@ -48,16 +48,17 @@ namespace RimWorld.BaseGen
 			foreach (IntVec3 item in rect)
 			{
 				Region region = item.GetRegion(map);
-				if (region != null && region.Room.PsychologicallyOutdoors)
+				if (region == null || !region.Room.PsychologicallyOutdoors)
 				{
-					List<Thing> thingList = item.GetThingList(map);
-					for (int i = 0; i < thingList.Count; i++)
+					continue;
+				}
+				List<Thing> thingList = item.GetThingList(map);
+				for (int i = 0; i < thingList.Count; i++)
+				{
+					CompGlower compGlower = thingList[i].TryGetComp<CompGlower>();
+					if (compGlower != null)
 					{
-						CompGlower compGlower = thingList[i].TryGetComp<CompGlower>();
-						if (compGlower != null)
-						{
-							nearbyGlowers.Add(compGlower);
-						}
+						nearbyGlowers.Add(compGlower);
 					}
 				}
 			}

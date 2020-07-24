@@ -63,7 +63,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return "Single(path=" + path + ", color=" + color + ", colorTwo=" + colorTwo + ")";
+			return string.Concat("Single(path=", path, ", color=", color, ", colorTwo=", colorTwo, ")");
 		}
 	}
 }

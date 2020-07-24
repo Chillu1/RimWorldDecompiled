@@ -124,6 +124,11 @@ namespace RimWorld
 
 		protected override void DrawGhost(Color ghostCol)
 		{
+			ThingDef def;
+			if ((def = (PlacingDef as ThingDef)) != null)
+			{
+				MeditationUtility.DrawMeditationFociAffectedByBuildingOverlay(base.Map, def, Faction.OfPlayer, UI.MouseCell(), placingRot);
+			}
 			Graphic baseGraphic = ThingToInstall.Graphic.ExtractInnerGraphicFor(ThingToInstall);
 			GhostDrawer.DrawGhostThing(UI.MouseCell(), placingRot, (ThingDef)PlacingDef, baseGraphic, ghostCol, AltitudeLayer.Blueprint, ThingToInstall);
 		}

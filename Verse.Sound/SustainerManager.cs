@@ -71,30 +71,28 @@ namespace Verse.Sound
 					{
 						value[j].scopeFader.inScope = true;
 					}
+					continue;
 				}
-				else
+				for (int k = 0; k < value.Count; k++)
 				{
-					for (int k = 0; k < value.Count; k++)
+					value[k].scopeFader.inScope = false;
+				}
+				value.Sort(SortSustainersByCameraDistanceCached);
+				int num = 0;
+				for (int l = 0; l < value.Count; l++)
+				{
+					value[l].scopeFader.inScope = true;
+					num++;
+					if (num >= key.maxVoices)
 					{
-						value[k].scopeFader.inScope = false;
+						break;
 					}
-					value.Sort(SortSustainersByCameraDistanceCached);
-					int num = 0;
-					for (int l = 0; l < value.Count; l++)
+				}
+				for (int m = 0; m < value.Count; m++)
+				{
+					if (!value[m].scopeFader.inScope)
 					{
-						value[l].scopeFader.inScope = true;
-						num++;
-						if (num >= key.maxVoices)
-						{
-							break;
-						}
-					}
-					for (int m = 0; m < value.Count; m++)
-					{
-						if (!value[m].scopeFader.inScope)
-						{
-							value[m].scopeFader.inScopePercent = 0f;
-						}
+						value[m].scopeFader.inScopePercent = 0f;
 					}
 				}
 			}

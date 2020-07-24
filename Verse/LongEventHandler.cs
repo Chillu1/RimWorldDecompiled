@@ -375,35 +375,36 @@ namespace Verse
 		private static void UpdateCurrentSynchronousEvent(out bool sceneChanged)
 		{
 			sceneChanged = false;
-			if (!currentEvent.ShouldWaitUntilDisplayed)
+			if (currentEvent.ShouldWaitUntilDisplayed)
 			{
-				try
+				return;
+			}
+			try
+			{
+				if (currentEvent.eventAction != null)
 				{
-					if (currentEvent.eventAction != null)
-					{
-						currentEvent.eventAction();
-					}
-					if (!currentEvent.levelToLoad.NullOrEmpty())
-					{
-						SceneManager.LoadScene(currentEvent.levelToLoad);
-						sceneChanged = true;
-					}
-					currentEvent = null;
-					eventThread = null;
-					levelLoadOp = null;
-					ExecuteToExecuteWhenFinished();
+					currentEvent.eventAction();
 				}
-				catch (Exception ex)
+				if (!currentEvent.levelToLoad.NullOrEmpty())
 				{
-					Log.Error("Exception from long event: " + ex);
-					if (currentEvent != null && currentEvent.exceptionHandler != null)
-					{
-						currentEvent.exceptionHandler(ex);
-					}
-					currentEvent = null;
-					eventThread = null;
-					levelLoadOp = null;
+					SceneManager.LoadScene(currentEvent.levelToLoad);
+					sceneChanged = true;
 				}
+				currentEvent = null;
+				eventThread = null;
+				levelLoadOp = null;
+				ExecuteToExecuteWhenFinished();
+			}
+			catch (Exception ex)
+			{
+				Log.Error("Exception from long event: " + ex);
+				if (currentEvent != null && currentEvent.exceptionHandler != null)
+				{
+					currentEvent.exceptionHandler(ex);
+				}
+				currentEvent = null;
+				eventThread = null;
+				levelLoadOp = null;
 			}
 		}
 

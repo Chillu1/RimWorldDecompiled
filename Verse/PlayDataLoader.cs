@@ -129,6 +129,15 @@ namespace Verse
 			{
 				DeepProfiler.End();
 			}
+			DeepProfiler.Start("TKeySystem.BuildMappings()");
+			try
+			{
+				TKeySystem.BuildMappings();
+			}
+			finally
+			{
+				DeepProfiler.End();
+			}
 			DeepProfiler.Start("Inject selected language data into game data (early pass).");
 			try
 			{
@@ -201,6 +210,7 @@ namespace Verse
 				ColoredText.ResetStaticData();
 				QuestNode_GetRandomNegativeGameCondition.ResetStaticData();
 				RoyalTitleUtility.ResetStaticData();
+				RewardsGenerator.ResetStaticData();
 				WorkGiver_FillFermentingBarrel.ResetStaticData();
 				WorkGiver_DoBill.ResetStaticData();
 				WorkGiver_InteractAnimal.ResetStaticData();

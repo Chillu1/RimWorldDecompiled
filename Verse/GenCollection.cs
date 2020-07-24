@@ -602,46 +602,47 @@ namespace Verse
 
 		public static void SortStable<T>(this IList<T> list, Func<T, T, int> comparator)
 		{
-			if (list.Count > 1)
+			if (list.Count <= 1)
 			{
-				List<Pair<T, int>> list2;
-				bool flag;
-				if (SortStableTempList<T>.working)
+				return;
+			}
+			List<Pair<T, int>> list2;
+			bool flag;
+			if (SortStableTempList<T>.working)
+			{
+				list2 = new List<Pair<T, int>>();
+				flag = false;
+			}
+			else
+			{
+				list2 = SortStableTempList<T>.list;
+				SortStableTempList<T>.working = true;
+				flag = true;
+			}
+			try
+			{
+				list2.Clear();
+				for (int i = 0; i < list.Count; i++)
 				{
-					list2 = new List<Pair<T, int>>();
-					flag = false;
+					list2.Add(new Pair<T, int>(list[i], i));
 				}
-				else
+				list2.Sort(delegate(Pair<T, int> lhs, Pair<T, int> rhs)
 				{
-					list2 = SortStableTempList<T>.list;
-					SortStableTempList<T>.working = true;
-					flag = true;
+					int num = comparator(lhs.First, rhs.First);
+					return (num != 0) ? num : lhs.Second.CompareTo(rhs.Second);
+				});
+				list.Clear();
+				for (int j = 0; j < list2.Count; j++)
+				{
+					list.Add(list2[j].First);
 				}
-				try
+				list2.Clear();
+			}
+			finally
+			{
+				if (flag)
 				{
-					list2.Clear();
-					for (int i = 0; i < list.Count; i++)
-					{
-						list2.Add(new Pair<T, int>(list[i], i));
-					}
-					list2.Sort(delegate(Pair<T, int> lhs, Pair<T, int> rhs)
-					{
-						int num = comparator(lhs.First, rhs.First);
-						return (num != 0) ? num : lhs.Second.CompareTo(rhs.Second);
-					});
-					list.Clear();
-					for (int j = 0; j < list2.Count; j++)
-					{
-						list.Add(list2[j].First);
-					}
-					list2.Clear();
-				}
-				finally
-				{
-					if (flag)
-					{
-						SortStableTempList<T>.working = false;
-					}
+					SortStableTempList<T>.working = false;
 				}
 			}
 		}
@@ -869,11 +870,12 @@ namespace Verse
 			int num = 0;
 			foreach (T item in enumerable)
 			{
-				if (predicate(item))
+				if (!predicate(item))
 				{
-					return num;
+					num++;
+					continue;
 				}
-				num++;
+				return num;
 			}
 			return num;
 		}
@@ -891,17 +893,17 @@ namespace Verse
 		{
 			T[] lhsv = lhs.ToArray();
 			V[] rhsv = rhs.ToArray();
-			int j = 0;
-			while (j < lhsv.Length)
+			int i = 0;
+			while (i < lhsv.Length)
 			{
 				int num;
-				for (int i = 0; i < rhsv.Length; i = num)
+				for (int j = 0; j < rhsv.Length; j = num)
 				{
-					yield return new Pair<T, V>(lhsv[j], rhsv[i]);
-					num = i + 1;
+					yield return new Pair<T, V>(lhsv[i], rhsv[j]);
+					num = j + 1;
 				}
-				num = j + 1;
-				j = num;
+				num = i + 1;
+				i = num;
 			}
 		}
 

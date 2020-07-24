@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Verse;
 
@@ -33,6 +34,8 @@ namespace RimWorld
 
 		private const float MinValueToGenerateSecondRewardType = 600f;
 
+		private static readonly List<ThingDef> MarketValueFillers = new List<ThingDef>();
+
 		public static readonly SimpleCurve RewardValueToRoyalFavorCurve = new SimpleCurve
 		{
 			new CurvePoint(100f, 2f),
@@ -49,6 +52,16 @@ namespace RimWorld
 			new CurvePoint(2000f, 35f),
 			new CurvePoint(5000f, 50f)
 		};
+
+		public static void ResetStaticData()
+		{
+			MarketValueFillers.Clear();
+			MarketValueFillers.Add(ThingDefOf.Silver);
+			MarketValueFillers.Add(ThingDefOf.Gold);
+			MarketValueFillers.Add(ThingDefOf.Uranium);
+			MarketValueFillers.Add(ThingDefOf.Jade);
+			MarketValueFillers.Add(ThingDefOf.Plasteel);
+		}
 
 		public static List<Reward> Generate(RewardsGeneratorParams parms)
 		{
@@ -69,17 +82,18 @@ namespace RimWorld
 
 		private static List<Reward> DoGenerate(RewardsGeneratorParams parms, out float generatedRewardValue)
 		{
+			List<Reward> list = new List<Reward>();
 			string text = parms.ConfigError();
 			if (text != null)
 			{
 				Log.Error("Invalid reward generation params: " + text);
 				generatedRewardValue = 0f;
-				return new List<Reward>();
+				return list;
 			}
 			parms.rewardValue = Mathf.Max(parms.rewardValue, parms.minGeneratedRewardValue);
 			bool flag = parms.allowGoodwill && parms.giverFaction != null && parms.giverFaction != Faction.OfPlayer && parms.giverFaction.CanEverGiveGoodwillRewards && parms.giverFaction.allowGoodwillRewards && parms.giverFaction.PlayerGoodwill <= 92;
 			bool flag2 = parms.allowRoyalFavor && parms.giverFaction != null && parms.giverFaction.allowRoyalFavorRewards && parms.giverFaction.def.HasRoyalTitles;
-			bool flag3 = flag2 | flag;
+			bool flag3 = flag2 || flag;
 			bool flag4 = parms.giverFaction != null && parms.giverFaction.HostileTo(Faction.OfPlayer);
 			bool flag5 = flag2 && parms.giverFaction == Faction.Empire && !parms.thingRewardItemsOnly;
 			bool flag6;
@@ -93,6 +107,11 @@ namespace RimWorld
 			{
 				flag6 = false;
 				flag7 = true;
+			}
+			else if (parms.thingRewardDisallowed && !flag3)
+			{
+				flag6 = false;
+				flag7 = false;
 			}
 			else
 			{
@@ -133,6 +152,11 @@ namespace RimWorld
 			}
 			else
 			{
+				if (!(flag6 && flag7))
+				{
+					generatedRewardValue = 0f;
+					return list;
+				}
 				float num4 = Rand.Range(0.3f, 0.7f);
 				float num5 = 1f - num4;
 				num2 = parms.rewardValue * num4;
@@ -177,25 +201,8 @@ namespace RimWorld
 			float num6 = parms.rewardValue - valueActuallyUsed - valueActuallyUsed2;
 			if ((num6 >= 200f || valueActuallyUsed + valueActuallyUsed2 < parms.minGeneratedRewardValue) && !parms.thingRewardDisallowed)
 			{
-				int num7 = GenMath.RoundRandom(num6);
-				if (num7 >= 1)
-				{
-					Thing thing = ThingMaker.MakeThing(ThingDefOf.Silver);
-					thing.stackCount = num7;
-					generatedRewardValue += thing.MarketValue * (float)thing.stackCount;
-					Reward_Items reward_Items2 = reward as Reward_Items;
-					if (reward_Items2 != null)
-					{
-						reward_Items2.items.Add(thing);
-					}
-					else
-					{
-						reward_Items = new Reward_Items();
-						reward_Items.items.Add(thing);
-					}
-				}
+				reward_Items = AddMarketValueFillers(num6, ref generatedRewardValue, reward);
 			}
-			List<Reward> list = new List<Reward>();
 			if (reward != null)
 			{
 				list.Add(reward);
@@ -262,6 +269,45 @@ namespace RimWorld
 			finally
 			{
 			}
+		}
+
+		private static Reward_Items AddMarketValueFillers(float remainingValue, ref float generatedRewardValue, Reward thingReward)
+		{
+			IEnumerable<ThingDef> source = MarketValueFillers.Where((ThingDef x) => remainingValue / x.BaseMarketValue >= 15f);
+			if (!source.Any())
+			{
+				return null;
+			}
+			ThingDef thingDef = null;
+			Reward_Items existingItemsReward = thingReward as Reward_Items;
+			if (existingItemsReward != null)
+			{
+				thingDef = source.FirstOrDefault((ThingDef x) => existingItemsReward.items.Any((Thing y) => y.def == x));
+			}
+			if (thingDef == null)
+			{
+				thingDef = source.RandomElement();
+			}
+			int num = GenMath.RoundRandom(remainingValue / thingDef.BaseMarketValue);
+			if (num >= 1)
+			{
+				Thing thing = ThingMaker.MakeThing(thingDef);
+				thing.stackCount = num;
+				generatedRewardValue += thing.MarketValue * (float)thing.stackCount;
+				Reward_Items reward_Items = thingReward as Reward_Items;
+				if (reward_Items == null)
+				{
+					return new Reward_Items
+					{
+						items = 
+						{
+							thing
+						}
+					};
+				}
+				reward_Items.items.Add(thing);
+			}
+			return null;
 		}
 	}
 }

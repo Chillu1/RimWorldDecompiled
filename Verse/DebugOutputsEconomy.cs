@@ -18,16 +18,91 @@ namespace Verse
 		[DebugOutput("Economy", false)]
 		public static void Drugs()
 		{
-			DebugTables.MakeTablesDialog(DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.IsWithinCategory(ThingCategoryDefOf.Medicine) || d.IsWithinCategory(ThingCategoryDefOf.Drugs)), new TableDataGetter<ThingDef>("name", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("ingredients", (ThingDef d) => CostListString(d, divideByVolume: true, starIfOnlyBuyable: true)), new TableDataGetter<ThingDef>("work amount", (ThingDef d) => WorkToProduceBest(d).ToString("F0")), new TableDataGetter<ThingDef>("real ingredient cost", (ThingDef d) => realIngredientCost(d).ToString("F1")), new TableDataGetter<ThingDef>("real sell price", (ThingDef d) => realSellPrice(d).ToString("F1")), new TableDataGetter<ThingDef>("real profit per item", (ThingDef d) => (realSellPrice(d) - realIngredientCost(d)).ToString("F1")), new TableDataGetter<ThingDef>("real profit per day's work", (ThingDef d) => ((realSellPrice(d) - realIngredientCost(d)) / WorkToProduceBest(d) * 30000f).ToString("F1")), new TableDataGetter<ThingDef>("real buy price", (ThingDef d) => realBuyPrice(d).ToString("F1")));
-			float realBuyPrice(ThingDef d)
+			DebugTables.MakeTablesDialog(DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.IsWithinCategory(ThingCategoryDefOf.Medicine) || d.IsWithinCategory(ThingCategoryDefOf.Drugs)), new TableDataGetter<ThingDef>("name", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("market\nvalue", (ThingDef d) => d.BaseMarketValue.ToStringMoney()), new TableDataGetter<ThingDef>("ingredients", (ThingDef d) => CostListString(d, divideByVolume: true, starIfOnlyBuyable: true)), new TableDataGetter<ThingDef>("work\namount", (ThingDef d) => (!(WorkToProduceBest(d) > 0f)) ? "-" : WorkToProduceBest(d).ToString("F0")), new TableDataGetter<ThingDef>("real\ningredient cost", (ThingDef d) => RealIngredientCost(d).ToString("F1")), new TableDataGetter<ThingDef>("real\nsell price", (ThingDef d) => RealSellPrice(d).ToStringMoney()), new TableDataGetter<ThingDef>("real\nprofit\nper item", (ThingDef d) => (RealSellPrice(d) - RealIngredientCost(d)).ToStringMoney()), new TableDataGetter<ThingDef>("real\nprofit\nper day's work", (ThingDef d) => ((RealSellPrice(d) - RealIngredientCost(d)) / WorkToProduceBest(d) * 30000f).ToStringMoney()), new TableDataGetter<ThingDef>("real\nbuy price", (ThingDef d) => RealBuyPrice(d).ToStringMoney()), new TableDataGetter<ThingDef>("for\npleasure", (ThingDef d) => d.IsPleasureDrug.ToStringCheckBlank()), new TableDataGetter<ThingDef>("non\nmedical", (ThingDef d) => d.IsNonMedicalDrug.ToStringCheckBlank()), new TableDataGetter<ThingDef>("joy", (ThingDef d) => (!d.IsPleasureDrug) ? "-" : d.ingestible.joy.ToString()), new TableDataGetter<ThingDef>("high\ngain", delegate(ThingDef d)
+			{
+				if (DrugStatsUtility.GetDrugHighGiver(d) == null)
+				{
+					return "-";
+				}
+				return (!(DrugStatsUtility.GetDrugHighGiver(d).severity > 0f)) ? "-" : DrugStatsUtility.GetDrugHighGiver(d).severity.ToString();
+			}), new TableDataGetter<ThingDef>("high\noffset\nper day", (ThingDef d) => (DrugStatsUtility.GetDrugHighGiver(d)?.hediffDef == null) ? "-" : DrugStatsUtility.GetHighOffsetPerDay(d).ToString()), new TableDataGetter<ThingDef>("high\ndays\nper dose", (ThingDef d) => (DrugStatsUtility.GetDrugHighGiver(d)?.hediffDef == null) ? "-" : (DrugStatsUtility.GetDrugHighGiver(d).severity / (0f - DrugStatsUtility.GetHighOffsetPerDay(d))).ToString("F2")), new TableDataGetter<ThingDef>("tolerance\ngain", (ThingDef d) => (!(DrugStatsUtility.GetToleranceGain(d) > 0f)) ? "-" : DrugStatsUtility.GetToleranceGain(d).ToStringPercent()), new TableDataGetter<ThingDef>("tolerance\noffset\nper day", (ThingDef d) => (DrugStatsUtility.GetTolerance(d) == null) ? "-" : DrugStatsUtility.GetToleranceOffsetPerDay(d).ToStringPercent()), new TableDataGetter<ThingDef>("tolerance\ndays\nper dose", (ThingDef d) => (DrugStatsUtility.GetTolerance(d) == null) ? "-" : (DrugStatsUtility.GetToleranceGain(d) / (0f - DrugStatsUtility.GetToleranceOffsetPerDay(d))).ToString("F2")), new TableDataGetter<ThingDef>("addiction\nmin tolerance", (ThingDef d) => (!Addictive(d)) ? "-" : MinToleranceToAddict(d).ToString()), new TableDataGetter<ThingDef>("addiction\nnew chance", (ThingDef d) => (!Addictive(d)) ? "-" : NewAddictionChance(d).ToStringPercent()), new TableDataGetter<ThingDef>("addiction\nnew severity", (ThingDef d) => (!Addictive(d)) ? "-" : NewAddictionSeverity(d).ToString()), new TableDataGetter<ThingDef>("addiction\nold severity gain", (ThingDef d) => (!Addictive(d)) ? "-" : OldAddictionSeverityOffset(d).ToString()), new TableDataGetter<ThingDef>("addiction\noffset\nper day", (ThingDef d) => (Addiction(d) == null) ? "-" : DrugStatsUtility.GetAddictionOffsetPerDay(d).ToString()), new TableDataGetter<ThingDef>("addiction\nrecover\nmin days", (ThingDef d) => (Addiction(d) == null) ? "-" : (NewAddictionSeverity(d) / (0f - DrugStatsUtility.GetAddictionOffsetPerDay(d))).ToString("F2")), new TableDataGetter<ThingDef>("need fall\nper day", (ThingDef d) => (DrugStatsUtility.GetNeed(d) == null) ? "-" : DrugStatsUtility.GetNeed(d).fallPerDay.ToString("F2")), new TableDataGetter<ThingDef>("need cost\nper day", (ThingDef d) => (DrugStatsUtility.GetNeed(d) == null) ? "-" : DrugStatsUtility.GetAddictionNeedCostPerDay(d).ToStringMoney()), new TableDataGetter<ThingDef>("overdose\nseverity gain", (ThingDef d) => (!IsDrug(d)) ? "-" : OverdoseSeverity(d).ToString()), new TableDataGetter<ThingDef>("overdose\nrandom-emerg\nchance", (ThingDef d) => (!IsDrug(d)) ? "-" : LargeOverdoseChance(d).ToStringPercent()), new TableDataGetter<ThingDef>("combat\ndrug", (ThingDef d) => (IsDrug(d) && d.GetCompProperties<CompProperties_Drug>().isCombatEnhancingDrug).ToStringCheckBlank()), new TableDataGetter<ThingDef>("safe dose\ninterval", (ThingDef d) => DrugStatsUtility.GetSafeDoseIntervalReadout(d)));
+			static HediffDef Addiction(ThingDef d)
+			{
+				if (!Addictive(d))
+				{
+					return null;
+				}
+				return DrugStatsUtility.GetChemical(d).addictionHediff;
+			}
+			static bool Addictive(ThingDef d)
+			{
+				if (!IsDrug(d))
+				{
+					return false;
+				}
+				return DrugStatsUtility.GetDrugComp(d).Addictive;
+			}
+			static bool IsDrug(ThingDef d)
+			{
+				return d.HasComp(typeof(CompDrug));
+			}
+			static float LargeOverdoseChance(ThingDef d)
+			{
+				if (IsDrug(d))
+				{
+					return DrugStatsUtility.GetDrugComp(d).largeOverdoseChance;
+				}
+				return -1f;
+			}
+			static float MinToleranceToAddict(ThingDef d)
+			{
+				if (IsDrug(d))
+				{
+					return DrugStatsUtility.GetDrugComp(d).minToleranceToAddict;
+				}
+				return -1f;
+			}
+			static float NewAddictionChance(ThingDef d)
+			{
+				if (IsDrug(d))
+				{
+					return DrugStatsUtility.GetDrugComp(d).addictiveness;
+				}
+				return -1f;
+			}
+			static float NewAddictionSeverity(ThingDef d)
+			{
+				if (IsDrug(d))
+				{
+					return DrugStatsUtility.GetChemical(d).addictionHediff.initialSeverity;
+				}
+				return -1f;
+			}
+			static float OldAddictionSeverityOffset(ThingDef d)
+			{
+				if (IsDrug(d))
+				{
+					return DrugStatsUtility.GetDrugComp(d).existingAddictionSeverityOffset;
+				}
+				return -1f;
+			}
+			static FloatRange OverdoseSeverity(ThingDef d)
+			{
+				if (IsDrug(d))
+				{
+					return DrugStatsUtility.GetDrugComp(d).overdoseSeverityOffset;
+				}
+				return FloatRange.Zero;
+			}
+			static float RealBuyPrice(ThingDef d)
 			{
 				return d.BaseMarketValue * 1.4f;
 			}
-			float realIngredientCost(ThingDef d)
+			static float RealIngredientCost(ThingDef d)
 			{
 				return CostToMake(d, real: true);
 			}
-			float realSellPrice(ThingDef d)
+			static float RealSellPrice(ThingDef d)
 			{
 				return d.BaseMarketValue * 0.6f;
 			}
@@ -50,26 +125,26 @@ namespace Verse
 				where d.category == ThingCategory.Pawn && d.race.IsFlesh
 				orderby bestMeatPerInput(d) descending
 				select d, new TableDataGetter<ThingDef>("", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("hungerRate", (ThingDef d) => d.race.baseHungerRate.ToString("F2")), new TableDataGetter<ThingDef>("gestDaysEach", (ThingDef d) => gestDaysEach(d).ToString("F2")), new TableDataGetter<ThingDef>("herbiv", (ThingDef d) => ((d.race.foodType & FoodTypeFlags.Plant) == 0) ? "" : "Y"), new TableDataGetter<ThingDef>("|", (ThingDef d) => "|"), new TableDataGetter<ThingDef>("bodySize", (ThingDef d) => d.race.baseBodySize.ToString("F2")), new TableDataGetter<ThingDef>("age Adult", (ThingDef d) => d.race.lifeStageAges[d.race.lifeStageAges.Count - 1].minAge.ToString("F2")), new TableDataGetter<ThingDef>("nutrition to adulthood", (ThingDef d) => nutritionToAdulthood(d).ToString("F2")), new TableDataGetter<ThingDef>("adult meat-nut", (ThingDef d) => (d.GetStatValueAbstract(StatDefOf.MeatAmount) * 0.05f).ToString("F2")), new TableDataGetter<ThingDef>("adult meat-nut / input-nut", (ThingDef d) => adultMeatNutPerInput(d).ToString("F3")), new TableDataGetter<ThingDef>("|", (ThingDef d) => "|"), new TableDataGetter<ThingDef>("baby size", (ThingDef d) => (d.race.lifeStageAges[0].def.bodySizeFactor * d.race.baseBodySize).ToString("F2")), new TableDataGetter<ThingDef>("nutrition to gestate", (ThingDef d) => nutritionToGestate(d).ToString("F2")), new TableDataGetter<ThingDef>("egg nut", (ThingDef d) => eggNut(d)), new TableDataGetter<ThingDef>("baby meat-nut", (ThingDef d) => babyMeatNut(d).ToString("F2")), new TableDataGetter<ThingDef>("baby meat-nut / input-nut", (ThingDef d) => babyMeatNutPerInput(d).ToString("F2")), new TableDataGetter<ThingDef>("baby wins", (ThingDef d) => (!(babyMeatNutPerInput(d) > adultMeatNutPerInput(d))) ? "" : "B"));
-			float adultMeatNutPerInput(ThingDef d)
+			static float adultMeatNutPerInput(ThingDef d)
 			{
 				return d.GetStatValueAbstract(StatDefOf.MeatAmount) * 0.05f / nutritionToAdulthood(d);
 			}
-			float babyMeatNut(ThingDef d)
+			static float babyMeatNut(ThingDef d)
 			{
 				LifeStageAge lifeStageAge3 = d.race.lifeStageAges[0];
 				return d.GetStatValueAbstract(StatDefOf.MeatAmount) * 0.05f * lifeStageAge3.def.bodySizeFactor;
 			}
-			float babyMeatNutPerInput(ThingDef d)
+			static float babyMeatNutPerInput(ThingDef d)
 			{
 				return babyMeatNut(d) / nutritionToGestate(d);
 			}
-			float bestMeatPerInput(ThingDef d)
+			static float bestMeatPerInput(ThingDef d)
 			{
 				float a = babyMeatNutPerInput(d);
 				float b = adultMeatNutPerInput(d);
 				return Mathf.Max(a, b);
 			}
-			string eggNut(ThingDef d)
+			static string eggNut(ThingDef d)
 			{
 				CompProperties_EggLayer compProperties = d.GetCompProperties<CompProperties_EggLayer>();
 				if (compProperties == null)
@@ -78,11 +153,11 @@ namespace Verse
 				}
 				return compProperties.eggFertilizedDef.GetStatValueAbstract(StatDefOf.Nutrition).ToString("F2");
 			}
-			float gestDaysEach(ThingDef d)
+			static float gestDaysEach(ThingDef d)
 			{
 				return GestationDaysEach(d);
 			}
-			float nutritionToAdulthood(ThingDef d)
+			static float nutritionToAdulthood(ThingDef d)
 			{
 				float num = 0f;
 				num += nutritionToGestate(d);
@@ -94,7 +169,7 @@ namespace Verse
 				}
 				return num;
 			}
-			float nutritionToGestate(ThingDef d)
+			static float nutritionToGestate(ThingDef d)
 			{
 				LifeStageAge lifeStageAge2 = d.race.lifeStageAges[d.race.lifeStageAges.Count - 1];
 				return 0f + gestDaysEach(d) * lifeStageAge2.def.hungerRateFactor * d.race.baseHungerRate;
@@ -146,8 +221,8 @@ namespace Verse
 			DebugTables.MakeTablesDialog(from d in DefDatabase<ThingDef>.AllDefs
 				where d.category == ThingCategory.Plant && d.plant.Harvestable && d.plant.Sowable
 				orderby d.plant.IsTree
-				select d, new TableDataGetter<ThingDef>("plant", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("product", (ThingDef d) => d.plant.harvestedThingDef.defName), new TableDataGetter<ThingDef>("grow time", (ThingDef d) => d.plant.growDays.ToString("F1")), new TableDataGetter<ThingDef>("work", (ThingDef d) => (d.plant.sowWork + d.plant.harvestWork).ToString("F0")), new TableDataGetter<ThingDef>("harvestCount", (ThingDef d) => d.plant.harvestYield.ToString("F1")), new TableDataGetter<ThingDef>("work-cost per cycle", (ThingDef d) => workCost(d).ToString("F2")), new TableDataGetter<ThingDef>("work-cost per harvestCount", (ThingDef d) => (workCost(d) / d.plant.harvestYield).ToString("F2")), new TableDataGetter<ThingDef>("value each", (ThingDef d) => d.plant.harvestedThingDef.BaseMarketValue.ToString("F2")), new TableDataGetter<ThingDef>("harvestValueTotal", (ThingDef d) => (d.plant.harvestYield * d.plant.harvestedThingDef.BaseMarketValue).ToString("F2")), new TableDataGetter<ThingDef>("profit per growDay", (ThingDef d) => ((d.plant.harvestYield * d.plant.harvestedThingDef.BaseMarketValue - workCost(d)) / d.plant.growDays).ToString("F2")), new TableDataGetter<ThingDef>("nutrition per growDay", (ThingDef d) => (d.plant.harvestedThingDef.ingestible == null) ? "" : (d.plant.harvestYield * d.plant.harvestedThingDef.GetStatValueAbstract(StatDefOf.Nutrition) / d.plant.growDays).ToString("F2")), new TableDataGetter<ThingDef>("nutrition", (ThingDef d) => (d.plant.harvestedThingDef.ingestible == null) ? "" : d.plant.harvestedThingDef.GetStatValueAbstract(StatDefOf.Nutrition).ToString("F2")), new TableDataGetter<ThingDef>("fertMin", (ThingDef d) => d.plant.fertilityMin.ToStringPercent()), new TableDataGetter<ThingDef>("fertSensitivity", (ThingDef d) => d.plant.fertilitySensitivity.ToStringPercent()));
-			float workCost(ThingDef d)
+				select d, new TableDataGetter<ThingDef>("plant", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("product", (ThingDef d) => d.plant.harvestedThingDef.defName), new TableDataGetter<ThingDef>("grow\ntime", (ThingDef d) => d.plant.growDays.ToString("F1")), new TableDataGetter<ThingDef>("work\nsow", (ThingDef d) => d.plant.sowWork.ToString("F0")), new TableDataGetter<ThingDef>("work\nharvest", (ThingDef d) => d.plant.harvestWork.ToString("F0")), new TableDataGetter<ThingDef>("work\ntotal", (ThingDef d) => (d.plant.sowWork + d.plant.harvestWork).ToString("F0")), new TableDataGetter<ThingDef>("harvest\nyield", (ThingDef d) => d.plant.harvestYield.ToString("F1")), new TableDataGetter<ThingDef>("work-cost\nper cycle", (ThingDef d) => workCost(d).ToString("F2")), new TableDataGetter<ThingDef>("work-cost\nper harvestCount", (ThingDef d) => (workCost(d) / d.plant.harvestYield).ToString("F2")), new TableDataGetter<ThingDef>("value\neach", (ThingDef d) => d.plant.harvestedThingDef.BaseMarketValue.ToString("F2")), new TableDataGetter<ThingDef>("harvest Value\nTotal", (ThingDef d) => (d.plant.harvestYield * d.plant.harvestedThingDef.BaseMarketValue).ToString("F2")), new TableDataGetter<ThingDef>("profit\nper growDay", (ThingDef d) => ((d.plant.harvestYield * d.plant.harvestedThingDef.BaseMarketValue - workCost(d)) / d.plant.growDays).ToString("F2")), new TableDataGetter<ThingDef>("nutrition\nper growDay", (ThingDef d) => (d.plant.harvestedThingDef.ingestible == null) ? "" : (d.plant.harvestYield * d.plant.harvestedThingDef.GetStatValueAbstract(StatDefOf.Nutrition) / d.plant.growDays).ToString("F2")), new TableDataGetter<ThingDef>("nutrition", (ThingDef d) => (d.plant.harvestedThingDef.ingestible == null) ? "" : d.plant.harvestedThingDef.GetStatValueAbstract(StatDefOf.Nutrition).ToString("F2")), new TableDataGetter<ThingDef>("fert\nmin", (ThingDef d) => d.plant.fertilityMin.ToStringPercent()), new TableDataGetter<ThingDef>("fert\nsensitivity", (ThingDef d) => d.plant.fertilitySensitivity.ToStringPercent()), new TableDataGetter<ThingDef>("yield per\nharvest work", (ThingDef d) => (d.plant.harvestYield / d.plant.harvestWork).ToString("F3")));
+			static float workCost(ThingDef d)
 			{
 				return 1.1f + d.plant.growDays * 1f + (d.plant.sowWork + d.plant.harvestWork) * 0.00612f;
 			}
@@ -173,7 +248,7 @@ namespace Verse
 				where (d.category == ThingCategory.Item && d.BaseMarketValue > 0.01f) || (d.category == ThingCategory.Building && (d.BuildableByPlayer || d.Minifiable))
 				orderby d.BaseMarketValue
 				select d, new TableDataGetter<ThingDef>("cat.", (ThingDef d) => d.category.ToString().Substring(0, 1).CapitalizeFirst()), new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("mobile", (ThingDef d) => (d.category == ThingCategory.Item || d.Minifiable).ToStringCheckBlank()), new TableDataGetter<ThingDef>("base\nmarket value", (ThingDef d) => d.BaseMarketValue.ToString("F1")), new TableDataGetter<ThingDef>("calculated\nmarket value", (ThingDef d) => calculatedMarketValue(d)), new TableDataGetter<ThingDef>("cost to make", (ThingDef d) => CostToMakeString(d)), new TableDataGetter<ThingDef>("work to produce", (ThingDef d) => (!(WorkToProduceBest(d) > 0f)) ? "-" : WorkToProduceBest(d).ToString("F1")), new TableDataGetter<ThingDef>("profit", (ThingDef d) => (d.BaseMarketValue - CostToMake(d)).ToString("F1")), new TableDataGetter<ThingDef>("profit\nrate", (ThingDef d) => (d.recipeMaker == null) ? "-" : ((d.BaseMarketValue - CostToMake(d)) / WorkToProduceBest(d) * 10000f).ToString("F0")), new TableDataGetter<ThingDef>("market value\ndefined", (ThingDef d) => d.statBases.Any((StatModifier st) => st.stat == StatDefOf.MarketValue).ToStringCheckBlank()), new TableDataGetter<ThingDef>("producible", (ThingDef d) => Producible(d).ToStringCheckBlank()), new TableDataGetter<ThingDef>("thing set\nmaker tags", (ThingDef d) => (!d.thingSetMakerTags.NullOrEmpty()) ? d.thingSetMakerTags.ToCommaList() : ""), new TableDataGetter<ThingDef>("made\nfrom\nstuff", (ThingDef d) => d.MadeFromStuff.ToStringCheckBlank()), new TableDataGetter<ThingDef>("cost list", (ThingDef d) => CostListString(d, divideByVolume: false, starIfOnlyBuyable: false)), new TableDataGetter<ThingDef>("recipes", (ThingDef d) => recipes(d)), new TableDataGetter<ThingDef>("work amount\nsources", (ThingDef d) => workAmountSources(d)));
-			string recipes(ThingDef d)
+			static string recipes(ThingDef d)
 			{
 				List<string> list2 = new List<string>();
 				foreach (RecipeDef allDef in DefDatabase<RecipeDef>.AllDefs)
@@ -195,7 +270,7 @@ namespace Verse
 				}
 				return list2.ToCommaList();
 			}
-			string workAmountSources(ThingDef d)
+			static string workAmountSources(ThingDef d)
 			{
 				List<string> list = new List<string>();
 				if (d.StatBaseDefined(StatDefOf.WorkToMake))
@@ -258,20 +333,21 @@ namespace Verse
 			};
 			foreach (ThingDef allDef in DefDatabase<ThingDef>.AllDefs)
 			{
-				if (allDef.thingSetMakerTags != null)
+				if (allDef.thingSetMakerTags == null)
 				{
-					int num = 0;
-					for (int i = 0; i < array.Length; i++)
+					continue;
+				}
+				int num = 0;
+				for (int i = 0; i < array.Length; i++)
+				{
+					if (allDef.thingSetMakerTags.Contains(array[i]))
 					{
-						if (allDef.thingSetMakerTags.Contains(array[i]))
-						{
-							num++;
-						}
+						num++;
 					}
-					if (num > 1)
-					{
-						text = text + allDef.defName + ": " + num + " reward tags\n";
-					}
+				}
+				if (num > 1)
+				{
+					text = text + allDef.defName + ": " + num + " reward tags\n";
 				}
 			}
 			if (text.Length > 0)
@@ -287,15 +363,16 @@ namespace Verse
 			foreach (ThingDef allDef in DefDatabase<ThingDef>.AllDefs)
 			{
 				Thing thing = ThingMaker.MakeThing(allDef, GenStuff.DefaultStuffFor(allDef));
-				if (thing.SmeltProducts(1f).Any())
+				if (!thing.SmeltProducts(1f).Any())
 				{
-					stringBuilder.Append(thing.LabelCap + ": ");
-					foreach (Thing item in thing.SmeltProducts(1f))
-					{
-						stringBuilder.Append(" " + item.Label);
-					}
-					stringBuilder.AppendLine();
+					continue;
 				}
+				stringBuilder.Append(thing.LabelCap + ": ");
+				foreach (Thing item in thing.SmeltProducts(1f))
+				{
+					stringBuilder.Append(" " + item.Label);
+				}
+				stringBuilder.AppendLine();
 			}
 			Log.Message(stringBuilder.ToString());
 		}
@@ -351,7 +428,7 @@ namespace Verse
 					{
 						num /= cost.thingDef.VolumePerUnit;
 					}
-					string text = cost.thingDef + " x" + num;
+					string text = string.Concat(cost.thingDef, " x", num);
 					if (starIfOnlyBuyable && RequiresBuying(cost.thingDef))
 					{
 						text += "*";
@@ -481,14 +558,15 @@ namespace Verse
 			}
 			foreach (RecipeDef allDef in DefDatabase<RecipeDef>.AllDefs)
 			{
-				if (allDef.workAmount > 0f && !allDef.products.NullOrEmpty())
+				if (!(allDef.workAmount > 0f) || allDef.products.NullOrEmpty())
 				{
-					for (int i = 0; i < allDef.products.Count; i++)
+					continue;
+				}
+				for (int i = 0; i < allDef.products.Count; i++)
+				{
+					if (allDef.products[i].thingDef == d && allDef.workAmount < num)
 					{
-						if (allDef.products[i].thingDef == d && allDef.workAmount < num)
-						{
-							num = allDef.workAmount;
-						}
+						num = allDef.workAmount;
 					}
 				}
 			}
@@ -499,7 +577,7 @@ namespace Verse
 			return -1f;
 		}
 
-		[DebugOutput]
+		[DebugOutput("Economy", false)]
 		public static void HediffsPriceImpact()
 		{
 			DebugTables.MakeTablesDialog(DefDatabase<HediffDef>.AllDefs, new List<TableDataGetter<HediffDef>>

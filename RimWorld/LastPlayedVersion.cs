@@ -21,42 +21,43 @@ namespace RimWorld
 
 		public static void InitializeIfNeeded()
 		{
-			if (!initialized)
+			if (initialized)
 			{
-				try
+				return;
+			}
+			try
+			{
+				string text = null;
+				if (File.Exists(GenFilePaths.LastPlayedVersionFilePath))
 				{
-					string text = null;
-					if (File.Exists(GenFilePaths.LastPlayedVersionFilePath))
+					try
 					{
-						try
-						{
-							text = File.ReadAllText(GenFilePaths.LastPlayedVersionFilePath);
-						}
-						catch (Exception ex)
-						{
-							Log.Error("Exception getting last played version data. Path: " + GenFilePaths.LastPlayedVersionFilePath + ". Exception: " + ex.ToString());
-						}
+						text = File.ReadAllText(GenFilePaths.LastPlayedVersionFilePath);
 					}
-					if (text != null)
+					catch (Exception ex)
 					{
-						try
-						{
-							lastPlayedVersionInt = VersionControl.VersionFromString(text);
-						}
-						catch (Exception ex2)
-						{
-							Log.Error("Exception parsing last version from string '" + text + "': " + ex2.ToString());
-						}
-					}
-					if (lastPlayedVersionInt != VersionControl.CurrentVersion)
-					{
-						File.WriteAllText(GenFilePaths.LastPlayedVersionFilePath, VersionControl.CurrentVersionString);
+						Log.Error("Exception getting last played version data. Path: " + GenFilePaths.LastPlayedVersionFilePath + ". Exception: " + ex.ToString());
 					}
 				}
-				finally
+				if (text != null)
 				{
-					initialized = true;
+					try
+					{
+						lastPlayedVersionInt = VersionControl.VersionFromString(text);
+					}
+					catch (Exception ex2)
+					{
+						Log.Error("Exception parsing last version from string '" + text + "': " + ex2.ToString());
+					}
 				}
+				if (lastPlayedVersionInt != VersionControl.CurrentVersion)
+				{
+					File.WriteAllText(GenFilePaths.LastPlayedVersionFilePath, VersionControl.CurrentVersionString);
+				}
+			}
+			finally
+			{
+				initialized = true;
 			}
 		}
 	}

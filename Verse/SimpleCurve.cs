@@ -232,7 +232,7 @@ namespace Verse
 			float num = Evaluate(startX + span) - Evaluate(startX);
 			if (num < 0f)
 			{
-				Log.Error("PeriodicProbability got negative probability from " + this + ": slope should never be negative.");
+				Log.Error(string.Concat("PeriodicProbability got negative probability from ", this, ": slope should never be negative."));
 				num = 0f;
 			}
 			if (num > 1f)

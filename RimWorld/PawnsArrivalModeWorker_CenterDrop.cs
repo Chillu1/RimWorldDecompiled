@@ -17,7 +17,7 @@ namespace RimWorld
 		{
 			if (!DropCellFinder.TryFindRaidDropCenterClose(out IntVec3 spot, map))
 			{
-				spot = DropCellFinder.FindRaidDropCenterDistant(map);
+				spot = DropCellFinder.FindRaidDropCenterDistant_NewTemp(map);
 			}
 			TransportPodsArrivalActionUtility.DropTravelingTransportPods(dropPods, spot, map);
 		}

@@ -282,6 +282,7 @@ namespace RimWorld
 				if (Prefs.DevMode && !selectedProject.TechprintRequirementMet && Widgets.ButtonText(new Rect(rect9.x + 120f, rect9.y - 30f, 120f, 30f), "Debug: Apply techprint"))
 				{
 					Find.ResearchManager.ApplyTechprint(selectedProject, null);
+					SoundDefOf.TechprintApplied.PlayOneShotOnCamera();
 				}
 			}
 			GUI.EndGroup();

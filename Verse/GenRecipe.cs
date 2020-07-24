@@ -19,9 +19,9 @@ namespace Verse
 			}
 			if (recipeDef.products != null)
 			{
-				for (int k = 0; k < recipeDef.products.Count; k++)
+				for (int j = 0; j < recipeDef.products.Count; j++)
 				{
-					ThingDefCountClass thingDefCountClass = recipeDef.products[k];
+					ThingDefCountClass thingDefCountClass = recipeDef.products[j];
 					Thing thing = ThingMaker.MakeThing(stuff: (!thingDefCountClass.thingDef.MadeFromStuff) ? null : dominantIngredient.def, def: thingDefCountClass.thingDef);
 					thing.stackCount = Mathf.CeilToInt((float)thingDefCountClass.count * efficiency);
 					if (dominantIngredient != null)
@@ -55,12 +55,12 @@ namespace Verse
 			{
 				yield break;
 			}
-			for (int k = 0; k < recipeDef.specialProducts.Count; k++)
+			for (int j = 0; j < recipeDef.specialProducts.Count; j++)
 			{
-				for (int i = 0; i < ingredients.Count; i++)
+				for (int k = 0; k < ingredients.Count; k++)
 				{
-					Thing thing2 = ingredients[i];
-					switch (recipeDef.specialProducts[k])
+					Thing thing2 = ingredients[k];
+					switch (recipeDef.specialProducts[j])
 					{
 					case SpecialProductType.Butchery:
 						foreach (Thing item in thing2.ButcherProducts(worker, efficiency))
@@ -86,7 +86,7 @@ namespace Verse
 			{
 				if (recipeDef.workSkill == null)
 				{
-					Log.Error(recipeDef + " needs workSkill because it creates a product with a quality.");
+					Log.Error(string.Concat(recipeDef, " needs workSkill because it creates a product with a quality."));
 				}
 				QualityCategory q = QualityUtility.GenerateQualityCreatedByPawn(worker, recipeDef.workSkill);
 				compQuality.SetQuality(q, ArtGenerationContext.Colony);

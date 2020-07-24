@@ -15,6 +15,8 @@ namespace RimWorld
 		[MustTranslate]
 		public string graphLabelY;
 
+		public string valueFormat;
+
 		[Unsaved(false)]
 		private HistoryAutoRecorderWorker workerInt;
 
@@ -27,18 +29,6 @@ namespace RimWorld
 					workerInt = (HistoryAutoRecorderWorker)Activator.CreateInstance(workerClass);
 				}
 				return workerInt;
-			}
-		}
-
-		public string GraphLabelY
-		{
-			get
-			{
-				if (graphLabelY == null)
-				{
-					return "Value".TranslateSimple();
-				}
-				return graphLabelY;
 			}
 		}
 

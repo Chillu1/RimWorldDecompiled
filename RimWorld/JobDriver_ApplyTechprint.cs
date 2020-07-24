@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Verse;
 using Verse.AI;
+using Verse.Sound;
 
 namespace RimWorld
 {
@@ -50,6 +51,7 @@ namespace RimWorld
 			{
 				Find.ResearchManager.ApplyTechprint(TechprintComp.Props.project, pawn);
 				Techprint.Destroy();
+				SoundDefOf.TechprintApplied.PlayOneShotOnCamera();
 			};
 			toil.defaultCompleteMode = ToilCompleteMode.Instant;
 			yield return toil;

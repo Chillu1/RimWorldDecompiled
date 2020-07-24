@@ -14,12 +14,12 @@ namespace RimWorld
 
 		private int lastUsedTick = -99999;
 
-		private const float WorkPerPortionBase = 12000f;
+		private const float WorkPerPortionBase = 10000f;
 
 		[Obsolete("Use WorkPerPortionBase constant directly.")]
-		public static float WorkPerPortionCurrentDifficulty => 12000f;
+		public static float WorkPerPortionCurrentDifficulty => 10000f;
 
-		public float ProgressToNextPortionPercent => portionProgress / 12000f;
+		public float ProgressToNextPortionPercent => portionProgress / 10000f;
 
 		public override void PostSpawnSetup(bool respawningAfterLoad)
 		{
@@ -35,11 +35,11 @@ namespace RimWorld
 
 		public void DrillWorkDone(Pawn driller)
 		{
-			float statValue = driller.GetStatValue(StatDefOf.MiningSpeed);
+			float statValue = driller.GetStatValue(StatDefOf.DeepDrillingSpeed);
 			portionProgress += statValue;
-			portionYieldPct += statValue * driller.GetStatValue(StatDefOf.MiningYield) / 12000f;
+			portionYieldPct += statValue * driller.GetStatValue(StatDefOf.MiningYield) / 10000f;
 			lastUsedTick = Find.TickManager.TicksGame;
-			if (portionProgress > 12000f)
+			if (portionProgress > 10000f)
 			{
 				TryProducePortion(portionYieldPct);
 				portionProgress = 0f;
@@ -77,13 +77,13 @@ namespace RimWorld
 			{
 				return;
 			}
-			if (DeepDrillUtility.GetBaseResource(parent.Map, cell) == null)
+			if (DeepDrillUtility.GetBaseResource(parent.Map, parent.Position) == null)
 			{
 				Messages.Message("DeepDrillExhaustedNoFallback".Translate(), parent, MessageTypeDefOf.TaskCompletion);
 				return;
 			}
-			Messages.Message("DeepDrillExhausted".Translate(Find.ActiveLanguageWorker.Pluralize(DeepDrillUtility.GetBaseResource(parent.Map, cell).label)), parent, MessageTypeDefOf.TaskCompletion);
-			for (int i = 0; i < 9; i++)
+			Messages.Message("DeepDrillExhausted".Translate(Find.ActiveLanguageWorker.Pluralize(DeepDrillUtility.GetBaseResource(parent.Map, parent.Position).label)), parent, MessageTypeDefOf.TaskCompletion);
+			for (int i = 0; i < 21; i++)
 			{
 				IntVec3 c = cell + GenRadial.RadialPattern[i];
 				if (c.InBounds(parent.Map))

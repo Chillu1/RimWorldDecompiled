@@ -135,7 +135,7 @@ namespace Verse
 				}
 				catch (Exception ex)
 				{
-					Log.Error("Explosion could not affect cell " + cellsToAffect[num] + ": " + ex);
+					Log.Error(string.Concat("Explosion could not affect cell ", cellsToAffect[num], ": ", ex));
 				}
 				cellsToAffect.RemoveAt(num);
 				num--;
@@ -193,16 +193,17 @@ namespace Verse
 			Scribe_Collections.Look(ref damagedThings, "damagedThings", LookMode.Reference);
 			Scribe_Collections.Look(ref ignoredThings, "ignoredThings", LookMode.Reference);
 			Scribe_Collections.Look(ref addedCellsAffectedOnlyByDamage, "addedCellsAffectedOnlyByDamage", LookMode.Value);
-			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			if (Scribe.mode != LoadSaveMode.PostLoadInit)
 			{
-				if (damagedThings != null)
-				{
-					damagedThings.RemoveAll((Thing x) => x == null);
-				}
-				if (ignoredThings != null)
-				{
-					ignoredThings.RemoveAll((Thing x) => x == null);
-				}
+				return;
+			}
+			if (damagedThings != null)
+			{
+				damagedThings.RemoveAll((Thing x) => x == null);
+			}
+			if (ignoredThings != null)
+			{
+				ignoredThings.RemoveAll((Thing x) => x == null);
 			}
 		}
 

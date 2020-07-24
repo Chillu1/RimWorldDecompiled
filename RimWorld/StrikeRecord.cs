@@ -23,7 +23,7 @@ namespace RimWorld
 
 		public override string ToString()
 		{
-			return "(" + cell + ", " + def + ", " + ticksGame + ")";
+			return string.Concat("(", cell, ", ", def, ", ", ticksGame, ")");
 		}
 	}
 }

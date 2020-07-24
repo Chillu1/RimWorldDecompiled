@@ -15,7 +15,7 @@ namespace Verse.Sound
 			gameObject.transform.position = Vector3.zero;
 			for (int i = 0; i < 32; i++)
 			{
-				GameObject gameObject2 = new GameObject("OneShotSource_" + i.ToString());
+				GameObject gameObject2 = new GameObject("OneShotSource_" + i);
 				gameObject2.transform.parent = gameObject.transform;
 				gameObject2.transform.localPosition = Vector3.zero;
 				sourcesWorld.Add(AudioSourceMaker.NewAudioSourceOn(gameObject2));

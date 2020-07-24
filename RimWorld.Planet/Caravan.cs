@@ -426,7 +426,7 @@ namespace RimWorld.Planet
 			}
 			if (p.Dead)
 			{
-				Log.Warning("Tried to add " + p + " to " + this + ", but this pawn is dead.");
+				Log.Warning(string.Concat("Tried to add ", p, " to ", this, ", but this pawn is dead."));
 				return;
 			}
 			Pawn pawn = p.carryTracker.CarriedThing as Pawn;
@@ -459,7 +459,7 @@ namespace RimWorld.Planet
 			}
 			else
 			{
-				Log.Error("Couldn't add pawn " + p + " to caravan.");
+				Log.Error(string.Concat("Couldn't add pawn ", p, " to caravan."));
 			}
 		}
 
@@ -716,83 +716,84 @@ namespace RimWorld.Planet
 					}
 				}
 			}
-			if (Prefs.DevMode)
+			if (!Prefs.DevMode)
 			{
-				Command_Action command_Action2 = new Command_Action();
-				command_Action2.defaultLabel = "Dev: Mental break";
-				command_Action2.action = delegate
-				{
-					if (PawnsListForReading.Where((Pawn x) => x.RaceProps.Humanlike && !x.InMentalState).TryRandomElement(out Pawn result6))
-					{
-						result6.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.Wander_Sad);
-					}
-				};
-				yield return command_Action2;
-				Command_Action command_Action3 = new Command_Action();
-				command_Action3.defaultLabel = "Dev: Make random pawn hungry";
-				command_Action3.action = delegate
-				{
-					if (PawnsListForReading.Where((Pawn x) => x.needs.food != null).TryRandomElement(out Pawn result5))
-					{
-						result5.needs.food.CurLevelPercentage = 0f;
-					}
-				};
-				yield return command_Action3;
-				Command_Action command_Action4 = new Command_Action();
-				command_Action4.defaultLabel = "Dev: Kill random pawn";
-				command_Action4.action = delegate
-				{
-					if (PawnsListForReading.TryRandomElement(out Pawn result4))
-					{
-						result4.Kill(null, null);
-						Messages.Message("Dev: Killed " + result4.LabelShort, this, MessageTypeDefOf.TaskCompletion, historical: false);
-					}
-				};
-				yield return command_Action4;
-				Command_Action command_Action5 = new Command_Action();
-				command_Action5.defaultLabel = "Dev: Harm random pawn";
-				command_Action5.action = delegate
-				{
-					if (PawnsListForReading.TryRandomElement(out Pawn result3))
-					{
-						DamageInfo dinfo = new DamageInfo(DamageDefOf.Scratch, 10f, 999f);
-						result3.TakeDamage(dinfo);
-					}
-				};
-				yield return command_Action5;
-				Command_Action command_Action6 = new Command_Action();
-				command_Action6.defaultLabel = "Dev: Down random pawn";
-				command_Action6.action = delegate
-				{
-					if (PawnsListForReading.Where((Pawn x) => !x.Downed).TryRandomElement(out Pawn result2))
-					{
-						HealthUtility.DamageUntilDowned(result2);
-						Messages.Message("Dev: Downed " + result2.LabelShort, this, MessageTypeDefOf.TaskCompletion, historical: false);
-					}
-				};
-				yield return command_Action6;
-				Command_Action command_Action7 = new Command_Action();
-				command_Action7.defaultLabel = "Dev: Plague on random pawn";
-				command_Action7.action = delegate
-				{
-					if (PawnsListForReading.Where((Pawn x) => !x.Downed).TryRandomElement(out Pawn result))
-					{
-						Hediff hediff = HediffMaker.MakeHediff(HediffDefOf.Plague, result);
-						hediff.Severity = HediffDefOf.Plague.stages[1].minSeverity - 0.001f;
-						result.health.AddHediff(hediff);
-						Messages.Message("Dev: Gave advanced plague to " + result.LabelShort, this, MessageTypeDefOf.TaskCompletion, historical: false);
-					}
-				};
-				yield return command_Action7;
-				Command_Action command_Action8 = new Command_Action();
-				command_Action8.defaultLabel = "Dev: Teleport to destination";
-				command_Action8.action = delegate
-				{
-					base.Tile = pather.Destination;
-					pather.StopDead();
-				};
-				yield return command_Action8;
+				yield break;
 			}
+			Command_Action command_Action2 = new Command_Action();
+			command_Action2.defaultLabel = "Dev: Mental break";
+			command_Action2.action = delegate
+			{
+				if (PawnsListForReading.Where((Pawn x) => x.RaceProps.Humanlike && !x.InMentalState).TryRandomElement(out Pawn result6))
+				{
+					result6.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.Wander_Sad);
+				}
+			};
+			yield return command_Action2;
+			Command_Action command_Action3 = new Command_Action();
+			command_Action3.defaultLabel = "Dev: Make random pawn hungry";
+			command_Action3.action = delegate
+			{
+				if (PawnsListForReading.Where((Pawn x) => x.needs.food != null).TryRandomElement(out Pawn result5))
+				{
+					result5.needs.food.CurLevelPercentage = 0f;
+				}
+			};
+			yield return command_Action3;
+			Command_Action command_Action4 = new Command_Action();
+			command_Action4.defaultLabel = "Dev: Kill random pawn";
+			command_Action4.action = delegate
+			{
+				if (PawnsListForReading.TryRandomElement(out Pawn result4))
+				{
+					result4.Kill(null, null);
+					Messages.Message("Dev: Killed " + result4.LabelShort, this, MessageTypeDefOf.TaskCompletion, historical: false);
+				}
+			};
+			yield return command_Action4;
+			Command_Action command_Action5 = new Command_Action();
+			command_Action5.defaultLabel = "Dev: Harm random pawn";
+			command_Action5.action = delegate
+			{
+				if (PawnsListForReading.TryRandomElement(out Pawn result3))
+				{
+					DamageInfo dinfo = new DamageInfo(DamageDefOf.Scratch, 10f, 999f);
+					result3.TakeDamage(dinfo);
+				}
+			};
+			yield return command_Action5;
+			Command_Action command_Action6 = new Command_Action();
+			command_Action6.defaultLabel = "Dev: Down random pawn";
+			command_Action6.action = delegate
+			{
+				if (PawnsListForReading.Where((Pawn x) => !x.Downed).TryRandomElement(out Pawn result2))
+				{
+					HealthUtility.DamageUntilDowned(result2);
+					Messages.Message("Dev: Downed " + result2.LabelShort, this, MessageTypeDefOf.TaskCompletion, historical: false);
+				}
+			};
+			yield return command_Action6;
+			Command_Action command_Action7 = new Command_Action();
+			command_Action7.defaultLabel = "Dev: Plague on random pawn";
+			command_Action7.action = delegate
+			{
+				if (PawnsListForReading.Where((Pawn x) => !x.Downed).TryRandomElement(out Pawn result))
+				{
+					Hediff hediff = HediffMaker.MakeHediff(HediffDefOf.Plague, result);
+					hediff.Severity = HediffDefOf.Plague.stages[1].minSeverity - 0.001f;
+					result.health.AddHediff(hediff);
+					Messages.Message("Dev: Gave advanced plague to " + result.LabelShort, this, MessageTypeDefOf.TaskCompletion, historical: false);
+				}
+			};
+			yield return command_Action7;
+			Command_Action command_Action8 = new Command_Action();
+			command_Action8.defaultLabel = "Dev: Teleport to destination";
+			command_Action8.action = delegate
+			{
+				base.Tile = pather.Destination;
+				pather.StopDead();
+			};
+			yield return command_Action8;
 		}
 
 		public override IEnumerable<FloatMenuOption> GetTransportPodsFloatMenuOptions(IEnumerable<IThingHolder> pods, CompLaunchable representative)
@@ -856,7 +857,7 @@ namespace RimWorld.Planet
 			{
 				if (!pawns[num].IsWorldPawn())
 				{
-					Log.Error("Caravan member " + pawns[num] + " is not a world pawn. Removing...");
+					Log.Error(string.Concat("Caravan member ", pawns[num], " is not a world pawn. Removing..."));
 					pawns.Remove(pawns[num]);
 				}
 			}

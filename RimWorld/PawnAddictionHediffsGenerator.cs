@@ -31,28 +31,27 @@ namespace RimWorld
 				{
 					allDrugs.AddRange(DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef x) => x.category == ThingCategory.Item && x.GetCompProperties<CompProperties_Drug>() != null));
 				}
-				if (DefDatabase<ChemicalDef>.AllDefsListForReading.Where((ChemicalDef x) => PossibleWithTechLevel(x, pawn.Faction) && !AddictionUtility.IsAddicted(pawn, x)).TryRandomElement(out ChemicalDef result))
+				if (!DefDatabase<ChemicalDef>.AllDefsListForReading.Where((ChemicalDef x) => PossibleWithTechLevel(x, pawn.Faction) && !AddictionUtility.IsAddicted(pawn, x)).TryRandomElement(out ChemicalDef result))
 				{
-					Hediff hediff = HediffMaker.MakeHediff(result.addictionHediff, pawn);
-					hediff.Severity = GeneratedAddictionSeverityRange.RandomInRange;
-					pawn.health.AddHediff(hediff);
-					if (result.toleranceHediff != null && Rand.Value < result.onGeneratedAddictedToleranceChance)
-					{
-						Hediff hediff2 = HediffMaker.MakeHediff(result.toleranceHediff, pawn);
-						hediff2.Severity = GeneratedToleranceSeverityRange.RandomInRange;
-						pawn.health.AddHediff(hediff2);
-					}
-					if (result.onGeneratedAddictedEvents != null)
-					{
-						foreach (HediffGiver_Event onGeneratedAddictedEvent in result.onGeneratedAddictedEvents)
-						{
-							onGeneratedAddictedEvent.EventOccurred(pawn);
-						}
-					}
-					DoIngestionOutcomeDoers(pawn, result);
-					continue;
+					break;
 				}
-				break;
+				Hediff hediff = HediffMaker.MakeHediff(result.addictionHediff, pawn);
+				hediff.Severity = GeneratedAddictionSeverityRange.RandomInRange;
+				pawn.health.AddHediff(hediff);
+				if (result.toleranceHediff != null && Rand.Value < result.onGeneratedAddictedToleranceChance)
+				{
+					Hediff hediff2 = HediffMaker.MakeHediff(result.toleranceHediff, pawn);
+					hediff2.Severity = GeneratedToleranceSeverityRange.RandomInRange;
+					pawn.health.AddHediff(hediff2);
+				}
+				if (result.onGeneratedAddictedEvents != null)
+				{
+					foreach (HediffGiver_Event onGeneratedAddictedEvent in result.onGeneratedAddictedEvents)
+					{
+						onGeneratedAddictedEvent.EventOccurred(pawn);
+					}
+				}
+				DoIngestionOutcomeDoers(pawn, result);
 			}
 		}
 

@@ -289,21 +289,22 @@ namespace Ionic.Zlib
 
 		public override void Close()
 		{
-			if (_stream != null)
+			if (_stream == null)
 			{
-				try
+				return;
+			}
+			try
+			{
+				finish();
+			}
+			finally
+			{
+				end();
+				if (!_leaveOpen)
 				{
-					finish();
+					_stream.Close();
 				}
-				finally
-				{
-					end();
-					if (!_leaveOpen)
-					{
-						_stream.Close();
-					}
-					_stream = null;
-				}
+				_stream = null;
 			}
 		}
 

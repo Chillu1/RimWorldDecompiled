@@ -14,14 +14,15 @@ namespace RimWorld
 			}
 			foreach (RoyalTitle item in p.royalty.AllTitlesInEffectForReading)
 			{
-				if (item.def.requiredApparel != null && item.def.requiredApparel.Count > 0)
+				if (item.def.requiredApparel == null || item.def.requiredApparel.Count <= 0)
 				{
-					for (int i = 0; i < item.def.requiredApparel.Count; i++)
+					continue;
+				}
+				for (int i = 0; i < item.def.requiredApparel.Count; i++)
+				{
+					if (!item.def.requiredApparel[i].IsMet(p))
 					{
-						if (!item.def.requiredApparel[i].IsMet(p))
-						{
-							return item.def;
-						}
+						return item.def;
 					}
 				}
 			}
@@ -30,25 +31,27 @@ namespace RimWorld
 
 		private static IEnumerable<string> GetFirstRequiredApparelPerGroup(Pawn p)
 		{
-			if (p.royalty != null && p.royalty.allowApparelRequirements)
+			if (p.royalty == null || !p.royalty.allowApparelRequirements)
 			{
-				foreach (RoyalTitle t in p.royalty.AllTitlesInEffectForReading)
+				yield break;
+			}
+			foreach (RoyalTitle t in p.royalty.AllTitlesInEffectForReading)
+			{
+				if (t.def.requiredApparel == null || t.def.requiredApparel.Count <= 0)
 				{
-					if (t.def.requiredApparel != null && t.def.requiredApparel.Count > 0)
+					continue;
+				}
+				for (int i = 0; i < t.def.requiredApparel.Count; i++)
+				{
+					RoyalTitleDef.ApparelRequirement apparelRequirement = t.def.requiredApparel[i];
+					if (!apparelRequirement.IsMet(p))
 					{
-						for (int i = 0; i < t.def.requiredApparel.Count; i++)
-						{
-							RoyalTitleDef.ApparelRequirement apparelRequirement = t.def.requiredApparel[i];
-							if (!apparelRequirement.IsMet(p))
-							{
-								yield return apparelRequirement.AllRequiredApparelForPawn(p).First().LabelCap;
-							}
-						}
+						yield return apparelRequirement.AllRequiredApparelForPawn(p).First().LabelCap;
 					}
 				}
-				yield return "ApparelRequirementAnyPowerArmor".Translate();
-				yield return "ApparelRequirementAnyPsycasterApparel".Translate();
 			}
+			yield return "ApparelRequirementAnyPrestigeArmor".Translate();
+			yield return "ApparelRequirementAnyPsycasterApparel".Translate();
 		}
 
 		public override string PostProcessLabel(Pawn p, string label)

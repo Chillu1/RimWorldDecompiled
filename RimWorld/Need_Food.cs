@@ -54,9 +54,9 @@ namespace RimWorld
 
 		public float NutritionWanted => MaxLevel - CurLevel;
 
-		private float HungerRate => pawn.ageTracker.CurLifeStage.hungerRateFactor * pawn.RaceProps.baseHungerRate * pawn.health.hediffSet.HungerRateFactor * pawn.GetStatValue(StatDefOf.HungerRateMultiplier);
+		private float HungerRate => pawn.ageTracker.CurLifeStage.hungerRateFactor * pawn.RaceProps.baseHungerRate * pawn.health.hediffSet.HungerRateFactor * ((pawn.story == null || pawn.story.traits == null) ? 1f : pawn.story.traits.HungerRateFactor) * pawn.GetStatValue(StatDefOf.HungerRateMultiplier);
 
-		private float HungerRateIgnoringMalnutrition => pawn.ageTracker.CurLifeStage.hungerRateFactor * pawn.RaceProps.baseHungerRate * pawn.health.hediffSet.GetHungerRateFactor(HediffDefOf.Malnutrition) * pawn.GetStatValue(StatDefOf.HungerRateMultiplier);
+		private float HungerRateIgnoringMalnutrition => pawn.ageTracker.CurLifeStage.hungerRateFactor * pawn.RaceProps.baseHungerRate * pawn.health.hediffSet.GetHungerRateFactor(HediffDefOf.Malnutrition) * ((pawn.story == null || pawn.story.traits == null) ? 1f : pawn.story.traits.HungerRateFactor) * pawn.GetStatValue(StatDefOf.HungerRateMultiplier);
 
 		public int TicksStarving => Mathf.Max(0, Find.TickManager.TicksGame - lastNonStarvingTick);
 

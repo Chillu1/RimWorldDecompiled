@@ -31,24 +31,25 @@ namespace Verse
 		public override void Update()
 		{
 			base.Update();
-			if (!LongEventHandler.ShouldWaitForEvent && !destroyed)
+			if (LongEventHandler.ShouldWaitForEvent || destroyed)
 			{
-				try
+				return;
+			}
+			try
+			{
+				musicManagerEntry.MusicManagerEntryUpdate();
+				if (Find.World != null)
 				{
-					musicManagerEntry.MusicManagerEntryUpdate();
-					if (Find.World != null)
-					{
-						Find.World.WorldUpdate();
-					}
-					if (Current.Game != null)
-					{
-						Current.Game.UpdateEntry();
-					}
+					Find.World.WorldUpdate();
 				}
-				catch (Exception arg)
+				if (Current.Game != null)
 				{
-					Log.Error("Root level exception in Update(): " + arg);
+					Current.Game.UpdateEntry();
 				}
+			}
+			catch (Exception arg)
+			{
+				Log.Error("Root level exception in Update(): " + arg);
 			}
 		}
 	}

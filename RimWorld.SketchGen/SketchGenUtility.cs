@@ -26,7 +26,13 @@ namespace RimWorld.SketchGen
 			return true;
 		}
 
+		[Obsolete("Only used for mod compatibility")]
 		public static bool IsFloorAllowed(TerrainDef floor, bool allowWoodenFloor, bool allowConcrete, Map useOnlyStonesAvailableOnMap, bool onlyBuildableByPlayer)
+		{
+			return IsFloorAllowed_NewTmp(floor, allowWoodenFloor, allowConcrete, useOnlyStonesAvailableOnMap, onlyBuildableByPlayer, onlyStoneFloor: true);
+		}
+
+		public static bool IsFloorAllowed_NewTmp(TerrainDef floor, bool allowWoodenFloor, bool allowConcrete, Map useOnlyStonesAvailableOnMap, bool onlyBuildableByPlayer, bool onlyStoneFloor)
 		{
 			if (!allowWoodenFloor && floor == TerrainDefOf.WoodPlankFloor)
 			{
@@ -36,17 +42,28 @@ namespace RimWorld.SketchGen
 			{
 				return false;
 			}
+			if (onlyStoneFloor)
+			{
+				List<ThingDefCountClass> list = floor.CostListAdjusted(null);
+				for (int i = 0; i < list.Count; i++)
+				{
+					if (list[i].thingDef.stuffProps != null && !list[i].thingDef.stuffProps.categories.Contains(StuffCategoryDefOf.Stony))
+					{
+						return false;
+					}
+				}
+			}
 			if (useOnlyStonesAvailableOnMap != null)
 			{
 				bool flag = false;
 				bool flag2 = true;
-				List<ThingDefCountClass> list = floor.CostListAdjusted(null);
-				for (int i = 0; i < list.Count; i++)
+				List<ThingDefCountClass> list2 = floor.CostListAdjusted(null);
+				for (int j = 0; j < list2.Count; j++)
 				{
-					if (list[i].thingDef.stuffProps != null && list[i].thingDef.stuffProps.SourceNaturalRock != null && list[i].thingDef.stuffProps.SourceNaturalRock.IsNonResourceNaturalRock)
+					if (list2[j].thingDef.stuffProps != null && list2[j].thingDef.stuffProps.SourceNaturalRock != null && list2[j].thingDef.stuffProps.SourceNaturalRock.IsNonResourceNaturalRock)
 					{
 						flag = true;
-						flag2 = (flag2 && Find.World.NaturalRockTypesIn(useOnlyStonesAvailableOnMap.Tile).Contains(list[i].thingDef.stuffProps.SourceNaturalRock));
+						flag2 = (flag2 && Find.World.NaturalRockTypesIn(useOnlyStonesAvailableOnMap.Tile).Contains(list2[j].thingDef.stuffProps.SourceNaturalRock));
 					}
 				}
 				if (flag && !flag2)
@@ -129,24 +146,25 @@ namespace RimWorld.SketchGen
 						flag = true;
 					}
 				}
-				if (result.minZ > outerRect.minZ)
+				if (result.minZ <= outerRect.minZ)
 				{
-					bool flag5 = false;
-					foreach (IntVec3 edgeCell4 in result.GetEdgeCells(Rot4.South))
+					continue;
+				}
+				bool flag5 = false;
+				foreach (IntVec3 edgeCell4 in result.GetEdgeCells(Rot4.South))
+				{
+					IntVec3 current4 = edgeCell4;
+					current4.z--;
+					if (processed.Contains(current4) || !canTraverse(current4))
 					{
-						IntVec3 current4 = edgeCell4;
-						current4.z--;
-						if (processed.Contains(current4) || !canTraverse(current4))
-						{
-							flag5 = true;
-							break;
-						}
+						flag5 = true;
+						break;
 					}
-					if (!flag5)
-					{
-						result.minZ--;
-						flag = true;
-					}
+				}
+				if (!flag5)
+				{
+					result.minZ--;
+					flag = true;
 				}
 			}
 			while (flag);

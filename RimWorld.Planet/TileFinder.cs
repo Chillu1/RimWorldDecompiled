@@ -97,7 +97,7 @@ namespace RimWorld.Planet
 		public static bool TryFindPassableTileWithTraversalDistance(int rootTile, int minDist, int maxDist, out int result, Predicate<int> validator = null, bool ignoreFirstTilePassability = false, bool preferCloserTiles = false, bool canTraverseImpassable = false)
 		{
 			tmpTiles.Clear();
-			Find.WorldFloodFiller.FloodFill(rootTile, (int x) => canTraverseImpassable || !Find.World.Impassable(x) || ((x == rootTile) & ignoreFirstTilePassability), delegate(int tile, int traversalDistance)
+			Find.WorldFloodFiller.FloodFill(rootTile, (int x) => canTraverseImpassable || !Find.World.Impassable(x) || (x == rootTile && ignoreFirstTilePassability), delegate(int tile, int traversalDistance)
 			{
 				if (traversalDistance > maxDist)
 				{

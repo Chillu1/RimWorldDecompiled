@@ -53,7 +53,7 @@ namespace RimWorld
 					SimpleCurveDrawInfo simpleCurveDrawInfo = new SimpleCurveDrawInfo();
 					simpleCurveDrawInfo.color = historyAutoRecorder.def.graphColor;
 					simpleCurveDrawInfo.label = historyAutoRecorder.def.LabelCap;
-					simpleCurveDrawInfo.labelY = historyAutoRecorder.def.GraphLabelY;
+					simpleCurveDrawInfo.valueFormat = historyAutoRecorder.def.valueFormat;
 					simpleCurveDrawInfo.curve = new SimpleCurve();
 					for (int j = 0; j < historyAutoRecorder.records.Count; j++)
 					{

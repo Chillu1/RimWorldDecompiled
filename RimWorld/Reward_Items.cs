@@ -8,39 +8,141 @@ namespace RimWorld
 {
 	public class Reward_Items : Reward
 	{
+		public struct RememberedItem : IExposable
+		{
+			public ThingStuffPairWithQuality thing;
+
+			public int stackCount;
+
+			public string label;
+
+			public RememberedItem(ThingStuffPairWithQuality thing, int stackCount, string label)
+			{
+				this.thing = thing;
+				this.stackCount = stackCount;
+				this.label = label;
+			}
+
+			public void ExposeData()
+			{
+				Scribe_Deep.Look(ref thing, "thing");
+				Scribe_Values.Look(ref stackCount, "stackCount", 0);
+				Scribe_Values.Look(ref label, "label");
+			}
+		}
+
 		public List<Thing> items = new List<Thing>();
+
+		private List<RememberedItem> itemDefs = new List<RememberedItem>();
+
+		private float lastTotalMarketValue;
 
 		private const string RootSymbol = "root";
 
-		private float TotalMarketValue
+		public List<Thing> ItemsListForReading => items;
+
+		public override IEnumerable<GenUI.AnonymousStackElement> StackElements
 		{
 			get
 			{
+				if (usedOrCleanedUp)
+				{
+					foreach (GenUI.AnonymousStackElement rewardStackElementsForThing in QuestPartUtility.GetRewardStackElementsForThings(itemDefs))
+					{
+						yield return rewardStackElementsForThing;
+					}
+					yield break;
+				}
+				foreach (GenUI.AnonymousStackElement rewardStackElementsForThing2 in QuestPartUtility.GetRewardStackElementsForThings(items))
+				{
+					yield return rewardStackElementsForThing2;
+				}
+			}
+		}
+
+		public override float TotalMarketValue
+		{
+			get
+			{
+				if (usedOrCleanedUp)
+				{
+					return lastTotalMarketValue;
+				}
 				float num = 0f;
 				for (int i = 0; i < items.Count; i++)
 				{
-					num += items[i].MarketValue * (float)items[i].stackCount;
+					Thing innerIfMinified = items[i].GetInnerIfMinified();
+					num += innerIfMinified.MarketValue * (float)items[i].stackCount;
 				}
 				return num;
 			}
 		}
 
+		public override void Notify_Used()
+		{
+			RememberItems();
+			base.Notify_Used();
+		}
+
+		public override void Notify_PreCleanup()
+		{
+			RememberItems();
+			base.Notify_PreCleanup();
+		}
+
+		private void RememberItems()
+		{
+			if (usedOrCleanedUp)
+			{
+				return;
+			}
+			itemDefs.Clear();
+			lastTotalMarketValue = 0f;
+			for (int i = 0; i < items.Count; i++)
+			{
+				Thing innerIfMinified = items[i].GetInnerIfMinified();
+				if (!innerIfMinified.Destroyed)
+				{
+					if (!innerIfMinified.TryGetQuality(out QualityCategory qc))
+					{
+						qc = QualityCategory.Normal;
+					}
+					itemDefs.Add(new RememberedItem(new ThingStuffPairWithQuality(innerIfMinified.def, innerIfMinified.Stuff, qc), items[i].stackCount, items[i].LabelNoCount));
+					lastTotalMarketValue += innerIfMinified.MarketValue * (float)items[i].stackCount;
+				}
+			}
+		}
+
 		public override void InitFromValue(float rewardValue, RewardsGeneratorParams parms, out float valueActuallyUsed)
 		{
-			FloatRange value = rewardValue * new FloatRange(0.7f, 1.3f);
-			ThingSetMakerParams parms2 = default(ThingSetMakerParams);
-			parms2.totalMarketValueRange = value;
-			parms2.makingFaction = parms.giverFaction;
-			if (!parms.disallowedThingDefs.NullOrEmpty())
-			{
-				parms2.validator = ((ThingDef x) => !parms.disallowedThingDefs.Contains(x));
-			}
 			items.Clear();
-			items.AddRange(ThingSetMakerDefOf.Reward_ItemsStandard.root.Generate(parms2));
+			bool flag = true;
+			float x2 = (Find.TickManager.TicksGame - Find.History.lastPsylinkAvailable).TicksToDays();
+			if (Rand.Chance(QuestTuning.DaysSincePsylinkAvailableToGuaranteedNeuroformerChance.Evaluate(x2)) && ModsConfig.RoyaltyActive && (parms.disallowedThingDefs == null || !parms.disallowedThingDefs.Contains(ThingDefOf.PsychicAmplifier)) && rewardValue >= 600f && parms.giverFaction != Faction.Empire)
+			{
+				items.Add(ThingMaker.MakeThing(ThingDefOf.PsychicAmplifier));
+				rewardValue -= items[0].MarketValue;
+				if (rewardValue < 100f)
+				{
+					flag = false;
+				}
+			}
+			if (flag)
+			{
+				FloatRange value = rewardValue * new FloatRange(0.7f, 1.3f);
+				ThingSetMakerParams parms2 = default(ThingSetMakerParams);
+				parms2.totalMarketValueRange = value;
+				parms2.makingFaction = parms.giverFaction;
+				if (!parms.disallowedThingDefs.NullOrEmpty())
+				{
+					parms2.validator = ((ThingDef x) => !parms.disallowedThingDefs.Contains(x));
+				}
+				items.AddRange(ThingSetMakerDefOf.Reward_ItemsStandard.root.Generate(parms2));
+			}
 			valueActuallyUsed = TotalMarketValue;
 		}
 
-		public override void AddQuestPartsToGeneratingQuest(int index, RewardsGeneratorParams parms, string customLetterLabel, string customLetterText, RulePack customLetterLabelRules, RulePack customLetterTextRules)
+		public override IEnumerable<QuestPart> GenerateQuestParts(int index, RewardsGeneratorParams parms, string customLetterLabel, string customLetterText, RulePack customLetterLabelRules, RulePack customLetterTextRules)
 		{
 			Slate slate = RimWorld.QuestGen.QuestGen.slate;
 			for (int i = 0; i < items.Count; i++)
@@ -60,7 +162,7 @@ namespace RimWorld
 				QuestPart_GiveToCaravan questPart_GiveToCaravan = new QuestPart_GiveToCaravan();
 				questPart_GiveToCaravan.inSignal = slate.Get<string>("inSignal");
 				questPart_GiveToCaravan.Things = items;
-				RimWorld.QuestGen.QuestGen.quest.AddPart(questPart_GiveToCaravan);
+				yield return questPart_GiveToCaravan;
 			}
 			else
 			{
@@ -83,7 +185,7 @@ namespace RimWorld
 				dropPods.mapParent = slate.Get<Map>("map").Parent;
 				dropPods.useTradeDropSpot = true;
 				dropPods.Things = items;
-				RimWorld.QuestGen.QuestGen.quest.AddPart(dropPods);
+				yield return dropPods;
 			}
 			slate.Set("itemsReward_items", items);
 			slate.Set("itemsReward_totalMarketValue", TotalMarketValue);
@@ -107,6 +209,18 @@ namespace RimWorld
 				name = name + "\n  -" + item.LabelCap + " " + (item.MarketValue * (float)item.stackCount).ToStringMoney();
 			}
 			return name;
+		}
+
+		public override void ExposeData()
+		{
+			base.ExposeData();
+			Scribe_Collections.Look(ref items, "items", LookMode.Reference);
+			Scribe_Collections.Look(ref itemDefs, "itemDefs", LookMode.Deep);
+			Scribe_Values.Look(ref lastTotalMarketValue, "lastTotalMarketValue", 0f);
+			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			{
+				items.RemoveAll((Thing x) => x == null);
+			}
 		}
 	}
 }

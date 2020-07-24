@@ -40,12 +40,13 @@ namespace RimWorld
 
 		private IEnumerable<Thing> ThingsToSelect()
 		{
-			if (Find.Selector.SingleSelectedThing == null || Find.Selector.SingleSelectedThing.def != def.thingDef)
+			if (Find.Selector.SingleSelectedThing != null && Find.Selector.SingleSelectedThing.def == def.thingDef)
 			{
-				foreach (Building item in base.Map.listerBuildings.AllBuildingsColonistOfDef(def.thingDef))
-				{
-					yield return item;
-				}
+				yield break;
+			}
+			foreach (Building item in base.Map.listerBuildings.AllBuildingsColonistOfDef(def.thingDef))
+			{
+				yield return item;
 			}
 		}
 

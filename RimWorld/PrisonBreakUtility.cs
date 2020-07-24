@@ -241,7 +241,7 @@ namespace RimWorld
 			{
 				if (!pawnPath.Found)
 				{
-					Log.Warning("Prison break: could not find path for prisoner " + escapingPrisoners[0] + " to the exit point.");
+					Log.Warning(string.Concat("Prison break: could not find path for prisoner ", escapingPrisoners[0], " to the exit point."));
 					return false;
 				}
 				for (int i = 0; i < pawnPath.NodesLeftCount; i++)

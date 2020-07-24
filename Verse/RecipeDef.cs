@@ -119,6 +119,8 @@ namespace Verse
 		[Unsaved(false)]
 		private List<ThingDef> premultipliedSmallIngredients;
 
+		private bool? isSurgeryCached;
+
 		public RecipeWorker Worker
 		{
 			get
@@ -228,14 +230,19 @@ namespace Verse
 		{
 			get
 			{
-				foreach (ThingDef allRecipeUser in AllRecipeUsers)
+				if (!isSurgeryCached.HasValue)
 				{
-					if (allRecipeUser.category == ThingCategory.Pawn)
+					isSurgeryCached = false;
+					foreach (ThingDef allRecipeUser in AllRecipeUsers)
 					{
-						return true;
+						if (allRecipeUser.category == ThingCategory.Pawn)
+						{
+							isSurgeryCached = true;
+							break;
+						}
 					}
 				}
-				return false;
+				return isSurgeryCached.Value;
 			}
 		}
 
@@ -253,6 +260,11 @@ namespace Verse
 				}
 				return products[0].thingDef;
 			}
+		}
+
+		public bool AvailableOnNow(Thing thing)
+		{
+			return Worker.AvailableOnNow(thing);
 		}
 
 		public float WorkAmountTotal(ThingDef stuffDef)
@@ -446,12 +458,13 @@ namespace Verse
 				flag = false;
 				for (int i = 0; i < ingredients.Count; i++)
 				{
-					if (ingredients[i].filter.AllowedThingDefs.Any((ThingDef td) => !premultipliedSmallIngredients.Contains(td)))
+					if (!ingredients[i].filter.AllowedThingDefs.Any((ThingDef td) => !premultipliedSmallIngredients.Contains(td)))
 					{
-						foreach (ThingDef allowedThingDef in ingredients[i].filter.AllowedThingDefs)
-						{
-							flag |= premultipliedSmallIngredients.Remove(allowedThingDef);
-						}
+						continue;
+					}
+					foreach (ThingDef allowedThingDef in ingredients[i].filter.AllowedThingDefs)
+					{
+						flag |= premultipliedSmallIngredients.Remove(allowedThingDef);
 					}
 				}
 			}

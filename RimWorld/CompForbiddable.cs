@@ -79,42 +79,43 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (!(parent is Building) || parent.Faction == Faction.OfPlayer)
+			if (parent is Building && parent.Faction != Faction.OfPlayer)
 			{
-				Command_Toggle command_Toggle = new Command_Toggle();
-				command_Toggle.hotKey = KeyBindingDefOf.Command_ItemForbid;
-				command_Toggle.icon = TexCommand.ForbidOff;
-				command_Toggle.isActive = (() => !Forbidden);
-				command_Toggle.defaultLabel = "CommandAllow".TranslateWithBackup("DesignatorUnforbid");
-				command_Toggle.activateIfAmbiguous = false;
-				if (forbiddenInt)
-				{
-					command_Toggle.defaultDesc = "CommandForbiddenDesc".TranslateWithBackup("DesignatorUnforbidDesc");
-				}
-				else
-				{
-					command_Toggle.defaultDesc = "CommandNotForbiddenDesc".TranslateWithBackup("DesignatorForbidDesc");
-				}
-				if (parent.def.IsDoor)
-				{
-					command_Toggle.tutorTag = "ToggleForbidden-Door";
-					command_Toggle.toggleAction = delegate
-					{
-						Forbidden = !Forbidden;
-						PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.ForbiddingDoors, KnowledgeAmount.SpecificInteraction);
-					};
-				}
-				else
-				{
-					command_Toggle.tutorTag = "ToggleForbidden";
-					command_Toggle.toggleAction = delegate
-					{
-						Forbidden = !Forbidden;
-						PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.Forbidding, KnowledgeAmount.SpecificInteraction);
-					};
-				}
-				yield return command_Toggle;
+				yield break;
 			}
+			Command_Toggle command_Toggle = new Command_Toggle();
+			command_Toggle.hotKey = KeyBindingDefOf.Command_ItemForbid;
+			command_Toggle.icon = TexCommand.ForbidOff;
+			command_Toggle.isActive = (() => !Forbidden);
+			command_Toggle.defaultLabel = "CommandAllow".TranslateWithBackup("DesignatorUnforbid");
+			command_Toggle.activateIfAmbiguous = false;
+			if (forbiddenInt)
+			{
+				command_Toggle.defaultDesc = "CommandForbiddenDesc".TranslateWithBackup("DesignatorUnforbidDesc");
+			}
+			else
+			{
+				command_Toggle.defaultDesc = "CommandNotForbiddenDesc".TranslateWithBackup("DesignatorForbidDesc");
+			}
+			if (parent.def.IsDoor)
+			{
+				command_Toggle.tutorTag = "ToggleForbidden-Door";
+				command_Toggle.toggleAction = delegate
+				{
+					Forbidden = !Forbidden;
+					PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.ForbiddingDoors, KnowledgeAmount.SpecificInteraction);
+				};
+			}
+			else
+			{
+				command_Toggle.tutorTag = "ToggleForbidden";
+				command_Toggle.toggleAction = delegate
+				{
+					Forbidden = !Forbidden;
+					PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.Forbidding, KnowledgeAmount.SpecificInteraction);
+				};
+			}
+			yield return command_Toggle;
 		}
 	}
 }

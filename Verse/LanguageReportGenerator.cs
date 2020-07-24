@@ -146,6 +146,14 @@ namespace Verse
 			{
 				Log.Error("Error while generating translation report (def-injections syntax suggestions): " + arg13);
 			}
+			try
+			{
+				AppendTKeySystemErrors(stringBuilder);
+			}
+			catch (Exception arg14)
+			{
+				Log.Error("Error while generating translation report (TKeySystem errors): " + arg14);
+			}
 			string text = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 			if (text.NullOrEmpty())
 			{
@@ -208,68 +216,71 @@ namespace Verse
 		{
 			LoadedLanguage activeLanguage = LanguageDatabase.activeLanguage;
 			LoadedLanguage defaultLanguage = LanguageDatabase.defaultLanguage;
-			if (activeLanguage != defaultLanguage)
+			if (activeLanguage == defaultLanguage)
 			{
-				StringBuilder stringBuilder = new StringBuilder();
-				int num = 0;
-				foreach (KeyValuePair<string, LoadedLanguage.KeyedReplacement> keyedReplacement in defaultLanguage.keyedReplacements)
-				{
-					if (!activeLanguage.HaveTextForKey(keyedReplacement.Key))
-					{
-						string text = keyedReplacement.Key + " '" + keyedReplacement.Value.value.Replace("\n", "\\n") + "' (English file: " + defaultLanguage.GetKeySourceFileAndLine(keyedReplacement.Key) + ")";
-						if (activeLanguage.HaveTextForKey(keyedReplacement.Key, allowPlaceholders: true))
-						{
-							text = text + " (placeholder exists in " + activeLanguage.GetKeySourceFileAndLine(keyedReplacement.Key) + ")";
-						}
-						num++;
-						stringBuilder.AppendLine(text);
-					}
-				}
-				sb.AppendLine();
-				sb.AppendLine("========== Missing keyed translations (" + num + ") ==========");
-				sb.Append(stringBuilder);
+				return;
 			}
+			StringBuilder stringBuilder = new StringBuilder();
+			int num = 0;
+			foreach (KeyValuePair<string, LoadedLanguage.KeyedReplacement> keyedReplacement in defaultLanguage.keyedReplacements)
+			{
+				if (!activeLanguage.HaveTextForKey(keyedReplacement.Key))
+				{
+					string text = keyedReplacement.Key + " '" + keyedReplacement.Value.value.Replace("\n", "\\n") + "' (English file: " + defaultLanguage.GetKeySourceFileAndLine(keyedReplacement.Key) + ")";
+					if (activeLanguage.HaveTextForKey(keyedReplacement.Key, allowPlaceholders: true))
+					{
+						text = text + " (placeholder exists in " + activeLanguage.GetKeySourceFileAndLine(keyedReplacement.Key) + ")";
+					}
+					num++;
+					stringBuilder.AppendLine(text);
+				}
+			}
+			sb.AppendLine();
+			sb.AppendLine("========== Missing keyed translations (" + num + ") ==========");
+			sb.Append(stringBuilder);
 		}
 
 		private static void AppendMissingDefInjections(StringBuilder sb, List<string> outUnnecessaryDefInjections)
 		{
 			LoadedLanguage activeLanguage = LanguageDatabase.activeLanguage;
 			LoadedLanguage defaultLanguage = LanguageDatabase.defaultLanguage;
-			if (activeLanguage != defaultLanguage)
+			if (activeLanguage == defaultLanguage)
 			{
-				StringBuilder stringBuilder = new StringBuilder();
-				int num = 0;
-				foreach (DefInjectionPackage defInjection in activeLanguage.defInjections)
-				{
-					foreach (string item in defInjection.MissingInjections(outUnnecessaryDefInjections))
-					{
-						num++;
-						stringBuilder.AppendLine(defInjection.defType.Name + ": " + item);
-					}
-				}
-				sb.AppendLine();
-				sb.AppendLine("========== Def-injected translations missing (" + num + ") ==========");
-				sb.Append(stringBuilder);
+				return;
 			}
+			StringBuilder stringBuilder = new StringBuilder();
+			int num = 0;
+			foreach (DefInjectionPackage defInjection in activeLanguage.defInjections)
+			{
+				foreach (string item in defInjection.MissingInjections(outUnnecessaryDefInjections))
+				{
+					num++;
+					stringBuilder.AppendLine(defInjection.defType.Name + ": " + item);
+				}
+			}
+			sb.AppendLine();
+			sb.AppendLine("========== Def-injected translations missing (" + num + ") ==========");
+			sb.Append(stringBuilder);
 		}
 
 		private static void AppendMissingBackstories(StringBuilder sb)
 		{
 			LoadedLanguage activeLanguage = LanguageDatabase.activeLanguage;
 			LoadedLanguage defaultLanguage = LanguageDatabase.defaultLanguage;
-			if (activeLanguage != defaultLanguage)
+			if (activeLanguage == defaultLanguage)
 			{
-				StringBuilder stringBuilder = new StringBuilder();
-				int num = 0;
-				foreach (string item in BackstoryTranslationUtility.MissingBackstoryTranslations(activeLanguage))
-				{
-					num++;
-					stringBuilder.AppendLine(item);
-				}
-				sb.AppendLine();
-				sb.AppendLine("========== Backstory translations missing (" + num + ") ==========");
-				sb.Append(stringBuilder);
+				return;
 			}
+			StringBuilder stringBuilder = new StringBuilder();
+			int num = 0;
+			foreach (string item in BackstoryTranslationUtility.MissingBackstoryTranslations(activeLanguage))
+			{
+				num++;
+				stringBuilder.AppendLine(item);
+			}
+			sb.AppendLine();
+			sb.AppendLine("========== Backstory translations missing (" + num + ") ==========");
+			sb.Append(stringBuilder);
 		}
 
 		private static void AppendUnnecessaryDefInjections(StringBuilder sb, List<string> unnecessaryDefInjections)
@@ -320,85 +331,89 @@ namespace Verse
 		{
 			LoadedLanguage activeLanguage = LanguageDatabase.activeLanguage;
 			LoadedLanguage defaultLanguage = LanguageDatabase.defaultLanguage;
-			if (activeLanguage != defaultLanguage)
+			if (activeLanguage == defaultLanguage)
 			{
-				StringBuilder stringBuilder = new StringBuilder();
-				int num = 0;
-				foreach (string item in defaultLanguage.keyedReplacements.Keys.Intersect(activeLanguage.keyedReplacements.Keys))
-				{
-					if (!activeLanguage.keyedReplacements[item].isPlaceholder && !SameSimpleGrammarResolverSymbols(defaultLanguage.keyedReplacements[item].value, activeLanguage.keyedReplacements[item].value))
-					{
-						num++;
-						stringBuilder.AppendLine(string.Format("{0} ({1})\n  - '{2}'\n  - '{3}'", item, activeLanguage.GetKeySourceFileAndLine(item), defaultLanguage.keyedReplacements[item].value.Replace("\n", "\\n"), activeLanguage.keyedReplacements[item].value.Replace("\n", "\\n")));
-					}
-				}
-				sb.AppendLine();
-				sb.AppendLine("========== Argument count mismatches (may or may not be incorrect) (" + num + ") ==========");
-				sb.Append(stringBuilder);
+				return;
 			}
+			StringBuilder stringBuilder = new StringBuilder();
+			int num = 0;
+			foreach (string item in defaultLanguage.keyedReplacements.Keys.Intersect(activeLanguage.keyedReplacements.Keys))
+			{
+				if (!activeLanguage.keyedReplacements[item].isPlaceholder && !SameSimpleGrammarResolverSymbols(defaultLanguage.keyedReplacements[item].value, activeLanguage.keyedReplacements[item].value))
+				{
+					num++;
+					stringBuilder.AppendLine(string.Format("{0} ({1})\n  - '{2}'\n  - '{3}'", item, activeLanguage.GetKeySourceFileAndLine(item), defaultLanguage.keyedReplacements[item].value.Replace("\n", "\\n"), activeLanguage.keyedReplacements[item].value.Replace("\n", "\\n")));
+				}
+			}
+			sb.AppendLine();
+			sb.AppendLine("========== Argument count mismatches (may or may not be incorrect) (" + num + ") ==========");
+			sb.Append(stringBuilder);
 		}
 
 		private static void AppendUnnecessaryKeyedTranslations(StringBuilder sb)
 		{
 			LoadedLanguage activeLanguage = LanguageDatabase.activeLanguage;
 			LoadedLanguage defaultLanguage = LanguageDatabase.defaultLanguage;
-			if (activeLanguage != defaultLanguage)
+			if (activeLanguage == defaultLanguage)
 			{
-				StringBuilder stringBuilder = new StringBuilder();
-				int num = 0;
-				foreach (KeyValuePair<string, LoadedLanguage.KeyedReplacement> keyedReplacement in activeLanguage.keyedReplacements)
-				{
-					if (!defaultLanguage.HaveTextForKey(keyedReplacement.Key))
-					{
-						num++;
-						stringBuilder.AppendLine(keyedReplacement.Key + " '" + keyedReplacement.Value.value.Replace("\n", "\\n") + "' (" + activeLanguage.GetKeySourceFileAndLine(keyedReplacement.Key) + ")");
-					}
-				}
-				sb.AppendLine();
-				sb.AppendLine("========== Unnecessary keyed translations (will never be used) (" + num + ") ==========");
-				sb.Append(stringBuilder);
+				return;
 			}
+			StringBuilder stringBuilder = new StringBuilder();
+			int num = 0;
+			foreach (KeyValuePair<string, LoadedLanguage.KeyedReplacement> keyedReplacement in activeLanguage.keyedReplacements)
+			{
+				if (!defaultLanguage.HaveTextForKey(keyedReplacement.Key))
+				{
+					num++;
+					stringBuilder.AppendLine(keyedReplacement.Key + " '" + keyedReplacement.Value.value.Replace("\n", "\\n") + "' (" + activeLanguage.GetKeySourceFileAndLine(keyedReplacement.Key) + ")");
+				}
+			}
+			sb.AppendLine();
+			sb.AppendLine("========== Unnecessary keyed translations (will never be used) (" + num + ") ==========");
+			sb.Append(stringBuilder);
 		}
 
 		private static void AppendKeyedTranslationsMatchingEnglish(StringBuilder sb)
 		{
 			LoadedLanguage activeLanguage = LanguageDatabase.activeLanguage;
 			LoadedLanguage defaultLanguage = LanguageDatabase.defaultLanguage;
-			if (activeLanguage != defaultLanguage)
+			if (activeLanguage == defaultLanguage)
 			{
-				StringBuilder stringBuilder = new StringBuilder();
-				int num = 0;
-				foreach (KeyValuePair<string, LoadedLanguage.KeyedReplacement> keyedReplacement in activeLanguage.keyedReplacements)
-				{
-					if (!keyedReplacement.Value.isPlaceholder && defaultLanguage.TryGetTextFromKey(keyedReplacement.Key, out TaggedString translated) && keyedReplacement.Value.value == (string)translated)
-					{
-						num++;
-						stringBuilder.AppendLine(keyedReplacement.Key + " '" + keyedReplacement.Value.value.Replace("\n", "\\n") + "' (" + activeLanguage.GetKeySourceFileAndLine(keyedReplacement.Key) + ")");
-					}
-				}
-				sb.AppendLine();
-				sb.AppendLine("========== Keyed translations matching English (maybe ok) (" + num + ") ==========");
-				sb.Append(stringBuilder);
+				return;
 			}
+			StringBuilder stringBuilder = new StringBuilder();
+			int num = 0;
+			foreach (KeyValuePair<string, LoadedLanguage.KeyedReplacement> keyedReplacement in activeLanguage.keyedReplacements)
+			{
+				if (!keyedReplacement.Value.isPlaceholder && defaultLanguage.TryGetTextFromKey(keyedReplacement.Key, out TaggedString translated) && keyedReplacement.Value.value == (string)translated)
+				{
+					num++;
+					stringBuilder.AppendLine(keyedReplacement.Key + " '" + keyedReplacement.Value.value.Replace("\n", "\\n") + "' (" + activeLanguage.GetKeySourceFileAndLine(keyedReplacement.Key) + ")");
+				}
+			}
+			sb.AppendLine();
+			sb.AppendLine("========== Keyed translations matching English (maybe ok) (" + num + ") ==========");
+			sb.Append(stringBuilder);
 		}
 
 		private static void AppendBackstoriesMatchingEnglish(StringBuilder sb)
 		{
 			LoadedLanguage activeLanguage = LanguageDatabase.activeLanguage;
 			LoadedLanguage defaultLanguage = LanguageDatabase.defaultLanguage;
-			if (activeLanguage != defaultLanguage)
+			if (activeLanguage == defaultLanguage)
 			{
-				StringBuilder stringBuilder = new StringBuilder();
-				int num = 0;
-				foreach (string item in BackstoryTranslationUtility.BackstoryTranslationsMatchingEnglish(activeLanguage))
-				{
-					num++;
-					stringBuilder.AppendLine(item);
-				}
-				sb.AppendLine();
-				sb.AppendLine("========== Backstory translations matching English (maybe ok) (" + num + ") ==========");
-				sb.Append(stringBuilder);
+				return;
 			}
+			StringBuilder stringBuilder = new StringBuilder();
+			int num = 0;
+			foreach (string item in BackstoryTranslationUtility.BackstoryTranslationsMatchingEnglish(activeLanguage))
+			{
+				num++;
+				stringBuilder.AppendLine(item);
+			}
+			sb.AppendLine();
+			sb.AppendLine("========== Backstory translations matching English (maybe ok) (" + num + ") ==========");
+			sb.Append(stringBuilder);
 		}
 
 		private static void AppendDefInjectionsSyntaxSuggestions(StringBuilder sb)
@@ -419,6 +434,16 @@ namespace Verse
 				sb.AppendLine();
 				sb.AppendLine("========== Def-injected translations syntax suggestions (" + num + ") ==========");
 				sb.Append(stringBuilder);
+			}
+		}
+
+		private static void AppendTKeySystemErrors(StringBuilder sb)
+		{
+			if (TKeySystem.loadErrors.Count != 0)
+			{
+				sb.AppendLine();
+				sb.AppendLine("========== TKey system errors (" + TKeySystem.loadErrors.Count + ") ==========");
+				sb.Append(string.Join("\r\n", TKeySystem.loadErrors));
 			}
 		}
 

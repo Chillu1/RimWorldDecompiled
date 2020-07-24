@@ -102,13 +102,14 @@ namespace RimWorld
 			foreach (Faction allFaction in Find.FactionManager.AllFactions)
 			{
 				List<Thing> list = ListFor(allFaction);
-				if (!list.NullOrEmpty())
+				if (list.NullOrEmpty())
 				{
-					stringBuilder.AppendLine("=======" + allFaction.Name + " (" + allFaction.def + ")");
-					foreach (Thing item in list)
-					{
-						stringBuilder.AppendLine(item.ThingID);
-					}
+					continue;
+				}
+				stringBuilder.AppendLine(string.Concat("=======", allFaction.Name, " (", allFaction.def, ")"));
+				foreach (Thing item in list)
+				{
+					stringBuilder.AppendLine(item.ThingID);
 				}
 			}
 			return stringBuilder.ToString();

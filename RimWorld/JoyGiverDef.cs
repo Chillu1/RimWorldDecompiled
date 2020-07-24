@@ -51,7 +51,7 @@ namespace RimWorld
 			}
 			if (jobDef != null && jobDef.joyKind != joyKind)
 			{
-				yield return "jobDef " + jobDef + " has joyKind " + jobDef.joyKind + " which does not match our joyKind " + joyKind;
+				yield return string.Concat("jobDef ", jobDef, " has joyKind ", jobDef.joyKind, " which does not match our joyKind ", joyKind);
 			}
 		}
 	}

@@ -376,7 +376,7 @@ namespace RimWorld
 
 		public void PrepareForWorkshopUpload()
 		{
-			string path = name + Rand.RangeInclusive(100, 999).ToString();
+			string path = name + Rand.RangeInclusive(100, 999);
 			tempUploadDir = Path.Combine(GenFilePaths.TempFolderPath, path);
 			DirectoryInfo directoryInfo = new DirectoryInfo(tempUploadDir);
 			if (directoryInfo.Exists)

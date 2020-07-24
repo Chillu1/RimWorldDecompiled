@@ -232,7 +232,7 @@ namespace RimWorld
 			}
 			catch (Exception ex)
 			{
-				Log.ErrorOnce("Exception in DrawThoughtGroup for " + group.def + " on " + pawn + ": " + ex.ToString(), 3452698);
+				Log.ErrorOnce(string.Concat("Exception in DrawThoughtGroup for ", group.def, " on ", pawn, ": ", ex.ToString()), 3452698);
 			}
 			return true;
 		}

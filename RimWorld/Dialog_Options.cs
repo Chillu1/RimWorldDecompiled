@@ -10,6 +10,8 @@ namespace RimWorld
 {
 	public class Dialog_Options : Window
 	{
+		private bool simulateNotOwningRoyaltyWhenOpened;
+
 		private const float SubOptionTabWidth = 40f;
 
 		public static readonly float[] UIScales = new float[9]
@@ -33,6 +35,12 @@ namespace RimWorld
 			doCloseX = true;
 			forcePause = true;
 			absorbInputAroundWindow = true;
+		}
+
+		public override void PostOpen()
+		{
+			base.PostOpen();
+			simulateNotOwningRoyaltyWhenOpened = Prefs.SimulateNotOwningRoyalty;
 		}
 
 		public override void DoWindowContents(Rect inRect)
@@ -79,13 +87,13 @@ namespace RimWorld
 				}
 				Find.WindowStack.Add(new FloatMenu(list));
 			}
-			if (listing_Standard.ButtonTextLabeled("UIScale".Translate(), Prefs.UIScale.ToString() + "x"))
+			if (listing_Standard.ButtonTextLabeled("UIScale".Translate(), Prefs.UIScale + "x"))
 			{
 				List<FloatMenuOption> list2 = new List<FloatMenuOption>();
 				for (int i = 0; i < UIScales.Length; i++)
 				{
 					float scale = UIScales[i];
-					list2.Add(new FloatMenuOption(UIScales[i].ToString() + "x", delegate
+					list2.Add(new FloatMenuOption(UIScales[i] + "x", delegate
 					{
 						if (scale != 1f && !ResolutionUtility.UIScaleSafeWithResolution(scale, Screen.width, Screen.height))
 						{
@@ -268,19 +276,19 @@ namespace RimWorld
 				{
 					Prefs.AutosaveIntervalDays = 0.5f;
 				}));
-				list7.Add(new FloatMenuOption(1.ToString() + " " + text2, delegate
+				list7.Add(new FloatMenuOption(1 + " " + text2, delegate
 				{
 					Prefs.AutosaveIntervalDays = 1f;
 				}));
-				list7.Add(new FloatMenuOption(3.ToString() + " " + text, delegate
+				list7.Add(new FloatMenuOption(3 + " " + text, delegate
 				{
 					Prefs.AutosaveIntervalDays = 3f;
 				}));
-				list7.Add(new FloatMenuOption(7.ToString() + " " + text, delegate
+				list7.Add(new FloatMenuOption(7 + " " + text, delegate
 				{
 					Prefs.AutosaveIntervalDays = 7f;
 				}));
-				list7.Add(new FloatMenuOption(14.ToString() + " " + text, delegate
+				list7.Add(new FloatMenuOption(14 + " " + text, delegate
 				{
 					Prefs.AutosaveIntervalDays = 14f;
 				}));
@@ -320,6 +328,12 @@ namespace RimWorld
 				bool checkOn13 = Prefs.LogVerbose;
 				listing_Standard.CheckboxLabeled("LogVerbose".Translate(), ref checkOn13);
 				Prefs.LogVerbose = checkOn13;
+				if (Current.ProgramState != ProgramState.Playing)
+				{
+					bool checkOn14 = Prefs.SimulateNotOwningRoyalty;
+					listing_Standard.CheckboxLabeled("SimulateNotOwningRoyalty".Translate(), ref checkOn14);
+					Prefs.SimulateNotOwningRoyalty = checkOn14;
+				}
 			}
 			listing_Standard.NewColumn();
 			Text.Font = GameFont.Medium;
@@ -381,6 +395,11 @@ namespace RimWorld
 		{
 			base.PreClose();
 			Prefs.Save();
+			if (Prefs.SimulateNotOwningRoyalty && !simulateNotOwningRoyaltyWhenOpened && ModsConfig.RoyaltyActive)
+			{
+				ModsConfig.SetActive(ModContentPack.RoyaltyModPackageId, active: false);
+				ModsConfig.RestartFromChangedMods();
+			}
 		}
 
 		public static string ResToString(int width, int height)

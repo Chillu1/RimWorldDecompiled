@@ -132,13 +132,14 @@ namespace RimWorld
 		{
 			yield return DescriptionEntry(def);
 			BuildableDef eDef = def as BuildableDef;
-			if (eDef != null)
+			if (eDef == null)
 			{
-				StatRequest statRequest = StatRequest.For(eDef, stuff);
-				foreach (StatDef item in DefDatabase<StatDef>.AllDefs.Where((StatDef st) => st.Worker.ShouldShowFor(statRequest)))
-				{
-					yield return new StatDrawEntry(item.category, item, eDef.GetStatValueAbstract(item, stuff), StatRequest.For(eDef, stuff));
-				}
+				yield break;
+			}
+			StatRequest statRequest = StatRequest.For(eDef, stuff);
+			foreach (StatDef item in DefDatabase<StatDef>.AllDefs.Where((StatDef st) => st.Worker.ShouldShowFor(statRequest)))
+			{
+				yield return new StatDrawEntry(item.category, item, eDef.GetStatValueAbstract(item, stuff), StatRequest.For(eDef, stuff));
 			}
 		}
 
@@ -164,20 +165,21 @@ namespace RimWorld
 
 		private static IEnumerable<StatDrawEntry> StatsToDraw(Thing thing)
 		{
-			yield return DescriptionEntry(thing);
-			StatDrawEntry statDrawEntry = QualityEntry(thing);
+			Thing thing2 = thing;
+			yield return DescriptionEntry(thing2);
+			StatDrawEntry statDrawEntry = QualityEntry(thing2);
 			if (statDrawEntry != null)
 			{
 				yield return statDrawEntry;
 			}
-			foreach (StatDef item in DefDatabase<StatDef>.AllDefs.Where((StatDef st) => st.Worker.ShouldShowFor(StatRequest.For(thing))))
+			foreach (StatDef item in DefDatabase<StatDef>.AllDefs.Where((StatDef st) => st.Worker.ShouldShowFor(StatRequest.For(thing2))))
 			{
-				if (!item.Worker.IsDisabledFor(thing))
+				if (!item.Worker.IsDisabledFor(thing2))
 				{
-					float statValue = thing.GetStatValue(item);
+					float statValue = thing2.GetStatValue(item);
 					if (item.showOnDefaultValue || statValue != item.defaultBaseValue)
 					{
-						yield return new StatDrawEntry(item.category, item, statValue, StatRequest.For(thing));
+						yield return new StatDrawEntry(item.category, item, statValue, StatRequest.For(thing2));
 					}
 				}
 				else
@@ -185,30 +187,30 @@ namespace RimWorld
 					yield return new StatDrawEntry(item.category, item);
 				}
 			}
-			if (thing.def.useHitPoints)
+			if (thing2.def.useHitPoints)
 			{
-				yield return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, "HitPointsBasic".Translate().CapitalizeFirst(), thing.HitPoints.ToString() + " / " + thing.MaxHitPoints.ToString(), "Stat_HitPoints_Desc".Translate(), 99998);
+				yield return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, "HitPointsBasic".Translate().CapitalizeFirst(), thing2.HitPoints + " / " + thing2.MaxHitPoints, "Stat_HitPoints_Desc".Translate(), 99998);
 			}
-			foreach (StatDrawEntry item2 in thing.SpecialDisplayStats())
+			foreach (StatDrawEntry item2 in thing2.SpecialDisplayStats())
 			{
 				yield return item2;
 			}
-			if (!thing.def.IsStuff)
+			if (!thing2.def.IsStuff)
 			{
 				yield break;
 			}
-			if (!thing.def.stuffProps.statFactors.NullOrEmpty())
+			if (!thing2.def.stuffProps.statFactors.NullOrEmpty())
 			{
-				for (int j = 0; j < thing.def.stuffProps.statFactors.Count; j++)
+				for (int j = 0; j < thing2.def.stuffProps.statFactors.Count; j++)
 				{
-					yield return new StatDrawEntry(StatCategoryDefOf.StuffStatFactors, thing.def.stuffProps.statFactors[j].stat, thing.def.stuffProps.statFactors[j].value, StatRequest.ForEmpty(), ToStringNumberSense.Factor);
+					yield return new StatDrawEntry(StatCategoryDefOf.StuffStatFactors, thing2.def.stuffProps.statFactors[j].stat, thing2.def.stuffProps.statFactors[j].value, StatRequest.ForEmpty(), ToStringNumberSense.Factor);
 				}
 			}
-			if (!thing.def.stuffProps.statOffsets.NullOrEmpty())
+			if (!thing2.def.stuffProps.statOffsets.NullOrEmpty())
 			{
-				for (int j = 0; j < thing.def.stuffProps.statOffsets.Count; j++)
+				for (int j = 0; j < thing2.def.stuffProps.statOffsets.Count; j++)
 				{
-					yield return new StatDrawEntry(StatCategoryDefOf.StuffStatOffsets, thing.def.stuffProps.statOffsets[j].stat, thing.def.stuffProps.statOffsets[j].value, StatRequest.ForEmpty(), ToStringNumberSense.Offset);
+					yield return new StatDrawEntry(StatCategoryDefOf.StuffStatOffsets, thing2.def.stuffProps.statOffsets[j].stat, thing2.def.stuffProps.statOffsets[j].value, StatRequest.ForEmpty(), ToStringNumberSense.Offset);
 				}
 			}
 		}
@@ -326,37 +328,38 @@ namespace RimWorld
 			Widgets.EndScrollView();
 			Rect outRect = rect3.ContractedBy(10f);
 			StatDrawEntry statDrawEntry = selectedEntry ?? mousedOverEntry ?? cachedDrawEntries.FirstOrDefault();
-			if (statDrawEntry != null)
+			if (statDrawEntry == null)
 			{
-				Rect rect4 = new Rect(0f, 0f, outRect.width - 16f, rightPanelHeight);
-				StatRequest statRequest = statDrawEntry.hasOptionalReq ? statDrawEntry.optionalReq : ((optionalThing == null) ? StatRequest.ForEmpty() : StatRequest.For(optionalThing));
-				string explanationText = statDrawEntry.GetExplanationText(statRequest);
-				float num = 0f;
-				Widgets.BeginScrollView(outRect, ref scrollPositionRightPanel, rect4);
-				Rect rect5 = rect4;
-				rect5.width -= 4f;
-				Widgets.Label(rect5, explanationText);
-				float num2 = Text.CalcHeight(explanationText, rect5.width) + 10f;
-				num += num2;
-				IEnumerable<Dialog_InfoCard.Hyperlink> hyperlinks = statDrawEntry.GetHyperlinks(statRequest);
-				if (hyperlinks != null)
-				{
-					Rect rect6 = new Rect(rect5.x, rect5.y + num2, rect5.width, rect5.height - num2);
-					Color color = GUI.color;
-					GUI.color = Widgets.NormalOptionColor;
-					foreach (Dialog_InfoCard.Hyperlink item in hyperlinks)
-					{
-						float num3 = Text.CalcHeight(item.Label, rect6.width);
-						Widgets.HyperlinkWithIcon(new Rect(rect6.x, rect6.y, rect6.width, num3), item, "ViewHyperlink".Translate(item.Label));
-						rect6.y += num3;
-						rect6.height -= num3;
-						num += num3;
-					}
-					GUI.color = color;
-				}
-				rightPanelHeight = num;
-				Widgets.EndScrollView();
+				return;
 			}
+			Rect rect4 = new Rect(0f, 0f, outRect.width - 16f, rightPanelHeight);
+			StatRequest statRequest = statDrawEntry.hasOptionalReq ? statDrawEntry.optionalReq : ((optionalThing == null) ? StatRequest.ForEmpty() : StatRequest.For(optionalThing));
+			string explanationText = statDrawEntry.GetExplanationText(statRequest);
+			float num = 0f;
+			Widgets.BeginScrollView(outRect, ref scrollPositionRightPanel, rect4);
+			Rect rect5 = rect4;
+			rect5.width -= 4f;
+			Widgets.Label(rect5, explanationText);
+			float num2 = Text.CalcHeight(explanationText, rect5.width) + 10f;
+			num += num2;
+			IEnumerable<Dialog_InfoCard.Hyperlink> hyperlinks = statDrawEntry.GetHyperlinks(statRequest);
+			if (hyperlinks != null)
+			{
+				Rect rect6 = new Rect(rect5.x, rect5.y + num2, rect5.width, rect5.height - num2);
+				Color color = GUI.color;
+				GUI.color = Widgets.NormalOptionColor;
+				foreach (Dialog_InfoCard.Hyperlink item in hyperlinks)
+				{
+					float num3 = Text.CalcHeight(item.Label, rect6.width);
+					Widgets.HyperlinkWithIcon(new Rect(rect6.x, rect6.y, rect6.width, num3), item, "ViewHyperlink".Translate(item.Label));
+					rect6.y += num3;
+					rect6.height -= num3;
+					num += num3;
+				}
+				GUI.color = color;
+			}
+			rightPanelHeight = num;
+			Widgets.EndScrollView();
 		}
 	}
 }

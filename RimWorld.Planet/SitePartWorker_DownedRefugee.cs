@@ -33,7 +33,7 @@ namespace RimWorld.Planet
 				}
 				outExtraDescriptionRules.Add(new Rule_String("pawnInvolvedInQuestInfo", text));
 			}
-			outExtraDescriptionRules.AddRange(GrammarUtility.RulesForPawn("refugee", pawn, outExtraDescriptionConstants));
+			slate.Set("refugee", pawn);
 		}
 
 		public override string GetPostProcessedThreatLabel(Site site, SitePart sitePart)

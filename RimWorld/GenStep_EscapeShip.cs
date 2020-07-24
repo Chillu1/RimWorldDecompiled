@@ -54,17 +54,18 @@ namespace RimWorld
 			rect.ClipInsideMap(map);
 			foreach (IntVec3 item in rect)
 			{
-				if (!map.terrainGrid.TerrainAt(item).affordances.Contains(TerrainAffordanceDefOf.Heavy))
+				if (map.terrainGrid.TerrainAt(item).affordances.Contains(TerrainAffordanceDefOf.Heavy))
 				{
-					CompTerrainPumpDry.AffectCell(map, item);
-					for (int i = 0; i < 8; i++)
+					continue;
+				}
+				CompTerrainPumpDry.AffectCell(map, item);
+				for (int i = 0; i < 8; i++)
+				{
+					Vector3 b = Rand.InsideUnitCircleVec3 * 3f;
+					IntVec3 c2 = IntVec3.FromVector3(item.ToVector3Shifted() + b);
+					if (c2.InBounds(map))
 					{
-						Vector3 b = Rand.InsideUnitCircleVec3 * 3f;
-						IntVec3 c2 = IntVec3.FromVector3(item.ToVector3Shifted() + b);
-						if (c2.InBounds(map))
-						{
-							CompTerrainPumpDry.AffectCell(map, c2);
-						}
+						CompTerrainPumpDry.AffectCell(map, c2);
 					}
 				}
 			}

@@ -71,11 +71,21 @@ namespace Verse
 				DeepProfiler.End();
 			}
 			Dictionary<XmlNode, LoadableXmlAsset> assetlookup = new Dictionary<XmlNode, LoadableXmlAsset>();
-			XmlDocument xmlDoc = null;
+			XmlDocument xmlDocument = null;
 			DeepProfiler.Start("CombineIntoUnifiedXML()");
 			try
 			{
-				xmlDoc = CombineIntoUnifiedXML(xmls, assetlookup);
+				xmlDocument = CombineIntoUnifiedXML(xmls, assetlookup);
+			}
+			finally
+			{
+				DeepProfiler.End();
+			}
+			TKeySystem.Clear();
+			DeepProfiler.Start("TKeySystem.Parse()");
+			try
+			{
+				TKeySystem.Parse(xmlDocument);
 			}
 			finally
 			{
@@ -84,7 +94,7 @@ namespace Verse
 			DeepProfiler.Start("ApplyPatches()");
 			try
 			{
-				ApplyPatches(xmlDoc, assetlookup);
+				ApplyPatches(xmlDocument, assetlookup);
 			}
 			finally
 			{
@@ -93,7 +103,7 @@ namespace Verse
 			DeepProfiler.Start("ParseAndProcessXML()");
 			try
 			{
-				ParseAndProcessXML(xmlDoc, assetlookup);
+				ParseAndProcessXML(xmlDocument, assetlookup);
 			}
 			finally
 			{
@@ -160,7 +170,7 @@ namespace Verse
 			for (int i = 0; i < runningMods.Count; i++)
 			{
 				ModContentPack modContentPack = runningMods[i];
-				DeepProfiler.Start("Loading " + modContentPack + " content");
+				DeepProfiler.Start(string.Concat("Loading ", modContentPack, " content"));
 				try
 				{
 					modContentPack.ReloadContent();
@@ -192,7 +202,7 @@ namespace Verse
 		{
 			foreach (Type type in typeof(Mod).InstantiableDescendantsAndSelf())
 			{
-				DeepProfiler.Start("Loading " + type + " mod class");
+				DeepProfiler.Start(string.Concat("Loading ", type, " mod class"));
 				try
 				{
 					if (!runningModClasses.ContainsKey(type))
@@ -203,7 +213,7 @@ namespace Verse
 				}
 				catch (Exception ex)
 				{
-					Log.Error("Error while instantiating a mod of type " + type + ": " + ex);
+					Log.Error(string.Concat("Error while instantiating a mod of type ", type, ": ", ex));
 				}
 				finally
 				{
@@ -259,19 +269,17 @@ namespace Verse
 				if (xml.xmlDoc == null || xml.xmlDoc.DocumentElement == null)
 				{
 					Log.Error(string.Format("{0}: unknown parse failure", xml.fullFolderPath + "/" + xml.name));
+					continue;
 				}
-				else
+				if (xml.xmlDoc.DocumentElement.Name != "Defs")
 				{
-					if (xml.xmlDoc.DocumentElement.Name != "Defs")
-					{
-						Log.Error(string.Format("{0}: root element named {1}; should be named Defs", xml.fullFolderPath + "/" + xml.name, xml.xmlDoc.DocumentElement.Name));
-					}
-					foreach (XmlNode childNode in xml.xmlDoc.DocumentElement.ChildNodes)
-					{
-						XmlNode xmlNode = xmlDocument.ImportNode(childNode, deep: true);
-						assetlookup[xmlNode] = xml;
-						xmlDocument.DocumentElement.AppendChild(xmlNode);
-					}
+					Log.Error(string.Format("{0}: root element named {1}; should be named Defs", xml.fullFolderPath + "/" + xml.name, xml.xmlDoc.DocumentElement.Name));
+				}
+				foreach (XmlNode childNode in xml.xmlDoc.DocumentElement.ChildNodes)
+				{
+					XmlNode xmlNode = xmlDocument.ImportNode(childNode, deep: true);
+					assetlookup[xmlNode] = xml;
+					xmlDocument.DocumentElement.AppendChild(xmlNode);
 				}
 			}
 			return xmlDocument;

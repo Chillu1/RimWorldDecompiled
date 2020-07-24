@@ -23,34 +23,34 @@ namespace Verse
 					alreadyLoadedFiles[folder.Item2] = new HashSet<string>();
 				}
 				VirtualFile file = folder.Item1.GetFile("Backstories/Backstories.xml");
-				if (file.Exists)
+				if (!file.Exists)
 				{
-					if (!file.FullPath.StartsWith(folder.Item3))
-					{
-						Log.Error("Failed to get a relative path for a file: " + file.FullPath + ", located in " + folder.Item3);
-					}
-					else
-					{
-						string item = file.FullPath.Substring(folder.Item3.Length);
-						if (!alreadyLoadedFiles[folder.Item2].Contains(item))
-						{
-							alreadyLoadedFiles[folder.Item2].Add(item);
-							XDocument xDocument;
-							try
-							{
-								xDocument = file.LoadAsXDocument();
-							}
-							catch (Exception ex)
-							{
-								loadErrors?.Add("Exception loading backstory translation data from file " + file + ": " + ex);
-								yield break;
-							}
-							foreach (XElement item2 in xDocument.Root.Elements())
-							{
-								yield return item2;
-							}
-						}
-					}
+					continue;
+				}
+				if (!file.FullPath.StartsWith(folder.Item3))
+				{
+					Log.Error("Failed to get a relative path for a file: " + file.FullPath + ", located in " + folder.Item3);
+					continue;
+				}
+				string item = file.FullPath.Substring(folder.Item3.Length);
+				if (alreadyLoadedFiles[folder.Item2].Contains(item))
+				{
+					continue;
+				}
+				alreadyLoadedFiles[folder.Item2].Add(item);
+				XDocument xDocument;
+				try
+				{
+					xDocument = file.LoadAsXDocument();
+				}
+				catch (Exception ex)
+				{
+					loadErrors?.Add(string.Concat("Exception loading backstory translation data from file ", file, ": ", ex));
+					yield break;
+				}
+				foreach (XElement item2 in xDocument.Root.Elements())
+				{
+					yield return item2;
 				}
 			}
 		}
@@ -113,14 +113,16 @@ namespace Verse
 		{
 			List<KeyValuePair<string, Backstory>> list = BackstoryDatabase.allBackstories.ToList();
 			List<string> list2 = new List<string>();
+			string modifiedIdentifier;
+			KeyValuePair<string, Backstory> backstory;
 			foreach (XElement item in BackstoryTranslationElements(lang.AllDirectories, null))
 			{
 				try
 				{
 					string text = item.Name.ToString();
-					string modifiedIdentifier = BackstoryDatabase.GetIdentifierClosestMatch(text, closestMatchWarning: false);
+					modifiedIdentifier = BackstoryDatabase.GetIdentifierClosestMatch(text, closestMatchWarning: false);
 					bool flag = list.Any((KeyValuePair<string, Backstory> x) => x.Key == modifiedIdentifier);
-					KeyValuePair<string, Backstory> backstory = list.Find((KeyValuePair<string, Backstory> x) => x.Key == modifiedIdentifier);
+					backstory = list.Find((KeyValuePair<string, Backstory> x) => x.Key == modifiedIdentifier);
 					if (flag)
 					{
 						list.RemoveAt(list.FindIndex((KeyValuePair<string, Backstory> x) => x.Key == backstory.Key));
@@ -157,7 +159,7 @@ namespace Verse
 				}
 				catch (Exception ex)
 				{
-					list2.Add("Exception reading " + item.Name + ": " + ex.Message);
+					list2.Add(string.Concat("Exception reading ", item.Name, ": ", ex.Message));
 				}
 			}
 			foreach (KeyValuePair<string, Backstory> item2 in list)
@@ -206,7 +208,7 @@ namespace Verse
 				}
 				catch (Exception ex)
 				{
-					list.Add("Exception reading " + item.Name + ": " + ex.Message);
+					list.Add(string.Concat("Exception reading ", item.Name, ": ", ex.Message));
 				}
 			}
 			return list;

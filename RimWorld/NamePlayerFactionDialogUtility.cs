@@ -31,20 +31,22 @@ namespace RimWorld
 		public static void Named(string s)
 		{
 			Faction.OfPlayer.Name = s;
-			if (Find.GameInfo.permadeathMode)
+			if (!Find.GameInfo.permadeathMode)
 			{
-				string oldSavefileName = Find.GameInfo.permadeathModeUniqueName;
-				string newSavefileName = PermadeathModeUtility.GeneratePermadeathSaveNameBasedOnPlayerInput(s, oldSavefileName);
-				if (oldSavefileName != newSavefileName)
-				{
-					LongEventHandler.QueueLongEvent(delegate
-					{
-						Find.GameInfo.permadeathModeUniqueName = newSavefileName;
-						Find.Autosaver.DoAutosave();
-						GenFilePaths.AllSavedGameFiles.FirstOrDefault((FileInfo x) => Path.GetFileNameWithoutExtension(x.Name) == oldSavefileName)?.Delete();
-					}, "Autosaving", doAsynchronously: false, null);
-				}
+				return;
 			}
+			string oldSavefileName = Find.GameInfo.permadeathModeUniqueName;
+			string newSavefileName = PermadeathModeUtility.GeneratePermadeathSaveNameBasedOnPlayerInput(s, oldSavefileName);
+			if (!(oldSavefileName != newSavefileName))
+			{
+				return;
+			}
+			LongEventHandler.QueueLongEvent(delegate
+			{
+				Find.GameInfo.permadeathModeUniqueName = newSavefileName;
+				Find.Autosaver.DoAutosave();
+				GenFilePaths.AllSavedGameFiles.FirstOrDefault((FileInfo x) => Path.GetFileNameWithoutExtension(x.Name) == oldSavefileName)?.Delete();
+			}, "Autosaving", doAsynchronously: false, null);
 		}
 	}
 }

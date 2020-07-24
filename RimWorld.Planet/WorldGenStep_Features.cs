@@ -21,7 +21,7 @@ namespace RimWorld.Planet
 				}
 				catch (Exception ex)
 				{
-					Log.Error("Could not generate world features of def " + item + ": " + ex);
+					Log.Error(string.Concat("Could not generate world features of def ", item, ": ", ex));
 				}
 			}
 		}

@@ -112,7 +112,7 @@ namespace Verse
 			foreach (Hediff hediff in pawn.health.hediffSet.hediffs)
 			{
 				Hediff localH = hediff;
-				list.Add(new DebugMenuOption(localH.LabelCap + ((localH.Part != null) ? (" (" + localH.Part.def + ")") : ""), DebugMenuOptionMode.Action, delegate
+				list.Add(new DebugMenuOption(localH.LabelCap + ((localH.Part != null) ? string.Concat(" (", localH.Part.def, ")") : ""), DebugMenuOptionMode.Action, delegate
 				{
 					pawn.health.RemoveHediff(localH);
 				}));

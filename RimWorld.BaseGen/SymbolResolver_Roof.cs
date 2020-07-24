@@ -6,16 +6,17 @@ namespace RimWorld.BaseGen
 	{
 		public override void Resolve(ResolveParams rp)
 		{
-			if (!rp.noRoof.HasValue || !rp.noRoof.Value)
+			if (rp.noRoof.HasValue && rp.noRoof.Value)
 			{
-				RoofGrid roofGrid = BaseGen.globalSettings.map.roofGrid;
-				RoofDef def = rp.roofDef ?? RoofDefOf.RoofConstructed;
-				foreach (IntVec3 item in rp.rect)
+				return;
+			}
+			RoofGrid roofGrid = BaseGen.globalSettings.map.roofGrid;
+			RoofDef def = rp.roofDef ?? RoofDefOf.RoofConstructed;
+			foreach (IntVec3 item in rp.rect)
+			{
+				if (!roofGrid.Roofed(item))
 				{
-					if (!roofGrid.Roofed(item))
-					{
-						roofGrid.SetRoof(item, def);
-					}
+					roofGrid.SetRoof(item, def);
 				}
 			}
 		}

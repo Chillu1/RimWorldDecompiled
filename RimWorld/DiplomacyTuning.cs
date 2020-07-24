@@ -42,8 +42,6 @@ namespace RimWorld
 
 		public const int Goodwill_BodyPartRemovalViolation = -70;
 
-		public const int Goodwill_PsychicAmplifierRemovalViolation = -200;
-
 		public const int Goodwill_MemberEuthanized = -100;
 
 		public const int Goodwill_AttackedSettlement = -50;
@@ -51,6 +49,8 @@ namespace RimWorld
 		public const int Goodwill_MilitaryAidRequested = -25;
 
 		public const int Goodwill_TraderRequested = -15;
+
+		public const int Goodwill_MemberStripped = -10;
 
 		public static readonly SimpleCurve Goodwill_PerQuadrumFromSettlementProximity = new SimpleCurve
 		{

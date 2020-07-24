@@ -99,23 +99,24 @@ namespace RimWorld.Planet
 				worldObjects.RemoveAll((WorldObject wo) => wo == null);
 				Recache();
 			}
-			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			if (Scribe.mode != LoadSaveMode.PostLoadInit)
 			{
-				if (worldObjects.RemoveAll((WorldObject wo) => wo == null || wo.def == null) != 0)
+				return;
+			}
+			if (worldObjects.RemoveAll((WorldObject wo) => wo == null || wo.def == null) != 0)
+			{
+				Log.Error("Some WorldObjects had null def after loading.");
+			}
+			for (int num2 = worldObjects.Count - 1; num2 >= 0; num2--)
+			{
+				try
 				{
-					Log.Error("Some WorldObjects had null def after loading.");
+					worldObjects[num2].SpawnSetup();
 				}
-				for (int num2 = worldObjects.Count - 1; num2 >= 0; num2--)
+				catch (Exception arg)
 				{
-					try
-					{
-						worldObjects[num2].SpawnSetup();
-					}
-					catch (Exception arg)
-					{
-						Log.Error("Exception spawning WorldObject: " + arg);
-						worldObjects.RemoveAt(num2);
-					}
+					Log.Error("Exception spawning WorldObject: " + arg);
+					worldObjects.RemoveAt(num2);
 				}
 			}
 		}
@@ -124,12 +125,12 @@ namespace RimWorld.Planet
 		{
 			if (worldObjects.Contains(o))
 			{
-				Log.Error("Tried to add world object " + o + " to world, but it's already here.");
+				Log.Error(string.Concat("Tried to add world object ", o, " to world, but it's already here."));
 				return;
 			}
 			if (o.Tile < 0)
 			{
-				Log.Error("Tried to add world object " + o + " but its tile is not set. Setting to 0.");
+				Log.Error(string.Concat("Tried to add world object ", o, " but its tile is not set. Setting to 0."));
 				o.Tile = 0;
 			}
 			worldObjects.Add(o);
@@ -142,7 +143,7 @@ namespace RimWorld.Planet
 		{
 			if (!worldObjects.Contains(o))
 			{
-				Log.Error("Tried to remove world object " + o + " from world, but it's not here.");
+				Log.Error(string.Concat("Tried to remove world object ", o, " from world, but it's not here."));
 				return;
 			}
 			worldObjects.Remove(o);

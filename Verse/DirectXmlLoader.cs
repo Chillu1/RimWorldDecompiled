@@ -161,33 +161,34 @@ namespace Verse
 
 		public static IEnumerable<T> AllGameItemsFromAsset<T>(LoadableXmlAsset asset) where T : new()
 		{
-			if (asset.xmlDoc != null)
+			if (asset.xmlDoc == null)
 			{
-				XmlNodeList xmlNodeList = asset.xmlDoc.DocumentElement.SelectNodes(typeof(T).Name);
-				bool gotData = false;
-				foreach (XmlNode item in xmlNodeList)
+				yield break;
+			}
+			XmlNodeList xmlNodeList = asset.xmlDoc.DocumentElement.SelectNodes(typeof(T).Name);
+			bool gotData = false;
+			foreach (XmlNode item in xmlNodeList)
+			{
+				XmlAttribute xmlAttribute = item.Attributes["Abstract"];
+				if (xmlAttribute == null || !(xmlAttribute.Value.ToLower() == "true"))
 				{
-					XmlAttribute xmlAttribute = item.Attributes["Abstract"];
-					if (xmlAttribute == null || !(xmlAttribute.Value.ToLower() == "true"))
+					T val;
+					try
 					{
-						T val;
-						try
-						{
-							val = DirectXmlToObject.ObjectFromXml<T>(item, doPostLoad: true);
-							gotData = true;
-						}
-						catch (Exception ex)
-						{
-							Log.Error("Exception loading data from file " + asset.name + ": " + ex);
-							continue;
-						}
-						yield return val;
+						val = DirectXmlToObject.ObjectFromXml<T>(item, doPostLoad: true);
+						gotData = true;
 					}
+					catch (Exception ex)
+					{
+						Log.Error("Exception loading data from file " + asset.name + ": " + ex);
+						continue;
+					}
+					yield return val;
 				}
-				if (!gotData)
-				{
-					Log.Error("Found no usable data when trying to get " + typeof(T) + "s from file " + asset.name);
-				}
+			}
+			if (!gotData)
+			{
+				Log.Error(string.Concat("Found no usable data when trying to get ", typeof(T), "s from file ", asset.name));
 			}
 		}
 	}

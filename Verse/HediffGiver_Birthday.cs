@@ -23,7 +23,7 @@ namespace Verse
 				float num = (pawn.ageTracker.AgeBiologicalYearsFloat - gotAtAge) * 60f;
 				if (num < 0f)
 				{
-					Log.Error("daysPassed < 0, pawn=" + pawn + ", gotAtAge=" + gotAtAge);
+					Log.Error(string.Concat("daysPassed < 0, pawn=", pawn, ", gotAtAge=", gotAtAge));
 					return;
 				}
 				for (int i = 0; i < addedHediffs.Count; i++)

@@ -271,13 +271,13 @@ namespace RimWorld
 			}
 			if (!ApparelUtility.HasPartsToWear(pawn, newApparel.def))
 			{
-				Log.Warning(pawn + " tried to wear " + newApparel + " but he has no body parts required to wear it.");
+				Log.Warning(string.Concat(pawn, " tried to wear ", newApparel, " but he has no body parts required to wear it."));
 				return;
 			}
 			if (EquipmentUtility.IsBiocoded(newApparel) && !EquipmentUtility.IsBiocodedFor(newApparel, pawn))
 			{
 				CompBiocodable compBiocodable = newApparel.TryGetComp<CompBiocodable>();
-				Log.Warning(pawn + " tried to wear " + newApparel + " but it is biocoded for " + compBiocodable.CodedPawnLabel + " .");
+				Log.Warning(string.Concat(pawn, " tried to wear ", newApparel, " but it is biocoded for ", compBiocodable.CodedPawnLabel, " ."));
 				return;
 			}
 			for (int num = wornApparel.Count - 1; num >= 0; num--)
@@ -290,7 +290,7 @@ namespace RimWorld
 						bool forbid = pawn.Faction != null && pawn.Faction.HostileTo(Faction.OfPlayer);
 						if (!TryDrop(apparel, out Apparel _, pawn.PositionHeld, forbid))
 						{
-							Log.Error(pawn + " could not drop " + apparel);
+							Log.Error(string.Concat(pawn, " could not drop ", apparel));
 							return;
 						}
 					}
@@ -302,7 +302,7 @@ namespace RimWorld
 			}
 			if (newApparel.Wearer != null)
 			{
-				Log.Warning(pawn + " is trying to wear " + newApparel + " but this apparel already has a wearer (" + newApparel.Wearer + "). This may or may not cause bugs.");
+				Log.Warning(string.Concat(pawn, " is trying to wear ", newApparel, " but this apparel already has a wearer (", newApparel.Wearer, "). This may or may not cause bugs."));
 			}
 			wornApparel.TryAdd(newApparel, canMergeWithExistingStacks: false);
 			if (locked)

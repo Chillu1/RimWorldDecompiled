@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Verse;
 
@@ -13,6 +14,11 @@ namespace RimWorld
 
 		public override void Notify_Equipped(Pawn pawn)
 		{
+			if (!ModLister.RoyaltyInstalled)
+			{
+				Log.ErrorOnce("Persona weapons are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 988331);
+				return;
+			}
 			if (pawn.IsColonistPlayerControlled && bondedPawn == null)
 			{
 				Find.LetterStack.ReceiveLetter("LetterBladelinkWeaponBondedLabel".Translate(pawn.Named("PAWN"), parent.Named("WEAPON")), "LetterBladelinkWeaponBonded".Translate(pawn.Named("PAWN"), parent.Named("WEAPON")).Resolve(), LetterDefOf.PositiveEvent);
@@ -56,22 +62,9 @@ namespace RimWorld
 			}
 		}
 
+		[Obsolete("Will be removed in the future")]
 		public override void Notify_UsedWeapon(Pawn pawn)
 		{
-			if (pawn.Faction == Faction.OfPlayer && !pawn.health.hediffSet.HasHediff(HediffDefOf.PsychicSilencer))
-			{
-				float statValue = parent.GetStatValue(StatDefOf.Bladelink_DetectionChance);
-				if (Rand.Chance(statValue))
-				{
-					foreach (Faction allFaction in Find.FactionManager.AllFactions)
-					{
-						if (ThingRequiringRoyalPermissionUtility.IsViolatingRulesOf(parent.def, pawn, allFaction))
-						{
-							allFaction.Notify_RoyalThingUseViolation(parent.def, pawn, parent.def.label, statValue);
-						}
-					}
-				}
-			}
 		}
 	}
 }

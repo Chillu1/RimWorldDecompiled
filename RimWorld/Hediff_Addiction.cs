@@ -49,11 +49,30 @@ namespace RimWorld
 		{
 			get
 			{
-				if (CurStageIndex == 1 && def.CompProps<HediffCompProperties_SeverityPerDay>() != null)
+				string labelInBrackets = base.LabelInBrackets;
+				string text = (1f - Severity).ToStringPercent("F0");
+				if (def.CompProps<HediffCompProperties_SeverityPerDay>() != null)
 				{
-					return base.LabelInBrackets + " " + (1f - Severity).ToStringPercent();
+					if (!labelInBrackets.NullOrEmpty())
+					{
+						return labelInBrackets + " " + text;
+					}
+					return text;
 				}
-				return base.LabelInBrackets;
+				return labelInBrackets;
+			}
+		}
+
+		public override string TipStringExtra
+		{
+			get
+			{
+				Need_Chemical need = Need;
+				if (need != null)
+				{
+					return "CreatesNeed".Translate() + ": " + need.LabelCap + " (" + need.CurLevelPercentage.ToStringPercent("F0") + ")";
+				}
+				return null;
 			}
 		}
 

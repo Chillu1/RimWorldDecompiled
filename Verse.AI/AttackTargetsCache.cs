@@ -193,7 +193,7 @@ namespace Verse.AI
 		{
 			if (!allTargets.Contains(target))
 			{
-				Log.Warning("Tried to deregister " + target + " but it's not in " + GetType());
+				Log.Warning(string.Concat("Tried to deregister ", target, " but it's not in ", GetType()));
 				return;
 			}
 			allTargets.Remove(target);

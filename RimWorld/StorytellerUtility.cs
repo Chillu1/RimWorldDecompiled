@@ -9,9 +9,9 @@ namespace RimWorld
 {
 	public static class StorytellerUtility
 	{
-		private const float GlobalPointsMin = 35f;
+		public const float GlobalPointsMin = 35f;
 
-		private const float GlobalPointsMax = 20000f;
+		public const float GlobalPointsMax = 10000f;
 
 		public const float BuildingWealthFactor = 0.5f;
 
@@ -50,6 +50,10 @@ namespace RimWorld
 			new CurvePoint(0.25f, 0.6f)
 		};
 
+		public const float ProgressScorePerWealth = 0.0001f;
+
+		public const float ProgressScorePerFreeColonist = 1f;
+
 		private static Dictionary<IIncidentTarget, StoryState> tmpOldStoryStates = new Dictionary<IIncidentTarget, StoryState>();
 
 		public static IncidentParms DefaultParmsNow(IncidentCategoryDef incCat, IIncidentTarget target)
@@ -67,6 +71,19 @@ namespace RimWorld
 			return incidentParms;
 		}
 
+		public static float GetProgressScore(IIncidentTarget target)
+		{
+			int num = 0;
+			foreach (Pawn item in target.PlayerPawnsForStoryteller)
+			{
+				if (!item.IsQuestLodger() && item.IsFreeColonist)
+				{
+					num++;
+				}
+			}
+			return (float)num * 1f + target.PlayerWealthForStoryteller * 0.0001f;
+		}
+
 		public static float DefaultThreatPointsNow(IIncidentTarget target)
 		{
 			float playerWealthForStoryteller = target.PlayerWealthForStoryteller;
@@ -74,36 +91,37 @@ namespace RimWorld
 			float num2 = 0f;
 			foreach (Pawn item in target.PlayerPawnsForStoryteller)
 			{
-				if (!item.IsQuestLodger())
+				if (item.IsQuestLodger())
 				{
-					float num3 = 0f;
-					if (item.IsFreeColonist)
+					continue;
+				}
+				float num3 = 0f;
+				if (item.IsFreeColonist)
+				{
+					num3 = PointsPerColonistByWealthCurve.Evaluate(playerWealthForStoryteller);
+				}
+				else if (item.RaceProps.Animal && item.Faction == Faction.OfPlayer && !item.Downed && item.training.CanAssignToTrain(TrainableDefOf.Release).Accepted)
+				{
+					num3 = 0.08f * item.kindDef.combatPower;
+					if (target is Caravan)
 					{
-						num3 = PointsPerColonistByWealthCurve.Evaluate(playerWealthForStoryteller);
+						num3 *= 0.7f;
 					}
-					else if (item.RaceProps.Animal && item.Faction == Faction.OfPlayer && !item.Downed && item.training.CanAssignToTrain(TrainableDefOf.Release).Accepted)
+				}
+				if (num3 > 0f)
+				{
+					if (item.ParentHolder != null && item.ParentHolder is Building_CryptosleepCasket)
 					{
-						num3 = 0.08f * item.kindDef.combatPower;
-						if (target is Caravan)
-						{
-							num3 *= 0.7f;
-						}
+						num3 *= 0.3f;
 					}
-					if (num3 > 0f)
-					{
-						if (item.ParentHolder != null && item.ParentHolder is Building_CryptosleepCasket)
-						{
-							num3 *= 0.3f;
-						}
-						num3 = Mathf.Lerp(num3, num3 * item.health.summaryHealth.SummaryHealthPercent, 0.65f);
-						num2 += num3;
-					}
+					num3 = Mathf.Lerp(num3, num3 * item.health.summaryHealth.SummaryHealthPercent, 0.65f);
+					num2 += num3;
 				}
 			}
 			float num4 = (num + num2) * target.IncidentPointsRandomFactorRange.RandomInRange;
 			float totalThreatPointsFactor = Find.StoryWatcher.watcherAdaptation.TotalThreatPointsFactor;
 			float num5 = Mathf.Lerp(1f, totalThreatPointsFactor, Find.Storyteller.difficulty.adaptationEffectFactor);
-			return Mathf.Clamp(num4 * num5 * Find.Storyteller.difficulty.threatScale * Find.Storyteller.def.pointsFactorFromDaysPassed.Evaluate(GenDate.DaysPassed), 35f, 20000f);
+			return Mathf.Clamp(num4 * num5 * Find.Storyteller.difficulty.threatScale * Find.Storyteller.def.pointsFactorFromDaysPassed.Evaluate(GenDate.DaysPassed), 35f, 10000f);
 		}
 
 		public static float DefaultSiteThreatPointsNow()
@@ -165,7 +183,7 @@ namespace RimWorld
 			string text = "Test future incidents for " + Find.Storyteller.def;
 			if (onlyThisComp != null)
 			{
-				text = text + " (" + onlyThisComp + ")";
+				text = string.Concat(text, " (", onlyThisComp, ")");
 			}
 			text = text + " (" + Find.TickManager.TicksGame.TicksToDays().ToString("F1") + "d - " + (Find.TickManager.TicksGame + numTestDays * 60000).TicksToDays().ToString("F1") + "d)";
 			DebugLogIncidentsInternal(allIncidents, threatBigCount, incCountsForTarget, incCountsForComp, numTestDays, stringBuilder.ToString(), text);
@@ -176,7 +194,7 @@ namespace RimWorld
 			StringBuilder stringBuilder = new StringBuilder();
 			DebugGetFutureIncidents(20, currentMapOnly: true, out Dictionary<IIncidentTarget, int> incCountsForTarget, out int[] incCountsForComp, out List<Pair<IncidentDef, IncidentParms>> allIncidents, out int threatBigCount, stringBuilder, null, parms);
 			new StringBuilder();
-			string header = "Test future incidents for ThreatsGenerator " + parms + " (" + 20 + " days, difficulty " + Find.Storyteller.difficulty + ")";
+			string header = string.Concat("Test future incidents for ThreatsGenerator ", parms, " (", 20, " days, difficulty ", Find.Storyteller.difficulty, ")");
 			DebugLogIncidentsInternal(allIncidents, threatBigCount, incCountsForTarget, incCountsForComp, 20, stringBuilder.ToString(), header);
 		}
 
@@ -246,46 +264,47 @@ namespace RimWorld
 					{
 						Log.Error("Null incident generated.");
 					}
-					if (!currentMapOnly || item.parms.target == Find.CurrentMap)
+					if (currentMapOnly && item.parms.target != Find.CurrentMap)
 					{
-						item.parms.target.StoryState.Notify_IncidentFired(item);
-						allIncidents.Add(new Pair<IncidentDef, IncidentParms>(item.def, item.parms));
-						if (!incCountsForTarget.ContainsKey(item.parms.target))
+						continue;
+					}
+					item.parms.target.StoryState.Notify_IncidentFired(item);
+					allIncidents.Add(new Pair<IncidentDef, IncidentParms>(item.def, item.parms));
+					if (!incCountsForTarget.ContainsKey(item.parms.target))
+					{
+						incCountsForTarget[item.parms.target] = 0;
+					}
+					incCountsForTarget[item.parms.target]++;
+					string text;
+					if (item.def.category != IncidentCategoryDefOf.ThreatBig)
+					{
+						text = ((item.def.category != IncidentCategoryDefOf.ThreatSmall) ? "  " : "S ");
+					}
+					else
+					{
+						threatBigCount++;
+						text = "T ";
+					}
+					string text2;
+					if (onlyThisThreatsGenerator != null)
+					{
+						text2 = "";
+					}
+					else
+					{
+						int num2 = Find.Storyteller.storytellerComps.IndexOf(item.source);
+						if (num2 >= 0)
 						{
-							incCountsForTarget[item.parms.target] = 0;
-						}
-						incCountsForTarget[item.parms.target]++;
-						string text;
-						if (item.def.category != IncidentCategoryDefOf.ThreatBig)
-						{
-							text = ((item.def.category != IncidentCategoryDefOf.ThreatSmall) ? "  " : "S ");
+							incCountsForComp[num2]++;
+							text2 = "M" + num2 + " ";
 						}
 						else
-						{
-							threatBigCount++;
-							text = "T ";
-						}
-						string text2;
-						if (onlyThisThreatsGenerator != null)
 						{
 							text2 = "";
 						}
-						else
-						{
-							int num2 = Find.Storyteller.storytellerComps.IndexOf(item.source);
-							if (num2 >= 0)
-							{
-								incCountsForComp[num2]++;
-								text2 = "M" + num2 + " ";
-							}
-							else
-							{
-								text2 = "";
-							}
-						}
-						text2 = text2.PadRight(4);
-						outputSb?.AppendLine(text2 + text + (Find.TickManager.TicksGame.TicksToDays().ToString("F1") + "d").PadRight(6) + " " + item);
 					}
+					text2 = text2.PadRight(4);
+					outputSb?.AppendLine(text2 + text + (Find.TickManager.TicksGame.TicksToDays().ToString("F1") + "d").PadRight(6) + " " + item);
 				}
 				Find.TickManager.DebugSetTicksGame(Find.TickManager.TicksGame + 1000);
 			}

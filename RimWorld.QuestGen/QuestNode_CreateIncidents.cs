@@ -73,7 +73,7 @@ namespace RimWorld.QuestGen
 			questPart_Delay.delayTicks = delayTicks;
 			questPart_Delay.inSignalEnable = delayInSignal;
 			questPart_Delay.inSignalDisable = disableSignal;
-			questPart_Delay.debugLabel = $"{questPart_Delay.delayTicks}_{incidentDef.ToString()}";
+			questPart_Delay.debugLabel = questPart_Delay.delayTicks.ToStringTicksToDays() + "_" + incidentDef.ToString();
 			quest.AddPart(questPart_Delay);
 			QuestPart_Incident questPart_Incident = new QuestPart_Incident();
 			questPart_Incident.incident = incident;

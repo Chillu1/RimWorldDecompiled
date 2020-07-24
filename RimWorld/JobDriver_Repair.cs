@@ -20,26 +20,27 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
+			JobDriver_Repair jobDriver_Repair = this;
 			this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
 			Toil repair = new Toil();
 			repair.initAction = delegate
 			{
-				ticksToNextRepair = 80f;
+				jobDriver_Repair.ticksToNextRepair = 80f;
 			};
 			repair.tickAction = delegate
 			{
 				Pawn actor = repair.actor;
 				actor.skills.Learn(SkillDefOf.Construction, 0.05f);
 				float num = actor.GetStatValue(StatDefOf.ConstructionSpeed) * 1.7f;
-				ticksToNextRepair -= num;
-				if (ticksToNextRepair <= 0f)
+				jobDriver_Repair.ticksToNextRepair -= num;
+				if (jobDriver_Repair.ticksToNextRepair <= 0f)
 				{
-					ticksToNextRepair += 20f;
-					base.TargetThingA.HitPoints++;
-					base.TargetThingA.HitPoints = Mathf.Min(base.TargetThingA.HitPoints, base.TargetThingA.MaxHitPoints);
-					base.Map.listerBuildingsRepairable.Notify_BuildingRepaired((Building)base.TargetThingA);
-					if (base.TargetThingA.HitPoints == base.TargetThingA.MaxHitPoints)
+					jobDriver_Repair.ticksToNextRepair += 20f;
+					jobDriver_Repair.TargetThingA.HitPoints++;
+					jobDriver_Repair.TargetThingA.HitPoints = Mathf.Min(jobDriver_Repair.TargetThingA.HitPoints, jobDriver_Repair.TargetThingA.MaxHitPoints);
+					jobDriver_Repair.Map.listerBuildingsRepairable.Notify_BuildingRepaired((Building)jobDriver_Repair.TargetThingA);
+					if (jobDriver_Repair.TargetThingA.HitPoints == jobDriver_Repair.TargetThingA.MaxHitPoints)
 					{
 						actor.records.Increment(RecordDefOf.ThingsRepaired);
 						actor.jobs.EndCurrentJob(JobCondition.Succeeded);

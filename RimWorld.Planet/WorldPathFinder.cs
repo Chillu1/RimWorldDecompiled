@@ -126,7 +126,7 @@ namespace RimWorld.Planet
 			{
 				if (openList.Count <= 0)
 				{
-					Log.Warning(caravan + " pathing from " + startTile + " to " + destTile + " ran out of tiles to process.");
+					Log.Warning(string.Concat(caravan, " pathing from ", startTile, " to ", destTile, " ran out of tiles to process."));
 					return WorldPath.NotFound;
 				}
 				CostNode costNode = openList.Pop();
@@ -145,7 +145,7 @@ namespace RimWorld.Planet
 				}
 				if (num2 > 500000)
 				{
-					Log.Warning(caravan + " pathing from " + startTile + " to " + destTile + " hit search limit of " + 500000 + " tiles.");
+					Log.Warning(string.Concat(caravan, " pathing from ", startTile, " to ", destTile, " hit search limit of ", 500000, " tiles."));
 					return WorldPath.NotFound;
 				}
 				int num5 = (num + 1 < tileIDToNeighbors_offsets.Count) ? tileIDToNeighbors_offsets[num + 1] : tileIDToNeighbors_values.Count;

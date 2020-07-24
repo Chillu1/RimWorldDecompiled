@@ -57,7 +57,7 @@ namespace RimWorld
 					if (!allDef.isExtreme || Prefs.ExtremeDifficultyUnlocked)
 					{
 						GUI.color = allDef.drawColor;
-						if (infoListing.RadioButton(allDef.LabelCap, difficulty == allDef, 0f, allDef.description))
+						if (infoListing.RadioButton_NewTemp(allDef.LabelCap, difficulty == allDef, 0f, allDef.description, 0f))
 						{
 							difficulty = allDef;
 						}

@@ -96,24 +96,26 @@ namespace RimWorld
 							break;
 						}
 					}
-					if (flag)
+					if (!flag)
 					{
-						for (int j = 0; j < requiredTags.Count; j++)
+						continue;
+					}
+					for (int j = 0; j < requiredTags.Count; j++)
+					{
+						if (item.def.apparel.tags.Contains(requiredTags[j]))
 						{
-							if (item.def.apparel.tags.Contains(requiredTags[j]))
-							{
-								return true;
-							}
+							return true;
 						}
-						if (allowedTags != null)
+					}
+					if (allowedTags == null)
+					{
+						continue;
+					}
+					for (int k = 0; k < allowedTags.Count; k++)
+					{
+						if (item.def.apparel.tags.Contains(allowedTags[k]))
 						{
-							for (int k = 0; k < allowedTags.Count; k++)
-							{
-								if (item.def.apparel.tags.Contains(allowedTags[k]))
-								{
-									return true;
-								}
-							}
+							return true;
 						}
 					}
 				}
@@ -172,11 +174,13 @@ namespace RimWorld
 
 		public bool suppressIdleAlert;
 
+		public bool canBeInherited;
+
+		public bool allowDignifiedMeditationFocus = true;
+
 		public ThoughtDef awardThought;
 
 		public ThoughtDef lostThought;
-
-		public float needFallPerDayAuthority;
 
 		public List<RoomRequirement> throneRoomRequirements;
 
@@ -203,6 +207,8 @@ namespace RimWorld
 		public List<AbilityDef> grantedAbilities = new List<AbilityDef>();
 
 		public IntRange speechCooldown;
+
+		public int maxPsylinkLevel;
 
 		[Unsaved(false)]
 		private List<ThingDef> satisfyingMealsCached;
@@ -361,7 +367,7 @@ namespace RimWorld
 			return HasSameRoomRequirement(otherReq, bedroomRequirements);
 		}
 
-		public int MaxAllowedPsychicAmplifierLevel(FactionDef faction)
+		public int MaxAllowedPsylinkLevel(FactionDef faction)
 		{
 			int result = 0;
 			for (int i = 0; i < faction.royalImplantRules.Count; i++)
@@ -447,15 +453,6 @@ namespace RimWorld
 				string reportText4 = enumerable.ToLineList(" -  ", capitalizeItems: true);
 				yield return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, taggedString6, valueString4, reportText4, 99994);
 			}
-			if (req.Faction != null)
-			{
-				int num = MaxAllowedPsychicAmplifierLevel(req.Faction.def);
-				if (num != 0)
-				{
-					TaggedString taggedString7 = "RoyalTitleTooltipMaxPsycastLevel".Translate();
-					yield return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, taggedString7, num.ToString(), "RoyalTitleTooltipMaxPsycastLevelDescription".Translate(req.Faction.Named("FACTION")).Resolve(), 99996);
-				}
-			}
 			if (foodRequirement.Defined && SatisfyingMeals().Any())
 			{
 				yield return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, "RoyalTitleRequiredMeals".Translate(), (from m in SatisfyingMeals()
@@ -465,12 +462,13 @@ namespace RimWorld
 
 		private IEnumerable<string> RequiredApparelListForGender(Gender g)
 		{
-			foreach (TaggedString item in from a in requiredApparel.SelectMany((ApparelRequirement r) => r.AllRequiredApparel(g))
+			Gender g2 = g;
+			foreach (TaggedString item in from a in requiredApparel.SelectMany((ApparelRequirement r) => r.AllRequiredApparel(g2))
 				select a.LabelCap)
 			{
 				yield return item;
 			}
-			yield return "ApparelRequirementAnyPowerArmor".Translate();
+			yield return "ApparelRequirementAnyPrestigeArmor".Translate();
 			yield return "ApparelRequirementAnyPsycasterApparel".Translate();
 		}
 
@@ -487,6 +485,10 @@ namespace RimWorld
 			foreach (string item in base.ConfigErrors())
 			{
 				yield return item;
+			}
+			if (!ModLister.RoyaltyInstalled)
+			{
+				Log.ErrorOnce("Royal titles are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 1222185);
 			}
 			if (awardThought != null && !typeof(Thought_MemoryRoyalTitle).IsAssignableFrom(awardThought.thoughtClass))
 			{
@@ -510,14 +512,15 @@ namespace RimWorld
 			{
 				yield return "undefined changeHeirQuestPoints, it's required for awardable titles";
 			}
-			if (!throneRoomRequirements.NullOrEmpty())
+			if (throneRoomRequirements.NullOrEmpty())
 			{
-				foreach (RoomRequirement req in throneRoomRequirements)
+				yield break;
+			}
+			foreach (RoomRequirement req in throneRoomRequirements)
+			{
+				foreach (string item2 in req.ConfigErrors())
 				{
-					foreach (string item2 in req.ConfigErrors())
-					{
-						yield return $"Room requirement {req.GetType().Name}: {item2}";
-					}
+					yield return $"Room requirement {req.GetType().Name}: {item2}";
 				}
 			}
 		}

@@ -213,6 +213,7 @@ namespace RimWorld
 
 		private static IEnumerable<Hediff> VisibleHediffs(Pawn pawn, bool showBloodLoss)
 		{
+			bool showBloodLoss2 = showBloodLoss;
 			if (!showAllHediffs)
 			{
 				List<Hediff_MissingPart> mpca = pawn.health.hediffSet.GetMissingPartsCommonAncestors();
@@ -230,19 +231,17 @@ namespace RimWorld
 					{
 						return false;
 					}
-					return (showBloodLoss || d.def != HediffDefOf.BloodLoss) ? true : false;
+					return (showBloodLoss2 || d.def != HediffDefOf.BloodLoss) ? true : false;
 				});
 				foreach (Hediff item in enumerable)
 				{
 					yield return item;
 				}
+				yield break;
 			}
-			else
+			foreach (Hediff hediff in pawn.health.hediffSet.hediffs)
 			{
-				foreach (Hediff hediff in pawn.health.hediffSet.hediffs)
-				{
-					yield return hediff;
-				}
+				yield return hediff;
 			}
 		}
 
@@ -254,7 +253,7 @@ namespace RimWorld
 				List<FloatMenuOption> list = new List<FloatMenuOption>();
 				foreach (RecipeDef allRecipe in thingForMedBills.def.AllRecipes)
 				{
-					if (allRecipe.AvailableNow)
+					if (allRecipe.AvailableNow && allRecipe.AvailableOnNow(pawn))
 					{
 						IEnumerable<ThingDef> enumerable = allRecipe.PotentiallyMissingIngredients(null, thingForMedBills.Map);
 						if (!enumerable.Any((ThingDef x) => x.isTechHediff) && !enumerable.Any((ThingDef x) => x.IsDrug) && (!enumerable.Any() || !allRecipe.dontShowIfAnyIngredientMissing))
@@ -551,7 +550,7 @@ namespace RimWorld
 				string text = item.First().LabelCap;
 				if (num5 != 1)
 				{
-					text = text + " x" + num5.ToString();
+					text = text + " x" + num5;
 				}
 				num4 += Text.CalcHeight(text, width);
 			}
@@ -717,18 +716,14 @@ namespace RimWorld
 			if (part != null)
 			{
 				stringBuilder.Append(part.LabelCap + ": ");
-				stringBuilder.AppendLine(" " + pawn.health.hediffSet.GetPartHealth(part).ToString() + " / " + part.def.GetMaxHealth(pawn).ToString());
+				stringBuilder.AppendLine(" " + pawn.health.hediffSet.GetPartHealth(part) + " / " + part.def.GetMaxHealth(pawn));
 				float num = PawnCapacityUtility.CalculatePartEfficiency(pawn.health.hediffSet, part);
 				if (num != 1f)
 				{
 					stringBuilder.AppendLine("Efficiency".Translate() + ": " + num.ToStringPercent());
 				}
+				stringBuilder.AppendLine("------------------");
 			}
-			else
-			{
-				stringBuilder.AppendLine("WholeBody".Translate());
-			}
-			stringBuilder.AppendLine("------------------");
 			foreach (IGrouping<int, Hediff> item in from x in diffs
 				group x by x.UIGroupKey)
 			{
@@ -736,7 +731,7 @@ namespace RimWorld
 				{
 					string severityLabel = item2.SeverityLabel;
 					bool flag = showHediffsDebugInfo && !item2.DebugString().NullOrEmpty();
-					if ((!item2.Label.NullOrEmpty() || !severityLabel.NullOrEmpty() || !item2.CapMods.NullOrEmpty()) | flag)
+					if (!item2.Label.NullOrEmpty() || !severityLabel.NullOrEmpty() || !item2.CapMods.NullOrEmpty() || flag)
 					{
 						stringBuilder.Append(item2.LabelCap);
 						if (!severityLabel.NullOrEmpty())
@@ -830,150 +825,164 @@ namespace RimWorld
 		{
 			Widgets.CheckboxLabeled(new Rect(rightRect.x, rightRect.y - 25f, 110f, 30f), "Dev: AllDiffs", ref showAllHediffs);
 			Widgets.CheckboxLabeled(new Rect(rightRect.x + 115f, rightRect.y - 25f, 120f, 30f), "DiffsDebugInfo", ref showHediffsDebugInfo);
-			if (Widgets.ButtonText(new Rect(rightRect.x + 240f, rightRect.y - 27f, 115f, 25f), "Debug info"))
+			if (!Widgets.ButtonText(new Rect(rightRect.x + 240f, rightRect.y - 27f, 115f, 25f), "Debug info"))
 			{
-				List<FloatMenuOption> list = new List<FloatMenuOption>();
-				list.Add(new FloatMenuOption("Parts hit chance (this part or any child node)", delegate
-				{
-					StringBuilder stringBuilder12 = new StringBuilder();
-					foreach (BodyPartRecord item2 in pawn.RaceProps.body.AllParts.OrderByDescending((BodyPartRecord x) => x.coverageAbsWithChildren))
-					{
-						stringBuilder12.AppendLine(item2.LabelCap + " " + item2.coverageAbsWithChildren.ToStringPercent());
-					}
-					Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder12.ToString()));
-				}));
-				list.Add(new FloatMenuOption("Parts hit chance (exactly this part)", delegate
-				{
-					StringBuilder stringBuilder11 = new StringBuilder();
-					float num2 = 0f;
-					foreach (BodyPartRecord item3 in pawn.RaceProps.body.AllParts.OrderByDescending((BodyPartRecord x) => x.coverageAbs))
-					{
-						stringBuilder11.AppendLine(item3.LabelCap + " " + item3.coverageAbs.ToStringPercent());
-						num2 += item3.coverageAbs;
-					}
-					stringBuilder11.AppendLine();
-					stringBuilder11.AppendLine("Total " + num2.ToStringPercent());
-					Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder11.ToString()));
-				}));
-				list.Add(new FloatMenuOption("Per-part efficiency", delegate
-				{
-					StringBuilder stringBuilder10 = new StringBuilder();
-					foreach (BodyPartRecord allPart in pawn.RaceProps.body.AllParts)
-					{
-						stringBuilder10.AppendLine(allPart.LabelCap + " " + PawnCapacityUtility.CalculatePartEfficiency(pawn.health.hediffSet, allPart).ToStringPercent());
-					}
-					Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder10.ToString()));
-				}));
-				list.Add(new FloatMenuOption("BodyPartGroup efficiency (of only natural parts)", delegate
-				{
-					StringBuilder stringBuilder9 = new StringBuilder();
-					foreach (BodyPartGroupDef item4 in DefDatabase<BodyPartGroupDef>.AllDefs.Where((BodyPartGroupDef x) => pawn.RaceProps.body.AllParts.Any((BodyPartRecord y) => y.groups.Contains(x))))
-					{
-						stringBuilder9.AppendLine(item4.LabelCap + " " + PawnCapacityUtility.CalculateNaturalPartsAverageEfficiency(pawn.health.hediffSet, item4).ToStringPercent());
-					}
-					Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder9.ToString()));
-				}));
-				list.Add(new FloatMenuOption("IsSolid", delegate
-				{
-					StringBuilder stringBuilder8 = new StringBuilder();
-					foreach (BodyPartRecord notMissingPart in pawn.health.hediffSet.GetNotMissingParts())
-					{
-						stringBuilder8.AppendLine(notMissingPart.LabelCap + " " + notMissingPart.def.IsSolid(notMissingPart, pawn.health.hediffSet.hediffs).ToString());
-					}
-					Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder8.ToString()));
-				}));
-				list.Add(new FloatMenuOption("IsSkinCovered", delegate
-				{
-					StringBuilder stringBuilder7 = new StringBuilder();
-					foreach (BodyPartRecord notMissingPart2 in pawn.health.hediffSet.GetNotMissingParts())
-					{
-						stringBuilder7.AppendLine(notMissingPart2.LabelCap + " " + notMissingPart2.def.IsSkinCovered(notMissingPart2, pawn.health.hediffSet).ToString());
-					}
-					Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder7.ToString()));
-				}));
-				list.Add(new FloatMenuOption("does have added parts", delegate
-				{
-					StringBuilder stringBuilder6 = new StringBuilder();
-					foreach (BodyPartRecord notMissingPart3 in pawn.health.hediffSet.GetNotMissingParts())
-					{
-						stringBuilder6.AppendLine(notMissingPart3.LabelCap + " " + pawn.health.hediffSet.PartOrAnyAncestorHasDirectlyAddedParts(notMissingPart3).ToString());
-					}
-					Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder6.ToString()));
-				}));
-				list.Add(new FloatMenuOption("GetNotMissingParts", delegate
-				{
-					StringBuilder stringBuilder5 = new StringBuilder();
-					foreach (BodyPartRecord notMissingPart4 in pawn.health.hediffSet.GetNotMissingParts())
-					{
-						stringBuilder5.AppendLine(notMissingPart4.LabelCap);
-					}
-					Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder5.ToString()));
-				}));
-				list.Add(new FloatMenuOption("GetCoverageOfNotMissingNaturalParts", delegate
-				{
-					StringBuilder stringBuilder4 = new StringBuilder();
-					foreach (BodyPartRecord item5 in pawn.RaceProps.body.AllParts.OrderByDescending((BodyPartRecord x) => pawn.health.hediffSet.GetCoverageOfNotMissingNaturalParts(x)))
-					{
-						stringBuilder4.AppendLine(item5.LabelCap + ": " + pawn.health.hediffSet.GetCoverageOfNotMissingNaturalParts(item5).ToStringPercent());
-					}
-					Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder4.ToString()));
-				}));
-				list.Add(new FloatMenuOption("parts nutrition (assuming adult)", delegate
-				{
-					StringBuilder stringBuilder3 = new StringBuilder();
-					float totalCorpseNutrition = StatDefOf.Nutrition.Worker.GetValueAbstract(pawn.RaceProps.corpseDef);
-					foreach (BodyPartRecord item6 in pawn.RaceProps.body.AllParts.OrderByDescending((BodyPartRecord x) => FoodUtility.GetBodyPartNutrition(totalCorpseNutrition, pawn, x)))
-					{
-						stringBuilder3.AppendLine(item6.LabelCap + ": " + FoodUtility.GetBodyPartNutrition(totalCorpseNutrition, pawn, item6));
-					}
-					Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder3.ToString()));
-				}));
-				HediffGiver_Birthday hLocal = default(HediffGiver_Birthday);
-				list.Add(new FloatMenuOption("HediffGiver_Birthday chance at age", delegate
-				{
-					List<FloatMenuOption> list2 = new List<FloatMenuOption>();
-					foreach (HediffGiverSetDef hediffGiverSet in pawn.RaceProps.hediffGiverSets)
-					{
-						foreach (HediffGiver_Birthday item7 in hediffGiverSet.hediffGivers.OfType<HediffGiver_Birthday>())
-						{
-							hLocal = item7;
-							FloatMenuOption item = new FloatMenuOption(hediffGiverSet.defName + " - " + item7.hediff.defName, delegate
-							{
-								StringBuilder stringBuilder2 = new StringBuilder();
-								stringBuilder2.AppendLine("% of pawns which will have at least 1 " + hLocal.hediff.label + " at age X:");
-								stringBuilder2.AppendLine();
-								for (int j = 1; (float)j < pawn.RaceProps.lifeExpectancy + 20f; j++)
-								{
-									stringBuilder2.AppendLine(j + ": " + hLocal.DebugChanceToHaveAtAge(pawn, j).ToStringPercent());
-								}
-								Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder2.ToString()));
-							});
-							list2.Add(item);
-						}
-					}
-					Find.WindowStack.Add(new FloatMenu(list2));
-				}));
-				list.Add(new FloatMenuOption("HediffGiver_Birthday count at age", delegate
-				{
-					StringBuilder stringBuilder = new StringBuilder();
-					stringBuilder.AppendLine("Average hediffs count (from HediffGiver_Birthday) at age X:");
-					stringBuilder.AppendLine();
-					for (int i = 1; (float)i < pawn.RaceProps.lifeExpectancy + 20f; i++)
-					{
-						float num = 0f;
-						foreach (HediffGiverSetDef hediffGiverSet2 in pawn.RaceProps.hediffGiverSets)
-						{
-							foreach (HediffGiver_Birthday item8 in hediffGiverSet2.hediffGivers.OfType<HediffGiver_Birthday>())
-							{
-								num += item8.DebugChanceToHaveAtAge(pawn, i);
-							}
-						}
-						stringBuilder.AppendLine(i + ": " + num.ToStringDecimalIfSmall());
-					}
-					Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder.ToString()));
-				}));
-				Find.WindowStack.Add(new FloatMenu(list));
+				return;
 			}
+			List<FloatMenuOption> list = new List<FloatMenuOption>();
+			list.Add(new FloatMenuOption("Parts hit chance (this part or any child node)", delegate
+			{
+				StringBuilder stringBuilder13 = new StringBuilder();
+				foreach (BodyPartRecord item2 in pawn.RaceProps.body.AllParts.OrderByDescending((BodyPartRecord x) => x.coverageAbsWithChildren))
+				{
+					stringBuilder13.AppendLine(item2.LabelCap + " " + item2.coverageAbsWithChildren.ToStringPercent());
+				}
+				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder13.ToString()));
+			}));
+			list.Add(new FloatMenuOption("Parts hit chance (exactly this part)", delegate
+			{
+				StringBuilder stringBuilder12 = new StringBuilder();
+				float num2 = 0f;
+				foreach (BodyPartRecord item3 in pawn.RaceProps.body.AllParts.OrderByDescending((BodyPartRecord x) => x.coverageAbs))
+				{
+					stringBuilder12.AppendLine(item3.LabelCap + " " + item3.coverageAbs.ToStringPercent());
+					num2 += item3.coverageAbs;
+				}
+				stringBuilder12.AppendLine();
+				stringBuilder12.AppendLine("Total " + num2.ToStringPercent());
+				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder12.ToString()));
+			}));
+			list.Add(new FloatMenuOption("Per-part efficiency", delegate
+			{
+				StringBuilder stringBuilder11 = new StringBuilder();
+				foreach (BodyPartRecord allPart in pawn.RaceProps.body.AllParts)
+				{
+					stringBuilder11.AppendLine(allPart.LabelCap + " " + PawnCapacityUtility.CalculatePartEfficiency(pawn.health.hediffSet, allPart).ToStringPercent());
+				}
+				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder11.ToString()));
+			}));
+			list.Add(new FloatMenuOption("BodyPartGroup efficiency (of only natural parts)", delegate
+			{
+				StringBuilder stringBuilder10 = new StringBuilder();
+				foreach (BodyPartGroupDef item4 in DefDatabase<BodyPartGroupDef>.AllDefs.Where((BodyPartGroupDef x) => pawn.RaceProps.body.AllParts.Any((BodyPartRecord y) => y.groups.Contains(x))))
+				{
+					stringBuilder10.AppendLine(item4.LabelCap + " " + PawnCapacityUtility.CalculateNaturalPartsAverageEfficiency(pawn.health.hediffSet, item4).ToStringPercent());
+				}
+				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder10.ToString()));
+			}));
+			list.Add(new FloatMenuOption("IsSolid", delegate
+			{
+				StringBuilder stringBuilder9 = new StringBuilder();
+				foreach (BodyPartRecord notMissingPart in pawn.health.hediffSet.GetNotMissingParts())
+				{
+					stringBuilder9.AppendLine(notMissingPart.LabelCap + " " + notMissingPart.def.IsSolid(notMissingPart, pawn.health.hediffSet.hediffs));
+				}
+				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder9.ToString()));
+			}));
+			list.Add(new FloatMenuOption("IsSkinCovered", delegate
+			{
+				StringBuilder stringBuilder8 = new StringBuilder();
+				foreach (BodyPartRecord notMissingPart2 in pawn.health.hediffSet.GetNotMissingParts())
+				{
+					stringBuilder8.AppendLine(notMissingPart2.LabelCap + " " + notMissingPart2.def.IsSkinCovered(notMissingPart2, pawn.health.hediffSet));
+				}
+				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder8.ToString()));
+			}));
+			list.Add(new FloatMenuOption("Immunities", delegate
+			{
+				StringBuilder stringBuilder7 = new StringBuilder();
+				foreach (HediffDef item5 in DefDatabase<HediffDef>.AllDefsListForReading)
+				{
+					ImmunityRecord immunityRecord = pawn.health.immunity.GetImmunityRecord(item5);
+					if (immunityRecord != null)
+					{
+						stringBuilder7.AppendLine(string.Concat("Hediff: ", immunityRecord.hediffDef, ", Source: ", immunityRecord.source, ", Immunity: ", immunityRecord.immunity));
+					}
+				}
+				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder7.ToString()));
+			}));
+			list.Add(new FloatMenuOption("does have added parts", delegate
+			{
+				StringBuilder stringBuilder6 = new StringBuilder();
+				foreach (BodyPartRecord notMissingPart3 in pawn.health.hediffSet.GetNotMissingParts())
+				{
+					stringBuilder6.AppendLine(notMissingPart3.LabelCap + " " + pawn.health.hediffSet.PartOrAnyAncestorHasDirectlyAddedParts(notMissingPart3));
+				}
+				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder6.ToString()));
+			}));
+			list.Add(new FloatMenuOption("GetNotMissingParts", delegate
+			{
+				StringBuilder stringBuilder5 = new StringBuilder();
+				foreach (BodyPartRecord notMissingPart4 in pawn.health.hediffSet.GetNotMissingParts())
+				{
+					stringBuilder5.AppendLine(notMissingPart4.LabelCap);
+				}
+				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder5.ToString()));
+			}));
+			list.Add(new FloatMenuOption("GetCoverageOfNotMissingNaturalParts", delegate
+			{
+				StringBuilder stringBuilder4 = new StringBuilder();
+				foreach (BodyPartRecord item6 in pawn.RaceProps.body.AllParts.OrderByDescending((BodyPartRecord x) => pawn.health.hediffSet.GetCoverageOfNotMissingNaturalParts(x)))
+				{
+					stringBuilder4.AppendLine(item6.LabelCap + ": " + pawn.health.hediffSet.GetCoverageOfNotMissingNaturalParts(item6).ToStringPercent());
+				}
+				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder4.ToString()));
+			}));
+			list.Add(new FloatMenuOption("parts nutrition (assuming adult)", delegate
+			{
+				StringBuilder stringBuilder3 = new StringBuilder();
+				float totalCorpseNutrition = StatDefOf.Nutrition.Worker.GetValueAbstract(pawn.RaceProps.corpseDef);
+				foreach (BodyPartRecord item7 in pawn.RaceProps.body.AllParts.OrderByDescending((BodyPartRecord x) => FoodUtility.GetBodyPartNutrition(totalCorpseNutrition, pawn, x)))
+				{
+					stringBuilder3.AppendLine(item7.LabelCap + ": " + FoodUtility.GetBodyPartNutrition(totalCorpseNutrition, pawn, item7));
+				}
+				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder3.ToString()));
+			}));
+			list.Add(new FloatMenuOption("HediffGiver_Birthday chance at age", delegate
+			{
+				List<FloatMenuOption> list2 = new List<FloatMenuOption>();
+				HediffGiver_Birthday hLocal = default(HediffGiver_Birthday);
+				foreach (HediffGiverSetDef hediffGiverSet in pawn.RaceProps.hediffGiverSets)
+				{
+					foreach (HediffGiver_Birthday item8 in hediffGiverSet.hediffGivers.OfType<HediffGiver_Birthday>())
+					{
+						hLocal = item8;
+						FloatMenuOption item = new FloatMenuOption(hediffGiverSet.defName + " - " + item8.hediff.defName, delegate
+						{
+							StringBuilder stringBuilder2 = new StringBuilder();
+							stringBuilder2.AppendLine("% of pawns which will have at least 1 " + hLocal.hediff.label + " at age X:");
+							stringBuilder2.AppendLine();
+							for (int j = 1; (float)j < pawn.RaceProps.lifeExpectancy + 20f; j++)
+							{
+								stringBuilder2.AppendLine(j + ": " + hLocal.DebugChanceToHaveAtAge(pawn, j).ToStringPercent());
+							}
+							Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder2.ToString()));
+						});
+						list2.Add(item);
+					}
+				}
+				Find.WindowStack.Add(new FloatMenu(list2));
+			}));
+			list.Add(new FloatMenuOption("HediffGiver_Birthday count at age", delegate
+			{
+				StringBuilder stringBuilder = new StringBuilder();
+				stringBuilder.AppendLine("Average hediffs count (from HediffGiver_Birthday) at age X:");
+				stringBuilder.AppendLine();
+				for (int i = 1; (float)i < pawn.RaceProps.lifeExpectancy + 20f; i++)
+				{
+					float num = 0f;
+					foreach (HediffGiverSetDef hediffGiverSet2 in pawn.RaceProps.hediffGiverSets)
+					{
+						foreach (HediffGiver_Birthday item9 in hediffGiverSet2.hediffGivers.OfType<HediffGiver_Birthday>())
+						{
+							num += item9.DebugChanceToHaveAtAge(pawn, i);
+						}
+					}
+					stringBuilder.AppendLine(i + ": " + num.ToStringDecimalIfSmall());
+				}
+				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder.ToString()));
+			}));
+			Find.WindowStack.Add(new FloatMenu(list));
 		}
 
 		public static Pair<string, Color> GetEfficiencyLabel(Pawn pawn, PawnCapacityDef activity)

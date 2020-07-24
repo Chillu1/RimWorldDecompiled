@@ -99,7 +99,7 @@ namespace Verse
 			}
 			if (!map.regionAndRoomUpdater.Enabled && map.regionAndRoomUpdater.AnythingToRebuild)
 			{
-				Log.Warning("Trying to get valid region at " + c + " but RegionAndRoomUpdater is disabled. The result may be incorrect.");
+				Log.Warning(string.Concat("Trying to get valid region at ", c, " but RegionAndRoomUpdater is disabled. The result may be incorrect."));
 			}
 			map.regionAndRoomUpdater.TryRebuildDirtyRegionsAndRooms();
 			Region region = regionGrid[map.cellIndices.CellToIndex(c)];

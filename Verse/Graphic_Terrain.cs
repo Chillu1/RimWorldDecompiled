@@ -9,7 +9,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return "Terrain(path=" + path + ", shader=" + base.Shader + ", color=" + color + ")";
+			return string.Concat("Terrain(path=", path, ", shader=", base.Shader, ", color=", color, ")");
 		}
 	}
 }

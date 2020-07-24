@@ -362,35 +362,27 @@ namespace Verse
 			{
 				newRot = (byte)result;
 			}
-			else if (!(str == "North"))
-			{
-				if (!(str == "East"))
-				{
-					if (!(str == "South"))
-					{
-						if (str == "West")
-						{
-							newRot = 3;
-						}
-						else
-						{
-							newRot = 0;
-							Log.Error("Invalid rotation: " + str);
-						}
-					}
-					else
-					{
-						newRot = 2;
-					}
-				}
-				else
-				{
-					newRot = 1;
-				}
-			}
 			else
 			{
-				newRot = 0;
+				switch (str)
+				{
+				case "North":
+					newRot = 0;
+					break;
+				case "East":
+					newRot = 1;
+					break;
+				case "South":
+					newRot = 2;
+					break;
+				case "West":
+					newRot = 3;
+					break;
+				default:
+					newRot = 0;
+					Log.Error("Invalid rotation: " + str);
+					break;
+				}
 			}
 			return new Rot4(newRot);
 		}

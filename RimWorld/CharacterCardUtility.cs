@@ -152,24 +152,35 @@ namespace RimWorld
 					TooltipHandler.TipRegionByKey(rect9, "RenounceTitle");
 					if (Widgets.ButtonImage(rect9, TexButton.RenounceTitle))
 					{
-						FloatMenuUtility.MakeMenu(pawn.royalty.AllTitlesForReading, (RoyalTitle title) => "RenounceTitle".Translate() + ": " + "TitleOfFaction".Translate(title.def.GetLabelCapFor(pawn), title.faction.GetCallLabel()), (RoyalTitle title) => delegate
+						FloatMenuUtility.MakeMenu(pawn.royalty.AllTitlesForReading, (RoyalTitle title) => "RenounceTitle".Translate() + ": " + "TitleOfFaction".Translate(title.def.GetLabelCapFor(pawn), title.faction.GetCallLabel()), delegate(RoyalTitle title)
 						{
-							RoyalTitleUtility.FindLostAndGainedPermits(title.def, null, out List<RoyalTitlePermitDef> _, out List<RoyalTitlePermitDef> lostPermits);
-							StringBuilder stringBuilder = new StringBuilder();
-							if (lostPermits.Count > 0)
+							object _003CDrawCharacterCard_003Eb__3S_0;
+							return delegate
 							{
-								stringBuilder.AppendLine("RenounceTitleWillLoosePermits".Translate(pawn.Named("PAWN")) + ":");
-								foreach (RoyalTitlePermitDef item2 in lostPermits)
+								RoyalTitleUtility.FindLostAndGainedPermits(title.def, null, out List<RoyalTitlePermitDef> _, out List<RoyalTitlePermitDef> lostPermits);
+								StringBuilder stringBuilder = new StringBuilder();
+								if (lostPermits.Count > 0)
 								{
-									stringBuilder.AppendLine("- " + item2.LabelCap + " (" + FirstTitleWithPermit(item2).GetLabelFor(pawn) + ")");
+									stringBuilder.AppendLine("RenounceTitleWillLoosePermits".Translate(pawn.Named("PAWN")) + ":");
+									foreach (RoyalTitlePermitDef item2 in lostPermits)
+									{
+										stringBuilder.AppendLine("- " + item2.LabelCap + " (" + FirstTitleWithPermit(item2).GetLabelFor(pawn) + ")");
+									}
+									stringBuilder.AppendLine();
 								}
-								stringBuilder.AppendLine();
-							}
-							stringBuilder.AppendLine(title.faction.def.renounceTitleMessage);
-							Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("RenounceTitleDescription".Translate(pawn.Named("PAWN"), "TitleOfFaction".Translate(title.def.GetLabelCapFor(pawn), title.faction.GetCallLabel()).Named("TITLE"), stringBuilder.ToString().TrimEndNewlines().Named("EFFECTS")), delegate
+								if (!title.faction.def.renounceTitleMessage.NullOrEmpty())
+								{
+									stringBuilder.AppendLine(title.faction.def.renounceTitleMessage);
+								}
+								Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("RenounceTitleDescription".Translate(pawn.Named("PAWN"), "TitleOfFaction".Translate(title.def.GetLabelCapFor(pawn), title.faction.GetCallLabel()).Named("TITLE"), stringBuilder.ToString().TrimEndNewlines().Named("EFFECTS")), delegate
+								{
+									pawn.royalty.SetTitle(title.faction, null, grantRewards: false);
+								}, destructive: true));
+							};
+							RoyalTitleDef FirstTitleWithPermit(RoyalTitlePermitDef permitDef)
 							{
-								pawn.royalty.SetTitle(title.faction, null, grantRewards: false);
-							}, destructive: true));
+								return title.faction.def.RoyalTitlesAwardableInSeniorityOrderForReading.First((RoyalTitleDef t) => t.permits != null && t.permits.Contains(permitDef));
+							}
 						});
 					}
 					num -= 40f;
@@ -196,16 +207,16 @@ namespace RimWorld
 					drawer = delegate(Rect r)
 					{
 						Rect rect23 = new Rect(r.x, r.y, r.width, r.height);
-						Color color6 = GUI.color;
+						Color color7 = GUI.color;
 						GUI.color = StackElementBackground;
 						GUI.DrawTexture(rect23, BaseContent.WhiteTex);
-						GUI.color = color6;
+						GUI.color = color7;
 						Widgets.DrawHighlightIfMouseover(rect23);
 						Rect rect24 = new Rect(r.x, r.y, r.width, r.height);
 						Rect position4 = new Rect(r.x + 1f, r.y + 1f, 20f, 20f);
 						GUI.color = pawn.Faction.Color;
 						GUI.DrawTexture(position4, pawn.Faction.def.FactionIcon);
-						GUI.color = color6;
+						GUI.color = color7;
 						Widgets.Label(new Rect(rect24.x + rect24.height + 5f, rect24.y, rect24.width - 10f, rect24.height), pawn.Faction.Name);
 						if (Widgets.ButtonInvisible(rect23))
 						{
@@ -250,10 +261,10 @@ namespace RimWorld
 					{
 						Rect rect20 = new Rect(r.x, r.y, r.width, r.height);
 						Rect rect21 = drawExtraFactionIcon ? rect20 : r;
-						Color color5 = GUI.color;
+						Color color6 = GUI.color;
 						GUI.color = StackElementBackground;
 						GUI.DrawTexture(rect21, BaseContent.WhiteTex);
-						GUI.color = color5;
+						GUI.color = color6;
 						Widgets.DrawHighlightIfMouseover(rect21);
 						if (drawExtraFactionIcon)
 						{
@@ -261,7 +272,7 @@ namespace RimWorld
 							Rect position3 = new Rect(r.x + 1f, r.y + 1f, 20f, 20f);
 							GUI.color = localExtraFaction.faction.Color;
 							GUI.DrawTexture(position3, localExtraFaction.faction.def.FactionIcon);
-							GUI.color = color5;
+							GUI.color = color6;
 							Widgets.Label(new Rect(rect22.x + rect22.height + 5f, rect22.y, rect22.width - 10f, rect22.height), factionName);
 						}
 						else
@@ -302,11 +313,11 @@ namespace RimWorld
 					{
 						drawer = delegate(Rect r)
 						{
-							Color color4 = GUI.color;
+							Color color5 = GUI.color;
 							Rect rect18 = new Rect(r.x, r.y, r.width + 22f, r.height);
 							GUI.color = StackElementBackground;
 							GUI.DrawTexture(rect18, BaseContent.WhiteTex);
-							GUI.color = color4;
+							GUI.color = color5;
 							int favor = pawn.royalty.GetFavor(localTitle.faction);
 							if (Mouse.IsOver(rect18))
 							{
@@ -316,7 +327,7 @@ namespace RimWorld
 							Rect position2 = new Rect(r.x + 1f, r.y + 1f, 20f, 20f);
 							GUI.color = title2.faction.Color;
 							GUI.DrawTexture(position2, localTitle.faction.def.FactionIcon);
-							GUI.color = color4;
+							GUI.color = color5;
 							Widgets.Label(new Rect(rect19.x + rect19.height + 5f, rect19.y, rect19.width - 10f, rect19.height), titleLabel);
 							if (Widgets.ButtonInvisible(rect18))
 							{
@@ -338,10 +349,10 @@ namespace RimWorld
 				{
 					drawer = delegate(Rect r)
 					{
-						Color color3 = GUI.color;
+						Color color4 = GUI.color;
 						GUI.color = StackElementBackground;
 						GUI.DrawTexture(r, BaseContent.WhiteTex);
-						GUI.color = color3;
+						GUI.color = color4;
 						DoQuestLine(r, str, quest);
 					},
 					width = GetQuestLineSize(str, quest).x
@@ -468,10 +479,10 @@ namespace RimWorld
 					{
 						GenUI.StackElementDrawer<WorkTags> drawer = delegate(Rect r, WorkTags tag)
 						{
-							Color color2 = GUI.color;
+							Color color3 = GUI.color;
 							GUI.color = StackElementBackground;
 							GUI.DrawTexture(r, BaseContent.WhiteTex);
-							GUI.color = color2;
+							GUI.color = color3;
 							GUI.color = GetDisabledWorkTagLabelColor(pawn, tag);
 							if (Mouse.IsOver(r))
 							{
@@ -480,7 +491,8 @@ namespace RimWorld
 							Widgets.Label(new Rect(r.x + 5f, r.y, r.width - 10f, r.height), tag.LabelTranslated().CapitalizeFirst());
 							if (Mouse.IsOver(r))
 							{
-								TooltipHandler.TipRegion(tip: new TipSignal(() => GetWorkTypeDisabledCausedBy(pawnLocal, tag) + "\n" + GetWorkTypesDisabledByWorkTag(tag), (int)currentY3 * 32), rect: r);
+								WorkTags tagLocal = tag;
+								TooltipHandler.TipRegion(tip: new TipSignal(() => GetWorkTypeDisabledCausedBy(pawnLocal, tagLocal) + "\n" + GetWorkTypesDisabledByWorkTag(tagLocal), (int)currentY3 * 32), rect: r);
 							}
 						};
 						if (allowWorkTagVerticalLayout)
@@ -514,6 +526,7 @@ namespace RimWorld
 					Text.Font = GameFont.Small;
 					if (traits == null || traits.Count == 0)
 					{
+						Color color = GUI.color;
 						GUI.color = Color.gray;
 						Rect rect12 = new Rect(sectionRect.x, currentY2, leftRect.width, 24f);
 						if (Mouse.IsOver(rect12))
@@ -523,15 +536,16 @@ namespace RimWorld
 						Widgets.Label(rect12, "None".Translate());
 						currentY2 += rect12.height + 2f;
 						TooltipHandler.TipRegionByKey(rect12, "None");
+						GUI.color = color;
 					}
 					else
 					{
 						GenUI.DrawElementStack(new Rect(sectionRect.x, currentY2, leftRect.width - 5f, leftRect.height / (float)numSections), 22f, pawn.story.traits.allTraits, delegate(Rect r, Trait trait)
 						{
-							Color color = GUI.color;
+							Color color2 = GUI.color;
 							GUI.color = StackElementBackground;
 							GUI.DrawTexture(r, BaseContent.WhiteTex);
-							GUI.color = color;
+							GUI.color = color2;
 							if (Mouse.IsOver(r))
 							{
 								Widgets.DrawHighlight(r);
@@ -539,7 +553,8 @@ namespace RimWorld
 							Widgets.Label(new Rect(r.x + 5f, r.y, r.width - 10f, r.height), trait.LabelCap);
 							if (Mouse.IsOver(r))
 							{
-								TooltipHandler.TipRegion(tip: new TipSignal(() => trait.TipString(pawn), (int)currentY2 * 37), rect: r);
+								Trait trLocal = trait;
+								TooltipHandler.TipRegion(tip: new TipSignal(() => trLocal.TipString(pawn), (int)currentY2 * 37), rect: r);
 							}
 						}, (Trait trait) => Text.CalcSize(trait.LabelCap).x + 10f);
 					}
@@ -575,7 +590,8 @@ namespace RimWorld
 							}
 							if (Mouse.IsOver(r))
 							{
-								TipSignal tip = new TipSignal(() => abil.def.GetTooltip() + "\n\n" + "ClickToLearnMore".Translate(), (int)currentY * 37);
+								Ability abilCapture = abil;
+								TipSignal tip = new TipSignal(() => abilCapture.def.GetTooltip() + "\n\n" + "ClickToLearnMore".Translate(), (int)currentY * 37);
 								TooltipHandler.TipRegion(r, tip);
 							}
 						}, (Ability abil) => 32f);
@@ -665,17 +681,13 @@ namespace RimWorld
 			SkillUI.DrawSkillsOf(mode: (Current.ProgramState != ProgramState.Playing) ? SkillUI.SkillDrawMode.Menu : SkillUI.SkillDrawMode.Gameplay, p: pawn, offset: new Vector2(0f, 0f));
 			GUI.EndGroup();
 			GUI.EndGroup();
-			RoyalTitleDef FirstTitleWithPermit(RoyalTitlePermitDef permitDef)
-			{
-				return title.faction.def.RoyalTitlesAwardableInSeniorityOrderForReading.First((RoyalTitleDef t) => t.permits != null && t.permits.Contains(permitDef));
-			}
 		}
 
 		private static string GetTitleTipString(Pawn pawn, Faction faction, RoyalTitle title, int favor)
 		{
 			RoyalTitleDef def = title.def;
 			TaggedString t = "RoyalTitleTooltipHasTitle".Translate(pawn.Named("PAWN"), faction.Named("FACTION"), def.GetLabelCapFor(pawn).Named("TITLE"));
-			t += "\n\n" + faction.def.royalFavorLabel.CapitalizeFirst() + ": " + favor.ToString();
+			t += "\n\n" + faction.def.royalFavorLabel.CapitalizeFirst() + ": " + favor;
 			RoyalTitleDef nextTitle = def.GetNextTitle(faction);
 			if (nextTitle != null)
 			{
@@ -685,22 +697,29 @@ namespace RimWorld
 			{
 				t += "\n" + "RoyalTitleTooltipFinalTitle".Translate();
 			}
-			Pawn heir = pawn.royalty.GetHeir(faction);
-			if (heir != null)
+			if (title.def.canBeInherited)
 			{
-				t += "\n\n" + "RoyalTitleTooltipInheritance".Translate(pawn.Named("PAWN"), heir.Named("HEIR"));
-				if (heir.Faction == null)
+				Pawn heir = pawn.royalty.GetHeir(faction);
+				if (heir != null)
 				{
-					t += " " + "RoyalTitleTooltipHeirNoFaction".Translate(heir.Named("HEIR"));
+					t += "\n\n" + "RoyalTitleTooltipInheritance".Translate(pawn.Named("PAWN"), heir.Named("HEIR"));
+					if (heir.Faction == null)
+					{
+						t += " " + "RoyalTitleTooltipHeirNoFaction".Translate(heir.Named("HEIR"));
+					}
+					else if (heir.Faction != faction)
+					{
+						t += " " + "RoyalTitleTooltipHeirDifferentFaction".Translate(heir.Named("HEIR"), heir.Faction.Named("FACTION"));
+					}
 				}
-				else if (heir.Faction != faction)
+				else
 				{
-					t += " " + "RoyalTitleTooltipHeirDifferentFaction".Translate(heir.Named("HEIR"), heir.Faction.Named("FACTION"));
+					t += "\n\n" + "RoyalTitleTooltipNoHeir".Translate(pawn.Named("PAWN"));
 				}
 			}
 			else
 			{
-				t += "\n\n" + "RoyalTitleTooltipNoHeir".Translate(pawn.Named("PAWN"));
+				t += "\n\n" + "LetterRoyalTitleCantBeInherited".Translate(title.def.Named("TITLE")).CapitalizeFirst() + " " + "LetterRoyalTitleNoHeir".Translate(pawn.Named("PAWN"));
 			}
 			t += "\n\n" + (title.conceited ? "RoyalTitleTooltipConceited" : "RoyalTitleTooltipNonConceited").Translate(pawn.Named("PAWN"));
 			t += "\n\n" + RoyalTitleUtility.GetTitleProgressionInfo(faction, pawn);
@@ -749,7 +768,13 @@ namespace RimWorld
 						list.Add(item);
 					}
 				}
-				return list;
+			}
+			foreach (QuestPart_WorkDisabled item2 in QuestUtility.GetWorkDisabledQuestPart(pawn))
+			{
+				if ((item2.disabledWorkTags & workTag) != 0 && !list.Contains(item2.quest))
+				{
+					list.Add(item2.quest);
+				}
 			}
 			return list;
 		}
@@ -787,6 +812,10 @@ namespace RimWorld
 				else if (item is RoyalTitle)
 				{
 					stringBuilder.AppendLine("IncapableOfTooltipTitle".Translate((item as RoyalTitle).def.GetLabelFor(pawn)));
+				}
+				else if (item is Quest)
+				{
+					stringBuilder.AppendLine("IncapableOfTooltipQuest".Translate((item as Quest).name));
 				}
 			}
 			return stringBuilder.ToString();

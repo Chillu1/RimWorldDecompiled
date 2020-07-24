@@ -102,14 +102,14 @@ namespace RimWorld.Planet
 				{
 					yield return extraGenStepDef;
 				}
-				for (int j = 0; j < parts.Count; j++)
+				for (int i = 0; i < parts.Count; i++)
 				{
 					GenStepParams partGenStepParams = default(GenStepParams);
-					partGenStepParams.sitePart = parts[j];
-					List<GenStepDef> partGenStepDefs = parts[j].def.ExtraGenSteps;
-					for (int i = 0; i < partGenStepDefs.Count; i++)
+					partGenStepParams.sitePart = parts[i];
+					List<GenStepDef> partGenStepDefs = parts[i].def.ExtraGenSteps;
+					for (int j = 0; j < partGenStepDefs.Count; j++)
 					{
-						yield return new GenStepWithParams(partGenStepDefs[i], partGenStepParams);
+						yield return new GenStepWithParams(partGenStepDefs[j], partGenStepParams);
 					}
 					partGenStepParams = default(GenStepParams);
 				}
@@ -317,12 +317,13 @@ namespace RimWorld.Planet
 			{
 				yield return floatMenuOption;
 			}
-			if (!base.HasMap)
+			if (base.HasMap)
 			{
-				foreach (FloatMenuOption floatMenuOption2 in CaravanArrivalAction_VisitSite.GetFloatMenuOptions(caravan, this))
-				{
-					yield return floatMenuOption2;
-				}
+				yield break;
+			}
+			foreach (FloatMenuOption floatMenuOption2 in CaravanArrivalAction_VisitSite.GetFloatMenuOptions(caravan, this))
+			{
+				yield return floatMenuOption2;
 			}
 		}
 

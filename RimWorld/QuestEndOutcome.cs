@@ -4,6 +4,7 @@ namespace RimWorld
 	{
 		Unknown,
 		Success,
-		Fail
+		Fail,
+		InvalidPreAcceptance
 	}
 }

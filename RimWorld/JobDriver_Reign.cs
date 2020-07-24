@@ -4,21 +4,27 @@ using Verse.AI;
 
 namespace RimWorld
 {
-	public class JobDriver_Reign : JobDriver
+	public class JobDriver_Reign : JobDriver_Meditate
 	{
-		private const TargetIndex ThroneInd = TargetIndex.A;
+		protected const TargetIndex FacingInd = TargetIndex.B;
 
-		private const TargetIndex FacingInd = TargetIndex.B;
+		protected const int ApplyThoughtInitialTicks = 10000;
 
-		private const int JobEndInterval = 5000;
-
-		private const int ApplyThoughtInitialTicks = 10000;
-
-		private Building_Throne Throne => (Building_Throne)base.TargetThingA;
+		private Building_Throne Throne => base.TargetThingA as Building_Throne;
 
 		public override bool TryMakePreToilReservations(bool errorOnFailed)
 		{
 			return pawn.Reserve(Throne, job, 1, -1, null, errorOnFailed);
+		}
+
+		public override string GetReport()
+		{
+			return ReportStringProcessed(job.def.reportString) + ": " + Throne.LabelShort.CapitalizeFirst() + "." + PsyfocusPerDayReport();
+		}
+
+		public override bool CanBeginNowWhileLyingDown()
+		{
+			return false;
 		}
 
 		protected override IEnumerable<Toil> MakeNewToils()
@@ -31,11 +37,11 @@ namespace RimWorld
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.InteractionCell);
 			Toil toil = new Toil();
 			toil.FailOnCannotTouch(TargetIndex.A, PathEndMode.InteractionCell);
-			toil.FailOn(() => pawn.needs.authority.CurLevel >= 1f);
 			toil.FailOn(() => Throne.AssignedPawn != pawn);
 			toil.FailOn(() => RoomRoleWorker_ThroneRoom.Validate(Throne.GetRoom()) != null);
+			toil.FailOn(() => !MeditationUtility.CanMeditateNow(pawn) || !MeditationUtility.SafeEnvironmentalConditions(pawn, base.TargetLocA, base.Map));
 			toil.defaultCompleteMode = ToilCompleteMode.Delay;
-			toil.defaultDuration = 5000;
+			toil.defaultDuration = job.def.joyDuration;
 			toil.tickAction = delegate
 			{
 				if (pawn.mindState.applyThroneThoughtsTick == 0)
@@ -60,7 +66,11 @@ namespace RimWorld
 					}
 				}
 				rotateToFace = TargetIndex.B;
-				pawn.GainComfortFromCellIfPossible();
+				MeditationTick();
+				if (job.ignoreJoyTimeAssignment && pawn.IsHashIntervalTick(300))
+				{
+					pawn.jobs.CheckForJobOverride();
+				}
 			};
 			yield return toil;
 		}

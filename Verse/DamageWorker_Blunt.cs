@@ -19,25 +19,26 @@ namespace Verse
 			bool flag = Rand.Chance(def.bluntInnerHitChance);
 			float num = flag ? def.bluntInnerHitDamageFractionToConvert.RandomInRange : 0f;
 			float num2 = totalDamage * (1f - num);
+			DamageInfo lastInfo = dinfo;
 			while (true)
 			{
-				num2 -= FinalizeAndAddInjury(pawn, num2, dinfo, result);
-				if (!pawn.health.hediffSet.PartIsMissing(dinfo.HitPart) || num2 <= 1f)
+				num2 -= FinalizeAndAddInjury(pawn, num2, lastInfo, result);
+				if (!pawn.health.hediffSet.PartIsMissing(lastInfo.HitPart) || num2 <= 1f)
 				{
 					break;
 				}
-				BodyPartRecord parent = dinfo.HitPart.parent;
+				BodyPartRecord parent = lastInfo.HitPart.parent;
 				if (parent == null)
 				{
 					break;
 				}
-				dinfo.SetHitPart(parent);
+				lastInfo.SetHitPart(parent);
 			}
-			if (flag && !dinfo.HitPart.def.IsSolid(dinfo.HitPart, pawn.health.hediffSet.hediffs) && dinfo.HitPart.depth == BodyPartDepth.Outside && (from x in pawn.health.hediffSet.GetNotMissingParts()
-				where x.parent == dinfo.HitPart && x.def.IsSolid(x, pawn.health.hediffSet.hediffs) && x.depth == BodyPartDepth.Inside
+			if (flag && !lastInfo.HitPart.def.IsSolid(lastInfo.HitPart, pawn.health.hediffSet.hediffs) && lastInfo.HitPart.depth == BodyPartDepth.Outside && (from x in pawn.health.hediffSet.GetNotMissingParts()
+				where x.parent == lastInfo.HitPart && x.def.IsSolid(x, pawn.health.hediffSet.hediffs) && x.depth == BodyPartDepth.Inside
 				select x).TryRandomElementByWeight((BodyPartRecord x) => x.coverageAbs, out BodyPartRecord result2))
 			{
-				DamageInfo dinfo2 = dinfo;
+				DamageInfo dinfo2 = lastInfo;
 				dinfo2.SetHitPart(result2);
 				float totalDamage2 = totalDamage * num + totalDamage * def.bluntInnerHitDamageFractionToAdd.RandomInRange;
 				FinalizeAndAddInjury(pawn, totalDamage2, dinfo2, result);
@@ -47,7 +48,7 @@ namespace Verse
 				return;
 			}
 			SimpleCurve simpleCurve = null;
-			if (dinfo.HitPart.parent == null)
+			if (lastInfo.HitPart.parent == null)
 			{
 				simpleCurve = def.bluntStunChancePerDamagePctOfCorePartToBodyCurve;
 			}
@@ -55,7 +56,7 @@ namespace Verse
 			{
 				foreach (BodyPartRecord item in pawn.RaceProps.body.GetPartsWithTag(BodyPartTagDefOf.ConsciousnessSource))
 				{
-					if (InSameBranch(item, dinfo.HitPart))
+					if (InSameBranch(item, lastInfo.HitPart))
 					{
 						simpleCurve = def.bluntStunChancePerDamagePctOfCorePartToHeadCurve;
 						break;

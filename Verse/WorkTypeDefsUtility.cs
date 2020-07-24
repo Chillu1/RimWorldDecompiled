@@ -47,6 +47,8 @@ namespace Verse
 				return "WorkTagMining".Translate();
 			case WorkTags.Hunting:
 				return "WorkTagHunting".Translate();
+			case WorkTags.AllWork:
+				return "WorkTagAllWork".Translate();
 			default:
 				Log.Error("Unknown or mixed worktags for naming: " + (int)tags);
 				return "Worktag";

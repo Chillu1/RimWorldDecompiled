@@ -121,20 +121,18 @@ namespace Verse
 					{
 						list.Add(pawn);
 						map.ParentFaction.kidnapped.Kidnap(pawn, null);
+						continue;
 					}
-					else
+					if (pawn.Faction == Faction.OfPlayer || pawn.HostFaction == Faction.OfPlayer)
 					{
-						if (pawn.Faction == Faction.OfPlayer || pawn.HostFaction == Faction.OfPlayer)
-						{
-							list2.Add(pawn);
-							PawnDiedOrDownedThoughtsUtility.TryGiveThoughts(pawn, null, PawnDiedOrDownedThoughtsKind.Lost);
-						}
-						CleanUpAndPassToWorld(pawn);
+						list2.Add(pawn);
+						PawnDiedOrDownedThoughtsUtility.TryGiveThoughts(pawn, null, PawnDiedOrDownedThoughtsKind.Lost);
 					}
+					CleanUpAndPassToWorld(pawn);
 				}
 				catch (Exception ex)
 				{
-					Log.Error("Could not despawn and pass to world " + list3[i] + ": " + ex);
+					Log.Error(string.Concat("Could not despawn and pass to world ", list3[i], ": ", ex));
 				}
 			}
 			for (int j = 0; j < list.Count; j++)

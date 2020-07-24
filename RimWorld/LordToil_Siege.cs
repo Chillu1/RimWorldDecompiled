@@ -27,7 +27,7 @@ namespace RimWorld
 
 		private const int ReplenishAtShells = 4;
 
-		private const int ShellReplenishCount = 10;
+		private const int ShellReplenishCount = 6;
 
 		private const int ReplenishAtMeals = 5;
 
@@ -84,13 +84,11 @@ namespace RimWorld
 					if (thing != null)
 					{
 						thing.stackCount += cost.count;
+						continue;
 					}
-					else
-					{
-						Thing thing2 = ThingMaker.MakeThing(cost.thingDef);
-						thing2.stackCount = cost.count;
-						list.Add(thing2);
-					}
+					Thing thing2 = ThingMaker.MakeThing(cost.thingDef);
+					thing2.stackCount = cost.count;
+					list.Add(thing2);
 				}
 				ThingDef thingDef = item2.def.entityDefToBuild as ThingDef;
 				if (thingDef != null)
@@ -305,7 +303,7 @@ namespace RimWorld
 				ThingDef thingDef = TurretGunUtility.TryFindRandomShellDef(ThingDefOf.Turret_Mortar, allowEMP: false, mustHarmHealth: true, lord.faction.def.techLevel, allowAntigrainWarhead: false, 250f);
 				if (thingDef != null)
 				{
-					DropSupplies(thingDef, 10);
+					DropSupplies(thingDef, 6);
 				}
 			}
 			if (num3 < 5)

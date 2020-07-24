@@ -19,15 +19,16 @@ namespace RimWorld
 
 		public override IEnumerable<Thing> GetTargets(Thing targetChosenByPlayer = null)
 		{
-			if (parent.MapHeld != null)
+			if (parent.MapHeld == null)
 			{
-				TargetingParameters tp = GetTargetingParameters();
-				foreach (Pawn item in parent.MapHeld.mapPawns.AllPawnsSpawned)
+				yield break;
+			}
+			TargetingParameters tp = GetTargetingParameters();
+			foreach (Pawn item in parent.MapHeld.mapPawns.AllPawnsSpawned)
+			{
+				if (tp.CanTarget(item))
 				{
-					if (tp.CanTarget(item))
-					{
-						yield return item;
-					}
+					yield return item;
 				}
 			}
 		}

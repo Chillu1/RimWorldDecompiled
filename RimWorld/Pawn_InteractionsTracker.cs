@@ -142,7 +142,7 @@ namespace RimWorld
 			}
 			if (pawn == recipient)
 			{
-				Log.Warning(pawn + " tried to interact with self, interaction=" + intDef.defName);
+				Log.Warning(string.Concat(pawn, " tried to interact with self, interaction=", intDef.defName));
 				return false;
 			}
 			if (!CanInteractNowWith(recipient, intDef))
@@ -151,7 +151,7 @@ namespace RimWorld
 			}
 			if (InteractedTooRecentlyToInteract())
 			{
-				Log.Error(pawn + " tried to do interaction " + intDef + " to " + recipient + " only " + (Find.TickManager.TicksGame - lastInteractionTime) + " ticks since last interaction (min is " + 120 + ").");
+				Log.Error(string.Concat(pawn, " tried to do interaction ", intDef, " to ", recipient, " only ", Find.TickManager.TicksGame - lastInteractionTime, " ticks since last interaction (min is ", 120, ")."));
 				return false;
 			}
 			List<RulePackDef> list = new List<RulePackDef>();
@@ -252,7 +252,7 @@ namespace RimWorld
 						workingList.Clear();
 						return true;
 					}
-					Log.Error(pawn + " failed to interact with " + p);
+					Log.Error(string.Concat(pawn, " failed to interact with ", p));
 				}
 			}
 			workingList.Clear();

@@ -36,22 +36,23 @@ namespace Verse.Sound
 
 		public void DoEditWidgets(WidgetRow widgetRow)
 		{
-			if (widgetRow.ButtonText("Setup from preset...", "Set up the reverb filter from a preset."))
+			if (!widgetRow.ButtonText("Setup from preset...", "Set up the reverb filter from a preset."))
 			{
-				List<FloatMenuOption> list = new List<FloatMenuOption>();
-				foreach (AudioReverbPreset value in Enum.GetValues(typeof(AudioReverbPreset)))
-				{
-					if (value != AudioReverbPreset.User)
-					{
-						AudioReverbPreset localPreset = value;
-						list.Add(new FloatMenuOption(value.ToString(), delegate
-						{
-							this.SetupAs(localPreset);
-						}));
-					}
-				}
-				Find.WindowStack.Add(new FloatMenu(list));
+				return;
 			}
+			List<FloatMenuOption> list = new List<FloatMenuOption>();
+			foreach (AudioReverbPreset value in Enum.GetValues(typeof(AudioReverbPreset)))
+			{
+				if (value != AudioReverbPreset.User)
+				{
+					AudioReverbPreset localPreset = value;
+					list.Add(new FloatMenuOption(value.ToString(), delegate
+					{
+						this.SetupAs(localPreset);
+					}));
+				}
+			}
+			Find.WindowStack.Add(new FloatMenu(list));
 		}
 
 		public void ApplyTo(AudioReverbFilter filter)

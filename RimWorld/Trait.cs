@@ -89,7 +89,7 @@ namespace RimWorld
 			bool flag = GetPermaThoughts().Any();
 			bool flag2 = currentData.statOffsets != null;
 			bool flag3 = currentData.statFactors != null;
-			if (num | flag | flag2 | flag3)
+			if (num || flag || flag2 || flag3)
 			{
 				stringBuilder.AppendLine();
 				stringBuilder.AppendLine();
@@ -130,6 +130,22 @@ namespace RimWorld
 					string toStringAsFactor = statModifier2.ToStringAsFactor;
 					string value3 = "    " + statModifier2.stat.LabelCap + " " + toStringAsFactor;
 					stringBuilder.AppendLine(value3);
+				}
+			}
+			if (currentData.hungerRateFactor != 1f)
+			{
+				string t = currentData.hungerRateFactor.ToStringByStyle(ToStringStyle.PercentOne, ToStringNumberSense.Factor);
+				string value4 = "    " + "HungerRate".Translate() + " " + t;
+				stringBuilder.AppendLine(value4);
+			}
+			if (ModsConfig.RoyaltyActive)
+			{
+				List<MeditationFocusDef> allowedMeditationFocusTypes = CurrentData.allowedMeditationFocusTypes;
+				if (!allowedMeditationFocusTypes.NullOrEmpty())
+				{
+					stringBuilder.AppendLine();
+					stringBuilder.AppendLine();
+					stringBuilder.AppendLine("EnablesMeditationFocusType".Translate() + ":\n" + allowedMeditationFocusTypes.Select((MeditationFocusDef f) => f.LabelCap.RawText).ToLineList("  - "));
 				}
 			}
 			if (stringBuilder.Length > 0 && stringBuilder[stringBuilder.Length - 1] == '\n')
@@ -182,7 +198,7 @@ namespace RimWorld
 			TraitDegreeData currentData = CurrentData;
 			if (!currentData.mentalBreakInspirationGainSet.NullOrEmpty() && !(Rand.Value > currentData.mentalBreakInspirationGainChance))
 			{
-				pawn.mindState.inspirationHandler.TryStartInspiration(currentData.mentalBreakInspirationGainSet.RandomElement());
+				pawn.mindState.inspirationHandler.TryStartInspiration_NewTemp(currentData.mentalBreakInspirationGainSet.RandomElement(), currentData.mentalBreakInspirationGainReasonText);
 			}
 		}
 

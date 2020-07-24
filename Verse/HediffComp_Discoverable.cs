@@ -59,7 +59,7 @@ namespace Verse
 				string value = base.Pawn.KindLabelIndefinite();
 				if (base.Pawn.Name.IsValid && !base.Pawn.Name.Numerical)
 				{
-					value = base.Pawn.Name + " (" + base.Pawn.KindLabel + ")";
+					value = string.Concat(base.Pawn.Name, " (", base.Pawn.KindLabel, ")");
 				}
 				text = Props.discoverLetterText.Formatted(value, base.Pawn.Named("PAWN")).AdjustedFor(base.Pawn).CapitalizeFirst();
 			}
@@ -73,7 +73,7 @@ namespace Verse
 
 		public override string CompDebugString()
 		{
-			return "discovered: " + discovered.ToString();
+			return "discovered: " + discovered;
 		}
 	}
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Verse;
 
 namespace RimWorld
@@ -8,7 +9,7 @@ namespace RimWorld
 	{
 		private HashSet<Type> disallowedDesignatorTypes = new HashSet<Type>();
 
-		private HashSet<BuildableDef> disallowedBuildings = new HashSet<BuildableDef>();
+		private HashSet<ThingDef> disallowedBuildings = new HashSet<ThingDef>();
 
 		public void SetAllowDesignator(Type type, bool allowed)
 		{
@@ -23,7 +24,7 @@ namespace RimWorld
 			Find.ReverseDesignatorDatabase.Reinit();
 		}
 
-		public void SetAllowBuilding(BuildableDef building, bool allowed)
+		public void SetAllowBuilding(ThingDef building, bool allowed)
 		{
 			if (allowed && disallowedBuildings.Contains(building))
 			{

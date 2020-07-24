@@ -559,14 +559,12 @@ namespace Ionic.Zlib
 									s.window[num4++] = s.window[num14++];
 								}
 								while (--num12 != 0);
+								break;
 							}
-							else
-							{
-								Array.Copy(s.window, num14, s.window, num4, num12);
-								num4 += num12;
-								num14 += num12;
-								num12 = 0;
-							}
+							Array.Copy(s.window, num14, s.window, num4, num12);
+							num4 += num12;
+							num14 += num12;
+							num12 = 0;
 							break;
 						}
 						if ((num11 & 0x40) == 0)

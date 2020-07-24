@@ -46,7 +46,7 @@ namespace Verse
 			{
 				if (use == ListerThingsUse.Region && !req.group.StoreInRegion())
 				{
-					Log.ErrorOnce("Tried to get things in group " + req.group + " in a region, but this group is never stored in regions. Most likely a global query should have been used.", 1968735132);
+					Log.ErrorOnce(string.Concat("Tried to get things in group ", req.group, " in a region, but this group is never stored in regions. Most likely a global query should have been used."), 1968735132);
 					return EmptyList;
 				}
 				return listsByGroup[(uint)req.group] ?? EmptyList;

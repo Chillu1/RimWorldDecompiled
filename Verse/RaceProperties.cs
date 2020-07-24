@@ -64,6 +64,8 @@ namespace Verse
 
 		public bool herdMigrationAllowed = true;
 
+		public List<ThingDef> willNeverEat;
+
 		public float gestationPeriodDays = 10f;
 
 		public SimpleCurve litterSizeCurve;
@@ -116,6 +118,8 @@ namespace Verse
 		public SoundDef soundMeleeHitBuilding;
 
 		public SoundDef soundMeleeMiss;
+
+		public SoundDef soundMeleeDodge;
 
 		[Unsaved(false)]
 		private DeathActionWorker deathActionWorkerInt;
@@ -310,6 +314,10 @@ namespace Verse
 			{
 				return false;
 			}
+			if (willNeverEat != null && willNeverEat.Contains(t))
+			{
+				return false;
+			}
 			return Eats(t.ingestible.foodType);
 		}
 
@@ -352,11 +360,11 @@ namespace Verse
 			{
 				yield return "predator but doesn't eat meat";
 			}
-			for (int j = 0; j < lifeStageAges.Count; j++)
+			for (int i = 0; i < lifeStageAges.Count; i++)
 			{
-				for (int i = 0; i < j; i++)
+				for (int j = 0; j < i; j++)
 				{
-					if (lifeStageAges[i].minAge > lifeStageAges[j].minAge)
+					if (lifeStageAges[j].minAge > lifeStageAges[i].minAge)
 					{
 						yield return "lifeStages minAges are not in ascending order";
 					}
@@ -383,7 +391,7 @@ namespace Verse
 			}
 			if (useMeatFrom != null && useMeatFrom.race.useMeatFrom != null)
 			{
-				yield return "tries to use meat from " + useMeatFrom + " which uses meat from " + useMeatFrom.race.useMeatFrom;
+				yield return string.Concat("tries to use meat from ", useMeatFrom, " which uses meat from ", useMeatFrom.race.useMeatFrom);
 			}
 			if (useLeatherFrom != null && useLeatherFrom.category != ThingCategory.Pawn)
 			{
@@ -391,7 +399,7 @@ namespace Verse
 			}
 			if (useLeatherFrom != null && useLeatherFrom.race.useLeatherFrom != null)
 			{
-				yield return "tries to use leather from " + useLeatherFrom + " which uses leather from " + useLeatherFrom.race.useLeatherFrom;
+				yield return string.Concat("tries to use leather from ", useLeatherFrom, " which uses leather from ", useLeatherFrom.race.useLeatherFrom);
 			}
 			if (Animal && trainability == null)
 			{
@@ -409,7 +417,7 @@ namespace Verse
 			}
 			if (req.HasThing && req.Thing is Pawn && (req.Thing as Pawn).needs != null && (req.Thing as Pawn).needs.food != null)
 			{
-				yield return new StatDrawEntry(StatCategoryDefOf.BasicsPawn, "NutritationEatenPerDay".Translate(), ((req.Thing as Pawn).needs.food.FoodFallPerTick * 60000f).ToString("0.##"), NutritionEatenPerDayExplanation(req.Thing as Pawn), 4000);
+				yield return new StatDrawEntry(StatCategoryDefOf.BasicsPawn, "HungerRate".Translate(), ((req.Thing as Pawn).needs.food.FoodFallPerTickAssumingCategory(HungerCategory.Fed) * 60000f).ToString("0.##"), NutritionEatenPerDayExplanation_NewTemp(req.Thing as Pawn), 1600);
 			}
 			if (parentDef.race.leatherDef != null)
 			{
@@ -443,19 +451,79 @@ namespace Verse
 			}
 		}
 
+		[Obsolete("Will be replaced with NutritionEatenPerDayExplanation_NewTemp soon.")]
 		public static string NutritionEatenPerDayExplanation(Pawn p)
 		{
+			return NutritionEatenPerDayExplanation_NewTemp(p, showDiet: true, showLegend: true, showCalculations: false);
+		}
+
+		public static string NutritionEatenPerDayExplanation_NewTemp(Pawn p, bool showDiet = false, bool showLegend = false, bool showCalculations = true)
+		{
 			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.AppendLine("NoDietCategoryLetter".Translate() + " - " + DietCategory.Omnivorous.ToStringHuman());
-			DietCategory[] array = (DietCategory[])Enum.GetValues(typeof(DietCategory));
-			for (int i = 0; i < array.Length; i++)
+			stringBuilder.AppendLine("NutritionEatenPerDayTip".Translate(ThingDefOf.MealSimple.GetStatValueAbstract(StatDefOf.Nutrition).ToString("0.##")));
+			stringBuilder.AppendLine();
+			if (showDiet)
 			{
-				if (array[i] != 0 && array[i] != DietCategory.Omnivorous)
-				{
-					stringBuilder.AppendLine(array[i].ToStringHumanShort() + " - " + array[i].ToStringHuman());
-				}
+				stringBuilder.AppendLine("CanEat".Translate() + ": " + p.RaceProps.foodType.ToHumanString());
+				stringBuilder.AppendLine();
 			}
-			return "NutritionEatenPerDayTip".Translate(ThingDefOf.MealSimple.GetStatValueAbstract(StatDefOf.Nutrition).ToString("0.##"), stringBuilder.ToString(), p.RaceProps.foodType.ToHumanString());
+			if (showLegend)
+			{
+				stringBuilder.AppendLine("Legend".Translate() + ":");
+				stringBuilder.AppendLine("NoDietCategoryLetter".Translate() + " - " + DietCategory.Omnivorous.ToStringHuman());
+				DietCategory[] array = (DietCategory[])Enum.GetValues(typeof(DietCategory));
+				for (int i = 0; i < array.Length; i++)
+				{
+					if (array[i] != 0 && array[i] != DietCategory.Omnivorous)
+					{
+						stringBuilder.AppendLine(array[i].ToStringHumanShort() + " - " + array[i].ToStringHuman());
+					}
+				}
+				stringBuilder.AppendLine();
+			}
+			if (showCalculations)
+			{
+				stringBuilder.AppendLine("StatsReport_BaseValue".Translate() + ": " + (p.ageTracker.CurLifeStage.hungerRateFactor * p.RaceProps.baseHungerRate * 2.66666666E-05f * 60000f).ToStringByStyle(ToStringStyle.FloatTwo));
+				if (p.health.hediffSet.HungerRateFactor != 1f)
+				{
+					stringBuilder.AppendLine();
+					stringBuilder.AppendLine("StatsReport_RelevantHediffs".Translate() + ": " + p.health.hediffSet.HungerRateFactor.ToStringByStyle(ToStringStyle.PercentOne, ToStringNumberSense.Factor));
+					foreach (Hediff hediff in p.health.hediffSet.hediffs)
+					{
+						if (hediff.CurStage != null && hediff.CurStage.hungerRateFactor != 1f)
+						{
+							stringBuilder.AppendLine("    " + hediff.LabelCap + ": " + hediff.CurStage.hungerRateFactor.ToStringByStyle(ToStringStyle.PercentOne, ToStringNumberSense.Factor));
+						}
+					}
+					foreach (Hediff hediff2 in p.health.hediffSet.hediffs)
+					{
+						if (hediff2.CurStage != null && hediff2.CurStage.hungerRateFactorOffset != 0f)
+						{
+							stringBuilder.AppendLine("    " + hediff2.LabelCap + ": +" + hediff2.CurStage.hungerRateFactorOffset.ToStringByStyle(ToStringStyle.FloatMaxOne, ToStringNumberSense.Factor));
+						}
+					}
+				}
+				if (p.story != null && p.story.traits != null && p.story.traits.HungerRateFactor != 1f)
+				{
+					stringBuilder.AppendLine();
+					stringBuilder.AppendLine("StatsReport_RelevantTraits".Translate() + ": " + p.story.traits.HungerRateFactor.ToStringByStyle(ToStringStyle.PercentOne, ToStringNumberSense.Factor));
+					foreach (Trait allTrait in p.story.traits.allTraits)
+					{
+						if (allTrait.CurrentData.hungerRateFactor != 1f)
+						{
+							stringBuilder.AppendLine("    " + allTrait.LabelCap + ": " + allTrait.CurrentData.hungerRateFactor.ToStringByStyle(ToStringStyle.PercentOne, ToStringNumberSense.Factor));
+						}
+					}
+				}
+				if (p.GetStatValue(StatDefOf.HungerRateMultiplier) != 1f)
+				{
+					stringBuilder.AppendLine();
+					stringBuilder.AppendLine(StatDefOf.HungerRateMultiplier.LabelCap + ": " + p.GetStatValue(StatDefOf.HungerRateMultiplier).ToStringByStyle(ToStringStyle.FloatMaxOne, ToStringNumberSense.Factor));
+				}
+				stringBuilder.AppendLine();
+				stringBuilder.AppendLine("StatsReport_FinalValue".Translate() + ": " + (p.needs.food.FoodFallPerTickAssumingCategory(HungerCategory.Fed) * 60000f).ToStringByStyle(ToStringStyle.FloatMaxTwo));
+			}
+			return stringBuilder.ToString().TrimEndNewlines();
 		}
 	}
 }

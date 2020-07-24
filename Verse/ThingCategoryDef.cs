@@ -34,13 +34,14 @@ namespace Verse
 		{
 			get
 			{
-				if (parent != null)
+				if (parent == null)
 				{
-					yield return parent;
-					foreach (ThingCategoryDef parent2 in parent.Parents)
-					{
-						yield return parent2;
-					}
+					yield break;
+				}
+				yield return parent;
+				foreach (ThingCategoryDef parent2 in parent.Parents)
+				{
+					yield return parent2;
 				}
 			}
 		}

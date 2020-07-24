@@ -280,12 +280,10 @@ namespace Verse
 				if (compCanBeDormant != null)
 				{
 					compCanBeDormant.ToSleep();
+					continue;
 				}
-				else
-				{
-					Pawn pawn = item as Pawn;
-					pawn?.jobs.StartJob(JobMaker.MakeJob(JobDefOf.LayDown, pawn.Position));
-				}
+				Pawn pawn = item as Pawn;
+				pawn?.jobs.StartJob(JobMaker.MakeJob(JobDefOf.LayDown, pawn.Position));
 			}
 		}
 

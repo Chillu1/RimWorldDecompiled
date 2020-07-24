@@ -21,7 +21,7 @@ namespace RimWorld
 		{
 			if (!p.health.hediffSet.HasHediff(HediffDefOf.PsychicAmplifier))
 			{
-				failReason = "PsycastNeurotrainerNoPsychicAmplifier".Translate();
+				failReason = "PsycastNeurotrainerNoPsylink".TranslateWithBackup("PsycastNeurotrainerNoPsychicAmplifier");
 				return false;
 			}
 			if (p.abilities != null && p.abilities.abilities.Any((Ability a) => a.def == Ability))
@@ -30,6 +30,20 @@ namespace RimWorld
 				return false;
 			}
 			return base.CanBeUsedBy(p, out failReason);
+		}
+
+		public override TaggedString ConfirmMessage(Pawn p)
+		{
+			Hediff firstHediffOfDef = p.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.PsychicAmplifier);
+			if (firstHediffOfDef == null)
+			{
+				return null;
+			}
+			if (Ability.level > ((Hediff_ImplantWithLevel)firstHediffOfDef).level)
+			{
+				return "PsylinkTooLowForGainAbility".Translate(p.Named("PAWN"), Ability.label.Named("ABILITY"));
+			}
+			return null;
 		}
 	}
 }

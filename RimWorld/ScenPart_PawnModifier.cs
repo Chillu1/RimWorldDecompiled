@@ -38,19 +38,20 @@ namespace RimWorld
 			Text.Anchor = TextAnchor.MiddleRight;
 			Widgets.Label(rect6, "context".Translate());
 			Text.Anchor = TextAnchor.UpperLeft;
-			if (Widgets.ButtonText(rect7, context.ToStringHuman()))
+			if (!Widgets.ButtonText(rect7, context.ToStringHuman()))
 			{
-				List<FloatMenuOption> list = new List<FloatMenuOption>();
-				foreach (PawnGenerationContext value in Enum.GetValues(typeof(PawnGenerationContext)))
-				{
-					PawnGenerationContext localCont = value;
-					list.Add(new FloatMenuOption(localCont.ToStringHuman(), delegate
-					{
-						context = localCont;
-					}));
-				}
-				Find.WindowStack.Add(new FloatMenu(list));
+				return;
 			}
+			List<FloatMenuOption> list = new List<FloatMenuOption>();
+			foreach (PawnGenerationContext value in Enum.GetValues(typeof(PawnGenerationContext)))
+			{
+				PawnGenerationContext localCont = value;
+				list.Add(new FloatMenuOption(localCont.ToStringHuman(), delegate
+				{
+					context = localCont;
+				}));
+			}
+			Find.WindowStack.Add(new FloatMenu(list));
 		}
 
 		public override void Randomize()
@@ -78,14 +79,15 @@ namespace RimWorld
 
 		public override void PostMapGenerate(Map map)
 		{
-			if (Find.GameInitData != null && hideOffMap && context.Includes(PawnGenerationContext.PlayerStarter))
+			if (Find.GameInitData == null || !hideOffMap || !context.Includes(PawnGenerationContext.PlayerStarter))
 			{
-				foreach (Pawn startingAndOptionalPawn in Find.GameInitData.startingAndOptionalPawns)
+				return;
+			}
+			foreach (Pawn startingAndOptionalPawn in Find.GameInitData.startingAndOptionalPawns)
+			{
+				if (Rand.Chance(chance) && startingAndOptionalPawn.RaceProps.Humanlike)
 				{
-					if (Rand.Chance(chance) && startingAndOptionalPawn.RaceProps.Humanlike)
-					{
-						ModifyHideOffMapStartingPawnPostMapGenerate(startingAndOptionalPawn);
-					}
+					ModifyHideOffMapStartingPawnPostMapGenerate(startingAndOptionalPawn);
 				}
 			}
 		}

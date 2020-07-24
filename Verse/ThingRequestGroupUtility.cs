@@ -104,6 +104,10 @@ namespace Verse
 				return false;
 			case ThingRequestGroup.FoodDispenser:
 				return false;
+			case ThingRequestGroup.Projectile:
+				return false;
+			case ThingRequestGroup.MeditationFocus:
+				return false;
 			default:
 				throw new ArgumentException("group");
 			}

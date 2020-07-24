@@ -18,6 +18,7 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
+			JobDriver_ConstructFinishFrame jobDriver_ConstructFinishFrame = this;
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch).FailOnDespawnedNullOrForbidden(TargetIndex.A);
 			Toil build = new Toil();
 			build.initAction = delegate
@@ -27,7 +28,7 @@ namespace RimWorld
 			build.tickAction = delegate
 			{
 				Pawn actor = build.actor;
-				Frame frame = Frame;
+				Frame frame = jobDriver_ConstructFinishFrame.Frame;
 				if (frame.resourceContainer.Count > 0)
 				{
 					actor.skills.Learn(SkillDefOf.Construction, 0.25f);
@@ -44,25 +45,25 @@ namespace RimWorld
 					if (!TutorSystem.TutorialMode && Rand.Value < 1f - Mathf.Pow(statValue, num / workToBuild))
 					{
 						frame.FailConstruction(actor);
-						ReadyForNextToil();
+						jobDriver_ConstructFinishFrame.ReadyForNextToil();
 						return;
 					}
 				}
 				if (frame.def.entityDefToBuild is TerrainDef)
 				{
-					base.Map.snowGrid.SetDepth(frame.Position, 0f);
+					jobDriver_ConstructFinishFrame.Map.snowGrid.SetDepth(frame.Position, 0f);
 				}
 				frame.workDone += num;
 				if (frame.workDone >= workToBuild)
 				{
 					frame.CompleteConstruction(actor);
-					ReadyForNextToil();
+					jobDriver_ConstructFinishFrame.ReadyForNextToil();
 				}
 			};
 			build.WithEffect(() => ((Frame)build.actor.jobs.curJob.GetTarget(TargetIndex.A).Thing).ConstructionEffect, TargetIndex.A);
 			build.FailOnDespawnedNullOrForbidden(TargetIndex.A);
 			build.FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
-			build.FailOn(() => !GenConstruct.CanConstruct(Frame, pawn));
+			build.FailOn(() => !GenConstruct.CanConstruct(jobDriver_ConstructFinishFrame.Frame, jobDriver_ConstructFinishFrame.pawn));
 			build.defaultCompleteMode = ToilCompleteMode.Delay;
 			build.defaultDuration = 5000;
 			build.activeSkill = (() => SkillDefOf.Construction);

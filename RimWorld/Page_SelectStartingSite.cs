@@ -59,7 +59,7 @@ namespace RimWorld
 			for (int i = 0; i < worldGrid.TilesCount; i++)
 			{
 				Tile tile = worldGrid[i];
-				if (TutorSystem.AllowAction("ChooseBiome-" + tile.biome.defName + "-" + tile.hilliness.ToString()))
+				if (TutorSystem.AllowAction("ChooseBiome-" + tile.biome.defName + "-" + tile.hilliness))
 				{
 					tmpTileVertices.Clear();
 					worldGrid.GetTileVertices(i, tmpTileVertices);
@@ -181,7 +181,7 @@ namespace RimWorld
 				return false;
 			}
 			Tile tile = Find.WorldGrid[selectedTile];
-			if (!TutorSystem.AllowAction("ChooseBiome-" + tile.biome.defName + "-" + tile.hilliness.ToString()))
+			if (!TutorSystem.AllowAction("ChooseBiome-" + tile.biome.defName + "-" + tile.hilliness))
 			{
 				return false;
 			}

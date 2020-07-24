@@ -79,13 +79,11 @@ namespace Verse
 					{
 						HandleNeighbor(list2[j], num, node, distanceGetter, outParents);
 					}
+					continue;
 				}
-				else
+				foreach (T item in enumerable)
 				{
-					foreach (T item in enumerable)
-					{
-						HandleNeighbor(item, num, node, distanceGetter, outParents);
-					}
+					HandleNeighbor(item, num, node, distanceGetter, outParents);
 				}
 			}
 			foreach (KeyValuePair<T, float> distance in distances)

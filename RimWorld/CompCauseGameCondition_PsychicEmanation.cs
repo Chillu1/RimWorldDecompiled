@@ -79,34 +79,35 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (Prefs.DevMode)
+			if (!Prefs.DevMode)
 			{
-				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = gender.GetLabel();
-				command_Action.action = delegate
-				{
-					if (gender == Gender.Female)
-					{
-						gender = Gender.Male;
-					}
-					else
-					{
-						gender = Gender.Female;
-					}
-					ReSetupAllConditions();
-				};
-				command_Action.hotKey = KeyBindingDefOf.Misc1;
-				yield return command_Action;
-				Command_Action command_Action2 = new Command_Action();
-				command_Action2.defaultLabel = droneLevel.GetLabel();
-				command_Action2.action = delegate
-				{
-					IncreaseDroneLevel();
-					ReSetupAllConditions();
-				};
-				command_Action2.hotKey = KeyBindingDefOf.Misc2;
-				yield return command_Action2;
+				yield break;
 			}
+			Command_Action command_Action = new Command_Action();
+			command_Action.defaultLabel = gender.GetLabel();
+			command_Action.action = delegate
+			{
+				if (gender == Gender.Female)
+				{
+					gender = Gender.Male;
+				}
+				else
+				{
+					gender = Gender.Female;
+				}
+				ReSetupAllConditions();
+			};
+			command_Action.hotKey = KeyBindingDefOf.Misc1;
+			yield return command_Action;
+			Command_Action command_Action2 = new Command_Action();
+			command_Action2.defaultLabel = droneLevel.GetLabel();
+			command_Action2.action = delegate
+			{
+				IncreaseDroneLevel();
+				ReSetupAllConditions();
+			};
+			command_Action2.hotKey = KeyBindingDefOf.Misc2;
+			yield return command_Action2;
 		}
 
 		public override string CompInspectStringExtra()

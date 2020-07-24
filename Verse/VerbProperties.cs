@@ -508,7 +508,7 @@ namespace Verse
 		{
 			if (parent.race != null && linkedBodyPartsGroup != null && !parent.race.body.AllParts.Any((BodyPartRecord part) => part.groups.Contains(linkedBodyPartsGroup)))
 			{
-				yield return "has verb with linkedBodyPartsGroup " + linkedBodyPartsGroup + " but body " + parent.race.body + " has no parts with that group.";
+				yield return string.Concat("has verb with linkedBodyPartsGroup ", linkedBodyPartsGroup, " but body ", parent.race.body, " has no parts with that group.");
 			}
 			if (LaunchesProjectile && defaultProjectile != null && forcedMissRadius > 0f != CausesExplosion)
 			{

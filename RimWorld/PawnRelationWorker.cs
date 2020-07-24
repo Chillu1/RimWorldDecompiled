@@ -11,7 +11,7 @@ namespace RimWorld
 		{
 			if (def.implied)
 			{
-				throw new NotImplementedException(def + " lacks InRelation implementation.");
+				throw new NotImplementedException(string.Concat(def, " lacks InRelation implementation."));
 			}
 			return me.relations.DirectRelationExists(def, other);
 		}
@@ -28,7 +28,7 @@ namespace RimWorld
 				generated.relations.AddDirectRelation(def, other);
 				return;
 			}
-			throw new NotImplementedException(def + " lacks CreateRelation implementation.");
+			throw new NotImplementedException(string.Concat(def, " lacks CreateRelation implementation."));
 		}
 
 		public float BaseGenerationChanceFactor(Pawn generated, Pawn other, PawnGenerationRequest request)

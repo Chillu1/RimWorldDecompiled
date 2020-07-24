@@ -100,6 +100,8 @@ namespace Verse
 
 		public virtual bool MultiSelect => false;
 
+		public LocalTargetInfo CurrentTarget => currentTarget;
+
 		public virtual TargetingParameters targetParams => verbProps.targetParams;
 
 		public virtual ITargetingSource DestinationSelector => null;
@@ -124,20 +126,22 @@ namespace Verse
 
 		public bool BuggedAfterLoading => verbProps == null;
 
-		public bool WarmingUp
+		public bool WarmingUp => WarmupStance != null;
+
+		public Stance_Warmup WarmupStance
 		{
 			get
 			{
 				if (CasterPawn == null || !CasterPawn.Spawned)
 				{
-					return false;
+					return null;
 				}
-				Stance_Warmup stance_Warmup = CasterPawn.stances.curStance as Stance_Warmup;
-				if (stance_Warmup != null)
+				Stance_Warmup stance_Warmup;
+				if ((stance_Warmup = (CasterPawn.stances.curStance as Stance_Warmup)) == null || stance_Warmup.verb != this)
 				{
-					return stance_Warmup.verb == this;
+					return null;
 				}
-				return false;
+				return stance_Warmup;
 			}
 		}
 
@@ -489,19 +493,18 @@ namespace Verse
 			GenDraw.DrawTargetHighlight(target);
 			bool needLOSToCenter;
 			float num = HighlightFieldRadiusAroundTarget(out needLOSToCenter);
-			if (num > 0.2f && TryFindShootLineFromTo(caster.Position, target, out ShootLine resultingLine))
+			if (!(num > 0.2f) || !TryFindShootLineFromTo(caster.Position, target, out ShootLine resultingLine))
 			{
-				if (needLOSToCenter)
-				{
-					GenExplosion.RenderPredictedAreaOfEffect(resultingLine.Dest, num);
-				}
-				else
-				{
-					GenDraw.DrawFieldEdges((from x in GenRadial.RadialCellsAround(resultingLine.Dest, num, useCenter: true)
-						where x.InBounds(Find.CurrentMap)
-						select x).ToList());
-				}
+				return;
 			}
+			if (needLOSToCenter)
+			{
+				GenExplosion.RenderPredictedAreaOfEffect(resultingLine.Dest, num);
+				return;
+			}
+			GenDraw.DrawFieldEdges((from x in GenRadial.RadialCellsAround(resultingLine.Dest, num, useCenter: true)
+				where x.InBounds(Find.CurrentMap)
+				select x).ToList());
 		}
 
 		public virtual void OnGUI(LocalTargetInfo target)

@@ -108,17 +108,45 @@ namespace RimWorld
 		{
 			if (!drug.IsDrug)
 			{
-				Log.Warning(drug + " is not a drug.");
+				Log.Warning(string.Concat(drug, " is not a drug."));
 				return false;
 			}
 			return drugTakeRecords.Any((DrugTakeRecord x) => x.drug == drug);
+		}
+
+		public bool AllowedToTakeToInventory(ThingDef thingDef)
+		{
+			if (!thingDef.IsIngestible)
+			{
+				Log.Error(string.Concat(thingDef, " is not ingestible."));
+				return false;
+			}
+			if (!thingDef.IsDrug)
+			{
+				Log.Error("AllowedToTakeScheduledEver on non-drug " + thingDef);
+				return false;
+			}
+			if (thingDef.IsNonMedicalDrug && pawn.IsTeetotaler())
+			{
+				return false;
+			}
+			DrugPolicyEntry drugPolicyEntry = CurrentPolicy[thingDef];
+			if (drugPolicyEntry.allowScheduled)
+			{
+				return false;
+			}
+			if (drugPolicyEntry.takeToInventory > 0)
+			{
+				return !pawn.inventory.innerContainer.Contains(thingDef);
+			}
+			return false;
 		}
 
 		public bool AllowedToTakeScheduledEver(ThingDef thingDef)
 		{
 			if (!thingDef.IsIngestible)
 			{
-				Log.Error(thingDef + " is not ingestible.");
+				Log.Error(string.Concat(thingDef, " is not ingestible."));
 				return false;
 			}
 			if (!thingDef.IsDrug)
@@ -141,7 +169,7 @@ namespace RimWorld
 		{
 			if (!thingDef.IsIngestible)
 			{
-				Log.Error(thingDef + " is not ingestible.");
+				Log.Error(string.Concat(thingDef, " is not ingestible."));
 				return false;
 			}
 			if (!thingDef.IsDrug)

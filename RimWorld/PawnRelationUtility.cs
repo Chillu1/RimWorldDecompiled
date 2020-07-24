@@ -10,33 +10,34 @@ namespace RimWorld
 	{
 		public static IEnumerable<PawnRelationDef> GetRelations(this Pawn me, Pawn other)
 		{
-			if (me != other && me.RaceProps.IsFlesh && other.RaceProps.IsFlesh && me.relations.RelatedToAnyoneOrAnyoneRelatedToMe && other.relations.RelatedToAnyoneOrAnyoneRelatedToMe)
+			if (me == other || !me.RaceProps.IsFlesh || !other.RaceProps.IsFlesh || !me.relations.RelatedToAnyoneOrAnyoneRelatedToMe || !other.relations.RelatedToAnyoneOrAnyoneRelatedToMe)
 			{
-				try
+				yield break;
+			}
+			try
+			{
+				bool anyNonKinFamilyByBloodRelation = false;
+				List<PawnRelationDef> defs = DefDatabase<PawnRelationDef>.AllDefsListForReading;
+				int i = 0;
+				for (int count = defs.Count; i < count; i++)
 				{
-					bool anyNonKinFamilyByBloodRelation = false;
-					List<PawnRelationDef> defs = DefDatabase<PawnRelationDef>.AllDefsListForReading;
-					int i = 0;
-					for (int count = defs.Count; i < count; i++)
+					PawnRelationDef pawnRelationDef = defs[i];
+					if (pawnRelationDef != PawnRelationDefOf.Kin && pawnRelationDef.Worker.InRelation(me, other))
 					{
-						PawnRelationDef pawnRelationDef = defs[i];
-						if (pawnRelationDef != PawnRelationDefOf.Kin && pawnRelationDef.Worker.InRelation(me, other))
+						if (pawnRelationDef.familyByBloodRelation)
 						{
-							if (pawnRelationDef.familyByBloodRelation)
-							{
-								anyNonKinFamilyByBloodRelation = true;
-							}
-							yield return pawnRelationDef;
+							anyNonKinFamilyByBloodRelation = true;
 						}
-					}
-					if (!anyNonKinFamilyByBloodRelation && PawnRelationDefOf.Kin.Worker.InRelation(me, other))
-					{
-						yield return PawnRelationDefOf.Kin;
+						yield return pawnRelationDef;
 					}
 				}
-				finally
+				if (!anyNonKinFamilyByBloodRelation && PawnRelationDefOf.Kin.Worker.InRelation(me, other))
 				{
+					yield return PawnRelationDefOf.Kin;
 				}
+			}
+			finally
+			{
 			}
 		}
 
@@ -60,34 +61,37 @@ namespace RimWorld
 			bool flag = false;
 			foreach (Pawn seenPawn in seenPawns)
 			{
-				if (seenPawn.RaceProps.IsFlesh && (informEvenIfSeenBefore || !seenPawn.relations.everSeenByPlayer))
+				if (!seenPawn.RaceProps.IsFlesh || (!informEvenIfSeenBefore && seenPawn.relations.everSeenByPlayer))
 				{
-					seenPawn.relations.everSeenByPlayer = true;
-					bool flag2 = false;
-					foreach (Pawn item in enumerable)
+					continue;
+				}
+				seenPawn.relations.everSeenByPlayer = true;
+				bool flag2 = false;
+				foreach (Pawn item in enumerable)
+				{
+					if (seenPawn == item)
 					{
-						if (seenPawn != item)
+						continue;
+					}
+					PawnRelationDef mostImportantRelation = item.GetMostImportantRelation(seenPawn);
+					if (mostImportantRelation == null)
+					{
+						continue;
+					}
+					if (!flag2)
+					{
+						flag2 = true;
+						if (flag)
 						{
-							PawnRelationDef mostImportantRelation = item.GetMostImportantRelation(seenPawn);
-							if (mostImportantRelation != null)
-							{
-								if (!flag2)
-								{
-									flag2 = true;
-									if (flag)
-									{
-										stringBuilder.AppendLine();
-									}
-									if (writeSeenPawnsNames)
-									{
-										stringBuilder.AppendLine(seenPawn.KindLabel.CapitalizeFirst() + " " + seenPawn.NameShortColored.Resolve() + ":");
-									}
-								}
-								flag = true;
-								stringBuilder.AppendLine("  - " + "Relationship".Translate(mostImportantRelation.GetGenderSpecificLabelCap(seenPawn), item.KindLabel + " " + item.NameShortColored.Resolve(), item));
-							}
+							stringBuilder.AppendLine();
+						}
+						if (writeSeenPawnsNames)
+						{
+							stringBuilder.AppendLine(seenPawn.KindLabel.CapitalizeFirst() + " " + seenPawn.NameShortColored.Resolve() + ":");
 						}
 					}
+					flag = true;
+					stringBuilder.AppendLine("  - " + "Relationship".Translate(mostImportantRelation.GetGenderSpecificLabelCap(seenPawn), item.KindLabel + " " + item.NameShortColored.Resolve(), item));
 				}
 			}
 			if (flag)
@@ -126,23 +130,24 @@ namespace RimWorld
 			TaggedString letterLabel = "";
 			TaggedString letterText = "";
 			Notify_PawnsSeenByPlayer_Letter(seenPawns, ref letterLabel, ref letterText, relationsInfoHeader, informEvenIfSeenBefore, writeSeenPawnsNames);
-			if (!letterText.NullOrEmpty())
+			if (letterText.NullOrEmpty())
 			{
-				Pawn pawn = null;
-				foreach (Pawn seenPawn in seenPawns)
-				{
-					if (GetMostImportantColonyRelative(seenPawn) != null)
-					{
-						pawn = seenPawn;
-						break;
-					}
-				}
-				if (pawn == null)
-				{
-					pawn = seenPawns.FirstOrDefault();
-				}
-				Find.LetterStack.ReceiveLetter(letterLabel, letterText, letterDef, pawn);
+				return;
 			}
+			Pawn pawn = null;
+			foreach (Pawn seenPawn in seenPawns)
+			{
+				if (GetMostImportantColonyRelative(seenPawn) != null)
+				{
+					pawn = seenPawn;
+					break;
+				}
+			}
+			if (pawn == null)
+			{
+				pawn = seenPawns.FirstOrDefault();
+			}
+			Find.LetterStack.ReceiveLetter(letterLabel, letterText, letterDef, pawn);
 		}
 
 		public static bool TryAppendRelationsWithColonistsInfo(ref TaggedString text, Pawn pawn)

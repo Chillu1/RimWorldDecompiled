@@ -9,6 +9,18 @@ namespace Verse
 
 		private HediffCompProperties_SeverityPerDay Props => (HediffCompProperties_SeverityPerDay)props;
 
+		public override string CompLabelInBracketsExtra
+		{
+			get
+			{
+				if (props is HediffCompProperties_SeverityPerDay && Props.showHoursToRecover && SeverityChangePerDay() < 0f)
+				{
+					return Mathf.RoundToInt(parent.Severity / Mathf.Abs(SeverityChangePerDay()) * 24f) + (string)"LetterHour".Translate();
+				}
+				return null;
+			}
+		}
+
 		public override string CompTipStringExtra
 		{
 			get

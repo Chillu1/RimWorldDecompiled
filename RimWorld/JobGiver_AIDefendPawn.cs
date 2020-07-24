@@ -31,7 +31,7 @@ namespace RimWorld
 			Pawn defendee = GetDefendee(pawn);
 			if (defendee == null)
 			{
-				Log.Error(GetType() + " has null defendee. pawn=" + pawn.ToStringSafe());
+				Log.Error(string.Concat(GetType(), " has null defendee. pawn=", pawn.ToStringSafe()));
 				return null;
 			}
 			Pawn carriedBy = defendee.CarriedBy;

@@ -55,32 +55,33 @@ namespace Verse
 				for (int i = 0; i < 1000; i++)
 				{
 					item.TakeDamage(new DamageInfo(DamageDefOf.Crush, 10f));
-					if (item.Destroyed)
+					if (!item.Destroyed)
 					{
-						string str = "Took " + (i + 1) + " hits";
-						Pawn pawn = item as Pawn;
-						if (pawn != null)
+						continue;
+					}
+					string str = "Took " + (i + 1) + " hits";
+					Pawn pawn = item as Pawn;
+					if (pawn != null)
+					{
+						if (pawn.health.ShouldBeDeadFromLethalDamageThreshold())
 						{
-							if (pawn.health.ShouldBeDeadFromLethalDamageThreshold())
+							str = str + " (reached lethal damage threshold of " + pawn.health.LethalDamageThreshold.ToString("0.#") + ")";
+						}
+						else if (PawnCapacityUtility.CalculatePartEfficiency(pawn.health.hediffSet, pawn.RaceProps.body.corePart) <= 0.0001f)
+						{
+							str += " (core part hp reached 0)";
+						}
+						else
+						{
+							PawnCapacityDef pawnCapacityDef = pawn.health.ShouldBeDeadFromRequiredCapacity();
+							if (pawnCapacityDef != null)
 							{
-								str = str + " (reached lethal damage threshold of " + pawn.health.LethalDamageThreshold.ToString("0.#") + ")";
-							}
-							else if (PawnCapacityUtility.CalculatePartEfficiency(pawn.health.hediffSet, pawn.RaceProps.body.corePart) <= 0.0001f)
-							{
-								str += " (core part hp reached 0)";
-							}
-							else
-							{
-								PawnCapacityDef pawnCapacityDef = pawn.health.ShouldBeDeadFromRequiredCapacity();
-								if (pawnCapacityDef != null)
-								{
-									str = str + " (incapable of " + pawnCapacityDef.defName + ")";
-								}
+								str = str + " (incapable of " + pawnCapacityDef.defName + ")";
 							}
 						}
-						Log.Message(str + ".");
-						break;
 					}
+					Log.Message(str + ".");
+					break;
 				}
 			}
 		}
@@ -233,7 +234,7 @@ namespace Verse
 			}
 		}
 
-		[DebugAction("Pawns", "+20 psychic entropy", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("Pawns", "+20 neural heat", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void AddPsychicEntropy()
 		{
 			foreach (Thing item in Find.CurrentMap.thingGrid.ThingsAt(UI.MouseCell()).ToList())
@@ -245,7 +246,7 @@ namespace Verse
 			}
 		}
 
-		[DebugAction("Pawns", "-20 psychic entropy", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("Pawns", "-20 neural heat", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void ReducePsychicEntropy()
 		{
 			foreach (Thing item in Find.CurrentMap.thingGrid.ThingsAt(UI.MouseCell()).ToList())
@@ -330,107 +331,109 @@ namespace Verse
 		[DebugAction("Pawns", "Add/remove pawn relation", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void AddRemovePawnRelation(Pawn p)
 		{
-			if (p.RaceProps.IsFlesh)
+			if (!p.RaceProps.IsFlesh)
 			{
-				PawnRelationDef defLocal = default(PawnRelationDef);
-				Pawn otherLocal = default(Pawn);
-				Action<bool> act = delegate(bool add)
+				return;
+			}
+			Action<bool> act = delegate(bool add)
+			{
+				if (add)
 				{
-					if (add)
+					List<DebugMenuOption> list2 = new List<DebugMenuOption>();
+					PawnRelationDef defLocal = default(PawnRelationDef);
+					foreach (PawnRelationDef allDef in DefDatabase<PawnRelationDef>.AllDefs)
 					{
-						List<DebugMenuOption> list2 = new List<DebugMenuOption>();
-						foreach (PawnRelationDef allDef in DefDatabase<PawnRelationDef>.AllDefs)
+						if (!allDef.implied)
 						{
-							if (!allDef.implied)
+							defLocal = allDef;
+							list2.Add(new DebugMenuOption(defLocal.defName, DebugMenuOptionMode.Action, delegate
 							{
-								defLocal = allDef;
-								list2.Add(new DebugMenuOption(defLocal.defName, DebugMenuOptionMode.Action, delegate
+								List<DebugMenuOption> list4 = new List<DebugMenuOption>();
+								Pawn otherLocal = default(Pawn);
+								foreach (Pawn item in from x in PawnsFinder.AllMapsWorldAndTemporary_Alive
+									where x.RaceProps.IsFlesh
+									orderby x.def == p.def descending, x.IsWorldPawn()
+									select x)
 								{
-									List<DebugMenuOption> list4 = new List<DebugMenuOption>();
-									foreach (Pawn item in from x in PawnsFinder.AllMapsWorldAndTemporary_Alive
-										where x.RaceProps.IsFlesh
-										orderby x.def == p.def descending, x.IsWorldPawn()
-										select x)
+									if (p != item && (!defLocal.familyByBloodRelation || item.def == p.def) && !p.relations.DirectRelationExists(defLocal, item))
 									{
-										if (p != item && (!defLocal.familyByBloodRelation || item.def == p.def) && !p.relations.DirectRelationExists(defLocal, item))
+										otherLocal = item;
+										list4.Add(new DebugMenuOption(otherLocal.LabelShort + " (" + otherLocal.KindLabel + ")", DebugMenuOptionMode.Action, delegate
 										{
-											otherLocal = item;
-											list4.Add(new DebugMenuOption(otherLocal.LabelShort + " (" + otherLocal.KindLabel + ")", DebugMenuOptionMode.Action, delegate
-											{
-												p.relations.AddDirectRelation(defLocal, otherLocal);
-											}));
-										}
+											p.relations.AddDirectRelation(defLocal, otherLocal);
+										}));
 									}
-									Find.WindowStack.Add(new Dialog_DebugOptionListLister(list4));
-								}));
-							}
-						}
-						Find.WindowStack.Add(new Dialog_DebugOptionListLister(list2));
-					}
-					else
-					{
-						List<DebugMenuOption> list3 = new List<DebugMenuOption>();
-						List<DirectPawnRelation> directRelations = p.relations.DirectRelations;
-						DirectPawnRelation rel = default(DirectPawnRelation);
-						for (int i = 0; i < directRelations.Count; i++)
-						{
-							rel = directRelations[i];
-							list3.Add(new DebugMenuOption(rel.def.defName + " - " + rel.otherPawn.LabelShort, DebugMenuOptionMode.Action, delegate
-							{
-								p.relations.RemoveDirectRelation(rel);
+								}
+								Find.WindowStack.Add(new Dialog_DebugOptionListLister(list4));
 							}));
 						}
-						Find.WindowStack.Add(new Dialog_DebugOptionListLister(list3));
 					}
-				};
-				List<DebugMenuOption> list = new List<DebugMenuOption>();
-				list.Add(new DebugMenuOption("Add", DebugMenuOptionMode.Action, delegate
+					Find.WindowStack.Add(new Dialog_DebugOptionListLister(list2));
+				}
+				else
 				{
-					act(obj: true);
-				}));
-				list.Add(new DebugMenuOption("Remove", DebugMenuOptionMode.Action, delegate
-				{
-					act(obj: false);
-				}));
-				Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
-			}
+					List<DebugMenuOption> list3 = new List<DebugMenuOption>();
+					List<DirectPawnRelation> directRelations = p.relations.DirectRelations;
+					DirectPawnRelation rel = default(DirectPawnRelation);
+					for (int i = 0; i < directRelations.Count; i++)
+					{
+						rel = directRelations[i];
+						list3.Add(new DebugMenuOption(rel.def.defName + " - " + rel.otherPawn.LabelShort, DebugMenuOptionMode.Action, delegate
+						{
+							p.relations.RemoveDirectRelation(rel);
+						}));
+					}
+					Find.WindowStack.Add(new Dialog_DebugOptionListLister(list3));
+				}
+			};
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			list.Add(new DebugMenuOption("Add", DebugMenuOptionMode.Action, delegate
+			{
+				act(obj: true);
+			}));
+			list.Add(new DebugMenuOption("Remove", DebugMenuOptionMode.Action, delegate
+			{
+				act(obj: false);
+			}));
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
 		}
 
 		[DebugAction("Pawns", null, actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void AddOpinionTalksAbout(Pawn p)
 		{
-			if (p.RaceProps.Humanlike)
+			if (!p.RaceProps.Humanlike)
 			{
-				Action<bool> act = delegate(bool good)
+				return;
+			}
+			Action<bool> act = delegate(bool good)
+			{
+				foreach (Pawn item in p.Map.mapPawns.AllPawnsSpawned.Where((Pawn x) => x.RaceProps.Humanlike))
 				{
-					foreach (Pawn item in p.Map.mapPawns.AllPawnsSpawned.Where((Pawn x) => x.RaceProps.Humanlike))
+					if (p != item)
 					{
-						if (p != item)
+						IEnumerable<ThoughtDef> source = DefDatabase<ThoughtDef>.AllDefs.Where((ThoughtDef x) => typeof(Thought_MemorySocial).IsAssignableFrom(x.thoughtClass) && ((good && x.stages[0].baseOpinionOffset > 0f) || (!good && x.stages[0].baseOpinionOffset < 0f)));
+						if (source.Any())
 						{
-							IEnumerable<ThoughtDef> source = DefDatabase<ThoughtDef>.AllDefs.Where((ThoughtDef x) => typeof(Thought_MemorySocial).IsAssignableFrom(x.thoughtClass) && ((good && x.stages[0].baseOpinionOffset > 0f) || (!good && x.stages[0].baseOpinionOffset < 0f)));
-							if (source.Any())
+							int num = Rand.Range(2, 5);
+							for (int i = 0; i < num; i++)
 							{
-								int num = Rand.Range(2, 5);
-								for (int i = 0; i < num; i++)
-								{
-									ThoughtDef def = source.RandomElement();
-									item.needs.mood.thoughts.memories.TryGainMemory(def, p);
-								}
+								ThoughtDef def = source.RandomElement();
+								item.needs.mood.thoughts.memories.TryGainMemory(def, p);
 							}
 						}
 					}
-				};
-				List<DebugMenuOption> list = new List<DebugMenuOption>();
-				list.Add(new DebugMenuOption("Good", DebugMenuOptionMode.Action, delegate
-				{
-					act(obj: true);
-				}));
-				list.Add(new DebugMenuOption("Bad", DebugMenuOptionMode.Action, delegate
-				{
-					act(obj: false);
-				}));
-				Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
-			}
+				}
+			};
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			list.Add(new DebugMenuOption("Good", DebugMenuOptionMode.Action, delegate
+			{
+				act(obj: true);
+			}));
+			list.Add(new DebugMenuOption("Bad", DebugMenuOptionMode.Action, delegate
+			{
+				act(obj: false);
+			}));
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
 		}
 
 		[DebugAction("Pawns", "Force vomit...", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
@@ -439,10 +442,16 @@ namespace Verse
 			p.jobs.StartJob(JobMaker.MakeJob(JobDefOf.Vomit), JobCondition.InterruptForced, null, resumeCurJobAfterwards: true);
 		}
 
-		[DebugAction("Pawns", "Authority -20%", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void OffsetAuthortyNegative20()
+		[DebugAction("Pawns", "Psyfocus +20%", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void OffsetPsyfocusPositive20(Pawn p)
 		{
-			OffsetNeed(DefDatabase<NeedDef>.GetNamed("Authority"), -0.2f);
+			p.psychicEntropy?.OffsetPsyfocusDirectly(0.2f);
+		}
+
+		[DebugAction("Pawns", "Psyfocus -20%", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void OffsetPsyfocusNegative20(Pawn p)
+		{
+			p.psychicEntropy?.OffsetPsyfocusDirectly(-0.2f);
 		}
 
 		[DebugAction("Pawns", "Food -20%", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
@@ -521,15 +530,16 @@ namespace Verse
 				}
 				DebugActionsUtility.DustPuffFrom(p);
 			}
-			if (p.training != null)
+			if (p.training == null)
 			{
-				foreach (TrainableDef allDef2 in DefDatabase<TrainableDef>.AllDefs)
+				return;
+			}
+			foreach (TrainableDef allDef2 in DefDatabase<TrainableDef>.AllDefs)
+			{
+				Pawn trainer = p.Map.mapPawns.FreeColonistsSpawned.RandomElement();
+				if (p.training.CanAssignToTrain(allDef2, out bool _).Accepted)
 				{
-					Pawn trainer = p.Map.mapPawns.FreeColonistsSpawned.RandomElement();
-					if (p.training.CanAssignToTrain(allDef2, out bool _).Accepted)
-					{
-						p.training.Train(allDef2, trainer);
-					}
+					p.training.Train(allDef2, trainer);
 				}
 			}
 		}
@@ -592,9 +602,9 @@ namespace Verse
 				{
 					text += " [NO]";
 				}
-				Pawn locP = default(Pawn);
 				list.Add(new DebugMenuOption(text, DebugMenuOptionMode.Tool, delegate
 				{
+					Pawn locP = default(Pawn);
 					foreach (Pawn item in (from t in Find.CurrentMap.thingGrid.ThingsAt(UI.MouseCell())
 						where t is Pawn
 						select t).Cast<Pawn>())
@@ -641,7 +651,7 @@ namespace Verse
 				{
 					foreach (Pawn item in Find.CurrentMap.thingGrid.ThingsAt(UI.MouseCell()).OfType<Pawn>())
 					{
-						item.mindState.inspirationHandler.TryStartInspiration(localDef);
+						item.mindState.inspirationHandler.TryStartInspiration_NewTemp(localDef, "Debug gain");
 						DebugActionsUtility.DustPuffFrom(item);
 					}
 				}));
@@ -678,6 +688,53 @@ namespace Verse
 			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
 		}
 
+		[DebugAction("Pawns", "Set backstory...", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void SetBackstory()
+		{
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			list.Add(new DebugMenuOption("adulthood", DebugMenuOptionMode.Action, delegate
+			{
+				AddBackstoryOption(BackstorySlot.Adulthood);
+			}));
+			list.Add(new DebugMenuOption("childhood", DebugMenuOptionMode.Action, delegate
+			{
+				AddBackstoryOption(BackstorySlot.Childhood);
+			}));
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+			static void AddBackstoryOption(BackstorySlot slot)
+			{
+				List<DebugMenuOption> list2 = new List<DebugMenuOption>();
+				foreach (KeyValuePair<string, Backstory> outerBackstory in BackstoryDatabase.allBackstories)
+				{
+					if (outerBackstory.Value.slot == slot)
+					{
+						list2.Add(new DebugMenuOption(outerBackstory.Key, DebugMenuOptionMode.Tool, delegate
+						{
+							foreach (Pawn item in (from t in Find.CurrentMap.thingGrid.ThingsAt(UI.MouseCell())
+								where t is Pawn
+								select t).Cast<Pawn>())
+							{
+								if (item.story != null)
+								{
+									if (slot == BackstorySlot.Adulthood)
+									{
+										item.story.adulthood = outerBackstory.Value;
+									}
+									else
+									{
+										item.story.childhood = outerBackstory.Value;
+									}
+									MeditationFocusTypeAvailabilityCache.ClearFor(item);
+									DebugActionsUtility.DustPuffFrom(item);
+								}
+							}
+						}));
+					}
+				}
+				Find.WindowStack.Add(new Dialog_DebugOptionListLister(list2));
+			}
+		}
+
 		[DebugAction("Pawns", "Give ability...", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void GiveAbility()
 		{
@@ -710,8 +767,8 @@ namespace Verse
 			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
 		}
 
-		[DebugAction("Pawns", "Give PsychicAmplifier...", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void GivePsychicAmplifier()
+		[DebugAction("Pawns", "Give Psylink...", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void GivePsylink()
 		{
 			List<DebugMenuOption> list = new List<DebugMenuOption>();
 			for (int i = 1; i <= 6; i++)
@@ -723,7 +780,7 @@ namespace Verse
 						where t is Pawn
 						select t).Cast<Pawn>())
 					{
-						Hediff_ImplantWithLevel hediff_ImplantWithLevel = item.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.PsychicAmplifier) as Hediff_ImplantWithLevel;
+						Hediff_ImplantWithLevel hediff_ImplantWithLevel = item.GetMainPsylinkSource();
 						if (hediff_ImplantWithLevel == null)
 						{
 							hediff_ImplantWithLevel = (HediffMaker.MakeHediff(HediffDefOf.PsychicAmplifier, item, item.health.hediffSet.GetBrain()) as Hediff_ImplantWithLevel);
@@ -736,7 +793,7 @@ namespace Verse
 			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
 		}
 
-		[DebugAction("Pawns", "Remove psychic entropy", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("Pawns", "Remove neural heat", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void RemovePsychicEntropy(Pawn p)
 		{
 			if (p.psychicEntropy != null)
@@ -817,27 +874,29 @@ namespace Verse
 		[DebugAction("Pawns", null, actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void TrainAnimal(Pawn p)
 		{
-			if (p.RaceProps.Animal && p.Faction == Faction.OfPlayer && p.training != null)
+			if (!p.RaceProps.Animal || p.Faction != Faction.OfPlayer || p.training == null)
 			{
-				DebugActionsUtility.DustPuffFrom(p);
-				bool flag = false;
-				foreach (TrainableDef allDef in DefDatabase<TrainableDef>.AllDefs)
+				return;
+			}
+			DebugActionsUtility.DustPuffFrom(p);
+			bool flag = false;
+			foreach (TrainableDef allDef in DefDatabase<TrainableDef>.AllDefs)
+			{
+				if (p.training.GetWanted(allDef))
 				{
-					if (p.training.GetWanted(allDef))
-					{
-						p.training.Train(allDef, null, complete: true);
-						flag = true;
-					}
+					p.training.Train(allDef, null, complete: true);
+					flag = true;
 				}
-				if (!flag)
+			}
+			if (flag)
+			{
+				return;
+			}
+			foreach (TrainableDef allDef2 in DefDatabase<TrainableDef>.AllDefs)
+			{
+				if (p.training.CanAssignToTrain(allDef2).Accepted)
 				{
-					foreach (TrainableDef allDef2 in DefDatabase<TrainableDef>.AllDefs)
-					{
-						if (p.training.CanAssignToTrain(allDef2).Accepted)
-						{
-							p.training.Train(allDef2, null, complete: true);
-						}
-					}
+					p.training.Train(allDef2, null, complete: true);
 				}
 			}
 		}
@@ -890,63 +949,67 @@ namespace Verse
 		[DebugAction("Pawns", null, actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void StartMarriageCeremony(Pawn p)
 		{
-			if (p.RaceProps.Humanlike)
+			if (!p.RaceProps.Humanlike)
 			{
-				List<DebugMenuOption> list = new List<DebugMenuOption>();
-				foreach (Pawn item in p.Map.mapPawns.AllPawnsSpawned.Where((Pawn x) => x.RaceProps.Humanlike))
-				{
-					if (p != item)
-					{
-						Pawn otherLocal = item;
-						list.Add(new DebugMenuOption(otherLocal.LabelShort + " (" + otherLocal.KindLabel + ")", DebugMenuOptionMode.Action, delegate
-						{
-							if (!p.relations.DirectRelationExists(PawnRelationDefOf.Fiance, otherLocal))
-							{
-								p.relations.TryRemoveDirectRelation(PawnRelationDefOf.Lover, otherLocal);
-								p.relations.TryRemoveDirectRelation(PawnRelationDefOf.Spouse, otherLocal);
-								p.relations.AddDirectRelation(PawnRelationDefOf.Fiance, otherLocal);
-								Messages.Message("Dev: Auto added fiance relation.", p, MessageTypeDefOf.TaskCompletion, historical: false);
-							}
-							if (!p.Map.lordsStarter.TryStartMarriageCeremony(p, otherLocal))
-							{
-								Messages.Message("Could not find any valid marriage site.", MessageTypeDefOf.RejectInput, historical: false);
-							}
-						}));
-					}
-				}
-				Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+				return;
 			}
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			foreach (Pawn item in p.Map.mapPawns.AllPawnsSpawned.Where((Pawn x) => x.RaceProps.Humanlike))
+			{
+				if (p == item)
+				{
+					continue;
+				}
+				Pawn otherLocal = item;
+				list.Add(new DebugMenuOption(otherLocal.LabelShort + " (" + otherLocal.KindLabel + ")", DebugMenuOptionMode.Action, delegate
+				{
+					if (!p.relations.DirectRelationExists(PawnRelationDefOf.Fiance, otherLocal))
+					{
+						p.relations.TryRemoveDirectRelation(PawnRelationDefOf.Lover, otherLocal);
+						p.relations.TryRemoveDirectRelation(PawnRelationDefOf.Spouse, otherLocal);
+						p.relations.AddDirectRelation(PawnRelationDefOf.Fiance, otherLocal);
+						Messages.Message("Dev: Auto added fiance relation.", p, MessageTypeDefOf.TaskCompletion, historical: false);
+					}
+					if (!p.Map.lordsStarter.TryStartMarriageCeremony(p, otherLocal))
+					{
+						Messages.Message("Could not find any valid marriage site.", MessageTypeDefOf.RejectInput, historical: false);
+					}
+				}));
+			}
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
 		}
 
 		[DebugAction("Pawns", null, actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void ForceInteraction(Pawn p)
 		{
-			if (p.Faction != null)
+			if (p.Faction == null)
 			{
-				List<DebugMenuOption> list = new List<DebugMenuOption>();
-				foreach (Pawn item in p.Map.mapPawns.SpawnedPawnsInFaction(p.Faction))
+				return;
+			}
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			foreach (Pawn item in p.Map.mapPawns.SpawnedPawnsInFaction(p.Faction))
+			{
+				if (item == p)
 				{
-					if (item != p)
+					continue;
+				}
+				Pawn otherLocal = item;
+				list.Add(new DebugMenuOption(otherLocal.LabelShort + " (" + otherLocal.KindLabel + ")", DebugMenuOptionMode.Action, delegate
+				{
+					List<DebugMenuOption> list2 = new List<DebugMenuOption>();
+					InteractionDef interactionLocal = default(InteractionDef);
+					foreach (InteractionDef item2 in DefDatabase<InteractionDef>.AllDefsListForReading)
 					{
-						Pawn otherLocal = item;
-						InteractionDef interactionLocal = default(InteractionDef);
-						list.Add(new DebugMenuOption(otherLocal.LabelShort + " (" + otherLocal.KindLabel + ")", DebugMenuOptionMode.Action, delegate
+						interactionLocal = item2;
+						list2.Add(new DebugMenuOption(interactionLocal.label, DebugMenuOptionMode.Action, delegate
 						{
-							List<DebugMenuOption> list2 = new List<DebugMenuOption>();
-							foreach (InteractionDef item2 in DefDatabase<InteractionDef>.AllDefsListForReading)
-							{
-								interactionLocal = item2;
-								list2.Add(new DebugMenuOption(interactionLocal.label, DebugMenuOptionMode.Action, delegate
-								{
-									p.interactions.TryInteractWith(otherLocal, interactionLocal);
-								}));
-							}
-							Find.WindowStack.Add(new Dialog_DebugOptionListLister(list2));
+							p.interactions.TryInteractWith(otherLocal, interactionLocal);
 						}));
 					}
-				}
-				Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+					Find.WindowStack.Add(new Dialog_DebugOptionListLister(list2));
+				}));
 			}
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
 		}
 
 		[DebugAction("Pawns", null, actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]

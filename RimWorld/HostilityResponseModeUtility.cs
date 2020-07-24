@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
@@ -75,18 +76,34 @@ namespace RimWorld
 
 		private static IEnumerable<Widgets.DropdownMenuElement<HostilityResponseMode>> DrawResponseButton_GenerateMenu(Pawn p)
 		{
-			foreach (HostilityResponseMode response in Enum.GetValues(typeof(HostilityResponseMode)))
+			_003C_003Ec__DisplayClass9_0 _003C_003Ec__DisplayClass9_ = new _003C_003Ec__DisplayClass9_0();
+			_003C_003Ec__DisplayClass9_.p = p;
+			IEnumerator enumerator = Enum.GetValues(typeof(HostilityResponseMode)).GetEnumerator();
+			try
 			{
-				if (response != HostilityResponseMode.Attack || !p.WorkTagIsDisabled(WorkTags.Violent))
+				while (enumerator.MoveNext())
 				{
-					yield return new Widgets.DropdownMenuElement<HostilityResponseMode>
+					_003C_003Ec__DisplayClass9_0 _003C_003Ec__DisplayClass9_2 = _003C_003Ec__DisplayClass9_;
+					HostilityResponseMode response = (HostilityResponseMode)enumerator.Current;
+					if (response != HostilityResponseMode.Attack || !_003C_003Ec__DisplayClass9_2.p.WorkTagIsDisabled(WorkTags.Violent))
 					{
-						option = new FloatMenuOption(response.GetLabel(), delegate
+						yield return new Widgets.DropdownMenuElement<HostilityResponseMode>
 						{
-							p.playerSettings.hostilityResponse = response;
-						}, response.GetIcon(), Color.white),
-						payload = response
-					};
+							option = new FloatMenuOption(response.GetLabel(), delegate
+							{
+								_003C_003Ec__DisplayClass9_2.p.playerSettings.hostilityResponse = response;
+							}, response.GetIcon(), Color.white),
+							payload = response
+						};
+					}
+				}
+			}
+			finally
+			{
+				IDisposable disposable = enumerator as IDisposable;
+				if (disposable != null)
+				{
+					disposable.Dispose();
 				}
 			}
 		}

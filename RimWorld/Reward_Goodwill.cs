@@ -1,4 +1,5 @@
 using RimWorld.QuestGen;
+using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 using Verse.Grammar;
@@ -11,22 +12,44 @@ namespace RimWorld
 
 		public Faction faction;
 
+		public override IEnumerable<GenUI.AnonymousStackElement> StackElements
+		{
+			get
+			{
+				yield return QuestPartUtility.GetStandardRewardStackElement("Goodwill".Translate() + " " + amount.ToStringWithSign(), delegate(Rect r)
+				{
+					GUI.color = faction.Color;
+					GUI.DrawTexture(r, faction.def.FactionIcon);
+					GUI.color = Color.white;
+				}, () => "GoodwillTip".Translate(faction, amount, -75, 75, faction.PlayerGoodwill, faction.PlayerRelationKind.GetLabel()), delegate
+				{
+					Find.WindowStack.Add(new Dialog_InfoCard(faction));
+				});
+			}
+		}
+
 		public override void InitFromValue(float rewardValue, RewardsGeneratorParams parms, out float valueActuallyUsed)
 		{
 			amount = GenMath.RoundRandom(RewardsGenerator.RewardValueToGoodwillCurve.Evaluate(rewardValue));
 			amount = Mathf.Min(amount, 100 - parms.giverFaction.PlayerGoodwill);
 			amount = Mathf.Max(amount, 1);
 			valueActuallyUsed = RewardsGenerator.RewardValueToGoodwillCurve.EvaluateInverted(amount);
+			if (parms.giverFaction.HostileTo(Faction.OfPlayer))
+			{
+				amount += Mathf.Clamp(-parms.giverFaction.PlayerGoodwill / 2, 0, amount);
+				amount = Mathf.Min(amount, 100 - parms.giverFaction.PlayerGoodwill);
+				amount = Mathf.Max(amount, 1);
+			}
 			faction = parms.giverFaction;
 		}
 
-		public override void AddQuestPartsToGeneratingQuest(int index, RewardsGeneratorParams parms, string customLetterLabel, string customLetterText, RulePack customLetterLabelRules, RulePack customLetterTextRules)
+		public override IEnumerable<QuestPart> GenerateQuestParts(int index, RewardsGeneratorParams parms, string customLetterLabel, string customLetterText, RulePack customLetterLabelRules, RulePack customLetterTextRules)
 		{
 			QuestPart_FactionGoodwillChange questPart_FactionGoodwillChange = new QuestPart_FactionGoodwillChange();
 			questPart_FactionGoodwillChange.change = amount;
 			questPart_FactionGoodwillChange.faction = faction;
 			questPart_FactionGoodwillChange.inSignal = RimWorld.QuestGen.QuestGen.slate.Get<string>("inSignal");
-			RimWorld.QuestGen.QuestGen.quest.AddPart(questPart_FactionGoodwillChange);
+			yield return questPart_FactionGoodwillChange;
 		}
 
 		public override string GetDescription(RewardsGeneratorParams parms)
@@ -37,6 +60,13 @@ namespace RimWorld
 		public override string ToString()
 		{
 			return GetType().Name + " (faction=" + faction.ToStringSafe() + ", amount=" + amount + ")";
+		}
+
+		public override void ExposeData()
+		{
+			base.ExposeData();
+			Scribe_Values.Look(ref amount, "amount", 0);
+			Scribe_References.Look(ref faction, "faction");
 		}
 	}
 }

@@ -13,6 +13,8 @@ namespace RimWorld
 
 		public static HediffDef SurgicalCut;
 
+		public static HediffDef ExecutionCut;
+
 		public static HediffDef Stab;
 
 		public static HediffDef Gunshot;
@@ -53,6 +55,8 @@ namespace RimWorld
 
 		public static HediffDef CatatonicBreakdown;
 
+		public static HediffDef Scaria;
+
 		[MayRequireRoyalty]
 		public static HediffDef PsychicEntropy;
 
@@ -75,6 +79,12 @@ namespace RimWorld
 		public static HediffDef Hangover;
 
 		public static HediffDef DrugOverdose;
+
+		public static HediffDef GoJuiceHigh;
+
+		public static HediffDef WakeUpTolerance;
+
+		public static HediffDef GoJuiceTolerance;
 
 		public static HediffDef BadBack;
 
@@ -117,9 +127,6 @@ namespace RimWorld
 
 		[MayRequireRoyalty]
 		public static HediffDef PsychicHarmonizer;
-
-		[MayRequireRoyalty]
-		public static HediffDef PsychicSilencer;
 
 		static HediffDefOf()
 		{

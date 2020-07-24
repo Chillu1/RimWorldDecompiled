@@ -18,57 +18,57 @@ namespace RimWorld
 
 		public static IEnumerable<Pawn> GeneratePawns(PawnGroupMakerParms parms, bool warnOnZeroResults = true)
 		{
-			PawnGroupMaker pawnGroupMaker;
 			if (parms.groupKind == null)
 			{
 				Log.Error("Tried to generate pawns with null pawn group kind def. parms=" + parms);
+				yield break;
 			}
-			else if (parms.faction == null)
+			if (parms.faction == null)
 			{
 				Log.Error("Tried to generate pawn kinds with null faction. parms=" + parms);
+				yield break;
 			}
-			else if (parms.faction.def.pawnGroupMakers.NullOrEmpty())
+			if (parms.faction.def.pawnGroupMakers.NullOrEmpty())
 			{
-				Log.Error("Faction " + parms.faction + " of def " + parms.faction.def + " has no any PawnGroupMakers.");
+				Log.Error(string.Concat("Faction ", parms.faction, " of def ", parms.faction.def, " has no any PawnGroupMakers."));
+				yield break;
 			}
-			else if (!TryGetRandomPawnGroupMaker(parms, out pawnGroupMaker))
+			if (!TryGetRandomPawnGroupMaker(parms, out PawnGroupMaker pawnGroupMaker))
 			{
-				Log.Error("Faction " + parms.faction + " of def " + parms.faction.def + " has no usable PawnGroupMakers for parms " + parms);
+				Log.Error(string.Concat("Faction ", parms.faction, " of def ", parms.faction.def, " has no usable PawnGroupMakers for parms ", parms));
+				yield break;
 			}
-			else
+			foreach (Pawn item in pawnGroupMaker.GeneratePawns(parms, warnOnZeroResults))
 			{
-				foreach (Pawn item in pawnGroupMaker.GeneratePawns(parms, warnOnZeroResults))
-				{
-					yield return item;
-				}
+				yield return item;
 			}
 		}
 
 		public static IEnumerable<PawnKindDef> GeneratePawnKindsExample(PawnGroupMakerParms parms)
 		{
-			PawnGroupMaker pawnGroupMaker;
 			if (parms.groupKind == null)
 			{
 				Log.Error("Tried to generate pawn kinds with null pawn group kind def. parms=" + parms);
+				yield break;
 			}
-			else if (parms.faction == null)
+			if (parms.faction == null)
 			{
 				Log.Error("Tried to generate pawn kinds with null faction. parms=" + parms);
+				yield break;
 			}
-			else if (parms.faction.def.pawnGroupMakers.NullOrEmpty())
+			if (parms.faction.def.pawnGroupMakers.NullOrEmpty())
 			{
-				Log.Error("Faction " + parms.faction + " of def " + parms.faction.def + " has no any PawnGroupMakers.");
+				Log.Error(string.Concat("Faction ", parms.faction, " of def ", parms.faction.def, " has no any PawnGroupMakers."));
+				yield break;
 			}
-			else if (!TryGetRandomPawnGroupMaker(parms, out pawnGroupMaker))
+			if (!TryGetRandomPawnGroupMaker(parms, out PawnGroupMaker pawnGroupMaker))
 			{
-				Log.Error("Faction " + parms.faction + " of def " + parms.faction.def + " has no usable PawnGroupMakers for parms " + parms);
+				Log.Error(string.Concat("Faction ", parms.faction, " of def ", parms.faction.def, " has no usable PawnGroupMakers for parms ", parms));
+				yield break;
 			}
-			else
+			foreach (PawnKindDef item in pawnGroupMaker.GeneratePawnKindsExample(parms))
 			{
-				foreach (PawnKindDef item in pawnGroupMaker.GeneratePawnKindsExample(parms))
-				{
-					yield return item;
-				}
+				yield return item;
 			}
 		}
 

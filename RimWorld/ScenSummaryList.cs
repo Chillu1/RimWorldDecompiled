@@ -21,18 +21,19 @@ namespace RimWorld
 			bool flag = true;
 			foreach (ScenPart allPart in scen.AllParts)
 			{
-				if (!allPart.summarized)
+				if (allPart.summarized)
 				{
-					foreach (string summaryListEntry in allPart.GetSummaryListEntries(tag))
+					continue;
+				}
+				foreach (string summaryListEntry in allPart.GetSummaryListEntries(tag))
+				{
+					if (!flag)
 					{
-						if (!flag)
-						{
-							stringBuilder.Append("\n");
-						}
-						stringBuilder.Append("   -" + summaryListEntry);
-						allPart.summarized = true;
-						flag = false;
+						stringBuilder.Append("\n");
 					}
+					stringBuilder.Append("   -" + summaryListEntry);
+					allPart.summarized = true;
+					flag = false;
 				}
 			}
 			return stringBuilder.ToString();

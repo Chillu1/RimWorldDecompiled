@@ -179,15 +179,16 @@ namespace Verse
 					dessicatedGraphic = curKindLifeStage.femaleDessicatedBodyGraphicData.GraphicColoredFor(pawn);
 				}
 			}
-			if (!pawn.kindDef.alternateGraphics.NullOrEmpty())
+			if (pawn.kindDef.alternateGraphics.NullOrEmpty())
 			{
-				Rand.PushState(pawn.thingIDNumber ^ 0xB415);
-				if (Rand.Value <= pawn.kindDef.alternateGraphicChance)
-				{
-					nakedGraphic = pawn.kindDef.alternateGraphics.RandomElementByWeight((AlternateGraphic x) => x.Weight).GetGraphic(nakedGraphic);
-				}
-				Rand.PopState();
+				return;
 			}
+			Rand.PushState(pawn.thingIDNumber ^ 0xB415);
+			if (Rand.Value <= pawn.kindDef.alternateGraphicChance)
+			{
+				nakedGraphic = pawn.kindDef.alternateGraphics.RandomElementByWeight((AlternateGraphic x) => x.Weight).GetGraphic(nakedGraphic);
+			}
+			Rand.PopState();
 		}
 
 		public void SetAllGraphicsDirty()

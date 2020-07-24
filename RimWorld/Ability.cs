@@ -212,6 +212,11 @@ namespace RimWorld
 					warmupMote.Maintain();
 				}
 			}
+			if (verb.WarmingUp && !CanApplyOn(verb.CurrentTarget))
+			{
+				verb.WarmupStance?.Interrupt();
+				verb.Reset();
+			}
 			if (cooldownTicks > 0)
 			{
 				cooldownTicks--;

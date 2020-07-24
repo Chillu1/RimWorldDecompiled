@@ -54,34 +54,36 @@ namespace Verse
 
 		public static void Error(string text, bool ignoreStopLoggingLimit = false)
 		{
-			if (ignoreStopLoggingLimit || !ReachedMaxMessagesLimit)
+			if (!ignoreStopLoggingLimit && ReachedMaxMessagesLimit)
 			{
-				Debug.LogError(text);
-				if (!currentlyLoggingError)
+				return;
+			}
+			Debug.LogError(text);
+			if (currentlyLoggingError)
+			{
+				return;
+			}
+			currentlyLoggingError = true;
+			try
+			{
+				if (Prefs.PauseOnError && Current.ProgramState == ProgramState.Playing)
 				{
-					currentlyLoggingError = true;
-					try
-					{
-						if (Prefs.PauseOnError && Current.ProgramState == ProgramState.Playing)
-						{
-							Find.TickManager.Pause();
-						}
-						messageQueue.Enqueue(new LogMessage(LogMessageType.Error, text, StackTraceUtility.ExtractStackTrace()));
-						PostMessage();
-						if (!PlayDataLoader.Loaded || Prefs.DevMode)
-						{
-							TryOpenLogWindow();
-						}
-					}
-					catch (Exception arg)
-					{
-						Debug.LogError("An error occurred while logging an error: " + arg);
-					}
-					finally
-					{
-						currentlyLoggingError = false;
-					}
+					Find.TickManager.Pause();
 				}
+				messageQueue.Enqueue(new LogMessage(LogMessageType.Error, text, StackTraceUtility.ExtractStackTrace()));
+				PostMessage();
+				if (!PlayDataLoader.Loaded || Prefs.DevMode)
+				{
+					TryOpenLogWindow();
+				}
+			}
+			catch (Exception arg)
+			{
+				Debug.LogError("An error occurred while logging an error: " + arg);
+			}
+			finally
+			{
+				currentlyLoggingError = false;
 			}
 		}
 

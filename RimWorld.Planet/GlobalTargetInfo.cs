@@ -152,7 +152,7 @@ namespace RimWorld.Planet
 		{
 			if (!allowNullMap && cell.IsValid && map == null)
 			{
-				Log.Warning("Constructed GlobalTargetInfo with cell=" + cell + " and a null map.");
+				Log.Warning(string.Concat("Constructed GlobalTargetInfo with cell=", cell, " and a null map."));
 			}
 			thingInt = null;
 			cellInt = cell;

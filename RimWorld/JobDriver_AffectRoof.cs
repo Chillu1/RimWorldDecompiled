@@ -38,21 +38,22 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
+			JobDriver_AffectRoof jobDriver_AffectRoof = this;
 			this.FailOnDespawnedOrNull(TargetIndex.B);
 			yield return Toils_Goto.Goto(TargetIndex.B, PathEndMode);
 			Toil doWork = new Toil();
 			doWork.initAction = delegate
 			{
-				workLeft = 65f;
+				jobDriver_AffectRoof.workLeft = 65f;
 			};
 			doWork.tickAction = delegate
 			{
 				float num = doWork.actor.GetStatValue(StatDefOf.ConstructionSpeed) * 1.7f;
-				workLeft -= num;
-				if (workLeft <= 0f)
+				jobDriver_AffectRoof.workLeft -= num;
+				if (jobDriver_AffectRoof.workLeft <= 0f)
 				{
-					DoEffect();
-					ReadyForNextToil();
+					jobDriver_AffectRoof.DoEffect();
+					jobDriver_AffectRoof.ReadyForNextToil();
 				}
 			};
 			doWork.FailOnCannotTouch(TargetIndex.B, PathEndMode);
@@ -60,7 +61,7 @@ namespace RimWorld
 			doWork.PlaySoundAtEnd(SoundDefOf.Roof_Finish);
 			doWork.WithEffect(EffecterDefOf.RoofWork, TargetIndex.A);
 			doWork.FailOn(DoWorkFailOn);
-			doWork.WithProgressBar(TargetIndex.A, () => 1f - workLeft / 65f);
+			doWork.WithProgressBar(TargetIndex.A, () => 1f - jobDriver_AffectRoof.workLeft / 65f);
 			doWork.defaultCompleteMode = ToilCompleteMode.Never;
 			yield return doWork;
 		}

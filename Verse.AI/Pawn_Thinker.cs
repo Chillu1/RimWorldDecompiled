@@ -35,7 +35,7 @@ namespace Verse.AI
 			T val = TryGetMainTreeThinkNode<T>();
 			if (val == null)
 			{
-				Log.Warning(pawn + " looked for ThinkNode of type " + typeof(T) + " and didn't find it.");
+				Log.Warning(string.Concat(pawn, " looked for ThinkNode of type ", typeof(T), " and didn't find it."));
 			}
 			return val;
 		}

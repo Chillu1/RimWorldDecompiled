@@ -128,27 +128,28 @@ namespace Verse
 		public virtual void CheckForMouseOverTextAt(float topY)
 		{
 			float num = (float)UI.screenWidth - 38f - 12f;
-			if (Mouse.IsOver(new Rect(num, topY, 38f, 30f)))
+			if (!Mouse.IsOver(new Rect(num, topY, 38f, 30f)))
 			{
-				Find.LetterStack.Notify_LetterMouseover(this);
-				TaggedString mouseoverText = GetMouseoverText();
-				if (!mouseoverText.RawText.NullOrEmpty())
+				return;
+			}
+			Find.LetterStack.Notify_LetterMouseover(this);
+			TaggedString mouseoverText = GetMouseoverText();
+			if (!mouseoverText.RawText.NullOrEmpty())
+			{
+				Text.Font = GameFont.Small;
+				Text.Anchor = TextAnchor.UpperLeft;
+				float num2 = Text.CalcHeight(mouseoverText, 310f);
+				num2 += 20f;
+				float x = num - 330f - 10f;
+				Rect infoRect = new Rect(x, topY - num2 / 2f, 330f, num2);
+				Find.WindowStack.ImmediateWindow(2768333, infoRect, WindowLayer.Super, delegate
 				{
 					Text.Font = GameFont.Small;
-					Text.Anchor = TextAnchor.UpperLeft;
-					float num2 = Text.CalcHeight(mouseoverText, 310f);
-					num2 += 20f;
-					float x = num - 330f - 10f;
-					Rect infoRect = new Rect(x, topY - num2 / 2f, 330f, num2);
-					Find.WindowStack.ImmediateWindow(2768333, infoRect, WindowLayer.Super, delegate
-					{
-						Text.Font = GameFont.Small;
-						Rect position = infoRect.AtZero().ContractedBy(10f);
-						GUI.BeginGroup(position);
-						Widgets.Label(new Rect(0f, 0f, position.width, position.height), mouseoverText.Resolve());
-						GUI.EndGroup();
-					});
-				}
+					Rect position = infoRect.AtZero().ContractedBy(10f);
+					GUI.BeginGroup(position);
+					Widgets.Label(new Rect(0f, 0f, position.width, position.height), mouseoverText.Resolve());
+					GUI.EndGroup();
+				});
 			}
 		}
 

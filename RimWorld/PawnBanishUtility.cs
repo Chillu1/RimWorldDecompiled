@@ -15,7 +15,7 @@ namespace RimWorld
 		{
 			if (pawn.Faction != Faction.OfPlayer && pawn.HostFaction != Faction.OfPlayer)
 			{
-				Log.Warning("Tried to banish " + pawn + " but he's neither a colonist, tame animal, nor prisoner.");
+				Log.Warning(string.Concat("Tried to banish ", pawn, " but he's neither a colonist, tame animal, nor prisoner."));
 				return;
 			}
 			if (tile == -1)

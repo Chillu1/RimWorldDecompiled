@@ -38,9 +38,14 @@ namespace RimWorld
 
 		public static bool CanEverPlantAt(this ThingDef plantDef, IntVec3 c, Map map)
 		{
+			return plantDef.CanEverPlantAt_NewTemp(c, map);
+		}
+
+		public static bool CanEverPlantAt_NewTemp(this ThingDef plantDef, IntVec3 c, Map map, bool canWipePlantsExceptTree = false)
+		{
 			if (plantDef.category != ThingCategory.Plant)
 			{
-				Log.Error("Checking CanGrowAt with " + plantDef + " which is not a plant.");
+				Log.Error(string.Concat("Checking CanGrowAt with ", plantDef, " which is not a plant."));
 			}
 			if (!c.InBounds(map))
 			{
@@ -54,13 +59,20 @@ namespace RimWorld
 			for (int i = 0; i < list.Count; i++)
 			{
 				Thing thing = list[i];
-				if (thing.def.BlockPlanting)
+				if (thing.def.BlocksPlanting(canWipePlantsExceptTree))
 				{
 					return false;
 				}
-				if (plantDef.passability == Traversability.Impassable && (thing.def.category == ThingCategory.Pawn || thing.def.category == ThingCategory.Item || thing.def.category == ThingCategory.Building || thing.def.category == ThingCategory.Plant))
+				if (plantDef.passability == Traversability.Impassable)
 				{
-					return false;
+					if (thing.def.category == ThingCategory.Pawn || thing.def.category == ThingCategory.Item || thing.def.category == ThingCategory.Building)
+					{
+						return false;
+					}
+					if (thing.def.category == ThingCategory.Plant && canWipePlantsExceptTree && thing.def.plant.IsTree)
+					{
+						return false;
+					}
 				}
 			}
 			if (plantDef.passability == Traversability.Impassable)
@@ -94,9 +106,7 @@ namespace RimWorld
 				Plant plant = allCell.GetPlant(Find.CurrentMap);
 				if (plant != null && dictionary.ContainsKey(plant.def))
 				{
-					ThingDef def = plant.def;
-					float num2 = dictionary[def];
-					dictionary[def] = num2 + 1f;
+					dictionary[plant.def]++;
 					num += 1f;
 				}
 			}
@@ -195,7 +205,7 @@ namespace RimWorld
 			stringBuilder.Append("Lat".PadRight(6));
 			for (int i = -90; i <= 90; i += 10)
 			{
-				stringBuilder.Append((i.ToString() + "d").PadRight(6));
+				stringBuilder.Append((i + "d").PadRight(6));
 			}
 			stringBuilder.AppendLine();
 			for (int j = 0; j < 60; j += 5)

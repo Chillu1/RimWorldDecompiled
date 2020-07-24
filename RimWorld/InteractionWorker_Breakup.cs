@@ -99,14 +99,14 @@ namespace RimWorld
 					}
 					stringBuilder.Append("LetterNoLongerLovers_BackToBirthName".Translate(recipient.Named("PAWN")));
 				}
-				if (flag | flag2)
+				if (flag || flag2)
 				{
 					stringBuilder.AppendLine();
 				}
 				if (thought != null)
 				{
 					stringBuilder.AppendLine();
-					stringBuilder.AppendLine("FinalStraw".Translate(thought.CurStage.LabelCap));
+					stringBuilder.AppendLine("FinalStraw".Translate(thought.LabelCap));
 				}
 				letterLabel = "LetterLabelBreakup".Translate();
 				letterText = stringBuilder.ToString().TrimEndNewlines();

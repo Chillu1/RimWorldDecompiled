@@ -63,7 +63,7 @@ namespace RimWorld.QuestGen
 			}
 			if (i == 20)
 			{
-				Log.Warning("Generated duplicate quest name. QuestScriptDef: " + QuestGen.Root + ". Quest name: " + text);
+				Log.Warning(string.Concat("Generated duplicate quest name. QuestScriptDef: ", QuestGen.Root, ". Quest name: ", text));
 			}
 			return text;
 		}

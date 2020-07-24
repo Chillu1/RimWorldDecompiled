@@ -12,7 +12,7 @@ namespace RimWorld
 
 		public override void TravelingTransportPodsArrived(List<ActiveDropPodInfo> dropPods, Map map)
 		{
-			IntVec3 near = DropCellFinder.FindRaidDropCenterDistant(map);
+			IntVec3 near = DropCellFinder.FindRaidDropCenterDistant_NewTemp(map);
 			TransportPodsArrivalActionUtility.DropTravelingTransportPods(dropPods, near, map);
 		}
 

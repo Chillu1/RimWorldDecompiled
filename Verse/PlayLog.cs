@@ -49,7 +49,7 @@ namespace Verse
 				{
 					if (!silentlyRemoveReferences)
 					{
-						Log.Warning("Discarding pawn " + p + ", but he is referenced by a play log entry " + entries[num] + ".");
+						Log.Warning(string.Concat("Discarding pawn ", p, ", but he is referenced by a play log entry ", entries[num], "."));
 					}
 					RemoveEntry(entries[num]);
 				}

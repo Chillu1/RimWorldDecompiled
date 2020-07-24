@@ -95,7 +95,7 @@ namespace Verse
 			{
 				Twelfth twelfth = (Twelfth)j;
 				float num3 = Find.World.tileTemperatures.AverageTemperatureForTwelfth(map.Tile, twelfth);
-				stringBuilder.AppendLine(twelfth.GetQuadrum() + "/" + SeasonUtility.GetReportedSeason(twelfth.GetMiddleYearPct(), num) + " - " + twelfth.ToString() + " " + num3.ToString("F2"));
+				stringBuilder.AppendLine(string.Concat(twelfth.GetQuadrum(), "/", SeasonUtility.GetReportedSeason(twelfth.GetMiddleYearPct(), num), " - ", twelfth.ToString(), " ", num3.ToString("F2")));
 			}
 			stringBuilder.AppendLine();
 			stringBuilder.AppendLine("-----Temperature for each day this year------");

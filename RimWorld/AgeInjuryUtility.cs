@@ -26,12 +26,12 @@ namespace RimWorld
 			{
 				yield break;
 			}
-			for (int j = 0; j < sets.Count; j++)
+			for (int i = 0; i < sets.Count; i++)
 			{
-				List<HediffGiver> givers = sets[j].hediffGivers;
-				for (int i = 0; i < givers.Count; i++)
+				List<HediffGiver> givers = sets[i].hediffGivers;
+				for (int j = 0; j < givers.Count; j++)
 				{
-					HediffGiver_Birthday hediffGiver_Birthday = givers[i] as HediffGiver_Birthday;
+					HediffGiver_Birthday hediffGiver_Birthday = givers[j] as HediffGiver_Birthday;
 					if (hediffGiver_Birthday != null)
 					{
 						float x = (float)age / raceDef.race.lifeExpectancy;
@@ -161,7 +161,7 @@ namespace RimWorld
 				Pawn pawn = PawnGenerator.GeneratePawn(Faction.OfPlayer.def.basicMemberKind, Faction.OfPlayer);
 				if (pawn.ageTracker.AgeBiologicalYears >= 40)
 				{
-					stringBuilder.AppendLine(pawn.Name + " age " + pawn.ageTracker.AgeBiologicalYears);
+					stringBuilder.AppendLine(string.Concat(pawn.Name, " age ", pawn.ageTracker.AgeBiologicalYears));
 					foreach (Hediff hediff in pawn.health.hediffSet.hediffs)
 					{
 						stringBuilder.AppendLine(" - " + hediff);

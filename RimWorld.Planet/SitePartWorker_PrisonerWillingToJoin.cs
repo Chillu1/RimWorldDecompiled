@@ -14,8 +14,8 @@ namespace RimWorld.Planet
 			part.things = new ThingOwner<Pawn>(part, oneStackOnly: true);
 			part.things.TryAdd(pawn);
 			PawnRelationUtility.Notify_PawnsSeenByPlayer(Gen.YieldSingle(pawn), out string pawnRelationsInfo, informEvenIfSeenBefore: true, writeSeenPawnsNames: false);
-			outExtraDescriptionRules.AddRange(GrammarUtility.RulesForPawn("prisoner", pawn, outExtraDescriptionConstants));
 			string output = pawnRelationsInfo.NullOrEmpty() ? "" : ((string)("\n\n" + "PawnHasTheseRelationshipsWithColonists".Translate(pawn.LabelShort, pawn) + "\n\n" + pawnRelationsInfo));
+			slate.Set("prisoner", pawn);
 			outExtraDescriptionRules.Add(new Rule_String("prisonerFullRelationInfo", output));
 		}
 

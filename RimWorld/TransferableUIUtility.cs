@@ -122,7 +122,7 @@ namespace RimWorld
 			}
 			TransferableOneWay transferableOneWay = trad as TransferableOneWay;
 			bool flag = transferableOneWay != null && transferableOneWay.HasAnyThing && transferableOneWay.AnyThing is Pawn && transferableOneWay.MaxCount == 1;
-			if (!trad.Interactive | readOnly)
+			if (!trad.Interactive || readOnly)
 			{
 				if (flag)
 				{
@@ -295,50 +295,53 @@ namespace RimWorld
 
 		public static void DrawTransferableInfo(Transferable trad, Rect idRect, Color labelColor)
 		{
-			if (trad.HasAnyThing || !trad.IsThing)
+			if (!trad.HasAnyThing && trad.IsThing)
 			{
-				if (Mouse.IsOver(idRect))
-				{
-					Widgets.DrawHighlight(idRect);
-				}
-				Rect rect = new Rect(0f, 0f, 27f, 27f);
-				if (trad.IsThing)
-				{
-					Widgets.ThingIcon(rect, trad.AnyThing);
-				}
-				else
-				{
-					trad.DrawIcon(rect);
-				}
-				if (trad.IsThing)
-				{
-					Widgets.InfoCardButton(40f, 0f, trad.AnyThing);
-				}
-				Text.Anchor = TextAnchor.MiddleLeft;
-				Rect rect2 = new Rect(80f, 0f, idRect.width - 80f, idRect.height);
-				Text.WordWrap = false;
-				GUI.color = labelColor;
-				Widgets.Label(rect2, trad.LabelCap);
-				GUI.color = Color.white;
-				Text.WordWrap = true;
-				if (Mouse.IsOver(idRect))
-				{
-					TooltipHandler.TipRegion(idRect, new TipSignal(delegate
-					{
-						if (!trad.HasAnyThing && trad.IsThing)
-						{
-							return "";
-						}
-						string text = trad.LabelCap;
-						string tipDescription = trad.TipDescription;
-						if (!tipDescription.NullOrEmpty())
-						{
-							text = text + ": " + tipDescription;
-						}
-						return text;
-					}, trad.GetHashCode()));
-				}
+				return;
 			}
+			if (Mouse.IsOver(idRect))
+			{
+				Widgets.DrawHighlight(idRect);
+			}
+			Rect rect = new Rect(0f, 0f, 27f, 27f);
+			if (trad.IsThing)
+			{
+				Widgets.ThingIcon(rect, trad.AnyThing);
+			}
+			else
+			{
+				trad.DrawIcon(rect);
+			}
+			if (trad.IsThing)
+			{
+				Widgets.InfoCardButton(40f, 0f, trad.AnyThing);
+			}
+			Text.Anchor = TextAnchor.MiddleLeft;
+			Rect rect2 = new Rect(80f, 0f, idRect.width - 80f, idRect.height);
+			Text.WordWrap = false;
+			GUI.color = labelColor;
+			Widgets.Label(rect2, trad.LabelCap);
+			GUI.color = Color.white;
+			Text.WordWrap = true;
+			if (!Mouse.IsOver(idRect))
+			{
+				return;
+			}
+			Transferable localTrad = trad;
+			TooltipHandler.TipRegion(idRect, new TipSignal(delegate
+			{
+				if (!localTrad.HasAnyThing && localTrad.IsThing)
+				{
+					return "";
+				}
+				string text = localTrad.LabelCap;
+				string tipDescription = localTrad.TipDescription;
+				if (!tipDescription.NullOrEmpty())
+				{
+					text = text + ": " + tipDescription;
+				}
+				return text;
+			}, localTrad.GetHashCode()));
 		}
 
 		public static float DefaultListOrderPriority(Transferable transferable)

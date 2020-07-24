@@ -173,13 +173,11 @@ namespace RimWorld
 						SetWantedRecursive(td.prerequisites[i], checkOn: true);
 					}
 				}
+				return;
 			}
-			else
+			foreach (TrainableDef item in DefDatabase<TrainableDef>.AllDefsListForReading.Where((TrainableDef t) => t.prerequisites != null && t.prerequisites.Contains(td)))
 			{
-				foreach (TrainableDef item in DefDatabase<TrainableDef>.AllDefsListForReading.Where((TrainableDef t) => t.prerequisites != null && t.prerequisites.Contains(td)))
-				{
-					SetWantedRecursive(item, checkOn: false);
-				}
+				SetWantedRecursive(item, checkOn: false);
 			}
 		}
 
@@ -212,7 +210,7 @@ namespace RimWorld
 					return;
 				}
 				countDecayFrom = Find.TickManager.TicksGame;
-				int num = --steps[trainableDef];
+				steps[trainableDef]--;
 				if (steps[trainableDef] > 0 || !learned[trainableDef])
 				{
 					return;

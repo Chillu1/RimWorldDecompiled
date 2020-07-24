@@ -114,7 +114,7 @@ namespace Verse
 				}
 				if (traverseParams.pawn.Map != map)
 				{
-					Log.Error("Called CanReach() with a pawn spawned not on this map. This means that we can't check his reachability here. Pawn's current map should have been used instead of this one. pawn=" + traverseParams.pawn + " pawn.Map=" + traverseParams.pawn.Map + " map=" + map);
+					Log.Error(string.Concat("Called CanReach() with a pawn spawned not on this map. This means that we can't check his reachability here. Pawn's current map should have been used instead of this one. pawn=", traverseParams.pawn, " pawn.Map=", traverseParams.pawn.Map, " map=", map));
 					return false;
 				}
 			}
@@ -455,7 +455,7 @@ namespace Verse
 				}
 				if (traverseParms.pawn.Map != map)
 				{
-					Log.Error("Called CanReachMapEdge() with a pawn spawned not on this map. This means that we can't check his reachability here. Pawn's current map should have been used instead of this one. pawn=" + traverseParms.pawn + " pawn.Map=" + traverseParms.pawn.Map + " map=" + map);
+					Log.Error(string.Concat("Called CanReachMapEdge() with a pawn spawned not on this map. This means that we can't check his reachability here. Pawn's current map should have been used instead of this one. pawn=", traverseParms.pawn, " pawn.Map=", traverseParms.pawn.Map, " map=", map));
 					return false;
 				}
 			}
@@ -493,7 +493,7 @@ namespace Verse
 				}
 				if (traverseParms.pawn.Map != map)
 				{
-					Log.Error("Called CanReachUnfogged() with a pawn spawned not on this map. This means that we can't check his reachability here. Pawn's current map should have been used instead of this one. pawn=" + traverseParms.pawn + " pawn.Map=" + traverseParms.pawn.Map + " map=" + map);
+					Log.Error(string.Concat("Called CanReachUnfogged() with a pawn spawned not on this map. This means that we can't check his reachability here. Pawn's current map should have been used instead of this one. pawn=", traverseParms.pawn, " pawn.Map=", traverseParms.pawn.Map, " map=", map));
 					return false;
 				}
 			}

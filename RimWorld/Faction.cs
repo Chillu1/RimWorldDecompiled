@@ -341,7 +341,7 @@ namespace RimWorld
 		{
 			if (other == this)
 			{
-				Log.Error("Tried to get relation between faction " + this + " and itself.");
+				Log.Error(string.Concat("Tried to get relation between faction ", this, " and itself."));
 				return new FactionRelation();
 			}
 			for (int i = 0; i < relations.Count; i++)
@@ -353,7 +353,7 @@ namespace RimWorld
 			}
 			if (!allowNull)
 			{
-				Log.Error("Faction " + name + " has null relation with " + other + ". Returning dummy relation.");
+				Log.Error(string.Concat("Faction ", name, " has null relation with ", other, ". Returning dummy relation."));
 				return new FactionRelation();
 			}
 			return null;
@@ -544,7 +544,7 @@ namespace RimWorld
 				{
 					TookDamageFromPredator(pawn);
 				}
-				if (dinfo.Instigator.Faction != null && dinfo.Def.ExternalViolenceFor(member) && !this.HostileTo(dinfo.Instigator.Faction) && !member.InAggroMentalState && (pawn == null || !pawn.InMentalState || pawn.MentalStateDef != MentalStateDefOf.Berserk) && (!member.InMentalState || !member.MentalStateDef.IsExtreme || member.MentalStateDef.category != MentalStateCategory.Malicious || PlayerRelationKind != FactionRelationKind.Ally) && (dinfo.Instigator.Faction != OfPlayer || (!PrisonBreakUtility.IsPrisonBreaking(member) && !member.IsQuestHelper())) && dinfo.Instigator.Faction == OfPlayer && !IsMutuallyHostileCrossfire(dinfo))
+				if (dinfo.Instigator.Faction != null && dinfo.Def.ExternalViolenceFor(member) && !this.HostileTo(dinfo.Instigator.Faction) && !member.InAggroMentalState && (pawn == null || !pawn.InAggroMentalState) && (!member.InMentalState || !member.MentalStateDef.IsExtreme || member.MentalStateDef.category != MentalStateCategory.Malicious || PlayerRelationKind != FactionRelationKind.Ally) && (dinfo.Instigator.Faction != OfPlayer || (!PrisonBreakUtility.IsPrisonBreaking(member) && !member.IsQuestHelper())) && dinfo.Instigator.Faction == OfPlayer && !IsMutuallyHostileCrossfire(dinfo))
 				{
 					float num = Mathf.Min(100f, dinfo.Amount);
 					int goodwillChange = (int)(-1.3f * num);
@@ -568,6 +568,14 @@ namespace RimWorld
 			if (violator != this && RelationKindWith(violator) != 0)
 			{
 				TrySetRelationKind(violator, FactionRelationKind.Hostile, canSendLetter: true, "GoodwillChangedReason_CapturedPawn".Translate(member.LabelShort, member), member);
+			}
+		}
+
+		public void Notify_MemberStripped(Pawn member, Faction violator)
+		{
+			if (violator != this && !def.hidden && !member.Dead && violator == OfPlayer && RelationKindWith(violator) != 0)
+			{
+				TryAffectGoodwillWith(OfPlayer, -10, canSendMessage: true, canSendHostilityLetter: true, "GoodwillChangedReason_PawnStripped".Translate(member), member);
 			}
 		}
 

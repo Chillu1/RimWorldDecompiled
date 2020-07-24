@@ -63,8 +63,9 @@ namespace RimWorld
 
 		public static IEnumerable<Pawn> AllSendablePawns(List<CompTransporter> transporters, Map map)
 		{
-			List<Pawn> pawns = CaravanFormingUtility.AllSendablePawns(map, allowEvenIfDowned: true, allowEvenIfInMentalState: false, allowEvenIfPrisonerNotSecure: false, allowCapturableDownedPawns: false, allowLodgers: true, (transporters[0].Props.canChangeAssignedThingsAfterStarting && transporters[0].LoadingInProgressOrReadyToLaunch) ? transporters[0].groupID : (-1));
 			CompShuttle shuttle = transporters[0].parent.TryGetComp<CompShuttle>();
+			int allowLoadAndEnterTransportersLordForGroupID = (transporters[0].Props.canChangeAssignedThingsAfterStarting && transporters[0].LoadingInProgressOrReadyToLaunch) ? transporters[0].groupID : (-1);
+			List<Pawn> pawns = CaravanFormingUtility.AllSendablePawns(map, allowEvenIfDowned: true, allowEvenIfInMentalState: false, allowEvenIfPrisonerNotSecure: false, allowCapturableDownedPawns: false, shuttle != null, allowLoadAndEnterTransportersLordForGroupID);
 			for (int i = 0; i < pawns.Count; i++)
 			{
 				if (shuttle == null || shuttle.IsRequired(pawns[i]) || shuttle.IsAllowed(pawns[i]))

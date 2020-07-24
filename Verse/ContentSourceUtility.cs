@@ -48,7 +48,7 @@ namespace Verse
 
 		public static string HumanLabel(this ContentSource s)
 		{
-			return ("ContentSource_" + s.ToString()).Translate();
+			return ("ContentSource_" + s).Translate();
 		}
 	}
 }

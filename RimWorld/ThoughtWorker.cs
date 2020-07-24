@@ -9,12 +9,12 @@ namespace RimWorld
 
 		public virtual string PostProcessLabel(Pawn p, string label)
 		{
-			return label;
+			return label.Formatted(p.Named("PAWN"));
 		}
 
 		public virtual string PostProcessDescription(Pawn p, string description)
 		{
-			return description;
+			return description.Formatted(p.Named("PAWN"));
 		}
 
 		public ThoughtState CurrentState(Pawn p)

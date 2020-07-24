@@ -37,6 +37,12 @@ namespace RimWorld
 			private set;
 		}
 
+		public Building AssignedMeditationSpot
+		{
+			get;
+			private set;
+		}
+
 		public Room OwnedRoom
 		{
 			get
@@ -67,11 +73,14 @@ namespace RimWorld
 		{
 			Building_Grave refee = AssignedGrave;
 			Building_Throne refee2 = AssignedThrone;
+			Building refee3 = AssignedMeditationSpot;
 			Scribe_References.Look(ref intOwnedBed, "ownedBed");
+			Scribe_References.Look(ref refee3, "assignedMeditationSpot");
 			Scribe_References.Look(ref refee, "assignedGrave");
 			Scribe_References.Look(ref refee2, "assignedThrone");
 			AssignedGrave = refee;
 			AssignedThrone = refee2;
+			AssignedMeditationSpot = refee3;
 			if (Scribe.mode != LoadSaveMode.PostLoadInit)
 			{
 				return;
@@ -193,6 +202,33 @@ namespace RimWorld
 			}
 			AssignedThrone.CompAssignableToPawn.ForceRemovePawn(pawn);
 			AssignedThrone = null;
+			return true;
+		}
+
+		public bool ClaimMeditationSpot(Building newSpot)
+		{
+			if (newSpot.GetAssignedPawn() == pawn)
+			{
+				return false;
+			}
+			UnclaimMeditationSpot();
+			if (newSpot.GetAssignedPawn() != null)
+			{
+				newSpot.GetAssignedPawn().ownership.UnclaimMeditationSpot();
+			}
+			newSpot.TryGetComp<CompAssignableToPawn>().ForceAddPawn(pawn);
+			AssignedMeditationSpot = newSpot;
+			return true;
+		}
+
+		public bool UnclaimMeditationSpot()
+		{
+			if (AssignedMeditationSpot == null)
+			{
+				return false;
+			}
+			AssignedMeditationSpot.TryGetComp<CompAssignableToPawn>().ForceRemovePawn(pawn);
+			AssignedMeditationSpot = null;
 			return true;
 		}
 

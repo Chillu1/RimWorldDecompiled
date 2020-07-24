@@ -18,6 +18,8 @@ namespace RimWorld
 
 		public FilthSourceFlags placementMask = FilthSourceFlags.Unnatural;
 
+		public SoundDef cleaningSound;
+
 		public bool TerrainSourced => (placementMask & FilthSourceFlags.Terrain) > FilthSourceFlags.None;
 	}
 }

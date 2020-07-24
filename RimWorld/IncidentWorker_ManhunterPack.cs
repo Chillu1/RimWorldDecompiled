@@ -46,6 +46,7 @@ namespace RimWorld
 				Pawn pawn = list[i];
 				IntVec3 loc = CellFinder.RandomClosewalkCellNear(result, map, 10);
 				QuestUtility.AddQuestTag(GenSpawn.Spawn(pawn, loc, map, rot), parms.questTag);
+				pawn.health.AddHediff(HediffDefOf.Scaria);
 				pawn.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.ManhunterPermanent);
 				pawn.mindState.exitMapAfterTick = Find.TickManager.TicksGame + Rand.Range(60000, 120000);
 			}

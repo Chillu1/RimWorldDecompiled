@@ -13,6 +13,15 @@ namespace RimWorld
 			return pawn.Reserve(job.targetA, job, 1, -1, null, errorOnFailed);
 		}
 
+		protected override string ReportStringProcessed(string str)
+		{
+			if (Talkee.guest.interactionMode == PrisonerInteractionModeDefOf.ReduceResistance)
+			{
+				return "JobReport_ReduceResistance".Translate(Talkee);
+			}
+			return base.ReportStringProcessed(str);
+		}
+
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
 			this.FailOnDespawnedOrNull(TargetIndex.A);

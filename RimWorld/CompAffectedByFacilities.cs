@@ -23,15 +23,16 @@ namespace RimWorld
 		{
 			get
 			{
-				if (parent.Spawned)
+				if (!parent.Spawned)
 				{
-					IEnumerable<Thing> enumerable = PotentialThingsToLinkTo(parent.def, parent.Position, parent.Rotation, parent.Map);
-					foreach (Thing item in enumerable)
+					yield break;
+				}
+				IEnumerable<Thing> enumerable = PotentialThingsToLinkTo(parent.def, parent.Position, parent.Rotation, parent.Map);
+				foreach (Thing item in enumerable)
+				{
+					if (CanLinkTo(item))
 					{
-						if (CanLinkTo(item))
-						{
-							yield return item;
-						}
+						yield return item;
 					}
 				}
 			}
@@ -317,37 +318,39 @@ namespace RimWorld
 		{
 			alreadyReturnedCount.Clear();
 			CompProperties_AffectedByFacilities compProperties = myDef.GetCompProperties<CompProperties_AffectedByFacilities>();
-			if (compProperties.linkableFacilities != null)
+			if (compProperties.linkableFacilities == null)
 			{
-				IEnumerable<Thing> enumerable = Enumerable.Empty<Thing>();
-				for (int i = 0; i < compProperties.linkableFacilities.Count; i++)
+				yield break;
+			}
+			IEnumerable<Thing> enumerable = Enumerable.Empty<Thing>();
+			for (int i = 0; i < compProperties.linkableFacilities.Count; i++)
+			{
+				enumerable = enumerable.Concat(map.listerThings.ThingsOfDef(compProperties.linkableFacilities[i]));
+			}
+			Vector3 myTrueCenter = GenThing.TrueCenter(myPos, myRot, myDef.size, myDef.Altitude);
+			IOrderedEnumerable<Thing> orderedEnumerable = from x in enumerable
+				orderby Vector3.Distance(myTrueCenter, x.TrueCenter()), x.Position.x, x.Position.z
+				select x;
+			foreach (Thing item in orderedEnumerable)
+			{
+				if (!CanPotentiallyLinkTo_Static(item, myDef, myPos, myRot))
 				{
-					enumerable = enumerable.Concat(map.listerThings.ThingsOfDef(compProperties.linkableFacilities[i]));
+					continue;
 				}
-				Vector3 myTrueCenter = GenThing.TrueCenter(myPos, myRot, myDef.size, myDef.Altitude);
-				IOrderedEnumerable<Thing> orderedEnumerable = from x in enumerable
-					orderby Vector3.Distance(myTrueCenter, x.TrueCenter()), x.Position.x, x.Position.z
-					select x;
-				foreach (Thing item in orderedEnumerable)
+				CompProperties_Facility compProperties2 = item.def.GetCompProperties<CompProperties_Facility>();
+				if (alreadyReturnedCount.ContainsKey(item.def))
 				{
-					if (CanPotentiallyLinkTo_Static(item, myDef, myPos, myRot))
+					if (alreadyReturnedCount[item.def] >= compProperties2.maxSimultaneous)
 					{
-						CompProperties_Facility compProperties2 = item.def.GetCompProperties<CompProperties_Facility>();
-						if (alreadyReturnedCount.ContainsKey(item.def))
-						{
-							if (alreadyReturnedCount[item.def] >= compProperties2.maxSimultaneous)
-							{
-								continue;
-							}
-						}
-						else
-						{
-							alreadyReturnedCount.Add(item.def, 0);
-						}
-						alreadyReturnedCount[item.def]++;
-						yield return item;
+						continue;
 					}
 				}
+				else
+				{
+					alreadyReturnedCount.Add(item.def, 0);
+				}
+				alreadyReturnedCount[item.def]++;
+				yield return item;
 			}
 		}
 
@@ -468,7 +471,7 @@ namespace RimWorld
 				sb.Append("    ");
 				if (num != 1)
 				{
-					sb.Append(num.ToString() + "x ");
+					sb.Append(num + "x ");
 				}
 				sb.AppendLine(linkedFacilities[i].LabelCap + ": " + statOffsetFromList.ToStringByStyle(stat.toStringStyle, ToStringNumberSense.Offset));
 				alreadyUsed.Add(linkedFacilities[i].def);
@@ -488,13 +491,14 @@ namespace RimWorld
 		private void LinkToNearbyFacilities()
 		{
 			UnlinkAll();
-			if (parent.Spawned)
+			if (!parent.Spawned)
 			{
-				foreach (Thing item in ThingsICanLinkTo)
-				{
-					linkedFacilities.Add(item);
-					item.TryGetComp<CompFacility>().Notify_NewLink(parent);
-				}
+				return;
+			}
+			foreach (Thing item in ThingsICanLinkTo)
+			{
+				linkedFacilities.Add(item);
+				item.TryGetComp<CompFacility>().Notify_NewLink(parent);
 			}
 		}
 

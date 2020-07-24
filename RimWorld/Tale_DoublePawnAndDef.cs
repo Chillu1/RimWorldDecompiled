@@ -28,7 +28,7 @@ namespace RimWorld
 		{
 			if (def.defSymbol.NullOrEmpty())
 			{
-				Log.Error(def + " uses tale type with def but defSymbol is not set.");
+				Log.Error(string.Concat(def, " uses tale type with def but defSymbol is not set."));
 			}
 			foreach (Rule item in base.SpecialTextGenerationRules())
 			{

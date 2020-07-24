@@ -21,6 +21,8 @@ namespace RimWorld
 
 		private const int RecentRandomQuestsMaxStorage = 5;
 
+		public IIncidentTarget Target => target;
+
 		public List<QuestScriptDef> RecentRandomQuests => recentRandomQuests;
 
 		public List<QuestScriptDef> RecentRandomDecrees => recentRandomDecrees;

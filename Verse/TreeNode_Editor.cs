@@ -148,7 +148,7 @@ namespace Verse
 				if (obj.GetType().IsGenericType && obj.GetType().GetGenericTypeDefinition() == typeof(List<>))
 				{
 					int num = (int)obj.GetType().GetProperty("Count").GetValue(obj, null);
-					return "(" + num.ToString() + " " + ((num == 1) ? "element" : "elements") + ")";
+					return "(" + num + " " + ((num == 1) ? "element" : "elements") + ")";
 				}
 				return "";
 			}
@@ -260,18 +260,16 @@ namespace Verse
 					TreeNode_Editor item = NewChildNodeFromListItem(this, i);
 					children.Add(item);
 				}
+				return;
 			}
-			else
+			foreach (FieldInfo item3 in from f in obj.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+				orderby InheritanceDistanceBetween(objType, f.DeclaringType) descending
+				select f)
 			{
-				foreach (FieldInfo item3 in from f in obj.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-					orderby InheritanceDistanceBetween(objType, f.DeclaringType) descending
-					select f)
+				if (item3.GetCustomAttributes(typeof(UnsavedAttribute), inherit: true).Length == 0 && item3.GetCustomAttributes(typeof(EditorHiddenAttribute), inherit: true).Length == 0)
 				{
-					if (item3.GetCustomAttributes(typeof(UnsavedAttribute), inherit: true).Length == 0 && item3.GetCustomAttributes(typeof(EditorHiddenAttribute), inherit: true).Length == 0)
-					{
-						TreeNode_Editor item2 = NewChildNodeFromField(this, item3);
-						children.Add(item2);
-					}
+					TreeNode_Editor item2 = NewChildNodeFromField(this, item3);
+					children.Add(item2);
 				}
 			}
 		}
@@ -290,7 +288,7 @@ namespace Verse
 				num++;
 			}
 			while (!(type == null));
-			Log.Error(childType + " is not a subclass of " + parentType);
+			Log.Error(string.Concat(childType, " is not a subclass of ", parentType));
 			return -1;
 		}
 
@@ -324,27 +322,29 @@ namespace Verse
 
 		public void DoSpecialPreElements(Listing_TreeDefs listing)
 		{
-			if (obj != null)
+			if (obj == null)
 			{
-				if (editWidgetsMethod != null)
-				{
-					WidgetRow widgetRow = listing.StartWidgetsRow(nestDepth);
-					editWidgetsMethod.Invoke(obj, new object[1]
-					{
-						widgetRow
-					});
-				}
-				Editable editable = obj as Editable;
-				if (editable != null)
-				{
-					GUI.color = new Color(1f, 0.5f, 0.5f, 1f);
-					foreach (string item in editable.ConfigErrors())
-					{
-						listing.InfoText(item, nestDepth);
-					}
-					GUI.color = Color.white;
-				}
+				return;
 			}
+			if (editWidgetsMethod != null)
+			{
+				WidgetRow widgetRow = listing.StartWidgetsRow(nestDepth);
+				editWidgetsMethod.Invoke(obj, new object[1]
+				{
+					widgetRow
+				});
+			}
+			Editable editable = obj as Editable;
+			if (editable == null)
+			{
+				return;
+			}
+			GUI.color = new Color(1f, 0.5f, 0.5f, 1f);
+			foreach (string item in editable.ConfigErrors())
+			{
+				listing.InfoText(item, nestDepth);
+			}
+			GUI.color = Color.white;
 		}
 
 		public override string ToString()

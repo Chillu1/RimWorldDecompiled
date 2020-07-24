@@ -45,10 +45,10 @@ namespace Verse
 			foreach (Faction item in Find.FactionManager.AllFactions.Where((Faction f) => f.def.RoyalTitlesAwardableInSeniorityOrderForReading.Count > 0))
 			{
 				Faction localFaction = item;
-				RoyalTitleDef localTitleDef = default(RoyalTitleDef);
 				list.Add(new DebugMenuOption(localFaction.Name, DebugMenuOptionMode.Action, delegate
 				{
 					List<DebugMenuOption> list2 = new List<DebugMenuOption>();
+					RoyalTitleDef localTitleDef = default(RoyalTitleDef);
 					foreach (RoyalTitleDef item2 in DefDatabase<RoyalTitleDef>.AllDefsListForReading)
 					{
 						localTitleDef = item2;

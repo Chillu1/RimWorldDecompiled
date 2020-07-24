@@ -36,6 +36,8 @@ namespace RimWorld
 
 		public abstract bool IsSpawningBlockedPermanently(IntVec3 at, Map map, Thing thingToIgnore = null, bool wipeIfCollides = false);
 
+		public abstract bool CanBuildOnTerrain(IntVec3 at, Map map);
+
 		public abstract bool Spawn(IntVec3 at, Map map, Faction faction, Sketch.SpawnMode spawnMode = Sketch.SpawnMode.Normal, bool wipeIfCollides = false, List<Thing> spawnedThings = null, bool dormant = false);
 
 		public abstract bool SameForSubtracting(SketchEntity other);

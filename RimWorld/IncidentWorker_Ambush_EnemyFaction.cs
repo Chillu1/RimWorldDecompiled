@@ -22,7 +22,7 @@ namespace RimWorld
 		{
 			if (!PawnGroupMakerUtility.TryGetRandomFactionForCombatPawnGroup(parms.points, out parms.faction))
 			{
-				Log.Error("Could not find any valid faction for " + def + " incident.");
+				Log.Error(string.Concat("Could not find any valid faction for ", def, " incident."));
 				return new List<Pawn>();
 			}
 			PawnGroupMakerParms defaultPawnGroupMakerParms = IncidentParmsUtility.GetDefaultPawnGroupMakerParms(PawnGroupKindDefOf.Combat, parms);

@@ -38,7 +38,7 @@ namespace Verse
 				{
 					if (num != 0)
 					{
-						Log.Error("Found two compressible things in " + curSq + ". The last was " + item);
+						Log.Error(string.Concat("Found two compressible things in ", curSq, ". The last was ", item));
 					}
 					num = item.def.shortHash;
 				}
@@ -53,7 +53,7 @@ namespace Verse
 			{
 				if (thingDefsByShortHash.ContainsKey(allDef.shortHash))
 				{
-					Log.Error("Hash collision between " + allDef + " and  " + thingDefsByShortHash[allDef.shortHash] + ": both have short hash " + allDef.shortHash);
+					Log.Error(string.Concat("Hash collision between ", allDef, " and  ", thingDefsByShortHash[allDef.shortHash], ": both have short hash ", allDef.shortHash));
 				}
 				else
 				{

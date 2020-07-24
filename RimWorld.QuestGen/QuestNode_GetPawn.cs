@@ -45,6 +45,10 @@ namespace RimWorld.QuestGen
 
 		public SlateRef<List<FactionDef>> excludeFactionDefs;
 
+		public SlateRef<float?> hostileWeight;
+
+		public SlateRef<float?> nonHostileWeight;
+
 		public SlateRef<int> maxUsablePawnsToGenerate = 10;
 
 		private IEnumerable<Pawn> ExistingUsablePawns(Slate slate)
@@ -110,7 +114,7 @@ namespace RimWorld.QuestGen
 					return false;
 				}
 				return ((int)x.def.techLevel >= (int)minTechLevel.GetValue(slate)) ? true : false;
-			}).TryRandomElement(out faction);
+			}).TryRandomElementByWeight((Faction x) => x.HostileTo(Faction.OfPlayer) ? (hostileWeight.GetValue(slate) ?? 1f) : (nonHostileWeight.GetValue(slate) ?? 1f), out faction);
 		}
 
 		protected override void RunInt()
@@ -120,7 +124,7 @@ namespace RimWorld.QuestGen
 			{
 				IEnumerable<Pawn> source = ExistingUsablePawns(slate);
 				int num = source.Count();
-				var = ((!Rand.Chance(canGeneratePawn.GetValue(slate) ? Mathf.Clamp01(1f - (float)num / (float)maxUsablePawnsToGenerate.GetValue(slate)) : 0f) || (!mustHaveNoFaction.GetValue(slate) && !TryFindFactionForPawnGeneration(slate, out Faction _))) ? source.RandomElement() : GeneratePawn(slate));
+				var = ((!Rand.Chance(canGeneratePawn.GetValue(slate) ? Mathf.Clamp01(1f - (float)num / (float)maxUsablePawnsToGenerate.GetValue(slate)) : 0f) || (!mustHaveNoFaction.GetValue(slate) && !TryFindFactionForPawnGeneration(slate, out Faction _))) ? source.RandomElementByWeight((Pawn x) => (x.Faction != null && x.Faction.HostileTo(Faction.OfPlayer)) ? (hostileWeight.GetValue(slate) ?? 1f) : (nonHostileWeight.GetValue(slate) ?? 1f)) : GeneratePawn(slate));
 				if (var.Faction != null && !var.Faction.def.hidden)
 				{
 					QuestPart_InvolvedFactions questPart_InvolvedFactions = new QuestPart_InvolvedFactions();

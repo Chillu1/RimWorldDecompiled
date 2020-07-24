@@ -26,7 +26,7 @@ namespace Verse
 			}
 			if (!loc.InBounds(map))
 			{
-				Log.Error("Tried to spawn " + newThing.ToStringSafe() + " out of bounds at " + loc + ".");
+				Log.Error(string.Concat("Tried to spawn ", newThing.ToStringSafe(), " out of bounds at ", loc, "."));
 				return null;
 			}
 			if (newThing.def.randomizeRotationOnSpawn)
@@ -36,12 +36,12 @@ namespace Verse
 			CellRect occupiedRect = GenAdj.OccupiedRect(loc, rot, newThing.def.Size);
 			if (!occupiedRect.InBounds(map))
 			{
-				Log.Error("Tried to spawn " + newThing.ToStringSafe() + " out of bounds at " + loc + " (out of bounds because size is " + newThing.def.Size + ").");
+				Log.Error(string.Concat("Tried to spawn ", newThing.ToStringSafe(), " out of bounds at ", loc, " (out of bounds because size is ", newThing.def.Size, ")."));
 				return null;
 			}
 			if (newThing.Spawned)
 			{
-				Log.Error("Tried to spawn " + newThing + " but it's already spawned.");
+				Log.Error(string.Concat("Tried to spawn ", newThing, " but it's already spawned."));
 				return newThing;
 			}
 			switch (wipeMode)
@@ -189,20 +189,21 @@ namespace Verse
 			{
 				foreach (Thing item2 in item.GetThingList(map).ToList())
 				{
-					if (SpawningWipes(thingDef, item2.def))
+					if (!SpawningWipes(thingDef, item2.def))
 					{
-						if (item2.def.category == ThingCategory.Item)
+						continue;
+					}
+					if (item2.def.category == ThingCategory.Item)
+					{
+						item2.DeSpawn();
+						if (!GenPlace.TryPlaceThing(item2, item, map, ThingPlaceMode.Near, null, (IntVec3 x) => !occupiedRect.Contains(x)))
 						{
-							item2.DeSpawn();
-							if (!GenPlace.TryPlaceThing(item2, item, map, ThingPlaceMode.Near, null, (IntVec3 x) => !occupiedRect.Contains(x)))
-							{
-								item2.Destroy();
-							}
+							item2.Destroy();
 						}
-						else
-						{
-							Refund(item2, map, occupiedRect);
-						}
+					}
+					else
+					{
+						Refund(item2, map, occupiedRect);
 					}
 				}
 			}
@@ -210,20 +211,21 @@ namespace Verse
 
 		public static void CheckMoveItemsAside(IntVec3 thingPos, Rot4 thingRot, ThingDef thingDef, Map map)
 		{
-			if (thingDef.surfaceType == SurfaceType.None && thingDef.passability != 0)
+			if (thingDef.surfaceType != 0 || thingDef.passability == Traversability.Standable)
 			{
-				CellRect occupiedRect = GenAdj.OccupiedRect(thingPos, thingRot, thingDef.Size);
-				foreach (IntVec3 item in occupiedRect)
+				return;
+			}
+			CellRect occupiedRect = GenAdj.OccupiedRect(thingPos, thingRot, thingDef.Size);
+			foreach (IntVec3 item in occupiedRect)
+			{
+				foreach (Thing item2 in item.GetThingList(map).ToList())
 				{
-					foreach (Thing item2 in item.GetThingList(map).ToList())
+					if (item2.def.category == ThingCategory.Item)
 					{
-						if (item2.def.category == ThingCategory.Item)
+						item2.DeSpawn();
+						if (!GenPlace.TryPlaceThing(item2, item, map, ThingPlaceMode.Near, null, (IntVec3 x) => !occupiedRect.Contains(x)))
 						{
-							item2.DeSpawn();
-							if (!GenPlace.TryPlaceThing(item2, item, map, ThingPlaceMode.Near, null, (IntVec3 x) => !occupiedRect.Contains(x)))
-							{
-								item2.Destroy();
-							}
+							item2.Destroy();
 						}
 					}
 				}

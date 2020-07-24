@@ -170,7 +170,7 @@ namespace Verse
 			}
 			if (fertility < 0f)
 			{
-				yield return "Terrain Def " + this + " has no fertility value set.";
+				yield return string.Concat("Terrain Def ", this, " has no fertility value set.");
 			}
 			if (renderPrecedence > 400)
 			{

@@ -125,24 +125,25 @@ namespace Verse
 		private void ErrorCheckOn(KeyBindingDef keyDef, KeyPrefs.BindingSlot slot)
 		{
 			KeyCode boundKeyCode = GetBoundKeyCode(keyDef, slot);
-			if (boundKeyCode != 0)
+			if (boundKeyCode == KeyCode.None)
 			{
-				foreach (KeyBindingDef item in ConflictingBindings(keyDef, boundKeyCode))
+				return;
+			}
+			foreach (KeyBindingDef item in ConflictingBindings(keyDef, boundKeyCode))
+			{
+				bool flag = boundKeyCode != keyDef.GetDefaultKeyCode(slot);
+				Log.Warning(string.Concat("Key binding conflict: ", item, " and ", keyDef, " are both bound to ", boundKeyCode, ".", flag ? " Fixed automatically." : ""));
+				if (flag)
 				{
-					bool flag = boundKeyCode != keyDef.GetDefaultKeyCode(slot);
-					Log.Warning("Key binding conflict: " + item + " and " + keyDef + " are both bound to " + boundKeyCode + "." + (flag ? " Fixed automatically." : ""));
-					if (flag)
+					if (slot == KeyPrefs.BindingSlot.A)
 					{
-						if (slot == KeyPrefs.BindingSlot.A)
-						{
-							keyPrefs[keyDef].keyBindingA = keyDef.defaultKeyCodeA;
-						}
-						else
-						{
-							keyPrefs[keyDef].keyBindingB = keyDef.defaultKeyCodeB;
-						}
-						KeyPrefs.Save();
+						keyPrefs[keyDef].keyBindingA = keyDef.defaultKeyCodeA;
 					}
+					else
+					{
+						keyPrefs[keyDef].keyBindingB = keyDef.defaultKeyCodeB;
+					}
+					KeyPrefs.Save();
 				}
 			}
 		}

@@ -100,34 +100,35 @@ namespace Verse
 			List<Thing> list2 = thingLists[Find.TickManager.TicksGame % TickInterval];
 			for (int m = 0; m < list2.Count; m++)
 			{
-				if (!list2[m].Destroyed)
+				if (list2[m].Destroyed)
 				{
-					try
+					continue;
+				}
+				try
+				{
+					switch (tickType)
 					{
-						switch (tickType)
-						{
-						case TickerType.Normal:
-							list2[m].Tick();
-							break;
-						case TickerType.Rare:
-							list2[m].TickRare();
-							break;
-						case TickerType.Long:
-							list2[m].TickLong();
-							break;
-						}
+					case TickerType.Normal:
+						list2[m].Tick();
+						break;
+					case TickerType.Rare:
+						list2[m].TickRare();
+						break;
+					case TickerType.Long:
+						list2[m].TickLong();
+						break;
 					}
-					catch (Exception ex)
+				}
+				catch (Exception ex)
+				{
+					string text = list2[m].Spawned ? string.Concat(" (at ", list2[m].Position, ")") : "";
+					if (Prefs.DevMode)
 					{
-						string text = list2[m].Spawned ? (" (at " + list2[m].Position + ")") : "";
-						if (Prefs.DevMode)
-						{
-							Log.Error("Exception ticking " + list2[m].ToStringSafe() + text + ": " + ex);
-						}
-						else
-						{
-							Log.ErrorOnce("Exception ticking " + list2[m].ToStringSafe() + text + ". Suppressing further errors. Exception: " + ex, list2[m].thingIDNumber ^ 0x22627165);
-						}
+						Log.Error("Exception ticking " + list2[m].ToStringSafe() + text + ": " + ex);
+					}
+					else
+					{
+						Log.ErrorOnce("Exception ticking " + list2[m].ToStringSafe() + text + ". Suppressing further errors. Exception: " + ex, list2[m].thingIDNumber ^ 0x22627165);
 					}
 				}
 			}

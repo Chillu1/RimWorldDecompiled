@@ -35,7 +35,7 @@ namespace RimWorld
 			for (int num2 = pawn.inventory.innerContainer.Count - 1; num2 >= 0; num2--)
 			{
 				Thing thing2 = pawn.inventory.innerContainer[num2];
-				if (thing2.def.IsDrug && pawn.drugs != null && !pawn.drugs.AllowedToTakeScheduledEver(thing2.def) && pawn.drugs.HasEverTaken(thing2.def) && !AddictionUtility.IsAddicted(pawn, thing2))
+				if (thing2.def.IsDrug && pawn.drugs != null && !pawn.drugs.AllowedToTakeScheduledEver(thing2.def) && pawn.drugs.CurrentPolicy[thing2.def].takeToInventory == 0 && !AddictionUtility.IsAddicted(pawn, thing2))
 				{
 					Drop(pawn, thing2);
 				}

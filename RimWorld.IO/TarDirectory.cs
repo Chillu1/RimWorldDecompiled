@@ -51,17 +51,18 @@ namespace RimWorld.IO
 
 		private void CheckLazyLoad()
 		{
-			if (lazyLoadArchive != null)
+			if (lazyLoadArchive == null)
 			{
-				using (FileStream inputStream = File.OpenRead(lazyLoadArchive))
-				{
-					using (TarInputStream input = new TarInputStream(inputStream))
-					{
-						ParseTAR(this, input, lazyLoadArchive);
-					}
-				}
-				lazyLoadArchive = null;
+				return;
 			}
+			using (FileStream inputStream = File.OpenRead(lazyLoadArchive))
+			{
+				using (TarInputStream input = new TarInputStream(inputStream))
+				{
+					ParseTAR(this, input, lazyLoadArchive);
+				}
+			}
+			lazyLoadArchive = null;
 		}
 
 		private static void ParseTAR(TarDirectory root, TarInputStream input, string fullPath)
@@ -106,20 +107,21 @@ namespace RimWorld.IO
 				}
 				foreach (TarDirectory item4 in list2)
 				{
-					if (!string.IsNullOrEmpty(item4.inArchiveFullPath))
+					if (string.IsNullOrEmpty(item4.inArchiveFullPath))
 					{
-						string b2 = FormatFolderPath(Path.GetDirectoryName(item4.inArchiveFullPath));
-						TarDirectory tarDirectory2 = null;
-						foreach (TarDirectory item5 in list2)
-						{
-							if (item5.inArchiveFullPath == b2)
-							{
-								tarDirectory2 = item5;
-								break;
-							}
-						}
-						tarDirectory2.subDirectories.Add(item4);
+						continue;
 					}
+					string b2 = FormatFolderPath(Path.GetDirectoryName(item4.inArchiveFullPath));
+					TarDirectory tarDirectory2 = null;
+					foreach (TarDirectory item5 in list2)
+					{
+						if (item5.inArchiveFullPath == b2)
+						{
+							tarDirectory2 = item5;
+							break;
+						}
+					}
+					tarDirectory2.subDirectories.Add(item4);
 				}
 			}
 			finally

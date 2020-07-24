@@ -55,20 +55,22 @@ namespace RimWorld
 			{
 				foreach (IntVec3 item in mapRect)
 				{
-					if (item.InBounds(Find.CurrentMap))
+					if (!item.InBounds(Find.CurrentMap))
 					{
-						List<Thing> cellThings = Find.CurrentMap.thingGrid.ThingsListAt(item);
-						if (cellThings != null)
+						continue;
+					}
+					List<Thing> cellThings = Find.CurrentMap.thingGrid.ThingsListAt(item);
+					if (cellThings == null)
+					{
+						continue;
+					}
+					for (int i = 0; i < cellThings.Count; i++)
+					{
+						Thing t = cellThings[i];
+						if (SelectableByMapClick(t) && !t.def.neverMultiSelect && !yieldedThings.Contains(t))
 						{
-							for (int i = 0; i < cellThings.Count; i++)
-							{
-								Thing t = cellThings[i];
-								if (SelectableByMapClick(t) && !t.def.neverMultiSelect && !yieldedThings.Contains(t))
-								{
-									yield return t;
-									yieldedThings.Add(t);
-								}
-							}
+							yield return t;
+							yieldedThings.Add(t);
 						}
 					}
 				}

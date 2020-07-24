@@ -34,18 +34,19 @@ namespace Verse.AI
 
 		public void Cleanup(int myIndex, JobDriver jobDriver)
 		{
-			if (finishActions != null)
+			if (finishActions == null)
 			{
-				for (int i = 0; i < finishActions.Count; i++)
+				return;
+			}
+			for (int i = 0; i < finishActions.Count; i++)
+			{
+				try
 				{
-					try
-					{
-						finishActions[i]();
-					}
-					catch (Exception ex)
-					{
-						Log.Error("Pawn " + actor.ToStringSafe() + " threw exception while executing toil's finish action (" + i + "), jobDriver=" + jobDriver.ToStringSafe() + ", job=" + jobDriver.job.ToStringSafe() + ", toilIndex=" + myIndex + ": " + ex);
-					}
+					finishActions[i]();
+				}
+				catch (Exception ex)
+				{
+					Log.Error("Pawn " + actor.ToStringSafe() + " threw exception while executing toil's finish action (" + i + "), jobDriver=" + jobDriver.ToStringSafe() + ", job=" + jobDriver.job.ToStringSafe() + ", toilIndex=" + myIndex + ": " + ex);
 				}
 			}
 		}

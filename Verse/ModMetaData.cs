@@ -74,7 +74,7 @@ namespace Verse
 				{
 					if (logIssues)
 					{
-						Log.Warning("Malformed (correct format is Major.Minor) version string on mod " + name + " from " + author + " \"" + str + "\" - parsed as \"" + version.Major.ToString() + "." + version.Minor.ToString() + "\"");
+						Log.Warning("Malformed (correct format is Major.Minor) version string on mod " + name + " from " + author + " \"" + str + "\" - parsed as \"" + version.Major + "." + version.Minor + "\"");
 					}
 					return false;
 				}
@@ -148,7 +148,7 @@ namespace Verse
 					}
 					flag = true;
 				}
-				if (!isOfficial && packageId.ToLower().Contains(ModContentPack.Ludeon))
+				if (!isOfficial && packageId.ToLower().Contains(ModContentPack.LudeonPackageIdAuthor))
 				{
 					if (logIssues)
 					{
@@ -210,7 +210,7 @@ namespace Verse
 						}
 						flag = true;
 					}
-					if (modDependency.downloadUrl.NullOrEmpty() && modDependency.steamWorkshopUrl.NullOrEmpty() && packageId.ToLower().Contains(ModContentPack.Ludeon))
+					if (modDependency.downloadUrl.NullOrEmpty() && modDependency.steamWorkshopUrl.NullOrEmpty() && !modDependency.packageId.ToLower().Contains(ModContentPack.LudeonPackageIdAuthor))
 					{
 						if (logIssues)
 						{
@@ -435,7 +435,7 @@ namespace Verse
 
 		IEnumerable<System.Version> WorkshopUploadable.SupportedVersions => SupportedVersionsReadOnly;
 
-		public string PreviewImagePath => rootDirInt.FullName + Path.DirectorySeparatorChar.ToString() + "About" + Path.DirectorySeparatorChar.ToString() + "Preview.png";
+		public string PreviewImagePath => rootDirInt.FullName + Path.DirectorySeparatorChar + "About" + Path.DirectorySeparatorChar + "Preview.png";
 
 		public bool Official
 		{
@@ -489,7 +489,7 @@ namespace Verse
 
 		public bool OnSteamWorkshop => source == ContentSource.SteamWorkshop;
 
-		private string PublishedFileIdPath => rootDirInt.FullName + Path.DirectorySeparatorChar.ToString() + "About" + Path.DirectorySeparatorChar.ToString() + "PublishedFileId.txt";
+		private string PublishedFileIdPath => rootDirInt.FullName + Path.DirectorySeparatorChar + "About" + Path.DirectorySeparatorChar + "PublishedFileId.txt";
 
 		public List<string> UnsatisfiedDependencies()
 		{
@@ -544,8 +544,8 @@ namespace Verse
 
 		private void Init()
 		{
-			meta = DirectXmlLoader.ItemFromXmlFile<ModMetaDataInternal>(RootDir.FullName + Path.DirectorySeparatorChar.ToString() + "About" + Path.DirectorySeparatorChar.ToString() + "About.xml");
-			loadFolders = DirectXmlLoader.ItemFromXmlFile<ModLoadFolders>(RootDir.FullName + Path.DirectorySeparatorChar.ToString() + "LoadFolders.xml");
+			meta = DirectXmlLoader.ItemFromXmlFile<ModMetaDataInternal>(RootDir.FullName + Path.DirectorySeparatorChar + "About" + Path.DirectorySeparatorChar + "About.xml");
+			loadFolders = DirectXmlLoader.ItemFromXmlFile<ModLoadFolders>(RootDir.FullName + Path.DirectorySeparatorChar + "LoadFolders.xml");
 			bool shouldLogIssues = ModLister.ShouldLogIssues;
 			HadIncorrectlyFormattedVersionInMetadata = !meta.TryParseSupportedVersions(!OnSteamWorkshop && shouldLogIssues);
 			if (meta.name.NullOrEmpty())

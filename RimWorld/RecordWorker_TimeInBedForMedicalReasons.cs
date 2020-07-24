@@ -14,7 +14,7 @@ namespace RimWorld
 			{
 				if (HealthAIUtility.ShouldSeekMedicalRest(pawn))
 				{
-					if (!(pawn.needs.rest.CurLevel >= 1f))
+					if (pawn.needs.rest != null && !(pawn.needs.rest.CurLevel >= 1f))
 					{
 						return pawn.CurJob.restUntilHealed;
 					}

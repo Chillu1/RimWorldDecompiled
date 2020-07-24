@@ -11,19 +11,17 @@ namespace RimWorld
 			if (pawns.Count() == 1)
 			{
 				yield return pawns.First();
+				yield break;
 			}
-			else
+			foreach (Pawn p in pawns)
 			{
-				foreach (Pawn p in pawns)
+				if (p.Faction == Faction.OfPlayer || p.HostFaction == Faction.OfPlayer)
 				{
-					if (p.Faction == Faction.OfPlayer || p.HostFaction == Faction.OfPlayer)
-					{
-						yield return p;
-					}
-					if (p.Faction == null && p.Downed)
-					{
-						yield return p;
-					}
+					yield return p;
+				}
+				if (p.Faction == null && p.Downed)
+				{
+					yield return p;
 				}
 			}
 		}
@@ -32,7 +30,7 @@ namespace RimWorld
 		{
 			foreach (Pawn pawn in pawns)
 			{
-				if (pawn.RaceProps.Humanlike && !pawn.Destroyed && ((pawn.Faction == Faction.OfPlayer || pawn.IsPrisonerOfColony || pawn.Downed) | joinPlayer | makePrisoners))
+				if (pawn.RaceProps.Humanlike && !pawn.Destroyed && (pawn.Faction == Faction.OfPlayer || pawn.IsPrisonerOfColony || pawn.Downed || joinPlayer || makePrisoners))
 				{
 					return true;
 				}
