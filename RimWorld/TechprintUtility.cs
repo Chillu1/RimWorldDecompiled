@@ -11,7 +11,7 @@ namespace RimWorld
 		{
 			return DefDatabase<ResearchProjectDef>.AllDefsListForReading.Where(delegate(ResearchProjectDef p)
 			{
-				if (p.techprintCount == 0)
+				if (p.TechprintCount == 0)
 				{
 					return false;
 				}
@@ -32,7 +32,7 @@ namespace RimWorld
 					CompProperties_Techprint compProperties = p.Techprint.GetCompProperties<CompProperties_Techprint>();
 					if (compProperties != null)
 					{
-						int num = compProperties.project.techprintCount - compProperties.project.TechprintsApplied;
+						int num = compProperties.project.TechprintCount - compProperties.project.TechprintsApplied;
 						int num2 = 0;
 						for (int i = 0; i < alreadyGeneratedTechprints.Count; i++)
 						{
@@ -58,7 +58,7 @@ namespace RimWorld
 
 		public static bool TryGetTechprintDefToGenerate(Faction faction, out ThingDef result, List<ThingDef> alreadyGeneratedTechprints = null, float maxMarketValue = float.MaxValue)
 		{
-			if (!GetResearchProjectsNeedingTechprintsNow(faction, alreadyGeneratedTechprints, maxMarketValue).TryRandomElementByWeight(GetSelectionWeight, out ResearchProjectDef result2))
+			if (!GetResearchProjectsNeedingTechprintsNow(faction, alreadyGeneratedTechprints, maxMarketValue).TryRandomElementByWeight(GetSelectionWeight, out var result2))
 			{
 				result = null;
 				return false;
@@ -72,12 +72,12 @@ namespace RimWorld
 		{
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.AppendLine("Techprints generated from these factions:");
-			foreach (Faction item in Find.FactionManager.AllFactions.Where((Faction fa) => fa.def.humanlikeFaction && !fa.def.hidden))
+			foreach (Faction item in Find.FactionManager.AllFactions.Where((Faction fa) => fa.def.humanlikeFaction && !fa.Hidden))
 			{
 				stringBuilder.AppendLine(item.Name);
 				for (int i = 0; i < 30; i++)
 				{
-					if (TryGetTechprintDefToGenerate(item, out ThingDef result))
+					if (TryGetTechprintDefToGenerate(item, out var result))
 					{
 						stringBuilder.AppendLine("    " + result.LabelCap);
 						continue;
@@ -93,7 +93,7 @@ namespace RimWorld
 		public static void TechprintsFromFactionsChances()
 		{
 			List<FloatMenuOption> list = new List<FloatMenuOption>();
-			foreach (Faction item in Find.FactionManager.AllFactions.Where((Faction fa) => fa.def.humanlikeFaction && !fa.def.hidden))
+			foreach (Faction item in Find.FactionManager.AllFactions.Where((Faction fa) => fa.def.humanlikeFaction && !fa.Hidden))
 			{
 				Faction localFac = item;
 				list.Add(new FloatMenuOption(localFac.Name + " (" + localFac.def.defName + ")", delegate

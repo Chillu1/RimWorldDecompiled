@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -102,6 +102,10 @@ namespace RimWorld
 		{
 			Scribe_References.Look(ref curPolicy, "curAssignedDrugs");
 			Scribe_Collections.Look(ref drugTakeRecords, "drugTakeRecords", LookMode.Deep);
+			if (Scribe.mode == LoadSaveMode.PostLoadInit && drugTakeRecords.RemoveAll((DrugTakeRecord x) => x.drug == null) != 0)
+			{
+				Log.ErrorOnce("Removed some null drugs from drug policy tracker", 816929737);
+			}
 		}
 
 		public bool HasEverTaken(ThingDef drug)

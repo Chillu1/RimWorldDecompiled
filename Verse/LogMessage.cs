@@ -12,23 +12,13 @@ namespace Verse
 
 		private string stackTrace;
 
-		public Color Color
+		public Color Color => type switch
 		{
-			get
-			{
-				switch (type)
-				{
-				case LogMessageType.Message:
-					return Color.white;
-				case LogMessageType.Warning:
-					return Color.yellow;
-				case LogMessageType.Error:
-					return Color.red;
-				default:
-					return Color.white;
-				}
-			}
-		}
+			LogMessageType.Message => Color.white, 
+			LogMessageType.Warning => Color.yellow, 
+			LogMessageType.Error => Color.red, 
+			_ => Color.white, 
+		};
 
 		public string StackTrace
 		{

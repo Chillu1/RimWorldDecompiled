@@ -79,7 +79,7 @@ namespace RimWorld
 				for (int j = 0; j < leftToLoad.Count; j++)
 				{
 					TransferableOneWay transferableOneWay2 = leftToLoad[j];
-					if (!tmpAlreadyLoading.TryGetValue(leftToLoad[j], out int value2))
+					if (!tmpAlreadyLoading.TryGetValue(leftToLoad[j], out var value2))
 					{
 						value2 = 0;
 					}
@@ -123,7 +123,7 @@ namespace RimWorld
 						break;
 					}
 				}
-				if (!tmpAlreadyLoading.TryGetValue(transferableOneWay3, out int value3))
+				if (!tmpAlreadyLoading.TryGetValue(transferableOneWay3, out var value3))
 				{
 					value3 = 0;
 				}

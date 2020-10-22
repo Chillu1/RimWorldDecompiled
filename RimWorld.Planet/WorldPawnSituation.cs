@@ -11,6 +11,7 @@ namespace RimWorld.Planet
 		CaravanMember,
 		InTravelingTransportPod,
 		ForSaleBySettlement,
-		ReservedByQuest
+		ReservedByQuest,
+		Teleporting
 	}
 }

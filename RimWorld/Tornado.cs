@@ -85,7 +85,7 @@ namespace RimWorld
 			get
 			{
 				float a = Mathf.Clamp01((float)(Find.TickManager.TicksGame - spawnTick) / 120f);
-				float b = (leftFadeOutTicks < 0) ? 1f : Mathf.Min((float)leftFadeOutTicks / 120f, 1f);
+				float b = ((leftFadeOutTicks < 0) ? 1f : Mathf.Min((float)leftFadeOutTicks / 120f, 1f));
 				return Mathf.Min(a, b);
 			}
 		}
@@ -204,7 +204,7 @@ namespace RimWorld
 			Vector2 vector = realPosition.Moved(num3, AdjustedDistanceFromCenter(distanceFromCenter));
 			vector.y += distanceFromCenter * 4f;
 			vector.y += ZOffsetBias;
-			Vector3 a = new Vector3(vector.x, AltitudeLayer.Weather.AltitudeFor() + 0.0454545468f * Rand.Range(0f, 1f), vector.y);
+			Vector3 a = new Vector3(vector.x, AltitudeLayer.Weather.AltitudeFor() + 3f / 70f * Rand.Range(0f, 1f), vector.y);
 			float num4 = distanceFromCenter * 3f;
 			float num5 = 1f;
 			if (num3 > 270f)

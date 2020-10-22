@@ -22,7 +22,7 @@ namespace RimWorld
 
 		public override void BackgroundOnGUI()
 		{
-			Vector2 vector = (overrideBGImage != null) ? new Vector2(overrideBGImage.width, overrideBGImage.height) : BGPlanetSize;
+			Vector2 vector = ((overrideBGImage != null) ? new Vector2(overrideBGImage.width, overrideBGImage.height) : BGPlanetSize);
 			bool flag = true;
 			if ((float)UI.screenWidth > (float)UI.screenHeight * (vector.x / vector.y))
 			{

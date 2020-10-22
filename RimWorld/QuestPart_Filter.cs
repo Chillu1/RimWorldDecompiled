@@ -8,14 +8,27 @@ namespace RimWorld
 
 		public string outSignal;
 
+		public string outSignalElse;
+
 		protected abstract bool Pass(SignalArgs args);
 
 		public override void Notify_QuestSignalReceived(Signal signal)
 		{
 			base.Notify_QuestSignalReceived(signal);
-			if (signal.tag == inSignal && Pass(signal.args))
+			if (!(signal.tag == inSignal))
 			{
-				Find.SignalManager.SendSignal(new Signal(outSignal, signal.args));
+				return;
+			}
+			if (Pass(signal.args))
+			{
+				if (!outSignal.NullOrEmpty())
+				{
+					Find.SignalManager.SendSignal(new Signal(outSignal, signal.args));
+				}
+			}
+			else if (!outSignalElse.NullOrEmpty())
+			{
+				Find.SignalManager.SendSignal(new Signal(outSignalElse, signal.args));
 			}
 		}
 
@@ -24,6 +37,7 @@ namespace RimWorld
 			base.ExposeData();
 			Scribe_Values.Look(ref inSignal, "inSignal");
 			Scribe_Values.Look(ref outSignal, "outSignal");
+			Scribe_Values.Look(ref outSignalElse, "outSignalElse");
 		}
 
 		public override void AssignDebugData()

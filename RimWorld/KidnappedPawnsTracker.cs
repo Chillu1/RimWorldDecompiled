@@ -66,7 +66,7 @@ namespace RimWorld
 					Find.LetterStack.ReceiveLetter("LetterLabelPawnsKidnapped".Translate(pawn.Named("PAWN")), "LetterPawnsKidnapped".Translate(pawn.Named("PAWN"), kidnapper.Faction.Named("FACTION")), LetterDefOf.NegativeEvent);
 				}
 			}
-			QuestUtility.SendQuestTargetSignals(pawn.questTags, "Kidnapped", this.Named("SUBJECT"), kidnapper.Named("KIDNAPPER"));
+			QuestUtility.SendQuestTargetSignals(pawn.questTags, "Kidnapped", pawn.Named("SUBJECT"), kidnapper.Named("KIDNAPPER"));
 			Find.GameEnder.CheckOrUpdateGameOver();
 		}
 

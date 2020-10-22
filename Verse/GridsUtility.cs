@@ -1,6 +1,6 @@
-using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 
 namespace Verse
 {
@@ -248,7 +248,7 @@ namespace Verse
 			IPlantToGrowSettable plantToGrowSettable = c.GetEdifice(map) as IPlantToGrowSettable;
 			if (plantToGrowSettable == null)
 			{
-				plantToGrowSettable = (c.GetZone(map) as IPlantToGrowSettable);
+				plantToGrowSettable = c.GetZone(map) as IPlantToGrowSettable;
 			}
 			return plantToGrowSettable;
 		}
@@ -269,7 +269,7 @@ namespace Verse
 		public static Building_Door GetDoor(this IntVec3 c, Map map)
 		{
 			Building_Door result;
-			if ((result = (c.GetEdifice(map) as Building_Door)) != null)
+			if ((result = c.GetEdifice(map) as Building_Door) != null)
 			{
 				return result;
 			}

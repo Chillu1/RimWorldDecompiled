@@ -1,5 +1,5 @@
-using RimWorld;
 using System;
+using RimWorld;
 
 namespace Verse.AI
 {
@@ -59,6 +59,11 @@ namespace Verse.AI
 		protected virtual IntVec3 GetExactWanderDest(Pawn pawn)
 		{
 			IntVec3 wanderRoot = GetWanderRoot(pawn);
+			PawnDuty duty = pawn.mindState.duty;
+			if (duty != null && duty.wanderRadius.HasValue)
+			{
+				wanderRadius = duty.wanderRadius.Value;
+			}
 			return RCellFinder.RandomWanderDestFor(pawn, wanderRoot, wanderRadius, wanderDestValidator, PawnUtility.ResolveMaxDanger(pawn, maxDanger));
 		}
 

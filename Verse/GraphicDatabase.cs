@@ -94,7 +94,7 @@ namespace Verse
 		{
 			req.color = (Color32)req.color;
 			req.colorTwo = (Color32)req.colorTwo;
-			if (!allGraphics.TryGetValue(req, out Graphic value))
+			if (!allGraphics.TryGetValue(req, out var value))
 			{
 				value = new T();
 				value.Init(req);

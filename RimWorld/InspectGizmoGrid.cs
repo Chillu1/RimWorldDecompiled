@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using Verse;
 
 namespace RimWorld
@@ -44,7 +43,7 @@ namespace RimWorld
 						}
 						Command_Action command_Action = new Command_Action();
 						command_Action.defaultLabel = des.LabelCapReverseDesignating(t);
-						command_Action.icon = des.IconReverseDesignating(t, out float angle, out Vector2 offset);
+						command_Action.icon = des.IconReverseDesignating(t, out var angle, out var offset);
 						command_Action.iconAngle = angle;
 						command_Action.iconOffset = offset;
 						command_Action.defaultDesc = des.DescReverseDesignating(t);

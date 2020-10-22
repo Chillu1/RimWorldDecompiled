@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 using Verse.Sound;
 
@@ -277,7 +277,7 @@ namespace Verse
 			command_Toggle.icon = ContentFinder<Texture2D>.Get("UI/Commands/HideZone");
 			command_Toggle.defaultLabel = (hidden ? "CommandUnhideZoneLabel".Translate() : "CommandHideZoneLabel".Translate());
 			command_Toggle.defaultDesc = "CommandHideZoneDesc".Translate();
-			command_Toggle.isActive = (() => hidden);
+			command_Toggle.isActive = () => hidden;
 			command_Toggle.toggleAction = delegate
 			{
 				hidden = !hidden;

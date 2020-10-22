@@ -1,6 +1,6 @@
+using System;
 using RimWorld;
 using RimWorld.Planet;
-using System;
 
 namespace Verse.AI
 {

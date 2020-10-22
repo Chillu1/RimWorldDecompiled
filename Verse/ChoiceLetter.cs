@@ -1,6 +1,6 @@
+using System.Collections.Generic;
 using RimWorld;
 using RimWorld.Planet;
-using System.Collections.Generic;
 
 namespace Verse
 {
@@ -97,7 +97,7 @@ namespace Verse
 		protected DiaOption Option_ViewInQuestsTab(string labelKey = "ViewRelatedQuest", bool postpone = false)
 		{
 			TaggedString taggedString = labelKey.Translate();
-			if (title != quest.name)
+			if (title != quest.name && !quest.hidden)
 			{
 				taggedString += ": " + quest.name;
 			}
@@ -115,7 +115,7 @@ namespace Verse
 				}
 			};
 			diaOption.resolveTree = true;
-			if (quest == null)
+			if (quest == null || quest.hidden)
 			{
 				diaOption.Disable(null);
 			}
@@ -124,7 +124,7 @@ namespace Verse
 
 		protected DiaOption Option_ViewInfoCard(int index)
 		{
-			int num = (hyperlinkThingDefs != null) ? hyperlinkThingDefs.Count : 0;
+			int num = ((hyperlinkThingDefs != null) ? hyperlinkThingDefs.Count : 0);
 			if (index >= num)
 			{
 				return new DiaOption(new Dialog_InfoCard.Hyperlink(hyperlinkHediffDefs[index - num]));

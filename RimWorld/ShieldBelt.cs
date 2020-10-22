@@ -96,6 +96,10 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> GetWornGizmos()
 		{
+			foreach (Gizmo wornGizmo in base.GetWornGizmos())
+			{
+				yield return wornGizmo;
+			}
 			if (Find.Selector.SingleSelectedThing == base.Wearer)
 			{
 				Gizmo_EnergyShieldStatus gizmo_EnergyShieldStatus = new Gizmo_EnergyShieldStatus();

@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -23,7 +23,7 @@ namespace RimWorld
 				{
 					Faction faction = NewGeneratedFaction(allDef);
 					Find.FactionManager.Add(faction);
-					if (!allDef.hidden)
+					if (!faction.Hidden)
 					{
 						i++;
 					}
@@ -38,7 +38,7 @@ namespace RimWorld
 			num -= Find.WorldObjects.Settlements.Count;
 			for (int k = 0; k < num; k++)
 			{
-				Faction faction3 = Find.World.factionManager.AllFactionsListForReading.Where((Faction x) => !x.def.isPlayer && !x.def.hidden).RandomElementByWeight((Faction x) => x.def.settlementGenerationWeight);
+				Faction faction3 = Find.World.factionManager.AllFactionsListForReading.Where((Faction x) => !x.def.isPlayer && !x.Hidden && !x.temporary).RandomElementByWeight((Faction x) => x.def.settlementGenerationWeight);
 				Settlement settlement = (Settlement)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.Settlement);
 				settlement.SetFaction(faction3);
 				settlement.Tile = TileFinder.RandomSettlementTileFor(faction3);
@@ -96,7 +96,7 @@ namespace RimWorld
 			{
 				faction.TryMakeInitialRelationsWith(item);
 			}
-			if (!facDef.hidden && !facDef.isPlayer)
+			if (!faction.Hidden && !facDef.isPlayer)
 			{
 				Settlement settlement = (Settlement)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.Settlement);
 				settlement.SetFaction(faction);
@@ -104,7 +104,17 @@ namespace RimWorld
 				settlement.Name = SettlementNameGenerator.GenerateSettlementName(settlement);
 				Find.WorldObjects.Add(settlement);
 			}
-			faction.GenerateNewLeader();
+			faction.TryGenerateNewLeader();
+			return faction;
+		}
+
+		public static Faction NewGeneratedFactionWithRelations(FactionDef facDef, List<FactionRelation> relations)
+		{
+			Faction faction = NewGeneratedFaction(facDef);
+			for (int i = 0; i < relations.Count; i++)
+			{
+				faction.SetRelation(relations[i]);
+			}
 			return faction;
 		}
 

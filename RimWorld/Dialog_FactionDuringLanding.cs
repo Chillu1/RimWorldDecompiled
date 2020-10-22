@@ -20,7 +20,7 @@ namespace RimWorld
 
 		public override void DoWindowContents(Rect inRect)
 		{
-			FactionUIUtility.DoWindowContents(new Rect(inRect.x, inRect.y, inRect.width, inRect.height - CloseButSize.y), ref scrollPosition, ref scrollViewHeight);
+			FactionUIUtility.DoWindowContents_NewTemp(new Rect(inRect.x, inRect.y, inRect.width, inRect.height - CloseButSize.y), ref scrollPosition, ref scrollViewHeight);
 		}
 	}
 }

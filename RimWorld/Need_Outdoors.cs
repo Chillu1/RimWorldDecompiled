@@ -96,7 +96,7 @@ namespace RimWorld
 				float b = 0.2f;
 				float num = 0f;
 				bool num2 = !pawn.Spawned || pawn.Position.UsesOutdoorTemperature(pawn.Map);
-				RoofDef roofDef = pawn.Spawned ? pawn.Position.GetRoof(pawn.Map) : null;
+				RoofDef roofDef = (pawn.Spawned ? pawn.Position.GetRoof(pawn.Map) : null);
 				if (num2)
 				{
 					num = ((roofDef == null) ? 8f : ((!roofDef.isThickRoof) ? 1f : (-0.4f)));

@@ -51,28 +51,22 @@ namespace RimWorld
 			{
 				moodBelowThresholdTicks.Add(0);
 			}
-			int num = 0;
-			while (true)
+			for (int i = 0; i < pawns.Count; i++)
 			{
-				if (num >= pawns.Count)
+				if (MoodBelowThreshold(pawns[i]))
 				{
-					return;
-				}
-				if (MoodBelowThreshold(pawns[num]))
-				{
-					moodBelowThresholdTicks[num]++;
-					if (moodBelowThresholdTicks[num] >= minTicksBelowThreshold)
+					moodBelowThresholdTicks[i]++;
+					if (moodBelowThresholdTicks[i] >= minTicksBelowThreshold)
 					{
+						Complete(pawns[i].Named("SUBJECT"));
 						break;
 					}
 				}
 				else
 				{
-					moodBelowThresholdTicks[num] = 0;
+					moodBelowThresholdTicks[i] = 0;
 				}
-				num++;
 			}
-			Complete(pawns[num].Named("SUBJECT"));
 		}
 
 		public override void ExposeData()

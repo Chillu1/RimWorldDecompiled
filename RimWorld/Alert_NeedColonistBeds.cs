@@ -55,16 +55,19 @@ namespace RimWorld
 			}
 			int num3 = 0;
 			int num4 = 0;
-			foreach (Pawn item in map.mapPawns.FreeColonistsSpawned)
+			foreach (Pawn freeColonist in map.mapPawns.FreeColonists)
 			{
-				Pawn pawn = LovePartnerRelationUtility.ExistingMostLikedLovePartner(item, allowDead: false);
-				if (pawn == null || !pawn.Spawned || pawn.Map != item.Map || pawn.Faction != Faction.OfPlayer || pawn.HostFaction != null)
+				if (freeColonist.Spawned || freeColonist.BrieflyDespawned())
 				{
-					num3++;
-				}
-				else
-				{
-					num4++;
+					Pawn pawn = LovePartnerRelationUtility.ExistingMostLikedLovePartner(freeColonist, allowDead: false);
+					if (pawn == null || !pawn.Spawned || pawn.Map != freeColonist.Map || pawn.Faction != Faction.OfPlayer || pawn.HostFaction != null)
+					{
+						num3++;
+					}
+					else
+					{
+						num4++;
+					}
 				}
 			}
 			if (num4 % 2 != 0)

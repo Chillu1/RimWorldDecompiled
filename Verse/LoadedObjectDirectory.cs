@@ -32,7 +32,7 @@ namespace Verse
 				catch (Exception)
 				{
 				}
-				if (allObjectsByLoadID.TryGetValue(text, out ILoadReferenceable value))
+				if (allObjectsByLoadID.TryGetValue(text, out var value))
 				{
 					string text3 = "";
 					Log.Error(string.Concat("Cannot register ", reffable.GetType(), " ", text2, ", (id=", text, " in loaded object directory. Id already used by ", value.GetType(), " ", value.ToStringSafe(), ".", text3));
@@ -71,7 +71,7 @@ namespace Verse
 			{
 				return default(T);
 			}
-			if (allObjectsByLoadID.TryGetValue(loadID, out ILoadReferenceable value))
+			if (allObjectsByLoadID.TryGetValue(loadID, out var value))
 			{
 				if (value == null)
 				{

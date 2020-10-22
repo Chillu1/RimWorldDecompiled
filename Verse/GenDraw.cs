@@ -1,7 +1,7 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
+using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse
@@ -194,25 +194,17 @@ namespace Verse
 
 		private static Material GetLineMat(SimpleColor color)
 		{
-			switch (color)
+			return color switch
 			{
-			case SimpleColor.White:
-				return LineMatWhite;
-			case SimpleColor.Red:
-				return LineMatRed;
-			case SimpleColor.Green:
-				return LineMatGreen;
-			case SimpleColor.Blue:
-				return LineMatBlue;
-			case SimpleColor.Magenta:
-				return LineMatMagenta;
-			case SimpleColor.Yellow:
-				return LineMatYellow;
-			case SimpleColor.Cyan:
-				return LineMatCyan;
-			default:
-				return LineMatWhite;
-			}
+				SimpleColor.White => LineMatWhite, 
+				SimpleColor.Red => LineMatRed, 
+				SimpleColor.Green => LineMatGreen, 
+				SimpleColor.Blue => LineMatBlue, 
+				SimpleColor.Magenta => LineMatMagenta, 
+				SimpleColor.Yellow => LineMatYellow, 
+				SimpleColor.Cyan => LineMatCyan, 
+				_ => LineMatWhite, 
+			};
 		}
 
 		public static void DrawWorldLineBetween(Vector3 A, Vector3 B)
@@ -284,7 +276,7 @@ namespace Verse
 			float d = 0.05f;
 			for (int i = 0; i < edgeTiles.Count; i++)
 			{
-				int index = (i == 0) ? (edgeTiles.Count - 1) : (i - 1);
+				int index = ((i == 0) ? (edgeTiles.Count - 1) : (i - 1));
 				int num = edgeTiles[index];
 				int num2 = edgeTiles[i];
 				if (worldGrid.IsNeighbor(num, num2))
@@ -363,7 +355,7 @@ namespace Verse
 			}
 			if (tDef.interactionCellGraphic != null)
 			{
-				Rot4 rot = tDef.interactionCellIconReverse ? placingRot.Opposite : placingRot;
+				Rot4 rot = (tDef.interactionCellIconReverse ? placingRot.Opposite : placingRot);
 				tDef.interactionCellGraphic.DrawFromDef(vector, rot, tDef.interactionCellIcon);
 			}
 			else
@@ -440,10 +432,10 @@ namespace Verse
 				{
 					continue;
 				}
-				rotNeeded[0] = (c.z < z - 1 && !fieldGrid[c.x, c.z + 1]);
-				rotNeeded[1] = (c.x < x - 1 && !fieldGrid[c.x + 1, c.z]);
-				rotNeeded[2] = (c.z > 0 && !fieldGrid[c.x, c.z - 1]);
-				rotNeeded[3] = (c.x > 0 && !fieldGrid[c.x - 1, c.z]);
+				rotNeeded[0] = c.z < z - 1 && !fieldGrid[c.x, c.z + 1];
+				rotNeeded[1] = c.x < x - 1 && !fieldGrid[c.x + 1, c.z];
+				rotNeeded[2] = c.z > 0 && !fieldGrid[c.x, c.z - 1];
+				rotNeeded[3] = c.x > 0 && !fieldGrid[c.x - 1, c.z];
 				for (int k = 0; k < 4; k++)
 				{
 					if (rotNeeded[k])
@@ -531,6 +523,19 @@ namespace Verse
 			else
 			{
 				Graphics.DrawMesh(mesh, loc, quat, mat, 0);
+			}
+		}
+
+		public static void DrawMeshNowOrLater_NewTemp(Mesh mesh, Matrix4x4 matrix, Material mat, bool drawNow)
+		{
+			if (drawNow)
+			{
+				mat.SetPass(0);
+				Graphics.DrawMeshNow(mesh, matrix);
+			}
+			else
+			{
+				Graphics.DrawMesh(mesh, matrix, mat, 0);
 			}
 		}
 

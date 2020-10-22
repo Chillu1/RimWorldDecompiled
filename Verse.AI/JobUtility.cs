@@ -1,5 +1,5 @@
-using RimWorld;
 using System;
+using RimWorld;
 
 namespace Verse.AI
 {
@@ -52,9 +52,9 @@ namespace Verse.AI
 
 		public static string GetResolvedJobReport(string baseText, LocalTargetInfo a, LocalTargetInfo b, LocalTargetInfo c)
 		{
-			GetText(a, out string backCompatibleText2, out object obj2);
-			GetText(b, out string backCompatibleText3, out object obj3);
-			GetText(c, out string backCompatibleText4, out object obj4);
+			GetText(a, out var backCompatibleText2, out var obj2);
+			GetText(b, out var backCompatibleText3, out var obj3);
+			GetText(c, out var backCompatibleText4, out var obj4);
 			return GetResolvedJobReportRaw(baseText, backCompatibleText2, obj2, backCompatibleText3, obj3, backCompatibleText4, obj4);
 			static void GetText(LocalTargetInfo x, out string backCompatibleText, out object obj)
 			{

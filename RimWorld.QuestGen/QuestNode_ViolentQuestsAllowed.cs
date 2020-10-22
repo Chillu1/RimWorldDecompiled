@@ -25,7 +25,7 @@ namespace RimWorld.QuestGen
 
 		private bool DoWork(Slate slate, Func<QuestNode, bool> func)
 		{
-			bool allowViolentQuests = Find.Storyteller.difficulty.allowViolentQuests;
+			bool allowViolentQuests = Find.Storyteller.difficultyValues.allowViolentQuests;
 			slate.Set("allowViolentQuests", allowViolentQuests);
 			if (allowViolentQuests)
 			{

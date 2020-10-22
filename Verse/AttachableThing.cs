@@ -12,7 +12,7 @@ namespace Verse
 			{
 				if (parent != null)
 				{
-					return parent.DrawPos + Vector3.up * 0.0454545468f * 0.9f;
+					return parent.DrawPos + Vector3.up * (3f / 70f) * 0.9f;
 				}
 				return base.DrawPos;
 			}

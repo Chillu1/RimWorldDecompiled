@@ -23,7 +23,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!RCellFinder.TryFindTravelDestFrom(parms.spawnCenter, map, out IntVec3 travelDest))
+			if (!RCellFinder.TryFindTravelDestFrom(parms.spawnCenter, map, out var travelDest))
 			{
 				Log.Warning(string.Concat("Failed to do traveler incident from ", parms.spawnCenter, ": Couldn't find anywhere for the traveler to go."));
 				return false;

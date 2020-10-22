@@ -26,15 +26,12 @@ namespace RimWorld.QuestGen
 		{
 			int challengeRating = QuestGen.quest.challengeRating;
 			Slate slate = QuestGen.slate;
-			switch (challengeRating)
+			return challengeRating switch
 			{
-			case 3:
-				return threeStarRange.GetValue(slate);
-			case 2:
-				return twoStarRange.GetValue(slate);
-			default:
-				return oneStarRange.GetValue(slate);
-			}
+				3 => threeStarRange.GetValue(slate), 
+				2 => twoStarRange.GetValue(slate), 
+				_ => oneStarRange.GetValue(slate), 
+			};
 		}
 
 		protected override bool TestRunInt(Slate slate)

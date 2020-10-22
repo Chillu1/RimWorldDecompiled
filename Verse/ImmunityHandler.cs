@@ -44,7 +44,7 @@ namespace Verse
 			{
 				return 0f;
 			}
-			if (AnyHediffMakesFullyImmuneTo_NewTemp(diseaseDef, out Hediff sourceHediff))
+			if (AnyHediffMakesFullyImmuneTo_NewTemp(diseaseDef, out var sourceHediff))
 			{
 				immunityCause = sourceHediff.def;
 				return 0f;
@@ -80,7 +80,7 @@ namespace Verse
 					break;
 				}
 			}
-			if (AnyHediffMakesFullyImmuneTo_NewTemp(def, out Hediff _) && num < 0.650000036f)
+			if (AnyHediffMakesFullyImmuneTo_NewTemp(def, out var _) && num < 0.650000036f)
 			{
 				num = 0.650000036f;
 			}
@@ -192,7 +192,7 @@ namespace Verse
 					break;
 				}
 			}
-			if (AnyHediffMakesFullyImmuneTo_NewTemp(def, out Hediff sourceHediff) && (immunityRecord == null || immunityRecord.immunity < 0.650000036f))
+			if (AnyHediffMakesFullyImmuneTo_NewTemp(def, out var sourceHediff) && (immunityRecord == null || immunityRecord.immunity < 0.650000036f))
 			{
 				immunityRecord = new ImmunityRecord
 				{

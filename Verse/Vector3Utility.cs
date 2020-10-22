@@ -37,19 +37,14 @@ namespace Verse
 
 		public static Vector3 RotatedBy(this Vector3 orig, Rot4 rot)
 		{
-			switch (rot.AsInt)
+			return rot.AsInt switch
 			{
-			case 0:
-				return orig;
-			case 1:
-				return new Vector3(orig.z, orig.y, 0f - orig.x);
-			case 2:
-				return new Vector3(0f - orig.x, orig.y, 0f - orig.z);
-			case 3:
-				return new Vector3(0f - orig.z, orig.y, orig.x);
-			default:
-				return orig;
-			}
+				0 => orig, 
+				1 => new Vector3(orig.z, orig.y, 0f - orig.x), 
+				2 => new Vector3(0f - orig.x, orig.y, 0f - orig.z), 
+				3 => new Vector3(0f - orig.z, orig.y, orig.x), 
+				_ => orig, 
+			};
 		}
 
 		public static float AngleToFlat(this Vector3 a, Vector3 b)

@@ -21,7 +21,7 @@ namespace RimWorld
 				return null;
 			}
 			ThingFilter fixedFilter = turret.building.turretGunDef.building.fixedStorageSettings.filter;
-			if (DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef x) => fixedFilter.Allows(x) && (allowEMP || x.projectileWhenLoaded.projectile.damageDef != DamageDefOf.EMP) && (!mustHarmHealth || x.projectileWhenLoaded.projectile.damageDef.harmsHealth) && (techLevel == TechLevel.Undefined || (int)x.techLevel <= (int)techLevel) && (allowAntigrainWarhead || x != ThingDefOf.Shell_AntigrainWarhead) && (maxMarketValue < 0f || x.BaseMarketValue <= maxMarketValue)).TryRandomElement(out ThingDef result))
+			if (DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef x) => fixedFilter.Allows(x) && (allowEMP || x.projectileWhenLoaded.projectile.damageDef != DamageDefOf.EMP) && (!mustHarmHealth || x.projectileWhenLoaded.projectile.damageDef.harmsHealth) && (techLevel == TechLevel.Undefined || (int)x.techLevel <= (int)techLevel) && (allowAntigrainWarhead || x != ThingDefOf.Shell_AntigrainWarhead) && (maxMarketValue < 0f || x.BaseMarketValue <= maxMarketValue)).TryRandomElement(out var result))
 			{
 				return result;
 			}

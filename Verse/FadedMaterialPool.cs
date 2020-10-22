@@ -99,7 +99,7 @@ namespace Verse
 			default:
 			{
 				FadedMatRequest key = new FadedMatRequest(sourceMat, num);
-				if (!cachedMats.TryGetValue(key, out Material value))
+				if (!cachedMats.TryGetValue(key, out var value))
 				{
 					value = MaterialAllocator.Create(sourceMat);
 					value.color = new Color(1f, 1f, 1f, (float)IndexFromAlpha(alpha) / 30f);

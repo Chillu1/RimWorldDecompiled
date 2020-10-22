@@ -36,7 +36,7 @@ namespace RimWorld
 
 		protected override void ScatterAt(IntVec3 loc, Map map, GenStepParams parms, int count = 1)
 		{
-			Faction faction = (map.ParentFaction != null && map.ParentFaction != Faction.OfPlayer) ? map.ParentFaction : Find.FactionManager.RandomEnemyFaction();
+			Faction faction = ((map.ParentFaction != null && map.ParentFaction != Faction.OfPlayer) ? map.ParentFaction : Find.FactionManager.RandomEnemyFaction());
 			CellRect cellRect = CellRect.CenteredOn(loc, 8, 8).ClipInsideMap(map);
 			Pawn singlePawnToSpawn;
 			if (parms.sitePart != null && parms.sitePart.things != null && parms.sitePart.things.Any)
@@ -58,6 +58,7 @@ namespace RimWorld
 			resolveParams2.rect = cellRect;
 			resolveParams2.faction = faction;
 			resolveParams2.singlePawnToSpawn = singlePawnToSpawn;
+			resolveParams2.singlePawnSpawnCellExtraPredicate = (IntVec3 x) => x.GetDoor(map) == null;
 			resolveParams2.postThingSpawn = delegate(Thing x)
 			{
 				MapGenerator.rootsToUnfog.Add(x.Position);

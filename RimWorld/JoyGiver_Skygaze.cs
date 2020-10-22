@@ -17,7 +17,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			if (!RCellFinder.TryFindSkygazeCell(pawn.Position, pawn, out IntVec3 result))
+			if (!RCellFinder.TryFindSkygazeCell(pawn.Position, pawn, out var result))
 			{
 				return null;
 			}

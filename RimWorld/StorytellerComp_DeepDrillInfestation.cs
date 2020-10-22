@@ -13,12 +13,12 @@ namespace RimWorld
 		{
 			get
 			{
-				DifficultyDef difficulty = Find.Storyteller.difficulty;
-				if (difficulty.deepDrillInfestationChanceFactor <= 0f)
+				Difficulty difficultyValues = Find.Storyteller.difficultyValues;
+				if (difficultyValues.deepDrillInfestationChanceFactor <= 0f)
 				{
 					return -1f;
 				}
-				return Props.baseMtbDaysPerDrill / difficulty.deepDrillInfestationChanceFactor;
+				return Props.baseMtbDaysPerDrill / difficultyValues.deepDrillInfestationChanceFactor;
 			}
 		}
 
@@ -41,7 +41,7 @@ namespace RimWorld
 				if (Rand.MTBEventOccurs(mtb, 60000f, 1000f))
 				{
 					IncidentParms parms = GenerateParms(IncidentCategoryDefOf.DeepDrillInfestation, target);
-					if (UsableIncidentsInCategory(IncidentCategoryDefOf.DeepDrillInfestation, parms).TryRandomElement(out IncidentDef result))
+					if (UsableIncidentsInCategory(IncidentCategoryDefOf.DeepDrillInfestation, parms).TryRandomElement(out var result))
 					{
 						yield return new FiringIncident(result, this, parms);
 					}

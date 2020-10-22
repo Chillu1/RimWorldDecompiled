@@ -31,7 +31,7 @@ namespace RimWorld
 				{
 					IntVec3 c = item;
 					c.x++;
-					Material material = (!c.InBounds(map) || !ShouldDrawPropsBelow(c, terrainGrid)) ? PropsRightMat : PropsLoopMat;
+					Material material = ((!c.InBounds(map) || !ShouldDrawPropsBelow(c, terrainGrid)) ? PropsRightMat : PropsLoopMat);
 					LayerSubMesh subMesh = GetSubMesh(material);
 					int count = subMesh.verts.Count;
 					subMesh.verts.Add(new Vector3(item.x, y, item.z - 1));

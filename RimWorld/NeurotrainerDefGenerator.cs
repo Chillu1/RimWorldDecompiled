@@ -78,7 +78,7 @@ namespace RimWorld
 				});
 				thingDef2.thingCategories = new List<ThingCategoryDef>
 				{
-					ThingCategoryDefOf.Neurotrainers
+					ThingCategoryDefOf.NeurotrainersSkill
 				};
 				thingDef2.thingSetMakerTags = new List<string>
 				{
@@ -142,7 +142,7 @@ namespace RimWorld
 				altitudeLayer = AltitudeLayer.Item,
 				alwaysHaulable = true,
 				rotatable = false,
-				pathCost = 15,
+				pathCost = DefGenerator.StandardItemPathCost,
 				tradeTags = new List<string>
 				{
 					"ExoticMisc"

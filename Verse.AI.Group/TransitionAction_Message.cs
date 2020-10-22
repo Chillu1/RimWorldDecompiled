@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Linq;
+using RimWorld;
 
 namespace Verse.AI.Group
 {
@@ -53,7 +53,7 @@ namespace Verse.AI.Group
 		{
 			if (repeatAvoiderTag.NullOrEmpty() || MessagesRepeatAvoider.MessageShowAllowed(repeatAvoiderTag, repeatAvoiderSeconds))
 			{
-				TargetInfo target = (lookTargetGetter != null) ? lookTargetGetter() : lookTarget;
+				TargetInfo target = ((lookTargetGetter != null) ? lookTargetGetter() : lookTarget);
 				if (!target.IsValid)
 				{
 					target = trans.target.lord.ownedPawns.FirstOrDefault();

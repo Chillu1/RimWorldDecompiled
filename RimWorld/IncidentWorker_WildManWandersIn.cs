@@ -10,7 +10,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!TryFindFormerFaction(out Faction _))
+			if (!TryFindFormerFaction(out var _))
 			{
 				return false;
 			}
@@ -30,11 +30,11 @@ namespace RimWorld
 		protected override bool TryExecuteWorker(IncidentParms parms)
 		{
 			Map map = (Map)parms.target;
-			if (!TryFindEntryCell(map, out IntVec3 cell))
+			if (!TryFindEntryCell(map, out var cell))
 			{
 				return false;
 			}
-			if (!TryFindFormerFaction(out Faction formerFaction))
+			if (!TryFindFormerFaction(out var formerFaction))
 			{
 				return false;
 			}
@@ -55,7 +55,7 @@ namespace RimWorld
 
 		private bool TryFindFormerFaction(out Faction formerFaction)
 		{
-			return Find.FactionManager.TryGetRandomNonColonyHumanlikeFaction(out formerFaction, tryMedievalOrBetter: false, allowDefeated: true);
+			return Find.FactionManager.TryGetRandomNonColonyHumanlikeFaction_NewTemp(out formerFaction, tryMedievalOrBetter: false, allowDefeated: true);
 		}
 	}
 }

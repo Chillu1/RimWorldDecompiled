@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using RimWorld.Planet;
+using UnityEngine;
 using Verse;
 
 namespace RimWorld.QuestGen
@@ -12,9 +14,13 @@ namespace RimWorld.QuestGen
 
 		public SlateRef<bool> allowCaravans;
 
+		public SlateRef<bool?> clampRangeBySiteParts;
+
+		public SlateRef<IEnumerable<SitePartDef>> sitePartDefs;
+
 		protected override bool TestRunInt(Slate slate)
 		{
-			if (!TryFindTile(slate, out int tile))
+			if (!TryFindTile(slate, out var tile))
 			{
 				return false;
 			}
@@ -25,7 +31,7 @@ namespace RimWorld.QuestGen
 		protected override void RunInt()
 		{
 			Slate slate = QuestGen.slate;
-			if (TryFindTile(QuestGen.slate, out int tile))
+			if (TryFindTile(QuestGen.slate, out var tile))
 			{
 				QuestGen.slate.Set(storeAs.GetValue(slate), tile);
 			}
@@ -34,9 +40,25 @@ namespace RimWorld.QuestGen
 		private bool TryFindTile(Slate slate, out int tile)
 		{
 			int nearThisTile = (slate.Get<Map>("map") ?? Find.RandomPlayerHomeMap)?.Tile ?? (-1);
-			if (!slate.TryGet("siteDistRange", out IntRange var))
+			int num = int.MaxValue;
+			bool? value = clampRangeBySiteParts.GetValue(slate);
+			if (value.HasValue && value.Value)
 			{
-				return TileFinder.TryFindNewSiteTile(out tile, 7, 27, preferCloserTiles: preferCloserTiles.GetValue(slate), allowCaravans: allowCaravans.GetValue(slate), nearThisTile: nearThisTile);
+				foreach (SitePartDef item in sitePartDefs.GetValue(slate))
+				{
+					if (item.conditionCauserDef != null)
+					{
+						num = Mathf.Min(num, item.conditionCauserDef.GetCompProperties<CompProperties_CausesGameCondition>().worldRange);
+					}
+				}
+			}
+			if (!slate.TryGet<IntRange>("siteDistRange", out var var))
+			{
+				var = new IntRange(7, Mathf.Min(27, num));
+			}
+			else if (num != int.MaxValue)
+			{
+				var = new IntRange(Mathf.Min(var.min, num), Mathf.Min(var.max, num));
 			}
 			return TileFinder.TryFindNewSiteTile(out tile, var.min, var.max, allowCaravans.GetValue(slate), preferCloserTiles.GetValue(slate), nearThisTile);
 		}

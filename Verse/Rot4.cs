@@ -1,5 +1,5 @@
-using RimWorld;
 using System;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -38,45 +38,23 @@ namespace Verse
 			}
 		}
 
-		public float AsAngle
+		public float AsAngle => AsInt switch
 		{
-			get
-			{
-				switch (AsInt)
-				{
-				case 0:
-					return 0f;
-				case 1:
-					return 90f;
-				case 2:
-					return 180f;
-				case 3:
-					return 270f;
-				default:
-					return 0f;
-				}
-			}
-		}
+			0 => 0f, 
+			1 => 90f, 
+			2 => 180f, 
+			3 => 270f, 
+			_ => 0f, 
+		};
 
-		public SpectateRectSide AsSpectateSide
+		public SpectateRectSide AsSpectateSide => AsInt switch
 		{
-			get
-			{
-				switch (AsInt)
-				{
-				case 0:
-					return SpectateRectSide.Up;
-				case 1:
-					return SpectateRectSide.Right;
-				case 2:
-					return SpectateRectSide.Down;
-				case 3:
-					return SpectateRectSide.Left;
-				default:
-					return SpectateRectSide.None;
-				}
-			}
-		}
+			0 => SpectateRectSide.Up, 
+			1 => SpectateRectSide.Right, 
+			2 => SpectateRectSide.Down, 
+			3 => SpectateRectSide.Left, 
+			_ => SpectateRectSide.None, 
+		};
 
 		public Quaternion AsQuat
 		{
@@ -99,25 +77,14 @@ namespace Verse
 			}
 		}
 
-		public Vector2 AsVector2
+		public Vector2 AsVector2 => rotInt switch
 		{
-			get
-			{
-				switch (rotInt)
-				{
-				case 0:
-					return Vector2.up;
-				case 1:
-					return Vector2.right;
-				case 2:
-					return Vector2.down;
-				case 3:
-					return Vector2.left;
-				default:
-					throw new Exception("rotInt's value cannot be >3 but it is:" + rotInt);
-				}
-			}
-		}
+			0 => Vector2.up, 
+			1 => Vector2.right, 
+			2 => Vector2.down, 
+			3 => Vector2.left, 
+			_ => throw new Exception("rotInt's value cannot be >3 but it is:" + rotInt), 
+		};
 
 		public bool IsHorizontal
 		{
@@ -151,65 +118,32 @@ namespace Verse
 			}
 		}
 
-		public IntVec3 FacingCell
+		public IntVec3 FacingCell => AsInt switch
 		{
-			get
-			{
-				switch (AsInt)
-				{
-				case 0:
-					return new IntVec3(0, 0, 1);
-				case 1:
-					return new IntVec3(1, 0, 0);
-				case 2:
-					return new IntVec3(0, 0, -1);
-				case 3:
-					return new IntVec3(-1, 0, 0);
-				default:
-					return default(IntVec3);
-				}
-			}
-		}
+			0 => new IntVec3(0, 0, 1), 
+			1 => new IntVec3(1, 0, 0), 
+			2 => new IntVec3(0, 0, -1), 
+			3 => new IntVec3(-1, 0, 0), 
+			_ => default(IntVec3), 
+		};
 
-		public IntVec3 RighthandCell
+		public IntVec3 RighthandCell => AsInt switch
 		{
-			get
-			{
-				switch (AsInt)
-				{
-				case 0:
-					return new IntVec3(1, 0, 0);
-				case 1:
-					return new IntVec3(0, 0, -1);
-				case 2:
-					return new IntVec3(-1, 0, 0);
-				case 3:
-					return new IntVec3(0, 0, 1);
-				default:
-					return default(IntVec3);
-				}
-			}
-		}
+			0 => new IntVec3(1, 0, 0), 
+			1 => new IntVec3(0, 0, -1), 
+			2 => new IntVec3(-1, 0, 0), 
+			3 => new IntVec3(0, 0, 1), 
+			_ => default(IntVec3), 
+		};
 
-		public Rot4 Opposite
+		public Rot4 Opposite => AsInt switch
 		{
-			get
-			{
-				switch (AsInt)
-				{
-				case 0:
-					return new Rot4(2);
-				case 1:
-					return new Rot4(3);
-				case 2:
-					return new Rot4(0);
-				case 3:
-					return new Rot4(1);
-				default:
-					return default(Rot4);
-				}
-			}
-		}
+			0 => new Rot4(2), 
+			1 => new Rot4(3), 
+			2 => new Rot4(0), 
+			3 => new Rot4(1), 
+			_ => default(Rot4), 
+		};
 
 		public Rot4(byte newRot)
 		{
@@ -301,19 +235,14 @@ namespace Verse
 
 		public override int GetHashCode()
 		{
-			switch (rotInt)
+			return rotInt switch
 			{
-			case 0:
-				return 235515;
-			case 1:
-				return 5612938;
-			case 2:
-				return 1215650;
-			case 3:
-				return 9231792;
-			default:
-				return rotInt;
-			}
+				0 => 235515, 
+				1 => 5612938, 
+				2 => 1215650, 
+				3 => 9231792, 
+				_ => rotInt, 
+			};
 		}
 
 		public override string ToString()
@@ -323,42 +252,32 @@ namespace Verse
 
 		public string ToStringHuman()
 		{
-			switch (rotInt)
+			return rotInt switch
 			{
-			case 0:
-				return "North".Translate();
-			case 1:
-				return "East".Translate();
-			case 2:
-				return "South".Translate();
-			case 3:
-				return "West".Translate();
-			default:
-				return "error";
-			}
+				0 => "North".Translate(), 
+				1 => "East".Translate(), 
+				2 => "South".Translate(), 
+				3 => "West".Translate(), 
+				_ => "error", 
+			};
 		}
 
 		public string ToStringWord()
 		{
-			switch (rotInt)
+			return rotInt switch
 			{
-			case 0:
-				return "North";
-			case 1:
-				return "East";
-			case 2:
-				return "South";
-			case 3:
-				return "West";
-			default:
-				return "error";
-			}
+				0 => "North", 
+				1 => "East", 
+				2 => "South", 
+				3 => "West", 
+				_ => "error", 
+			};
 		}
 
 		public static Rot4 FromString(string str)
 		{
 			byte newRot;
-			if (int.TryParse(str, out int result))
+			if (int.TryParse(str, out var result))
 			{
 				newRot = (byte)result;
 			}

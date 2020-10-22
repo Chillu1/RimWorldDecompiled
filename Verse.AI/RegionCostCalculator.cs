@@ -115,7 +115,7 @@ namespace Verse.AI
 						continue;
 					}
 					int num = RegionLinkDistance(destinationCell, regionLink, minPathCost);
-					if (distances.TryGetValue(regionLink, out int value))
+					if (distances.TryGetValue(regionLink, out var value))
 					{
 						if (num < value)
 						{
@@ -187,11 +187,11 @@ namespace Verse.AI
 					{
 						continue;
 					}
-					int val = (otherRegion.door != null) ? num2 : RegionLinkDistance(regionLinkQueueEntry.Link, regionLink, minPathCost);
+					int val = ((otherRegion.door != null) ? num2 : RegionLinkDistance(regionLinkQueueEntry.Link, regionLink, minPathCost));
 					val = Math.Max(val, 1);
 					int num3 = num + val;
 					int estimatedPathCost = MinimumRegionLinkDistance(destinationCell, regionLink) + num3;
-					if (distances.TryGetValue(regionLink, out int value))
+					if (distances.TryGetValue(regionLink, out var value))
 					{
 						if (num3 < value)
 						{
@@ -226,7 +226,7 @@ namespace Verse.AI
 			for (int i = 0; i < region.links.Count; i++)
 			{
 				RegionLink regionLink = region.links[i];
-				if (regionLink != bestLink && regionLink.GetOtherRegion(region).type.Passable() && distances.TryGetValue(regionLink, out int value) && value < secondBestCost)
+				if (regionLink != bestLink && regionLink.GetOtherRegion(region).type.Passable() && distances.TryGetValue(regionLink, out var value) && value < secondBestCost)
 				{
 					secondBestCost = value;
 					secondBestLink = regionLink;
@@ -237,7 +237,7 @@ namespace Verse.AI
 
 		public int RegionMedianPathCost(Region region)
 		{
-			if (minPathCosts.TryGetValue(region, out int value))
+			if (minPathCosts.TryGetValue(region, out var value))
 			{
 				return value;
 			}
@@ -274,8 +274,8 @@ namespace Verse.AI
 
 		private int RegionLinkDistance(RegionLink a, RegionLink b, int minPathCost)
 		{
-			IntVec3 a2 = linkTargetCells.ContainsKey(a) ? linkTargetCells[a] : RegionLinkCenter(a);
-			IntVec3 b2 = linkTargetCells.ContainsKey(b) ? linkTargetCells[b] : RegionLinkCenter(b);
+			IntVec3 a2 = (linkTargetCells.ContainsKey(a) ? linkTargetCells[a] : RegionLinkCenter(a));
+			IntVec3 b2 = (linkTargetCells.ContainsKey(b) ? linkTargetCells[b] : RegionLinkCenter(b));
 			IntVec3 intVec = a2 - b2;
 			int num = Math.Abs(intVec.x);
 			int num2 = Math.Abs(intVec.z);
@@ -363,7 +363,7 @@ namespace Verse.AI
 				RegionLink regionLink = region.links[i];
 				if (regionLink.GetOtherRegion(region).Allows(traverseParms, isDestination: false))
 				{
-					if (!tmpDistances.TryGetValue(map.cellIndices.CellToIndex(linkTargetCells[regionLink]), out float value))
+					if (!tmpDistances.TryGetValue(map.cellIndices.CellToIndex(linkTargetCells[regionLink]), out var value))
 					{
 						Log.ErrorOnce("Dijkstra couldn't reach one of the cells even though they are in the same region. There is most likely something wrong with the neighbor nodes getter.", 1938471531);
 						value = 100f;

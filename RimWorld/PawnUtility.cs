@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.AI;
@@ -61,7 +61,7 @@ namespace RimWorld
 				{
 					return false;
 				}
-				List<InteractionDef> list = isInitiator ? mentalStateDef.blockInteractionInitiationExcept : mentalStateDef.blockInteractionRecipientExcept;
+				List<InteractionDef> list = (isInitiator ? mentalStateDef.blockInteractionInitiationExcept : mentalStateDef.blockInteractionRecipientExcept);
 				if (list != null)
 				{
 					return !list.Contains(interaction);
@@ -137,7 +137,7 @@ namespace RimWorld
 
 		public static bool EnemiesAreNearby(Pawn pawn, int regionsToScan = 9, bool passDoors = false)
 		{
-			TraverseParms tp = passDoors ? TraverseParms.For(TraverseMode.PassDoors) : TraverseParms.For(pawn);
+			TraverseParms tp = (passDoors ? TraverseParms.For(TraverseMode.PassDoors) : TraverseParms.For(pawn));
 			bool foundEnemy = false;
 			RegionTraverser.BreadthFirstTraverse(pawn.Position, pawn.Map, (Region from, Region to) => to.Allows(tp, isDestination: false), delegate(Region r)
 			{
@@ -279,7 +279,7 @@ namespace RimWorld
 
 		public static void GiveNameBecauseOfNuzzle(Pawn namer, Pawn namee)
 		{
-			string value = (namee.Name == null) ? namee.LabelIndefinite() : namee.Name.ToStringFull;
+			string value = ((namee.Name == null) ? namee.LabelIndefinite() : namee.Name.ToStringFull);
 			namee.Name = PawnBioAndNameGenerator.GeneratePawnName(namee);
 			if (namer.Faction == Faction.OfPlayer)
 			{
@@ -689,6 +689,16 @@ namespace RimWorld
 			return tmpPawnKindsStr.ToLineList(prefix);
 		}
 
+		public static string PawnKindsToLineList(IEnumerable<PawnKindDef> pawnKinds, string prefix, Color color)
+		{
+			PawnKindsToList(pawnKinds);
+			for (int i = 0; i < tmpPawnKindsStr.Count; i++)
+			{
+				tmpPawnKindsStr[i] = tmpPawnKindsStr[i].Colorize(color);
+			}
+			return tmpPawnKindsStr.ToLineList(prefix);
+		}
+
 		public static string PawnKindsToCommaList(IEnumerable<PawnKindDef> pawnKinds, bool useAnd = false)
 		{
 			PawnKindsToList(pawnKinds);
@@ -761,16 +771,49 @@ namespace RimWorld
 			return (int)HediffDefOf.PsychicAmplifier.maxSeverity;
 		}
 
-		public static void ChangePsylinkLevel(this Pawn pawn, int levelOffset)
+		public static RoyalTitle GetMaxPsylinkLevelTitle(this Pawn pawn)
+		{
+			if (pawn.royalty == null)
+			{
+				return null;
+			}
+			int num = 0;
+			RoyalTitle result = null;
+			foreach (RoyalTitle item in pawn.royalty.AllTitlesInEffectForReading)
+			{
+				if (num < item.def.maxPsylinkLevel)
+				{
+					num = item.def.maxPsylinkLevel;
+					result = item;
+				}
+			}
+			return result;
+		}
+
+		public static int GetMaxPsylinkLevelByTitle(this Pawn pawn)
+		{
+			return pawn.GetMaxPsylinkLevelTitle()?.def.maxPsylinkLevel ?? 0;
+		}
+
+		public static void ChangePsylinkLevel(this Pawn pawn, int levelOffset, bool sendLetter = true)
 		{
 			Hediff_Psylink mainPsylinkSource = pawn.GetMainPsylinkSource();
 			if (mainPsylinkSource == null)
 			{
-				mainPsylinkSource = (Hediff_Psylink)pawn.health.AddHediff(HediffDefOf.PsychicAmplifier, pawn.health.hediffSet.GetBrain());
+				mainPsylinkSource = (Hediff_Psylink)HediffMaker.MakeHediff(HediffDefOf.PsychicAmplifier, pawn);
+				try
+				{
+					mainPsylinkSource.suppressPostAddLetter = !sendLetter;
+					pawn.health.AddHediff(mainPsylinkSource, pawn.health.hediffSet.GetBrain());
+				}
+				finally
+				{
+					mainPsylinkSource.suppressPostAddLetter = false;
+				}
 			}
 			else
 			{
-				mainPsylinkSource.ChangeLevel(levelOffset);
+				mainPsylinkSource.ChangeLevel(levelOffset, sendLetter);
 			}
 		}
 
@@ -863,7 +906,7 @@ namespace RimWorld
 				{
 					continue;
 				}
-				if (CellFinder.TryFindBestPawnStandCell(pawn, out IntVec3 cell))
+				if (CellFinder.TryFindBestPawnStandCell(pawn, out var cell))
 				{
 					pawn.Position = cell;
 					pawn.Notify_Teleported(endCurrentJob: true, resetTweenedPos: false);
@@ -900,12 +943,12 @@ namespace RimWorld
 
 		public static float GetManhunterOnDamageChance(PawnKindDef kind)
 		{
-			return kind.RaceProps.manhunterOnDamageChance * Find.Storyteller.difficulty.manhunterChanceOnDamageFactor;
+			return kind.RaceProps.manhunterOnDamageChance * Find.Storyteller.difficultyValues.manhunterChanceOnDamageFactor;
 		}
 
 		public static float GetManhunterOnDamageChance(RaceProperties race)
 		{
-			return race.manhunterOnDamageChance * Find.Storyteller.difficulty.manhunterChanceOnDamageFactor;
+			return race.manhunterOnDamageChance * Find.Storyteller.difficultyValues.manhunterChanceOnDamageFactor;
 		}
 	}
 }

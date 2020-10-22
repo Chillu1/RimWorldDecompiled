@@ -16,26 +16,21 @@ namespace RimWorld
 			}
 			bool flag = target.IncidentTargetTags().Contains(IncidentTargetTagDefOf.Map_RaidBeacon);
 			List<IncidentCategoryDef> list = new List<IncidentCategoryDef>();
-			IncidentParms parms;
-			IncidentDef result;
-			while (true)
+			do
 			{
 				IncidentCategoryDef incidentCategoryDef = ChooseRandomCategory(target, list);
-				parms = GenerateParms(incidentCategoryDef, target);
-				if (UsableIncidentsInCategory(incidentCategoryDef, parms).TryRandomElementByWeight(base.IncidentChanceFinal, out result))
+				IncidentParms parms = GenerateParms(incidentCategoryDef, target);
+				if (UsableIncidentsInCategory(incidentCategoryDef, parms).TryRandomElementByWeight(base.IncidentChanceFinal, out var result))
 				{
+					if (!(Props.skipThreatBigIfRaidBeacon && flag) || result.category != IncidentCategoryDefOf.ThreatBig)
+					{
+						yield return new FiringIncident(result, this, parms);
+					}
 					break;
 				}
 				list.Add(incidentCategoryDef);
-				if (list.Count >= Props.categoryWeights.Count)
-				{
-					yield break;
-				}
 			}
-			if (!(Props.skipThreatBigIfRaidBeacon && flag) || result.category != IncidentCategoryDefOf.ThreatBig)
-			{
-				yield return new FiringIncident(result, this, parms);
-			}
+			while (list.Count < Props.categoryWeights.Count);
 		}
 
 		private IncidentCategoryDef ChooseRandomCategory(IIncidentTarget target, List<IncidentCategoryDef> skipCategories)

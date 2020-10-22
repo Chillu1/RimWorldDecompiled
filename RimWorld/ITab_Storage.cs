@@ -116,7 +116,7 @@ namespace RimWorld
 				List<ThingComp> allComps = thingWithComps.AllComps;
 				for (int i = 0; i < allComps.Count; i++)
 				{
-					storeSettingsParent = (allComps[i] as IStoreSettingsParent);
+					storeSettingsParent = allComps[i] as IStoreSettingsParent;
 					if (storeSettingsParent != null)
 					{
 						return storeSettingsParent;

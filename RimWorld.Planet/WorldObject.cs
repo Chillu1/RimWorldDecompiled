@@ -84,7 +84,7 @@ namespace RimWorld.Planet
 
 		public virtual Texture2D ExpandingIcon => def.ExpandingIconTexture ?? ((Texture2D)Material.mainTexture);
 
-		public virtual Color ExpandingIconColor => Material.color;
+		public virtual Color ExpandingIconColor => def.expandingIconColor ?? Material.color;
 
 		public virtual float ExpandingIconPriority => def.expandingIconPriority;
 
@@ -123,6 +123,10 @@ namespace RimWorld.Planet
 				return Find.WorldGrid[Tile].biome;
 			}
 		}
+
+		public virtual float ExpandingIconRotation => 0f;
+
+		public virtual bool ExpandingIconFlipHorizontal => false;
 
 		public virtual IEnumerable<IncidentTargetTagDef> IncidentTargetTags()
 		{
@@ -426,6 +430,11 @@ namespace RimWorld.Planet
 					yield return transportPodsFloatMenuOption;
 				}
 			}
+		}
+
+		public virtual IEnumerable<FloatMenuOption> GetShuttleFloatMenuOptions(IEnumerable<IThingHolder> pods, Action<int, TransportPodsArrivalAction> launchAction)
+		{
+			yield break;
 		}
 
 		public virtual IEnumerable<InspectTabBase> GetInspectTabs()

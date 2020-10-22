@@ -23,7 +23,7 @@ namespace RimWorld.QuestGen
 
 		private void SetVars(Slate slate)
 		{
-			if (options.TryRandomElement(out SlateRef<object> result))
+			if (options.TryRandomElement(out var result))
 			{
 				slate.Set(storeAs.GetValue(slate), result.GetValue(slate));
 			}

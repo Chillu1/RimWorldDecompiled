@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -51,6 +51,8 @@ namespace Verse
 
 		public string labelNounPretty;
 
+		public string targetPrefix;
+
 		public List<string> tags;
 
 		public bool priceImpact;
@@ -58,6 +60,10 @@ namespace Verse
 		public float priceOffset;
 
 		public bool chronic;
+
+		public bool keepOnBodyPartRestoration;
+
+		public bool countsAsAddedPartOrImplant;
 
 		public SimpleCurve removeOnRedressChanceByDaysCurve = new SimpleCurve
 		{

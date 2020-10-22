@@ -18,7 +18,7 @@ namespace RimWorld
 
 		public static Faction GetRandomFactionForRefugee()
 		{
-			if (Rand.Chance(0.6f) && Find.FactionManager.TryGetRandomNonColonyHumanlikeFaction(out Faction faction, tryMedievalOrBetter: true))
+			if (Rand.Chance(0.6f) && Find.FactionManager.TryGetRandomNonColonyHumanlikeFaction_NewTemp(out var faction, tryMedievalOrBetter: true))
 			{
 				return faction;
 			}

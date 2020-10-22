@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 
 namespace Verse.AI
 {
@@ -53,7 +53,8 @@ namespace Verse.AI
 				Log.Error("No target. This should have been checked in this mental state's worker.");
 				return "";
 			}
-			return def.beginLetter.Formatted(pawn.NameShortColored.Resolve(), target.Label, pawn.Named("PAWN"), target.Named("TARGET")).AdjustedFor(pawn).CapitalizeFirst();
+			return def.beginLetter.Formatted(pawn.NameShortColored, target.Label, pawn.Named("PAWN"), target.Named("TARGET")).AdjustedFor(pawn).Resolve()
+				.CapitalizeFirst();
 		}
 	}
 }

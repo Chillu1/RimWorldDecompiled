@@ -89,7 +89,7 @@ namespace RimWorld
 
 		public void TryGainMemory(Thought_Memory newThought, Pawn otherPawn = null)
 		{
-			if (!ThoughtUtility.CanGetThought(pawn, newThought.def))
+			if (!ThoughtUtility.CanGetThought_NewTemp(pawn, newThought.def))
 			{
 				return;
 			}
@@ -100,7 +100,7 @@ namespace RimWorld
 			}
 			newThought.pawn = pawn;
 			newThought.otherPawn = otherPawn;
-			if (!newThought.TryMergeWithExistingMemory(out bool showBubble))
+			if (!newThought.TryMergeWithExistingMemory(out var showBubble))
 			{
 				memories.Add(newThought);
 			}

@@ -26,13 +26,9 @@ namespace Verse
 		public static string GetTextWithoutBOM(TextAsset textAsset)
 		{
 			string text = null;
-			using (MemoryStream stream = new MemoryStream(textAsset.bytes))
-			{
-				using (StreamReader streamReader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true))
-				{
-					return streamReader.ReadToEnd();
-				}
-			}
+			using MemoryStream stream = new MemoryStream(textAsset.bytes);
+			using StreamReader streamReader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
+			return streamReader.ReadToEnd();
 		}
 
 		public static IEnumerable<string> LinesFromFile(string filePath)

@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 
 namespace Verse
 {
@@ -14,7 +14,7 @@ namespace Verse
 			}
 			Map map = victim.Map;
 			DamageResult damageResult = base.Apply(dinfo, victim);
-			if (!damageResult.deflected && !dinfo.InstantPermanentInjury)
+			if (!damageResult.deflected && !dinfo.InstantPermanentInjury && Rand.Chance(FireUtility.ChanceToAttachFireFromEvent(victim)))
 			{
 				victim.TryAttachFire(Rand.Range(0.15f, 0.25f));
 			}

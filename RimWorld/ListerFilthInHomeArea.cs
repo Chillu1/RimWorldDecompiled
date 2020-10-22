@@ -36,21 +36,14 @@ namespace RimWorld
 
 		public void Notify_FilthDespawned(Filth f)
 		{
-			int num = 0;
-			while (true)
+			for (int i = 0; i < filthInHomeArea.Count; i++)
 			{
-				if (num < filthInHomeArea.Count)
+				if (filthInHomeArea[i] == f)
 				{
-					if (filthInHomeArea[num] == f)
-					{
-						break;
-					}
-					num++;
-					continue;
+					filthInHomeArea.RemoveAt(i);
+					break;
 				}
-				return;
 			}
-			filthInHomeArea.RemoveAt(num);
 		}
 
 		public void Notify_HomeAreaChanged(IntVec3 c)

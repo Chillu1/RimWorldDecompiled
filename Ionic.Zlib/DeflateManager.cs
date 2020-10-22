@@ -820,8 +820,8 @@ namespace Ionic.Zlib
 				lookahead += num2;
 				if (lookahead >= MIN_MATCH)
 				{
-					ins_h = (window[strstart] & 0xFF);
-					ins_h = (((ins_h << hash_shift) ^ (window[strstart + 1] & 0xFF)) & hash_mask);
+					ins_h = window[strstart] & 0xFF;
+					ins_h = ((ins_h << hash_shift) ^ (window[strstart + 1] & 0xFF)) & hash_mask;
 				}
 			}
 			while (lookahead < MIN_LOOKAHEAD && _codec.AvailableBytesIn != 0);
@@ -846,8 +846,8 @@ namespace Ionic.Zlib
 				}
 				if (lookahead >= MIN_MATCH)
 				{
-					ins_h = (((ins_h << hash_shift) ^ (window[strstart + (MIN_MATCH - 1)] & 0xFF)) & hash_mask);
-					num = (head[ins_h] & 0xFFFF);
+					ins_h = ((ins_h << hash_shift) ^ (window[strstart + (MIN_MATCH - 1)] & 0xFF)) & hash_mask;
+					num = head[ins_h] & 0xFFFF;
 					prev[strstart & w_mask] = head[ins_h];
 					head[ins_h] = (short)strstart;
 				}
@@ -866,8 +866,8 @@ namespace Ionic.Zlib
 						do
 						{
 							strstart++;
-							ins_h = (((ins_h << hash_shift) ^ (window[strstart + (MIN_MATCH - 1)] & 0xFF)) & hash_mask);
-							num = (head[ins_h] & 0xFFFF);
+							ins_h = ((ins_h << hash_shift) ^ (window[strstart + (MIN_MATCH - 1)] & 0xFF)) & hash_mask;
+							num = head[ins_h] & 0xFFFF;
 							prev[strstart & w_mask] = head[ins_h];
 							head[ins_h] = (short)strstart;
 						}
@@ -878,8 +878,8 @@ namespace Ionic.Zlib
 					{
 						strstart += match_length;
 						match_length = 0;
-						ins_h = (window[strstart] & 0xFF);
-						ins_h = (((ins_h << hash_shift) ^ (window[strstart + 1] & 0xFF)) & hash_mask);
+						ins_h = window[strstart] & 0xFF;
+						ins_h = ((ins_h << hash_shift) ^ (window[strstart + 1] & 0xFF)) & hash_mask;
 					}
 				}
 				else
@@ -932,8 +932,8 @@ namespace Ionic.Zlib
 				}
 				if (lookahead >= MIN_MATCH)
 				{
-					ins_h = (((ins_h << hash_shift) ^ (window[strstart + (MIN_MATCH - 1)] & 0xFF)) & hash_mask);
-					num = (head[ins_h] & 0xFFFF);
+					ins_h = ((ins_h << hash_shift) ^ (window[strstart + (MIN_MATCH - 1)] & 0xFF)) & hash_mask;
+					num = head[ins_h] & 0xFFFF;
 					prev[strstart & w_mask] = head[ins_h];
 					head[ins_h] = (short)strstart;
 				}
@@ -961,8 +961,8 @@ namespace Ionic.Zlib
 					{
 						if (++strstart <= num2)
 						{
-							ins_h = (((ins_h << hash_shift) ^ (window[strstart + (MIN_MATCH - 1)] & 0xFF)) & hash_mask);
-							num = (head[ins_h] & 0xFFFF);
+							ins_h = ((ins_h << hash_shift) ^ (window[strstart + (MIN_MATCH - 1)] & 0xFF)) & hash_mask;
+							num = head[ins_h] & 0xFFFF;
 							prev[strstart & w_mask] = head[ins_h];
 							head[ins_h] = (short)strstart;
 						}
@@ -1026,7 +1026,7 @@ namespace Ionic.Zlib
 			int num = config.MaxChainLength;
 			int num2 = strstart;
 			int num3 = prev_length;
-			int num4 = (strstart > w_size - MIN_LOOKAHEAD) ? (strstart - (w_size - MIN_LOOKAHEAD)) : 0;
+			int num4 = ((strstart > w_size - MIN_LOOKAHEAD) ? (strstart - (w_size - MIN_LOOKAHEAD)) : 0);
 			int niceLength = config.NiceLength;
 			int num5 = w_mask;
 			int num6 = strstart + MAX_MATCH;
@@ -1066,7 +1066,7 @@ namespace Ionic.Zlib
 					b2 = window[num2 + num3];
 				}
 			}
-			while ((cur_match = (prev[cur_match & num5] & 0xFFFF)) > num4 && --num != 0);
+			while ((cur_match = prev[cur_match & num5] & 0xFFFF) > num4 && --num != 0);
 			if (num3 <= lookahead)
 			{
 				return num3;
@@ -1208,11 +1208,11 @@ namespace Ionic.Zlib
 			Array.Copy(dictionary, sourceIndex, window, 0, num);
 			strstart = num;
 			block_start = num;
-			ins_h = (window[0] & 0xFF);
-			ins_h = (((ins_h << hash_shift) ^ (window[1] & 0xFF)) & hash_mask);
+			ins_h = window[0] & 0xFF;
+			ins_h = ((ins_h << hash_shift) ^ (window[1] & 0xFF)) & hash_mask;
 			for (int i = 0; i <= num - MIN_MATCH; i++)
 			{
-				ins_h = (((ins_h << hash_shift) ^ (window[i + (MIN_MATCH - 1)] & 0xFF)) & hash_mask);
+				ins_h = ((ins_h << hash_shift) ^ (window[i + (MIN_MATCH - 1)] & 0xFF)) & hash_mask;
 				prev[i & w_mask] = head[ins_h];
 				head[ins_h] = (short)i;
 			}
@@ -1252,10 +1252,10 @@ namespace Ionic.Zlib
 				pending[pendingCount++] = (byte)num2;
 				if (strstart != 0)
 				{
-					pending[pendingCount++] = (byte)((uint)((int)_codec._Adler32 & -16777216) >> 24);
+					pending[pendingCount++] = (byte)((_codec._Adler32 & 0xFF000000u) >> 24);
 					pending[pendingCount++] = (byte)((_codec._Adler32 & 0xFF0000) >> 16);
 					pending[pendingCount++] = (byte)((_codec._Adler32 & 0xFF00) >> 8);
-					pending[pendingCount++] = (byte)(_codec._Adler32 & 0xFF);
+					pending[pendingCount++] = (byte)(_codec._Adler32 & 0xFFu);
 				}
 				_codec._Adler32 = Adler.Adler32(0u, null, 0, 0);
 			}
@@ -1326,10 +1326,10 @@ namespace Ionic.Zlib
 			{
 				return 1;
 			}
-			pending[pendingCount++] = (byte)((uint)((int)_codec._Adler32 & -16777216) >> 24);
+			pending[pendingCount++] = (byte)((_codec._Adler32 & 0xFF000000u) >> 24);
 			pending[pendingCount++] = (byte)((_codec._Adler32 & 0xFF0000) >> 16);
 			pending[pendingCount++] = (byte)((_codec._Adler32 & 0xFF00) >> 8);
-			pending[pendingCount++] = (byte)(_codec._Adler32 & 0xFF);
+			pending[pendingCount++] = (byte)(_codec._Adler32 & 0xFFu);
 			_codec.flush_pending();
 			Rfc1950BytesEmitted = true;
 			if (pendingCount == 0)

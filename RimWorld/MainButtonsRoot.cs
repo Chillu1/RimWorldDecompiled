@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -40,22 +40,15 @@ namespace RimWorld
 				return;
 			}
 			DoButtons();
-			int num = 0;
-			while (true)
+			for (int i = 0; i < allButtonsInOrder.Count; i++)
 			{
-				if (num < allButtonsInOrder.Count)
+				if (!allButtonsInOrder[i].Worker.Disabled && allButtonsInOrder[i].hotKey != null && allButtonsInOrder[i].hotKey.KeyDownEvent)
 				{
-					if (!allButtonsInOrder[num].Worker.Disabled && allButtonsInOrder[num].hotKey != null && allButtonsInOrder[num].hotKey.KeyDownEvent)
-					{
-						break;
-					}
-					num++;
-					continue;
+					Event.current.Use();
+					allButtonsInOrder[i].Worker.InterfaceTryActivate();
+					break;
 				}
-				return;
 			}
-			Event.current.Use();
-			allButtonsInOrder[num].Worker.InterfaceTryActivate();
 		}
 
 		public void HandleLowPriorityShortcuts()
@@ -87,7 +80,7 @@ namespace RimWorld
 			{
 				if (allButtonsInOrder[j].buttonVisible)
 				{
-					int num6 = allButtonsInOrder[j].minimized ? num3 : num2;
+					int num6 = (allButtonsInOrder[j].minimized ? num3 : num2);
 					if (j == num4)
 					{
 						num6 = UI.screenWidth - num5;

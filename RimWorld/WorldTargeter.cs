@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
@@ -22,11 +22,13 @@ namespace RimWorld
 
 		private Func<GlobalTargetInfo, string> extraLabelGetter;
 
+		private Func<GlobalTargetInfo, bool> canSelectTarget;
+
 		private const float BaseFeedbackTexSize = 0.8f;
 
 		public bool IsTargeting => action != null;
 
-		public void BeginTargeting(Func<GlobalTargetInfo, bool> action, bool canTargetTiles, Texture2D mouseAttachment = null, bool closeWorldTabWhenFinished = false, Action onUpdate = null, Func<GlobalTargetInfo, string> extraLabelGetter = null)
+		public void BeginTargeting_NewTemp(Func<GlobalTargetInfo, bool> action, bool canTargetTiles, Texture2D mouseAttachment = null, bool closeWorldTabWhenFinished = false, Action onUpdate = null, Func<GlobalTargetInfo, string> extraLabelGetter = null, Func<GlobalTargetInfo, bool> canSelectTarget = null)
 		{
 			this.action = action;
 			this.canTargetTiles = canTargetTiles;
@@ -34,6 +36,13 @@ namespace RimWorld
 			this.closeWorldTabWhenFinished = closeWorldTabWhenFinished;
 			this.onUpdate = onUpdate;
 			this.extraLabelGetter = extraLabelGetter;
+			this.canSelectTarget = canSelectTarget;
+		}
+
+		[Obsolete("Only need this overload to not break mod compatibility.")]
+		public void BeginTargeting(Func<GlobalTargetInfo, bool> action, bool canTargetTiles, Texture2D mouseAttachment = null, bool closeWorldTabWhenFinished = false, Action onUpdate = null, Func<GlobalTargetInfo, string> extraLabelGetter = null)
+		{
+			BeginTargeting_NewTemp(action, canTargetTiles, mouseAttachment, closeWorldTabWhenFinished, onUpdate, extraLabelGetter);
 		}
 
 		public void StopTargeting()
@@ -57,7 +66,7 @@ namespace RimWorld
 				if (Event.current.button == 0 && IsTargeting)
 				{
 					GlobalTargetInfo arg = CurrentTargetUnderMouse();
-					if (action(arg))
+					if ((canSelectTarget == null || canSelectTarget(arg)) && action(arg))
 					{
 						SoundDefOf.Tick_High.PlayOneShotOnCamera();
 						StopTargeting();
@@ -112,16 +121,16 @@ namespace RimWorld
 			if (IsTargeting)
 			{
 				Vector3 pos = Vector3.zero;
-				GlobalTargetInfo globalTargetInfo = CurrentTargetUnderMouse();
-				if (globalTargetInfo.HasWorldObject)
+				GlobalTargetInfo arg = CurrentTargetUnderMouse();
+				if (arg.HasWorldObject)
 				{
-					pos = globalTargetInfo.WorldObject.DrawPos;
+					pos = arg.WorldObject.DrawPos;
 				}
-				else if (globalTargetInfo.Tile >= 0)
+				else if (arg.Tile >= 0)
 				{
-					pos = Find.WorldGrid.GetTileCenter(globalTargetInfo.Tile);
+					pos = Find.WorldGrid.GetTileCenter(arg.Tile);
 				}
-				if (globalTargetInfo.IsValid && !Mouse.IsInputBlockedNow)
+				if (arg.IsValid && !Mouse.IsInputBlockedNow && (canSelectTarget == null || canSelectTarget(arg)))
 				{
 					WorldRendererUtility.DrawQuadTangentialToPlanet(pos, 0.8f * Find.WorldGrid.averageTileSize, 0.018f, WorldMaterials.CurTargetingMat);
 				}

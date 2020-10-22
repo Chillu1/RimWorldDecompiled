@@ -23,7 +23,7 @@ namespace Verse
 				if (HasAutoAnimation)
 				{
 					int ticksGame = Find.TickManager.TicksGame;
-					float num = (ticksGame < autoAnimationStartTick + fadeInDuration) ? ((float)(ticksGame - autoAnimationStartTick) / (float)fadeInDuration) : ((ticksGame >= autoAnimationStartTick + fadeInDuration + holdDuration) ? (1f - (float)(ticksGame - autoAnimationStartTick - fadeInDuration - holdDuration) / (float)fadeOutDuration) : 1f);
+					float num = ((ticksGame < autoAnimationStartTick + fadeInDuration) ? ((float)(ticksGame - autoAnimationStartTick) / (float)fadeInDuration) : ((ticksGame >= autoAnimationStartTick + fadeInDuration + holdDuration) ? (1f - (float)(ticksGame - autoAnimationStartTick - fadeInDuration - holdDuration) / (float)fadeOutDuration) : 1f));
 					return Mathf.Clamp01(num * autoAnimationTarget);
 				}
 				return 0f;

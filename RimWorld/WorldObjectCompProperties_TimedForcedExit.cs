@@ -1,8 +1,10 @@
-using RimWorld.Planet;
+using System;
 using System.Collections.Generic;
+using RimWorld.Planet;
 
 namespace RimWorld
 {
+	[Obsolete]
 	public class WorldObjectCompProperties_TimedForcedExit : WorldObjectCompProperties
 	{
 		public WorldObjectCompProperties_TimedForcedExit()

@@ -29,7 +29,7 @@ namespace RimWorld
 			Toil toil2 = new Toil();
 			toil2.initAction = delegate
 			{
-				if (!pawn.equipment.TryDropEquipment(TargetEquipment, out ThingWithComps _, pawn.Position))
+				if (!pawn.equipment.TryDropEquipment(TargetEquipment, out var _, pawn.Position))
 				{
 					EndJobWith(JobCondition.Incompletable);
 				}

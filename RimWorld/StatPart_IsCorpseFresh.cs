@@ -6,7 +6,7 @@ namespace RimWorld
 	{
 		public override void TransformValue(StatRequest req, ref float val)
 		{
-			if (TryGetIsFreshFactor(req, out float factor))
+			if (TryGetIsFreshFactor(req, out var factor))
 			{
 				val *= factor;
 			}
@@ -14,7 +14,7 @@ namespace RimWorld
 
 		public override string ExplanationPart(StatRequest req)
 		{
-			if (TryGetIsFreshFactor(req, out float factor) && factor != 1f)
+			if (TryGetIsFreshFactor(req, out var factor) && factor != 1f)
 			{
 				return "StatsReport_NotFresh".Translate() + ": x" + factor.ToStringPercent();
 			}

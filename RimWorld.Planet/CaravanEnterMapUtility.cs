@@ -67,22 +67,19 @@ namespace RimWorld.Planet
 
 		private static IntVec3 GetEnterCell(Caravan caravan, Map map, CaravanEnterMode enterMode, Predicate<IntVec3> extraCellValidator)
 		{
-			switch (enterMode)
+			return enterMode switch
 			{
-			case CaravanEnterMode.Edge:
-				return FindNearEdgeCell(map, extraCellValidator);
-			case CaravanEnterMode.Center:
-				return FindCenterCell(map, extraCellValidator);
-			default:
-				throw new NotImplementedException("CaravanEnterMode");
-			}
+				CaravanEnterMode.Edge => FindNearEdgeCell(map, extraCellValidator), 
+				CaravanEnterMode.Center => FindCenterCell(map, extraCellValidator), 
+				_ => throw new NotImplementedException("CaravanEnterMode"), 
+			};
 		}
 
 		private static IntVec3 FindNearEdgeCell(Map map, Predicate<IntVec3> extraCellValidator)
 		{
 			Predicate<IntVec3> baseValidator = (IntVec3 x) => x.Standable(map) && !x.Fogged(map);
 			Faction hostFaction = map.ParentFaction;
-			if (CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => baseValidator(x) && (extraCellValidator == null || extraCellValidator(x)) && ((hostFaction != null && map.reachability.CanReachFactionBase(x, hostFaction)) || (hostFaction == null && map.reachability.CanReachBiggestMapEdgeRoom(x))), map, CellFinder.EdgeRoadChance_Neutral, out IntVec3 result))
+			if (CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => baseValidator(x) && (extraCellValidator == null || extraCellValidator(x)) && ((hostFaction != null && map.reachability.CanReachFactionBase(x, hostFaction)) || (hostFaction == null && map.reachability.CanReachBiggestMapEdgeRoom(x))), map, CellFinder.EdgeRoadChance_Neutral, out var result))
 			{
 				return CellFinder.RandomClosewalkCellNear(result, map, 5);
 			}
@@ -102,7 +99,7 @@ namespace RimWorld.Planet
 		{
 			TraverseParms traverseParms = TraverseParms.For(TraverseMode.NoPassClosedDoors);
 			Predicate<IntVec3> baseValidator = (IntVec3 x) => x.Standable(map) && !x.Fogged(map) && map.reachability.CanReachMapEdge(x, traverseParms);
-			if (extraCellValidator != null && RCellFinder.TryFindRandomCellNearTheCenterOfTheMapWith((IntVec3 x) => baseValidator(x) && extraCellValidator(x), map, out IntVec3 result))
+			if (extraCellValidator != null && RCellFinder.TryFindRandomCellNearTheCenterOfTheMapWith((IntVec3 x) => baseValidator(x) && extraCellValidator(x), map, out var result))
 			{
 				return result;
 			}

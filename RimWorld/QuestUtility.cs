@@ -1,10 +1,10 @@
-using RimWorld.Planet;
-using RimWorld.QuestGen;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld.Planet;
+using RimWorld.QuestGen;
 using UnityEngine;
 using Verse;
 using Verse.AI.Group;
@@ -43,11 +43,19 @@ namespace RimWorld
 
 		public const string QuestTargetSignalPart_TitleChanged = "TitleChanged";
 
+		public const string QuestTargetSignalPart_TitleAwardedWhenUpdatingChanged = "TitleAwardedWhenUpdatingChanged";
+
+		public const string QuestTargetSignalPart_Banished = "Banished";
+
+		public const string QuestTargetSignalPart_RanWild = "RanWild";
+
 		public const string QuestTargetSignalPart_ShuttleSentSatisfied = "SentSatisfied";
 
 		public const string QuestTargetSignalPart_ShuttleSentUnsatisfied = "SentUnsatisfied";
 
 		public const string QuestTargetSignalPart_ShuttleSentWithExtraColonists = "SentWithExtraColonists";
+
+		public const string QuestTargetSignalPart_ShuttleUnloaded = "Unloaded";
 
 		public const string QuestTargetSignalPart_AllEnemiesDefeated = "AllEnemiesDefeated";
 
@@ -70,6 +78,14 @@ namespace RimWorld
 		public const string QuestTargetSignalPart_ExitMentalState = "ExitMentalState";
 
 		public const string QuestTargetSignalPart_FactionBecameHostileToPlayer = "BecameHostileToPlayer";
+
+		public const string QuestTargetSignalPart_CeremonyExpired = "CeremonyExpired";
+
+		public const string QuestTargetSignalPart_CeremonyFailed = "CeremonyFailed";
+
+		public const string QuestTargetSignalPart_CeremonyDone = "CeremonyDone";
+
+		public const string QuestTargetSignalPart_QuestEnded = "QuestEnded";
 
 		private static List<ExtraFaction> tmpExtraFactions = new List<ExtraFaction>();
 
@@ -111,7 +127,7 @@ namespace RimWorld
 					text += "\n\n" + "LetterQuestRequiresAcceptance".Translate(quest.ticksUntilAcceptanceExpiry.ToStringTicksToPeriod(allowSeconds: false, shortForm: false, canUseDecimals: false));
 				}
 			}
-			ChoiceLetter choiceLetter = LetterMaker.MakeLetter(label, text, IncidentDefOf.GiveQuest_Random.letterDef, LookTargets.Invalid, null, quest);
+			ChoiceLetter choiceLetter = LetterMaker.MakeLetter(label, text, (quest.root != null && quest.root.questAvailableLetterDef != null) ? quest.root.questAvailableLetterDef : IncidentDefOf.GiveQuest_Random.letterDef, LookTargets.Invalid, null, quest);
 			choiceLetter.title = quest.name;
 			Find.LetterStack.ReceiveLetter(choiceLetter);
 		}
@@ -322,7 +338,7 @@ namespace RimWorld
 				for (int j = 0; j < partList.Count; j++)
 				{
 					QuestPart_WorkDisabled questPart_WorkDisabled;
-					if ((questPart_WorkDisabled = (partList[j] as QuestPart_WorkDisabled)) != null && questPart_WorkDisabled.pawns.Contains(p))
+					if ((questPart_WorkDisabled = partList[j] as QuestPart_WorkDisabled) != null && questPart_WorkDisabled.pawns.Contains(p))
 					{
 						yield return questPart_WorkDisabled;
 					}
@@ -332,7 +348,11 @@ namespace RimWorld
 
 		public static bool IsQuestLodger(this Pawn p)
 		{
-			return p.HasExtraHomeFaction();
+			if (!p.HasExtraHomeFaction())
+			{
+				return p.HasExtraMiniFaction();
+			}
+			return true;
 		}
 
 		public static bool IsQuestHelper(this Pawn p)
@@ -352,9 +372,43 @@ namespace RimWorld
 				for (int j = 0; j < partsListForReading.Count; j++)
 				{
 					QuestPart_ExtraFaction questPart_ExtraFaction;
-					if ((questPart_ExtraFaction = (partsListForReading[j] as QuestPart_ExtraFaction)) != null && questPart_ExtraFaction.affectedPawns.Contains(p) && questPart_ExtraFaction.areHelpers)
+					if ((questPart_ExtraFaction = partsListForReading[j] as QuestPart_ExtraFaction) != null && questPart_ExtraFaction.affectedPawns.Contains(p) && questPart_ExtraFaction.areHelpers)
 					{
 						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+		public static bool IsQuestReward(this Pawn pawn)
+		{
+			List<Quest> questsListForReading = Find.QuestManager.QuestsListForReading;
+			for (int i = 0; i < questsListForReading.Count; i++)
+			{
+				if (questsListForReading[i].State != 0 && questsListForReading[i].State != QuestState.Ongoing)
+				{
+					continue;
+				}
+				List<QuestPart> partsListForReading = questsListForReading[i].PartsListForReading;
+				for (int j = 0; j < partsListForReading.Count; j++)
+				{
+					QuestPart_Choice questPart_Choice;
+					if ((questPart_Choice = partsListForReading[j] as QuestPart_Choice) == null)
+					{
+						continue;
+					}
+					for (int k = 0; k < questPart_Choice.choices.Count; k++)
+					{
+						QuestPart_Choice.Choice choice = questPart_Choice.choices[k];
+						for (int l = 0; l < choice.rewards.Count; l++)
+						{
+							Reward_Pawn reward_Pawn;
+							if ((reward_Pawn = choice.rewards[l] as Reward_Pawn) != null && reward_Pawn.pawn == pawn)
+							{
+								return true;
+							}
+						}
 					}
 				}
 			}
@@ -374,7 +428,7 @@ namespace RimWorld
 				for (int j = 0; j < partsListForReading.Count; j++)
 				{
 					QuestPart_AllowDecreesForLodger questPart_AllowDecreesForLodger;
-					if ((questPart_AllowDecreesForLodger = (partsListForReading[j] as QuestPart_AllowDecreesForLodger)) != null && questPart_AllowDecreesForLodger.lodger == p)
+					if ((questPart_AllowDecreesForLodger = partsListForReading[j] as QuestPart_AllowDecreesForLodger) != null && questPart_AllowDecreesForLodger.lodger == p)
 					{
 						return true;
 					}
@@ -386,6 +440,11 @@ namespace RimWorld
 		public static bool HasExtraHomeFaction(this Pawn p, Quest forQuest = null)
 		{
 			return p.GetExtraHomeFaction(forQuest) != null;
+		}
+
+		public static bool HasExtraMiniFaction(this Pawn p, Quest forQuest = null)
+		{
+			return p.GetExtraMiniFaction(forQuest) != null;
 		}
 
 		public static bool HasExtraHomeFaction(this Pawn p, Faction faction)
@@ -404,6 +463,22 @@ namespace RimWorld
 			return false;
 		}
 
+		public static bool HasExtraMiniFaction(this Pawn p, Faction faction)
+		{
+			tmpExtraFactions.Clear();
+			GetExtraFactionsFromQuestParts(p, tmpExtraFactions);
+			for (int i = 0; i < tmpExtraFactions.Count; i++)
+			{
+				if (tmpExtraFactions[i].factionType == ExtraFactionType.MiniFaction && tmpExtraFactions[i].faction == faction)
+				{
+					tmpExtraFactions.Clear();
+					return true;
+				}
+			}
+			tmpExtraFactions.Clear();
+			return false;
+		}
+
 		public static Faction GetExtraHomeFaction(this Pawn p, Quest forQuest = null)
 		{
 			return p.GetExtraFaction(ExtraFactionType.HomeFaction, forQuest);
@@ -412,6 +487,27 @@ namespace RimWorld
 		public static Faction GetExtraHostFaction(this Pawn p, Quest forQuest = null)
 		{
 			return p.GetExtraFaction(ExtraFactionType.HostFaction, forQuest);
+		}
+
+		public static Faction GetExtraMiniFaction(this Pawn p, Quest forQuest = null)
+		{
+			return p.GetExtraFaction(ExtraFactionType.MiniFaction, forQuest);
+		}
+
+		public static bool InSameExtraFaction(this Pawn p, Pawn target, ExtraFactionType type, Quest forQuest = null)
+		{
+			return p.GetSharedExtraFaction(target, type, forQuest) != null;
+		}
+
+		public static Faction GetSharedExtraFaction(this Pawn p, Pawn target, ExtraFactionType type, Quest forQuest = null)
+		{
+			Faction extraFaction = p.GetExtraFaction(type, forQuest);
+			Faction extraFaction2 = target.GetExtraFaction(type, forQuest);
+			if (extraFaction != null && extraFaction == extraFaction2)
+			{
+				return extraFaction;
+			}
+			return null;
 		}
 
 		public static Faction GetExtraFaction(this Pawn p, ExtraFactionType extraFactionType, Quest forQuest = null)
@@ -466,7 +562,7 @@ namespace RimWorld
 				for (int j = 0; j < partsListForReading.Count; j++)
 				{
 					QuestPart_LendColonistsToFaction questPart_LendColonistsToFaction;
-					if ((questPart_LendColonistsToFaction = (partsListForReading[j] as QuestPart_LendColonistsToFaction)) != null && questPart_LendColonistsToFaction.LentColonistsListForReading.Contains(pawn))
+					if ((questPart_LendColonistsToFaction = partsListForReading[j] as QuestPart_LendColonistsToFaction) != null && questPart_LendColonistsToFaction.LentColonistsListForReading.Contains(pawn))
 					{
 						return true;
 					}
@@ -489,7 +585,7 @@ namespace RimWorld
 				for (int j = 0; j < partsListForReading.Count; j++)
 				{
 					QuestPart_LendColonistsToFaction questPart_LendColonistsToFaction;
-					if ((questPart_LendColonistsToFaction = (partsListForReading[j] as QuestPart_LendColonistsToFaction)) != null)
+					if ((questPart_LendColonistsToFaction = partsListForReading[j] as QuestPart_LendColonistsToFaction) != null)
 					{
 						num += questPart_LendColonistsToFaction.LentColonistsListForReading.Count;
 					}
@@ -521,7 +617,7 @@ namespace RimWorld
 
 		public static void AppendInspectStringsFromQuestParts(StringBuilder sb, ISelectable target)
 		{
-			AppendInspectStringsFromQuestParts(sb, target, out int _);
+			AppendInspectStringsFromQuestParts(sb, target, out var _);
 		}
 
 		public static void AppendInspectStringsFromQuestParts(StringBuilder sb, ISelectable target, out int count)
@@ -569,13 +665,12 @@ namespace RimWorld
 
 		public static IEnumerable<Gizmo> GetQuestRelatedGizmos(Thing thing)
 		{
-			Thing thing2 = thing;
 			if (Find.Selector.SelectedObjects.Count != 1)
 			{
 				yield break;
 			}
-			Quest linkedQuest = Find.QuestManager.QuestsListForReading.FirstOrDefault((Quest q) => !q.Historical && !q.dismissed && (q.QuestLookTargets.Contains(thing2) || q.QuestSelectTargets.Contains(thing2)));
-			if (linkedQuest != null)
+			Quest linkedQuest = Find.QuestManager.QuestsListForReading.FirstOrDefault((Quest q) => !q.Historical && !q.dismissed && (q.QuestLookTargets.Contains(thing) || q.QuestSelectTargets.Contains(thing)));
+			if (linkedQuest != null && !linkedQuest.hidden)
 			{
 				Command_Action command_Action = new Command_Action();
 				command_Action.defaultLabel = "CommandOpenLinkedQuest".Translate(linkedQuest.name);
@@ -632,7 +727,7 @@ namespace RimWorld
 				for (int j = 0; j < partsListForReading.Count; j++)
 				{
 					QuestPart_DisableRandomMoodCausedMentalBreaks questPart_DisableRandomMoodCausedMentalBreaks;
-					if ((questPart_DisableRandomMoodCausedMentalBreaks = (partsListForReading[j] as QuestPart_DisableRandomMoodCausedMentalBreaks)) != null && questPart_DisableRandomMoodCausedMentalBreaks.State == QuestPartState.Enabled && questPart_DisableRandomMoodCausedMentalBreaks.pawns.Contains(p))
+					if ((questPart_DisableRandomMoodCausedMentalBreaks = partsListForReading[j] as QuestPart_DisableRandomMoodCausedMentalBreaks) != null && questPart_DisableRandomMoodCausedMentalBreaks.State == QuestPartState.Enabled && questPart_DisableRandomMoodCausedMentalBreaks.pawns.Contains(p))
 					{
 						return true;
 					}

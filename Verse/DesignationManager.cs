@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 
 namespace Verse
 {
@@ -88,7 +88,7 @@ namespace Verse
 			allDesignations.Add(newDes);
 			newDes.designationManager = this;
 			newDes.Notify_Added();
-			Map map = newDes.target.HasThing ? newDes.target.Thing.Map : this.map;
+			Map map = (newDes.target.HasThing ? newDes.target.Thing.Map : this.map);
 			if (map != null)
 			{
 				MoteMaker.ThrowMetaPuffs(newDes.target.ToTargetInfo(map));

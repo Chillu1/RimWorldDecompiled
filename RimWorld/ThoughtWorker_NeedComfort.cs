@@ -11,23 +11,16 @@ namespace RimWorld
 			{
 				return ThoughtState.Inactive;
 			}
-			switch (p.needs.comfort.CurCategory)
+			return p.needs.comfort.CurCategory switch
 			{
-			case ComfortCategory.Uncomfortable:
-				return ThoughtState.ActiveAtStage(0);
-			case ComfortCategory.Normal:
-				return ThoughtState.Inactive;
-			case ComfortCategory.Comfortable:
-				return ThoughtState.ActiveAtStage(1);
-			case ComfortCategory.VeryComfortable:
-				return ThoughtState.ActiveAtStage(2);
-			case ComfortCategory.ExtremelyComfortable:
-				return ThoughtState.ActiveAtStage(3);
-			case ComfortCategory.LuxuriantlyComfortable:
-				return ThoughtState.ActiveAtStage(4);
-			default:
-				throw new NotImplementedException();
-			}
+				ComfortCategory.Uncomfortable => ThoughtState.ActiveAtStage(0), 
+				ComfortCategory.Normal => ThoughtState.Inactive, 
+				ComfortCategory.Comfortable => ThoughtState.ActiveAtStage(1), 
+				ComfortCategory.VeryComfortable => ThoughtState.ActiveAtStage(2), 
+				ComfortCategory.ExtremelyComfortable => ThoughtState.ActiveAtStage(3), 
+				ComfortCategory.LuxuriantlyComfortable => ThoughtState.ActiveAtStage(4), 
+				_ => throw new NotImplementedException(), 
+			};
 		}
 	}
 }

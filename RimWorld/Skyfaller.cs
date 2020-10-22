@@ -75,7 +75,7 @@ namespace RimWorld
 			}
 		}
 
-		private float TimeInAnimation
+		protected float TimeInAnimation
 		{
 			get
 			{
@@ -356,7 +356,7 @@ namespace RimWorld
 			return innerContainer[0];
 		}
 
-		private void DrawDropSpotShadow()
+		protected void DrawDropSpotShadow()
 		{
 			Material shadowMaterial = ShadowMaterial;
 			if (!(shadowMaterial == null))

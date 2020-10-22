@@ -11,11 +11,17 @@ namespace Verse
 
 		public int ticksBetweenMotes = 40;
 
+		public int maxMoteCount = int.MaxValue;
+
+		public int initialDelayTicks;
+
 		public float chancePerTick = 0.1f;
 
 		public MoteSpawnLocType spawnLocType = MoteSpawnLocType.BetweenPositions;
 
 		public float positionLerpFactor = 0.5f;
+
+		public Vector3 positionOffset = Vector3.zero;
 
 		public float positionRadius;
 

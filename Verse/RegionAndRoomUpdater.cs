@@ -320,7 +320,7 @@ namespace Verse
 			{
 				RoomGroup roomGroup = newRoomGroups[j];
 				roomGroup.Notify_RoomGroupShapeChanged();
-				if (map.temperatureCache.TryGetAverageCachedRoomGroupTemp(roomGroup, out float result))
+				if (map.temperatureCache.TryGetAverageCachedRoomGroupTemp(roomGroup, out var result))
 				{
 					roomGroup.Temperature = result;
 				}

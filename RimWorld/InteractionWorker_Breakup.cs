@@ -24,7 +24,13 @@ namespace RimWorld
 			{
 				num2 = 0.4f;
 			}
-			return 0.02f * num * num2;
+			float num3 = 1f;
+			HediffWithTarget hediffWithTarget = (HediffWithTarget)initiator.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.PsychicLove);
+			if (hediffWithTarget != null && hediffWithTarget.target == recipient)
+			{
+				num3 = 0.1f;
+			}
+			return 0.02f * num * num2 * num3;
 		}
 
 		public Thought RandomBreakupReason(Pawn initiator, Pawn recipient)

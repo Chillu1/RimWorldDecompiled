@@ -1,11 +1,11 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse.Sound;
 
@@ -269,12 +269,12 @@ namespace Verse
 		public static bool CanDrawIconFor(Def def)
 		{
 			BuildableDef buildableDef;
-			if ((buildableDef = (def as BuildableDef)) != null)
+			if ((buildableDef = def as BuildableDef) != null)
 			{
 				return buildableDef.uiIcon != null;
 			}
 			FactionDef factionDef;
-			if ((factionDef = (def as FactionDef)) != null)
+			if ((factionDef = def as FactionDef) != null)
 			{
 				return factionDef.FactionIcon != null;
 			}
@@ -284,7 +284,7 @@ namespace Verse
 		public static void DefIcon(Rect rect, Def def, ThingDef stuffDef = null, float scale = 1f, bool drawPlaceholder = false)
 		{
 			BuildableDef buildableDef;
-			if ((buildableDef = (def as BuildableDef)) != null)
+			if ((buildableDef = def as BuildableDef) != null)
 			{
 				rect.position += new Vector2(buildableDef.uiIconOffset.x * rect.size.x, buildableDef.uiIconOffset.y * rect.size.y);
 			}
@@ -292,21 +292,21 @@ namespace Verse
 			RecipeDef recipeDef;
 			TerrainDef terrainDef;
 			FactionDef factionDef;
-			if ((thingDef = (def as ThingDef)) != null)
+			if ((thingDef = def as ThingDef) != null)
 			{
 				ThingIcon(rect, thingDef, stuffDef, scale);
 			}
-			else if ((recipeDef = (def as RecipeDef)) != null && recipeDef.ProducedThingDef != null)
+			else if ((recipeDef = def as RecipeDef) != null && recipeDef.UIIconThing != null)
 			{
-				ThingIcon(rect, recipeDef.ProducedThingDef, null, scale);
+				ThingIcon(rect, recipeDef.UIIconThing, null, scale);
 			}
-			else if ((terrainDef = (def as TerrainDef)) != null && terrainDef.uiIcon != null)
+			else if ((terrainDef = def as TerrainDef) != null && terrainDef.uiIcon != null)
 			{
 				GUI.color = terrainDef.uiIconColor;
 				DrawTextureFitted(rect, terrainDef.uiIcon, scale, Vector2.one, CroppedTerrainTextureRect(terrainDef.uiIcon));
 				GUI.color = Color.white;
 			}
-			else if ((factionDef = (def as FactionDef)) != null)
+			else if ((factionDef = def as FactionDef) != null)
 			{
 				if (!factionDef.colorSpectrum.NullOrEmpty())
 				{
@@ -378,9 +378,9 @@ namespace Verse
 			{
 				Texture2D resolvedIcon = thingDef.uiIcon;
 				Graphic_Appearances graphic_Appearances;
-				if ((graphic_Appearances = (thingDef.graphic as Graphic_Appearances)) != null)
+				if ((graphic_Appearances = thingDef.graphic as Graphic_Appearances) != null)
 				{
-					resolvedIcon = (Texture2D)graphic_Appearances.SubGraphicFor(stuffDef).MatAt(thingDef.defaultPlacingRot).mainTexture;
+					resolvedIcon = (Texture2D)graphic_Appearances.SubGraphicFor(stuffDef ?? GenStuff.DefaultStuffFor(thingDef)).MatAt(thingDef.defaultPlacingRot).mainTexture;
 				}
 				if (stuffDef != null)
 				{
@@ -835,27 +835,20 @@ namespace Verse
 
 		public static MultiCheckboxState CheckboxMulti(Rect rect, MultiCheckboxState state, bool paintable = false)
 		{
-			Texture2D tex;
-			switch (state)
+			Texture2D tex = state switch
 			{
-			case MultiCheckboxState.On:
-				tex = CheckboxOnTex;
-				break;
-			case MultiCheckboxState.Off:
-				tex = CheckboxOffTex;
-				break;
-			default:
-				tex = CheckboxPartialTex;
-				break;
-			}
+				MultiCheckboxState.On => CheckboxOnTex, 
+				MultiCheckboxState.Off => CheckboxOffTex, 
+				_ => CheckboxPartialTex, 
+			};
 			MouseoverSounds.DoRegion(rect);
-			MultiCheckboxState multiCheckboxState = (state != MultiCheckboxState.Off) ? MultiCheckboxState.Off : MultiCheckboxState.On;
+			MultiCheckboxState multiCheckboxState = ((state != MultiCheckboxState.Off) ? MultiCheckboxState.Off : MultiCheckboxState.On);
 			bool flag = false;
 			DraggableResult draggableResult = ButtonImageDraggable(rect, tex);
 			if (paintable && draggableResult == DraggableResult.Dragged)
 			{
 				checkboxPainting = true;
-				checkboxPaintingState = (multiCheckboxState == MultiCheckboxState.On);
+				checkboxPaintingState = multiCheckboxState == MultiCheckboxState.On;
 				flag = true;
 			}
 			else if (draggableResult.AnyPressed())
@@ -1168,7 +1161,7 @@ namespace Verse
 		public static bool ButtonImageWithBG(Rect butRect, Texture2D image, Vector2? imageSize = null)
 		{
 			bool result = ButtonText(butRect, "");
-			Rect position = (!imageSize.HasValue) ? butRect : new Rect(Mathf.Floor(butRect.x + butRect.width / 2f - imageSize.Value.x / 2f), Mathf.Floor(butRect.y + butRect.height / 2f - imageSize.Value.y / 2f), imageSize.Value.x, imageSize.Value.y);
+			Rect position = ((!imageSize.HasValue) ? butRect : new Rect(Mathf.Floor(butRect.x + butRect.width / 2f - imageSize.Value.x / 2f), Mathf.Floor(butRect.y + butRect.height / 2f - imageSize.Value.y / 2f), imageSize.Value.x, imageSize.Value.y));
 			GUI.DrawTexture(position, image);
 			return result;
 		}
@@ -1330,7 +1323,7 @@ namespace Verse
 			}
 			else if (typeof(T) == typeof(float))
 			{
-				if (float.TryParse(edited, out float result2))
+				if (float.TryParse(edited, out var result2))
 				{
 					val = (T)(object)Mathf.Clamp(result2, min, max);
 					buffer = ToStringTypedIn(val);
@@ -1503,7 +1496,7 @@ namespace Verse
 				TextAnchor anchor = Text.Anchor;
 				GameFont font = Text.Font;
 				Text.Font = GameFont.Tiny;
-				float num2 = label.NullOrEmpty() ? 18f : Text.CalcSize(label).y;
+				float num2 = (label.NullOrEmpty() ? 18f : Text.CalcSize(label).y);
 				rect.y = rect.y - num2 + 3f;
 				if (!leftAlignedLabel.NullOrEmpty())
 				{
@@ -1546,7 +1539,7 @@ namespace Verse
 			{
 				num = GenMath.LerpDouble(maxFreq, 1f, 0f, 0.5f, freq);
 			}
-			string label = (freq == 1f) ? ((string)"EveryDay".Translate()) : ((!(freq < 1f)) ? ((string)"EveryDays".Translate(freq.ToString("0.##"))) : ((string)"TimesPerDay".Translate((1f / freq).ToString("0.##"))));
+			string label = ((freq == 1f) ? ((string)"EveryDay".Translate()) : ((!(freq < 1f)) ? ((string)"EveryDays".Translate(freq.ToString("0.##"))) : ((string)"TimesPerDay".Translate((1f / freq).ToString("0.##")))));
 			float num2 = HorizontalSlider(rect, num, 0f, 1f, middleAlignment: true, label);
 			if (num != num2)
 			{
@@ -1806,7 +1799,7 @@ namespace Verse
 			rect2.xMin += 8f;
 			rect2.xMax -= 8f;
 			GUI.color = RangeControlTextColor;
-			string label = (range == RimWorld.QualityRange.All) ? ((string)"AnyQuality".Translate()) : ((range.max != range.min) ? (range.min.GetLabel() + " - " + range.max.GetLabel()) : ((string)"OnlyQuality".Translate(range.min.GetLabel())));
+			string label = ((range == RimWorld.QualityRange.All) ? ((string)"AnyQuality".Translate()) : ((range.max != range.min) ? (range.min.GetLabel() + " - " + range.max.GetLabel()) : ((string)"OnlyQuality".Translate(range.min.GetLabel()))));
 			GameFont font = Text.Font;
 			Text.Font = GameFont.Tiny;
 			Text.Anchor = TextAnchor.UpperCenter;
@@ -2341,7 +2334,7 @@ namespace Verse
 			if (Event.current.type == EventType.Repaint)
 			{
 				Rect rect = new Rect(0f, 0f, texProportions.x, texProportions.y);
-				float num = (!(rect.width / rect.height < outerRect.width / outerRect.height)) ? (outerRect.width / rect.width) : (outerRect.height / rect.height);
+				float num = ((!(rect.width / rect.height < outerRect.width / outerRect.height)) ? (outerRect.width / rect.width) : (outerRect.height / rect.height));
 				num *= scale;
 				rect.width *= num;
 				rect.height *= num;
@@ -2464,6 +2457,18 @@ namespace Verse
 					}
 				}
 			}
+		}
+
+		public static void MouseAttachedLabel(string label)
+		{
+			Vector2 mousePosition = Event.current.mousePosition;
+			Rect rect = new Rect(mousePosition.x + 8f, mousePosition.y + 8f, 32f, 32f);
+			GUI.color = Color.white;
+			Text.Font = GameFont.Small;
+			Rect rect2 = new Rect(rect.xMax, rect.y, 9999f, 100f);
+			Vector2 vector = Text.CalcSize(label);
+			GUI.DrawTexture(new Rect(rect2.x - vector.x * 0.1f, rect2.y, vector.x * 1.2f, vector.y), TexUI.GrayTextBG);
+			Label(rect2, label);
 		}
 
 		public static void WidgetsOnGUI()

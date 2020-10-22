@@ -8,10 +8,8 @@ namespace RimWorld.IO
 	{
 		public static XDocument LoadAsXDocument(this VirtualFile file)
 		{
-			using (Stream input = file.CreateReadStream())
-			{
-				return XDocument.Load(XmlReader.Create(input), LoadOptions.SetLineInfo);
-			}
+			using Stream input = file.CreateReadStream();
+			return XDocument.Load(XmlReader.Create(input), LoadOptions.SetLineInfo);
 		}
 	}
 }

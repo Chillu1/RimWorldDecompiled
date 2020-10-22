@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.IO;
+using RimWorld;
 
 namespace Verse
 {
@@ -15,7 +15,7 @@ namespace Verse
 			{
 				Current.Game = null;
 				musicManagerEntry = new MusicManagerEntry();
-				FileInfo fileInfo = Root.checkedAutostartSaveFile ? null : SaveGameFilesUtility.GetAutostartSaveFile();
+				FileInfo fileInfo = (Root.checkedAutostartSaveFile ? null : SaveGameFilesUtility.GetAutostartSaveFile());
 				Root.checkedAutostartSaveFile = true;
 				if (fileInfo != null)
 				{

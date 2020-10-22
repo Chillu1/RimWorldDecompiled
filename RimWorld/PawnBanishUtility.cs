@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Text;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -23,7 +23,10 @@ namespace RimWorld
 				tile = pawn.Tile;
 			}
 			bool flag = WouldBeLeftToDie(pawn, tile);
-			PawnDiedOrDownedThoughtsUtility.TryGiveThoughts(pawn, null, (!flag) ? PawnDiedOrDownedThoughtsKind.Banished : PawnDiedOrDownedThoughtsKind.BanishedToDie);
+			if (!pawn.IsQuestLodger())
+			{
+				PawnDiedOrDownedThoughtsUtility.TryGiveThoughts(pawn, null, (!flag) ? PawnDiedOrDownedThoughtsKind.Banished : PawnDiedOrDownedThoughtsKind.BanishedToDie);
+			}
 			Caravan caravan = pawn.GetCaravan();
 			if (caravan != null)
 			{
@@ -45,21 +48,21 @@ namespace RimWorld
 			{
 				pawn.guest.SetGuestStatus(null);
 			}
-			if (pawn.Faction != Faction.OfPlayer)
+			if (pawn.Faction == Faction.OfPlayer)
 			{
-				return;
-			}
-			if (!pawn.Spawned && Find.FactionManager.TryGetRandomNonColonyHumanlikeFaction(out Faction faction, pawn.Faction != null && (int)pawn.Faction.def.techLevel >= 3))
-			{
-				if (pawn.Faction != faction)
+				if (!pawn.Spawned && Find.FactionManager.TryGetRandomNonColonyHumanlikeFaction_NewTemp(out var faction, pawn.Faction != null && (int)pawn.Faction.def.techLevel >= 3))
 				{
-					pawn.SetFaction(faction);
+					if (pawn.Faction != faction)
+					{
+						pawn.SetFaction(faction);
+					}
+				}
+				else if (pawn.Faction != null)
+				{
+					pawn.SetFaction(null);
 				}
 			}
-			else if (pawn.Faction != null)
-			{
-				pawn.SetFaction(null);
-			}
+			QuestUtility.SendQuestTargetSignals(pawn.questTags, "Banished", pawn.Named("SUBJECT"));
 		}
 
 		public static bool WouldBeLeftToDie(Pawn p, int tile)
@@ -103,9 +106,9 @@ namespace RimWorld
 				stringBuilder.AppendLine();
 				stringBuilder.Append("ConfirmBanishPawnDialog_LeftToDie".Translate(banishedPawn.LabelShort, banishedPawn).Resolve().CapitalizeFirst());
 			}
-			List<ThingWithComps> list = (banishedPawn.equipment != null) ? banishedPawn.equipment.AllEquipmentListForReading : null;
-			List<Apparel> list2 = (banishedPawn.apparel != null) ? banishedPawn.apparel.WornApparel : null;
-			ThingOwner<Thing> thingOwner = (banishedPawn.inventory != null && WillTakeInventoryIfBanished(banishedPawn)) ? banishedPawn.inventory.innerContainer : null;
+			List<ThingWithComps> list = ((banishedPawn.equipment != null) ? banishedPawn.equipment.AllEquipmentListForReading : null);
+			List<Apparel> list2 = ((banishedPawn.apparel != null) ? banishedPawn.apparel.WornApparel : null);
+			ThingOwner<Thing> thingOwner = ((banishedPawn.inventory != null && WillTakeInventoryIfBanished(banishedPawn)) ? banishedPawn.inventory.innerContainer : null);
 			if (!list.NullOrEmpty() || !list2.NullOrEmpty() || !thingOwner.NullOrEmpty())
 			{
 				stringBuilder.AppendLine();
@@ -138,7 +141,10 @@ namespace RimWorld
 					}
 				}
 			}
-			PawnDiedOrDownedThoughtsUtility.BuildMoodThoughtsListString(banishedPawn, null, (!flag) ? PawnDiedOrDownedThoughtsKind.Banished : PawnDiedOrDownedThoughtsKind.BanishedToDie, stringBuilder, "\n\n" + "ConfirmBanishPawnDialog_IndividualThoughts".Translate(banishedPawn.LabelShort, banishedPawn), "\n\n" + "ConfirmBanishPawnDialog_AllColonistsThoughts".Translate());
+			if (!banishedPawn.IsQuestLodger())
+			{
+				PawnDiedOrDownedThoughtsUtility.BuildMoodThoughtsListString(banishedPawn, null, (!flag) ? PawnDiedOrDownedThoughtsKind.Banished : PawnDiedOrDownedThoughtsKind.BanishedToDie, stringBuilder, "\n\n" + "ConfirmBanishPawnDialog_IndividualThoughts".Translate(banishedPawn.LabelShort, banishedPawn), "\n\n" + "ConfirmBanishPawnDialog_AllColonistsThoughts".Translate());
+			}
 			return stringBuilder.ToString();
 		}
 

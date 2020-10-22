@@ -21,7 +21,7 @@ namespace RimWorld
 			newReq.maxRangeFromTarget = 9999f;
 			newReq.locus = (IntVec3)pawn.mindState.duty.focus;
 			newReq.maxRangeFromLocus = pawn.mindState.duty.radius;
-			newReq.wantCoverFromTarget = (verb.verbProps.range > 7f);
+			newReq.wantCoverFromTarget = verb.verbProps.range > 7f;
 			return CastPositionFinder.TryFindCastPosition(newReq, out dest);
 		}
 	}

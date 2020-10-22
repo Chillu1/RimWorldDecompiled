@@ -36,6 +36,10 @@ namespace RimWorld
 
 		private static readonly Color PurchasedColor = new Color(1f, 1f, 1f, 0.35f);
 
+		private const int NumColumns = 2;
+
+		private const int NumRows = 3;
+
 		private static UI_BackgroundMain BackgroundMain => (UI_BackgroundMain)UIMenuBackgroundManager.background;
 
 		public static void Init()
@@ -100,7 +104,7 @@ namespace RimWorld
 			List<ListableOption> list = new List<ListableOption>();
 			if (Current.ProgramState == ProgramState.Entry)
 			{
-				string label = "Tutorial".CanTranslate() ? ((string)"Tutorial".Translate()) : ((string)"LearnToPlay".Translate());
+				string label = ("Tutorial".CanTranslate() ? ((string)"Tutorial".Translate()) : ((string)"LearnToPlay".Translate()));
 				list.Add(new ListableOption(label, delegate
 				{
 					InitLearnToPlay();
@@ -312,38 +316,62 @@ namespace RimWorld
 			}
 			else
 			{
-				DoExpansionInfo(num, rect.y - 8f);
+				DoExpansionInfo(num, rect.yMax);
 			}
 		}
 
 		private static void DoExpansionInfo(int index, float yOffset)
 		{
 			ExpansionDef expansionDef = ModLister.AllExpansions[index];
-			float num = 500f;
+			List<Texture2D> previewImages = expansionDef.PreviewImages;
+			float num = 350f;
 			float num2 = 16f;
+			float num3 = 200f;
+			float num4 = num3 * 2f + num2 * 2f;
+			float b = (previewImages.NullOrEmpty() ? 0f : (num3 * 3f + num2 * 2.5f));
 			Text.Font = GameFont.Medium;
-			float num3 = Text.CalcHeight(expansionDef.label, num - num2 * 2f);
+			float num5 = Text.CalcHeight(expansionDef.label, num - num2 * 2f);
 			Text.Font = GameFont.Small;
 			string text = "ClickForMoreInfo".Translate();
-			float num4 = Text.CalcHeight(text, num - num2 * 2f);
-			float num5 = Text.CalcHeight(expansionDef.description, num - num2 * 2f);
-			float num6 = num3 + num4 + num2 + num5 + num2 * 2f;
-			Rect rect = new Rect(8f, yOffset - num6, num, num6);
-			Widgets.DrawWindowBackground(rect);
+			float num6 = Text.CalcHeight(expansionDef.description, num - num2 * 2f);
+			float num7 = Text.CalcHeight(text, num - num2 * 2f);
+			b = Mathf.Max(num5 + num7 + num2 + num6 + num2 * 2f, b);
+			Rect rect = new Rect(8f, yOffset - b, num, b);
+			Widgets.DrawWindowBackground(new Rect(rect.x, rect.y, previewImages.NullOrEmpty() ? rect.width : (rect.width + num4), rect.height));
 			Rect position = rect.ContractedBy(num2);
 			GUI.BeginGroup(position);
-			float num7 = 0f;
+			float num8 = 0f;
 			Text.Font = GameFont.Medium;
 			Text.Anchor = TextAnchor.UpperCenter;
-			Widgets.Label(new Rect(0f, num7, position.width, num3), new GUIContent(" " + expansionDef.label, expansionDef.Icon));
+			Widgets.Label(new Rect(0f, num8, position.width, num5), new GUIContent(" " + expansionDef.label, expansionDef.Icon));
 			Text.Font = GameFont.Small;
-			num7 += num3;
+			num8 += num5;
 			GUI.color = Color.grey;
-			Widgets.Label(new Rect(0f, num7, position.width, num4), text);
+			Widgets.Label(new Rect(0f, num8, position.width, num7), text);
 			GUI.color = Color.white;
 			Text.Anchor = TextAnchor.UpperLeft;
-			num7 += num4 + num2;
-			Widgets.Label(new Rect(0f, num7, position.width, position.height - num7), expansionDef.description);
+			num8 += num7 + num2;
+			Widgets.Label(new Rect(0f, num8, position.width, position.height - num8), expansionDef.description);
+			GUI.EndGroup();
+			if (previewImages.NullOrEmpty())
+			{
+				return;
+			}
+			Rect position2 = new Rect(rect.x + rect.width, rect.y, num4, rect.height).ContractedBy(num2);
+			GUI.BeginGroup(position2);
+			float num9 = 0f;
+			float num10 = 0f;
+			for (int i = 0; i < previewImages.Count; i++)
+			{
+				float num11 = num3 - num2 / 2f;
+				GUI.DrawTexture(new Rect(num9, num10, num11, num11), previewImages[i]);
+				num9 += num3 + num2 / 2f;
+				if (num9 >= position2.width)
+				{
+					num9 = 0f;
+					num10 += num3 + num2 / 2f;
+				}
+			}
 			GUI.EndGroup();
 		}
 

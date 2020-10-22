@@ -21,7 +21,7 @@ namespace RimWorld
 
 		protected Hive GetHiveFor(Pawn pawn)
 		{
-			if (Data.assignedHives.TryGetValue(pawn, out Hive value))
+			if (Data.assignedHives.TryGetValue(pawn, out var value))
 			{
 				return value;
 			}

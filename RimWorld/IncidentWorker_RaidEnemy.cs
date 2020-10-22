@@ -69,7 +69,7 @@ namespace RimWorld
 				return;
 			}
 			Map map = (Map)parms.target;
-			DefDatabase<RaidStrategyDef>.AllDefs.Where((RaidStrategyDef d) => d.Worker.CanUseWith(parms, groupKind) && (parms.raidArrivalMode != null || (d.arriveModes != null && d.arriveModes.Any((PawnsArrivalModeDef x) => x.Worker.CanUseWith(parms))))).TryRandomElementByWeight((RaidStrategyDef d) => d.Worker.SelectionWeight(map, parms.points), out RaidStrategyDef result);
+			DefDatabase<RaidStrategyDef>.AllDefs.Where((RaidStrategyDef d) => d.Worker.CanUseWith(parms, groupKind) && (parms.raidArrivalMode != null || (d.arriveModes != null && d.arriveModes.Any((PawnsArrivalModeDef x) => x.Worker.CanUseWith(parms))))).TryRandomElementByWeight((RaidStrategyDef d) => d.Worker.SelectionWeight(map, parms.points), out var result);
 			parms.raidStrategy = result;
 			if (parms.raidStrategy == null)
 			{
@@ -105,6 +105,24 @@ namespace RimWorld
 		protected override string GetRelatedPawnsInfoLetterText(IncidentParms parms)
 		{
 			return "LetterRelatedPawnsRaidEnemy".Translate(Faction.OfPlayer.def.pawnsPlural, parms.faction.def.pawnsPlural);
+		}
+
+		protected override void GenerateRaidLoot(IncidentParms parms, float raidLootPoints, List<Pawn> pawns)
+		{
+			if (parms.faction.def.raidLootMaker != null && pawns.Any())
+			{
+				raidLootPoints *= Find.Storyteller.difficultyValues.EffectiveRaidLootPointsFactor;
+				float num = parms.faction.def.raidLootValueFromPointsCurve.Evaluate(raidLootPoints);
+				if (parms.raidStrategy != null)
+				{
+					num *= parms.raidStrategy.raidLootValueFactor;
+				}
+				ThingSetMakerParams parms2 = default(ThingSetMakerParams);
+				parms2.totalMarketValueRange = new FloatRange(num, num);
+				parms2.makingFaction = parms.faction;
+				List<Thing> loot = parms.faction.def.raidLootMaker.root.Generate(parms2);
+				new RaidLootDistributor(parms, pawns, loot).DistributeLoot();
+			}
 		}
 	}
 }

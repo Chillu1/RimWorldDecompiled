@@ -61,21 +61,14 @@ namespace Verse
 
 		public IEnumerable<string> ConfigErrors(string prefix)
 		{
-			int num = 0;
-			while (true)
+			for (int i = 0; i < columns.Count - 1; i++)
 			{
-				if (num < columns.Count - 1)
+				if (columns[i + 1].x < columns[i].x)
 				{
-					if (columns[num + 1].x < columns[num].x)
-					{
-						break;
-					}
-					num++;
-					continue;
+					yield return prefix + ": columns are out of order";
+					break;
 				}
-				yield break;
 			}
-			yield return prefix + ": columns are out of order";
 		}
 	}
 }

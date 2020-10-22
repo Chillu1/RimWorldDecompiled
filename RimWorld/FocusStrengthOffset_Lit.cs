@@ -20,10 +20,6 @@ namespace RimWorld
 
 		public override float GetOffset(Thing parent, Pawn user = null)
 		{
-			if (!CanApply(parent, user))
-			{
-				return 0f;
-			}
 			return offset;
 		}
 

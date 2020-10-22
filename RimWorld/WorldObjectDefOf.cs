@@ -25,6 +25,9 @@ namespace RimWorld
 
 		public static WorldObjectDef PeaceTalks;
 
+		[MayRequireRoyalty]
+		public static WorldObjectDef TravelingShuttle;
+
 		public static WorldObjectDef Debug_Arena;
 
 		static WorldObjectDefOf()

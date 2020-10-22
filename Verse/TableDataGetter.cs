@@ -17,13 +17,13 @@ namespace Verse
 		public TableDataGetter(string label, Func<T, float> getter)
 		{
 			this.label = label;
-			this.getter = ((T t) => getter(t).ToString("0.#"));
+			this.getter = (T t) => getter(t).ToString("0.#");
 		}
 
 		public TableDataGetter(string label, Func<T, int> getter)
 		{
 			this.label = label;
-			this.getter = ((T t) => getter(t).ToString("F0"));
+			this.getter = (T t) => getter(t).ToString("F0");
 		}
 
 		public TableDataGetter(string label, Func<T, ThingDef> getter)
@@ -39,7 +39,7 @@ namespace Verse
 		public TableDataGetter(string label, Func<T, object> getter)
 		{
 			this.label = label;
-			this.getter = ((T t) => getter(t).ToString());
+			this.getter = (T t) => getter(t).ToString();
 		}
 	}
 }

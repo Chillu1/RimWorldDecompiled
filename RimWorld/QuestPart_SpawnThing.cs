@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -22,6 +22,10 @@ namespace RimWorld
 		public bool lookForSafeSpot;
 
 		public bool tryLandInShipLandingZone;
+
+		public Thing tryLandNearThing;
+
+		public Pawn mapParentOfPawn;
 
 		private Thing innerSkyfallerThing;
 
@@ -55,10 +59,22 @@ namespace RimWorld
 			}
 		}
 
+		public MapParent MapParent
+		{
+			get
+			{
+				if (mapParentOfPawn != null)
+				{
+					return mapParentOfPawn.MapHeld.Parent;
+				}
+				return mapParent;
+			}
+		}
+
 		public override void Notify_QuestSignalReceived(Signal signal)
 		{
 			base.Notify_QuestSignalReceived(signal);
-			if (!(signal.tag == inSignal) || !mapParent.HasMap)
+			if (!(signal.tag == inSignal) || !MapParent.HasMap)
 			{
 				return;
 			}
@@ -69,24 +85,28 @@ namespace RimWorld
 			}
 			else
 			{
-				if (tryLandInShipLandingZone && !DropCellFinder.TryFindShipLandingArea(mapParent.Map, out result, out Thing firstBlockingThing))
+				if (tryLandInShipLandingZone && !DropCellFinder.TryFindShipLandingArea(MapParent.Map, out result, out var firstBlockingThing))
 				{
 					if (firstBlockingThing != null)
 					{
 						Messages.Message("ShuttleBlocked".Translate("BlockedBy".Translate(firstBlockingThing).CapitalizeFirst()), firstBlockingThing, MessageTypeDefOf.NeutralEvent);
 					}
-					result = DropCellFinder.TryFindSafeLandingSpotCloseToColony(mapParent.Map, thing.def.Size, factionForFindingSpot);
+					result = DropCellFinder.TryFindSafeLandingSpotCloseToColony(MapParent.Map, thing.def.Size, factionForFindingSpot);
 				}
-				if (!result.IsValid && (!lookForSafeSpot || !DropCellFinder.FindSafeLandingSpot(out result, factionForFindingSpot, mapParent.Map, 35, 15, 25, thing.def.size)))
+				if (!result.IsValid && tryLandNearThing != null)
 				{
-					IntVec3 intVec = DropCellFinder.RandomDropSpot(mapParent.Map);
-					if (!DropCellFinder.TryFindDropSpotNear(intVec, mapParent.Map, out result, allowFogged: false, canRoofPunch: false, allowIndoors: false, thing.def.size))
+					DropCellFinder.FindSafeLandingSpotNearAvoidingHostiles(tryLandNearThing, MapParent.Map, out result, 35, 15, 25, thing.def.size);
+				}
+				if (!result.IsValid && (!lookForSafeSpot || !DropCellFinder.FindSafeLandingSpot(out result, factionForFindingSpot, MapParent.Map, 35, 15, 25, thing.def.size)))
+				{
+					IntVec3 intVec = DropCellFinder.RandomDropSpot(MapParent.Map);
+					if (!DropCellFinder.TryFindDropSpotNear(intVec, MapParent.Map, out result, allowFogged: false, canRoofPunch: false, allowIndoors: false, thing.def.size))
 					{
 						result = intVec;
 					}
 				}
 			}
-			GenPlace.TryPlaceThing(thing, result, mapParent.Map, ThingPlaceMode.Near);
+			GenPlace.TryPlaceThing(thing, result, MapParent.Map, ThingPlaceMode.Near);
 			spawned = true;
 			Skyfaller skyfaller = thing as Skyfaller;
 			if (skyfaller != null && skyfaller.innerContainer.Count == 1)
@@ -101,7 +121,15 @@ namespace RimWorld
 
 		public override bool QuestPartReserves(Pawn p)
 		{
-			return p == thing;
+			if (p != thing)
+			{
+				if (thing is Skyfaller)
+				{
+					return ((Skyfaller)thing).innerContainer.Contains(p);
+				}
+				return false;
+			}
+			return true;
 		}
 
 		public override void ExposeData()
@@ -124,6 +152,8 @@ namespace RimWorld
 			Scribe_Values.Look(ref questLookTarget, "questLookTarget", defaultValue: true);
 			Scribe_References.Look(ref innerSkyfallerThing, "innerSkyfallerThing");
 			Scribe_Values.Look(ref tryLandInShipLandingZone, "tryLandInShipLandingZone", defaultValue: false);
+			Scribe_References.Look(ref tryLandNearThing, "tryLandNearThing");
+			Scribe_References.Look(ref mapParentOfPawn, "mapParentOfPawn");
 		}
 
 		public override void AssignDebugData()

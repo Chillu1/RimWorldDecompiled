@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse.AI
@@ -60,7 +60,7 @@ namespace Verse.AI
 		{
 			UnfinishedThing unfinishedThing = t as UnfinishedThing;
 			Building building;
-			if (unfinishedThing != null && unfinishedThing.BoundBill != null && ((building = (unfinishedThing.BoundBill.billStack.billGiver as Building)) == null || (building.Spawned && building.OccupiedRect().ExpandedBy(1).Contains(unfinishedThing.Position))))
+			if (unfinishedThing != null && unfinishedThing.BoundBill != null && ((building = unfinishedThing.BoundBill.billStack.billGiver as Building) == null || (building.Spawned && building.OccupiedRect().ExpandedBy(1).Contains(unfinishedThing.Position))))
 			{
 				return false;
 			}
@@ -92,7 +92,7 @@ namespace Verse.AI
 		public static Job HaulToStorageJob(Pawn p, Thing t)
 		{
 			StoragePriority currentPriority = StoreUtility.CurrentStoragePriorityOf(t);
-			if (!StoreUtility.TryFindBestBetterStorageFor(t, p, p.Map, currentPriority, p.Faction, out IntVec3 foundCell, out IHaulDestination haulDestination))
+			if (!StoreUtility.TryFindBestBetterStorageFor(t, p, p.Map, currentPriority, p.Faction, out var foundCell, out var haulDestination))
 			{
 				JobFailReason.Is(NoEmptyPlaceLowerTrans);
 				return null;
@@ -193,7 +193,7 @@ namespace Verse.AI
 
 		public static Job HaulAsideJobFor(Pawn p, Thing t)
 		{
-			if (!CanHaulAside(p, t, out IntVec3 storeCell))
+			if (!CanHaulAside(p, t, out var storeCell))
 			{
 				return null;
 			}

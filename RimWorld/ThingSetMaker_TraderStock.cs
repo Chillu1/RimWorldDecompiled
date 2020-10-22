@@ -11,7 +11,7 @@ namespace RimWorld
 		{
 			TraderKindDef traderKindDef = parms.traderDef ?? DefDatabase<TraderKindDef>.AllDefsListForReading.RandomElement();
 			Faction makingFaction = parms.makingFaction;
-			int forTile = parms.tile.HasValue ? parms.tile.Value : ((Find.AnyPlayerHomeMap != null) ? Find.AnyPlayerHomeMap.Tile : ((Find.CurrentMap == null) ? (-1) : Find.CurrentMap.Tile));
+			int forTile = (parms.tile.HasValue ? parms.tile.Value : ((Find.AnyPlayerHomeMap != null) ? Find.AnyPlayerHomeMap.Tile : ((Find.CurrentMap == null) ? (-1) : Find.CurrentMap.Tile)));
 			for (int i = 0; i < traderKindDef.stockGenerators.Count; i++)
 			{
 				foreach (Thing item in traderKindDef.stockGenerators[i].GenerateThings(forTile, parms.makingFaction))
@@ -58,7 +58,7 @@ namespace RimWorld
 			foreach (Thing item in Generate(parms))
 			{
 				MinifiedThing minifiedThing = item as MinifiedThing;
-				Thing thing = (minifiedThing == null) ? item : minifiedThing.InnerThing;
+				Thing thing = ((minifiedThing == null) ? item : minifiedThing.InnerThing);
 				string labelCap = thing.LabelCap;
 				labelCap = labelCap + " [" + (thing.MarketValue * (float)thing.stackCount).ToString("F0") + "]";
 				stringBuilder.AppendLine(labelCap);

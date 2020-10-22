@@ -22,6 +22,10 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (f.temporary)
+			{
+				return false;
+			}
 			if (!desperate && (!f.def.allowedArrivalTemperatureRange.Includes(map.mapTemperature.OutdoorTemp) || !f.def.allowedArrivalTemperatureRange.Includes(map.mapTemperature.SeasonalTemp)))
 			{
 				return false;

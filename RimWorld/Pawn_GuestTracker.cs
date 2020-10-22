@@ -232,7 +232,7 @@ namespace RimWorld
 			lastRecruiterNegotiationAbilityFactor = RecruitUtility.RecruitChanceFactorForRecruiterNegotiationAbility(recruiter);
 			lastRecruiterOpinionChanceFactor = RecruitUtility.RecruitChanceFactorForOpinion(recruiter, pawn);
 			lastRecruiterResistanceReduce = resistanceReduce;
-			hasOpinionOfLastRecruiter = (pawn.relations != null);
+			hasOpinionOfLastRecruiter = pawn.relations != null;
 			lastRecruiterOpinion = (hasOpinionOfLastRecruiter ? pawn.relations.OpinionOf(recruiter) : 0);
 			lastRecruiterFinalChance = pawn.RecruitChanceFinalByPawn(recruiter);
 		}
@@ -312,7 +312,7 @@ namespace RimWorld
 
 		public void CapturedBy(Faction by, Pawn byPawn = null)
 		{
-			pawn.FactionOrExtraHomeFaction?.Notify_MemberCaptured(pawn, by);
+			pawn.FactionOrExtraMiniOrHomeFaction?.Notify_MemberCaptured(pawn, by);
 			SetGuestStatus(by, prisoner: true);
 			if (IsPrisoner && byPawn != null)
 			{
@@ -346,7 +346,7 @@ namespace RimWorld
 				if (pawn.Faction == null || pawn.Faction.def.rescueesCanJoin)
 				{
 					Map mapHeld = pawn.MapHeld;
-					float num = (pawn.SafeTemperatureRange().Includes(mapHeld.mapTemperature.OutdoorTemp) && !mapHeld.gameConditionManager.ConditionIsActive(GameConditionDefOf.ToxicFallout)) ? 0.5f : 1f;
+					float num = ((pawn.SafeTemperatureRange().Includes(mapHeld.mapTemperature.OutdoorTemp) && !mapHeld.gameConditionManager.ConditionIsActive(GameConditionDefOf.ToxicFallout)) ? 0.5f : 1f);
 					if (Rand.ValueSeeded(pawn.thingIDNumber ^ 0x88F8E4) < num)
 					{
 						pawn.SetFaction(Faction.OfPlayer);

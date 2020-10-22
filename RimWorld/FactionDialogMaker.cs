@@ -1,8 +1,8 @@
-using RimWorld.QuestGen;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld.QuestGen;
 using Verse;
 using Verse.AI;
 
@@ -29,7 +29,7 @@ namespace RimWorld
 			DiaNode root;
 			if (faction.PlayerRelationKind == FactionRelationKind.Hostile)
 			{
-				string key = (faction.def.permanentEnemy || !"FactionGreetingHostileAppreciative".CanTranslate()) ? "FactionGreetingHostile" : "FactionGreetingHostileAppreciative";
+				string key = ((faction.def.permanentEnemy || !"FactionGreetingHostileAppreciative".CanTranslate()) ? "FactionGreetingHostile" : "FactionGreetingHostileAppreciative");
 				root = new DiaNode(key.Translate(value).AdjustedFor(pawn));
 			}
 			else if (faction.PlayerRelationKind == FactionRelationKind.Neutral)
@@ -100,21 +100,19 @@ namespace RimWorld
 
 		private static IEnumerable<DiaOption> DebugOptions(Faction faction, Pawn negotiator)
 		{
-			Faction faction2 = faction;
-			Pawn negotiator2 = negotiator;
 			DiaOption diaOption = new DiaOption("(Debug) Goodwill +10");
 			diaOption.action = delegate
 			{
-				faction2.TryAffectGoodwillWith(Faction.OfPlayer, 10, canSendMessage: false);
+				faction.TryAffectGoodwillWith(Faction.OfPlayer, 10, canSendMessage: false);
 			};
-			diaOption.linkLateBind = (() => FactionDialogFor(negotiator2, faction2));
+			diaOption.linkLateBind = () => FactionDialogFor(negotiator, faction);
 			yield return diaOption;
 			DiaOption diaOption2 = new DiaOption("(Debug) Goodwill -10");
 			diaOption2.action = delegate
 			{
-				faction2.TryAffectGoodwillWith(Faction.OfPlayer, -10, canSendMessage: false);
+				faction.TryAffectGoodwillWith(Faction.OfPlayer, -10, canSendMessage: false);
 			};
-			diaOption2.linkLateBind = (() => FactionDialogFor(negotiator2, faction2));
+			diaOption2.linkLateBind = () => FactionDialogFor(negotiator, faction);
 			yield return diaOption2;
 		}
 
@@ -156,7 +154,11 @@ namespace RimWorld
 			{
 				action = delegate
 				{
-					QuestUtility.SendLetterQuestAvailable(QuestUtility.GenerateQuestAndMakeAvailable(QuestScriptDefOf.OpportunitySite_ItemStash, slate));
+					Quest quest = QuestUtility.GenerateQuestAndMakeAvailable(QuestScriptDefOf.OpportunitySite_ItemStash, slate);
+					if (!quest.hidden)
+					{
+						QuestUtility.SendLetterQuestAvailable(quest);
+					}
 					TradeUtility.LaunchThingsOfType(ThingDefOf.Silver, 1500, map, null);
 					Current.Game.GetComponent<GameComponent_OnetimeNotification>().sendAICoreRequestReminder = false;
 				},
@@ -339,23 +341,28 @@ namespace RimWorld
 						continue;
 					}
 				}
-				if (!item.IsQuestLodger())
+				if (item.IsQuestLodger())
 				{
-					Pawn heir = item;
-					Action confirmedAct = delegate
-					{
-						QuestScriptDef changeRoyalHeir = QuestScriptDefOf.ChangeRoyalHeir;
-						Slate slate = new Slate();
-						slate.Set("points", title.changeHeirQuestPoints);
-						slate.Set("asker", factionRepresentative);
-						slate.Set("titleHolder", negotiator);
-						slate.Set("titleHeir", heir);
-						slate.Set("titlePreviousHeir", negotiator.royalty.GetHeir(faction));
-						QuestUtility.SendLetterQuestAvailable(QuestUtility.GenerateQuestAndMakeAvailable(changeRoyalHeir, slate));
-					};
-					diaOption.link = RoyalHeirChangeConfirm(faction, negotiator, heir2, confirmedAct);
-					diaNode.options.Add(diaOption);
+					continue;
 				}
+				Pawn heir = item;
+				Action confirmedAct = delegate
+				{
+					QuestScriptDef changeRoyalHeir = QuestScriptDefOf.ChangeRoyalHeir;
+					Slate slate = new Slate();
+					slate.Set("points", title.changeHeirQuestPoints);
+					slate.Set("asker", factionRepresentative);
+					slate.Set("titleHolder", negotiator);
+					slate.Set("titleHeir", heir);
+					slate.Set("titlePreviousHeir", negotiator.royalty.GetHeir(faction));
+					Quest quest = QuestUtility.GenerateQuestAndMakeAvailable(changeRoyalHeir, slate);
+					if (!quest.hidden)
+					{
+						QuestUtility.SendLetterQuestAvailable(quest);
+					}
+				};
+				diaOption.link = RoyalHeirChangeConfirm(faction, negotiator, heir2, confirmedAct);
+				diaNode.options.Add(diaOption);
 			}
 			DiaOption diaOption2 = new DiaOption("GoBack".Translate());
 			diaOption2.linkLateBind = ResetToRoot(faction, negotiator);

@@ -1,8 +1,9 @@
 using Verse;
+using Verse.AI;
 
 namespace RimWorld
 {
-	public class Verb_Spawn : Verb
+	public class Verb_Spawn : Verb_CastBase
 	{
 		protected override bool TryCastShot()
 		{
@@ -16,10 +17,7 @@ namespace RimWorld
 				Pawn pawn = caster.Map.mapPawns.FreeColonistsSpawned.RandomElementWithFallback();
 				TaleRecorder.RecordTale(verbProps.colonyWideTaleDef, caster, pawn);
 			}
-			if (base.EquipmentSource != null && !base.EquipmentSource.Destroyed)
-			{
-				base.EquipmentSource.Destroy();
-			}
+			base.ReloadableCompSource?.UsedOnce();
 			return true;
 		}
 	}

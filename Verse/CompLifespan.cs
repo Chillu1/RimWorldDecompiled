@@ -19,7 +19,7 @@ namespace Verse
 			age++;
 			if (age >= Props.lifespanTicks)
 			{
-				parent.Destroy();
+				Expire();
 			}
 		}
 
@@ -28,7 +28,7 @@ namespace Verse
 			age += 250;
 			if (age >= Props.lifespanTicks)
 			{
-				parent.Destroy();
+				Expire();
 			}
 		}
 
@@ -46,6 +46,15 @@ namespace Verse
 				}
 			}
 			return result;
+		}
+
+		protected void Expire()
+		{
+			if (Props.expireEffect != null)
+			{
+				Props.expireEffect.Spawn(parent.Position, parent.Map).Cleanup();
+			}
+			parent.Destroy(DestroyMode.KillFinalize);
 		}
 	}
 }

@@ -149,15 +149,12 @@ namespace RimWorld
 				{
 					return false;
 				}
-				switch (warmth)
+				return warmth switch
 				{
-				case NeededWarmth.Cool:
-					return aps.Sum((ThingStuffPair a) => a.InsulationHeat) >= -2f;
-				case NeededWarmth.Warm:
-					return aps.Sum((ThingStuffPair a) => a.InsulationCold) >= 52f;
-				default:
-					throw new NotImplementedException();
-				}
+					NeededWarmth.Cool => aps.Sum((ThingStuffPair a) => a.InsulationHeat) >= -2f, 
+					NeededWarmth.Warm => aps.Sum((ThingStuffPair a) => a.InsulationCold) >= 52f, 
+					_ => throw new NotImplementedException(), 
+				};
 			}
 
 			public void AddFreeWarmthAsNeeded(NeededWarmth warmth, float mapTemperature)
@@ -253,7 +250,7 @@ namespace RimWorld
 						}
 						return (!(GetReplacedInsulationCold(pa) >= pa.InsulationCold)) ? true : false;
 					};
-					if (allApparelPairs.Where((ThingStuffPair pa) => hatPairValidator(pa)).TryRandomElementByWeight((ThingStuffPair pa) => pa.Commonality / (pa.Price * pa.Price), out ThingStuffPair hatPair))
+					if (allApparelPairs.Where((ThingStuffPair pa) => hatPairValidator(pa)).TryRandomElementByWeight((ThingStuffPair pa) => pa.Commonality / (pa.Price * pa.Price), out var hatPair))
 					{
 						if (DebugViewSettings.logApparelGeneration)
 						{
@@ -504,27 +501,29 @@ namespace RimWorld
 		{
 			workingSet.Reset(pawn.RaceProps.body, pawn.def);
 			float num = money;
-			List<ThingDef> reqApparel = pawn.kindDef.apparelRequired;
-			if (reqApparel != null)
-			{
-				int j;
-				for (j = 0; j < reqApparel.Count; j++)
-				{
-					ThingStuffPair pair = allApparelPairs.Where((ThingStuffPair pa) => pa.thing == reqApparel[j] && CanUseStuff(pawn, pa)).RandomElementByWeight((ThingStuffPair pa) => pa.Commonality);
-					workingSet.Add(pair);
-					num -= pair.Price;
-				}
-			}
 			List<SpecificApparelRequirement> att = pawn.kindDef.specificApparelRequirements;
 			if (att != null)
 			{
-				int i;
-				for (i = 0; i < att.Count; i++)
+				int j;
+				for (j = 0; j < att.Count; j++)
 				{
-					if ((!att[i].RequiredTag.NullOrEmpty() || !att[i].AlternateTagChoices.NullOrEmpty()) && allApparelPairs.Where((ThingStuffPair pa) => ApparelRequirementTagsMatch(att[i], pa.thing) && ApparelRequirementHandlesThing(att[i], pa.thing) && CanUseStuff(pawn, pa) && pa.thing.apparel.CorrectGenderForWearing(pawn.gender) && !workingSet.PairOverlapsAnything(pa)).TryRandomElementByWeight((ThingStuffPair pa) => pa.Commonality, out ThingStuffPair result))
+					if ((!att[j].RequiredTag.NullOrEmpty() || !att[j].AlternateTagChoices.NullOrEmpty()) && allApparelPairs.Where((ThingStuffPair pa) => ApparelRequirementTagsMatch(att[j], pa.thing) && ApparelRequirementHandlesThing(att[j], pa.thing) && CanUseStuff(pawn, pa) && pa.thing.apparel.CorrectGenderForWearing(pawn.gender) && !workingSet.PairOverlapsAnything(pa)).TryRandomElementByWeight((ThingStuffPair pa) => pa.Commonality, out var result))
 					{
 						workingSet.Add(result);
 						num -= result.Price;
+					}
+				}
+			}
+			List<ThingDef> reqApparel = pawn.kindDef.apparelRequired;
+			if (reqApparel != null)
+			{
+				int i;
+				for (i = 0; i < reqApparel.Count; i++)
+				{
+					if (allApparelPairs.Where((ThingStuffPair pa) => pa.thing == reqApparel[i] && CanUseStuff(pawn, pa) && !workingSet.PairOverlapsAnything(pa)).TryRandomElementByWeight((ThingStuffPair pa) => pa.Commonality, out var result2))
+					{
+						workingSet.Add(result2);
+						num -= result2.Price;
 					}
 				}
 			}
@@ -536,11 +535,11 @@ namespace RimWorld
 					usableApparel.Add(apparelCandidates[k]);
 				}
 			}
-			ThingStuffPair result2;
-			while ((!(Rand.Value < 0.1f) || !(money < 9999999f)) && usableApparel.Where((ThingStuffPair pa) => CanUseStuff(pawn, pa)).TryRandomElementByWeight((ThingStuffPair pa) => pa.Commonality, out result2))
+			ThingStuffPair result3;
+			while ((!(Rand.Value < 0.1f) || !(money < 9999999f)) && usableApparel.Where((ThingStuffPair pa) => CanUseStuff(pawn, pa)).TryRandomElementByWeight((ThingStuffPair pa) => pa.Commonality, out result3))
 			{
-				workingSet.Add(result2);
-				num -= result2.Price;
+				workingSet.Add(result3);
+				num -= result3.Price;
 				for (int num2 = usableApparel.Count - 1; num2 >= 0; num2--)
 				{
 					if (usableApparel[num2].Price > num || workingSet.PairOverlapsAnything(usableApparel[num2]))

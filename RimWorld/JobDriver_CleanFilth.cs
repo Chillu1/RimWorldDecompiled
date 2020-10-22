@@ -24,7 +24,6 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			JobDriver_CleanFilth jobDriver_CleanFilth = this;
 			Toil initExtractTargetFromQueue = Toils_JobTransforms.ClearDespawnedNullOrForbiddenQueuedTargets(TargetIndex.A);
 			yield return initExtractTargetFromQueue;
 			yield return Toils_JobTransforms.SucceedOnNoTargetInQueue(TargetIndex.A);
@@ -33,32 +32,32 @@ namespace RimWorld
 			Toil clean = new Toil();
 			clean.initAction = delegate
 			{
-				jobDriver_CleanFilth.cleaningWorkDone = 0f;
-				jobDriver_CleanFilth.totalCleaningWorkDone = 0f;
-				jobDriver_CleanFilth.totalCleaningWorkRequired = jobDriver_CleanFilth.Filth.def.filth.cleaningWorkToReduceThickness * (float)jobDriver_CleanFilth.Filth.thickness;
+				cleaningWorkDone = 0f;
+				totalCleaningWorkDone = 0f;
+				totalCleaningWorkRequired = Filth.def.filth.cleaningWorkToReduceThickness * (float)Filth.thickness;
 			};
 			clean.tickAction = delegate
 			{
-				Filth filth = jobDriver_CleanFilth.Filth;
-				jobDriver_CleanFilth.cleaningWorkDone += 1f;
-				jobDriver_CleanFilth.totalCleaningWorkDone += 1f;
-				if (jobDriver_CleanFilth.cleaningWorkDone > filth.def.filth.cleaningWorkToReduceThickness)
+				Filth filth = Filth;
+				cleaningWorkDone += 1f;
+				totalCleaningWorkDone += 1f;
+				if (cleaningWorkDone > filth.def.filth.cleaningWorkToReduceThickness)
 				{
 					filth.ThinFilth();
-					jobDriver_CleanFilth.cleaningWorkDone = 0f;
+					cleaningWorkDone = 0f;
 					if (filth.Destroyed)
 					{
 						clean.actor.records.Increment(RecordDefOf.MessesCleaned);
-						jobDriver_CleanFilth.ReadyForNextToil();
+						ReadyForNextToil();
 					}
 				}
 			};
 			clean.defaultCompleteMode = ToilCompleteMode.Never;
 			clean.WithEffect(EffecterDefOf.Clean, TargetIndex.A);
-			clean.WithProgressBar(TargetIndex.A, () => jobDriver_CleanFilth.totalCleaningWorkDone / jobDriver_CleanFilth.totalCleaningWorkRequired, interpolateBetweenActorAndTarget: true);
+			clean.WithProgressBar(TargetIndex.A, () => totalCleaningWorkDone / totalCleaningWorkRequired, interpolateBetweenActorAndTarget: true);
 			clean.PlaySustainerOrSound(delegate
 			{
-				ThingDef def = jobDriver_CleanFilth.Filth.def;
+				ThingDef def = Filth.def;
 				return (!def.filth.cleaningSound.NullOrUndefined()) ? def.filth.cleaningSound : SoundDefOf.Interact_CleanFilth;
 			});
 			clean.JumpIfDespawnedOrNullOrForbidden(TargetIndex.A, initExtractTargetFromQueue);

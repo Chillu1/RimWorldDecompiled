@@ -180,7 +180,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (a.TryGetQuality(out QualityCategory qc) && b.TryGetQuality(out QualityCategory qc2) && qc != qc2)
+			if (a.TryGetQuality(out var qc) && b.TryGetQuality(out var qc2) && qc != qc2)
 			{
 				return false;
 			}
@@ -253,7 +253,7 @@ namespace RimWorld
 				Tradeable tradeable = tradeables[i];
 				if (tradeable.HasAnyThing)
 				{
-					TransferAsOneMode mode = (!tradeable.TraderWillTrade) ? TransferAsOneMode.InactiveTradeable : TransferAsOneMode.Normal;
+					TransferAsOneMode mode = ((!tradeable.TraderWillTrade) ? TransferAsOneMode.InactiveTradeable : TransferAsOneMode.Normal);
 					if (TransferAsOne(thing, tradeable.AnyThing, mode))
 					{
 						return tradeable;
@@ -342,22 +342,15 @@ namespace RimWorld
 					}
 					TransferNoSplit(tradeables[j].thingsColony, countToTransferToDestination, delegate(Thing originalThing, int toTake)
 					{
-						int num = 0;
-						ThingCount thingCount;
-						while (true)
+						for (int k = 0; k < outThingsAfterTransfer.Count; k++)
 						{
-							if (num >= outThingsAfterTransfer.Count)
-							{
-								return;
-							}
-							thingCount = outThingsAfterTransfer[num];
+							ThingCount thingCount = outThingsAfterTransfer[k];
 							if (thingCount.Thing == originalThing)
 							{
+								outThingsAfterTransfer[k] = thingCount.WithCount(thingCount.Count - toTake);
 								break;
 							}
-							num++;
 						}
-						outThingsAfterTransfer[num] = thingCount.WithCount(thingCount.Count - toTake);
 					}, removeIfTakingEntireThing: false, errorIfNotEnoughThings: false);
 				}
 			}

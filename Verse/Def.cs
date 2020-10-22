@@ -1,6 +1,6 @@
-using RimWorld;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using RimWorld;
 
 namespace Verse
 {
@@ -128,11 +128,10 @@ namespace Verse
 			{
 				Log.Warning("Some descriptionHyperlinks in " + defName + " had null def.");
 			}
-			Def def = this;
 			int i;
 			for (i = descriptionHyperlinks.Count - 1; i > 0; i--)
 			{
-				if (descriptionHyperlinks.FirstIndexOf((DefHyperlink h) => h.def == def.descriptionHyperlinks[i].def) < i)
+				if (descriptionHyperlinks.FirstIndexOf((DefHyperlink h) => h.def == descriptionHyperlinks[i].def) < i)
 				{
 					yield return "Hyperlink to " + descriptionHyperlinks[i].def.defName + " more than once on " + defName + " description";
 				}

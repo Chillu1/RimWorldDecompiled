@@ -41,20 +41,14 @@ namespace RimWorld.QuestGen
 			{
 				num = GenMath.RoundRandom(num);
 			}
-			if (challengeRating.TryGetValue(slate, out int value))
+			if (challengeRating.TryGetValue(slate, out var value))
 			{
-				switch (value)
+				num = value switch
 				{
-				case 1:
-					num = Mathf.Min(num, maxCountOneStar.GetValue(slate));
-					break;
-				case 2:
-					num = Mathf.Min(num, maxCountTwoStar.GetValue(slate));
-					break;
-				default:
-					num = Mathf.Min(num, maxCountThreeStar.GetValue(slate));
-					break;
-				}
+					1 => Mathf.Min(num, maxCountOneStar.GetValue(slate)), 
+					2 => Mathf.Min(num, maxCountTwoStar.GetValue(slate)), 
+					_ => Mathf.Min(num, maxCountThreeStar.GetValue(slate)), 
+				};
 			}
 			SimpleCurve value2 = chancesCurve.GetValue(slate);
 			int num2 = value2.Points.Count - 1;

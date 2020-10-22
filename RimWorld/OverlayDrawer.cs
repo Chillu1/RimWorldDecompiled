@@ -172,7 +172,7 @@ namespace RimWorld
 		private void RenderPulsingOverlay(Thing thing, Material mat, int altInd, Mesh mesh, bool incrementOffset = true)
 		{
 			Vector3 drawPos = thing.TrueCenter();
-			drawPos.y = BaseAlt + 0.0454545468f * (float)altInd;
+			drawPos.y = BaseAlt + 3f / 70f * (float)altInd;
 			drawPos += curOffset;
 			if (incrementOffset)
 			{
@@ -194,8 +194,8 @@ namespace RimWorld
 			CompRefuelable compRefuelable = t.TryGetComp<CompRefuelable>();
 			Material material = MaterialPool.MatFrom((compRefuelable != null) ? compRefuelable.Props.FuelIcon : ThingDefOf.Chemfuel.uiIcon, ShaderDatabase.MetaOverlayDesaturated, Color.white);
 			Vector3 position = t.TrueCenter();
-			position.y = BaseAlt + 5f / 22f;
-			Vector3 position2 = new Vector3(position.x, position.y + 0.0454545468f, position.z);
+			position.y = BaseAlt + 3f / 14f;
+			Vector3 position2 = new Vector3(position.x, position.y + 3f / 70f, position.z);
 			Graphics.DrawMesh(MeshPool.plane08, position, Quaternion.identity, material, 0);
 			Graphics.DrawMesh(MeshPool.plane08, position2, Quaternion.identity, ForbiddenMat, 0);
 		}
@@ -211,29 +211,29 @@ namespace RimWorld
 			{
 				drawPos.z -= (float)t.RotatedSize.z * 0.3f;
 			}
-			drawPos.y = BaseAlt + 0.181818187f;
+			drawPos.y = BaseAlt + 6f / 35f;
 			Graphics.DrawMesh(MeshPool.plane05, drawPos, Quaternion.identity, ForbiddenMat, 0);
 		}
 
 		private void RenderForbiddenBigOverlay(Thing t)
 		{
 			Vector3 drawPos = t.DrawPos;
-			drawPos.y = BaseAlt + 0.181818187f;
+			drawPos.y = BaseAlt + 6f / 35f;
 			Graphics.DrawMesh(MeshPool.plane10, drawPos, Quaternion.identity, ForbiddenMat, 0);
 		}
 
 		private void RenderBurningWick(Thing parent)
 		{
-			Material material = ((parent.thingIDNumber + Find.TickManager.TicksGame) % 6 >= 3) ? WickMaterialB : WickMaterialA;
+			Material material = (((parent.thingIDNumber + Find.TickManager.TicksGame) % 6 >= 3) ? WickMaterialB : WickMaterialA);
 			Vector3 drawPos = parent.DrawPos;
-			drawPos.y = BaseAlt + 5f / 22f;
+			drawPos.y = BaseAlt + 3f / 14f;
 			Graphics.DrawMesh(MeshPool.plane20, drawPos, Quaternion.identity, material, 0);
 		}
 
 		private void RenderQuestionMarkOverlay(Thing t)
 		{
 			Vector3 drawPos = t.DrawPos;
-			drawPos.y = BaseAlt + 0.272727281f;
+			drawPos.y = BaseAlt + 9f / 35f;
 			if (t is Pawn)
 			{
 				drawPos.x += (float)t.def.size.x - 0.52f;

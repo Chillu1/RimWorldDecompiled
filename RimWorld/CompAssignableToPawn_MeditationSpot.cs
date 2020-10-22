@@ -18,6 +18,11 @@ namespace RimWorld
 			}
 		}
 
+		protected override string GetAssignmentGizmoDesc()
+		{
+			return "CommandMeditationSpotSetOwnerDesc".Translate();
+		}
+
 		public override string CompInspectStringExtra()
 		{
 			if (base.AssignedPawnsForReading.Count == 0)

@@ -71,7 +71,7 @@ namespace Verse
 
 		public T Get(string path)
 		{
-			if (contentList.TryGetValue(path, out T value))
+			if (contentList.TryGetValue(path, out var value))
 			{
 				return value;
 			}

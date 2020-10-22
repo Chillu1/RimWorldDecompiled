@@ -6,17 +6,13 @@ namespace Verse
 	{
 		public static string GetLabel(this PsychGlow gl)
 		{
-			switch (gl)
+			return gl switch
 			{
-			case PsychGlow.Dark:
-				return "Dark".Translate();
-			case PsychGlow.Lit:
-				return "Lit".Translate();
-			case PsychGlow.Overlit:
-				return "LitBrightly".Translate();
-			default:
-				throw new ArgumentException();
-			}
+				PsychGlow.Dark => "Dark".Translate(), 
+				PsychGlow.Lit => "Lit".Translate(), 
+				PsychGlow.Overlit => "LitBrightly".Translate(), 
+				_ => throw new ArgumentException(), 
+			};
 		}
 	}
 }

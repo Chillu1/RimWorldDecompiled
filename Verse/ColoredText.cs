@@ -1,9 +1,9 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -47,6 +47,8 @@ namespace Verse
 
 		public static readonly Color FactionColor_Hostile = RedReadable;
 
+		public static readonly Color ThreatColor = GenColor.FromHex("d46f68");
+
 		public static readonly Color FactionColor_Neutral = GenColor.FromHex("00bfff");
 
 		public static readonly Color WarningColor = GenColor.FromHex("ff0000");
@@ -74,7 +76,7 @@ namespace Verse
 			DaysRegex = new Regex(string.Format("PeriodDays".Translate(), "\\d+\\.?\\d*"));
 			HoursRegex = new Regex(string.Format("PeriodHours".Translate(), "\\d+\\.?\\d*"));
 			SecondsRegex = new Regex(string.Format("PeriodSeconds".Translate(), "\\d+\\.?\\d*"));
-			string str = "(" + FactionDefOf.PlayerColony.pawnSingular + "|" + FactionDefOf.PlayerColony.pawnsPlural + ")";
+			string str = "(" + FactionDefOf.PlayerColony.pawnsPlural + "|" + FactionDefOf.PlayerColony.pawnSingular + ")";
 			ColonistCountRegex = new Regex("\\d+\\.?\\d* " + str);
 		}
 
@@ -123,13 +125,13 @@ namespace Verse
 				return null;
 			}
 			string rawText = taggedStr.RawText;
-			if (rawText == null)
+			if (rawText.NullOrEmpty())
 			{
 				return rawText;
 			}
-			if (cache.TryGetValue(rawText, out string _))
+			if (cache.TryGetValue(rawText, out var value))
 			{
-				return cache[rawText];
+				return value;
 			}
 			resultBuffer.Length = 0;
 			if (rawText.IndexOf("(*") < 0)
@@ -249,6 +251,8 @@ namespace Verse
 				return text.Colorize(DateTimeColor);
 			case TagType.ColonistCount:
 				return text.Colorize(ColonistCountColor);
+			case TagType.Threat:
+				return text.Colorize(ThreatColor);
 			default:
 				Log.Error("Invalid tag '" + tag + "'");
 				return text;
@@ -265,17 +269,13 @@ namespace Verse
 			{
 				return faction.Color;
 			}
-			switch (faction.RelationKindWith(Faction.OfPlayer))
+			return faction.RelationKindWith(Faction.OfPlayer) switch
 			{
-			case FactionRelationKind.Ally:
-				return FactionColor_Ally;
-			case FactionRelationKind.Hostile:
-				return FactionColor_Hostile;
-			case FactionRelationKind.Neutral:
-				return FactionColor_Neutral;
-			default:
-				return faction.Color;
-			}
+				FactionRelationKind.Ally => FactionColor_Ally, 
+				FactionRelationKind.Hostile => FactionColor_Hostile, 
+				FactionRelationKind.Neutral => FactionColor_Neutral, 
+				_ => faction.Color, 
+			};
 		}
 
 		private static T ParseEnum<T>(string value, bool ignoreCase = true)

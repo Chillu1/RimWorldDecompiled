@@ -29,13 +29,9 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (pawn.InBed() && pawn.guest != null && pawn.Faction != pawn.guest.HostFaction)
+			if (pawn.InBed() && pawn.guest != null && pawn.Faction != pawn.guest.HostFaction && pawn.CurrentBed().Faction == pawn.guest.HostFaction)
 			{
-				Building_Bed building_Bed = pawn.CurrentBed();
-				if (building_Bed.Medical && building_Bed.Faction == pawn.guest.HostFaction)
-				{
-					return false;
-				}
+				return false;
 			}
 			if (Find.TickManager.TicksGame < pawn.mindState.lastHarmTick + 300)
 			{

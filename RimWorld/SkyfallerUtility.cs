@@ -31,7 +31,7 @@ namespace RimWorld
 
 		public static void MakeDropoffShuttle(Map map, List<Thing> contents, Faction faction = null)
 		{
-			if (!DropCellFinder.TryFindShipLandingArea(map, out IntVec3 result, out Thing firstBlockingThing))
+			if (!DropCellFinder.TryFindShipLandingArea(map, out var result, out var firstBlockingThing))
 			{
 				if (firstBlockingThing != null)
 				{
@@ -44,7 +44,7 @@ namespace RimWorld
 			for (int i = 0; i < contents.Count; i++)
 			{
 				Pawn p;
-				if ((p = (contents[i] as Pawn)) != null)
+				if ((p = contents[i] as Pawn) != null)
 				{
 					Find.WorldPawns.RemovePawn(p);
 				}

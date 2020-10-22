@@ -35,7 +35,7 @@ namespace RimWorld
 		public override void Notify_Starting()
 		{
 			base.Notify_Starting();
-			ThingCount thingCount = (!job.targetA.IsValid) ? LoadTransportersJobUtility.FindThingToLoad(pawn, base.Container.TryGetComp<CompTransporter>()) : new ThingCount(job.targetA.Thing, job.targetA.Thing.stackCount);
+			ThingCount thingCount = ((!job.targetA.IsValid) ? LoadTransportersJobUtility.FindThingToLoad(pawn, base.Container.TryGetComp<CompTransporter>()) : new ThingCount(job.targetA.Thing, job.targetA.Thing.stackCount));
 			job.targetA = thingCount.Thing;
 			job.count = thingCount.Count;
 			initialCount = thingCount.Count;

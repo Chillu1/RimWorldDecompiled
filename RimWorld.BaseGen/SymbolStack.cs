@@ -27,7 +27,7 @@ namespace RimWorld.BaseGen
 			{
 				text += "_";
 			}
-			text += (customNameForPath ?? symbol);
+			text += customNameForPath ?? symbol;
 			Element item = default(Element);
 			item.symbol = symbol;
 			item.resolveParams = resolveParams;

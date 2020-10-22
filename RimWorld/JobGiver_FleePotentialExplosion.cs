@@ -31,7 +31,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			if (!RCellFinder.TryFindDirectFleeDestination(knownExploder.Position, 9f, pawn, out IntVec3 result))
+			if (!RCellFinder.TryFindDirectFleeDestination(knownExploder.Position, 9f, pawn, out var result))
 			{
 				return null;
 			}

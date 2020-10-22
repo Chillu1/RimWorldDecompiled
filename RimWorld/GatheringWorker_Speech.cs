@@ -18,7 +18,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!TryFindGatherSpot(organizer, out IntVec3 _))
+			if (!TryFindGatherSpot(organizer, out var _))
 			{
 				return false;
 			}

@@ -22,11 +22,16 @@ namespace RimWorld
 		[NoTranslate]
 		public string siteUrl;
 
+		[NoTranslate]
+		public string previewImagesFolderPath;
+
 		public bool isCore;
 
 		private Texture2D cachedIcon;
 
 		private Texture2D cachedBG;
+
+		private List<Texture2D> cachedPreviewImages;
 
 		public Texture2D Icon
 		{
@@ -49,6 +54,22 @@ namespace RimWorld
 					cachedBG = ContentFinder<Texture2D>.Get(backgroundPath);
 				}
 				return cachedBG;
+			}
+		}
+
+		public List<Texture2D> PreviewImages
+		{
+			get
+			{
+				if (cachedPreviewImages.NullOrEmpty())
+				{
+					if (previewImagesFolderPath.NullOrEmpty())
+					{
+						return null;
+					}
+					cachedPreviewImages = new List<Texture2D>(ContentFinder<Texture2D>.GetAllInFolder(previewImagesFolderPath));
+				}
+				return cachedPreviewImages;
 			}
 		}
 
@@ -80,21 +101,12 @@ namespace RimWorld
 			}
 		}
 
-		public string StatusDescription
+		public string StatusDescription => Status switch
 		{
-			get
-			{
-				switch (Status)
-				{
-				case ExpansionStatus.Active:
-					return "ContentActive".Translate();
-				case ExpansionStatus.Installed:
-					return "ContentInstalledButNotActive".Translate();
-				default:
-					return "ContentNotInstalled".Translate();
-				}
-			}
-		}
+			ExpansionStatus.Active => "ContentActive".Translate(), 
+			ExpansionStatus.Installed => "ContentInstalledButNotActive".Translate(), 
+			_ => "ContentNotInstalled".Translate(), 
+		};
 
 		public override void PostLoad()
 		{

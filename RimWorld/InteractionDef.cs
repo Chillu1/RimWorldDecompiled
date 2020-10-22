@@ -25,6 +25,8 @@ namespace RimWorld
 
 		public int recipientXpGainAmount;
 
+		public bool ignoreTimeSinceLastInteraction;
+
 		[NoTranslate]
 		private string symbol;
 

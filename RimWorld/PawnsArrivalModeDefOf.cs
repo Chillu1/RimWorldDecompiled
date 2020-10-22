@@ -11,6 +11,8 @@ namespace RimWorld
 
 		public static PawnsArrivalModeDef RandomDrop;
 
+		public static PawnsArrivalModeDef Shuttle;
+
 		static PawnsArrivalModeDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(PawnsArrivalModeDefOf));

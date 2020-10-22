@@ -28,7 +28,7 @@ namespace RimWorld.QuestGen
 
 		protected override bool TestRunInt(Slate slate)
 		{
-			if (!Find.Storyteller.difficulty.allowViolentQuests)
+			if (!Find.Storyteller.difficultyValues.allowViolentQuests)
 			{
 				return false;
 			}
@@ -36,7 +36,7 @@ namespace RimWorld.QuestGen
 			{
 				return false;
 			}
-			if (!ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(slate.Get("points", 0f), slate.Get<Map>("map").Tile, out PawnKindDef _))
+			if (!ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(slate.Get("points", 0f), slate.Get<Map>("map").Tile, out var _))
 			{
 				return false;
 			}
@@ -55,14 +55,14 @@ namespace RimWorld.QuestGen
 			incidentParms.target = map;
 			incidentParms.points = points;
 			incidentParms.questTag = QuestGenUtility.HardcodedTargetQuestTagWithQuestID(tag.GetValue(slate));
-			incidentParms.spawnCenter = (walkInSpot.GetValue(slate) ?? QuestGen.slate.Get<IntVec3?>("walkInSpot") ?? IntVec3.Invalid);
+			incidentParms.spawnCenter = walkInSpot.GetValue(slate) ?? QuestGen.slate.Get<IntVec3?>("walkInSpot") ?? IntVec3.Invalid;
 			incidentParms.pawnCount = animalCount.GetValue(slate);
-			if (ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(points, map.Tile, out PawnKindDef animalKind))
+			if (ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(points, map.Tile, out var animalKind))
 			{
 				incidentParms.pawnKind = animalKind;
 			}
 			slate.Set("animalKindDef", animalKind);
-			int num = (incidentParms.pawnCount > 0) ? incidentParms.pawnCount : ManhunterPackIncidentUtility.GetAnimalsCount(animalKind, points);
+			int num = ((incidentParms.pawnCount > 0) ? incidentParms.pawnCount : ManhunterPackIncidentUtility.GetAnimalsCount(animalKind, points));
 			QuestGen.slate.Set("animalCount", num);
 			if (!customLetterLabel.GetValue(slate).NullOrEmpty() || customLetterLabelRules.GetValue(slate) != null)
 			{
@@ -79,7 +79,7 @@ namespace RimWorld.QuestGen
 				}, QuestGenUtility.MergeRules(customLetterTextRules.GetValue(slate), customLetterText.GetValue(slate), "root"));
 			}
 			questPart_Incident.SetIncidentParmsAndRemoveTarget(incidentParms);
-			questPart_Incident.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart_Incident.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			QuestGen.quest.AddPart(questPart_Incident);
 			List<Rule> rules = new List<Rule>
 			{

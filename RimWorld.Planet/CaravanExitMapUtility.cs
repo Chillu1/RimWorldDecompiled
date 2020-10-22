@@ -48,7 +48,7 @@ namespace RimWorld.Planet
 				}
 			}
 			Caravan caravan = CaravanMaker.MakeCaravan(tmpPawns, faction, exitFromTile, addToWorldPawnsIfNotAlready: false);
-			Rot4 exitDir = (map != null) ? Find.WorldGrid.GetRotFromTo(exitFromTile, directionTile) : Rot4.Invalid;
+			Rot4 exitDir = ((map != null) ? Find.WorldGrid.GetRotFromTo(exitFromTile, directionTile) : Rot4.Invalid);
 			for (int j = 0; j < tmpPawns.Count; j++)
 			{
 				tmpPawns[j].ExitMap(allowedToJoinOrCreateCaravan: false, exitDir);
@@ -167,8 +167,8 @@ namespace RimWorld.Planet
 				int num = tmpNeighbors[i];
 				if (IsGoodCaravanStartingTile(num))
 				{
-					GetExitMapEdges(grid, currentTileID, num, out Rot4 primary, out Rot4 secondary);
-					if (((primary != Rot4.Invalid && CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => x.Walkable(map) && !x.Fogged(map), map, primary, CellFinder.EdgeRoadChance_Ignore, out IntVec3 result)) || (secondary != Rot4.Invalid && CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => x.Walkable(map) && !x.Fogged(map), map, secondary, CellFinder.EdgeRoadChance_Ignore, out result))) && !retTiles.Contains(num))
+					GetExitMapEdges(grid, currentTileID, num, out var primary, out var secondary);
+					if (((primary != Rot4.Invalid && CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => x.Walkable(map) && !x.Fogged(map), map, primary, CellFinder.EdgeRoadChance_Ignore, out var result)) || (secondary != Rot4.Invalid && CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => x.Walkable(map) && !x.Fogged(map), map, secondary, CellFinder.EdgeRoadChance_Ignore, out result))) && !retTiles.Contains(num))
 					{
 						retTiles.Add(num);
 					}
@@ -285,7 +285,7 @@ namespace RimWorld.Planet
 					tileCandidates.Add(num);
 				}
 			}
-			if (tileCandidates.TryRandomElement(out int result))
+			if (tileCandidates.TryRandomElement(out var result))
 			{
 				return result;
 			}
@@ -321,7 +321,7 @@ namespace RimWorld.Planet
 					tileCandidates.Add(num);
 				}
 			}
-			if (tileCandidates.TryRandomElement(out int result))
+			if (tileCandidates.TryRandomElement(out var result))
 			{
 				return result;
 			}

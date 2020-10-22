@@ -75,7 +75,7 @@ namespace Verse
 			List<Hediff> hediffs = hs.hediffs;
 			for (int i = 0; i < hediffs.Count; i++)
 			{
-				if (hediffs[i] is Hediff_Implant)
+				if (hediffs[i].def.countsAsAddedPartOrImplant)
 				{
 					num++;
 				}

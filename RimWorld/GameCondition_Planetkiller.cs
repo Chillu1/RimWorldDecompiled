@@ -16,7 +16,7 @@ namespace RimWorld
 		{
 			get
 			{
-				Vector2 location = (Find.CurrentMap == null) ? default(Vector2) : Find.WorldGrid.LongLatOf(Find.CurrentMap.Tile);
+				Vector2 location = ((Find.CurrentMap == null) ? default(Vector2) : Find.WorldGrid.LongLatOf(Find.CurrentMap.Tile));
 				return (string)(string.Concat(string.Concat(def.LabelCap, "\n"), "\n", Description) + ("\n" + "ImpactDate".Translate().CapitalizeFirst() + ": " + GenDate.DateFullStringAt(GenDate.TickGameToAbs(startTick + base.Duration), location))) + ("\n" + "TimeLeft".Translate().CapitalizeFirst() + ": " + base.TicksLeft.ToStringTicksToPeriod());
 			}
 		}

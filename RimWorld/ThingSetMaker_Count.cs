@@ -38,7 +38,7 @@ namespace RimWorld
 			float num3 = 0f;
 			for (int i = 0; i < num2; i++)
 			{
-				if (!ThingSetMakerUtility.TryGetRandomThingWhichCanWeighNoMoreThan(enumerable, stuffTechLevel, (num == float.MaxValue) ? float.MaxValue : (num - num3), parms.qualityGenerator, out ThingStuffPair thingStuffPair))
+				if (!ThingSetMakerUtility.TryGetRandomThingWhichCanWeighNoMoreThan(enumerable, stuffTechLevel, (num == float.MaxValue) ? float.MaxValue : (num - num3), parms.qualityGenerator, out var thingStuffPair))
 				{
 					break;
 				}

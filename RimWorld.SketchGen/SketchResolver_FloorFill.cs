@@ -1,7 +1,7 @@
-using RimWorld.BaseGen;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.BaseGen;
 using UnityEngine;
 using Verse;
 
@@ -20,7 +20,7 @@ namespace RimWorld.SketchGen
 		protected override void ResolveInt(ResolveParams parms)
 		{
 			CellRect outerRect = parms.rect ?? parms.sketch.OccupiedRect;
-			if (!TryFindFloors(out TerrainDef floor, out TerrainDef floor2, parms))
+			if (!TryFindFloors(out var floor, out var floor2, parms))
 			{
 				return;
 			}
@@ -70,7 +70,7 @@ namespace RimWorld.SketchGen
 
 		protected override bool CanResolveInt(ResolveParams parms)
 		{
-			if (!TryFindFloors(out TerrainDef _, out TerrainDef _, parms))
+			if (!TryFindFloors(out var _, out var _, parms))
 			{
 				return false;
 			}

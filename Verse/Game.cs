@@ -1,9 +1,9 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
+using RimWorld.Planet;
 using Verse.Profile;
 
 namespace Verse
@@ -371,6 +371,7 @@ namespace Verse
 					});
 				}
 				Find.Scenario.PostGameStart();
+				history.FinalizeInit();
 				if (Faction.OfPlayer.def.startingResearchTags != null)
 				{
 					foreach (ResearchProjectTagDef startingResearchTag in Faction.OfPlayer.def.startingResearchTags)
@@ -393,9 +394,9 @@ namespace Verse
 							if (allDef2.HasTag(startingTechprintsResearchTag))
 							{
 								int techprints = researchManager.GetTechprints(allDef2);
-								if (techprints < allDef2.techprintCount)
+								if (techprints < allDef2.TechprintCount)
 								{
-									researchManager.AddTechprints(allDef2, allDef2.techprintCount - techprints);
+									researchManager.AddTechprints(allDef2, allDef2.TechprintCount - techprints);
 								}
 							}
 						}
@@ -547,7 +548,6 @@ namespace Verse
 			researchManager.ReapplyAllMods();
 			MessagesRepeatAvoider.Reset();
 			GameComponentUtility.FinalizeInit();
-			history.FinalizeInit();
 			Current.ProgramState = ProgramState.Playing;
 		}
 

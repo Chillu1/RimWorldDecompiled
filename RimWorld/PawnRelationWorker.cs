@@ -54,8 +54,8 @@ namespace RimWorld
 			{
 				num *= request.RelationWithExtraPawnChanceFactor;
 			}
-			TechLevel techLevel = (generated.Faction != null) ? generated.Faction.def.techLevel : TechLevel.Undefined;
-			TechLevel techLevel2 = (other.Faction != null) ? other.Faction.def.techLevel : TechLevel.Undefined;
+			TechLevel techLevel = ((generated.Faction != null) ? generated.Faction.def.techLevel : TechLevel.Undefined);
+			TechLevel techLevel2 = ((other.Faction != null) ? other.Faction.def.techLevel : TechLevel.Undefined);
 			if (techLevel != 0 && techLevel2 != 0 && techLevel != techLevel2)
 			{
 				num *= 0.85f;

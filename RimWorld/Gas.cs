@@ -22,7 +22,10 @@ namespace RimWorld
 				gas.Destroy();
 			}
 			base.SpawnSetup(map, respawningAfterLoad);
-			destroyTick = Find.TickManager.TicksGame + def.gas.expireSeconds.RandomInRange.SecondsToTicks();
+			if (!respawningAfterLoad)
+			{
+				destroyTick = Find.TickManager.TicksGame + def.gas.expireSeconds.RandomInRange.SecondsToTicks();
+			}
 			graphicRotationSpeed = Rand.Range(0f - def.gas.rotationSpeed, def.gas.rotationSpeed) / 60f;
 		}
 

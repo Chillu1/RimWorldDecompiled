@@ -1,8 +1,8 @@
-using RimWorld.IO;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using RimWorld.IO;
 
 namespace Verse
 {
@@ -32,7 +32,7 @@ namespace Verse
 
 		public Gender ResolveGender(string str, string fallback = null)
 		{
-			if (!TryResolveGender(str, out Gender gender) && fallback != null)
+			if (!TryResolveGender(str, out var gender) && fallback != null)
 			{
 				TryResolveGender(str, out gender);
 			}

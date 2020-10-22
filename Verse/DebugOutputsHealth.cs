@@ -1,8 +1,8 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
+using RimWorld.Planet;
 
 namespace Verse
 {
@@ -99,7 +99,9 @@ namespace Verse
 					Pawn pawn = PawnGenerator.GeneratePawn(new PawnGenerationRequest(x.race.AnyPawnKind, null, PawnGenerationContext.NonPlayer, -1, forceGenerateNewPawn: true));
 					for (int j = 0; j < 1000; j++)
 					{
-						pawn.TakeDamage(new DamageInfo(DamageDefOf.Crush, 10f));
+						DamageInfo dinfo = new DamageInfo(DamageDefOf.Crush, 10f);
+						dinfo.SetIgnoreInstantKillProtection(ignore: true);
+						pawn.TakeDamage(dinfo);
 						if (pawn.Destroyed)
 						{
 							num += j + 1;
@@ -191,7 +193,7 @@ namespace Verse
 			DebugTables.MakeTablesDialog(DefDatabase<HediffDef>.AllDefs, new List<TableDataGetter<HediffDef>>
 			{
 				new TableDataGetter<HediffDef>("defName", (HediffDef h) => h.defName),
-				new TableDataGetter<HediffDef>("cares", (HediffDef h) => typeof(Hediff_Implant).IsAssignableFrom(h.hediffClass).ToStringCheckBlank())
+				new TableDataGetter<HediffDef>("cares", (HediffDef h) => h.countsAsAddedPartOrImplant.ToStringCheckBlank())
 			}.ToArray());
 		}
 	}

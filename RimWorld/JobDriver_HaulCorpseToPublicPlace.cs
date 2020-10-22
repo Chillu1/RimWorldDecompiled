@@ -65,7 +65,7 @@ namespace RimWorld
 					if (!Rand.Chance(0.8f) || !TryFindTableCell(out result))
 					{
 						bool flag = false;
-						if (RCellFinder.TryFindRandomSpotJustOutsideColony(pawn, out IntVec3 result2) && CellFinder.TryRandomClosewalkCellNear(result2, pawn.Map, 5, out result, (IntVec3 x) => pawn.CanReserve(x) && x.GetFirstItem(pawn.Map) == null))
+						if (RCellFinder.TryFindRandomSpotJustOutsideColony(pawn, out var result2) && CellFinder.TryRandomClosewalkCellNear(result2, pawn.Map, 5, out result, (IntVec3 x) => pawn.CanReserve(x) && x.GetFirstItem(pawn.Map) == null))
 						{
 							flag = true;
 						}

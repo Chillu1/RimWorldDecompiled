@@ -59,7 +59,7 @@ namespace RimWorld
 				{
 					yield return base.Option_JumpToLocationAndPostpone;
 				}
-				if (quest != null)
+				if (quest != null && !quest.hidden)
 				{
 					yield return Option_ViewInQuestsTab("ViewRelatedQuest", postpone: true);
 				}

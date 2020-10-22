@@ -6,7 +6,7 @@ namespace RimWorld
 	{
 		public override void TransformValue(StatRequest req, ref float val)
 		{
-			if (TryGetIsFleshFactor(req, out float bodySize))
+			if (TryGetIsFleshFactor(req, out var bodySize))
 			{
 				val *= bodySize;
 			}
@@ -14,7 +14,7 @@ namespace RimWorld
 
 		public override string ExplanationPart(StatRequest req)
 		{
-			if (TryGetIsFleshFactor(req, out float bodySize) && bodySize != 1f)
+			if (TryGetIsFleshFactor(req, out var bodySize) && bodySize != 1f)
 			{
 				return "StatsReport_NotFlesh".Translate() + ": x" + bodySize.ToStringPercent();
 			}

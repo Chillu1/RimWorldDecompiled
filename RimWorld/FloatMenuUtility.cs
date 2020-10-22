@@ -57,9 +57,14 @@ namespace RimWorld
 			{
 				failStr = "IsIncapableOfViolenceLower".Translate(pawn.LabelShort, pawn);
 			}
+			else if (pawn == target.Thing)
+			{
+				failStr = "CannotAttackSelf".Translate();
+			}
 			else
 			{
-				if (pawn != target.Thing)
+				Pawn target2;
+				if ((target2 = target.Thing as Pawn) == null || (!pawn.InSameExtraFaction(target2, ExtraFactionType.HomeFaction) && !pawn.InSameExtraFaction(target2, ExtraFactionType.MiniFaction)))
 				{
 					return delegate
 					{
@@ -67,7 +72,7 @@ namespace RimWorld
 						pawn.jobs.TryTakeOrderedJob(job);
 					};
 				}
-				failStr = "CannotAttackSelf".Translate();
+				failStr = "CannotAttackSameFactionMember".Translate();
 			}
 			failStr = failStr.CapitalizeFirst();
 			return null;
@@ -96,9 +101,14 @@ namespace RimWorld
 			{
 				failStr = "Incapable".Translate();
 			}
+			else if (pawn == target.Thing)
+			{
+				failStr = "CannotAttackSelf".Translate();
+			}
 			else
 			{
-				if (pawn != target.Thing)
+				Pawn target2;
+				if ((target2 = target.Thing as Pawn) == null || (!pawn.InSameExtraFaction(target2, ExtraFactionType.HomeFaction) && !pawn.InSameExtraFaction(target2, ExtraFactionType.MiniFaction)))
 				{
 					return delegate
 					{
@@ -111,7 +121,7 @@ namespace RimWorld
 						pawn.jobs.TryTakeOrderedJob(job);
 					};
 				}
-				failStr = "CannotAttackSelf".Translate();
+				failStr = "CannotAttackSameFactionMember".Translate();
 			}
 			failStr = failStr.CapitalizeFirst();
 			return null;

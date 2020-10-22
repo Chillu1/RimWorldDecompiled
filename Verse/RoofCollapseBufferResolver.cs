@@ -1,6 +1,6 @@
-using RimWorld;
 using System.Collections.Generic;
 using System.Text;
+using RimWorld;
 
 namespace Verse
 {
@@ -36,14 +36,18 @@ namespace Verse
 				for (int i = 0; i < tmpCrushedThings.Count; i++)
 				{
 					Thing thing = tmpCrushedThings[i];
-					string item = thing.LabelShortCap;
-					if (thing.def.category == ThingCategory.Pawn)
+					Corpse corpse;
+					if ((corpse = thing as Corpse) == null || !corpse.Bugged)
 					{
-						item = thing.LabelCap;
-					}
-					if (!tmpCrushedNames.Contains(item))
-					{
-						tmpCrushedNames.Add(item);
+						string item = thing.LabelShortCap;
+						if (thing.def.category == ThingCategory.Pawn)
+						{
+							item = thing.LabelCap;
+						}
+						if (!tmpCrushedNames.Contains(item))
+						{
+							tmpCrushedNames.Add(item);
+						}
 					}
 				}
 				foreach (string tmpCrushedName in tmpCrushedNames)

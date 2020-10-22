@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld.QuestGen
@@ -28,6 +28,8 @@ namespace RimWorld.QuestGen
 
 		public SlateRef<bool> leaderMustBeSafe;
 
+		public SlateRef<bool> mustHaveGoodwillRewardsEnabled;
+
 		public SlateRef<Pawn> ofPawn;
 
 		public SlateRef<Thing> mustBeHostileToFactionOf;
@@ -38,7 +40,7 @@ namespace RimWorld.QuestGen
 
 		protected override bool TestRunInt(Slate slate)
 		{
-			if (slate.TryGet(storeAs.GetValue(slate), out Faction var) && IsGoodFaction(var, slate))
+			if (slate.TryGet<Faction>(storeAs.GetValue(slate), out var var) && IsGoodFaction(var, slate))
 			{
 				return true;
 			}
@@ -53,10 +55,10 @@ namespace RimWorld.QuestGen
 		protected override void RunInt()
 		{
 			Slate slate = QuestGen.slate;
-			if ((!QuestGen.slate.TryGet(storeAs.GetValue(slate), out Faction var) || !IsGoodFaction(var, QuestGen.slate)) && TryFindFaction(out var, QuestGen.slate))
+			if ((!QuestGen.slate.TryGet<Faction>(storeAs.GetValue(slate), out var var) || !IsGoodFaction(var, QuestGen.slate)) && TryFindFaction(out var, QuestGen.slate))
 			{
 				QuestGen.slate.Set(storeAs.GetValue(slate), var);
-				if (!var.def.hidden)
+				if (!var.Hidden)
 				{
 					QuestPart_InvolvedFactions questPart_InvolvedFactions = new QuestPart_InvolvedFactions();
 					questPart_InvolvedFactions.factions.Add(var);
@@ -67,14 +69,14 @@ namespace RimWorld.QuestGen
 
 		private bool TryFindFaction(out Faction faction, Slate slate)
 		{
-			return (from x in Find.FactionManager.GetFactions(allowHidden: true)
+			return (from x in Find.FactionManager.GetFactions_NewTemp(allowHidden: true)
 				where IsGoodFaction(x, slate)
 				select x).TryRandomElement(out faction);
 		}
 
 		private bool IsGoodFaction(Faction faction, Slate slate)
 		{
-			if (faction.def.hidden && (allowedHiddenFactions.GetValue(slate) == null || !allowedHiddenFactions.GetValue(slate).Contains(faction)))
+			if (faction.Hidden && (allowedHiddenFactions.GetValue(slate) == null || !allowedHiddenFactions.GetValue(slate).Contains(faction)))
 			{
 				return false;
 			}
@@ -107,6 +109,10 @@ namespace RimWorld.QuestGen
 				return false;
 			}
 			if (playerCantBeAttackingCurrently.GetValue(slate) && SettlementUtility.IsPlayerAttackingAnySettlementOf(faction))
+			{
+				return false;
+			}
+			if (mustHaveGoodwillRewardsEnabled.GetValue(slate) && !faction.allowGoodwillRewards)
 			{
 				return false;
 			}

@@ -31,17 +31,17 @@ namespace RimWorld.QuestGen
 			if (value != 0 && value2 != null && value2.Faction != null)
 			{
 				QuestPart_FactionGoodwillChange questPart_FactionGoodwillChange = new QuestPart_FactionGoodwillChange();
-				questPart_FactionGoodwillChange.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+				questPart_FactionGoodwillChange.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 				questPart_FactionGoodwillChange.faction = value2.Faction;
 				questPart_FactionGoodwillChange.change = value;
 				slate.Set("goodwillPenalty", Mathf.Abs(value).ToString());
 				QuestGen.quest.AddPart(questPart_FactionGoodwillChange);
 			}
 			QuestPart_QuestEnd questPart_QuestEnd = new QuestPart_QuestEnd();
-			questPart_QuestEnd.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart_QuestEnd.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			questPart_QuestEnd.outcome = outcome.GetValue(slate);
-			questPart_QuestEnd.signalListenMode = (signalListenMode.GetValue(slate) ?? QuestPart.SignalListenMode.OngoingOnly);
-			questPart_QuestEnd.sendLetter = (sendStandardLetter.GetValue(slate) ?? false);
+			questPart_QuestEnd.signalListenMode = signalListenMode.GetValue(slate) ?? QuestPart.SignalListenMode.OngoingOnly;
+			questPart_QuestEnd.sendLetter = sendStandardLetter.GetValue(slate) ?? false;
 			QuestGen.quest.AddPart(questPart_QuestEnd);
 		}
 	}

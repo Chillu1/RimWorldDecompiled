@@ -103,7 +103,7 @@ namespace RimWorld
 				Thought_Memory thought_Memory = thoughts.memories.OldestMemoryInGroup(this);
 				if (thought_Memory != null)
 				{
-					showBubble = (thought_Memory.age > thought_Memory.def.DurationTicks / 2);
+					showBubble = thought_Memory.age > thought_Memory.def.DurationTicks / 2;
 					thought_Memory.Renew();
 					return true;
 				}

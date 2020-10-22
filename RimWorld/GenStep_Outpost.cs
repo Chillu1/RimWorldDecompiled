@@ -1,6 +1,6 @@
-using RimWorld.BaseGen;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.BaseGen;
 using Verse;
 
 namespace RimWorld
@@ -17,16 +17,16 @@ namespace RimWorld
 
 		public override void Generate(Map map, GenStepParams parms)
 		{
-			if (!MapGenerator.TryGetVar("RectOfInterest", out CellRect var))
+			if (!MapGenerator.TryGetVar<CellRect>("RectOfInterest", out var var))
 			{
 				var = CellRect.SingleCell(map.Center);
 			}
-			if (!MapGenerator.TryGetVar("UsedRects", out List<CellRect> var2))
+			if (!MapGenerator.TryGetVar<List<CellRect>>("UsedRects", out var var2))
 			{
 				var2 = new List<CellRect>();
 				MapGenerator.SetVar("UsedRects", var2);
 			}
-			Faction faction = (map.ParentFaction != null && map.ParentFaction != Faction.OfPlayer) ? map.ParentFaction : Find.FactionManager.RandomEnemyFaction();
+			Faction faction = ((map.ParentFaction != null && map.ParentFaction != Faction.OfPlayer) ? map.ParentFaction : Find.FactionManager.RandomEnemyFaction());
 			ResolveParams resolveParams = default(ResolveParams);
 			resolveParams.rect = GetOutpostRect(var, var2, map);
 			resolveParams.faction = faction;
@@ -46,7 +46,17 @@ namespace RimWorld
 			RimWorld.BaseGen.BaseGen.globalSettings.minBuildings = 1;
 			RimWorld.BaseGen.BaseGen.globalSettings.minBarracks = 1;
 			RimWorld.BaseGen.BaseGen.symbolStack.Push("settlement", resolveParams);
+			if (faction != null && faction == Faction.Empire)
+			{
+				RimWorld.BaseGen.BaseGen.globalSettings.minThroneRooms = 1;
+				RimWorld.BaseGen.BaseGen.globalSettings.minLandingPads = 1;
+			}
 			RimWorld.BaseGen.BaseGen.Generate();
+			if (faction != null && faction == Faction.Empire && RimWorld.BaseGen.BaseGen.globalSettings.landingPadsGenerated == 0)
+			{
+				GenStep_Settlement.GenerateLandingPadNearby(resolveParams.rect, map, faction, out var usedRect);
+				var2.Add(usedRect);
+			}
 			var2.Add(resolveParams.rect);
 		}
 

@@ -63,7 +63,7 @@ namespace Verse
 			float x = XAtIndentLevel(indentLevel);
 			float y = curY + lineHeight / 2f - 9f;
 			Rect butRect = new Rect(x, y, 18f, 18f);
-			Texture2D tex = node.IsOpen(openMask) ? TexButton.Collapse : TexButton.Reveal;
+			Texture2D tex = (node.IsOpen(openMask) ? TexButton.Collapse : TexButton.Reveal);
 			if (Widgets.ButtonImage(butRect, tex))
 			{
 				bool flag = node.IsOpen(openMask);

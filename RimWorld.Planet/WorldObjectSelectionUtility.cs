@@ -57,7 +57,7 @@ namespace RimWorld.Planet
 		{
 			Ray ray = Find.WorldCamera.ScreenPointToRay(mousePos * Prefs.UIScale);
 			int worldLayerMask = WorldCameraManager.WorldLayerMask;
-			if (Physics.Raycast(ray, out RaycastHit hitInfo, 1500f, worldLayerMask))
+			if (Physics.Raycast(ray, out var hitInfo, 1500f, worldLayerMask))
 			{
 				return Vector3.Distance(hitInfo.point, o.DrawPos);
 			}

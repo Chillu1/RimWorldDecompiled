@@ -27,7 +27,10 @@ namespace RimWorld
 
 		public float minRefireDays;
 
+		[Obsolete]
 		public int minDifficulty;
+
+		public DifficultyConditionConfig disabledWhen = new DifficultyConditionConfig();
 
 		public bool pointsScaleable;
 
@@ -62,6 +65,8 @@ namespace RimWorld
 		public bool pawnMustBeCapableOfViolence;
 
 		public Gender pawnFixedGender;
+
+		public HediffDef pawnHediff;
 
 		public GameConditionDef gameCondition;
 

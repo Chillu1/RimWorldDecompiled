@@ -8,7 +8,7 @@ namespace RimWorld
 {
 	public class LordJob_Joinable_Speech : LordJob_Joinable_Gathering
 	{
-		public const float DurationHours = 5f;
+		public const float DurationHours = 4f;
 
 		public static readonly Dictionary<ThoughtDef, float> OutcomeThoughtChances = new Dictionary<ThoughtDef, float>
 		{
@@ -29,6 +29,8 @@ namespace RimWorld
 				0.2f
 			}
 		};
+
+		private static readonly float InspirationChanceFromInspirationalSpeech = 0.05f;
 
 		private static List<Tuple<ThoughtDef, float>> outcomeChancesTemp = new List<Tuple<ThoughtDef, float>>();
 
@@ -57,7 +59,7 @@ namespace RimWorld
 			stateGraph.AddToil(lordToil);
 			LordToil_End lordToil_End = new LordToil_End();
 			stateGraph.AddToil(lordToil_End);
-			float speechDuration = 12500f;
+			float speechDuration = 10000f;
 			Transition transition = new Transition(lordToil, lordToil_End);
 			transition.AddTrigger(new Trigger_TickCondition(ShouldBeCalledOff));
 			transition.AddTrigger(new Trigger_PawnKilled());
@@ -94,20 +96,34 @@ namespace RimWorld
 				Find.LetterStack.ReceiveLetter("LetterLabelSpeechCancelled".Translate(), "LetterSpeechCancelled".Translate(organizer.Named("ORGANIZER")).CapitalizeFirst(), LetterDefOf.NegativeEvent, organizer);
 				return;
 			}
-			ThoughtDef key = OutcomeThoughtChances.RandomElementByWeight((KeyValuePair<ThoughtDef, float> t) => (!PositiveOutcome(t.Key)) ? OutcomeThoughtChances[t.Key] : (OutcomeThoughtChances[t.Key] * organizer.GetStatValue(StatDefOf.SocialImpact) * progress)).Key;
+			ThoughtDef key = OutcomeThoughtChances.RandomElementByWeight((KeyValuePair<ThoughtDef, float> t) => (!PositiveOutcome(t.Key)) ? t.Value : (t.Value * organizer.GetStatValue(StatDefOf.SocialImpact) * progress)).Key;
+			string text = "";
 			foreach (Pawn ownedPawn in lord.ownedPawns)
 			{
-				if (ownedPawn != organizer && organizer.Position.InHorDistOf(ownedPawn.Position, 18f))
+				if (ownedPawn == organizer || !organizer.Position.InHorDistOf(ownedPawn.Position, 18f))
 				{
-					ownedPawn.needs.mood.thoughts.memories.TryGainMemory(key, organizer);
+					continue;
+				}
+				ownedPawn.needs.mood.thoughts.memories.TryGainMemory(key, organizer);
+				if (key == ThoughtDefOf.InspirationalSpeech && Rand.Chance(InspirationChanceFromInspirationalSpeech))
+				{
+					InspirationDef randomAvailableInspirationDef = ownedPawn.mindState.inspirationHandler.GetRandomAvailableInspirationDef();
+					if (randomAvailableInspirationDef != null && ownedPawn.mindState.inspirationHandler.TryStartInspiration_NewTemp(randomAvailableInspirationDef, "LetterSpeechInspiration".Translate(ownedPawn.Named("PAWN"), organizer.Named("SPEAKER"))))
+					{
+						text = text + "  - " + ownedPawn.NameShortColored.Resolve() + "\n";
+					}
 				}
 			}
-			TaggedString text = "LetterFinishedSpeech".Translate(organizer.Named("ORGANIZER")).CapitalizeFirst() + " " + ("Letter" + key.defName).Translate();
+			TaggedString text2 = "LetterFinishedSpeech".Translate(organizer.Named("ORGANIZER")).CapitalizeFirst() + " " + ("Letter" + key.defName).Translate();
+			if (!text.NullOrEmpty())
+			{
+				text2 += "\n\n" + "LetterSpeechInspiredListeners".Translate() + "\n\n" + text.TrimEndNewlines();
+			}
 			if (progress < 1f)
 			{
-				text += "\n\n" + "LetterSpeechInterrupted".Translate(progress.ToStringPercent(), organizer.Named("ORGANIZER"));
+				text2 += "\n\n" + "LetterSpeechInterrupted".Translate(progress.ToStringPercent(), organizer.Named("ORGANIZER"));
 			}
-			Find.LetterStack.ReceiveLetter(key.stages[0].LabelCap, text, PositiveOutcome(key) ? LetterDefOf.PositiveEvent : LetterDefOf.NegativeEvent, organizer);
+			Find.LetterStack.ReceiveLetter(key.stages[0].LabelCap, text2, PositiveOutcome(key) ? LetterDefOf.PositiveEvent : LetterDefOf.NegativeEvent, organizer);
 			Ability ability = organizer.abilities.GetAbility(AbilityDefOf.Speech);
 			RoyalTitle mostSeniorTitle = organizer.royalty.MostSeniorTitle;
 			if (ability != null && mostSeniorTitle != null)

@@ -18,7 +18,7 @@ namespace RimWorld.BaseGen
 				}
 				for (int j = 0; j < 2; j++)
 				{
-					if (!TryFindRandomDoorSpawnCell(rp.rect, new Rot4(i), out IntVec3 found))
+					if (!TryFindRandomDoorSpawnCell(rp.rect, new Rot4(i), out var found))
 					{
 						continue;
 					}
@@ -68,10 +68,10 @@ namespace RimWorld.BaseGen
 				}
 				if (!Rand.TryRangeInclusiveWhere(rect.minX + 1, rect.maxX - 1, delegate(int x)
 				{
-					IntVec3 c7 = new IntVec3(x, 0, rect.maxZ + 1);
-					IntVec3 c8 = new IntVec3(x, 0, rect.maxZ - 1);
-					return c7.InBounds(map) && c7.Standable(map) && c8.InBounds(map) && c8.Standable(map);
-				}, out int value))
+					IntVec3 cell7 = new IntVec3(x, 0, rect.maxZ + 1);
+					IntVec3 cell8 = new IntVec3(x, 0, rect.maxZ - 1);
+					return CanPassThrough(cell7, map) && CanPassThrough(cell8, map);
+				}, out var value))
 				{
 					found = IntVec3.Invalid;
 					return false;
@@ -88,10 +88,10 @@ namespace RimWorld.BaseGen
 				}
 				if (!Rand.TryRangeInclusiveWhere(rect.minX + 1, rect.maxX - 1, delegate(int x)
 				{
-					IntVec3 c5 = new IntVec3(x, 0, rect.minZ - 1);
-					IntVec3 c6 = new IntVec3(x, 0, rect.minZ + 1);
-					return c5.InBounds(map) && c5.Standable(map) && c6.InBounds(map) && c6.Standable(map);
-				}, out int value2))
+					IntVec3 cell5 = new IntVec3(x, 0, rect.minZ - 1);
+					IntVec3 cell6 = new IntVec3(x, 0, rect.minZ + 1);
+					return CanPassThrough(cell5, map) && CanPassThrough(cell6, map);
+				}, out var value2))
 				{
 					found = IntVec3.Invalid;
 					return false;
@@ -108,10 +108,10 @@ namespace RimWorld.BaseGen
 				}
 				if (!Rand.TryRangeInclusiveWhere(rect.minZ + 1, rect.maxZ - 1, delegate(int z)
 				{
-					IntVec3 c3 = new IntVec3(rect.minX - 1, 0, z);
-					IntVec3 c4 = new IntVec3(rect.minX + 1, 0, z);
-					return c3.InBounds(map) && c3.Standable(map) && c4.InBounds(map) && c4.Standable(map);
-				}, out int value3))
+					IntVec3 cell3 = new IntVec3(rect.minX - 1, 0, z);
+					IntVec3 cell4 = new IntVec3(rect.minX + 1, 0, z);
+					return CanPassThrough(cell3, map) && CanPassThrough(cell4, map);
+				}, out var value3))
 				{
 					found = IntVec3.Invalid;
 					return false;
@@ -126,16 +126,25 @@ namespace RimWorld.BaseGen
 			}
 			if (!Rand.TryRangeInclusiveWhere(rect.minZ + 1, rect.maxZ - 1, delegate(int z)
 			{
-				IntVec3 c = new IntVec3(rect.maxX + 1, 0, z);
-				IntVec3 c2 = new IntVec3(rect.maxX - 1, 0, z);
-				return c.InBounds(map) && c.Standable(map) && c2.InBounds(map) && c2.Standable(map);
-			}, out int value4))
+				IntVec3 cell = new IntVec3(rect.maxX + 1, 0, z);
+				IntVec3 cell2 = new IntVec3(rect.maxX - 1, 0, z);
+				return CanPassThrough(cell, map) && CanPassThrough(cell2, map);
+			}, out var value4))
 			{
 				found = IntVec3.Invalid;
 				return false;
 			}
 			found = new IntVec3(rect.maxX, 0, value4);
 			return true;
+		}
+
+		private bool CanPassThrough(IntVec3 cell, Map map)
+		{
+			if (cell.InBounds(map) && cell.Standable(map))
+			{
+				return cell.GetEdifice(map) == null;
+			}
+			return false;
 		}
 
 		private int GetDistanceToExistingDoors(IntVec3 cell, CellRect rect)

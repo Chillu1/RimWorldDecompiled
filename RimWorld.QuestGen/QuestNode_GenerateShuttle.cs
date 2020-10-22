@@ -28,6 +28,10 @@ namespace RimWorld.QuestGen
 
 		public SlateRef<Faction> owningFaction;
 
+		public SlateRef<bool> permitShuttle;
+
+		public SlateRef<bool> hideControls;
+
 		protected override bool TestRunInt(Slate slate)
 		{
 			return true;
@@ -62,6 +66,8 @@ namespace RimWorld.QuestGen
 			compShuttle.dropEverythingIfUnsatisfied = dropEverythingIfUnsatisfied.GetValue(slate);
 			compShuttle.leaveImmediatelyWhenSatisfied = leaveImmediatelyWhenSatisfied.GetValue(slate);
 			compShuttle.dropEverythingOnArrival = dropEverythingOnArrival.GetValue(slate);
+			compShuttle.permitShuttle = permitShuttle.GetValue(slate);
+			compShuttle.hideControls = hideControls.GetValue(slate);
 			QuestGen.slate.Set(storeAs.GetValue(slate), thing);
 		}
 	}

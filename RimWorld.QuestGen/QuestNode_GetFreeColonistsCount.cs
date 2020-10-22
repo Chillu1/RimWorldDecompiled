@@ -22,7 +22,7 @@ namespace RimWorld.QuestGen
 
 		private void SetVars(Slate slate)
 		{
-			slate.Set<int>(var: (onlyThisMap.GetValue(slate) == null) ? PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists.Count : onlyThisMap.GetValue(slate).mapPawns.FreeColonistsCount, name: storeAs.GetValue(slate), isAbsoluteName: false);
+			slate.Set(var: (onlyThisMap.GetValue(slate) == null) ? PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists.Count : onlyThisMap.GetValue(slate).mapPawns.FreeColonistsCount, name: storeAs.GetValue(slate));
 		}
 	}
 }

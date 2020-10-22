@@ -6,14 +6,18 @@ namespace RimWorld
 	{
 		private float ApparelScorePerBeltRadius = 0.046f;
 
-		public override bool CheckPreAbsorbDamage(DamageInfo dinfo)
+		public override void Notify_BulletImpactNearby(BulletImpactData impactData)
 		{
-			if (!dinfo.Def.isExplosive && dinfo.Def.harmsHealth && dinfo.Def.ExternalViolenceFor(this) && dinfo.Def.isRanged && base.Wearer.Spawned)
+			base.Notify_BulletImpactNearby(impactData);
+			Pawn wearer = base.Wearer;
+			if (!wearer.Dead && !impactData.bullet.def.projectile.damageDef.isExplosive && impactData.bullet.Launcher is Building_Turret && impactData.bullet.Launcher != null && impactData.bullet.Launcher.HostileTo(base.Wearer) && !wearer.IsColonist && wearer.Spawned)
 			{
-				GenExplosion.DoExplosion(base.Wearer.Position, base.Wearer.Map, this.GetStatValue(StatDefOf.SmokepopBeltRadius), DamageDefOf.Smoke, null, -1, -1f, null, null, null, null, ThingDefOf.Gas_Smoke, 1f);
-				Destroy();
+				Gas gas = wearer.Position.GetGas(wearer.Map);
+				if (gas == null || !gas.def.gas.blockTurretTracking)
+				{
+					Verb_SmokePop.Pop(this.TryGetComp<CompReloadable>());
+				}
 			}
-			return false;
 		}
 
 		public override float GetSpecialApparelScoreOffset()

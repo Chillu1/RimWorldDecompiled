@@ -1,7 +1,7 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 using UnityEngine;
 using Verse.AI.Group;
 
@@ -91,6 +91,14 @@ namespace Verse.AI
 						return false;
 					}
 				}
+				if ((flags & TargetScanFlags.NeedNotUnderThickRoof) != 0)
+				{
+					RoofDef roof = thing.Position.GetRoof(thing.Map);
+					if (roof != null && roof.isThickRoof)
+					{
+						return false;
+					}
+				}
 				if ((flags & TargetScanFlags.NeedLOSToAll) != 0)
 				{
 					if (losValidator != null && (!losValidator(searcherThing.Position) || !losValidator(thing.Position)))
@@ -173,7 +181,7 @@ namespace Verse.AI
 				if ((flags & TargetScanFlags.NeedReachable) != 0)
 				{
 					Predicate<IAttackTarget> oldValidator2 = innerValidator;
-					innerValidator = ((IAttackTarget t) => oldValidator2(t) && CanReach(searcherThing, t.Thing, canBash));
+					innerValidator = (IAttackTarget t) => oldValidator2(t) && CanReach(searcherThing, t.Thing, canBash);
 				}
 				bool flag = false;
 				for (int i = 0; i < tmpTargets.Count; i++)
@@ -239,7 +247,7 @@ namespace Verse.AI
 			}
 			else
 			{
-				TraverseMode mode = canBash ? TraverseMode.PassDoors : TraverseMode.NoPassClosedDoors;
+				TraverseMode mode = (canBash ? TraverseMode.PassDoors : TraverseMode.NoPassClosedDoors);
 				if (!searcher.Map.reachability.CanReach(searcher.Position, target, PathEndMode.Touch, TraverseParms.For(mode)))
 				{
 					return false;
@@ -322,7 +330,7 @@ namespace Verse.AI
 
 		private static IAttackTarget GetRandomShootingTargetByScore(List<IAttackTarget> targets, IAttackTargetSearcher searcher, Verb verb)
 		{
-			if (GetAvailableShootingTargetsByScore(targets, searcher, verb).TryRandomElementByWeight((Pair<IAttackTarget, float> x) => x.Second, out Pair<IAttackTarget, float> result))
+			if (GetAvailableShootingTargetsByScore(targets, searcher, verb).TryRandomElementByWeight((Pair<IAttackTarget, float> x) => x.Second, out var result))
 			{
 				return result.First;
 			}
@@ -443,7 +451,7 @@ namespace Verse.AI
 						}
 						flag = false;
 					}
-					float num3 = (thingList[j] == searcher) ? 40f : ((!(thingList[j] is Pawn)) ? 10f : (thingList[j].def.race.Animal ? 7f : 18f));
+					float num3 = ((thingList[j] == searcher) ? 40f : ((!(thingList[j] is Pawn)) ? 10f : (thingList[j].def.race.Animal ? 7f : 18f)));
 					num2 = ((!searcher.Thing.HostileTo(thingList[j])) ? (num2 - num3) : (num2 + num3 * 0.6f));
 				}
 			}
@@ -499,7 +507,7 @@ namespace Verse.AI
 					Thing thing = thingList[i];
 					if (thing is IAttackTarget && thing != target)
 					{
-						float num3 = (thing == searcher) ? 40f : ((!(thing is Pawn)) ? 10f : (thing.def.race.Animal ? 7f : 18f));
+						float num3 = ((thing == searcher) ? 40f : ((!(thing is Pawn)) ? 10f : (thing.def.race.Animal ? 7f : 18f)));
 						num3 *= num2;
 						num3 = ((!searcher.Thing.HostileTo(thing)) ? (num3 * -1f) : (num3 * 0.6f));
 						num += num3;

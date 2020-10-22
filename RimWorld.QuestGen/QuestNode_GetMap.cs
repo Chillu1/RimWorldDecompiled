@@ -15,7 +15,7 @@ namespace RimWorld.QuestGen
 
 		protected override bool TestRunInt(Slate slate)
 		{
-			if (slate.TryGet(storeAs.GetValue(slate), out Map var) && IsAcceptableMap(var, slate))
+			if (slate.TryGet<Map>(storeAs.GetValue(slate), out var var) && IsAcceptableMap(var, slate))
 			{
 				return true;
 			}
@@ -30,7 +30,7 @@ namespace RimWorld.QuestGen
 		protected override void RunInt()
 		{
 			Slate slate = QuestGen.slate;
-			if ((!QuestGen.slate.TryGet(storeAs.GetValue(slate), out Map var) || !IsAcceptableMap(var, slate)) && TryFindMap(slate, out var))
+			if ((!QuestGen.slate.TryGet<Map>(storeAs.GetValue(slate), out var var) || !IsAcceptableMap(var, slate)) && TryFindMap(slate, out var))
 			{
 				QuestGen.slate.Set(storeAs.GetValue(slate), var);
 			}
@@ -38,7 +38,7 @@ namespace RimWorld.QuestGen
 
 		private bool TryFindMap(Slate slate, out Map map)
 		{
-			if (!preferMapWithMinFreeColonists.TryGetValue(slate, out int minCount))
+			if (!preferMapWithMinFreeColonists.TryGetValue(slate, out var minCount))
 			{
 				minCount = 1;
 			}
@@ -56,7 +56,7 @@ namespace RimWorld.QuestGen
 			{
 				return false;
 			}
-			if (mustBeInfestable.GetValue(slate) && !InfestationCellFinder.TryFindCell(out IntVec3 _, map))
+			if (mustBeInfestable.GetValue(slate) && !InfestationCellFinder.TryFindCell(out var _, map))
 			{
 				return false;
 			}

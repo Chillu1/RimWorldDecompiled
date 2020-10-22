@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 using Verse.Sound;
 
@@ -32,7 +32,7 @@ namespace Verse
 			Widgets.DrawMenuSection(rect2);
 			for (int i = 0; i < rows; i++)
 			{
-				int num3 = (i == 0) ? (tabs.Count - (rows - 1) * num) : num;
+				int num3 = ((i == 0) ? (tabs.Count - (rows - 1) * num) : num);
 				tmpTabs.Clear();
 				for (int j = num2; j < num2 + num3; j++)
 				{

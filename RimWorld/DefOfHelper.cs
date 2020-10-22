@@ -67,8 +67,12 @@ namespace RimWorld
 		{
 			if (!bindingNow)
 			{
-				string text = DirectXmlToObject.currentlyInstantiatingObjectOfType.Any() ? ("DirectXmlToObject is currently instantiating an object of type " + DirectXmlToObject.currentlyInstantiatingObjectOfType.Peek()) : ((Scribe.mode != LoadSaveMode.LoadingVars) ? "" : ("curParent=" + Scribe.loader.curParent.ToStringSafe() + " curPathRelToParent=" + Scribe.loader.curPathRelToParent));
+				string text = (DirectXmlToObject.currentlyInstantiatingObjectOfType.Any() ? ("DirectXmlToObject is currently instantiating an object of type " + DirectXmlToObject.currentlyInstantiatingObjectOfType.Peek()) : ((Scribe.mode != LoadSaveMode.LoadingVars) ? "" : ("curParent=" + Scribe.loader.curParent.ToStringSafe() + " curPathRelToParent=" + Scribe.loader.curPathRelToParent)));
 				Log.Warning("Tried to use an uninitialized DefOf of type " + defOf.Name + ". DefOfs are initialized right after all defs all loaded. Uninitialized DefOfs will return only nulls. (hint: don't use DefOfs as default field values in Defs, try to resolve them in ResolveReferences() instead)" + (text.NullOrEmpty() ? "" : (" Debug info: " + text)));
+			}
+			if (typeof(Def).IsAssignableFrom(defOf))
+			{
+				Log.Warning("Possible typo: " + defOf.Name + ". Using def type name not preceded by \"Of\"");
 			}
 		}
 	}

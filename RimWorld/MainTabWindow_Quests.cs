@@ -1,9 +1,9 @@
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
@@ -41,6 +41,8 @@ namespace RimWorld
 		private List<QuestPart> tmpQuestParts = new List<QuestPart>();
 
 		private string debugSendSignalTextField;
+
+		private bool showAll;
 
 		private const float LeftRectWidthFraction = 0.36f;
 
@@ -182,6 +184,14 @@ namespace RimWorld
 			rect2.yMin += 32f;
 			Widgets.DrawMenuSection(rect2);
 			TabDrawer.DrawTabs(rect2, tabs);
+			if (Prefs.DevMode)
+			{
+				Widgets.CheckboxLabeled(new Rect(rect.width - 135f, rect.height - 24f + 5f, 120f, 24f), "Dev: Show all", ref showAll);
+			}
+			else
+			{
+				showAll = false;
+			}
 			SortQuestsByTab();
 			if (tmpQuestsToShow.Count != 0)
 			{
@@ -390,7 +400,10 @@ namespace RimWorld
 				DoDefHyperlinks(rect3, ref curY);
 				float num2 = curY;
 				curY = num;
-				DoFactionInfo(rect4, ref curY);
+				if (!selected.root.hideFactionInfoInWindow)
+				{
+					DoFactionInfo(rect4, ref curY);
+				}
 				DoDebugInfoToggle(rect3, ref curY);
 				if (num2 > curY)
 				{
@@ -415,7 +428,7 @@ namespace RimWorld
 		private void DoDismissButton(Rect innerRect, ref float curY)
 		{
 			Rect rect = new Rect(innerRect.xMax - 32f - 4f, innerRect.y, 32f, 32f);
-			Texture2D tex = (!selected.Historical && selected.dismissed) ? ResumeQuestIcon : DismissIcon;
+			Texture2D tex = ((!selected.Historical && selected.dismissed) ? ResumeQuestIcon : DismissIcon);
 			if (Widgets.ButtonImage(rect, tex))
 			{
 				if (selected.Historical)
@@ -439,7 +452,7 @@ namespace RimWorld
 			}
 			if (Mouse.IsOver(rect))
 			{
-				string key = selected.Historical ? "DeleteQuest" : (selected.dismissed ? "UnDismissQuest" : "DismissQuest");
+				string key = (selected.Historical ? "DeleteQuest" : (selected.dismissed ? "UnDismissQuest" : "DismissQuest"));
 				TooltipHandler.TipRegion(rect, key.Translate());
 			}
 		}
@@ -461,7 +474,7 @@ namespace RimWorld
 			List<QuestPart> partsListForReading = selected.PartsListForReading;
 			for (int i = 0; i < partsListForReading.Count; i++)
 			{
-				questPart_Choice = (partsListForReading[i] as QuestPart_Choice);
+				questPart_Choice = partsListForReading[i] as QuestPart_Choice;
 				if (questPart_Choice != null)
 				{
 					break;
@@ -520,7 +533,7 @@ namespace RimWorld
 				Rect rect = new Rect(innerRect.x, num, innerRect.width, 25f);
 				GUI.color = TimeLimitColor;
 				Text.Anchor = TextAnchor.MiddleRight;
-				string text = selected.Historical ? GetAcceptedOnByString(selected) : GetAcceptedAgoByString(selected);
+				string text = (selected.Historical ? GetAcceptedOnByString(selected) : GetAcceptedAgoByString(selected));
 				Widgets.Label(rect, text);
 				GUI.color = Color.white;
 				Text.Anchor = TextAnchor.UpperLeft;
@@ -637,7 +650,7 @@ namespace RimWorld
 			if (num != 0)
 			{
 				bool flag = num > 1;
-				string text = "QuestAcceptanceRequirementsDescription".Translate() + (flag ? ": " : " ") + (flag ? ("\n" + enumerable.ToLineList("  - ", capitalizeItems: true)) : enumerable.First());
+				string text = "QuestAcceptanceRequirementsDescription".Translate() + (flag ? ": " : " ") + (flag ? ("\n" + enumerable.ToLineList("  - ", capitalizeItems: true)) : (enumerable.First() + "."));
 				curY += 17f;
 				float num2 = 0f;
 				float x = innerRect.x + 8f;
@@ -656,6 +669,7 @@ namespace RimWorld
 				Widgets.DrawBox(rect2, 2);
 				curY += num2;
 				GUI.color = Color.white;
+				new LookTargets(ListUnmetAcceptRequirementCulprits()).TryHighlight(arrow: true, colonistBar: true, circleOverlay: true);
 			}
 		}
 
@@ -675,11 +689,27 @@ namespace RimWorld
 			}
 		}
 
+		private IEnumerable<GlobalTargetInfo> ListUnmetAcceptRequirementCulprits()
+		{
+			for (int i = 0; i < selected.PartsListForReading.Count; i++)
+			{
+				QuestPart_RequirementsToAccept questPart_RequirementsToAccept = selected.PartsListForReading[i] as QuestPart_RequirementsToAccept;
+				if (questPart_RequirementsToAccept == null)
+				{
+					continue;
+				}
+				foreach (GlobalTargetInfo culprit in questPart_RequirementsToAccept.Culprits)
+				{
+					yield return culprit;
+				}
+			}
+		}
+
 		private void DoOutcomeInfo(Rect innerRect, ref float curY)
 		{
 			if (selected.Historical)
 			{
-				string text = (selected.State == QuestState.EndedOfferExpired) ? ((string)"QuestOutcomeInfo_OfferExpired".Translate()) : ((selected.State == QuestState.EndedUnknownOutcome || selected.State == QuestState.EndedSuccess) ? ((string)"QuestOutcomeInfo_UnknownOrSuccess".Translate()) : ((selected.State == QuestState.EndedFailed) ? ((string)"QuestOutcomeInfo_Failed".Translate()) : ((selected.State != QuestState.EndedInvalid) ? null : ((string)"QuestOutcomeInfo_Invalid".Translate()))));
+				string text = ((selected.State == QuestState.EndedOfferExpired) ? ((string)"QuestOutcomeInfo_OfferExpired".Translate()) : ((selected.State == QuestState.EndedUnknownOutcome || selected.State == QuestState.EndedSuccess) ? ((string)"QuestOutcomeInfo_UnknownOrSuccess".Translate()) : ((selected.State == QuestState.EndedFailed) ? ((string)"QuestOutcomeInfo_Failed".Translate()) : ((selected.State != QuestState.EndedInvalid) ? null : ((string)"QuestOutcomeInfo_Invalid".Translate())))));
 				if (!text.NullOrEmpty())
 				{
 					curY += 17f;
@@ -734,7 +764,7 @@ namespace RimWorld
 			List<QuestPart> partsListForReading = selected.PartsListForReading;
 			for (int i = 0; i < partsListForReading.Count; i++)
 			{
-				choice = (partsListForReading[i] as QuestPart_Choice);
+				choice = partsListForReading[i] as QuestPart_Choice;
 				if (choice != null)
 				{
 					break;
@@ -982,7 +1012,7 @@ namespace RimWorld
 			curY += 15f;
 			foreach (Faction involvedFaction in selected.InvolvedFactions)
 			{
-				if (involvedFaction != null && !involvedFaction.def.hidden && !involvedFaction.IsPlayer)
+				if (involvedFaction != null && !involvedFaction.Hidden && !involvedFaction.IsPlayer)
 				{
 					FactionUIUtility.DrawRelatedFactionInfo(rect, involvedFaction, ref curY);
 				}
@@ -1075,6 +1105,10 @@ namespace RimWorld
 
 		private bool ShouldListNow(Quest quest)
 		{
+			if (quest.hidden && !showAll)
+			{
+				return false;
+			}
 			switch (curTab)
 			{
 			case QuestsTab.Available:
@@ -1177,7 +1211,7 @@ namespace RimWorld
 										TaggedString t3 = null;
 										if (flag)
 										{
-											t3 = "RoyalWithConceitedTrait".Translate(arg, arg2, conceitedTraits.Select((Trait t) => t.CurrentData.label).ToCommaList(useAnd: true));
+											t3 = "RoyalWithConceitedTrait".Translate(arg, arg2, conceitedTraits.Select((Trait t) => t.Label).ToCommaList(useAnd: true));
 										}
 										TaggedString t4 = null;
 										if (flag2)

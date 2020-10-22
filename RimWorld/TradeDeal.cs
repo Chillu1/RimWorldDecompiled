@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -49,7 +49,7 @@ namespace RimWorld
 				{
 					continue;
 				}
-				if (!TradeSession.playerNegotiator.IsWorldPawn() && !InSellablePosition(item, out string reason))
+				if (!TradeSession.playerNegotiator.IsWorldPawn() && !InSellablePosition(item, out var reason))
 				{
 					if (reason != null && !cannotSellReasons.Contains(reason))
 					{
@@ -154,7 +154,7 @@ namespace RimWorld
 				LimitCurrencyCountToFunds();
 				int goodwillChange = FactionGiftUtility.GetGoodwillChange(tradeables, TradeSession.trader.Faction);
 				FactionGiftUtility.GiveGift(tradeables, TradeSession.trader.Faction, TradeSession.playerNegotiator);
-				actuallyTraded = ((float)goodwillChange > 0f);
+				actuallyTraded = (float)goodwillChange > 0f;
 				return true;
 			}
 			if (CurrencyTradeable == null || CurrencyTradeable.CountPostDealFor(Transactor.Colony) < 0)

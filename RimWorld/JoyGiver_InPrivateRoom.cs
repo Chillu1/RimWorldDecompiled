@@ -17,7 +17,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			if (!ownedRoom.Cells.Where((IntVec3 c) => c.Standable(pawn.Map) && !c.IsForbidden(pawn) && pawn.CanReserveAndReach(c, PathEndMode.OnCell, Danger.None)).TryRandomElement(out IntVec3 result))
+			if (!ownedRoom.Cells.Where((IntVec3 c) => c.Standable(pawn.Map) && !c.IsForbidden(pawn) && pawn.CanReserveAndReach(c, PathEndMode.OnCell, Danger.None)).TryRandomElement(out var result))
 			{
 				return null;
 			}

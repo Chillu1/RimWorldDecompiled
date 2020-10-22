@@ -37,12 +37,10 @@ namespace Verse
 			{
 				using (StreamReader input = new StreamReader(filePath))
 				{
-					using (XmlTextReader reader = new XmlTextReader(input))
-					{
-						XmlDocument xmlDocument = new XmlDocument();
-						xmlDocument.Load(reader);
-						curXmlParent = xmlDocument.DocumentElement;
-					}
+					using XmlTextReader reader = new XmlTextReader(input);
+					XmlDocument xmlDocument = new XmlDocument();
+					xmlDocument.Load(reader);
+					curXmlParent = xmlDocument.DocumentElement;
 				}
 				Scribe.mode = LoadSaveMode.LoadingVars;
 			}
@@ -65,21 +63,17 @@ namespace Verse
 			{
 				using (StreamReader input = new StreamReader(filePath))
 				{
-					using (XmlTextReader xmlTextReader = new XmlTextReader(input))
+					using XmlTextReader xmlTextReader = new XmlTextReader(input);
+					if (!ScribeMetaHeaderUtility.ReadToMetaElement(xmlTextReader))
 					{
-						if (!ScribeMetaHeaderUtility.ReadToMetaElement(xmlTextReader))
-						{
-							return;
-						}
-						using (XmlReader reader = xmlTextReader.ReadSubtree())
-						{
-							XmlDocument xmlDocument = new XmlDocument();
-							xmlDocument.Load(reader);
-							XmlElement xmlElement = xmlDocument.CreateElement("root");
-							xmlElement.AppendChild(xmlDocument.DocumentElement);
-							curXmlParent = xmlElement;
-						}
+						return;
 					}
+					using XmlReader reader = xmlTextReader.ReadSubtree();
+					XmlDocument xmlDocument = new XmlDocument();
+					xmlDocument.Load(reader);
+					XmlElement xmlElement = xmlDocument.CreateElement("root");
+					xmlElement.AppendChild(xmlDocument.DocumentElement);
+					curXmlParent = xmlElement;
 				}
 				Scribe.mode = LoadSaveMode.LoadingVars;
 			}

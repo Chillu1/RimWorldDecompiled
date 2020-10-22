@@ -58,7 +58,7 @@ namespace Verse.Sound
 				parent.End();
 				return;
 			}
-			float num = (!subDef.sustainLoop) ? resolvedGrain.duration : subDef.sustainLoopDurationRange.RandomInRange;
+			float num = ((!subDef.sustainLoop) ? resolvedGrain.duration : subDef.sustainLoopDurationRange.RandomInRange);
 			float num2 = Time.realtimeSinceStartup + num;
 			nextSampleStartTime = num2 + subDef.sustainIntervalRange.RandomInRange;
 			if (nextSampleStartTime < Time.realtimeSinceStartup + 0.01f)

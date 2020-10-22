@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -45,23 +45,16 @@ namespace RimWorld
 					}
 				}
 			}
-			switch (psychicDroneLevel)
+			return psychicDroneLevel switch
 			{
-			case PsychicDroneLevel.None:
-				return false;
-			case PsychicDroneLevel.GoodMedium:
-				return ThoughtState.ActiveAtStage(0);
-			case PsychicDroneLevel.BadLow:
-				return ThoughtState.ActiveAtStage(1);
-			case PsychicDroneLevel.BadMedium:
-				return ThoughtState.ActiveAtStage(2);
-			case PsychicDroneLevel.BadHigh:
-				return ThoughtState.ActiveAtStage(3);
-			case PsychicDroneLevel.BadExtreme:
-				return ThoughtState.ActiveAtStage(4);
-			default:
-				throw new NotImplementedException();
-			}
+				PsychicDroneLevel.None => false, 
+				PsychicDroneLevel.GoodMedium => ThoughtState.ActiveAtStage(0), 
+				PsychicDroneLevel.BadLow => ThoughtState.ActiveAtStage(1), 
+				PsychicDroneLevel.BadMedium => ThoughtState.ActiveAtStage(2), 
+				PsychicDroneLevel.BadHigh => ThoughtState.ActiveAtStage(3), 
+				PsychicDroneLevel.BadExtreme => ThoughtState.ActiveAtStage(4), 
+				_ => throw new NotImplementedException(), 
+			};
 		}
 	}
 }

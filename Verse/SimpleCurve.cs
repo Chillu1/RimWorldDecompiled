@@ -116,21 +116,14 @@ namespace Verse
 
 		public void RemovePointNear(CurvePoint point)
 		{
-			int num = 0;
-			while (true)
+			for (int i = 0; i < points.Count; i++)
 			{
-				if (num < points.Count)
+				if ((points[i].Loc - point.Loc).sqrMagnitude < 0.001f)
 				{
-					if ((points[num].Loc - point.Loc).sqrMagnitude < 0.001f)
-					{
-						break;
-					}
-					num++;
-					continue;
+					points.RemoveAt(i);
+					break;
 				}
-				return;
 			}
-			points.RemoveAt(num);
 		}
 
 		public float Evaluate(float x)
@@ -244,21 +237,14 @@ namespace Verse
 
 		public IEnumerable<string> ConfigErrors(string prefix)
 		{
-			int num = 0;
-			while (true)
+			for (int i = 0; i < points.Count - 1; i++)
 			{
-				if (num < points.Count - 1)
+				if (points[i + 1].x < points[i].x)
 				{
-					if (points[num + 1].x < points[num].x)
-					{
-						break;
-					}
-					num++;
-					continue;
+					yield return prefix + ": points are out of order";
+					break;
 				}
-				yield break;
 			}
-			yield return prefix + ": points are out of order";
 		}
 	}
 }

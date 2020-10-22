@@ -168,7 +168,7 @@ namespace RimWorld
 						return 0f;
 					}
 					LordToil_MarriageCeremony lordToil_MarriageCeremony = lord.CurLordToil as LordToil_MarriageCeremony;
-					if (lordToil_MarriageCeremony != null && !SpectatorCellFinder.TryFindSpectatorCellFor(p, lordToil_MarriageCeremony.Data.spectateRect, base.Map, out IntVec3 _, lordToil_MarriageCeremony.Data.spectateRectAllowedSides))
+					if (lordToil_MarriageCeremony != null && !SpectatorCellFinder.TryFindSpectatorCellFor(p, lordToil_MarriageCeremony.Data.spectateRect, base.Map, out var _, lordToil_MarriageCeremony.Data.spectateRectAllowedSides))
 					{
 						return 0f;
 					}

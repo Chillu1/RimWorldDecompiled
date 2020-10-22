@@ -1,7 +1,7 @@
-using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse.AI
@@ -134,8 +134,8 @@ namespace Verse.AI
 			{
 				return false;
 			}
-			int num = (!target.HasThing) ? 1 : target.Thing.stackCount;
-			int num2 = (stackCount == -1) ? num : stackCount;
+			int num = ((!target.HasThing) ? 1 : target.Thing.stackCount);
+			int num2 = ((stackCount == -1) ? num : stackCount);
 			if (num2 > num)
 			{
 				return false;
@@ -196,7 +196,7 @@ namespace Verse.AI
 			{
 				return 0;
 			}
-			int num = (!target.HasThing) ? 1 : target.Thing.stackCount;
+			int num = ((!target.HasThing) ? 1 : target.Thing.stackCount);
 			int num2 = 0;
 			if (!ignoreOtherReservations)
 			{
@@ -237,8 +237,8 @@ namespace Verse.AI
 				Log.Warning(claimant.ToStringSafe() + " tried to reserve thing " + target.ToStringSafe() + " without a valid job");
 				return false;
 			}
-			int num = (!target.HasThing) ? 1 : target.Thing.stackCount;
-			int num2 = (stackCount == -1) ? num : stackCount;
+			int num = ((!target.HasThing) ? 1 : target.Thing.stackCount);
+			int num2 = ((stackCount == -1) ? num : stackCount);
 			for (int i = 0; i < reservations.Count; i++)
 			{
 				Reservation reservation = reservations[i];
@@ -553,7 +553,7 @@ namespace Verse.AI
 					num = claimant.jobs.curDriver.CurToilIndex;
 				}
 			}
-			string text2 = (!target.HasThing || target.Thing.def.stackLimit == 1) ? "" : ("(current stack count: " + target.Thing.stackCount + ")");
+			string text2 = ((!target.HasThing || target.Thing.def.stackLimit == 1) ? "" : ("(current stack count: " + target.Thing.stackCount + ")"));
 			string text3 = "Could not reserve " + target.ToStringSafe() + text2 + " (layer: " + layer.ToStringSafe() + ") for " + claimant.ToStringSafe() + " for job " + job.ToStringSafe() + " (now doing job " + text + "(curToil=" + num + ")) for maxPawns " + maxPawns + " and stackCount " + stackCount + ".";
 			Pawn pawn = FirstRespectedReserver(target, claimant);
 			if (pawn != null)

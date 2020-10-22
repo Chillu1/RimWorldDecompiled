@@ -14,7 +14,29 @@ namespace Verse.AI
 			};
 			toil.defaultCompleteMode = ToilCompleteMode.Instant;
 			yield return toil;
-			yield return Toils_Combat.CastVerb(TargetIndex.A, TargetIndex.B, canHitNonTargetPawns: false);
+			Toil toil2 = Toils_Combat.CastVerb(TargetIndex.A, TargetIndex.B, canHitNonTargetPawns: false);
+			if (job.ability != null && job.ability.def.showCastingProgressBar && job.verbToUse != null)
+			{
+				toil2.WithProgressBar(TargetIndex.A, () => job.verbToUse.WarmupProgress);
+			}
+			yield return toil2;
+		}
+
+		public override void Notify_Starting()
+		{
+			base.Notify_Starting();
+			job.ability?.Notify_StartedCasting();
+		}
+
+		public override string GetReport()
+		{
+			string text = "";
+			text = ((job.ability == null || job.ability.def.targetRequired) ? base.GetReport() : ((string)"UsingVerbNoTarget".Translate(job.verbToUse.ReportLabel)));
+			if (job.ability != null && job.ability.def.showCastingProgressBar)
+			{
+				text += " " + "DurationLeft".Translate(job.verbToUse.WarmupTicksLeft.ToStringSecondsFromTicks()) + ".";
+			}
+			return text;
 		}
 	}
 }

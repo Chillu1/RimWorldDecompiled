@@ -1,8 +1,8 @@
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -36,7 +36,7 @@ namespace RimWorld
 
 		private Func<float> availableMassGetter;
 
-		private float extraHeaderSpace;
+		public float extraHeaderSpace;
 
 		private bool ignoreSpawnedCorpseGearAndInventoryMass;
 
@@ -56,6 +56,8 @@ namespace RimWorld
 
 		private bool playerPawnsReadOnly;
 
+		public bool readOnly;
+
 		private bool transferablesCached;
 
 		private Vector2 scrollPosition;
@@ -68,7 +70,7 @@ namespace RimWorld
 
 		private static List<TransferableCountToTransferStoppingPoint> stoppingPoints = new List<TransferableCountToTransferStoppingPoint>();
 
-		private const float TopAreaHeight = 37f;
+		public const float TopAreaHeight = 37f;
 
 		protected readonly Vector2 AcceptButtonSize = new Vector2(160f, 40f);
 
@@ -211,7 +213,7 @@ namespace RimWorld
 
 		public void OnGUI(Rect inRect)
 		{
-			OnGUI(inRect, out bool _);
+			OnGUI(inRect, out var _);
 		}
 
 		public void OnGUI(Rect inRect, out bool anythingChanged)
@@ -271,7 +273,7 @@ namespace RimWorld
 					}
 				}
 				float curY = 6f;
-				float availableMass = (availableMassGetter != null) ? availableMassGetter() : float.MaxValue;
+				float availableMass = ((availableMassGetter != null) ? availableMassGetter() : float.MaxValue);
 				Rect viewRect = new Rect(0f, 0f, mainRect.width - 16f, num);
 				Widgets.BeginScrollView(mainRect, ref scrollPosition, viewRect);
 				float num2 = scrollPosition.y - 30f;
@@ -330,12 +332,12 @@ namespace RimWorld
 			if (availableMassGetter != null && (!(trad.AnyThing is Pawn) || includePawnsMassInMassUsage))
 			{
 				float num = availableMass + GetMass(trad.AnyThing) * (float)trad.CountToTransfer;
-				int threshold = (!(num <= 0f)) ? Mathf.FloorToInt(num / GetMass(trad.AnyThing)) : 0;
+				int threshold = ((!(num <= 0f)) ? Mathf.FloorToInt(num / GetMass(trad.AnyThing)) : 0);
 				stoppingPoints.Add(new TransferableCountToTransferStoppingPoint(threshold, "M<", ">M"));
 			}
 			Pawn pawn = trad.AnyThing as Pawn;
 			bool flag = pawn != null && (pawn.IsColonist || pawn.IsPrisonerOfColony);
-			TransferableUIUtility.DoCountAdjustInterface(rect2, trad, index, 0, maxCount, flash: false, stoppingPoints, playerPawnsReadOnly && flag);
+			TransferableUIUtility.DoCountAdjustInterface(rect2, trad, index, 0, maxCount, flash: false, stoppingPoints, (playerPawnsReadOnly && flag) || readOnly);
 			width -= 240f;
 			if (drawMarketValue)
 			{
@@ -428,7 +430,7 @@ namespace RimWorld
 			{
 				return;
 			}
-			if (!cachedTicksUntilRot.TryGetValue(trad, out int value))
+			if (!cachedTicksUntilRot.TryGetValue(trad, out var value))
 			{
 				value = int.MaxValue;
 				for (int i = 0; i < trad.things.Count; i++)
@@ -609,7 +611,7 @@ namespace RimWorld
 			{
 				float cap = MassUtility.Capacity(pawn);
 				float gearMass = MassUtility.GearMass(pawn);
-				float invMass = InventoryCalculatorsUtility.ShouldIgnoreInventoryOf(pawn, ignorePawnInventoryMass) ? 0f : MassUtility.InventoryMass(pawn);
+				float invMass = (InventoryCalculatorsUtility.ShouldIgnoreInventoryOf(pawn, ignorePawnInventoryMass) ? 0f : MassUtility.InventoryMass(pawn));
 				float num = cap - gearMass - invMass;
 				if (num > 0f)
 				{

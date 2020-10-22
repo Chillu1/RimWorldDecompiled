@@ -1,7 +1,7 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.IO;
+using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse
@@ -12,12 +12,11 @@ namespace Verse
 
 		public override void Start()
 		{
-			Log.ResetMessageCount();
 			base.Start();
 			try
 			{
 				musicManagerPlay = new MusicManagerPlay();
-				FileInfo autostart = Root.checkedAutostartSaveFile ? null : SaveGameFilesUtility.GetAutostartSaveFile();
+				FileInfo autostart = (Root.checkedAutostartSaveFile ? null : SaveGameFilesUtility.GetAutostartSaveFile());
 				Root.checkedAutostartSaveFile = true;
 				if (autostart != null)
 				{

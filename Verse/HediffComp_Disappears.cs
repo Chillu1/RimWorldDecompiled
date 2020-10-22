@@ -1,3 +1,5 @@
+using RimWorld;
+
 namespace Verse
 {
 	public class HediffComp_Disappears : HediffComp
@@ -26,7 +28,7 @@ namespace Verse
 				{
 					return base.CompLabelInBracketsExtra;
 				}
-				return ticksToDisappear.TicksToSeconds().ToString("0.0");
+				return ticksToDisappear.ToStringTicksToPeriod(allowSeconds: true, shortForm: true);
 			}
 		}
 

@@ -1,10 +1,10 @@
-using RimWorld;
-using Steamworks;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using RimWorld;
+using Steamworks;
 
 namespace Verse.Steam
 {
@@ -200,7 +200,7 @@ namespace Verse.Steam
 			string text = "Steam Workshop Item details received:";
 			for (int i = 0; i < detailsQueryCount; i++)
 			{
-				SteamUGC.GetQueryUGCResult(detailsQueryHandle, (uint)i, out SteamUGCDetails_t pDetails);
+				SteamUGC.GetQueryUGCResult(detailsQueryHandle, (uint)i, out var pDetails);
 				if (pDetails.m_eResult != EResult.k_EResultOK)
 				{
 					text = text + "\n  Query result: " + pDetails.m_eResult;
@@ -229,7 +229,7 @@ namespace Verse.Steam
 
 		public static void GetUpdateStatus(out EItemUpdateStatus updateStatus, out float progPercent)
 		{
-			updateStatus = SteamUGC.GetItemUpdateProgress(curUpdateHandle, out ulong punBytesProcessed, out ulong punBytesTotal);
+			updateStatus = SteamUGC.GetItemUpdateProgress(curUpdateHandle, out var punBytesProcessed, out var punBytesTotal);
 			progPercent = (float)punBytesProcessed / (float)punBytesTotal;
 		}
 
@@ -306,7 +306,7 @@ namespace Verse.Steam
 				return "[unpublished]";
 			}
 			string str = string.Concat("[", pfid, "] ");
-			if (SteamUGC.GetItemInstallInfo(pfid, out ulong punSizeOnDisk, out string pchFolder, 257u, out uint _))
+			if (SteamUGC.GetItemInstallInfo(pfid, out var punSizeOnDisk, out var pchFolder, 257u, out var _))
 			{
 				str += "\n      installed";
 				str = str + "\n      folder=" + pchFolder;

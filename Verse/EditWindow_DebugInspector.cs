@@ -1,8 +1,8 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
 using UnityEngine;
 using UnityEngine.Profiling;
 using Verse.AI;
@@ -323,16 +323,22 @@ namespace Verse
 						foreach (Thing item6 in Find.CurrentMap.thingGrid.ThingsAt(intVec))
 						{
 							Apparel apparel2 = item6 as Apparel;
-							if (apparel2 != null)
+							if (apparel2 == null)
 							{
-								stringBuilder.AppendLine(apparel2.LabelCap);
-								stringBuilder.AppendLine("   raw: " + JobGiver_OptimizeApparel.ApparelScoreRaw(null, apparel2).ToString("F2"));
-								Pawn pawn = Find.Selector.SingleSelectedThing as Pawn;
-								if (pawn != null)
+								continue;
+							}
+							stringBuilder.AppendLine(apparel2.LabelCap);
+							stringBuilder.AppendLine("   raw: " + JobGiver_OptimizeApparel.ApparelScoreRaw(null, apparel2).ToString("F2"));
+							Pawn pawn = Find.Selector.SingleSelectedThing as Pawn;
+							if (pawn != null)
+							{
+								List<float> list = new List<float>();
+								for (int j = 0; j < pawn.apparel.WornApparel.Count; j++)
 								{
-									stringBuilder.AppendLine("  Pawn: " + pawn);
-									stringBuilder.AppendLine("  gain: " + JobGiver_OptimizeApparel.ApparelScoreGain(pawn, apparel2).ToString("F2"));
+									list.Add(JobGiver_OptimizeApparel.ApparelScoreRaw(pawn, pawn.apparel.WornApparel[j]));
 								}
+								stringBuilder.AppendLine("  Pawn: " + pawn);
+								stringBuilder.AppendLine("  gain: " + JobGiver_OptimizeApparel.ApparelScoreGain_NewTmp(pawn, apparel2, list).ToString("F2"));
 							}
 						}
 					}
@@ -446,9 +452,9 @@ namespace Verse
 						if (pawn2 != null)
 						{
 							List<Thing> thingList = intVec.GetThingList(Find.CurrentMap);
-							for (int j = 0; j < thingList.Count; j++)
+							for (int k = 0; k < thingList.Count; k++)
 							{
-								Pawn pawn3 = thingList[j] as Pawn;
+								Pawn pawn3 = thingList[k] as Pawn;
 								if (pawn3 != null)
 								{
 									stringBuilder.AppendLine("---");

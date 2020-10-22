@@ -8,15 +8,15 @@ namespace RimWorld
 {
 	public static class GatherAnimalsAndSlavesForCaravanUtility
 	{
+		[Obsolete]
 		public static bool IsFollowingAnyone(Pawn p)
 		{
-			return p.mindState.duty.focus.HasThing;
+			return false;
 		}
 
+		[Obsolete]
 		public static void SetFollower(Pawn p, Pawn follower)
 		{
-			p.mindState.duty.focus = follower;
-			p.mindState.duty.radius = 10f;
 		}
 
 		public static void CheckArrived(Lord lord, List<Pawn> pawns, IntVec3 meetingPoint, string memo, Predicate<Pawn> shouldCheckIfArrived, Predicate<Pawn> extraValidator = null)

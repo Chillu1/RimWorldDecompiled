@@ -49,11 +49,22 @@ namespace RimWorld
 
 		public static EffecterDef Interceptor_BlockedProjectile;
 
+		public static EffecterDef DisabledByEMP;
+
 		[MayRequireRoyalty]
 		public static EffecterDef ActivatorProximityTriggered;
 
 		[MayRequireRoyalty]
-		public static EffecterDef DisabledByEMP;
+		public static EffecterDef Skip_Entry;
+
+		[MayRequireRoyalty]
+		public static EffecterDef Skip_Exit;
+
+		[MayRequireRoyalty]
+		public static EffecterDef Skip_EntryNoDelay;
+
+		[MayRequireRoyalty]
+		public static EffecterDef Skip_ExitNoDelay;
 
 		static EffecterDefOf()
 		{

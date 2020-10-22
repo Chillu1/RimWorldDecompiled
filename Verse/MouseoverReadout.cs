@@ -58,7 +58,7 @@ namespace Verse
 			TerrainDef terrain = c.GetTerrain(Find.CurrentMap);
 			if (terrain != cachedTerrain)
 			{
-				string t = ((double)terrain.fertility > 0.0001) ? (" " + "FertShort".TranslateSimple() + " " + terrain.fertility.ToStringPercent()) : "";
+				string t = (((double)terrain.fertility > 0.0001) ? (" " + "FertShort".TranslateSimple() + " " + terrain.fertility.ToStringPercent()) : "");
 				cachedTerrainString = terrain.LabelCap + ((terrain.passability != Traversability.Impassable) ? (" (" + "WalkSpeed".Translate(SpeedPercentString(terrain.pathCost)) + t + ")") : ((TaggedString)null));
 				cachedTerrain = terrain;
 			}

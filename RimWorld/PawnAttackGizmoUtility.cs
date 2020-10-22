@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Verse;
@@ -40,7 +41,7 @@ namespace RimWorld
 			command_Target.targetingParams = TargetingParameters.ForAttackAny();
 			command_Target.hotKey = KeyBindingDefOf.Misc1;
 			command_Target.icon = TexCommand.SquadAttack;
-			if (FloatMenuUtility.GetAttackAction(pawn, LocalTargetInfo.Invalid, out string failStr) == null)
+			if (FloatMenuUtility.GetAttackAction(pawn, LocalTargetInfo.Invalid, out var failStr) == null)
 			{
 				command_Target.Disable(failStr.CapitalizeFirst() + ".");
 			}
@@ -52,7 +53,16 @@ namespace RimWorld
 					return pawn2 != null && pawn2.IsColonistPlayerControlled && pawn2.Drafted;
 				}).Cast<Pawn>())
 				{
-					FloatMenuUtility.GetAttackAction(item, target, out string _)?.Invoke();
+					string failStr2;
+					Action attackAction = FloatMenuUtility.GetAttackAction(item, target, out failStr2);
+					if (attackAction != null)
+					{
+						attackAction();
+					}
+					else if (!failStr2.NullOrEmpty())
+					{
+						Messages.Message(failStr2, target, MessageTypeDefOf.RejectInput, historical: false);
+					}
 				}
 			};
 			return command_Target;
@@ -79,7 +89,7 @@ namespace RimWorld
 			command_Target.targetingParams = TargetingParameters.ForAttackAny();
 			command_Target.hotKey = KeyBindingDefOf.Misc2;
 			command_Target.icon = TexCommand.AttackMelee;
-			if (FloatMenuUtility.GetMeleeAttackAction(pawn, LocalTargetInfo.Invalid, out string failStr) == null)
+			if (FloatMenuUtility.GetMeleeAttackAction(pawn, LocalTargetInfo.Invalid, out var failStr) == null)
 			{
 				command_Target.Disable(failStr.CapitalizeFirst() + ".");
 			}
@@ -91,7 +101,16 @@ namespace RimWorld
 					return pawn2 != null && pawn2.IsColonistPlayerControlled && pawn2.Drafted;
 				}).Cast<Pawn>())
 				{
-					FloatMenuUtility.GetMeleeAttackAction(item, target, out string _)?.Invoke();
+					string failStr2;
+					Action meleeAttackAction = FloatMenuUtility.GetMeleeAttackAction(item, target, out failStr2);
+					if (meleeAttackAction != null)
+					{
+						meleeAttackAction();
+					}
+					else if (!failStr2.NullOrEmpty())
+					{
+						Messages.Message(failStr2, target, MessageTypeDefOf.RejectInput, historical: false);
+					}
 				}
 			};
 			return command_Target;
@@ -139,7 +158,7 @@ namespace RimWorld
 				Pawn pawn = selectedObjectsListForReading[i] as Pawn;
 				if (pawn != null && pawn.IsColonistPlayerControlled)
 				{
-					ThingDef thingDef2 = (pawn.equipment != null && pawn.equipment.Primary != null) ? pawn.equipment.Primary.def : null;
+					ThingDef thingDef2 = ((pawn.equipment != null && pawn.equipment.Primary != null) ? pawn.equipment.Primary.def : null);
 					if (!flag)
 					{
 						thingDef = thingDef2;

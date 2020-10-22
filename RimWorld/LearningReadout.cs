@@ -129,7 +129,7 @@ namespace RimWorld
 				{
 					GenUI.DrawFlash(rect.x, rect.center.y, (float)UI.screenWidth * 0.6f, Pulser.PulseBrightness(1f, 1f, num) * 0.85f, new Color(0.8f, 0.77f, 0.53f));
 				}
-				ConceptDef conceptDef = (selectedConcept != null) ? selectedConcept : mouseoverConcept;
+				ConceptDef conceptDef = ((selectedConcept != null) ? selectedConcept : mouseoverConcept);
 				if (conceptDef != null)
 				{
 					DrawInfoPane(conceptDef);

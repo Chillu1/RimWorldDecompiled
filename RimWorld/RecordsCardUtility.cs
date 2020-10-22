@@ -67,7 +67,7 @@ namespace RimWorld
 		private static float DrawRecord(float x, float y, float width, RecordDef record, Pawn pawn)
 		{
 			float num = width * 0.45f;
-			string text = (record.type != 0) ? pawn.records.GetValue(record).ToString("0.##") : pawn.records.GetAsInt(record).ToStringTicksToPeriod();
+			string text = ((record.type != 0) ? pawn.records.GetValue(record).ToString("0.##") : pawn.records.GetAsInt(record).ToStringTicksToPeriod());
 			Rect rect = new Rect(8f, y, width, Text.CalcHeight(text, num));
 			if (Mouse.IsOver(rect))
 			{

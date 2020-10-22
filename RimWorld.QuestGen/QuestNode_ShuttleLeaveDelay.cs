@@ -33,7 +33,7 @@ namespace RimWorld.QuestGen
 		{
 			Slate slate = QuestGen.slate;
 			QuestPart_ShuttleLeaveDelay questPart_ShuttleLeaveDelay = new QuestPart_ShuttleLeaveDelay();
-			questPart_ShuttleLeaveDelay.inSignalEnable = (QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart_ShuttleLeaveDelay.inSignalEnable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			questPart_ShuttleLeaveDelay.delayTicks = delayTicks.GetValue(slate);
 			questPart_ShuttleLeaveDelay.shuttle = shuttle.GetValue(slate);
 			questPart_ShuttleLeaveDelay.expiryInfoPart = "ShuttleDepartsIn".Translate();

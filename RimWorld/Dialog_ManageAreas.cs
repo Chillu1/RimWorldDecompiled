@@ -47,7 +47,7 @@ namespace RimWorld
 				}
 				if (listing_Standard.ButtonText("NewArea".Translate()))
 				{
-					map.areaManager.TryMakeNewAllowed(out Area_Allowed _);
+					map.areaManager.TryMakeNewAllowed(out var _);
 				}
 			}
 			listing_Standard.End();

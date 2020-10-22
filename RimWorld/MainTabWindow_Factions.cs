@@ -8,10 +8,26 @@ namespace RimWorld
 
 		private float scrollViewHeight;
 
+		private Faction scrollToFaction;
+
+		public override void PreOpen()
+		{
+			scrollToFaction = null;
+		}
+
+		public void ScrollToFaction(Faction faction)
+		{
+			scrollToFaction = faction;
+		}
+
 		public override void DoWindowContents(Rect fillRect)
 		{
 			base.DoWindowContents(fillRect);
-			FactionUIUtility.DoWindowContents(fillRect, ref scrollPosition, ref scrollViewHeight);
+			FactionUIUtility.DoWindowContents_NewTemp(fillRect, ref scrollPosition, ref scrollViewHeight, scrollToFaction);
+			if (scrollToFaction != null)
+			{
+				scrollToFaction = null;
+			}
 		}
 	}
 }

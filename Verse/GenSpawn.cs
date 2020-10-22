@@ -1,7 +1,7 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 
 namespace Verse
 {
@@ -272,6 +272,10 @@ namespace Verse
 			{
 				return false;
 			}
+			if (thingDef.category == ThingCategory.PsychicEmitter)
+			{
+				return thingDef2.category == ThingCategory.PsychicEmitter;
+			}
 			if (thingDef2.category == ThingCategory.Filth && thingDef.passability != 0)
 			{
 				return true;
@@ -336,6 +340,10 @@ namespace Verse
 			if (thingDef.IsEdifice())
 			{
 				if (thingDef.BlockPlanting && thingDef2.category == ThingCategory.Plant)
+				{
+					return true;
+				}
+				if (thingDef2.category == ThingCategory.PsychicEmitter)
 				{
 					return true;
 				}

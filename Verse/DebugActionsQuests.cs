@@ -1,9 +1,9 @@
-using RimWorld;
-using RimWorld.QuestGen;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
+using RimWorld.QuestGen;
 using UnityEngine;
 
 namespace Verse
@@ -42,91 +42,197 @@ namespace Verse
 			GenerateQuests(30, logDescOnly: false);
 		}
 
-		private static void GenerateQuests(int count, bool logDescOnly)
+		[DebugAction("Quests", "Generate quests (1x for each points)", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void GenerateQuestsSamples()
 		{
 			List<DebugMenuOption> list = new List<DebugMenuOption>();
-			Action<QuestScriptDef> generate = delegate(QuestScriptDef script)
+			foreach (QuestScriptDef scriptDef in DefDatabase<QuestScriptDef>.AllDefs.Where((QuestScriptDef x) => x.IsRootAny))
 			{
-				List<DebugMenuOption> list2 = new List<DebugMenuOption>();
+				list.Add(new DebugMenuOption(scriptDef.defName, DebugMenuOptionMode.Action, delegate
+				{
+					foreach (float item in DebugActionsUtility.PointsOptions(extended: false))
+					{
+						try
+						{
+							if (!scriptDef.CanRun(item))
+							{
+								Log.Error("Cannot generate quest " + scriptDef.defName + " for " + item + " points!");
+							}
+							else
+							{
+								Quest quest = QuestUtility.GenerateQuestAndMakeAvailable(scriptDef, item);
+								quest.name = item + ": " + quest.name;
+							}
+						}
+						catch (Exception ex)
+						{
+							Log.Error("Exception generating quest " + scriptDef.defName + " for " + item + " points!\n\n" + ex.Message + "\n-------------\n" + ex.StackTrace);
+						}
+					}
+				}));
+			}
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list.OrderBy((DebugMenuOption op) => op.label)));
+		}
+
+		private static void GenerateQuests(int count, bool logDescOnly)
+		{
+			Action<QuestScriptDef, Slate> generateQuest = delegate(QuestScriptDef script, Slate slate)
+			{
+				int num = 0;
+				for (int i = 0; i < count; i++)
+				{
+					if (script.IsRootDecree)
+					{
+						Pawn pawn = slate.Get<Pawn>("asker");
+						if (pawn.royalty.AllTitlesForReading.NullOrEmpty())
+						{
+							pawn.royalty.SetTitle(Faction.Empire, RoyalTitleDefOf.Knight, grantRewards: false);
+							Messages.Message("Dev: Gave " + RoyalTitleDefOf.Knight.label + " title to " + pawn.LabelCap, pawn, MessageTypeDefOf.NeutralEvent, historical: false);
+						}
+						Find.CurrentMap.StoryState.RecordDecreeFired(script);
+					}
+					if (count != 1 && !script.CanRun(slate))
+					{
+						num++;
+					}
+					else if (!logDescOnly)
+					{
+						Quest quest = QuestUtility.GenerateQuestAndMakeAvailable(script, slate);
+						if (!quest.hidden)
+						{
+							QuestUtility.SendLetterQuestAvailable(quest);
+						}
+					}
+					else
+					{
+						Quest quest2 = QuestUtility.GenerateQuestAndMakeAvailable(script, slate);
+						string text2 = quest2.name;
+						if (slate.Exists("points"))
+						{
+							text2 = text2 + "(" + slate.Get("points", 0f) + " points)";
+						}
+						if (slate.Exists("population"))
+						{
+							text2 = text2 + "(" + slate.Get("population", 0) + " population)";
+						}
+						text2 += "\n--------------\n" + quest2.description + "\n--------------";
+						Log.Message(text2);
+						Find.QuestManager.Remove(quest2);
+					}
+				}
+				if (num != 0)
+				{
+					Messages.Message("Dev: Generated only " + (count - num) + " quests.", MessageTypeDefOf.RejectInput, historical: false);
+				}
+			};
+			Action<QuestScriptDef, Slate, Action> selectPoints = delegate(QuestScriptDef script, Slate slate, Action next)
+			{
+				List<DebugMenuOption> list3 = new List<DebugMenuOption>();
 				float localPoints = default(float);
-				Slate testSlate = default(Slate);
 				foreach (float item in DebugActionsUtility.PointsOptions(extended: false))
 				{
 					localPoints = item;
-					string text = item.ToString("F0");
-					testSlate = new Slate();
-					testSlate.Set("points", localPoints);
+					string text = item.ToString("F0") + " points";
 					if (script != null)
 					{
 						if (script.IsRootDecree)
 						{
-							testSlate.Set("asker", PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists.RandomElement());
+							slate.Set("asker", PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists.RandomElement());
 						}
 						if (script == QuestScriptDefOf.LongRangeMineralScannerLump)
 						{
-							testSlate.Set("targetMineable", ThingDefOf.MineableGold);
-							testSlate.Set("worker", PawnsFinder.AllMaps_FreeColonists.FirstOrDefault());
+							slate.Set("targetMineableThing", ThingDefOf.Gold);
+							slate.Set("targetMineable", ThingDefOf.MineableGold);
+							slate.Set("worker", PawnsFinder.AllMaps_FreeColonists.FirstOrDefault());
 						}
-						if (!script.CanRun(testSlate))
+						slate.Set("points", localPoints);
+						if (!script.CanRun(slate))
 						{
 							text += " [not now]";
 						}
 					}
-					list2.Add(new DebugMenuOption(text, DebugMenuOptionMode.Action, delegate
+					list3.Add(new DebugMenuOption(text, DebugMenuOptionMode.Action, delegate
 					{
-						int num = 0;
-						bool flag = script == null;
-						for (int i = 0; i < count; i++)
-						{
-							if (flag)
-							{
-								script = NaturalRandomQuestChooser.ChooseNaturalRandomQuest(localPoints, Find.CurrentMap);
-								Find.CurrentMap.StoryState.RecordRandomQuestFired(script);
-							}
-							if (script.IsRootDecree)
-							{
-								Pawn pawn = testSlate.Get<Pawn>("asker");
-								if (pawn.royalty.AllTitlesForReading.NullOrEmpty())
-								{
-									pawn.royalty.SetTitle(Faction.Empire, RoyalTitleDefOf.Knight, grantRewards: false);
-									Messages.Message("Dev: Gave " + RoyalTitleDefOf.Knight.label + " title to " + pawn.LabelCap, pawn, MessageTypeDefOf.NeutralEvent, historical: false);
-								}
-								Find.CurrentMap.StoryState.RecordDecreeFired(script);
-							}
-							if (count != 1 && !script.CanRun(testSlate))
-							{
-								num++;
-							}
-							else if (!logDescOnly)
-							{
-								QuestUtility.SendLetterQuestAvailable(QuestUtility.GenerateQuestAndMakeAvailable(script, testSlate));
-							}
-							else
-							{
-								Quest quest = QuestUtility.GenerateQuestAndMakeAvailable(script, testSlate);
-								Log.Message(quest.name + " (" + localPoints + " points)\n--------------\n" + quest.description + "\n--------------");
-								Find.QuestManager.Remove(quest);
-							}
-						}
-						if (num != 0)
-						{
-							Messages.Message("Dev: Generated only " + (count - num) + " quests.", MessageTypeDefOf.RejectInput, historical: false);
-						}
+						slate.Set("points", localPoints);
+						next();
+					}));
+				}
+				Find.WindowStack.Add(new Dialog_DebugOptionListLister(list3));
+			};
+			Action<Slate, Action> selectPopulation = delegate(Slate slate, Action next)
+			{
+				List<DebugMenuOption> list2 = new List<DebugMenuOption>
+				{
+					new DebugMenuOption("*Don't set", DebugMenuOptionMode.Action, next)
+				};
+				int localPopulation = default(int);
+				foreach (int item2 in DebugActionsUtility.PopulationOptions())
+				{
+					localPopulation = item2;
+					list2.Add(new DebugMenuOption(item2.ToString("F0") + " colony population", DebugMenuOptionMode.Action, delegate
+					{
+						slate.Set("population", localPopulation);
+						next();
 					}));
 				}
 				Find.WindowStack.Add(new Dialog_DebugOptionListLister(list2));
 			};
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
 			list.Add(new DebugMenuOption("*Natural random", DebugMenuOptionMode.Action, delegate
 			{
-				generate(null);
+				Slate slate3 = new Slate();
+				selectPoints(null, slate3, delegate
+				{
+					float points = slate3.Get("points", 0f);
+					QuestScriptDef script2 = NaturalRandomQuestChooser.ChooseNaturalRandomQuest(points, Find.CurrentMap);
+					if (script2.affectedByPopulation)
+					{
+						selectPopulation(slate3, delegate
+						{
+							generateQuest(script2, slate3);
+						});
+					}
+					else
+					{
+						generateQuest(script2, slate3);
+					}
+				});
 			}));
-			foreach (QuestScriptDef item2 in DefDatabase<QuestScriptDef>.AllDefs.Where((QuestScriptDef x) => x.IsRootAny))
+			foreach (QuestScriptDef scriptDef in DefDatabase<QuestScriptDef>.AllDefs.Where((QuestScriptDef x) => x.IsRootAny))
 			{
-				QuestScriptDef localRuleDef = item2;
-				string defName = localRuleDef.defName;
+				QuestScriptDef localScriptDef = scriptDef;
+				string defName = localScriptDef.defName;
 				list.Add(new DebugMenuOption(defName, DebugMenuOptionMode.Action, delegate
 				{
-					generate(localRuleDef);
+					Slate slate2 = new Slate();
+					if (localScriptDef.affectedByPoints && localScriptDef.affectedByPopulation)
+					{
+						selectPoints(localScriptDef, slate2, delegate
+						{
+							selectPopulation(slate2, delegate
+							{
+								generateQuest(localScriptDef, slate2);
+							});
+						});
+					}
+					else if (scriptDef.affectedByPoints)
+					{
+						selectPoints(localScriptDef, slate2, delegate
+						{
+							generateQuest(localScriptDef, slate2);
+						});
+					}
+					else if (localScriptDef.affectedByPopulation)
+					{
+						selectPopulation(slate2, delegate
+						{
+							generateQuest(localScriptDef, slate2);
+						});
+					}
+					else
+					{
+						generateQuest(localScriptDef, slate2);
+					}
 				}));
 			}
 			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list.OrderBy((DebugMenuOption op) => op.label)));

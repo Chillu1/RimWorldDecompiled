@@ -10,10 +10,11 @@ namespace RimWorld
 		{
 			Job job = JobMaker.MakeJob(JobDefOf.Ingest, drug);
 			job.count = Mathf.Min(drug.stackCount, drug.def.ingestible.maxNumToIngestAtOnce, maxNumToCarry);
-			if (drug.Spawned && pawn.drugs != null && !pawn.inventory.innerContainer.Contains(drug.def))
+			if (pawn.drugs != null)
 			{
 				DrugPolicyEntry drugPolicyEntry = pawn.drugs.CurrentPolicy[drug.def];
-				if (drugPolicyEntry.allowScheduled)
+				int num = pawn.inventory.innerContainer.TotalStackCountOfDef(drug.def) - job.count;
+				if (drugPolicyEntry.allowScheduled && num <= 0)
 				{
 					job.takeExtraIngestibles = drugPolicyEntry.takeToInventory;
 				}

@@ -6,6 +6,14 @@ namespace RimWorld
 {
 	public static class FireUtility
 	{
+		private static readonly SimpleCurve ChanceToCatchFirePerSecondForPawnFromFlammability = new SimpleCurve
+		{
+			new CurvePoint(0f, 0f),
+			new CurvePoint(0.1f, 0.07f),
+			new CurvePoint(0.3f, 1f),
+			new CurvePoint(1f, 1f)
+		};
+
 		public static bool CanEverAttachFire(this Thing t)
 		{
 			if (t.Destroyed)
@@ -30,7 +38,7 @@ namespace RimWorld
 		public static float ChanceToStartFireIn(IntVec3 c, Map map)
 		{
 			List<Thing> thingList = c.GetThingList(map);
-			float num = c.TerrainFlammableNow(map) ? c.GetTerrain(map).GetStatValueAbstract(StatDefOf.Flammability) : 0f;
+			float num = (c.TerrainFlammableNow(map) ? c.GetTerrain(map).GetStatValueAbstract(StatDefOf.Flammability) : 0f);
 			for (int i = 0; i < thingList.Count; i++)
 			{
 				Thing thing = thingList[i];
@@ -72,6 +80,25 @@ namespace RimWorld
 			obj.fireSize = fireSize;
 			GenSpawn.Spawn(obj, c, map, Rot4.North);
 			return true;
+		}
+
+		public static float ChanceToAttachFireFromEvent(Thing t)
+		{
+			return ChanceToAttachFireCumulative(t, 60f);
+		}
+
+		public static float ChanceToAttachFireCumulative(Thing t, float freqInTicks)
+		{
+			if (!t.CanEverAttachFire())
+			{
+				return 0f;
+			}
+			if (t.HasAttachment(ThingDefOf.Fire))
+			{
+				return 0f;
+			}
+			float num = ChanceToCatchFirePerSecondForPawnFromFlammability.Evaluate(t.GetStatValue(StatDefOf.Flammability));
+			return 1f - Mathf.Pow(1f - num, freqInTicks / 60f);
 		}
 
 		public static void TryAttachFire(this Thing t, float fireSize)

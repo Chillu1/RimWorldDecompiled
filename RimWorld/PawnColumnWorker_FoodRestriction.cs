@@ -31,23 +31,16 @@ namespace RimWorld
 
 		private IEnumerable<Widgets.DropdownMenuElement<FoodRestriction>> Button_GenerateMenu(Pawn pawn)
 		{
-			_003C_003Ec__DisplayClass4_0 _003C_003Ec__DisplayClass4_ = new _003C_003Ec__DisplayClass4_0();
-			_003C_003Ec__DisplayClass4_.pawn = pawn;
-			using (List<FoodRestriction>.Enumerator enumerator = Current.Game.foodRestrictionDatabase.AllFoodRestrictions.GetEnumerator())
+			foreach (FoodRestriction foodRestriction in Current.Game.foodRestrictionDatabase.AllFoodRestrictions)
 			{
-				while (enumerator.MoveNext())
+				yield return new Widgets.DropdownMenuElement<FoodRestriction>
 				{
-					_003C_003Ec__DisplayClass4_0 _003C_003Ec__DisplayClass4_2 = _003C_003Ec__DisplayClass4_;
-					FoodRestriction foodRestriction = enumerator.Current;
-					yield return new Widgets.DropdownMenuElement<FoodRestriction>
+					option = new FloatMenuOption(foodRestriction.label, delegate
 					{
-						option = new FloatMenuOption(foodRestriction.label, delegate
-						{
-							_003C_003Ec__DisplayClass4_2.pawn.foodRestriction.CurrentFoodRestriction = foodRestriction;
-						}),
-						payload = foodRestriction
-					};
-				}
+						pawn.foodRestriction.CurrentFoodRestriction = foodRestriction;
+					}),
+					payload = foodRestriction
+				};
 			}
 		}
 

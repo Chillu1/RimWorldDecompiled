@@ -95,7 +95,7 @@ namespace Verse
 				byte b2 = 1;
 				for (int j = 0; j < elements; j++)
 				{
-					arr[j] = ((arr2[num3] & b2) != 0);
+					arr[j] = (arr2[num3] & b2) != 0;
 					b2 = (byte)(b2 * 2);
 					if (b2 > 32)
 					{
@@ -109,7 +109,7 @@ namespace Verse
 			byte b3 = 1;
 			for (int k = 0; k < elements; k++)
 			{
-				arr[k] = ((arr2[num4] & b3) != 0);
+				arr[k] = (arr2[num4] & b3) != 0;
 				b3 = (byte)(b3 * 2);
 				if (b3 == 0)
 				{

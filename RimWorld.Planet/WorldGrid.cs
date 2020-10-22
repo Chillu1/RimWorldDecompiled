@@ -113,8 +113,8 @@ namespace RimWorld.Planet
 				return 0f;
 			}
 			Vector3 northPolePos = NorthPolePos;
-			WorldRendererUtility.GetTangentialVectorFacing(from, northPolePos, out Vector3 forward, out Vector3 right);
-			WorldRendererUtility.GetTangentialVectorFacing(from, to, out Vector3 forward2, out Vector3 _);
+			WorldRendererUtility.GetTangentialVectorFacing(from, northPolePos, out var forward, out var right);
+			WorldRendererUtility.GetTangentialVectorFacing(from, to, out var forward2, out var _);
 			float num = Vector3.Angle(forward, forward2);
 			if (Vector3.Dot(forward2, right) < 0f)
 			{
@@ -240,7 +240,7 @@ namespace RimWorld.Planet
 
 		public Vector3 GetTileCenter(int tileID)
 		{
-			int num = (tileID + 1 < tileIDToVerts_offsets.Count) ? tileIDToVerts_offsets[tileID + 1] : verts.Count;
+			int num = ((tileID + 1 < tileIDToVerts_offsets.Count) ? tileIDToVerts_offsets[tileID + 1] : verts.Count);
 			Vector3 zero = Vector3.zero;
 			int num2 = 0;
 			for (int i = tileIDToVerts_offsets[tileID]; i < num; i++)
@@ -332,7 +332,7 @@ namespace RimWorld.Planet
 				return null;
 			}
 			Tile tile = tiles[fromTile];
-			List<Tile.RoadLink> list = visibleOnly ? tile.Roads : tile.potentialRoads;
+			List<Tile.RoadLink> list = (visibleOnly ? tile.Roads : tile.potentialRoads);
 			if (list == null)
 			{
 				return null;
@@ -402,7 +402,7 @@ namespace RimWorld.Planet
 				return null;
 			}
 			Tile tile = tiles[fromTile];
-			List<Tile.RiverLink> list = visibleOnly ? tile.Rivers : tile.potentialRivers;
+			List<Tile.RiverLink> list = (visibleOnly ? tile.Rivers : tile.potentialRivers);
 			if (list == null)
 			{
 				return null;
@@ -501,7 +501,7 @@ namespace RimWorld.Planet
 				return int.MaxValue;
 			}
 			int finalDist = int.MaxValue;
-			int maxTilesToProcess = (maxDist == int.MaxValue) ? int.MaxValue : TilesNumWithinTraversalDistance(maxDist + 1);
+			int maxTilesToProcess = ((maxDist == int.MaxValue) ? int.MaxValue : TilesNumWithinTraversalDistance(maxDist + 1));
 			Find.WorldFloodFiller.FloodFill(start, (int x) => passImpassable || !Find.World.Impassable(x), delegate(int tile, int dist)
 			{
 				if (tile == end)
@@ -546,7 +546,7 @@ namespace RimWorld.Planet
 			for (int i = 0; i < tilesCount; i++)
 			{
 				Vector3 tileCenter = GetTileCenter(i);
-				int num3 = (i + 1 < tileIDToNeighbors_offsets.Count) ? tileIDToNeighbors_offsets[i + 1] : tileIDToNeighbors_values.Count;
+				int num3 = ((i + 1 < tileIDToNeighbors_offsets.Count) ? tileIDToNeighbors_offsets[i + 1] : tileIDToNeighbors_values.Count);
 				for (int j = tileIDToNeighbors_offsets[i]; j < num3; j++)
 				{
 					int tileID = tileIDToNeighbors_values[j];
@@ -692,7 +692,7 @@ namespace RimWorld.Planet
 			}
 			DataSerializeUtility.LoadUshort(tileBiome, TilesCount, delegate(int i, ushort data)
 			{
-				tiles[i].biome = (DefDatabase<BiomeDef>.GetByShortHash(data) ?? BiomeDefOf.TemperateForest);
+				tiles[i].biome = DefDatabase<BiomeDef>.GetByShortHash(data) ?? BiomeDefOf.TemperateForest;
 			});
 			DataSerializeUtility.LoadUshort(tileElevation, TilesCount, delegate(int i, ushort data)
 			{

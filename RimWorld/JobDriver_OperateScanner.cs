@@ -27,10 +27,11 @@ namespace RimWorld
 				actor.skills.Learn(SkillDefOf.Intellectual, 0.035f);
 				actor.GainComfortFromCellIfPossible(chairsOnly: true);
 			};
+			work.PlaySustainerOrSound(scannerComp.Props.soundWorking);
 			work.AddFailCondition(() => !scannerComp.CanUseNow);
 			work.defaultCompleteMode = ToilCompleteMode.Never;
 			work.FailOnCannotTouch(TargetIndex.A, PathEndMode.InteractionCell);
-			work.activeSkill = (() => SkillDefOf.Intellectual);
+			work.activeSkill = () => SkillDefOf.Intellectual;
 			yield return work;
 		}
 	}

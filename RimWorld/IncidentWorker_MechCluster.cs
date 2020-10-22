@@ -9,7 +9,7 @@ namespace RimWorld
 		protected override bool TryExecuteWorker(IncidentParms parms)
 		{
 			Map map = (Map)parms.target;
-			MechClusterSketch sketch = MechClusterGenerator.GenerateClusterSketch(parms.points, map);
+			MechClusterSketch sketch = MechClusterGenerator.GenerateClusterSketch_NewTemp(parms.points, map);
 			IntVec3 center = MechClusterUtility.FindClusterPosition(map, sketch, 100, 0.5f);
 			if (!center.IsValid)
 			{

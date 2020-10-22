@@ -84,6 +84,14 @@ namespace RimWorld
 
 		public int minMechClusterPoints;
 
+		public float destroyShakeAmount = -1f;
+
+		public SoundDef destroySound;
+
+		public EffecterDef destroyEffecter;
+
+		public BuildingSizeCategory buildingSizeCategory;
+
 		public bool isPlayerEjectable;
 
 		public GraphicData fullGraveGraphicData;
@@ -189,7 +197,11 @@ namespace RimWorld
 
 		public bool artificialForMeditationPurposes = true;
 
+		public EffecterDef effectWatching;
+
 		public bool SupportsPlants => sowTag != null;
+
+		public int EffectiveMineableYield => Mathf.RoundToInt((float)mineableYield * Find.Storyteller.difficultyValues.mineYieldFactor);
 
 		public bool IsTurret => turretGunDef != null;
 

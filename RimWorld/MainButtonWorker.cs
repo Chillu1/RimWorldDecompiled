@@ -60,8 +60,8 @@ namespace RimWorld
 			}
 			bool flag = num > 0.85f * rect.width - 1f;
 			Rect rect2 = rect;
-			string label = (def.Icon == null) ? text : "";
-			float textLeftMargin = flag ? 2f : (-1f);
+			string label = ((def.Icon == null) ? text : "");
+			float textLeftMargin = (flag ? 2f : (-1f));
 			if (Widgets.ButtonTextSubtle(rect2, label, ButtonBarPercent, textLeftMargin, SoundDefOf.Mouseover_Category))
 			{
 				InterfaceTryActivate();

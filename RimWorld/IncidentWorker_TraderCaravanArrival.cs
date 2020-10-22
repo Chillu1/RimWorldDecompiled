@@ -99,7 +99,7 @@ namespace RimWorld
 				}
 			}
 			SendLetter(parms, list, traderKind);
-			RCellFinder.TryFindRandomSpotJustOutsideColony(list[0], out IntVec3 result);
+			RCellFinder.TryFindRandomSpotJustOutsideColony(list[0], out var result);
 			LordJob_TradeWithColony lordJob = new LordJob_TradeWithColony(parms.faction, result);
 			LordMaker.MakeNewLord(parms.faction, lordJob, map, list);
 			return true;

@@ -1,5 +1,6 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
+using UnityEngine;
 using Verse.Sound;
 
 namespace Verse
@@ -91,6 +92,21 @@ namespace Verse
 		}
 
 		public int MaxSimultaneousSamples => maxSimultaneous * subSounds.Count;
+
+		public FloatRange Duration
+		{
+			get
+			{
+				float num = float.PositiveInfinity;
+				float num2 = float.NegativeInfinity;
+				foreach (SubSoundDef subSound in subSounds)
+				{
+					num = Mathf.Min(num, subSound.Duration.min);
+					num2 = Mathf.Max(num2, subSound.Duration.max);
+				}
+				return new FloatRange((num == float.PositiveInfinity) ? 0f : num, (num2 == float.NegativeInfinity) ? 0f : num2);
+			}
+		}
 
 		public override void ResolveReferences()
 		{
@@ -237,7 +253,7 @@ namespace Verse
 		{
 			lock (undefinedSoundDefsLock)
 			{
-				if (!undefinedSoundDefs.TryGetValue(defName, out SoundDef value))
+				if (!undefinedSoundDefs.TryGetValue(defName, out var value))
 				{
 					value = new SoundDef();
 					value.isUndefined = true;

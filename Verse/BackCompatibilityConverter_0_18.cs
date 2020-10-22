@@ -1,8 +1,8 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Text.RegularExpressions;
 using System.Xml;
+using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse
@@ -444,12 +444,16 @@ namespace Verse
 			}
 			else if (defType == typeof(RulePackDef))
 			{
+				if (defName == "NamerFactionBasePlayerColony")
+				{
+					return "NamerInitialSettlementColony";
+				}
+				if (defName == "NamerFactionBasePlayerTribe")
+				{
+					return "NamerInitialSettlementTribe";
+				}
 				switch (defName)
 				{
-				case "NamerFactionBasePlayerColony":
-					return "NamerInitialSettlementColony";
-				case "NamerFactionBasePlayerTribe":
-					return "NamerInitialSettlementTribe";
 				case "NamerFactionBasePlayerTribe":
 					return "NamerSettlementPlayerTribe";
 				case "NamerFactionBasePlayerColonyRandomized":

@@ -91,7 +91,7 @@ namespace RimWorld
 			}
 			for (int i = 0; i < values.Count; i++)
 			{
-				int num = (i == 0) ? Mathf.Abs(values[i] - fixedValue) : Mathf.Abs(values[i] - values[i - 1]);
+				int num = ((i == 0) ? Mathf.Abs(values[i] - fixedValue) : Mathf.Abs(values[i] - values[i - 1]));
 				if (num >= minDiff)
 				{
 					continue;

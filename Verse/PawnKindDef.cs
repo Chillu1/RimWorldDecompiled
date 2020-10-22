@@ -1,6 +1,6 @@
-using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -42,6 +42,10 @@ namespace Verse
 		public bool destroyGearOnDrop;
 
 		public float defendPointRadius = -1f;
+
+		public bool factionHostileOnKill;
+
+		public bool factionHostileOnDeath;
 
 		public float royalTitleChance;
 
@@ -220,11 +224,10 @@ namespace Verse
 			if (weaponMoney != FloatRange.Zero)
 			{
 				float num = 999999f;
-				PawnKindDef pawnKindDef = this;
 				int j;
 				for (j = 0; j < weaponTags.Count; j++)
 				{
-					IEnumerable<ThingDef> source = DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.weaponTags != null && d.weaponTags.Contains(pawnKindDef.weaponTags[j]));
+					IEnumerable<ThingDef> source = DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.weaponTags != null && d.weaponTags.Contains(weaponTags[j]));
 					if (source.Any())
 					{
 						num = Mathf.Min(num, source.Min((ThingDef d) => PawnWeaponGenerator.CheapestNonDerpPriceFor(d)));

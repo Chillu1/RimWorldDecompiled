@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 using Verse.AI;
 
@@ -71,6 +71,7 @@ namespace RimWorld
 			if (Find.CurrentMap != null && !WorldRendererUtility.WorldRenderedNow && !Find.UIRoot.screenshotMode.FiltersCurrentEvent)
 			{
 				EnvironmentStatsDrawer.EnvironmentStatsOnGUI();
+				Find.CurrentMap.deepResourceGrid.DeepResourcesOnGUI();
 				Find.CurrentMap.debugDrawer.DebugDrawerOnGUI();
 			}
 		}

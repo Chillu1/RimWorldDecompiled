@@ -1,7 +1,7 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -742,7 +742,7 @@ namespace Verse
 			}
 			if (allowedQualities != QualityRange.All && t.def.FollowQualityThingFilter())
 			{
-				if (!t.TryGetQuality(out QualityCategory qc))
+				if (!t.TryGetQuality(out var qc))
 				{
 					qc = QualityCategory.Normal;
 				}

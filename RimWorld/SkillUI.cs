@@ -84,7 +84,7 @@ namespace RimWorld
 			{
 				if ((int)skill.passion > 0)
 				{
-					Texture2D image = (skill.passion == Passion.Major) ? PassionMajorIcon : PassionMinorIcon;
+					Texture2D image = ((skill.passion == Passion.Major) ? PassionMajorIcon : PassionMinorIcon);
 					GUI.DrawTexture(position, image);
 				}
 				Rect rect2 = new Rect(position.xMax, 0f, holdingRect.width - position.xMax, holdingRect.height);
@@ -131,7 +131,7 @@ namespace RimWorld
 				stringBuilder.AppendLine((string)("Level".Translate() + " ") + sk.Level + ": " + sk.LevelDescriptor);
 				if (Current.ProgramState == ProgramState.Playing)
 				{
-					string text = (sk.Level == 20) ? "Experience".Translate() : "ProgressToNextLevel".Translate();
+					string text = ((sk.Level == 20) ? "Experience".Translate() : "ProgressToNextLevel".Translate());
 					stringBuilder.AppendLine(text + ": " + sk.xpSinceLastLevel.ToString("F0") + " / " + sk.XpRequiredForLevelUp);
 				}
 				stringBuilder.Append("Passion".Translate() + ": ");

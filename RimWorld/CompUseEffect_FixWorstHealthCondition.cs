@@ -116,7 +116,7 @@ namespace RimWorld
 				bool flag = hediffs[i].def.lethalSeverity >= 0f && hediffs[i].Severity / hediffs[i].def.lethalSeverity >= 0.8f;
 				if (num2 || flag)
 				{
-					float num3 = (hediffs[i].Part != null) ? hediffs[i].Part.coverageAbsWithChildren : 999f;
+					float num3 = ((hediffs[i].Part != null) ? hediffs[i].Part.coverageAbsWithChildren : 999f);
 					if (hediff == null || num3 > num)
 					{
 						hediff = hediffs[i];
@@ -176,7 +176,7 @@ namespace RimWorld
 			{
 				if (hediffs[i].Visible && hediffs[i].def.isBad && hediffs[i].def.everCurableByItem && !(hediffs[i] is Hediff_Injury) && !(hediffs[i] is Hediff_MissingPart) && !(hediffs[i] is Hediff_Addiction) && !(hediffs[i] is Hediff_AddedPart) && (!onlyIfCanKill || CanEverKill(hediffs[i])))
 				{
-					float num2 = (hediffs[i].Part != null) ? hediffs[i].Part.coverageAbsWithChildren : 999f;
+					float num2 = ((hediffs[i].Part != null) ? hediffs[i].Part.coverageAbsWithChildren : 999f);
 					if (hediff == null || num2 > num)
 					{
 						hediff = hediffs[i];

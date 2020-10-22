@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -54,7 +54,7 @@ namespace RimWorld
 		public override void AssignDebugData()
 		{
 			base.AssignDebugData();
-			def = (ThoughtDefOf.DecreeMet ?? ThoughtDefOf.DebugGood);
+			def = ThoughtDefOf.DecreeMet ?? ThoughtDefOf.DebugGood;
 			pawn = PawnsFinder.AllMaps_FreeColonists.FirstOrDefault();
 		}
 

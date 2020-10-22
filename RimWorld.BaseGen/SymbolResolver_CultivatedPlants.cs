@@ -33,7 +33,7 @@ namespace RimWorld.BaseGen
 				return;
 			}
 			float growth = Rand.Range(0.2f, 1f);
-			int age = thingDef.plant.LimitedLifespan ? Rand.Range(0, Mathf.Max(thingDef.plant.LifespanTicks - 2500, 0)) : 0;
+			int age = (thingDef.plant.LimitedLifespan ? Rand.Range(0, Mathf.Max(thingDef.plant.LifespanTicks - 2500, 0)) : 0);
 			foreach (IntVec3 item in rp.rect)
 			{
 				if (!(map.fertilityGrid.FertilityAt(item) < thingDef.plant.fertilityMin) && TryDestroyBlockingThingsAt(item))
@@ -70,7 +70,7 @@ namespace RimWorld.BaseGen
 			{
 				return null;
 			}
-			if (DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef x) => x.category == ThingCategory.Plant && x.plant.Sowable && !x.plant.IsTree && !x.plant.cavePlant && x.plant.fertilityMin <= minFertility && x.plant.Harvestable).TryRandomElement(out ThingDef result))
+			if (DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef x) => x.category == ThingCategory.Plant && x.plant.Sowable && !x.plant.IsTree && !x.plant.cavePlant && x.plant.fertilityMin <= minFertility && x.plant.Harvestable).TryRandomElement(out var result))
 			{
 				return result;
 			}

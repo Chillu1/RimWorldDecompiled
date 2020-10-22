@@ -93,7 +93,7 @@ namespace RimWorld
 					}
 				}
 			}
-			if (TryFindSpawnCell(parent, PropsSpawner.thingToSpawn, PropsSpawner.spawnCount, out IntVec3 result))
+			if (TryFindSpawnCell(parent, PropsSpawner.thingToSpawn, PropsSpawner.spawnCount, out var result))
 			{
 				Thing thing = ThingMaker.MakeThing(PropsSpawner.thingToSpawn);
 				thing.stackCount = PropsSpawner.spawnCount;
@@ -105,7 +105,7 @@ namespace RimWorld
 				{
 					thing.SetFaction(parent.Faction);
 				}
-				GenPlace.TryPlaceThing(thing, result, parent.Map, ThingPlaceMode.Direct, out Thing lastResultingThing);
+				GenPlace.TryPlaceThing(thing, result, parent.Map, ThingPlaceMode.Direct, out var lastResultingThing);
 				if (PropsSpawner.spawnForbidden)
 				{
 					lastResultingThing.SetForbidden(value: true);
@@ -165,7 +165,7 @@ namespace RimWorld
 
 		public override void PostExposeData()
 		{
-			string str = PropsSpawner.saveKeysPrefix.NullOrEmpty() ? null : (PropsSpawner.saveKeysPrefix + "_");
+			string str = (PropsSpawner.saveKeysPrefix.NullOrEmpty() ? null : (PropsSpawner.saveKeysPrefix + "_"));
 			Scribe_Values.Look(ref ticksUntilSpawn, str + "ticksUntilSpawn", 0);
 		}
 

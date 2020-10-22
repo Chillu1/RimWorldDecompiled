@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 using Verse.Grammar;
 
@@ -46,7 +46,7 @@ namespace RimWorld.QuestGen
 		{
 			Slate slate = QuestGen.slate;
 			QuestPart_Letter questPart_Letter = new QuestPart_Letter();
-			questPart_Letter.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? slate.Get<string>("inSignal"));
+			questPart_Letter.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? slate.Get<string>("inSignal");
 			LetterDef letterDef = this.letterDef.GetValue(slate) ?? LetterDefOf.NeutralEvent;
 			if (typeof(ChoiceLetter).IsAssignableFrom(letterDef.letterClass))
 			{
@@ -70,7 +70,7 @@ namespace RimWorld.QuestGen
 			questPart_Letter.chosenPawnSignal = QuestGenUtility.HardcodedSignalWithQuestID(chosenPawnSignal.GetValue(slate));
 			questPart_Letter.useColonistsOnMap = useColonistsOnMap.GetValue(slate);
 			questPart_Letter.useColonistsFromCaravanArg = useColonistsFromCaravanArg.GetValue(slate);
-			questPart_Letter.signalListenMode = (signalListenMode.GetValue(slate) ?? QuestPart.SignalListenMode.OngoingOnly);
+			questPart_Letter.signalListenMode = signalListenMode.GetValue(slate) ?? QuestPart.SignalListenMode.OngoingOnly;
 			questPart_Letter.filterDeadPawnsFromLookTargets = filterDeadPawnsFromLookTargets.GetValue(slate);
 			QuestGen.quest.AddPart(questPart_Letter);
 		}

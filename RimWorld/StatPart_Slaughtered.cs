@@ -27,7 +27,7 @@ namespace RimWorld
 		private bool CanApply(StatRequest req)
 		{
 			Pawn pawn;
-			if (!req.HasThing || (pawn = (req.Thing as Pawn)) == null)
+			if (!req.HasThing || (pawn = req.Thing as Pawn) == null)
 			{
 				return false;
 			}

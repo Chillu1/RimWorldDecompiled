@@ -1,6 +1,6 @@
-using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -74,6 +74,8 @@ namespace Verse
 		public EffecterDef destroyEffect;
 
 		public EffecterDef destroyEffectWater;
+
+		public bool autoRebuildable;
 
 		public ThingDef generatedFilth;
 
@@ -217,7 +219,7 @@ namespace Verse
 			{
 				yield return new StatDrawEntry(StatCategoryDefOf.Basics, "Supports".Translate(), array.ToCommaList().CapitalizeFirst(), "Stat_Thing_Terrain_Supports_Desc".Translate(), 2000);
 			}
-			if (IsFine)
+			if (IsFine && ModsConfig.RoyaltyActive)
 			{
 				yield return new StatDrawEntry(StatCategoryDefOf.Basics, "Stat_Thing_Terrain_Fine_Name".Translate(), "Stat_Thing_Terrain_Fine_Value".Translate(), "Stat_Thing_Terrain_Fine_Desc".Translate(), 2000);
 			}

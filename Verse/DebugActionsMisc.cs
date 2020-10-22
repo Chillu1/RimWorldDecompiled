@@ -1,9 +1,9 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
+using RimWorld.Planet;
 using Verse.AI.Group;
 using Verse.Profile;
 using Verse.Sound;
@@ -38,6 +38,19 @@ namespace Verse
 			foreach (Thing item in Find.CurrentMap.listerThings.AllThings.ToList())
 			{
 				item.Destroy();
+			}
+		}
+
+		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void DestroyClutter()
+		{
+			foreach (Thing item in Find.CurrentMap.listerThings.ThingsInGroup(ThingRequestGroup.Chunk).ToList())
+			{
+				item.Destroy();
+			}
+			foreach (Thing item2 in Find.CurrentMap.listerThings.ThingsInGroup(ThingRequestGroup.Filth).ToList())
+			{
+				item2.Destroy();
 			}
 		}
 
@@ -112,7 +125,7 @@ namespace Verse
 			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
 		}
 
-		[DebugAction("General", "End game condition...", allowedGameStates = (AllowedGameStates.Playing | AllowedGameStates.IsCurrentlyOnMap | AllowedGameStates.HasGameCondition))]
+		[DebugAction("General", "End game condition...", allowedGameStates = (AllowedGameStates.PlayingOnMap | AllowedGameStates.HasGameCondition))]
 		private static void EndGameCondition()
 		{
 			List<DebugMenuOption> list = new List<DebugMenuOption>();
@@ -278,20 +291,17 @@ namespace Verse
 		{
 			Pawn leader = Find.FactionManager.AllFactions.Where((Faction x) => x.leader != null).RandomElement().leader;
 			int num = 0;
-			while (true)
+			while (!leader.Dead)
 			{
-				if (!leader.Dead)
+				if (++num > 1000)
 				{
-					if (++num > 1000)
-					{
-						break;
-					}
-					leader.TakeDamage(new DamageInfo(DamageDefOf.Bullet, 30f, 999f));
-					continue;
+					Log.Warning("Could not kill faction leader.");
+					break;
 				}
-				return;
+				DamageInfo dinfo = new DamageInfo(DamageDefOf.Bullet, 30f, 999f);
+				dinfo.SetIgnoreInstantKillProtection(ignore: true);
+				leader.TakeDamage(dinfo);
 			}
-			Log.Warning("Could not kill faction leader.");
 		}
 
 		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
@@ -405,7 +415,7 @@ namespace Verse
 				ResearchProjectDef localProject = item;
 				list.Add(new DebugMenuOption(localProject.LabelCap, DebugMenuOptionMode.Action, delegate
 				{
-					Find.ResearchManager.AddTechprints(localProject, localProject.techprintCount - Find.ResearchManager.GetTechprints(localProject));
+					Find.ResearchManager.AddTechprints(localProject, localProject.TechprintCount - Find.ResearchManager.GetTechprints(localProject));
 				}));
 			}
 			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
@@ -450,13 +460,13 @@ namespace Verse
 				{
 					continue;
 				}
-				PawnKindDef pawnKindDef = prisoner ? DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef pk) => pk.defaultFactionType != null && !pk.defaultFactionType.isPlayer && pk.RaceProps.Humanlike).RandomElement() : PawnKindDefOf.SpaceRefugee;
+				PawnKindDef pawnKindDef = (prisoner ? DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef pk) => pk.defaultFactionType != null && !pk.defaultFactionType.isPlayer && pk.RaceProps.Humanlike).RandomElement() : PawnKindDefOf.SpaceRefugee);
 				Faction faction = FactionUtility.DefaultFactionFrom(pawnKindDef.defaultFactionType);
 				Pawn pawn = PawnGenerator.GeneratePawn(pawnKindDef, faction);
 				GenSpawn.Spawn(pawn, item.Position, Find.CurrentMap);
 				foreach (ThingWithComps item2 in pawn.equipment.AllEquipmentListForReading.ToList())
 				{
-					if (pawn.equipment.TryDropEquipment(item2, out ThingWithComps resultingEq, pawn.Position))
+					if (pawn.equipment.TryDropEquipment(item2, out var resultingEq, pawn.Position))
 					{
 						resultingEq.Destroy();
 					}
@@ -487,7 +497,7 @@ namespace Verse
 				for (int j = 0; j < partsListForReading.Count; j++)
 				{
 					QuestPart_LendColonistsToFaction questPart_LendColonistsToFaction;
-					if ((questPart_LendColonistsToFaction = (partsListForReading[j] as QuestPart_LendColonistsToFaction)) == null)
+					if ((questPart_LendColonistsToFaction = partsListForReading[j] as QuestPart_LendColonistsToFaction) == null)
 					{
 						continue;
 					}
@@ -495,7 +505,7 @@ namespace Verse
 					for (int k = 0; k < lentColonistsListForReading.Count; k++)
 					{
 						Pawn pawn;
-						if ((pawn = (lentColonistsListForReading[k] as Pawn)) != null && !pawn.Dead)
+						if ((pawn = lentColonistsListForReading[k] as Pawn) != null && !pawn.Dead)
 						{
 							tmpLentColonists.Add(pawn);
 						}
@@ -618,7 +628,7 @@ namespace Verse
 				if (pawn.royalty != null && pawn.royalty.AllTitlesInEffectForReading.Any())
 				{
 					RoyalTitle mostSeniorTitle = pawn.royalty.MostSeniorTitle;
-					if (apparel.TryGetQuality(out QualityCategory qc) && (int)qc < (int)mostSeniorTitle.def.requiredMinimumApparelQuality)
+					if (apparel.TryGetQuality(out var qc) && (int)qc < (int)mostSeniorTitle.def.requiredMinimumApparelQuality)
 					{
 						return "Quality too low.";
 					}

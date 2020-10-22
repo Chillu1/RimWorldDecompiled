@@ -13,7 +13,7 @@ namespace RimWorld.BaseGen
 			{
 				return false;
 			}
-			if (!TryFindFirstHivePos(rp.rect, out IntVec3 _))
+			if (!TryFindFirstHivePos(rp.rect, out var _))
 			{
 				return false;
 			}
@@ -22,7 +22,7 @@ namespace RimWorld.BaseGen
 
 		public override void Resolve(ResolveParams rp)
 		{
-			if (!TryFindFirstHivePos(rp.rect, out IntVec3 pos))
+			if (!TryFindFirstHivePos(rp.rect, out var pos))
 			{
 				return;
 			}
@@ -36,7 +36,7 @@ namespace RimWorld.BaseGen
 			hive = (Hive)GenSpawn.Spawn(hive, pos, BaseGen.globalSettings.map);
 			for (int i = 0; i < num - 1; i++)
 			{
-				if (hive.GetComp<CompSpawnerHives>().TrySpawnChildHive(ignoreRoofedRequirement: true, out Hive newHive))
+				if (hive.GetComp<CompSpawnerHives>().TrySpawnChildHive(ignoreRoofedRequirement: true, out var newHive))
 				{
 					hive = newHive;
 				}

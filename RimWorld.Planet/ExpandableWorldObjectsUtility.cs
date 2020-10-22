@@ -101,7 +101,13 @@ namespace RimWorld.Planet
 							expandingIconColor.b *= num;
 						}
 						GUI.color = expandingIconColor;
-						GUI.DrawTexture(ExpandedIconScreenRect(worldObject), worldObject.ExpandingIcon);
+						Rect rect = ExpandedIconScreenRect(worldObject);
+						if (worldObject.ExpandingIconFlipHorizontal)
+						{
+							rect.x = rect.xMax;
+							rect.width *= -1f;
+						}
+						Widgets.DrawTextureRotated(rect, worldObject.ExpandingIcon, worldObject.ExpandingIconRotation);
 					}
 				}
 				catch (Exception ex)
@@ -116,7 +122,7 @@ namespace RimWorld.Planet
 		public static Rect ExpandedIconScreenRect(WorldObject o)
 		{
 			Vector2 vector = o.ScreenPos();
-			float num = (!o.ExpandMore) ? 30f : Mathf.Lerp(30f, 40.5f, ExpandMoreTransitionPct);
+			float num = ((!o.ExpandMore) ? (30f * o.def.expandingIconDrawSize) : Mathf.Lerp(30f * o.def.expandingIconDrawSize, 30f * o.def.expandingIconDrawSize * 1.35f, ExpandMoreTransitionPct));
 			return new Rect(vector.x - num / 2f, vector.y - num / 2f, num, num);
 		}
 

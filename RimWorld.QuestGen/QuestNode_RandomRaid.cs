@@ -13,7 +13,7 @@ namespace RimWorld.QuestGen
 
 		protected override bool TestRunInt(Slate slate)
 		{
-			if (!Find.Storyteller.difficulty.allowViolentQuests)
+			if (!Find.Storyteller.difficultyValues.allowViolentQuests)
 			{
 				return false;
 			}
@@ -35,7 +35,7 @@ namespace RimWorld.QuestGen
 			float val = QuestGen.slate.Get("points", 0f);
 			Faction faction = QuestGen.slate.Get<Faction>("enemyFaction");
 			QuestPart_RandomRaid questPart_RandomRaid = new QuestPart_RandomRaid();
-			questPart_RandomRaid.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart_RandomRaid.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			questPart_RandomRaid.mapParent = map.Parent;
 			questPart_RandomRaid.faction = faction;
 			questPart_RandomRaid.pointsRange = RaidPointsRandomFactor * val;

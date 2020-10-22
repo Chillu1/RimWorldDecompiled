@@ -51,7 +51,7 @@ namespace RimWorld
 
 		public Outfit MakeNewOutfit()
 		{
-			int uniqueId = (!outfits.Any()) ? 1 : (outfits.Max((Outfit o) => o.uniqueId) + 1);
+			int uniqueId = ((!outfits.Any()) ? 1 : (outfits.Max((Outfit o) => o.uniqueId) + 1));
 			Outfit outfit = new Outfit(uniqueId, "Outfit".Translate() + " " + uniqueId.ToString());
 			outfit.filter.SetAllow(ThingCategoryDefOf.Apparel, allow: true);
 			outfits.Add(outfit);

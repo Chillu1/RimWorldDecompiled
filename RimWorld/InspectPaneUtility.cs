@@ -92,7 +92,7 @@ namespace RimWorld
 		{
 			string text = "";
 			Zone zone;
-			if ((zone = (selected[0] as Zone)) != null)
+			if ((zone = selected[0] as Zone) != null)
 			{
 				if (selected.Count == 1)
 				{
@@ -105,7 +105,7 @@ namespace RimWorld
 					for (int i = 1; i < selected.Count; i++)
 					{
 						Zone zone2;
-						if ((zone2 = (selected[i] as Zone)) != null && zone2.BaseLabel != baseLabel)
+						if ((zone2 = selected[i] as Zone) != null && zone2.BaseLabel != baseLabel)
 						{
 							flag = false;
 							break;
@@ -121,7 +121,7 @@ namespace RimWorld
 				for (int j = 0; j < selected.Count; j++)
 				{
 					Thing outerThing;
-					if ((outerThing = (selected[j] as Thing)) != null)
+					if ((outerThing = selected[j] as Thing) != null)
 					{
 						selectedThings.Add(outerThing.GetInnerIfMinified());
 					}
@@ -357,11 +357,9 @@ namespace RimWorld
 				}
 				else
 				{
-					using (IEnumerator<InspectTabBase> enumerator = mainTabWindow_Inspect.CurTabs.GetEnumerator())
+					using IEnumerator<InspectTabBase> enumerator = mainTabWindow_Inspect.CurTabs.GetEnumerator();
+					while (enumerator.MoveNext() && !Find(enumerator.Current))
 					{
-						while (enumerator.MoveNext() && !Find(enumerator.Current))
-						{
-						}
 					}
 				}
 			}

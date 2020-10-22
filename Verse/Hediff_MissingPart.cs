@@ -155,9 +155,9 @@ namespace Verse
 			}
 		}
 
-		public override void Tended(float quality, int batchPosition = 0)
+		public override void Tended_NewTemp(float quality, float maxQuality, int batchPosition = 0)
 		{
-			base.Tended(quality, batchPosition);
+			base.Tended_NewTemp(quality, maxQuality, batchPosition);
 			IsFresh = false;
 			pawn.health.Notify_HediffChanged(this);
 		}

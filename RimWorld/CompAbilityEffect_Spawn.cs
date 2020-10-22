@@ -14,7 +14,7 @@ namespace RimWorld
 
 		public override bool Valid(LocalTargetInfo target, bool throwMessages = false)
 		{
-			if (target.Cell.Filled(parent.pawn.Map))
+			if (target.Cell.Filled(parent.pawn.Map) || (target.Cell.GetFirstBuilding(parent.pawn.Map) != null && !Props.allowOnBuildings))
 			{
 				if (throwMessages)
 				{

@@ -34,7 +34,7 @@ namespace Verse
 			this.folderName = folderName;
 			this.requiredPackageIds = requiredPackageIds;
 			this.disallowedPackageIds = disallowedPackageIds;
-			hashCodeCached = (folderName?.GetHashCode() ?? 0);
+			hashCodeCached = folderName?.GetHashCode() ?? 0;
 			hashCodeCached = Gen.HashCombine(hashCodeCached, requiredPackageIds?.GetHashCode() ?? 0);
 			hashCodeCached = Gen.HashCombine(hashCodeCached, disallowedPackageIds?.GetHashCode() ?? 0);
 		}
@@ -51,7 +51,7 @@ namespace Verse
 		public override bool Equals(object obj)
 		{
 			LoadFolder other;
-			if ((other = (obj as LoadFolder)) != null)
+			if ((other = obj as LoadFolder) != null)
 			{
 				return Equals(other);
 			}

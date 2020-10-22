@@ -19,7 +19,6 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			JobDriver_Research jobDriver_Research = this;
 			this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.InteractionCell);
 			Toil research = new Toil();
@@ -27,19 +26,19 @@ namespace RimWorld
 			{
 				Pawn actor = research.actor;
 				float statValue = actor.GetStatValue(StatDefOf.ResearchSpeed);
-				statValue *= jobDriver_Research.TargetThingA.GetStatValue(StatDefOf.ResearchSpeedFactor);
+				statValue *= base.TargetThingA.GetStatValue(StatDefOf.ResearchSpeedFactor);
 				Find.ResearchManager.ResearchPerformed(statValue, actor);
 				actor.skills.Learn(SkillDefOf.Intellectual, 0.1f);
 				actor.GainComfortFromCellIfPossible(chairsOnly: true);
 			};
-			research.FailOn(() => jobDriver_Research.Project == null);
-			research.FailOn(() => !jobDriver_Research.Project.CanBeResearchedAt(jobDriver_Research.ResearchBench, ignoreResearchBenchPowerStatus: false));
+			research.FailOn(() => Project == null);
+			research.FailOn(() => !Project.CanBeResearchedAt(ResearchBench, ignoreResearchBenchPowerStatus: false));
 			research.FailOnCannotTouch(TargetIndex.A, PathEndMode.InteractionCell);
 			research.WithEffect(EffecterDefOf.Research, TargetIndex.A);
-			research.WithProgressBar(TargetIndex.A, () => jobDriver_Research.Project?.ProgressPercent ?? 0f);
+			research.WithProgressBar(TargetIndex.A, () => Project?.ProgressPercent ?? 0f);
 			research.defaultCompleteMode = ToilCompleteMode.Delay;
 			research.defaultDuration = 4000;
-			research.activeSkill = (() => SkillDefOf.Intellectual);
+			research.activeSkill = () => SkillDefOf.Intellectual;
 			yield return research;
 			yield return Toils_General.Wait(2);
 		}

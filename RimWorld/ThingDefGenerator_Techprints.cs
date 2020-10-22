@@ -15,7 +15,7 @@ namespace RimWorld
 			}
 			foreach (ResearchProjectDef item in DefDatabase<ResearchProjectDef>.AllDefsListForReading)
 			{
-				if (item.techprintCount > 0)
+				if (item.TechprintCount > 0)
 				{
 					ThingDef thingDef = new ThingDef();
 					thingDef.resourceReadoutPriority = ResourceCountPriority.Middle;
@@ -43,7 +43,7 @@ namespace RimWorld
 					thingDef.tickerType = TickerType.Never;
 					thingDef.alwaysHaulable = true;
 					thingDef.rotatable = false;
-					thingDef.pathCost = 15;
+					thingDef.pathCost = DefGenerator.StandardItemPathCost;
 					thingDef.drawGUIOverlay = true;
 					thingDef.modContentPack = item.modContentPack;
 					thingDef.tradeTags = new List<string>();

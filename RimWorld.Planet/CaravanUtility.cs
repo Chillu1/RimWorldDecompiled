@@ -50,7 +50,7 @@ namespace RimWorld.Planet
 			{
 				return tile;
 			}
-			GenWorldClosest.TryFindClosestTile(tile, predicate, out int foundTile, 50);
+			GenWorldClosest.TryFindClosestTile(tile, predicate, out var foundTile, 50);
 			return foundTile;
 		}
 

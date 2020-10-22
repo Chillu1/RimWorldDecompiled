@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -38,13 +38,18 @@ namespace RimWorld
 
 		public static void Destroy(List<Thing> things)
 		{
-			for (int i = 0; i < things.Count; i++)
+			for (int num = things.Count - 1; num >= 0; num--)
 			{
-				Thing thing = (!(things[i].ParentHolder is MinifiedThing)) ? things[i] : ((Thing)things[i].ParentHolder);
-				if (!thing.Destroyed)
-				{
-					thing.DestroyOrPassToWorld(DestroyMode.QuestLogic);
-				}
+				Destroy(things[num]);
+			}
+		}
+
+		public static void Destroy(Thing thing)
+		{
+			Thing thing2 = ((!(thing.ParentHolder is MinifiedThing)) ? thing : ((Thing)thing.ParentHolder));
+			if (!thing2.Destroyed)
+			{
+				thing2.DestroyOrPassToWorld(DestroyMode.QuestLogic);
 			}
 		}
 

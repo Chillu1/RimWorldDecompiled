@@ -17,6 +17,8 @@ namespace RimWorld
 
 		public SoundDef soundAmbientPowered;
 
+		public SoundDef soundAmbientProducingPower;
+
 		public override IEnumerable<StatDrawEntry> SpecialDisplayStats(StatRequest req)
 		{
 			foreach (StatDrawEntry item in base.SpecialDisplayStats(req))

@@ -49,7 +49,7 @@ namespace Verse
 			{
 				num += 17592186044416L;
 			}
-			return (ulong)((long)num + 281474976710656L * length);
+			return num + (ulong)(281474976710656L * length);
 		}
 	}
 }

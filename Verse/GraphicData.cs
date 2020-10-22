@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -123,19 +123,14 @@ namespace Verse
 
 		public Vector3 DrawOffsetForRot(Rot4 rot)
 		{
-			switch (rot.AsInt)
+			return rot.AsInt switch
 			{
-			case 0:
-				return drawOffsetNorth ?? drawOffset;
-			case 1:
-				return drawOffsetEast ?? drawOffset;
-			case 2:
-				return drawOffsetSouth ?? drawOffset;
-			case 3:
-				return drawOffsetWest ?? drawOffset;
-			default:
-				return drawOffset;
-			}
+				0 => drawOffsetNorth ?? drawOffset, 
+				1 => drawOffsetEast ?? drawOffset, 
+				2 => drawOffsetSouth ?? drawOffset, 
+				3 => drawOffsetWest ?? drawOffset, 
+				_ => drawOffset, 
+			};
 		}
 
 		public Graphic GraphicColoredFor(Thing t)

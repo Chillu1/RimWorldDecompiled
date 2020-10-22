@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 
 namespace Verse
 {
@@ -48,6 +48,10 @@ namespace Verse
 		{
 		}
 
+		public virtual void CompTickLong()
+		{
+		}
+
 		public virtual void PostPreApplyDamage(DamageInfo dinfo, out bool absorbed)
 		{
 			absorbed = false;
@@ -91,6 +95,11 @@ namespace Verse
 			yield break;
 		}
 
+		public virtual IEnumerable<Gizmo> CompGetWornGizmosExtra()
+		{
+			yield break;
+		}
+
 		public virtual bool AllowStackWith(Thing other)
 		{
 			return true;
@@ -107,6 +116,11 @@ namespace Verse
 		}
 
 		public virtual IEnumerable<FloatMenuOption> CompFloatMenuOptions(Pawn selPawn)
+		{
+			yield break;
+		}
+
+		public virtual IEnumerable<FloatMenuOption> CompMultiSelectFloatMenuOptions(List<Pawn> selPawns)
 		{
 			yield break;
 		}
@@ -149,6 +163,10 @@ namespace Verse
 		}
 
 		public virtual void Notify_UsedWeapon(Pawn pawn)
+		{
+		}
+
+		public virtual void Notify_KilledPawn(Pawn pawn)
 		{
 		}
 

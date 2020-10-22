@@ -18,7 +18,7 @@ namespace RimWorld
 			Map map = (Map)parms.target;
 			IntVec3 start;
 			IntVec3 end;
-			if (TryFindAnimalKind(map.Tile, out PawnKindDef _))
+			if (TryFindAnimalKind(map.Tile, out var _))
 			{
 				return TryFindStartAndEndCells(map, out start, out end);
 			}
@@ -28,11 +28,11 @@ namespace RimWorld
 		protected override bool TryExecuteWorker(IncidentParms parms)
 		{
 			Map map = (Map)parms.target;
-			if (!TryFindAnimalKind(map.Tile, out PawnKindDef animalKind))
+			if (!TryFindAnimalKind(map.Tile, out var animalKind))
 			{
 				return false;
 			}
-			if (!TryFindStartAndEndCells(map, out IntVec3 start, out IntVec3 end))
+			if (!TryFindStartAndEndCells(map, out var start, out var end))
 			{
 				return false;
 			}
@@ -67,7 +67,7 @@ namespace RimWorld
 			for (int i = 0; i < 8; i++)
 			{
 				IntVec3 startLocal = start;
-				if (!CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => map.reachability.CanReach(startLocal, x, PathEndMode.OnCell, TraverseMode.NoPassClosedDoors, Danger.Deadly), map, CellFinder.EdgeRoadChance_Ignore, out IntVec3 result))
+				if (!CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => map.reachability.CanReach(startLocal, x, PathEndMode.OnCell, TraverseMode.NoPassClosedDoors, Danger.Deadly), map, CellFinder.EdgeRoadChance_Ignore, out var result))
 				{
 					break;
 				}

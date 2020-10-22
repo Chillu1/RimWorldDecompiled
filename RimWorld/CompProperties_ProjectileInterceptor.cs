@@ -25,11 +25,17 @@ namespace RimWorld
 
 		public float minAlpha;
 
+		public float idlePulseSpeed = 0.7f;
+
+		public float minIdleAlpha = -1.7f;
+
 		public Color color = Color.white;
 
 		public EffecterDef reactivateEffect;
 
 		public EffecterDef interceptEffect;
+
+		public SoundDef activeSound;
 
 		public CompProperties_ProjectileInterceptor()
 		{

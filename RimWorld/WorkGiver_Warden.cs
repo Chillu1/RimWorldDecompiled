@@ -1,5 +1,6 @@
-using RimWorld.Planet;
+using System;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 using Verse.AI;
 
@@ -21,10 +22,16 @@ namespace RimWorld
 			return pawn.Map.mapPawns.PrisonersOfColonySpawnedCount == 0;
 		}
 
+		[Obsolete("Will be removed in the future")]
 		protected bool ShouldTakeCareOfPrisoner(Pawn warden, Thing prisoner)
 		{
+			return ShouldTakeCareOfPrisoner_NewTemp(warden, prisoner);
+		}
+
+		protected bool ShouldTakeCareOfPrisoner_NewTemp(Pawn warden, Thing prisoner, bool forced = false)
+		{
 			Pawn pawn = prisoner as Pawn;
-			if (pawn == null || !pawn.IsPrisonerOfColony || !pawn.guest.PrisonerIsSecure || !pawn.Spawned || pawn.InAggroMentalState || prisoner.IsForbidden(warden) || pawn.IsFormingCaravan() || !warden.CanReserveAndReach(pawn, PathEndMode.OnCell, warden.NormalMaxDanger()))
+			if (pawn == null || !pawn.IsPrisonerOfColony || !pawn.guest.PrisonerIsSecure || !pawn.Spawned || pawn.InAggroMentalState || prisoner.IsForbidden(warden) || pawn.IsFormingCaravan() || !warden.CanReserveAndReach(pawn, PathEndMode.OnCell, warden.NormalMaxDanger(), 1, -1, null, forced))
 			{
 				return false;
 			}

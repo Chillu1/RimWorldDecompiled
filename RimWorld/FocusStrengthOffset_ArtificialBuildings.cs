@@ -10,6 +10,11 @@ namespace RimWorld
 
 		protected override string ExplanationKey => "StatsReport_NearbyArtificialStructures";
 
+		public override bool CanApply(Thing parent, Pawn user = null)
+		{
+			return parent.Spawned;
+		}
+
 		protected override float SourceValue(Thing parent)
 		{
 			return parent.Spawned ? parent.Map.listerArtificialBuildingsForMeditation.GetForCell(parent.Position, radius).Count : 0;

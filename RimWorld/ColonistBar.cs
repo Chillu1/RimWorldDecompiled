@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -175,12 +175,20 @@ namespace RimWorld
 					if (entry.pawn != null)
 					{
 						drawer.DrawColonist(rect, entry.pawn, entry.map, colonistsToHighlight.Contains(entry.pawn), reordering);
-						if (entry.pawn.HasExtraHomeFaction())
+						Faction faction = null;
+						if (entry.pawn.HasExtraMiniFaction())
 						{
-							Faction extraHomeFaction = entry.pawn.GetExtraHomeFaction();
-							GUI.color = extraHomeFaction.Color;
+							faction = entry.pawn.GetExtraMiniFaction();
+						}
+						else if (entry.pawn.HasExtraHomeFaction())
+						{
+							faction = entry.pawn.GetExtraHomeFaction();
+						}
+						if (faction != null)
+						{
+							GUI.color = faction.Color;
 							float num2 = rect.width * 0.5f;
-							GUI.DrawTexture(new Rect(rect.xMax - num2 - 2f, rect.yMax - num2 - 2f, num2, num2), extraHomeFaction.def.FactionIcon);
+							GUI.DrawTexture(new Rect(rect.xMax - num2 - 2f, rect.yMax - num2 - 2f, num2, num2), faction.def.FactionIcon);
 							GUI.color = Color.white;
 						}
 					}
@@ -287,7 +295,7 @@ namespace RimWorld
 
 		public float GetEntryRectAlpha(Rect rect)
 		{
-			if (Messages.CollidesWithAnyMessage(rect, out float messageAlpha))
+			if (Messages.CollidesWithAnyMessage(rect, out var messageAlpha))
 			{
 				return Mathf.Lerp(1f, 0.2f, messageAlpha);
 			}
@@ -394,7 +402,7 @@ namespace RimWorld
 
 		public bool AnyColonistOrCorpseAt(Vector2 pos)
 		{
-			if (!TryGetEntryAt(pos, out Entry entry))
+			if (!TryGetEntryAt(pos, out var entry))
 			{
 				return false;
 			}
@@ -539,7 +547,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			if (!TryGetEntryAt(pos, out Entry entry))
+			if (!TryGetEntryAt(pos, out var entry))
 			{
 				return null;
 			}

@@ -30,7 +30,7 @@ namespace RimWorld
 			command_Toggle.defaultLabel = "CommandWarnInBuildingRadius".Translate();
 			command_Toggle.defaultDesc = "CommandWarnInBuildingRadiusDesc".Translate();
 			command_Toggle.icon = CommandTex;
-			command_Toggle.isActive = (() => enabled);
+			command_Toggle.isActive = () => enabled;
 			command_Toggle.toggleAction = (Action)Delegate.Combine(command_Toggle.toggleAction, (Action)delegate
 			{
 				enabled = !enabled;

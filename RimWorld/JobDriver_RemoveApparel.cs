@@ -37,14 +37,14 @@ namespace RimWorld
 			{
 				if (pawn.apparel.WornApparel.Contains(Apparel))
 				{
-					if (pawn.apparel.TryDrop(Apparel, out Apparel resultingAp))
+					if (pawn.apparel.TryDrop(Apparel, out var resultingAp))
 					{
 						job.targetA = resultingAp;
 						if (job.haulDroppedApparel)
 						{
 							resultingAp.SetForbidden(value: false, warnOnFail: false);
 							StoragePriority currentPriority = StoreUtility.CurrentStoragePriorityOf(resultingAp);
-							if (StoreUtility.TryFindBestBetterStoreCellFor(resultingAp, pawn, base.Map, currentPriority, pawn.Faction, out IntVec3 foundCell))
+							if (StoreUtility.TryFindBestBetterStoreCellFor(resultingAp, pawn, base.Map, currentPriority, pawn.Faction, out var foundCell))
 							{
 								job.count = resultingAp.stackCount;
 								job.targetB = foundCell;

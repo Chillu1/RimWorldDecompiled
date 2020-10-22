@@ -92,7 +92,7 @@ namespace RimWorld
 				rect2.width = 432f;
 				Widgets.Label(rect2, def.HelpTextAdjusted);
 				Rect butRect = new Rect(rect.xMax - 32f - 8f, rect.y + 8f, 32f, 32f);
-				Texture2D tex = (!Expiring) ? TexButton.CloseXBig : Widgets.CheckboxOnTex;
+				Texture2D tex = ((!Expiring) ? TexButton.CloseXBig : Widgets.CheckboxOnTex);
 				if (Widgets.ButtonImage(butRect, tex, new Color(0.95f, 0.95f, 0.95f), new Color(71f / 85f, 2f / 3f, 14f / 51f)))
 				{
 					SoundDefOf.Click.PlayOneShotOnCamera();
@@ -108,7 +108,7 @@ namespace RimWorld
 
 		private void CloseButtonClicked()
 		{
-			KnowledgeAmount know = def.noteTeaches ? KnowledgeAmount.NoteTaught : KnowledgeAmount.NoteClosed;
+			KnowledgeAmount know = (def.noteTeaches ? KnowledgeAmount.NoteTaught : KnowledgeAmount.NoteClosed);
 			PlayerKnowledgeDatabase.KnowledgeDemonstrated(def, know);
 			Find.ActiveLesson.Deactivate();
 		}

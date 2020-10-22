@@ -37,7 +37,7 @@ namespace RimWorld
 				Thing thing = Barrel.TakeOutBeer();
 				GenPlace.TryPlaceThing(thing, pawn.Position, base.Map, ThingPlaceMode.Near);
 				StoragePriority currentPriority = StoreUtility.CurrentStoragePriorityOf(thing);
-				if (StoreUtility.TryFindBestBetterStoreCellFor(thing, pawn, base.Map, currentPriority, pawn.Faction, out IntVec3 foundCell))
+				if (StoreUtility.TryFindBestBetterStoreCellFor(thing, pawn, base.Map, currentPriority, pawn.Faction, out var foundCell))
 				{
 					job.SetTarget(TargetIndex.C, foundCell);
 					job.SetTarget(TargetIndex.B, thing);

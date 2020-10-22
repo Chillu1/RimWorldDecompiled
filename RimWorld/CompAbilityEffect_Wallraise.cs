@@ -27,10 +27,6 @@ namespace RimWorld
 			{
 				GenSpawn.Spawn(ThingDefOf.RaisedRocks, item2, map);
 				MoteMaker.ThrowDustPuffThick(item2.ToVector3Shifted(), map, Rand.Range(1.5f, 3f), DustColor);
-				if (item2 != target.Cell)
-				{
-					MoteMaker.MakeStaticMote(item2, parent.pawn.Map, ThingDefOf.Mote_PsycastSkipEffect);
-				}
 			}
 			foreach (Thing item3 in list)
 			{

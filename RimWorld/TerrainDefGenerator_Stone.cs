@@ -25,7 +25,7 @@ namespace RimWorld
 				terrainDef.affordances.Add(TerrainAffordanceDefOf.Heavy);
 				terrainDef.affordances.Add(TerrainAffordanceDefOf.SmoothableStone);
 				terrainDef.fertility = 0f;
-				terrainDef.filthAcceptanceMask = (FilthSourceFlags.Terrain | FilthSourceFlags.Unnatural);
+				terrainDef.filthAcceptanceMask = FilthSourceFlags.Terrain | FilthSourceFlags.Unnatural;
 				terrainDef.modContentPack = item.modContentPack;
 				terrainDef.renderPrecedence = 190 + i;
 				terrainDef.defName = item.defName + "_Rough";

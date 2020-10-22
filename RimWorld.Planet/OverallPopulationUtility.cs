@@ -34,25 +34,17 @@ namespace RimWorld.Planet
 
 		public static float GetScaleFactor(this OverallPopulation population)
 		{
-			switch (population)
+			return population switch
 			{
-			case OverallPopulation.AlmostNone:
-				return 0.1f;
-			case OverallPopulation.Little:
-				return 0.4f;
-			case OverallPopulation.LittleBitLess:
-				return 0.7f;
-			case OverallPopulation.Normal:
-				return 1f;
-			case OverallPopulation.LittleBitMore:
-				return 1.5f;
-			case OverallPopulation.High:
-				return 2f;
-			case OverallPopulation.VeryHigh:
-				return 2.75f;
-			default:
-				return 1f;
-			}
+				OverallPopulation.AlmostNone => 0.1f, 
+				OverallPopulation.Little => 0.4f, 
+				OverallPopulation.LittleBitLess => 0.7f, 
+				OverallPopulation.Normal => 1f, 
+				OverallPopulation.LittleBitMore => 1.5f, 
+				OverallPopulation.High => 2f, 
+				OverallPopulation.VeryHigh => 2.75f, 
+				_ => 1f, 
+			};
 		}
 	}
 }

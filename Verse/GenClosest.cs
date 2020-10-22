@@ -1,7 +1,7 @@
-using RimWorld;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using RimWorld;
 using Verse.AI;
 
 namespace Verse
@@ -53,9 +53,9 @@ namespace Verse
 			bool flag2 = false;
 			if (!thingReq.IsUndefined && thingReq.CanBeFoundInRegion)
 			{
-				int num = (searchRegionsMax > 0) ? searchRegionsMax : 30;
-				thing = RegionwiseBFSWorker(root, map, thingReq, peMode, traverseParams, validator, null, searchRegionsMin, num, maxDistance, out int regionsSeen, traversableRegionTypes, ignoreEntirelyForbiddenRegions);
-				flag2 = (thing == null && regionsSeen < num);
+				int num = ((searchRegionsMax > 0) ? searchRegionsMax : 30);
+				thing = RegionwiseBFSWorker(root, map, thingReq, peMode, traverseParams, validator, null, searchRegionsMin, num, maxDistance, out var regionsSeen, traversableRegionTypes, ignoreEntirelyForbiddenRegions);
+				flag2 = thing == null && regionsSeen < num;
 			}
 			if (thing == null && flag && !flag2)
 			{
@@ -95,7 +95,7 @@ namespace Verse
 			Thing result = null;
 			if (!thingReq.IsUndefined)
 			{
-				result = RegionwiseBFSWorker(root, map, thingReq, peMode, traverseParams, validator, priorityGetter, minRegions, maxRegions, maxDistance, out int _);
+				result = RegionwiseBFSWorker(root, map, thingReq, peMode, traverseParams, validator, priorityGetter, minRegions, maxRegions, maxDistance, out var _);
 			}
 			return result;
 		}
@@ -154,7 +154,7 @@ namespace Verse
 						Thing thing = list[i];
 						if (ReachabilityWithinRegion.ThingFromRegionListerReachable(thing, r, peMode, traverseParams.pawn))
 						{
-							float num = (priorityGetter != null) ? priorityGetter(thing) : 0f;
+							float num = ((priorityGetter != null) ? priorityGetter(thing) : 0f);
 							if (!(num < bestPrio))
 							{
 								float num2 = (thing.Position - root).LengthHorizontalSquared;
@@ -189,28 +189,28 @@ namespace Verse
 			IList<Pawn> list2;
 			IList<Building> list3;
 			IList<IAttackTarget> list4;
-			if ((list = (searchSet as IList<Thing>)) != null)
+			if ((list = searchSet as IList<Thing>) != null)
 			{
 				for (int i = 0; i < list.Count; i++)
 				{
 					Process(list[i]);
 				}
 			}
-			else if ((list2 = (searchSet as IList<Pawn>)) != null)
+			else if ((list2 = searchSet as IList<Pawn>) != null)
 			{
 				for (int j = 0; j < list2.Count; j++)
 				{
 					Process(list2[j]);
 				}
 			}
-			else if ((list3 = (searchSet as IList<Building>)) != null)
+			else if ((list3 = searchSet as IList<Building>) != null)
 			{
 				for (int k = 0; k < list3.Count; k++)
 				{
 					Process(list3[k]);
 				}
 			}
-			else if ((list4 = (searchSet as IList<IAttackTarget>)) != null)
+			else if ((list4 = searchSet as IList<IAttackTarget>) != null)
 			{
 				for (int l = 0; l < list4.Count; l++)
 				{
@@ -264,21 +264,21 @@ namespace Verse
 			IList<Thing> list;
 			IList<Pawn> list2;
 			IList<Building> list3;
-			if ((list = (searchSet as IList<Thing>)) != null)
+			if ((list = searchSet as IList<Thing>) != null)
 			{
 				for (int i = 0; i < list.Count; i++)
 				{
 					Process(list[i]);
 				}
 			}
-			else if ((list2 = (searchSet as IList<Pawn>)) != null)
+			else if ((list2 = searchSet as IList<Pawn>) != null)
 			{
 				for (int j = 0; j < list2.Count; j++)
 				{
 					Process(list2[j]);
 				}
 			}
-			else if ((list3 = (searchSet as IList<Building>)) != null)
+			else if ((list3 = searchSet as IList<Building>) != null)
 			{
 				for (int k = 0; k < list3.Count; k++)
 				{

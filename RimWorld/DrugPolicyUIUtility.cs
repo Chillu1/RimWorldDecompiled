@@ -41,23 +41,16 @@ namespace RimWorld
 
 		private static IEnumerable<Widgets.DropdownMenuElement<DrugPolicy>> Button_GenerateMenu(Pawn pawn)
 		{
-			_003C_003Ec__DisplayClass2_0 _003C_003Ec__DisplayClass2_ = new _003C_003Ec__DisplayClass2_0();
-			_003C_003Ec__DisplayClass2_.pawn = pawn;
-			using (List<DrugPolicy>.Enumerator enumerator = Current.Game.drugPolicyDatabase.AllPolicies.GetEnumerator())
+			foreach (DrugPolicy assignedDrugs in Current.Game.drugPolicyDatabase.AllPolicies)
 			{
-				while (enumerator.MoveNext())
+				yield return new Widgets.DropdownMenuElement<DrugPolicy>
 				{
-					_003C_003Ec__DisplayClass2_0 _003C_003Ec__DisplayClass2_2 = _003C_003Ec__DisplayClass2_;
-					DrugPolicy assignedDrugs = enumerator.Current;
-					yield return new Widgets.DropdownMenuElement<DrugPolicy>
+					option = new FloatMenuOption(assignedDrugs.label, delegate
 					{
-						option = new FloatMenuOption(assignedDrugs.label, delegate
-						{
-							_003C_003Ec__DisplayClass2_2.pawn.drugs.CurrentPolicy = assignedDrugs;
-						}),
-						payload = assignedDrugs
-					};
-				}
+						pawn.drugs.CurrentPolicy = assignedDrugs;
+					}),
+					payload = assignedDrugs
+				};
 			}
 		}
 	}

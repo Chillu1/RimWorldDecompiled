@@ -32,6 +32,10 @@ namespace RimWorld
 
 		private List<TabRecord> tabs = new List<TabRecord>();
 
+		private List<ResearchProjectDef> cachedVisibleResearchProjects;
+
+		private Dictionary<ResearchProjectDef, List<Pair<ResearchPrerequisitesUtility.UnlockedHeader, List<Def>>>> cachedUnlockedDefsGroupedByPrerequisites;
+
 		private const float leftAreaWidthPercent = 0.22f;
 
 		private const float LeftAreaWidthMin = 200f;
@@ -115,6 +119,18 @@ namespace RimWorld
 			}
 		}
 
+		public List<ResearchProjectDef> VisibleResearchProjects
+		{
+			get
+			{
+				if (cachedVisibleResearchProjects == null)
+				{
+					cachedVisibleResearchProjects = new List<ResearchProjectDef>(DefDatabase<ResearchProjectDef>.AllDefsListForReading.Where((ResearchProjectDef d) => Find.Storyteller.difficultyValues.AllowedBy(d.hideWhen) || d == Find.ResearchManager.currentProj));
+				}
+				return cachedVisibleResearchProjects;
+			}
+		}
+
 		public override Vector2 InitialSize
 		{
 			get
@@ -130,13 +146,13 @@ namespace RimWorld
 
 		private Vector2 ViewSize(ResearchTabDef tab)
 		{
-			List<ResearchProjectDef> allDefsListForReading = DefDatabase<ResearchProjectDef>.AllDefsListForReading;
+			List<ResearchProjectDef> visibleResearchProjects = VisibleResearchProjects;
 			float num = 0f;
 			float num2 = 0f;
 			Text.Font = GameFont.Small;
-			for (int i = 0; i < allDefsListForReading.Count; i++)
+			for (int i = 0; i < visibleResearchProjects.Count; i++)
 			{
-				ResearchProjectDef researchProjectDef = allDefsListForReading[i];
+				ResearchProjectDef researchProjectDef = visibleResearchProjects[i];
 				if (researchProjectDef.tab == tab)
 				{
 					Rect rect = new Rect(0f, 0f, 140f, 0f);
@@ -152,6 +168,8 @@ namespace RimWorld
 		{
 			base.PreOpen();
 			selectedProject = Find.ResearchManager.currentProj;
+			cachedVisibleResearchProjects = null;
+			cachedUnlockedDefsGroupedByPrerequisites = null;
 			if (CurTab == null)
 			{
 				if (selectedProject != null)
@@ -204,7 +222,7 @@ namespace RimWorld
 				{
 					float num2 = selectedProject.CostFactor(Faction.OfPlayer.def.techLevel);
 					Rect rect4 = new Rect(0f, num, viewRect.width, 0f);
-					string text = "TechLevelTooLow".Translate(Faction.OfPlayer.def.techLevel.ToStringHuman(), selectedProject.techLevel.ToStringHuman(), num2.ToStringPercent());
+					string text = "TechLevelTooLow".Translate(Faction.OfPlayer.def.techLevel.ToStringHuman(), selectedProject.techLevel.ToStringHuman(), (1f / num2).ToStringPercent());
 					if (num2 != 1f)
 					{
 						text += " " + "ResearchCostComparison".Translate(selectedProject.baseCost.ToString("F0"), selectedProject.CostApparent.ToString("F0"));
@@ -212,24 +230,16 @@ namespace RimWorld
 					Widgets.LabelCacheHeight(ref rect4, text);
 					num += rect4.height;
 				}
-				if (!ColonistsHaveResearchBench)
-				{
-					GUI.color = ColoredText.RedReadable;
-					Rect rect5 = new Rect(0f, num, viewRect.width, 0f);
-					Widgets.LabelCacheHeight(ref rect5, "CannotResearchNoBench".Translate());
-					num += rect5.height;
-					GUI.color = Color.white;
-				}
 				num += DrawResearchPrereqs(rect: new Rect(0f, num, viewRect.width, 500f), project: selectedProject);
 				num += DrawResearchBenchRequirements(rect: new Rect(0f, num, viewRect.width, 500f), project: selectedProject);
-				Rect rect8 = new Rect(0f, num, viewRect.width, 500f);
-				num += DrawUnlockableHyperlinks(rect8, selectedProject);
+				Rect rect7 = new Rect(0f, num, viewRect.width, 500f);
+				num += DrawUnlockableHyperlinks(rect7, selectedProject);
 				num = (leftScrollViewHeight = num + 3f);
 				Widgets.EndScrollView();
-				Rect rect9 = new Rect(0f, outRect.yMax + 10f, position.width, 68f);
+				Rect rect8 = new Rect(0f, outRect.yMax + 10f, position.width, 68f);
 				if (selectedProject.CanStartNow && selectedProject != Find.ResearchManager.currentProj)
 				{
-					if (Widgets.ButtonText(rect9, "Research".Translate()))
+					if (Widgets.ButtonText(rect8, "Research".Translate()))
 					{
 						SoundDefOf.ResearchStart.PlayOneShotOnCamera();
 						Find.ResearchManager.currentProj = selectedProject;
@@ -262,24 +272,24 @@ namespace RimWorld
 						}
 						if (!selectedProject.TechprintRequirementMet)
 						{
-							text2 += "\n  " + "InsufficientTechprintsApplied".Translate(selectedProject.TechprintsApplied, selectedProject.techprintCount);
+							text2 += "\n  " + "InsufficientTechprintsApplied".Translate(selectedProject.TechprintsApplied, selectedProject.TechprintCount);
 						}
 					}
-					Widgets.DrawHighlight(rect9);
-					Widgets.Label(rect9.ContractedBy(5f), text2);
+					Widgets.DrawHighlight(rect8);
+					Widgets.Label(rect8.ContractedBy(5f), text2);
 					Text.Anchor = TextAnchor.UpperLeft;
 				}
-				Rect rect10 = new Rect(0f, rect9.yMax + 10f, position.width, 35f);
-				Widgets.FillableBar(rect10, selectedProject.ProgressPercent, ResearchBarFillTex, ResearchBarBGTex, doBorder: true);
+				Rect rect9 = new Rect(0f, rect8.yMax + 10f, position.width, 35f);
+				Widgets.FillableBar(rect9, selectedProject.ProgressPercent, ResearchBarFillTex, ResearchBarBGTex, doBorder: true);
 				Text.Anchor = TextAnchor.MiddleCenter;
-				Widgets.Label(rect10, selectedProject.ProgressApparent.ToString("F0") + " / " + selectedProject.CostApparent.ToString("F0"));
+				Widgets.Label(rect9, selectedProject.ProgressApparent.ToString("F0") + " / " + selectedProject.CostApparent.ToString("F0"));
 				Text.Anchor = TextAnchor.UpperLeft;
-				if (Prefs.DevMode && selectedProject != Find.ResearchManager.currentProj && !selectedProject.IsFinished && Widgets.ButtonText(new Rect(rect9.x, rect9.y - 30f, 120f, 30f), "Debug: Finish now"))
+				if (Prefs.DevMode && selectedProject != Find.ResearchManager.currentProj && !selectedProject.IsFinished && Widgets.ButtonText(new Rect(rect8.x, rect8.y - 30f, 120f, 30f), "Debug: Finish now"))
 				{
 					Find.ResearchManager.currentProj = selectedProject;
 					Find.ResearchManager.FinishProject(selectedProject);
 				}
-				if (Prefs.DevMode && !selectedProject.TechprintRequirementMet && Widgets.ButtonText(new Rect(rect9.x + 120f, rect9.y - 30f, 120f, 30f), "Debug: Apply techprint"))
+				if (Prefs.DevMode && !selectedProject.TechprintRequirementMet && Widgets.ButtonText(new Rect(rect8.x + 120f, rect8.y - 30f, 120f, 30f), "Debug: Apply techprint"))
 				{
 					Find.ResearchManager.ApplyTechprint(selectedProject, null);
 					SoundDefOf.TechprintApplied.PlayOneShotOnCamera();
@@ -348,7 +358,7 @@ namespace RimWorld
 				if (Widgets.ButtonImageFitted(butRect, TexButton.Copy))
 				{
 					StringBuilder stringBuilder = new StringBuilder();
-					foreach (ResearchProjectDef item in DefDatabase<ResearchProjectDef>.AllDefsListForReading.Where((ResearchProjectDef def) => def.Debug_IsPositionModified()))
+					foreach (ResearchProjectDef item in VisibleResearchProjects.Where((ResearchProjectDef def) => def.Debug_IsPositionModified()))
 					{
 						stringBuilder.AppendLine(item.defName);
 						stringBuilder.AppendLine(string.Format("  <researchViewX>{0}</researchViewX>", item.ResearchViewX.ToString("F2")));
@@ -374,12 +384,12 @@ namespace RimWorld
 			Widgets.ScrollHorizontal(outRect, ref rightScrollPosition, rect2);
 			Widgets.BeginScrollView(outRect, ref rightScrollPosition, rect2);
 			GUI.BeginGroup(position);
-			List<ResearchProjectDef> allDefsListForReading = DefDatabase<ResearchProjectDef>.AllDefsListForReading;
+			List<ResearchProjectDef> visibleResearchProjects = VisibleResearchProjects;
 			for (int i = 0; i < 2; i++)
 			{
-				for (int j = 0; j < allDefsListForReading.Count; j++)
+				for (int j = 0; j < visibleResearchProjects.Count; j++)
 				{
-					ResearchProjectDef researchProjectDef = allDefsListForReading[j];
+					ResearchProjectDef researchProjectDef = visibleResearchProjects[j];
 					if (researchProjectDef.tab != CurTab)
 					{
 						continue;
@@ -410,9 +420,9 @@ namespace RimWorld
 				}
 			}
 			Rect other = new Rect(rightScrollPosition.x, rightScrollPosition.y, outRect.width, outRect.height).ExpandedBy(10f);
-			for (int l = 0; l < allDefsListForReading.Count; l++)
+			for (int l = 0; l < visibleResearchProjects.Count; l++)
 			{
-				ResearchProjectDef researchProjectDef3 = allDefsListForReading[l];
+				ResearchProjectDef researchProjectDef3 = visibleResearchProjects[l];
 				if (researchProjectDef3.tab != CurTab)
 				{
 					continue;
@@ -505,11 +515,11 @@ namespace RimWorld
 				GUI.color = color;
 				Text.Anchor = TextAnchor.MiddleLeft;
 				Widgets.Label(rect5, researchProjectDef3.CostApparent.ToString());
-				if (researchProjectDef3.techprintCount > 0)
+				if (researchProjectDef3.TechprintCount > 0)
 				{
 					GUI.color = (researchProjectDef3.TechprintRequirementMet ? FulfilledPrerequisiteColor : MissingPrerequisiteColor);
 					Text.Anchor = TextAnchor.MiddleRight;
-					Widgets.Label(rect6, GetTechprintsInfoCached(researchProjectDef3.TechprintsApplied, researchProjectDef3.techprintCount));
+					Widgets.Label(rect6, GetTechprintsInfoCached(researchProjectDef3.TechprintsApplied, researchProjectDef3.TechprintCount));
 				}
 				GUI.color = color3;
 				Text.Anchor = anchor;
@@ -635,8 +645,9 @@ namespace RimWorld
 				rect.xMin += 6f;
 				rect.yMin += rect.height;
 				SetPrerequisiteStatusColor(present, project);
-				Widgets.LabelCacheHeight(ref rect, project.requiredResearchBuilding.LabelCap);
-				rect.yMin += rect.height;
+				rect.height = Text.CalcHeight(project.requiredResearchBuilding.LabelCap, rect.width - 24f - 6f);
+				Widgets.HyperlinkWithIcon(rect, new Dialog_InfoCard.Hyperlink(project.requiredResearchBuilding));
+				rect.yMin += rect.height + 4f;
 				GUI.color = Color.white;
 				rect.xMin = xMin;
 			}
@@ -656,6 +667,7 @@ namespace RimWorld
 					DrawResearchBenchFacilityRequirement(project.requiredResearchFacilities[j], bestMatchingBench, project, ref rect);
 					rect.yMin += rect.height;
 				}
+				rect.yMin += 4f;
 			}
 			GUI.color = Color.white;
 			rect.xMin = xMin;
@@ -664,26 +676,71 @@ namespace RimWorld
 
 		private float DrawUnlockableHyperlinks(Rect rect, ResearchProjectDef project)
 		{
-			List<Dialog_InfoCard.Hyperlink> infoCardHyperlinks = project.InfoCardHyperlinks;
-			if (infoCardHyperlinks.NullOrEmpty())
+			List<Pair<ResearchPrerequisitesUtility.UnlockedHeader, List<Def>>> list = UnlockedDefsGroupedByPrerequisites(project);
+			if (list.NullOrEmpty())
 			{
 				return 0f;
 			}
 			float yMin = rect.yMin;
-			Widgets.LabelCacheHeight(ref rect, "Unlocks".Translate() + ":");
-			rect.x += 6f;
-			rect.yMin += rect.height;
-			for (int i = 0; i < infoCardHyperlinks.Count; i++)
+			float x = rect.x;
+			foreach (Pair<ResearchPrerequisitesUtility.UnlockedHeader, List<Def>> item in list)
 			{
-				Widgets.HyperlinkWithIcon(new Rect(rect.x, rect.yMin, rect.width, 24f), infoCardHyperlinks[i]);
-				rect.yMin += 24f;
+				ResearchPrerequisitesUtility.UnlockedHeader first = item.First;
+				rect.x = x;
+				if (!first.unlockedBy.Any())
+				{
+					Widgets.LabelCacheHeight(ref rect, "Unlocks".Translate() + ":");
+				}
+				else
+				{
+					Widgets.LabelCacheHeight(ref rect, string.Concat("UnlockedWith".Translate(), " ", HeaderLabel(first), ":"));
+				}
+				rect.x += 6f;
+				rect.yMin += rect.height;
+				foreach (Def item2 in item.Second)
+				{
+					Widgets.HyperlinkWithIcon(hyperlink: new Dialog_InfoCard.Hyperlink(item2), rect: new Rect(rect.x, rect.yMin, rect.width, 24f));
+					rect.yMin += 24f;
+				}
 			}
 			return rect.yMin - yMin;
 		}
 
+		private List<Pair<ResearchPrerequisitesUtility.UnlockedHeader, List<Def>>> UnlockedDefsGroupedByPrerequisites(ResearchProjectDef project)
+		{
+			if (cachedUnlockedDefsGroupedByPrerequisites == null)
+			{
+				cachedUnlockedDefsGroupedByPrerequisites = new Dictionary<ResearchProjectDef, List<Pair<ResearchPrerequisitesUtility.UnlockedHeader, List<Def>>>>();
+			}
+			if (!cachedUnlockedDefsGroupedByPrerequisites.TryGetValue(project, out var value))
+			{
+				value = ResearchPrerequisitesUtility.UnlockedDefsGroupedByPrerequisites(project);
+				cachedUnlockedDefsGroupedByPrerequisites.Add(project, value);
+			}
+			return value;
+		}
+
+		private string HeaderLabel(ResearchPrerequisitesUtility.UnlockedHeader headerProject)
+		{
+			StringBuilder stringBuilder = new StringBuilder();
+			string value = "";
+			for (int i = 0; i < headerProject.unlockedBy.Count; i++)
+			{
+				ResearchProjectDef researchProjectDef = headerProject.unlockedBy[i];
+				string text = researchProjectDef.LabelCap;
+				if (!researchProjectDef.IsFinished)
+				{
+					text = text.Colorize(MissingPrerequisiteColor);
+				}
+				stringBuilder.Append(text).Append(value);
+				value = ", ";
+			}
+			return stringBuilder.ToString();
+		}
+
 		private float DrawTechprintInfo(Rect rect, ResearchProjectDef project)
 		{
-			if (selectedProject.techprintCount == 0)
+			if (selectedProject.TechprintCount == 0)
 			{
 				return 0f;
 			}
@@ -702,9 +759,18 @@ namespace RimWorld
 						if (item.def.categoryTag == heldByFactionCategoryTag)
 						{
 							string name = item.Name;
-							Rect rect2 = new Rect(rect.x, yMin + num, rect.width, Text.CalcHeight(name, rect.width));
-							Widgets.Label(rect2, name);
-							num += rect2.height;
+							Rect position = new Rect(rect.x, yMin + num, rect.width, Mathf.Max(24f, Text.CalcHeight(name, rect.width - 24f - 6f)));
+							GUI.BeginGroup(position);
+							Rect r = new Rect(0f, 0f, 24f, 24f).ContractedBy(2f);
+							FactionUIUtility.DrawFactionIconWithTooltip(r, item);
+							Rect rect2 = new Rect(r.xMax + 6f, 0f, position.width - r.width - 6f, position.height);
+							Text.Anchor = TextAnchor.MiddleLeft;
+							Text.WordWrap = false;
+							Widgets.Label(rect2, item.Name);
+							Text.Anchor = TextAnchor.UpperLeft;
+							Text.WordWrap = true;
+							GUI.EndGroup();
+							num += position.height;
 						}
 					}
 				}
@@ -748,7 +814,8 @@ namespace RimWorld
 			{
 				text += " (" + "InactiveFacility".Translate() + ")";
 			}
-			Widgets.LabelCacheHeight(ref rect, text);
+			rect.height = Text.CalcHeight(text, rect.width - 24f - 6f);
+			Widgets.HyperlinkWithIcon(rect, new Dialog_InfoCard.Hyperlink(requiredFacility), text);
 		}
 
 		private Building_ResearchBench FindBenchFulfillingMostRequirements(ThingDef requiredResearchBench, List<ThingDef> requiredFacilities)

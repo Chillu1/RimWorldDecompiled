@@ -6,6 +6,10 @@ namespace RimWorld
 	{
 		public float offset;
 
+		public virtual bool DependsOnPawn => false;
+
+		public virtual bool NeedsToBeSpawned => true;
+
 		public virtual string GetExplanation(Thing parent)
 		{
 			return "";
@@ -35,9 +39,18 @@ namespace RimWorld
 		{
 		}
 
-		public virtual float MaxOffset(bool forAbstract = false)
+		public virtual float MinOffset(Thing parent = null)
+		{
+			return 0f;
+		}
+
+		public virtual float MaxOffset(Thing parent = null)
 		{
 			return offset;
+		}
+
+		public virtual void ResolveReferences()
+		{
 		}
 	}
 }

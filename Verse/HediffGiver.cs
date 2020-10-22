@@ -1,5 +1,6 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
+using RimWorld.Planet;
 
 namespace Verse
 {
@@ -14,6 +15,8 @@ namespace Verse
 
 		public bool allowOnLodgers = true;
 
+		public bool allowOnQuestRewardPawns = true;
+
 		public int countToAffect = 1;
 
 		public virtual void OnIntervalPassed(Pawn pawn, Hediff cause)
@@ -27,7 +30,11 @@ namespace Verse
 
 		public bool TryApply(Pawn pawn, List<Hediff> outAddedHediffs = null)
 		{
-			if (pawn.IsQuestLodger() && !allowOnLodgers)
+			if (!allowOnLodgers && pawn.IsQuestLodger())
+			{
+				return false;
+			}
+			if (!allowOnQuestRewardPawns && pawn.IsWorldPawn() && pawn.IsQuestReward())
 			{
 				return false;
 			}
@@ -40,11 +47,11 @@ namespace Verse
 			{
 				if (cause == null)
 				{
-					Find.LetterStack.ReceiveLetter("LetterHediffFromRandomHediffGiverLabel".Translate(pawn.LabelShort, hediff.LabelCap, pawn.Named("PAWN")).CapitalizeFirst(), "LetterHediffFromRandomHediffGiver".Translate(pawn.LabelShort, hediff.LabelCap, pawn.Named("PAWN")).CapitalizeFirst(), LetterDefOf.NegativeEvent, pawn);
+					Find.LetterStack.ReceiveLetter("LetterHediffFromRandomHediffGiverLabel".Translate(pawn.LabelShortCap, hediff.LabelCap, pawn.Named("PAWN")).CapitalizeFirst(), "LetterHediffFromRandomHediffGiver".Translate(pawn.LabelShortCap, hediff.LabelCap, pawn.Named("PAWN")).CapitalizeFirst(), LetterDefOf.NegativeEvent, pawn);
 				}
 				else
 				{
-					Find.LetterStack.ReceiveLetter("LetterHealthComplicationsLabel".Translate(pawn.LabelShort, hediff.LabelCap, pawn.Named("PAWN")).CapitalizeFirst(), "LetterHealthComplications".Translate(pawn.LabelShort, hediff.LabelCap, cause.LabelCap, pawn.Named("PAWN")).CapitalizeFirst(), LetterDefOf.NegativeEvent, pawn);
+					Find.LetterStack.ReceiveLetter("LetterHealthComplicationsLabel".Translate(pawn.LabelShort, hediff.LabelCap, pawn.Named("PAWN")).CapitalizeFirst(), "LetterHealthComplications".Translate(pawn.LabelShortCap, hediff.LabelCap, cause.LabelCap, pawn.Named("PAWN")).CapitalizeFirst(), LetterDefOf.NegativeEvent, pawn);
 				}
 			}
 		}

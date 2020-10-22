@@ -1,5 +1,6 @@
 using UnityEngine;
 using Verse;
+using Verse.AI;
 
 namespace RimWorld
 {
@@ -53,11 +54,22 @@ namespace RimWorld
 
 		public override bool ValidateTarget(LocalTargetInfo target)
 		{
-			if (!CanHitTarget(target))
+			if (verbProps.range > 0f)
+			{
+				if (!CanHitTarget(target))
+				{
+					if (target.IsValid)
+					{
+						Messages.Message(ability.def.LabelCap + ": " + "AbilityCannotHitTarget".Translate(), new LookTargets(ability.pawn, target.ToTargetInfo(ability.pawn.Map)), MessageTypeDefOf.RejectInput, historical: false);
+					}
+					return false;
+				}
+			}
+			else if (!ability.pawn.CanReach(target, PathEndMode.Touch, ability.pawn.NormalMaxDanger()))
 			{
 				if (target.IsValid)
 				{
-					Messages.Message(ability.def.LabelCap + ": " + "AbilityCannotHitTarget".Translate(), MessageTypeDefOf.RejectInput);
+					Messages.Message(ability.def.LabelCap + ": " + "AbilityCannotReachTarget".Translate(), new LookTargets(ability.pawn, target.ToTargetInfo(ability.pawn.Map)), MessageTypeDefOf.RejectInput, historical: false);
 				}
 				return false;
 			}
@@ -75,9 +87,18 @@ namespace RimWorld
 			return true;
 		}
 
+		public override bool CanHitTarget(LocalTargetInfo targ)
+		{
+			if (verbProps.range <= 0f)
+			{
+				return true;
+			}
+			return base.CanHitTarget(targ);
+		}
+
 		public override void OnGUI(LocalTargetInfo target)
 		{
-			if (CanHitTarget(target) && IsApplicableTo(target))
+			if (CanHitTarget(target) && IsApplicableTo(target) && ValidateTarget(target))
 			{
 				base.OnGUI(target);
 			}
@@ -85,17 +106,48 @@ namespace RimWorld
 			{
 				GenUI.DrawMouseAttachment(TexCommand.CannotShoot);
 			}
+			DrawAttachmentExtraLabel(target);
+		}
+
+		protected void DrawAttachmentExtraLabel(LocalTargetInfo target)
+		{
+			foreach (CompAbilityEffect effectComp in ability.EffectComps)
+			{
+				string text = effectComp.ExtraLabel(target);
+				if (!text.NullOrEmpty())
+				{
+					Widgets.MouseAttachedLabel(text);
+					break;
+				}
+			}
 		}
 
 		public void DrawRadius()
 		{
-			GenDraw.DrawRadiusRing(ability.pawn.Position, verbProps.range);
+			if (ability.pawn.Spawned)
+			{
+				GenDraw.DrawRadiusRing(ability.pawn.Position, verbProps.range);
+			}
+		}
+
+		public override bool TryStartCastOn(LocalTargetInfo castTarg, LocalTargetInfo destTarg, bool surpriseAttack = false, bool canHitNonTargetPawns = true)
+		{
+			bool num = base.TryStartCastOn(castTarg, destTarg, surpriseAttack, canHitNonTargetPawns);
+			Pawn pawn;
+			if (num && ability.def.stunTargetWhileCasting && ability.def.verbProperties.warmupTime > 0f && (pawn = castTarg.Thing as Pawn) != null && pawn != ability.pawn)
+			{
+				pawn.stances.stunner.StunFor_NewTmp(ability.def.verbProperties.warmupTime.SecondsToTicks(), ability.pawn, addBattleLog: false, showMote: false);
+			}
+			return num;
 		}
 
 		public override void DrawHighlight(LocalTargetInfo target)
 		{
 			AbilityDef def = ability.def;
-			DrawRadius();
+			if (verbProps.range > 0f)
+			{
+				DrawRadius();
+			}
 			if (CanHitTarget(target) && IsApplicableTo(target))
 			{
 				if (def.HasAreaOfEffect)
@@ -115,6 +167,12 @@ namespace RimWorld
 			{
 				ability.DrawEffectPreviews(target);
 			}
+		}
+
+		public override void ExposeData()
+		{
+			base.ExposeData();
+			Scribe_References.Look(ref ability, "ability");
 		}
 	}
 }

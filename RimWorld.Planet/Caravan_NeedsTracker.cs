@@ -98,7 +98,7 @@ namespace RimWorld.Planet
 			}
 			else
 			{
-				if (!CaravanInventoryUtility.TryGetBestFood(caravan, pawn, out Thing food2, out Pawn owner))
+				if (!CaravanInventoryUtility.TryGetBestFood(caravan, pawn, out var food2, out var owner))
 				{
 					return;
 				}
@@ -122,7 +122,7 @@ namespace RimWorld.Planet
 
 		private void TrySatisfyChemicalNeed(Pawn pawn, Need_Chemical chemical)
 		{
-			if ((int)chemical.CurCategory < 2 && CaravanInventoryUtility.TryGetDrugToSatisfyChemicalNeed(caravan, pawn, chemical, out Thing drug, out Pawn owner))
+			if ((int)chemical.CurCategory < 2 && CaravanInventoryUtility.TryGetDrugToSatisfyChemicalNeed(caravan, pawn, chemical, out var drug, out var owner))
 			{
 				IngestDrug(pawn, drug, owner);
 			}
@@ -156,7 +156,7 @@ namespace RimWorld.Planet
 				currentJoyGainPerTick *= 1250f;
 				tmpAvailableJoyKinds.Clear();
 				GetAvailableJoyKindsFor(pawn, tmpAvailableJoyKinds);
-				if (tmpAvailableJoyKinds.TryRandomElementByWeight((JoyKindDef x) => 1f - Mathf.Clamp01(pawn.needs.joy.tolerances[x]), out JoyKindDef result))
+				if (tmpAvailableJoyKinds.TryRandomElementByWeight((JoyKindDef x) => 1f - Mathf.Clamp01(pawn.needs.joy.tolerances[x]), out var result))
 				{
 					joy.GainJoy(currentJoyGainPerTick, result);
 					tmpAvailableJoyKinds.Clear();

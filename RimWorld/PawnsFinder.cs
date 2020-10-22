@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -33,6 +33,8 @@ namespace RimWorld
 		private static List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive_Colonists_Result = new List<Pawn>();
 
 		private static List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_Result = new List<Pawn>();
+
+		private static List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoLodgers_Result = new List<Pawn>();
 
 		private static List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep_Result = new List<Pawn>();
 
@@ -367,6 +369,23 @@ namespace RimWorld
 			}
 		}
 
+		public static List<Pawn> AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoLodgers
+		{
+			get
+			{
+				allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoLodgers_Result.Clear();
+				List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive = AllMapsCaravansAndTravelingTransportPods_Alive;
+				for (int i = 0; i < allMapsCaravansAndTravelingTransportPods_Alive.Count; i++)
+				{
+					if (allMapsCaravansAndTravelingTransportPods_Alive[i].IsFreeColonist && !allMapsCaravansAndTravelingTransportPods_Alive[i].IsQuestLodger())
+					{
+						allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoLodgers_Result.Add(allMapsCaravansAndTravelingTransportPods_Alive[i]);
+					}
+				}
+				return allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoLodgers_Result;
+			}
+		}
+
 		public static List<Pawn> AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep
 		{
 			get
@@ -627,7 +646,7 @@ namespace RimWorld
 
 		public static List<Pawn> AllMaps_SpawnedPawnsInFaction(Faction faction)
 		{
-			if (!allMaps_SpawnedPawnsInFaction_Result.TryGetValue(faction, out List<Pawn> value))
+			if (!allMaps_SpawnedPawnsInFaction_Result.TryGetValue(faction, out var value))
 			{
 				value = new List<Pawn>();
 				allMaps_SpawnedPawnsInFaction_Result.Add(faction, value);
@@ -678,6 +697,7 @@ namespace RimWorld
 			allMaps_FreeColonistsAndPrisoners_Result.Clear();
 			allMaps_SpawnedPawnsInFaction_Result.Clear();
 			homeMaps_FreeColonistsSpawned_Result.Clear();
+			allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoLodgers_Result.Clear();
 		}
 	}
 }

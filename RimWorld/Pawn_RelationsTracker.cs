@@ -240,9 +240,10 @@ namespace RimWorld
 				}
 				finally
 				{
-					canCacheFamilyByBlood = false;
-					familyByBloodIsCached = false;
-					cachedFamilyByBlood.Clear();
+					Pawn_RelationsTracker pawn_RelationsTracker = this;
+					pawn_RelationsTracker.canCacheFamilyByBlood = false;
+					pawn_RelationsTracker.familyByBloodIsCached = false;
+					pawn_RelationsTracker.cachedFamilyByBlood.Clear();
 				}
 			}
 		}
@@ -348,7 +349,7 @@ namespace RimWorld
 				Log.Warning(string.Concat("Tried to add the same relation twice: ", def, ", pawn=", pawn, ", otherPawn=", otherPawn));
 				return;
 			}
-			int startTicks = (Current.ProgramState == ProgramState.Playing) ? Find.TickManager.TicksGame : 0;
+			int startTicks = ((Current.ProgramState == ProgramState.Playing) ? Find.TickManager.TicksGame : 0);
 			def.Worker.OnRelationCreated(pawn, otherPawn);
 			directRelations.Add(new DirectPawnRelation(def, otherPawn, startTicks));
 			otherPawn.relations.pawnsWithDirectRelationsWithMe.Add(pawn);
@@ -359,6 +360,24 @@ namespace RimWorld
 			}
 			GainedOrLostDirectRelation();
 			otherPawn.relations.GainedOrLostDirectRelation();
+			if (Current.ProgramState != ProgramState.Playing)
+			{
+				return;
+			}
+			if (!pawn.Dead && pawn.health != null)
+			{
+				for (int num = pawn.health.hediffSet.hediffs.Count - 1; num >= 0; num--)
+				{
+					pawn.health.hediffSet.hediffs[num].Notify_RelationAdded(otherPawn, def);
+				}
+			}
+			if (!otherPawn.Dead && otherPawn.health != null)
+			{
+				for (int num2 = otherPawn.health.hediffSet.hediffs.Count - 1; num2 >= 0; num2--)
+				{
+					otherPawn.health.hediffSet.hediffs[num2].Notify_RelationAdded(pawn, def);
+				}
+			}
 		}
 
 		public void RemoveDirectRelation(DirectPawnRelation relation)
@@ -604,7 +623,13 @@ namespace RimWorld
 			{
 				num *= relation.romanceChanceFactor;
 			}
-			return SecondaryLovinChanceFactor(otherPawn) * num;
+			float num2 = 1f;
+			HediffWithTarget hediffWithTarget = (HediffWithTarget)pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.PsychicLove);
+			if (hediffWithTarget != null && hediffWithTarget.target == otherPawn)
+			{
+				num2 = 10f;
+			}
+			return SecondaryLovinChanceFactor(otherPawn) * num * num2;
 		}
 
 		public float CompatibilityWith(Pawn otherPawn)
@@ -833,14 +858,13 @@ namespace RimWorld
 					pawn = directRelations[i].otherPawn;
 					num++;
 					float value = Rand.Value;
-					MentalStateDef stateDef = (value < 0.25f) ? MentalStateDefOf.Wander_Sad : ((value < 0.5f) ? MentalStateDefOf.Wander_Psychotic : ((!(value < 0.75f)) ? MentalStateDefOf.Manhunter : MentalStateDefOf.Berserk));
-					directRelations[i].otherPawn.mindState.mentalStateHandler.TryStartMentalState(stateDef, "MentalStateReason_BondedHumanDeath".Translate(this.pawn), forceWake: true);
+					MentalStateDef stateDef = ((value < 0.25f) ? MentalStateDefOf.Wander_Sad : ((value < 0.5f) ? MentalStateDefOf.Wander_Psychotic : ((!(value < 0.75f)) ? MentalStateDefOf.Manhunter : MentalStateDefOf.Berserk)));
+					directRelations[i].otherPawn.mindState.mentalStateHandler.TryStartMentalState(stateDef, "MentalStateReason_BondedHumanDeath".Translate(this.pawn).Resolve(), forceWake: true);
 				}
 			}
 			if (num == 1)
 			{
-				string str = (pawn.Name == null || pawn.Name.Numerical) ? ((string)"MessageBondedAnimalMentalBreak".Translate(pawn.LabelIndefinite(), this.pawn.LabelShort, pawn.Named("ANIMAL"), this.pawn.Named("HUMAN"))) : ((string)"MessageNamedBondedAnimalMentalBreak".Translate(pawn.KindLabelIndefinite(), pawn.Name.ToStringShort, this.pawn.LabelShort, pawn.Named("ANIMAL"), this.pawn.Named("HUMAN")));
-				Messages.Message(str.CapitalizeFirst(), pawn, MessageTypeDefOf.ThreatSmall);
+				Messages.Message(((pawn.Name == null || pawn.Name.Numerical) ? "MessageBondedAnimalMentalBreak".Translate(pawn.LabelIndefinite(), this.pawn.LabelShort, pawn.Named("ANIMAL"), this.pawn.Named("HUMAN")) : "MessageNamedBondedAnimalMentalBreak".Translate(pawn.KindLabelIndefinite(), pawn.Name.ToStringShort, this.pawn.LabelShort, pawn.Named("ANIMAL"), this.pawn.Named("HUMAN"))).CapitalizeFirst(), pawn, MessageTypeDefOf.ThreatSmall);
 			}
 			else if (num > 1)
 			{

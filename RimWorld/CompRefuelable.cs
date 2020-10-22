@@ -276,7 +276,7 @@ namespace RimWorld
 				command_Toggle.defaultDesc = "CommandToggleAllowAutoRefuelDesc".Translate();
 				command_Toggle.hotKey = KeyBindingDefOf.Command_ItemForbid;
 				command_Toggle.icon = (allowAutoRefuel ? TexCommand.ForbidOff : TexCommand.ForbidOn);
-				command_Toggle.isActive = (() => allowAutoRefuel);
+				command_Toggle.isActive = () => allowAutoRefuel;
 				command_Toggle.toggleAction = delegate
 				{
 					allowAutoRefuel = !allowAutoRefuel;

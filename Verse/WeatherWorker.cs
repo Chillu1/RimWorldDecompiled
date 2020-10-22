@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 
 namespace Verse
 {
@@ -76,7 +76,7 @@ namespace Verse
 			SkyThreshold skyThreshold = skyTargets[num2];
 			SkyThreshold skyThreshold2 = skyTargets[num3];
 			float num4 = skyThreshold2.celGlowThreshold - skyThreshold.celGlowThreshold;
-			float t = (num4 != 0f) ? ((num - skyThreshold.celGlowThreshold) / num4) : 1f;
+			float t = ((num4 != 0f) ? ((num - skyThreshold.celGlowThreshold) / num4) : 1f);
 			SkyTarget result = default(SkyTarget);
 			result.glow = num;
 			result.colors = SkyColorSet.Lerp(skyThreshold.colors, skyThreshold2.colors, t);

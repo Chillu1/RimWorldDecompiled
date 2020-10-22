@@ -60,7 +60,7 @@ namespace RimWorld
 				}
 				Thought_Memory thought_Memory;
 				ISocialThought socialThought;
-				description = ((def.Worker != null) ? def.Worker.PostProcessDescription(pawn, description) : (((thought_Memory = (this as Thought_Memory)) != null && thought_Memory.otherPawn != null) ? ((string)description.Formatted(pawn.Named("PAWN"), thought_Memory.otherPawn.Named("OTHERPAWN"))) : (((socialThought = (this as ISocialThought)) == null || socialThought.OtherPawn() == null) ? ((string)description.Formatted(pawn.Named("PAWN"))) : ((string)description.Formatted(pawn.Named("PAWN"), socialThought.OtherPawn().Named("OTHERPAWN"))))));
+				description = ((def.Worker != null) ? def.Worker.PostProcessDescription(pawn, description) : (((thought_Memory = this as Thought_Memory) != null && thought_Memory.otherPawn != null) ? ((string)description.Formatted(pawn.Named("PAWN"), thought_Memory.otherPawn.Named("OTHERPAWN"))) : (((socialThought = this as ISocialThought) == null || socialThought.OtherPawn() == null) ? ((string)description.Formatted(pawn.Named("PAWN"))) : ((string)description.Formatted(pawn.Named("PAWN"), socialThought.OtherPawn().Named("OTHERPAWN"))))));
 				string text = ThoughtUtility.ThoughtNullifiedMessage(pawn, def);
 				if (!string.IsNullOrEmpty(text))
 				{

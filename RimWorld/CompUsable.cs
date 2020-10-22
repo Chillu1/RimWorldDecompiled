@@ -18,47 +18,45 @@ namespace RimWorld
 
 		public override IEnumerable<FloatMenuOption> CompFloatMenuOptions(Pawn myPawn)
 		{
-			Pawn myPawn2 = myPawn;
-			CompUsable compUsable = this;
-			if (!CanBeUsedBy(myPawn2, out string failReason))
+			if (!CanBeUsedBy(myPawn, out var failReason))
 			{
-				yield return new FloatMenuOption(FloatMenuOptionLabel(myPawn2) + ((failReason != null) ? (" (" + failReason + ")") : ""), null);
+				yield return new FloatMenuOption(FloatMenuOptionLabel(myPawn) + ((failReason != null) ? (" (" + failReason + ")") : ""), null);
 				yield break;
 			}
-			if (!myPawn2.CanReach(parent, PathEndMode.Touch, Danger.Deadly))
+			if (!myPawn.CanReach(parent, PathEndMode.Touch, Danger.Deadly))
 			{
-				yield return new FloatMenuOption(FloatMenuOptionLabel(myPawn2) + " (" + "NoPath".Translate() + ")", null);
+				yield return new FloatMenuOption(FloatMenuOptionLabel(myPawn) + " (" + "NoPath".Translate() + ")", null);
 				yield break;
 			}
-			if (!myPawn2.CanReserve(parent))
+			if (!myPawn.CanReserve(parent))
 			{
-				yield return new FloatMenuOption(FloatMenuOptionLabel(myPawn2) + " (" + "Reserved".Translate() + ")", null);
+				yield return new FloatMenuOption(FloatMenuOptionLabel(myPawn) + " (" + "Reserved".Translate() + ")", null);
 				yield break;
 			}
-			if (!myPawn2.health.capacities.CapableOf(PawnCapacityDefOf.Manipulation))
+			if (!myPawn.health.capacities.CapableOf(PawnCapacityDefOf.Manipulation))
 			{
-				yield return new FloatMenuOption(FloatMenuOptionLabel(myPawn2) + " (" + "Incapable".Translate() + ")", null);
+				yield return new FloatMenuOption(FloatMenuOptionLabel(myPawn) + " (" + "Incapable".Translate() + ")", null);
 				yield break;
 			}
-			yield return new FloatMenuOption(FloatMenuOptionLabel(myPawn2), delegate
+			yield return new FloatMenuOption(FloatMenuOptionLabel(myPawn), delegate
 			{
-				if (myPawn2.CanReserveAndReach(compUsable.parent, PathEndMode.Touch, Danger.Deadly))
+				if (myPawn.CanReserveAndReach(parent, PathEndMode.Touch, Danger.Deadly))
 				{
-					foreach (CompUseEffect comp in compUsable.parent.GetComps<CompUseEffect>())
+					foreach (CompUseEffect comp in parent.GetComps<CompUseEffect>())
 					{
-						if (comp.SelectedUseOption(myPawn2))
+						if (comp.SelectedUseOption(myPawn))
 						{
 							return;
 						}
 					}
-					compUsable.TryStartUseJob(myPawn2, LocalTargetInfo.Invalid);
+					TryStartUseJob(myPawn, LocalTargetInfo.Invalid);
 				}
 			});
 		}
 
 		public virtual void TryStartUseJob(Pawn pawn, LocalTargetInfo extraTarget)
 		{
-			if (!pawn.CanReserveAndReach(parent, PathEndMode.Touch, Danger.Deadly) || !CanBeUsedBy(pawn, out string _))
+			if (!pawn.CanReserveAndReach(parent, PathEndMode.Touch, Danger.Deadly) || !CanBeUsedBy(pawn, out var _))
 			{
 				return;
 			}
@@ -86,14 +84,14 @@ namespace RimWorld
 			}
 			void StartJob()
 			{
-				Job job = extraTarget.IsValid ? JobMaker.MakeJob(Props.useJob, parent, extraTarget) : JobMaker.MakeJob(Props.useJob, parent);
+				Job job = (extraTarget.IsValid ? JobMaker.MakeJob(Props.useJob, parent, extraTarget) : JobMaker.MakeJob(Props.useJob, parent));
 				pawn.jobs.TryTakeOrderedJob(job);
 			}
 		}
 
 		public void UsedBy(Pawn p)
 		{
-			if (!CanBeUsedBy(p, out string _))
+			if (!CanBeUsedBy(p, out var _))
 			{
 				return;
 			}

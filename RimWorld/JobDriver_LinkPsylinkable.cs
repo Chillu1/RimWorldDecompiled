@@ -46,8 +46,8 @@ namespace RimWorld
 				pawn.rotationTracker.FaceTarget(PsylinkableThing);
 				if (Find.TickManager.TicksGame % 720 == 0)
 				{
-					Vector3 vector = pawn.Position.ToVector3();
-					vector += (PsylinkableThing.Position.ToVector3() - vector) * Rand.Value;
+					Vector3 vector = pawn.TrueCenter();
+					vector += (PsylinkableThing.TrueCenter() - vector) * Rand.Value;
 					MoteMaker.MakeStaticMote(vector, pawn.Map, ThingDefOf.Mote_PsycastAreaEffect, 0.5f);
 					Psylinkable.Props.linkSound.PlayOneShot(SoundInfo.InMap(new TargetInfo(PsylinkableThing)));
 				}

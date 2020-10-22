@@ -13,6 +13,12 @@ namespace Verse
 
 		protected Listing_Standard listing;
 
+		protected bool focusOnFilterOnOpen = true;
+
+		private bool focusFilter;
+
+		protected const string FilterControlName = "DebugFilter";
+
 		public override Vector2 InitialSize => new Vector2(UI.screenWidth, UI.screenHeight);
 
 		public override bool IsDebug => true;
@@ -24,9 +30,25 @@ namespace Verse
 			absorbInputAroundWindow = true;
 		}
 
+		public override void PostOpen()
+		{
+			base.PostOpen();
+			if (focusOnFilterOnOpen)
+			{
+				focusFilter = true;
+			}
+		}
+
 		public override void DoWindowContents(Rect inRect)
 		{
+			GUI.SetNextControlName("DebugFilter");
 			filter = Widgets.TextField(new Rect(0f, 0f, 200f, 30f), filter);
+			if ((Event.current.type == EventType.KeyDown || Event.current.type == EventType.Repaint) && focusFilter)
+			{
+				GUI.FocusControl("DebugFilter");
+				filter = "";
+				focusFilter = false;
+			}
 			if (Event.current.type == EventType.Layout)
 			{
 				totalOptionsHeight = 0f;

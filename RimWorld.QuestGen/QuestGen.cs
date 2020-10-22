@@ -33,6 +33,8 @@ namespace RimWorld.QuestGen
 
 		private static List<string> slateQuestTagsToAddWhenFinished = new List<string>();
 
+		private static List<Rule> questContentRules = new List<Rule>();
+
 		public static QuestScriptDef Root => root;
 
 		public static bool Working => working;
@@ -47,9 +49,11 @@ namespace RimWorld.QuestGen
 
 		public static List<QuestTextRequest> TextRequestsReadOnly => textRequests;
 
+		public static List<Rule> QuestContentRulesReadOnly => questContentRules;
+
 		public static string GenerateNewSignal(string signalString, bool ensureUnique = true)
 		{
-			if (!ensureUnique || !generatedSignals.TryGetValue(signalString, out int value))
+			if (!ensureUnique || !generatedSignals.TryGetValue(signalString, out var value))
 			{
 				value = 0;
 			}
@@ -60,7 +64,7 @@ namespace RimWorld.QuestGen
 
 		public static string GenerateNewTargetQuestTag(string targetString, bool ensureUnique = true)
 		{
-			if (!ensureUnique || !generatedTargetQuestTags.TryGetValue(targetString, out int value))
+			if (!ensureUnique || !generatedTargetQuestTags.TryGetValue(targetString, out var value))
 			{
 				value = 0;
 			}
@@ -99,6 +103,7 @@ namespace RimWorld.QuestGen
 					quest.challengeRating = root.defaultChallengeRating;
 				}
 				quest.root = root;
+				quest.hidden = root.defaultHidden;
 				slate.SetIfNone("inSignal", quest.InitiateSignal);
 				root.Run();
 				try
@@ -167,6 +172,7 @@ namespace RimWorld.QuestGen
 				questDescriptionConstants.Clear();
 				questNameRules.Clear();
 				questNameConstants.Clear();
+				questContentRules.Clear();
 				slateQuestTagsToAddWhenFinished.Clear();
 				ResetIdCounters();
 			}
@@ -259,6 +265,23 @@ namespace RimWorld.QuestGen
 			}
 		}
 
+		public static void AddQuestContentRules(RulePack rulePack)
+		{
+			AddQuestContentRules(rulePack.Rules);
+		}
+
+		public static void AddQuestContentRules(List<Rule> rules)
+		{
+			if (!working)
+			{
+				Log.Error("Tried to add quest content rules while not resolving any quest.");
+			}
+			else
+			{
+				questContentRules.AddRange(QuestGenUtility.AppendCurrentPrefix(rules));
+			}
+		}
+
 		public static void AddSlateQuestTagToAddWhenFinished(string slateVarNameWithPrefix)
 		{
 			if (!slateQuestTagsToAddWhenFinished.Contains(slateVarNameWithPrefix))
@@ -298,7 +321,7 @@ namespace RimWorld.QuestGen
 		{
 			for (int i = 0; i < slateQuestTagsToAddWhenFinished.Count; i++)
 			{
-				if (slate.TryGet(slateQuestTagsToAddWhenFinished[i], out object var, isAbsoluteName: true))
+				if (slate.TryGet<object>(slateQuestTagsToAddWhenFinished[i], out var var, isAbsoluteName: true))
 				{
 					string questTagToAdd = GenerateNewTargetQuestTag(slateQuestTagsToAddWhenFinished[i], ensureUnique: false);
 					QuestUtility.AddQuestTag(var, questTagToAdd);

@@ -20,7 +20,7 @@ namespace RimWorld.QuestGen
 			Slate slate = QuestGen.slate;
 			QuestPart_DestroyWorldObject questPart_DestroyWorldObject = new QuestPart_DestroyWorldObject();
 			questPart_DestroyWorldObject.worldObject = worldObject.GetValue(slate);
-			questPart_DestroyWorldObject.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart_DestroyWorldObject.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			QuestGen.quest.AddPart(questPart_DestroyWorldObject);
 		}
 	}

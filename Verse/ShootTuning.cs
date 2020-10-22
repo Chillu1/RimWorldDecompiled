@@ -1,3 +1,5 @@
+using System;
+
 namespace Verse
 {
 	public static class ShootTuning
@@ -76,6 +78,7 @@ namespace Verse
 
 		public const float Intercept_Pawn_HitChanceFactor_LayingDown = 0.1f;
 
+		[Obsolete]
 		public const float Intercept_Pawn_HitChanceFactor_NonWildNonEnemy = 0.4f;
 
 		public const float Intercept_Object_HitChancePerFillPercent = 0.15f;

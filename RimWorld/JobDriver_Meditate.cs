@@ -12,7 +12,7 @@ namespace RimWorld
 
 		private Mote psyfocusMote;
 
-		private Sustainer sustainer;
+		protected Sustainer sustainer;
 
 		protected const TargetIndex SpotInd = TargetIndex.A;
 
@@ -87,6 +87,10 @@ namespace RimWorld
 				if (Focus != null)
 				{
 					meditate.FailOnDespawnedNullOrForbidden(TargetIndex.C);
+					if (pawn.HasPsylink && Focus.Thing != null)
+					{
+						meditate.FailOn(() => Focus.Thing.GetStatValueForPawn(StatDefOf.MeditationFocusStrength, pawn) < float.Epsilon);
+					}
 				}
 				meditate.handlingFacing = true;
 			}
@@ -95,11 +99,22 @@ namespace RimWorld
 			meditate.FailOn(() => !MeditationUtility.CanMeditateNow(pawn) || !MeditationUtility.SafeEnvironmentalConditions(pawn, base.TargetLocA, base.Map));
 			meditate.AddPreTickAction(delegate
 			{
+				bool flag = pawn.GetTimeAssignment() == TimeAssignmentDefOf.Meditate;
+				if (job.ignoreJoyTimeAssignment)
+				{
+					Pawn_PsychicEntropyTracker psychicEntropy = pawn.psychicEntropy;
+					if (!flag && psychicEntropy.TargetPsyfocus < psychicEntropy.CurrentPsyfocus && (psychicEntropy.TargetPsyfocus < job.psyfocusTargetLast || job.wasOnMeditationTimeAssignment))
+					{
+						EndJobWith(JobCondition.InterruptForced);
+						return;
+					}
+					job.psyfocusTargetLast = psychicEntropy.TargetPsyfocus;
+					job.wasOnMeditationTimeAssignment = flag;
+				}
 				if (faceDir.IsValid && !FromBed)
 				{
 					pawn.rotationTracker.FaceCell(pawn.Position + faceDir);
 				}
-				pawn.GainComfortFromCellIfPossible();
 				MeditationTick();
 				if (ModLister.RoyaltyInstalled && MeditationFocusDefOf.Natural.CanPawnUse(pawn))
 				{
@@ -112,25 +127,25 @@ namespace RimWorld
 							Plant plant = c.GetPlant(pawn.Map);
 							if (plant != null && plant.def == ThingDefOf.Plant_TreeAnima)
 							{
-								plant.TryGetComp<CompSpawnSubplant>()?.AddProgress(AnimaTreeSubplantProgressPerTick);
+								plant.TryGetComp<CompSpawnSubplant>()?.AddProgress_NewTmp(AnimaTreeSubplantProgressPerTick);
 							}
 						}
 					}
 				}
 			});
-			meditate.AddFinishAction(delegate
-			{
-				if (sustainer != null)
-				{
-					sustainer.End();
-				}
-			});
 			yield return meditate;
+		}
+
+		public override void Notify_Starting()
+		{
+			base.Notify_Starting();
+			job.psyfocusTargetLast = pawn.psychicEntropy.TargetPsyfocus;
 		}
 
 		protected void MeditationTick()
 		{
 			pawn.skills.Learn(SkillDefOf.Intellectual, 0.0180000011f);
+			pawn.GainComfortFromCellIfPossible();
 			if (pawn.needs.joy != null)
 			{
 				JoyUtility.JoyTickCheckEnd(pawn, JoyTickFullJoyAction.None);
@@ -144,7 +159,7 @@ namespace RimWorld
 				return;
 			}
 			pawn.psychicEntropy.Notify_Meditated();
-			if (pawn.HasPsylink && pawn.GetStatValue(StatDefOf.PsychicSensitivity) > float.Epsilon)
+			if (pawn.HasPsylink && pawn.psychicEntropy.PsychicSensitivity > float.Epsilon)
 			{
 				if (psyfocusMote == null || psyfocusMote.Destroyed)
 				{
@@ -153,12 +168,9 @@ namespace RimWorld
 				psyfocusMote.Maintain();
 				if (sustainer == null || sustainer.Ended)
 				{
-					sustainer = SoundDefOf.MeditationGainPsyfocus.TrySpawnSustainer(SoundInfo.InMap(pawn));
+					sustainer = SoundDefOf.MeditationGainPsyfocus.TrySpawnSustainer(SoundInfo.InMap(pawn, MaintenanceType.PerTick));
 				}
-				else
-				{
-					sustainer.Maintain();
-				}
+				sustainer.Maintain();
 				pawn.psychicEntropy.GainPsyfocus(Focus.Thing);
 			}
 		}

@@ -32,7 +32,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (TopDeconstructibleInCell(c, out AcceptanceReport reportToDisplay) == null)
+			if (TopDeconstructibleInCell(c, out var reportToDisplay) == null)
 			{
 				return reportToDisplay;
 			}
@@ -41,7 +41,7 @@ namespace RimWorld
 
 		public override void DesignateSingleCell(IntVec3 loc)
 		{
-			DesignateThing(TopDeconstructibleInCell(loc, out AcceptanceReport _));
+			DesignateThing(TopDeconstructibleInCell(loc, out var _));
 		}
 
 		private Thing TopDeconstructibleInCell(IntVec3 loc, out AcceptanceReport reportToDisplay)

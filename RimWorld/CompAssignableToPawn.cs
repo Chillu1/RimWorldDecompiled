@@ -137,7 +137,7 @@ namespace RimWorld
 
 		protected virtual string GetAssignmentGizmoDesc()
 		{
-			return "CommandThroneSetOwnerDesc".Translate();
+			return "";
 		}
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
@@ -152,7 +152,7 @@ namespace RimWorld
 				{
 					Find.WindowStack.Add(new Dialog_AssignBuildingOwner(this));
 				};
-				command_Action.hotKey = KeyBindingDefOf.Misc3;
+				command_Action.hotKey = KeyBindingDefOf.Misc4;
 				yield return command_Action;
 			}
 		}

@@ -25,7 +25,7 @@ namespace RimWorld.Planet
 		{
 			DeepProfiler.Start("GenerateWorld");
 			Rand.PushState();
-			int seed = Rand.Seed = GetSeedFromSeedString(seedString);
+			int seed = (Rand.Seed = GetSeedFromSeedString(seedString));
 			try
 			{
 				Current.CreatingWorld = new World();

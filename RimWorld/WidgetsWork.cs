@@ -36,19 +36,14 @@ namespace RimWorld
 
 		public static Color ColorOfPriority(int prio)
 		{
-			switch (prio)
+			return prio switch
 			{
-			case 1:
-				return new Color(0f, 1f, 0f);
-			case 2:
-				return new Color(1f, 0.9f, 0.5f);
-			case 3:
-				return new Color(0.8f, 0.7f, 0.5f);
-			case 4:
-				return new Color(0.74f, 0.74f, 0.74f);
-			default:
-				return Color.grey;
-			}
+				1 => new Color(0f, 1f, 0f), 
+				2 => new Color(1f, 0.9f, 0.5f), 
+				3 => new Color(0.8f, 0.7f, 0.5f), 
+				4 => new Color(0.74f, 0.74f, 0.74f), 
+				_ => Color.grey, 
+			};
 		}
 
 		public static void DrawWorkBoxFor(float x, float y, Pawn p, WorkTypeDef wType, bool incapableBecauseOfCapacities)

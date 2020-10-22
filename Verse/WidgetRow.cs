@@ -141,7 +141,7 @@ namespace Verse
 				TooltipHandler.TipRegion(rect, tooltip);
 			}
 			Rect position = new Rect(rect.x + rect.width / 2f, rect.y, rect.height / 2f, rect.height / 2f);
-			Texture2D image = toggleable ? Widgets.CheckboxOnTex : Widgets.CheckboxOffTex;
+			Texture2D image = (toggleable ? Widgets.CheckboxOnTex : Widgets.CheckboxOffTex);
 			GUI.DrawTexture(position, image);
 			if (mouseoverSound != null)
 			{

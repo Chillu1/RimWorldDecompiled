@@ -1,7 +1,7 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -38,8 +38,12 @@ namespace Verse
 		[MustTranslate]
 		public string discoveredLetterText;
 
+		[Obsolete]
 		public int discoveredLetterMinDifficulty;
 
+		public DifficultyConditionConfig discoveredLetterDisabledWhen = new DifficultyConditionConfig();
+
+		[Obsolete]
 		public bool unlockExtremeDifficulty;
 
 		public int techprintCount;
@@ -49,6 +53,8 @@ namespace Verse
 		public float techprintMarketValue = 1000f;
 
 		public List<string> heldByFactionCategoryTags;
+
+		public DifficultyConditionConfig hideWhen = new DifficultyConditionConfig();
 
 		[Unsaved(false)]
 		private float x = 1f;
@@ -130,13 +136,25 @@ namespace Verse
 			}
 		}
 
+		public int TechprintCount
+		{
+			get
+			{
+				if (!ModLister.RoyaltyInstalled)
+				{
+					return 0;
+				}
+				return techprintCount;
+			}
+		}
+
 		public int TechprintsApplied => Find.ResearchManager.GetTechprints(this);
 
 		public bool TechprintRequirementMet
 		{
 			get
 			{
-				if (techprintCount > 0 && Find.ResearchManager.GetTechprints(this) < techprintCount)
+				if (TechprintCount > 0 && Find.ResearchManager.GetTechprints(this) < TechprintCount)
 				{
 					return false;
 				}
@@ -148,7 +166,7 @@ namespace Verse
 		{
 			get
 			{
-				if (techprintCount <= 0)
+				if (TechprintCount <= 0)
 				{
 					return null;
 				}
@@ -373,7 +391,7 @@ namespace Verse
 				item.y = item.researchViewY;
 			}
 			int num = 0;
-			do
+			while (true)
 			{
 				bool flag = false;
 				foreach (ResearchProjectDef item2 in DefDatabase<ResearchProjectDef>.AllDefsListForReading)
@@ -421,12 +439,15 @@ namespace Verse
 				if (flag)
 				{
 					num++;
+					if (num > 200)
+					{
+						Log.Error("Couldn't relax research project coordinates apart after " + 200 + " passes.");
+						break;
+					}
 					continue;
 				}
-				return;
+				break;
 			}
-			while (num <= 200);
-			Log.Error("Couldn't relax research project coordinates apart after " + 200 + " passes.");
 		}
 
 		private static void ClampInCoordinateLimits(ResearchProjectDef rp)

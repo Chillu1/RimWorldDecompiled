@@ -51,7 +51,7 @@ namespace RimWorld
 			letterDef = null;
 			lookTargets = null;
 			bool flag = recipient.AnimalOrWildMan();
-			float x = (recipient.relations != null) ? recipient.relations.OpinionOf(initiator) : 0;
+			float x = ((recipient.relations != null) ? recipient.relations.OpinionOf(initiator) : 0);
 			bool flag2 = initiator.InspirationDef == InspirationDefOf.Inspired_Recruitment && !flag && recipient.guest.interactionMode != PrisonerInteractionModeDefOf.ReduceResistance;
 			if (DebugSettings.instantRecruit)
 			{
@@ -103,7 +103,7 @@ namespace RimWorld
 				else
 				{
 					num2 = initiator.GetStatValue(StatDefOf.TameAnimalChance);
-					float x2 = recipient.IsWildMan() ? 0.75f : recipient.RaceProps.wildness;
+					float x2 = (recipient.IsWildMan() ? 0.75f : recipient.RaceProps.wildness);
 					num2 *= TameChanceFactorCurve_Wildness.Evaluate(x2);
 					if (recipient.IsPrisonerInPrisonCell())
 					{
@@ -134,7 +134,7 @@ namespace RimWorld
 				}
 				else
 				{
-					string text2 = flag ? "TextMote_TameFail".Translate(num2.ToStringPercent()) : "TextMote_RecruitFail".Translate(num2.ToStringPercent());
+					string text2 = (flag ? "TextMote_TameFail".Translate(num2.ToStringPercent()) : "TextMote_RecruitFail".Translate(num2.ToStringPercent()));
 					if (!flag)
 					{
 						if (recipient.needs.mood != null && recipient.needs.mood.CurLevelPercentage < 0.4f)
@@ -159,7 +159,7 @@ namespace RimWorld
 
 		public static void DoRecruit(Pawn recruiter, Pawn recruitee, float recruitChance, bool useAudiovisualEffects = true)
 		{
-			DoRecruit(recruiter, recruitee, recruitChance, out string _, out string _, useAudiovisualEffects);
+			DoRecruit(recruiter, recruitee, recruitChance, out var _, out var _, useAudiovisualEffects);
 		}
 
 		public static void DoRecruit(Pawn recruiter, Pawn recruitee, float recruitChance, out string letterLabel, out string letter, bool useAudiovisualEffects = true, bool sendLetter = true)

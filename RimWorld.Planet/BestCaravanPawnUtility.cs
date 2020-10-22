@@ -16,7 +16,7 @@ namespace RimWorld.Planet
 			Predicate<Pawn> pawnValidator = null;
 			if (negotiatingWith != null)
 			{
-				pawnValidator = ((Pawn p) => p.CanTradeWith(negotiatingWith, trader));
+				pawnValidator = (Pawn p) => p.CanTradeWith(negotiatingWith, trader);
 			}
 			return FindPawnWithBestStat(caravan, StatDefOf.TradePriceImprovement, pawnValidator);
 		}

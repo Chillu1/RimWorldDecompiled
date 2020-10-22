@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Verse;
 
@@ -5,19 +6,24 @@ namespace RimWorld
 {
 	public class GenStep_MechCluster : GenStep
 	{
+		[Obsolete]
 		public const int ExtraRangeToRectOfInterest = 20;
 
 		public static readonly FloatRange DefaultPointsRange = new FloatRange(750f, 2500f);
+
+		public bool forceNoConditionCauser;
+
+		public int extraRangeToRectOfInterest = 20;
 
 		public override int SeedPart => 341176078;
 
 		public override void Generate(Map map, GenStepParams parms)
 		{
-			MechClusterSketch sketch = MechClusterGenerator.GenerateClusterSketch(DefaultPointsRange.RandomInRange, map, startDormant: false);
+			MechClusterSketch sketch = MechClusterGenerator.GenerateClusterSketch_NewTemp(DefaultPointsRange.RandomInRange, map, startDormant: true, forceNoConditionCauser);
 			IntVec3 center = IntVec3.Invalid;
-			if (MapGenerator.TryGetVar("RectOfInterest", out CellRect var))
+			if (MapGenerator.TryGetVar<CellRect>("RectOfInterest", out var var))
 			{
-				center = var.ExpandedBy(20).MaxBy((IntVec3 x) => MechClusterUtility.GetClusterPositionScore(x, map, sketch));
+				center = var.ExpandedBy(extraRangeToRectOfInterest).MaxBy((IntVec3 x) => MechClusterUtility.GetClusterPositionScore(x, map, sketch));
 			}
 			if (!center.IsValid)
 			{

@@ -1,9 +1,9 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using RimWorld;
 
 namespace Verse
 {
@@ -59,6 +59,7 @@ namespace Verse
 			}
 		}
 
+		[Obsolete]
 		public static bool ExtremeDifficultyUnlocked
 		{
 			get
@@ -522,7 +523,7 @@ namespace Verse
 
 		public static NameTriple RandomPreferredName()
 		{
-			if (PreferredNames.Where((string name) => !name.NullOrEmpty()).TryRandomElement(out string result))
+			if (PreferredNames.Where((string name) => !name.NullOrEmpty()).TryRandomElement(out var result))
 			{
 				return NameTriple.FromString(result);
 			}

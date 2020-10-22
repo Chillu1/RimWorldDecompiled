@@ -12,6 +12,10 @@ namespace RimWorld.BaseGen
 			{
 				return false;
 			}
+			if (BaseGen.globalSettings.basePart_landingPadsResolved < BaseGen.globalSettings.minLandingPads && rp.rect.Width >= 9 && rp.rect.Height >= 9)
+			{
+				return false;
+			}
 			return true;
 		}
 

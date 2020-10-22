@@ -39,6 +39,8 @@ namespace RimWorld
 
 		public bool neverTargetIncapacitated;
 
+		public bool neverTargetHostileFaction;
+
 		public bool onlyTargetThingsAffectingRegions;
 
 		public bool onlyTargetDamagedThings;
@@ -50,6 +52,10 @@ namespace RimWorld
 		public bool onlyTargetControlledPawns;
 
 		public bool onlyTargetColonists;
+
+		public bool onlyTargetPrisonersOfColony;
+
+		public bool onlyTargetPsychicSensitive;
 
 		public ThingCategory thingCategory;
 
@@ -130,6 +136,22 @@ namespace RimWorld
 				if (onlyTargetColonists && (!pawn.IsColonist || pawn.HostFaction != null))
 				{
 					return false;
+				}
+				if (onlyTargetPrisonersOfColony && !pawn.IsPrisonerOfColony)
+				{
+					return false;
+				}
+				if (onlyTargetPsychicSensitive && pawn.GetStatValue(StatDefOf.PsychicSensitivity) <= 0f)
+				{
+					return false;
+				}
+				if (neverTargetHostileFaction && !pawn.IsPrisonerOfColony)
+				{
+					Faction factionOrExtraMiniOrHomeFaction = pawn.FactionOrExtraMiniOrHomeFaction;
+					if (factionOrExtraMiniOrHomeFaction != null && factionOrExtraMiniOrHomeFaction.HostileTo(Faction.OfPlayer))
+					{
+						return false;
+					}
 				}
 				return true;
 			}
@@ -246,7 +268,7 @@ namespace RimWorld
 				canTargetPawns = true,
 				canTargetItems = true,
 				mapObjectTargetsMustBeAutoAttackable = false,
-				validator = ((TargetInfo targ) => targ.HasThing && StrippableUtility.CanBeStrippedByColony(targ.Thing))
+				validator = (TargetInfo targ) => targ.HasThing && StrippableUtility.CanBeStrippedByColony(targ.Thing)
 			};
 		}
 
@@ -257,7 +279,7 @@ namespace RimWorld
 				canTargetPawns = true,
 				canTargetBuildings = false,
 				mapObjectTargetsMustBeAutoAttackable = false,
-				validator = ((TargetInfo x) => (x.Thing as ITrader)?.CanTradeNow ?? false)
+				validator = (TargetInfo x) => (x.Thing as ITrader)?.CanTradeNow ?? false
 			};
 		}
 
@@ -271,7 +293,7 @@ namespace RimWorld
 				canTargetFires = false,
 				canTargetBuildings = false,
 				canTargetItems = false,
-				validator = ((TargetInfo x) => DropCellFinder.IsGoodDropSpot(x.Cell, x.Map, allowFogged: false, canRoofPunch: true))
+				validator = (TargetInfo x) => DropCellFinder.IsGoodDropSpot(x.Cell, x.Map, allowFogged: false, canRoofPunch: true)
 			};
 		}
 
@@ -297,7 +319,7 @@ namespace RimWorld
 				canTargetPawns = false,
 				canTargetBuildings = true,
 				mapObjectTargetsMustBeAutoAttackable = false,
-				validator = ((TargetInfo x) => (x.Thing as IOpenable)?.CanOpen ?? false)
+				validator = (TargetInfo x) => (x.Thing as IOpenable)?.CanOpen ?? false
 			};
 		}
 

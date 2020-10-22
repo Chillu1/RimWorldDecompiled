@@ -1,7 +1,7 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 
 namespace Verse.AI.Group
 {
@@ -61,6 +61,15 @@ namespace Verse.AI.Group
 		public virtual ThinkTreeDutyHook VoluntaryJoinDutyHookFor(Pawn p)
 		{
 			return ThinkTreeDutyHook.None;
+		}
+
+		public virtual void DrawPawnGUIOverlay(Pawn pawn)
+		{
+		}
+
+		public virtual IEnumerable<FloatMenuOption> ExtraFloatMenuOptions(Pawn target, Pawn forPawn)
+		{
+			return null;
 		}
 
 		public virtual void Notify_PawnLost(Pawn victim, PawnLostCondition cond)

@@ -16,6 +16,8 @@ namespace RimWorld
 
 		private Gizmo mouseoverGizmo;
 
+		private Gizmo lastMouseOverGizmo;
+
 		public Type OpenTabType
 		{
 			get
@@ -55,6 +57,8 @@ namespace RimWorld
 		public float PaneTopY => (float)UI.screenHeight - 165f - 35f;
 
 		public bool AnythingSelected => NumSelected > 0;
+
+		public Gizmo LastMouseoverGizmo => lastMouseOverGizmo;
 
 		public bool ShouldShowSelectNextInCellButton
 		{
@@ -172,6 +176,7 @@ namespace RimWorld
 		{
 			base.WindowUpdate();
 			InspectPaneUtility.UpdateTabs(this);
+			lastMouseOverGizmo = mouseoverGizmo;
 			if (mouseoverGizmo != null)
 			{
 				mouseoverGizmo.GizmoUpdateOnMouseover();

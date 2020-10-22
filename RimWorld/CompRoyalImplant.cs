@@ -55,10 +55,10 @@ namespace RimWorld
 				return "";
 			}
 			Hediff_ImplantWithLevel hediff_ImplantWithLevel = (Hediff_ImplantWithLevel)pawn.health.hediffSet.hediffs.FirstOrDefault((Hediff h) => h.def == hediff);
-			int num = (levelOffset != 0 && hediff_ImplantWithLevel != null) ? (hediff_ImplantWithLevel.level + levelOffset) : 0;
+			int num = ((levelOffset != 0 && hediff_ImplantWithLevel != null) ? (hediff_ImplantWithLevel.level + levelOffset) : 0);
 			foreach (Faction item in Find.FactionManager.AllFactionsListForReading)
 			{
-				if (pawn.Faction != null && !item.def.hidden && !item.HostileTo(Faction.OfPlayer) && ThingRequiringRoyalPermissionUtility.IsViolatingRulesOf(hediff, pawn, item, num))
+				if (pawn.Faction != null && !item.Hidden && !item.HostileTo(Faction.OfPlayer) && ThingRequiringRoyalPermissionUtility.IsViolatingRulesOf(hediff, pawn, item, num))
 				{
 					RoyalTitleDef minTitleForImplant = item.GetMinTitleForImplant(hediff, num);
 					HediffCompProperties_RoyalImplant hediffCompProperties_RoyalImplant = hediff.CompProps<HediffCompProperties_RoyalImplant>();

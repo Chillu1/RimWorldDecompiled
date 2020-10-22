@@ -25,5 +25,7 @@ namespace RimWorld
 		public const string Goodwill = "GOODWILL";
 
 		public const string AverageMood = "AVERAGEMOOD";
+
+		public const string PawnsAliveCount = "PAWNSALIVECOUNT";
 	}
 }

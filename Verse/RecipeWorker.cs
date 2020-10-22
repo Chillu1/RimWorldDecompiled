@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 
 namespace Verse
 {
@@ -52,7 +52,7 @@ namespace Verse
 		{
 			if (factionToInform != null && billDoer != null && billDoer.Faction != null)
 			{
-				factionToInform.TryAffectGoodwillWith(billDoer.Faction, goodwillImpact, canSendMessage: true, canSendHostilityLetter: true, reason, pawn);
+				factionToInform.TryAffectGoodwillWith(billDoer.Faction, goodwillImpact, canSendMessage: true, reason: reason, lookTarget: pawn, canSendHostilityLetter: !factionToInform.temporary);
 				QuestUtility.SendQuestTargetSignals(pawn.questTags, "SurgeryViolation", pawn.Named("SUBJECT"));
 			}
 		}

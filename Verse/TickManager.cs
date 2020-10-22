@@ -1,7 +1,7 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -228,19 +228,14 @@ namespace Verse
 
 		private TickList TickListFor(Thing t)
 		{
-			switch (t.def.tickerType)
+			return t.def.tickerType switch
 			{
-			case TickerType.Never:
-				return null;
-			case TickerType.Normal:
-				return tickListNormal;
-			case TickerType.Rare:
-				return tickListRare;
-			case TickerType.Long:
-				return tickListLong;
-			default:
-				throw new InvalidOperationException();
-			}
+				TickerType.Never => null, 
+				TickerType.Normal => tickListNormal, 
+				TickerType.Rare => tickListRare, 
+				TickerType.Long => tickListLong, 
+				_ => throw new InvalidOperationException(), 
+			};
 		}
 
 		public void TickManagerUpdate()

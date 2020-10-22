@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse.AI
@@ -78,7 +78,7 @@ namespace Verse.AI
 			float range = tur.GunCompEq.PrimaryVerb.verbProps.range;
 			float num = tur.GunCompEq.PrimaryVerb.verbProps.EffectiveMinRange(allowAdjacentShot: true);
 			int num2 = GenRadial.NumCellsInRadius(range + 4f);
-			for (int i = (!(num < 1f)) ? GenRadial.NumCellsInRadius(num) : 0; i < num2; i++)
+			for (int i = ((!(num < 1f)) ? GenRadial.NumCellsInRadius(num) : 0); i < num2; i++)
 			{
 				IntVec3 intVec = tur.Position + GenRadial.RadialPattern[i];
 				if (intVec.InBounds(tur.Map) && intVec.Walkable(tur.Map) && GenSight.LineOfSight(intVec, tur.Position, tur.Map, skipFirstCell: true))

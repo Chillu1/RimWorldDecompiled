@@ -40,19 +40,14 @@ namespace RimWorld
 
 		private float FoodMultiplier(HungerCategory hunger)
 		{
-			switch (hunger)
+			return hunger switch
 			{
-			case HungerCategory.Starving:
-				return factorStarving;
-			case HungerCategory.UrgentlyHungry:
-				return factorUrgentlyHungry;
-			case HungerCategory.Hungry:
-				return factorHungry;
-			case HungerCategory.Fed:
-				return factorFed;
-			default:
-				throw new InvalidOperationException();
-			}
+				HungerCategory.Starving => factorStarving, 
+				HungerCategory.UrgentlyHungry => factorUrgentlyHungry, 
+				HungerCategory.Hungry => factorHungry, 
+				HungerCategory.Fed => factorFed, 
+				_ => throw new InvalidOperationException(), 
+			};
 		}
 	}
 }

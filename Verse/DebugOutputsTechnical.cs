@@ -1,10 +1,10 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse
@@ -122,7 +122,7 @@ namespace Verse
 				orderby x.label
 				select x, new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("best local", delegate(ThingDef d)
 			{
-				IEnumerable<ThingRequestGroup> source2 = ListerThings.EverListable(d, ListerThingsUse.Region) ? ((ThingRequestGroup[])Enum.GetValues(typeof(ThingRequestGroup))).Where((ThingRequestGroup x) => x.StoreInRegion() && x.Includes(d)) : Enumerable.Empty<ThingRequestGroup>();
+				IEnumerable<ThingRequestGroup> source2 = (ListerThings.EverListable(d, ListerThingsUse.Region) ? ((ThingRequestGroup[])Enum.GetValues(typeof(ThingRequestGroup))).Where((ThingRequestGroup x) => x.StoreInRegion() && x.Includes(d)) : Enumerable.Empty<ThingRequestGroup>());
 				if (!source2.Any())
 				{
 					return "-";
@@ -131,7 +131,7 @@ namespace Verse
 				return string.Concat(best2, " (defs: ", DefDatabase<ThingDef>.AllDefs.Count((ThingDef x) => ListerThings.EverListable(x, ListerThingsUse.Region) && best2.Includes(x)), ")");
 			}), new TableDataGetter<ThingDef>("best global", delegate(ThingDef d)
 			{
-				IEnumerable<ThingRequestGroup> source = ListerThings.EverListable(d, ListerThingsUse.Global) ? ((ThingRequestGroup[])Enum.GetValues(typeof(ThingRequestGroup))).Where((ThingRequestGroup x) => x.Includes(d)) : Enumerable.Empty<ThingRequestGroup>();
+				IEnumerable<ThingRequestGroup> source = (ListerThings.EverListable(d, ListerThingsUse.Global) ? ((ThingRequestGroup[])Enum.GetValues(typeof(ThingRequestGroup))).Where((ThingRequestGroup x) => x.Includes(d)) : Enumerable.Empty<ThingRequestGroup>());
 				if (!source.Any())
 				{
 					return "-";
@@ -148,6 +148,7 @@ namespace Verse
 			PawnKindDef slave = PawnKindDefOf.Slave;
 			Faction faction = FactionUtility.DefaultFactionFrom(slave.defaultFactionType);
 			DamageInfo dinfo = new DamageInfo(thingDef.projectile.damageDef, thingDef.projectile.GetDamageAmount(null), thingDef.projectile.GetArmorPenetration(null));
+			dinfo.SetIgnoreInstantKillProtection(ignore: true);
 			int num = 0;
 			int num2 = 0;
 			DefMap<BodyPartDef, int> defMap = new DefMap<BodyPartDef, int>();

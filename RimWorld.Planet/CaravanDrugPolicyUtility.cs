@@ -33,7 +33,7 @@ namespace RimWorld.Planet
 			DrugPolicy currentPolicy = pawn.drugs.CurrentPolicy;
 			for (int i = 0; i < currentPolicy.Count; i++)
 			{
-				if (pawn.drugs.ShouldTryToTakeScheduledNow(currentPolicy[i].drug) && CaravanInventoryUtility.TryGetThingOfDef(caravan, currentPolicy[i].drug, out Thing thing, out Pawn owner))
+				if (pawn.drugs.ShouldTryToTakeScheduledNow(currentPolicy[i].drug) && CaravanInventoryUtility.TryGetThingOfDef(caravan, currentPolicy[i].drug, out var thing, out var owner))
 				{
 					caravan.needs.IngestDrug(pawn, thing, owner);
 				}

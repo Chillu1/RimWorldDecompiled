@@ -1,6 +1,6 @@
-using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 
 namespace Verse.AI
 {
@@ -84,7 +84,7 @@ namespace Verse.AI
 					}
 				}
 			}
-			if (list.TryRandomElement(out Building result))
+			if (list.TryRandomElement(out var result))
 			{
 				return result.Position;
 			}
@@ -100,11 +100,11 @@ namespace Verse.AI
 					}
 				}
 			}
-			if (map.mapPawns.FreeColonistsSpawned.Where((Pawn x) => map.reachability.CanReach(raidSpawnLoc, x, PathEndMode.OnCell, TraverseMode.PassAllDestroyableThings, Danger.Deadly)).TryRandomElement(out Pawn result2))
+			if (map.mapPawns.FreeColonistsSpawned.Where((Pawn x) => map.reachability.CanReach(raidSpawnLoc, x, PathEndMode.OnCell, TraverseMode.PassAllDestroyableThings, Danger.Deadly)).TryRandomElement(out var result2))
 			{
 				return result2.Position;
 			}
-			if (CellFinderLoose.TryGetRandomCellWith((IntVec3 x) => map.reachability.CanReach(raidSpawnLoc, x, PathEndMode.OnCell, TraverseMode.PassAllDestroyableThings, Danger.Deadly), map, 1000, out IntVec3 result3))
+			if (CellFinderLoose.TryGetRandomCellWith((IntVec3 x) => map.reachability.CanReach(raidSpawnLoc, x, PathEndMode.OnCell, TraverseMode.PassAllDestroyableThings, Danger.Deadly), map, 1000, out var result3))
 			{
 				return result3;
 			}

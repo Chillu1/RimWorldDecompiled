@@ -113,7 +113,7 @@ namespace RimWorld
 			}
 			for (int i = 0; i < 2; i++)
 			{
-				if (!int.TryParse(array[i], out int result))
+				if (!int.TryParse(array[i], out var result))
 				{
 					return false;
 				}
@@ -182,7 +182,7 @@ namespace RimWorld
 			int build = 0;
 			for (int i = 0; i < 3; i++)
 			{
-				if (!int.TryParse(array[i], out int result))
+				if (!int.TryParse(array[i], out var result))
 				{
 					throw new ArgumentException("str");
 				}
@@ -215,7 +215,7 @@ namespace RimWorld
 			}
 			for (int i = 0; i < 2; i++)
 			{
-				if (!int.TryParse(array[i], out int result))
+				if (!int.TryParse(array[i], out var result))
 				{
 					return false;
 				}

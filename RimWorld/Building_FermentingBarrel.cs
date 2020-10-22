@@ -219,7 +219,7 @@ namespace RimWorld
 			if (!Empty)
 			{
 				Vector3 drawPos = DrawPos;
-				drawPos.y += 0.0454545468f;
+				drawPos.y += 3f / 70f;
 				drawPos.z += 0.25f;
 				GenDraw.FillableBarRequest r = default(GenDraw.FillableBarRequest);
 				r.center = drawPos;

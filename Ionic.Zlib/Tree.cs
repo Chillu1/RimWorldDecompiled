@@ -1136,7 +1136,7 @@ namespace Ionic.Zlib
 			int num = 0;
 			do
 			{
-				num |= (code & 1);
+				num |= code & 1;
 				code >>= 1;
 				num <<= 1;
 			}

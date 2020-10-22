@@ -69,15 +69,12 @@ namespace RimWorld
 
 		public override string CompInspectStringExtra()
 		{
-			switch (CurStage)
+			return CurStage switch
 			{
-			case MaintainableStage.NeedsMaintenance:
-				return "DueForMaintenance".Translate();
-			case MaintainableStage.Damaging:
-				return "DeterioratingDueToLackOfMaintenance".Translate();
-			default:
-				return null;
-			}
+				MaintainableStage.NeedsMaintenance => "DueForMaintenance".Translate(), 
+				MaintainableStage.Damaging => "DeterioratingDueToLackOfMaintenance".Translate(), 
+				_ => null, 
+			};
 		}
 	}
 }

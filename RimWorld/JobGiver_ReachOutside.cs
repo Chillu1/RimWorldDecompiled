@@ -16,7 +16,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			if (!RCellFinder.TryFindRandomSpotJustOutsideColony(pawn, out IntVec3 result))
+			if (!RCellFinder.TryFindRandomSpotJustOutsideColony(pawn, out var result))
 			{
 				return null;
 			}

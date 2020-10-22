@@ -149,7 +149,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (InteractedTooRecentlyToInteract())
+			if (!intDef.ignoreTimeSinceLastInteraction && InteractedTooRecentlyToInteract())
 			{
 				Log.Error(string.Concat(pawn, " tried to do interaction ", intDef, " to ", recipient, " only ", Find.TickManager.TicksGame - lastInteractionTime, " ticks since last interaction (min is ", 120, ")."));
 				return false;
@@ -245,7 +245,7 @@ namespace RimWorld
 			for (int i = 0; i < workingList.Count; i++)
 			{
 				Pawn p = workingList[i];
-				if (p != pawn && CanInteractNowWith(p) && InteractionUtility.CanReceiveRandomInteraction(p) && !pawn.HostileTo(p) && allDefsListForReading.TryRandomElementByWeight((InteractionDef x) => (!CanInteractNowWith(p, x)) ? 0f : x.Worker.RandomSelectionWeight(pawn, p), out InteractionDef result))
+				if (p != pawn && CanInteractNowWith(p) && InteractionUtility.CanReceiveRandomInteraction(p) && !pawn.HostileTo(p) && allDefsListForReading.TryRandomElementByWeight((InteractionDef x) => (!CanInteractNowWith(p, x)) ? 0f : x.Worker.RandomSelectionWeight(pawn, p), out var result))
 				{
 					if (TryInteractWith(p, result))
 					{

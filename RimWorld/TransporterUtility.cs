@@ -1,6 +1,7 @@
-using RimWorld.Planet;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 using Verse.AI;
 using Verse.AI.Group;
@@ -61,11 +62,18 @@ namespace RimWorld
 			return nextTransporterGroupID;
 		}
 
+		[Obsolete("Only used for mod compatibility. Will be removed in future version.")]
 		public static IEnumerable<Pawn> AllSendablePawns(List<CompTransporter> transporters, Map map)
 		{
+			return AllSendablePawns_NewTmp(transporters, map, autoLoot: false);
+		}
+
+		public static IEnumerable<Pawn> AllSendablePawns_NewTmp(List<CompTransporter> transporters, Map map, bool autoLoot)
+		{
 			CompShuttle shuttle = transporters[0].parent.TryGetComp<CompShuttle>();
-			int allowLoadAndEnterTransportersLordForGroupID = (transporters[0].Props.canChangeAssignedThingsAfterStarting && transporters[0].LoadingInProgressOrReadyToLaunch) ? transporters[0].groupID : (-1);
-			List<Pawn> pawns = CaravanFormingUtility.AllSendablePawns(map, allowEvenIfDowned: true, allowEvenIfInMentalState: false, allowEvenIfPrisonerNotSecure: false, allowCapturableDownedPawns: false, shuttle != null, allowLoadAndEnterTransportersLordForGroupID);
+			int allowLoadAndEnterTransportersLordForGroupID = ((transporters[0].Props.canChangeAssignedThingsAfterStarting && transporters[0].LoadingInProgressOrReadyToLaunch) ? transporters[0].groupID : (-1));
+			bool allowLodgers = shuttle != null;
+			List<Pawn> pawns = CaravanFormingUtility.AllSendablePawns(map, allowEvenIfDowned: true, autoLoot, autoLoot, autoLoot, allowLodgers, allowLoadAndEnterTransportersLordForGroupID);
 			for (int i = 0; i < pawns.Count; i++)
 			{
 				if (shuttle == null || shuttle.IsRequired(pawns[i]) || shuttle.IsAllowed(pawns[i]))
@@ -75,9 +83,15 @@ namespace RimWorld
 			}
 		}
 
+		[Obsolete("Only used for mod compatibility. Will be removed in future version.")]
 		public static IEnumerable<Thing> AllSendableItems(List<CompTransporter> transporters, Map map)
 		{
-			List<Thing> items = CaravanFormingUtility.AllReachableColonyItems(map, allowEvenIfOutsideHomeArea: false, transporters[0].Props.canChangeAssignedThingsAfterStarting && transporters[0].LoadingInProgressOrReadyToLaunch);
+			return AllSendableItems_NewTmp(transporters, map, autoLoot: false);
+		}
+
+		public static IEnumerable<Thing> AllSendableItems_NewTmp(List<CompTransporter> transporters, Map map, bool autoLoot)
+		{
+			List<Thing> items = CaravanFormingUtility.AllReachableColonyItems(map, canMinify: autoLoot, allowEvenIfOutsideHomeArea: autoLoot, allowEvenIfReserved: transporters[0].Props.canChangeAssignedThingsAfterStarting && transporters[0].LoadingInProgressOrReadyToLaunch);
 			CompShuttle shuttle = transporters[0].parent.TryGetComp<CompShuttle>();
 			for (int i = 0; i < items.Count; i++)
 			{

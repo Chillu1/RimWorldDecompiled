@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -28,7 +28,7 @@ namespace Verse
 					if (apparel.def.apparel.CoversBodyPart(part))
 					{
 						float num2 = amount;
-						ApplyArmor(ref amount, armorPenetration, apparel.GetStatValue(armorRatingStat), apparel, ref damageDef, pawn, out bool metalArmor);
+						ApplyArmor(ref amount, armorPenetration, apparel.GetStatValue(armorRatingStat), apparel, ref damageDef, pawn, out var metalArmor);
 						if (amount < 0.001f)
 						{
 							deflectedByMetalArmor = metalArmor;
@@ -42,7 +42,7 @@ namespace Verse
 				}
 			}
 			float num3 = amount;
-			ApplyArmor(ref amount, armorPenetration, pawn.GetStatValue(armorRatingStat), null, ref damageDef, pawn, out bool metalArmor2);
+			ApplyArmor(ref amount, armorPenetration, pawn.GetStatValue(armorRatingStat), null, ref damageDef, pawn, out var metalArmor2);
 			if (amount < 0.001f)
 			{
 				deflectedByMetalArmor = metalArmor2;
@@ -59,7 +59,7 @@ namespace Verse
 		{
 			if (armorThing != null)
 			{
-				metalArmor = (armorThing.def.apparel.useDeflectMetalEffect || (armorThing.Stuff != null && armorThing.Stuff.IsMetal));
+				metalArmor = armorThing.def.apparel.useDeflectMetalEffect || (armorThing.Stuff != null && armorThing.Stuff.IsMetal);
 			}
 			else
 			{

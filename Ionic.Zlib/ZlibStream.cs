@@ -185,40 +185,32 @@ namespace Ionic.Zlib
 
 		public static byte[] CompressString(string s)
 		{
-			using (MemoryStream memoryStream = new MemoryStream())
-			{
-				Stream compressor = new ZlibStream(memoryStream, CompressionMode.Compress, CompressionLevel.BestCompression);
-				ZlibBaseStream.CompressString(s, compressor);
-				return memoryStream.ToArray();
-			}
+			using MemoryStream memoryStream = new MemoryStream();
+			Stream compressor = new ZlibStream(memoryStream, CompressionMode.Compress, CompressionLevel.BestCompression);
+			ZlibBaseStream.CompressString(s, compressor);
+			return memoryStream.ToArray();
 		}
 
 		public static byte[] CompressBuffer(byte[] b)
 		{
-			using (MemoryStream memoryStream = new MemoryStream())
-			{
-				Stream compressor = new ZlibStream(memoryStream, CompressionMode.Compress, CompressionLevel.BestCompression);
-				ZlibBaseStream.CompressBuffer(b, compressor);
-				return memoryStream.ToArray();
-			}
+			using MemoryStream memoryStream = new MemoryStream();
+			Stream compressor = new ZlibStream(memoryStream, CompressionMode.Compress, CompressionLevel.BestCompression);
+			ZlibBaseStream.CompressBuffer(b, compressor);
+			return memoryStream.ToArray();
 		}
 
 		public static string UncompressString(byte[] compressed)
 		{
-			using (MemoryStream stream = new MemoryStream(compressed))
-			{
-				Stream decompressor = new ZlibStream(stream, CompressionMode.Decompress);
-				return ZlibBaseStream.UncompressString(compressed, decompressor);
-			}
+			using MemoryStream stream = new MemoryStream(compressed);
+			Stream decompressor = new ZlibStream(stream, CompressionMode.Decompress);
+			return ZlibBaseStream.UncompressString(compressed, decompressor);
 		}
 
 		public static byte[] UncompressBuffer(byte[] compressed)
 		{
-			using (MemoryStream stream = new MemoryStream(compressed))
-			{
-				Stream decompressor = new ZlibStream(stream, CompressionMode.Decompress);
-				return ZlibBaseStream.UncompressBuffer(compressed, decompressor);
-			}
+			using MemoryStream stream = new MemoryStream(compressed);
+			Stream decompressor = new ZlibStream(stream, CompressionMode.Decompress);
+			return ZlibBaseStream.UncompressBuffer(compressed, decompressor);
 		}
 	}
 }

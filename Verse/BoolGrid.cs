@@ -29,7 +29,7 @@ namespace Verse
 				}
 				int yieldedCount = 0;
 				bool canSetMinPossibleTrueIndex = minPossibleTrueIndexDirty;
-				int num = (!minPossibleTrueIndexDirty) ? minPossibleTrueIndexCached : 0;
+				int num = ((!minPossibleTrueIndexDirty) ? minPossibleTrueIndexCached : 0);
 				for (int i = num; i < arr.Length; i++)
 				{
 					if (arr[i])

@@ -15,7 +15,7 @@ namespace RimWorld.BaseGen
 			{
 				return false;
 			}
-			if (!TryFindSplitPoint(horizontal: false, rp.rect, out int splitPoint, out int spaceBetween) && !TryFindSplitPoint(horizontal: true, rp.rect, out spaceBetween, out splitPoint))
+			if (!TryFindSplitPoint(horizontal: false, rp.rect, out var splitPoint, out var spaceBetween) && !TryFindSplitPoint(horizontal: true, rp.rect, out spaceBetween, out splitPoint))
 			{
 				return false;
 			}
@@ -26,7 +26,7 @@ namespace RimWorld.BaseGen
 		{
 			bool @bool = Rand.Bool;
 			bool flag;
-			if (TryFindSplitPoint(@bool, rp.rect, out int splitPoint, out int spaceBetween))
+			if (TryFindSplitPoint(@bool, rp.rect, out var splitPoint, out var spaceBetween))
 			{
 				flag = @bool;
 			}
@@ -84,7 +84,7 @@ namespace RimWorld.BaseGen
 
 		private bool TryFindSplitPoint(bool horizontal, CellRect rect, out int splitPoint, out int spaceBetween)
 		{
-			int num = horizontal ? rect.Height : rect.Width;
+			int num = (horizontal ? rect.Height : rect.Width);
 			spaceBetween = SpaceBetweenRange.RandomInRange;
 			spaceBetween = Mathf.Min(spaceBetween, num - 10);
 			if (spaceBetween < SpaceBetweenRange.min)

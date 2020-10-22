@@ -148,7 +148,7 @@ namespace RimWorld.Planet
 			for (int i = 0; i < allPawnsSpawned.Count; i++)
 			{
 				Pawn pawn = allPawnsSpawned[i];
-				if ((allowEvenIfDowned || !pawn.Downed) && (allowEvenIfInMentalState || !pawn.InMentalState) && (pawn.Faction == Faction.OfPlayer || pawn.IsPrisonerOfColony || (allowCapturableDownedPawns && CanListAsAutoCapturable(pawn))) && !pawn.IsQuestHelper() && (!pawn.IsQuestLodger() || allowLodgers) && (allowEvenIfPrisonerNotSecure || !pawn.IsPrisoner || pawn.guest.PrisonerIsSecure) && (pawn.GetLord() == null || pawn.GetLord().LordJob is LordJob_VoluntarilyJoinable || (allowLoadAndEnterTransportersLordForGroupID >= 0 && pawn.GetLord().LordJob is LordJob_LoadAndEnterTransporters && ((LordJob_LoadAndEnterTransporters)pawn.GetLord().LordJob).transportersGroup == allowLoadAndEnterTransportersLordForGroupID)))
+				if ((allowEvenIfDowned || !pawn.Downed) && (allowEvenIfInMentalState || !pawn.InMentalState) && (pawn.Faction == Faction.OfPlayer || pawn.IsPrisonerOfColony || (allowCapturableDownedPawns && CanListAsAutoCapturable(pawn))) && !pawn.IsQuestHelper() && (!pawn.IsQuestLodger() || allowLodgers) && (allowEvenIfPrisonerNotSecure || !pawn.IsPrisoner || pawn.guest.PrisonerIsSecure) && (pawn.GetLord() == null || pawn.GetLord().LordJob is LordJob_VoluntarilyJoinable || pawn.GetLord().LordJob.IsCaravanSendable || (allowLoadAndEnterTransportersLordForGroupID >= 0 && pawn.GetLord().LordJob is LordJob_LoadAndEnterTransporters && ((LordJob_LoadAndEnterTransporters)pawn.GetLord().LordJob).transportersGroup == allowLoadAndEnterTransportersLordForGroupID)))
 				{
 					list.Add(pawn);
 				}
@@ -167,10 +167,9 @@ namespace RimWorld.Planet
 
 		public static IEnumerable<Gizmo> GetGizmos(Pawn pawn)
 		{
-			Pawn pawn2 = pawn;
-			if (IsFormingCaravanOrDownedPawnToBeTakenByCaravan(pawn2))
+			if (IsFormingCaravanOrDownedPawnToBeTakenByCaravan(pawn))
 			{
-				Lord lord = GetFormAndSendCaravanLord(pawn2);
+				Lord lord = GetFormAndSendCaravanLord(pawn);
 				Command_Action command_Action = new Command_Action();
 				command_Action.defaultLabel = "CommandCancelFormingCaravan".Translate();
 				command_Action.defaultDesc = "CommandCancelFormingCaravanDesc".Translate();
@@ -188,28 +187,28 @@ namespace RimWorld.Planet
 				command_Action2.icon = RemoveFromCaravanCommand;
 				command_Action2.action = delegate
 				{
-					RemovePawnFromCaravan(pawn2, lord);
+					RemovePawnFromCaravan(pawn, lord);
 				};
 				command_Action2.hotKey = KeyBindingDefOf.Misc6;
 				yield return command_Action2;
 			}
 			else
 			{
-				if (!pawn2.Spawned)
+				if (!pawn.Spawned)
 				{
 					yield break;
 				}
 				bool flag = false;
-				for (int i = 0; i < pawn2.Map.lordManager.lords.Count; i++)
+				for (int i = 0; i < pawn.Map.lordManager.lords.Count; i++)
 				{
-					Lord lord2 = pawn2.Map.lordManager.lords[i];
+					Lord lord2 = pawn.Map.lordManager.lords[i];
 					if (lord2.faction == Faction.OfPlayer && lord2.LordJob is LordJob_FormAndSendCaravan)
 					{
 						flag = true;
 						break;
 					}
 				}
-				if (!flag || !Dialog_FormCaravan.AllSendablePawns(pawn2.Map, reform: false).Contains(pawn2))
+				if (!flag || !Dialog_FormCaravan.AllSendablePawns(pawn.Map, reform: false).Contains(pawn))
 				{
 					yield break;
 				}
@@ -220,9 +219,9 @@ namespace RimWorld.Planet
 				command_Action3.action = delegate
 				{
 					List<Lord> list = new List<Lord>();
-					for (int j = 0; j < pawn2.Map.lordManager.lords.Count; j++)
+					for (int j = 0; j < pawn.Map.lordManager.lords.Count; j++)
 					{
-						Lord lord3 = pawn2.Map.lordManager.lords[j];
+						Lord lord3 = pawn.Map.lordManager.lords[j];
 						if (lord3.faction == Faction.OfPlayer && lord3.LordJob is LordJob_FormAndSendCaravan)
 						{
 							list.Add(lord3);
@@ -232,7 +231,7 @@ namespace RimWorld.Planet
 					{
 						if (list.Count == 1)
 						{
-							LateJoinFormingCaravan(pawn2, list[0]);
+							LateJoinFormingCaravan(pawn, list[0]);
 							SoundDefOf.Click.PlayOneShotOnCamera();
 						}
 						else
@@ -245,9 +244,9 @@ namespace RimWorld.Planet
 								string label = (string)("Caravan".Translate() + " ") + (k + 1);
 								list2.Add(new FloatMenuOption(label, delegate
 								{
-									if (pawn2.Spawned && pawn2.Map.lordManager.lords.Contains(caravanLocal) && Dialog_FormCaravan.AllSendablePawns(pawn2.Map, reform: false).Contains(pawn2))
+									if (pawn.Spawned && pawn.Map.lordManager.lords.Contains(caravanLocal) && Dialog_FormCaravan.AllSendablePawns(pawn.Map, reform: false).Contains(pawn))
 									{
-										LateJoinFormingCaravan(pawn2, caravanLocal);
+										LateJoinFormingCaravan(pawn, caravanLocal);
 									}
 								}));
 							}

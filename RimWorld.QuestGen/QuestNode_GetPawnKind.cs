@@ -36,7 +36,7 @@ namespace RimWorld.QuestGen
 		private void SetVars(Slate slate)
 		{
 			Option option = options.GetValue(slate).RandomElementByWeight((Option x) => x.weight);
-			slate.Set<PawnKindDef>(var: (option.kindDef != null) ? option.kindDef : ((!option.anyAnimal) ? null : DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef x) => x.RaceProps.Animal && (option.onlyAllowedFleshType == null || x.RaceProps.FleshType == option.onlyAllowedFleshType)).RandomElement()), name: storeAs.GetValue(slate), isAbsoluteName: false);
+			slate.Set(var: (option.kindDef != null) ? option.kindDef : ((!option.anyAnimal) ? null : DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef x) => x.RaceProps.Animal && (option.onlyAllowedFleshType == null || x.RaceProps.FleshType == option.onlyAllowedFleshType)).RandomElement()), name: storeAs.GetValue(slate));
 		}
 	}
 }

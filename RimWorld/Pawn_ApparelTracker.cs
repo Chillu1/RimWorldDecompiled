@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -106,7 +106,7 @@ namespace RimWorld
 				{
 					return false;
 				}
-				HasBasicApparel(out bool hasPants, out bool hasShirt);
+				HasBasicApparel(out var hasPants, out var hasShirt);
 				if (!hasPants)
 				{
 					bool flag = false;
@@ -139,6 +139,26 @@ namespace RimWorld
 			}
 		}
 
+		public IEnumerable<Verb> AllApparelVerbs
+		{
+			get
+			{
+				List<Apparel> list = WornApparel;
+				for (int i = 0; i < list.Count; i++)
+				{
+					Apparel apparel = list[i];
+					List<Verb> verbs = apparel.GetComp<CompReloadable>()?.AllVerbs;
+					if (verbs != null)
+					{
+						for (int j = 0; j < verbs.Count; j++)
+						{
+							yield return verbs[j];
+						}
+					}
+				}
+			}
+		}
+
 		public Pawn_ApparelTracker(Pawn pawn)
 		{
 			this.pawn = pawn;
@@ -154,9 +174,25 @@ namespace RimWorld
 			{
 				SortWornApparelIntoDrawOrder();
 			}
-			if (Scribe.mode == LoadSaveMode.PostLoadInit && lockedApparel != null)
+			if (Scribe.mode != LoadSaveMode.PostLoadInit)
+			{
+				return;
+			}
+			if (lockedApparel != null)
 			{
 				lockedApparel.RemoveAll((Apparel x) => x == null);
+			}
+			foreach (Apparel item in WornApparel)
+			{
+				CompReloadable comp = item.GetComp<CompReloadable>();
+				if (comp == null)
+				{
+					continue;
+				}
+				foreach (Verb allVerb in comp.AllVerbs)
+				{
+					allVerb.caster = pawn;
+				}
 			}
 		}
 
@@ -288,7 +324,7 @@ namespace RimWorld
 					if (dropReplacedApparel)
 					{
 						bool forbid = pawn.Faction != null && pawn.Faction.HostileTo(Faction.OfPlayer);
-						if (!TryDrop(apparel, out Apparel _, pawn.PositionHeld, forbid))
+						if (!TryDrop(apparel, out var _, pawn.PositionHeld, forbid))
 						{
 							Log.Error(string.Concat(pawn, " could not drop ", apparel));
 							return;
@@ -352,7 +388,7 @@ namespace RimWorld
 			}
 			for (int j = 0; j < tmpApparelList.Count; j++)
 			{
-				TryDrop(tmpApparelList[j], out Apparel _, pos, forbid);
+				TryDrop(tmpApparelList[j], out var _, pos, forbid);
 			}
 		}
 
@@ -504,6 +540,15 @@ namespace RimWorld
 		{
 			SortWornApparelIntoDrawOrder();
 			ApparelChanged();
+			List<Verb> list = apparel.GetComp<CompReloadable>()?.AllVerbs;
+			if (list != null)
+			{
+				foreach (Verb item in list)
+				{
+					item.caster = pawn;
+					item.Notify_PickedUp();
+				}
+			}
 			if (!apparel.def.equippedStatOffsets.NullOrEmpty())
 			{
 				pawn.health.capacities.Notify_CapacityLevelsDirty();
@@ -524,6 +569,14 @@ namespace RimWorld
 			if (!apparel.def.equippedStatOffsets.NullOrEmpty())
 			{
 				pawn.health.capacities.Notify_CapacityLevelsDirty();
+			}
+		}
+
+		public void Notify_BulletImpactNearby(BulletImpactData impactData)
+		{
+			for (int i = 0; i < wornApparel.Count; i++)
+			{
+				wornApparel[i].Notify_BulletImpactNearby(impactData);
 			}
 		}
 

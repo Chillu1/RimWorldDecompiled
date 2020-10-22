@@ -55,7 +55,7 @@ namespace RimWorld.QuestGen
 				}, QuestGenUtility.MergeRules(customLetterTextRules.GetValue(slate), customLetterText.GetValue(slate), "root"));
 			}
 			questPart_Incident.SetIncidentParmsAndRemoveTarget(incidentParms);
-			questPart_Incident.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart_Incident.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			QuestGen.quest.AddPart(questPart_Incident);
 		}
 	}

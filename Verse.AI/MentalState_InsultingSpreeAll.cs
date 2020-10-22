@@ -49,7 +49,7 @@ namespace Verse.AI
 				targetFoundTicks = -1;
 				return;
 			}
-			Pawn pawn = (target == null || Find.TickManager.TicksGame - targetFoundTicks <= 1250 || !candidates.Any((Pawn x) => x != target)) ? candidates.RandomElementByWeight((Pawn x) => GetCandidateWeight(x)) : candidates.Where((Pawn x) => x != target).RandomElementByWeight((Pawn x) => GetCandidateWeight(x));
+			Pawn pawn = ((target == null || Find.TickManager.TicksGame - targetFoundTicks <= 1250 || !candidates.Any((Pawn x) => x != target)) ? candidates.RandomElementByWeight((Pawn x) => GetCandidateWeight(x)) : candidates.Where((Pawn x) => x != target).RandomElementByWeight((Pawn x) => GetCandidateWeight(x)));
 			if (pawn != target)
 			{
 				target = pawn;

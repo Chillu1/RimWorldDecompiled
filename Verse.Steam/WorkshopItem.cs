@@ -1,5 +1,5 @@
-using Steamworks;
 using System.IO;
+using Steamworks;
 
 namespace Verse.Steam
 {

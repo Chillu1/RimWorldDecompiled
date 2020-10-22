@@ -1,5 +1,3 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,6 +5,8 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse
@@ -187,10 +187,10 @@ namespace Verse
 		{
 			int num = 352654597;
 			int num2 = num;
-			num = (((num << 5) + num + (num >> 27)) ^ v1);
-			num2 = (((num2 << 5) + num2 + (num2 >> 27)) ^ v2);
-			num = (((num << 5) + num + (num >> 27)) ^ v3);
-			num2 = (((num2 << 5) + num2 + (num2 >> 27)) ^ v4);
+			num = ((num << 5) + num + (num >> 27)) ^ v1;
+			num2 = ((num2 << 5) + num2 + (num2 >> 27)) ^ v2;
+			num = ((num << 5) + num + (num >> 27)) ^ v3;
+			num2 = ((num2 << 5) + num2 + (num2 >> 27)) ^ v4;
 			return num + num2 * 1566083941;
 		}
 

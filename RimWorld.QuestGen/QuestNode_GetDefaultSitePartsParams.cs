@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld.QuestGen
@@ -28,7 +28,7 @@ namespace RimWorld.QuestGen
 
 		private void SetVars(Slate slate)
 		{
-			SiteMakerHelper.GenerateDefaultParams(slate.Get("points", 0f), tile.GetValue(slate), faction.GetValue(slate), sitePartDefs.GetValue(slate), out List<SitePartDefWithParams> sitePartDefsWithParams);
+			SiteMakerHelper.GenerateDefaultParams(slate.Get("points", 0f), tile.GetValue(slate), faction.GetValue(slate), sitePartDefs.GetValue(slate), out var sitePartDefsWithParams);
 			for (int i = 0; i < sitePartDefsWithParams.Count; i++)
 			{
 				if (sitePartDefsWithParams[i].def == SitePartDefOf.PreciousLump)

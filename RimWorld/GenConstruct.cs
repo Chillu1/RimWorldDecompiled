@@ -327,9 +327,9 @@ namespace RimWorld
 			ThingDef thingDef = newDef as ThingDef;
 			BuildableDef buildableDef = BuiltDefOf(oldDef);
 			ThingDef thingDef2 = buildableDef as ThingDef;
-			if (oldDef == ThingDefOf.SteamGeyser && !newDef.ForceAllowPlaceOver(oldDef))
+			if (newDef.ForceAllowPlaceOver(oldDef))
 			{
-				return false;
+				return true;
 			}
 			if (oldDef.category == ThingCategory.Plant && oldDef.passability == Traversability.Impassable && thingDef != null && thingDef.category == ThingCategory.Building && !thingDef.building.canPlaceOverImpassablePlant)
 			{
@@ -384,7 +384,7 @@ namespace RimWorld
 		public static Thing FirstBlockingThing(Thing constructible, Pawn pawnToIgnore)
 		{
 			Blueprint blueprint = constructible as Blueprint;
-			Thing thing = (blueprint == null) ? null : MiniToInstallOrBuildingToReinstall(blueprint);
+			Thing thing = ((blueprint == null) ? null : MiniToInstallOrBuildingToReinstall(blueprint));
 			foreach (IntVec3 item in constructible.OccupiedRect())
 			{
 				List<Thing> thingList = item.GetThingList(constructible.Map);
@@ -462,7 +462,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			ThingDef thingDef = (constructible is Blueprint) ? constructible.def : ((!(constructible is Frame)) ? constructible.def.blueprintDef : constructible.def.entityDefToBuild.blueprintDef);
+			ThingDef thingDef = ((constructible is Blueprint) ? constructible.def : ((!(constructible is Frame)) ? constructible.def.blueprintDef : constructible.def.entityDefToBuild.blueprintDef));
 			if (t.def.category == ThingCategory.Building && GenSpawn.SpawningWipes(thingDef.entityDefToBuild, t.def))
 			{
 				return true;
@@ -479,7 +479,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (t.def == ThingDefOf.SteamGeyser && thingDef.entityDefToBuild.ForceAllowPlaceOver(t.def))
+			if (thingDef.entityDefToBuild.ForceAllowPlaceOver(t.def))
 			{
 				return false;
 			}

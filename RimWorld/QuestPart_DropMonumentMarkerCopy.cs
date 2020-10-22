@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -11,6 +11,8 @@ namespace RimWorld
 		public string inSignal;
 
 		public string outSignalResult;
+
+		public bool destroyOrPassToWorldOnCleanup;
 
 		private MonumentMarker copy;
 
@@ -68,6 +70,15 @@ namespace RimWorld
 			}
 		}
 
+		public override void Cleanup()
+		{
+			base.Cleanup();
+			if (destroyOrPassToWorldOnCleanup && copy != null)
+			{
+				QuestPart_DestroyThingsOrPassToWorld.Destroy(copy);
+			}
+		}
+
 		public override void ExposeData()
 		{
 			base.ExposeData();
@@ -75,6 +86,7 @@ namespace RimWorld
 			Scribe_Values.Look(ref outSignalResult, "outSignalResult");
 			Scribe_References.Look(ref mapParent, "mapParent");
 			Scribe_References.Look(ref copy, "copy");
+			Scribe_Values.Look(ref destroyOrPassToWorldOnCleanup, "destroyOrPassToWorldOnCleanup", defaultValue: false);
 		}
 
 		public override void AssignDebugData()

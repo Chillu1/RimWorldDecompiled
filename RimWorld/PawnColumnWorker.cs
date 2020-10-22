@@ -44,7 +44,7 @@ namespace RimWorld
 			}
 			if (table.SortingBy == def)
 			{
-				Texture2D texture2D = table.SortingDescending ? SortingDescendingIcon : SortingIcon;
+				Texture2D texture2D = (table.SortingDescending ? SortingDescendingIcon : SortingIcon);
 				GUI.DrawTexture(new Rect(rect.xMax - (float)texture2D.width - 1f, rect.yMax - (float)texture2D.height - 1f, texture2D.width, texture2D.height), texture2D);
 			}
 			if (!def.HeaderInteractable)

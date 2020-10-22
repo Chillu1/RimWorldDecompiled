@@ -17,12 +17,12 @@ namespace Verse
 			{
 				return baseMat;
 			}
-			if (!damagedMats.TryGetValue(baseMat, out Material value))
+			if (!damagedMats.TryGetValue(baseMat, out var value))
 			{
 				value = MaterialAllocator.Create(baseMat);
 				damagedMats.Add(baseMat, value);
 			}
-			Color color2 = value.color = Color.Lerp(baseMat.color, DamagedMatStartingColor, damPct);
+			Color color2 = (value.color = Color.Lerp(baseMat.color, DamagedMatStartingColor, damPct));
 			return value;
 		}
 	}

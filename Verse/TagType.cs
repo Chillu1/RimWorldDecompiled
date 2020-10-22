@@ -7,6 +7,7 @@ namespace Verse
 		Faction,
 		Settlement,
 		DateTime,
-		ColonistCount
+		ColonistCount,
+		Threat
 	}
 }

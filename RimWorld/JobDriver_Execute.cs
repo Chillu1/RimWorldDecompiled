@@ -15,17 +15,17 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			JobDriver_Execute jobDriver_Execute = this;
 			this.FailOnAggroMentalState(TargetIndex.A);
-			yield return Toils_Interpersonal.GotoPrisoner(pawn, Victim, PrisonerInteractionModeDefOf.Execution).FailOn(() => !jobDriver_Execute.Victim.IsPrisonerOfColony || !jobDriver_Execute.Victim.guest.PrisonerIsSecure);
+			yield return Toils_Interpersonal.GotoPrisoner(pawn, Victim, PrisonerInteractionModeDefOf.Execution).FailOn(() => !Victim.IsPrisonerOfColony || !Victim.guest.PrisonerIsSecure);
 			Toil execute = new Toil();
 			execute.initAction = delegate
 			{
-				ExecutionUtility.DoExecutionByCut(execute.actor, jobDriver_Execute.Victim);
-				ThoughtUtility.GiveThoughtsForPawnExecuted(jobDriver_Execute.Victim, PawnExecutionKind.GenericBrutal);
-				TaleRecorder.RecordTale(TaleDefOf.ExecutedPrisoner, jobDriver_Execute.pawn, jobDriver_Execute.Victim);
+				ExecutionUtility.DoExecutionByCut(execute.actor, Victim);
+				ThoughtUtility.GiveThoughtsForPawnExecuted(Victim, PawnExecutionKind.GenericBrutal);
+				TaleRecorder.RecordTale(TaleDefOf.ExecutedPrisoner, pawn, Victim);
 			};
 			execute.defaultCompleteMode = ToilCompleteMode.Instant;
+			execute.activeSkill = () => SkillDefOf.Melee;
 			yield return execute;
 		}
 	}

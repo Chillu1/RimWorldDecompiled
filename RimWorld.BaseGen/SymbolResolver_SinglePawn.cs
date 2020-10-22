@@ -15,7 +15,7 @@ namespace RimWorld.BaseGen
 			{
 				return true;
 			}
-			if (!TryFindSpawnCell(rp, out IntVec3 _))
+			if (!TryFindSpawnCell(rp, out var _))
 			{
 				return false;
 			}
@@ -29,7 +29,7 @@ namespace RimWorld.BaseGen
 				return;
 			}
 			Map map = BaseGen.globalSettings.map;
-			if (!TryFindSpawnCell(rp, out IntVec3 cell))
+			if (!TryFindSpawnCell(rp, out var cell))
 			{
 				if (rp.singlePawnToSpawn != null)
 				{

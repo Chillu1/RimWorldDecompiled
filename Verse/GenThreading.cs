@@ -97,9 +97,9 @@ namespace Verse
 						{
 							callback(item2);
 						}
-						catch (Exception exception)
+						catch (Exception arg)
 						{
-							Debug.LogException(exception);
+							Log.Error("Error in ParallelForEach(): " + arg);
 						}
 					}
 					Interlocked.Add(ref tasksDone, localBatch.Count);
@@ -129,9 +129,9 @@ namespace Verse
 						{
 							callback(i);
 						}
-						catch (Exception exception)
+						catch (Exception arg)
 						{
-							Debug.LogException(exception);
+							Log.Error("Error in ParallelFor(): " + arg);
 						}
 					}
 					Interlocked.Add(ref tasksDone, localBatch.toExclusive - localBatch.fromInclusive);

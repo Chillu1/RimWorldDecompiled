@@ -158,7 +158,7 @@ namespace RimWorld
 		{
 			GenRadial.ProcessEquidistantCells(base.Position, 4f, delegate(List<IntVec3> cells)
 			{
-				if (cells.Where((IntVec3 x) => BlightUtility.GetFirstBlightableNowPlant(x, base.Map) != null).TryRandomElement(out IntVec3 result))
+				if (cells.Where((IntVec3 x) => BlightUtility.GetFirstBlightableNowPlant(x, base.Map) != null).TryRandomElement(out var result))
 				{
 					BlightUtility.GetFirstBlightableNowPlant(result, base.Map).CropBlighted();
 					return true;

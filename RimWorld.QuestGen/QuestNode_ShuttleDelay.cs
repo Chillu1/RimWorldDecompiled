@@ -30,7 +30,7 @@ namespace RimWorld.QuestGen
 		{
 			Slate slate = QuestGen.slate;
 			QuestPart_ShuttleDelay questPart_ShuttleDelay = new QuestPart_ShuttleDelay();
-			questPart_ShuttleDelay.inSignalEnable = (QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart_ShuttleDelay.inSignalEnable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			questPart_ShuttleDelay.delayTicks = delayTicks.GetValue(slate);
 			if (lodgers.GetValue(slate) != null)
 			{

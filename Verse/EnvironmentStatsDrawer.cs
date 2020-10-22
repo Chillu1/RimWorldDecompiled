@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -8,17 +8,25 @@ namespace Verse
 	{
 		private const float StatLabelColumnWidth = 100f;
 
+		private const float StatGutterColumnWidth = 10f;
+
 		private const float ScoreColumnWidth = 50f;
 
 		private const float ScoreStageLabelColumnWidth = 160f;
 
 		private static readonly Color RelatedStatColor = new Color(0.85f, 0.85f, 0.85f);
 
+		private static readonly Color UnrelatedStatColor = Color.gray;
+
 		private const float DistFromMouse = 26f;
 
-		public const float WindowPadding = 18f;
+		public const float WindowPadding = 12f;
 
 		private const float LineHeight = 23f;
+
+		private const float FootnoteHeight = 23f;
+
+		private const float TitleHeight = 30f;
 
 		private const float SpaceBetweenLines = 2f;
 
@@ -105,20 +113,20 @@ namespace Verse
 
 		public static Rect GetWindowRect(bool shouldShowBeauty, bool shouldShowRoomStats)
 		{
-			Rect result = new Rect(Event.current.mousePosition.x, Event.current.mousePosition.y, 416f, 36f);
+			Rect result = new Rect(Event.current.mousePosition.x, Event.current.mousePosition.y, 414f, 24f);
+			int num = 0;
 			if (shouldShowBeauty)
 			{
+				num++;
 				result.height += 25f;
 			}
 			if (shouldShowRoomStats)
 			{
-				if (shouldShowBeauty)
-				{
-					result.height += 13f;
-				}
+				num++;
 				result.height += 23f;
-				result.height += (float)DisplayedRoomStatsCount * 25f;
+				result.height += (float)DisplayedRoomStatsCount * 25f + 23f;
 			}
+			result.height += 13f * (float)(num - 1);
 			result.x += 26f;
 			result.y += 26f;
 			if (result.xMax > (float)UI.screenWidth)
@@ -136,29 +144,35 @@ namespace Verse
 		{
 			PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.InspectRoomStats, KnowledgeAmount.FrameDisplayed);
 			Text.Font = GameFont.Small;
-			float curY = 18f;
-			bool flag = ShouldShowBeauty();
-			if (flag)
+			float curY = 12f;
+			int dividingLinesSeen = 0;
+			if (ShouldShowBeauty())
 			{
+				DrawDividingLineIfNecessary();
 				float beauty = BeautyUtility.AverageBeautyPerceptible(UI.MouseCell(), Find.CurrentMap);
-				Rect rect = new Rect(18f, curY, windowRect.width - 36f, 100f);
+				Rect rect = new Rect(22f, curY, windowRect.width - 24f - 10f, 100f);
 				GUI.color = BeautyDrawer.BeautyColor(beauty, 40f);
 				Widgets.Label(rect, "BeautyHere".Translate() + ": " + beauty.ToString("F1"));
 				curY += 25f;
 			}
 			if (ShouldShowRoomStats())
 			{
-				if (flag)
-				{
-					curY += 5f;
-					GUI.color = new Color(1f, 1f, 1f, 0.4f);
-					Widgets.DrawLineHorizontal(18f, curY, windowRect.width - 36f);
-					GUI.color = Color.white;
-					curY += 8f;
-				}
+				DrawDividingLineIfNecessary();
 				DoRoomInfo(UI.MouseCell().GetRoom(Find.CurrentMap, RegionType.Set_All), ref curY, windowRect);
 			}
 			GUI.color = Color.white;
+			void DrawDividingLineIfNecessary()
+			{
+				dividingLinesSeen++;
+				if (dividingLinesSeen > 1)
+				{
+					curY += 5f;
+					GUI.color = new Color(1f, 1f, 1f, 0.4f);
+					Widgets.DrawLineHorizontal(12f, curY, windowRect.width - 24f);
+					GUI.color = Color.white;
+					curY += 8f;
+				}
+			}
 		}
 
 		public static void DrawRoomOverlays()
@@ -179,11 +193,15 @@ namespace Verse
 
 		public static void DoRoomInfo(Room room, ref float curY, Rect windowRect)
 		{
-			Rect rect = new Rect(18f, curY, windowRect.width - 36f, 100f);
+			Rect rect = new Rect(12f, curY, windowRect.width - 24f, 100f);
 			GUI.color = Color.white;
-			Widgets.Label(rect, GetRoomRoleLabel(room));
-			curY += 25f;
+			Text.Font = GameFont.Medium;
+			Widgets.Label(new Rect(rect.x + 10f, curY, rect.width - 10f, rect.height), GetRoomRoleLabel(room));
+			curY += 30f;
+			Text.Font = GameFont.Small;
 			Text.WordWrap = false;
+			int num = 0;
+			bool flag = false;
 			for (int i = 0; i < DefDatabase<RoomStatDef>.AllDefsListForReading.Count; i++)
 			{
 				RoomStatDef roomStatDef = DefDatabase<RoomStatDef>.AllDefsListForReading[i];
@@ -191,22 +209,40 @@ namespace Verse
 				{
 					float stat = room.GetStat(roomStatDef);
 					RoomStatScoreStage scoreStage = roomStatDef.GetScoreStage(stat);
+					GUI.color = Color.white;
+					Rect rect2 = new Rect(rect.x, curY, rect.width, 23f);
+					if (num % 2 == 1)
+					{
+						Widgets.DrawLightHighlight(rect2);
+					}
+					Rect rect3 = new Rect(rect.x, curY, 10f, 23f);
 					if (room.Role.IsStatRelated(roomStatDef))
 					{
+						flag = true;
+						Widgets.Label(rect3, "*");
 						GUI.color = RelatedStatColor;
 					}
 					else
 					{
-						GUI.color = Color.gray;
+						GUI.color = UnrelatedStatColor;
 					}
-					Rect rect2 = new Rect(rect.x, curY, 100f, 23f);
-					Widgets.Label(rect2, roomStatDef.LabelCap);
-					Rect rect3 = new Rect(rect2.xMax + 35f, curY, 50f, 23f);
+					Rect rect4 = new Rect(rect3.xMax, curY, 100f, 23f);
+					Widgets.Label(rect4, roomStatDef.LabelCap);
+					Rect rect5 = new Rect(rect4.xMax + 35f, curY, 50f, 23f);
 					string label = roomStatDef.ScoreToString(stat);
-					Widgets.Label(rect3, label);
-					Widgets.Label(new Rect(rect3.xMax + 35f, curY, 160f, 23f), (scoreStage == null) ? "" : scoreStage.label);
+					Widgets.Label(rect5, label);
+					Widgets.Label(new Rect(rect5.xMax + 35f, curY, 160f, 23f), (scoreStage == null) ? "" : scoreStage.label.CapitalizeFirst());
 					curY += 25f;
+					num++;
 				}
+			}
+			if (flag)
+			{
+				GUI.color = Color.grey;
+				Text.Font = GameFont.Tiny;
+				Widgets.Label(new Rect(rect.x, curY, rect.width, 23f), "* " + "StatRelatesToCurrentRoom".Translate());
+				GUI.color = Color.white;
+				Text.Font = GameFont.Small;
 			}
 			Text.WordWrap = true;
 		}
@@ -226,7 +262,7 @@ namespace Verse
 					pawn2 = owner;
 				}
 			}
-			TaggedString taggedString = (pawn == null) ? room.Role.LabelCap : ((pawn2 != null) ? "CouplesRoom".Translate(pawn.LabelShort, pawn2.LabelShort, room.Role.label, pawn.Named("PAWN1"), pawn2.Named("PAWN2")) : "SomeonesRoom".Translate(pawn.LabelShort, room.Role.label, pawn.Named("PAWN")));
+			TaggedString taggedString = ((pawn == null) ? room.Role.LabelCap : ((pawn2 != null) ? "CouplesRoom".Translate(pawn.LabelShort, pawn2.LabelShort, room.Role.label, pawn.Named("PAWN1"), pawn2.Named("PAWN2")) : "SomeonesRoom".Translate(pawn.LabelShort, room.Role.label, pawn.Named("PAWN"))));
 			return taggedString;
 		}
 	}

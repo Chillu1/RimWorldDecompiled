@@ -102,13 +102,13 @@ namespace RimWorld.SketchGen
 			if (vertical)
 			{
 				buildable.pos.x += initial.minX - buildable.OccupiedRect.minX;
-				int num = (!originIncluded) ? (origin - initial.maxZ - 1 + origin) : (origin - initial.maxZ + origin);
+				int num = ((!originIncluded) ? (origin - initial.maxZ - 1 + origin) : (origin - initial.maxZ + origin));
 				buildable.pos.z += num - buildable.OccupiedRect.minZ;
 			}
 			else
 			{
 				buildable.pos.z += initial.minZ - buildable.OccupiedRect.minZ;
-				int num2 = (!originIncluded) ? (origin - initial.maxX - 1 + origin) : (origin - initial.maxX + origin);
+				int num2 = ((!originIncluded) ? (origin - initial.maxX - 1 + origin) : (origin - initial.maxX + origin));
 				buildable.pos.x += num2 - buildable.OccupiedRect.minX;
 			}
 		}

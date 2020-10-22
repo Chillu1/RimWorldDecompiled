@@ -33,9 +33,9 @@ namespace RimWorld
 			}
 		}
 
-		public override void Tended(float quality, int batchPosition = 0)
+		public override void Tended_NewTemp(float quality, float maxQuality, int batchPosition = 0)
 		{
-			base.Tended(quality, 0);
+			base.Tended_NewTemp(quality, maxQuality, 0);
 			float num = 0.65f * quality;
 			if (Rand.Value < num)
 			{

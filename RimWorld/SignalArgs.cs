@@ -235,7 +235,7 @@ namespace RimWorld
 
 		public bool TryGetArg<T>(string name, out T arg)
 		{
-			if (!TryGetArg(name, out NamedArgument arg2) || !(arg2.arg is T))
+			if (!TryGetArg(name, out var arg2) || !(arg2.arg is T))
 			{
 				arg = default(T);
 				return false;
@@ -246,7 +246,7 @@ namespace RimWorld
 
 		public NamedArgument GetArg(int index)
 		{
-			if (TryGetArg(index, out NamedArgument arg))
+			if (TryGetArg(index, out var arg))
 			{
 				return arg;
 			}
@@ -255,7 +255,7 @@ namespace RimWorld
 
 		public NamedArgument GetArg(string name)
 		{
-			if (TryGetArg(name, out NamedArgument arg))
+			if (TryGetArg(name, out var arg))
 			{
 				return arg;
 			}

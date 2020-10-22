@@ -6,23 +6,16 @@ namespace RimWorld
 	{
 		public static string GetLabel(this PsychicDroneLevel level)
 		{
-			switch (level)
+			return level switch
 			{
-			case PsychicDroneLevel.None:
-				return "PsychicDroneLevel_None".Translate();
-			case PsychicDroneLevel.GoodMedium:
-				return "PsychicDroneLevel_GoodMedium".Translate();
-			case PsychicDroneLevel.BadLow:
-				return "PsychicDroneLevel_BadLow".Translate();
-			case PsychicDroneLevel.BadMedium:
-				return "PsychicDroneLevel_BadMedium".Translate();
-			case PsychicDroneLevel.BadHigh:
-				return "PsychicDroneLevel_BadHigh".Translate();
-			case PsychicDroneLevel.BadExtreme:
-				return "PsychicDroneLevel_BadExtreme".Translate();
-			default:
-				return "error";
-			}
+				PsychicDroneLevel.None => "PsychicDroneLevel_None".Translate(), 
+				PsychicDroneLevel.GoodMedium => "PsychicDroneLevel_GoodMedium".Translate(), 
+				PsychicDroneLevel.BadLow => "PsychicDroneLevel_BadLow".Translate(), 
+				PsychicDroneLevel.BadMedium => "PsychicDroneLevel_BadMedium".Translate(), 
+				PsychicDroneLevel.BadHigh => "PsychicDroneLevel_BadHigh".Translate(), 
+				PsychicDroneLevel.BadExtreme => "PsychicDroneLevel_BadExtreme".Translate(), 
+				_ => "error", 
+			};
 		}
 
 		public static string GetLabelCap(this PsychicDroneLevel level)

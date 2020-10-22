@@ -1,6 +1,6 @@
-using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 using Verse.Sound;
 
 namespace Verse
@@ -188,17 +188,13 @@ namespace Verse
 			{
 				return false;
 			}
-			switch (t.def.category)
+			return t.def.category switch
 			{
-			case ThingCategory.Building:
-				return true;
-			case ThingCategory.Pawn:
-				return true;
-			case ThingCategory.Item:
-				return t.MarketValue > 0.01f;
-			default:
-				return false;
-			}
+				ThingCategory.Building => true, 
+				ThingCategory.Pawn => true, 
+				ThingCategory.Item => t.MarketValue > 0.01f, 
+				_ => false, 
+			};
 		}
 	}
 }

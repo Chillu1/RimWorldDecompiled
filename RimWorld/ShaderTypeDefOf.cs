@@ -17,7 +17,7 @@ namespace RimWorld
 
 		static ShaderTypeDefOf()
 		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(ShaderTypeDef));
+			DefOfHelper.EnsureInitializedInCtor(typeof(ShaderTypeDefOf));
 		}
 	}
 }

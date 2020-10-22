@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Verse;
@@ -6,7 +7,13 @@ namespace RimWorld
 {
 	public class ThoughtWorker_RoyalTitleApparelRequirementNotMet : ThoughtWorker
 	{
+		[Obsolete("Will be removed in the future")]
 		private static RoyalTitleDef Validate(Pawn p)
+		{
+			return null;
+		}
+
+		private static RoyalTitle Validate_NewTemp(Pawn p)
 		{
 			if (p.royalty == null || !p.royalty.allowApparelRequirements)
 			{
@@ -22,13 +29,14 @@ namespace RimWorld
 				{
 					if (!item.def.requiredApparel[i].IsMet(p))
 					{
-						return item.def;
+						return item;
 					}
 				}
 			}
 			return null;
 		}
 
+		[Obsolete("Only used for mod compatibility. Will be removed in a future update.")]
 		private static IEnumerable<string> GetFirstRequiredApparelPerGroup(Pawn p)
 		{
 			if (p.royalty == null || !p.royalty.allowApparelRequirements)
@@ -54,29 +62,59 @@ namespace RimWorld
 			yield return "ApparelRequirementAnyPsycasterApparel".Translate();
 		}
 
+		private static IEnumerable<string> GetAllRequiredApparelPerGroup(Pawn p)
+		{
+			if (p.royalty == null || !p.royalty.allowApparelRequirements)
+			{
+				yield break;
+			}
+			foreach (RoyalTitle t in p.royalty.AllTitlesInEffectForReading)
+			{
+				if (t.def.requiredApparel == null || t.def.requiredApparel.Count <= 0)
+				{
+					continue;
+				}
+				for (int i = 0; i < t.def.requiredApparel.Count; i++)
+				{
+					RoyalTitleDef.ApparelRequirement apparelRequirement = t.def.requiredApparel[i];
+					if (apparelRequirement.IsMet(p))
+					{
+						continue;
+					}
+					IEnumerable<ThingDef> enumerable = apparelRequirement.AllRequiredApparelForPawn(p);
+					foreach (ThingDef item in enumerable)
+					{
+						yield return item.LabelCap;
+					}
+				}
+			}
+			yield return "ApparelRequirementAnyPrestigeArmor".Translate();
+			yield return "ApparelRequirementAnyPsycasterApparel".Translate();
+		}
+
 		public override string PostProcessLabel(Pawn p, string label)
 		{
-			RoyalTitleDef royalTitleDef = Validate(p);
-			if (royalTitleDef == null)
+			RoyalTitle royalTitle = Validate_NewTemp(p);
+			if (royalTitle == null)
 			{
 				return string.Empty;
 			}
-			return label.Formatted(royalTitleDef.GetLabelCapFor(p).Named("TITLE"), p.Named("PAWN"));
+			return label.Formatted(royalTitle.Named("TITLE"), p.Named("PAWN")).CapitalizeFirst();
 		}
 
 		public override string PostProcessDescription(Pawn p, string description)
 		{
-			RoyalTitleDef royalTitleDef = Validate(p);
-			if (royalTitleDef == null)
+			RoyalTitle royalTitle = Validate_NewTemp(p);
+			if (royalTitle == null)
 			{
 				return string.Empty;
 			}
-			return description.Formatted(GetFirstRequiredApparelPerGroup(p).ToLineList("- "), royalTitleDef.GetLabelCapFor(p).Named("TITLE"), p.Named("PAWN"));
+			return description.Formatted(GetAllRequiredApparelPerGroup(p).Distinct().ToLineList("- "), royalTitle.Named("TITLE"), p.Named("PAWN")).CapitalizeFirst();
 		}
 
 		protected override ThoughtState CurrentStateInternal(Pawn p)
 		{
-			if (Validate(p) == null)
+			if (Validate_NewTemp(p) == null)
 			{
 				return ThoughtState.Inactive;
 			}

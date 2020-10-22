@@ -19,7 +19,7 @@ namespace RimWorld
 			int count = countRange.RandomInRange;
 			for (int i = 0; i < count; i++)
 			{
-				if (!Find.FactionManager.AllFactionsVisible.Where((Faction fac) => fac != Faction.OfPlayer && fac.def.humanlikeFaction).TryRandomElement(out Faction result))
+				if (!Find.FactionManager.AllFactionsVisible.Where((Faction fac) => fac != Faction.OfPlayer && fac.def.humanlikeFaction && !fac.temporary).TryRandomElement(out var result))
 				{
 					break;
 				}
@@ -28,7 +28,7 @@ namespace RimWorld
 				request.Faction = result;
 				request.Tile = forTile;
 				request.ForceAddFreeWarmLayerIfNeeded = !trader.orbital;
-				request.RedressValidator = ((Pawn x) => x.royalty == null || !x.royalty.AllTitlesForReading.Any());
+				request.RedressValidator = (Pawn x) => x.royalty == null || !x.royalty.AllTitlesForReading.Any();
 				yield return PawnGenerator.GeneratePawn(request);
 			}
 		}

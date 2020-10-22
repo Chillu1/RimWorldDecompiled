@@ -18,7 +18,7 @@ namespace RimWorld
 			}
 			Map map = (Map)parms.target;
 			PawnKindDef kind;
-			if (RCellFinder.TryFindRandomPawnEntryCell(out IntVec3 _, map, CellFinder.EdgeRoadChance_Animal))
+			if (RCellFinder.TryFindRandomPawnEntryCell(out var _, map, CellFinder.EdgeRoadChance_Animal))
 			{
 				return TryFindRandomPawnKind(map, out kind);
 			}
@@ -28,11 +28,11 @@ namespace RimWorld
 		protected override bool TryExecuteWorker(IncidentParms parms)
 		{
 			Map map = (Map)parms.target;
-			if (!RCellFinder.TryFindRandomPawnEntryCell(out IntVec3 result, map, CellFinder.EdgeRoadChance_Animal))
+			if (!RCellFinder.TryFindRandomPawnEntryCell(out var result, map, CellFinder.EdgeRoadChance_Animal))
 			{
 				return false;
 			}
-			if (!TryFindRandomPawnKind(map, out PawnKindDef kind))
+			if (!TryFindRandomPawnKind(map, out var kind))
 			{
 				return false;
 			}

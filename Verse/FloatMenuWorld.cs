@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse
@@ -8,7 +8,7 @@ namespace Verse
 	{
 		private Vector2 clickPos;
 
-		private const int RevalidateEveryFrame = 3;
+		private const int RevalidateEveryFrame = 4;
 
 		public FloatMenuWorld(List<FloatMenuOption> options, string title, Vector2 clickPos)
 			: base(options, title)
@@ -24,7 +24,7 @@ namespace Verse
 				Find.WindowStack.TryRemove(this);
 				return;
 			}
-			if (Time.frameCount % 3 == 0)
+			if (Time.frameCount % 4 == 0)
 			{
 				List<FloatMenuOption> list = FloatMenuMakerWorld.ChoicesAtFor(clickPos, caravan);
 				List<FloatMenuOption> cachedChoices = list;

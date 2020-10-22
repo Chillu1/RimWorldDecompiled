@@ -26,6 +26,8 @@ namespace Verse
 
 		private bool ignoreArmorInt;
 
+		private bool ignoreInstantKillProtectionInt;
+
 		private BodyPartRecord hitPartInt;
 
 		private BodyPartHeight heightInt;
@@ -104,6 +106,8 @@ namespace Verse
 
 		public bool IgnoreArmor => ignoreArmorInt;
 
+		public bool IgnoreInstantKillProtection => ignoreInstantKillProtectionInt;
+
 		public DamageInfo(DamageDef def, float amount, float armorPenetration = 0f, float angle = -1f, Thing instigator = null, BodyPartRecord hitPart = null, ThingDef weapon = null, SourceCategory category = SourceCategory.ThingOrUnknown, Thing intendedTarget = null)
 		{
 			defInt = def;
@@ -128,6 +132,7 @@ namespace Verse
 			instantPermanentInjuryInt = false;
 			allowDamagePropagationInt = true;
 			ignoreArmorInt = false;
+			ignoreInstantKillProtectionInt = false;
 			intendedTargetInt = intendedTarget;
 		}
 
@@ -149,6 +154,7 @@ namespace Verse
 			allowDamagePropagationInt = cloneSource.allowDamagePropagationInt;
 			intendedTargetInt = cloneSource.intendedTargetInt;
 			ignoreArmorInt = cloneSource.ignoreArmorInt;
+			ignoreInstantKillProtectionInt = cloneSource.ignoreInstantKillProtectionInt;
 		}
 
 		public void SetAmount(float newAmount)
@@ -159,6 +165,11 @@ namespace Verse
 		public void SetIgnoreArmor(bool ignoreArmor)
 		{
 			ignoreArmorInt = ignoreArmor;
+		}
+
+		public void SetIgnoreInstantKillProtection(bool ignore)
+		{
+			ignoreInstantKillProtectionInt = ignore;
 		}
 
 		public void SetBodyRegion(BodyPartHeight height = BodyPartHeight.Undefined, BodyPartDepth depth = BodyPartDepth.Undefined)

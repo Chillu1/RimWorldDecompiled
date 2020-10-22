@@ -19,7 +19,7 @@ namespace RimWorld
 			}
 			Map map = (Map)parms.target;
 			IntVec3 result;
-			if (ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(parms.points, map.Tile, out PawnKindDef _))
+			if (ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(parms.points, map.Tile, out var _))
 			{
 				return RCellFinder.TryFindRandomPawnEntryCell(out result, map, CellFinder.EdgeRoadChance_Animal);
 			}

@@ -1,8 +1,11 @@
-using RimWorld;
 using System.Collections.Generic;
+using System.Linq;
+using RimWorld;
+using UnityEngine;
 
 namespace Verse
 {
+	[StaticConstructorOnStartup]
 	public class Pawn_InventoryTracker : IThingHolder, IExposable
 	{
 		public Pawn pawn;
@@ -13,9 +16,13 @@ namespace Verse
 
 		private List<Thing> itemsNotForSale = new List<Thing>();
 
+		public static readonly Texture2D DrugTex = ContentFinder<Texture2D>.Get("UI/Commands/TakeDrug");
+
 		private static List<ThingDefCount> tmpDrugsToKeep = new List<ThingDefCount>();
 
 		private static List<Thing> tmpThingList = new List<Thing>();
+
+		private List<Thing> usableDrugsTmp = new List<Thing>();
 
 		public bool UnloadEverything
 		{
@@ -132,7 +139,7 @@ namespace Verse
 			tmpThingList.AddRange(innerContainer);
 			for (int i = 0; i < tmpThingList.Count; i++)
 			{
-				innerContainer.TryDrop(tmpThingList[i], pos, pawn.MapHeld, ThingPlaceMode.Near, out Thing _, delegate(Thing t, int unused)
+				innerContainer.TryDrop(tmpThingList[i], pos, pawn.MapHeld, ThingPlaceMode.Near, out var _, delegate(Thing t, int unused)
 				{
 					if (forbid)
 					{
@@ -190,6 +197,87 @@ namespace Verse
 		public void GetChildHolders(List<IThingHolder> outChildren)
 		{
 			ThingOwnerUtility.AppendThingHoldersFromThings(outChildren, GetDirectlyHeldThings());
+		}
+
+		public IEnumerable<Thing> GetDrugs()
+		{
+			foreach (Thing item in innerContainer)
+			{
+				if (item.TryGetComp<CompDrug>() != null)
+				{
+					yield return item;
+				}
+			}
+		}
+
+		public IEnumerable<Thing> GetCombatEnhancingDrugs()
+		{
+			foreach (Thing item in innerContainer)
+			{
+				CompDrug compDrug = item.TryGetComp<CompDrug>();
+				if (compDrug != null && compDrug.Props.isCombatEnhancingDrug)
+				{
+					yield return item;
+				}
+			}
+		}
+
+		public Thing FindCombatEnhancingDrug()
+		{
+			return GetCombatEnhancingDrugs().FirstOrDefault();
+		}
+
+		public IEnumerable<Gizmo> GetGizmos()
+		{
+			if (!pawn.IsColonistPlayerControlled || !pawn.Drafted || Find.Selector.SingleSelectedThing != pawn || pawn.IsTeetotaler())
+			{
+				yield break;
+			}
+			usableDrugsTmp.Clear();
+			foreach (Thing drug3 in GetDrugs())
+			{
+				if (FoodUtility.WillIngestFromInventoryNow(pawn, drug3))
+				{
+					usableDrugsTmp.Add(drug3);
+				}
+			}
+			if (usableDrugsTmp.Count == 0)
+			{
+				yield break;
+			}
+			if (usableDrugsTmp.Count == 1)
+			{
+				Thing drug = usableDrugsTmp[0];
+				Command_Action command_Action = new Command_Action();
+				command_Action.defaultLabel = "ConsumeThing".Translate(drug.LabelNoCount, drug);
+				command_Action.defaultDesc = drug.LabelCapNoCount + ": " + drug.def.description.CapitalizeFirst();
+				command_Action.icon = drug.def.uiIcon;
+				command_Action.iconAngle = drug.def.uiIconAngle;
+				command_Action.iconOffset = drug.def.uiIconOffset;
+				command_Action.action = delegate
+				{
+					FoodUtility.IngestFromInventoryNow(pawn, drug);
+				};
+				yield return command_Action;
+				yield break;
+			}
+			Command_Action command_Action2 = new Command_Action();
+			command_Action2.defaultLabel = "TakeDrug".Translate();
+			command_Action2.defaultDesc = "TakeDrugDesc".Translate();
+			command_Action2.icon = DrugTex;
+			command_Action2.action = delegate
+			{
+				List<FloatMenuOption> list = new List<FloatMenuOption>();
+				foreach (Thing drug2 in usableDrugsTmp)
+				{
+					list.Add(new FloatMenuOption("ConsumeThing".Translate(drug2.LabelNoCount, drug2), delegate
+					{
+						FoodUtility.IngestFromInventoryNow(pawn, drug2);
+					}));
+				}
+				Find.WindowStack.Add(new FloatMenu(list));
+			};
+			yield return command_Action2;
 		}
 	}
 }

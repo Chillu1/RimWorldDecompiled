@@ -16,7 +16,7 @@ namespace RimWorld
 		protected override void DoIngestionOutcomeSpecial(Pawn pawn, Thing ingested)
 		{
 			Hediff hediff = HediffMaker.MakeHediff(hediffDef, pawn);
-			float effect = (!(severity > 0f)) ? hediffDef.initialSeverity : severity;
+			float effect = ((!(severity > 0f)) ? hediffDef.initialSeverity : severity);
 			if (divideByBodySize)
 			{
 				effect /= pawn.BodySize;

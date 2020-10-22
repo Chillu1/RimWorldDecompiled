@@ -28,7 +28,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (DefDatabase<TraderKindDef>.AllDefs.Where((TraderKindDef x) => CanSpawn(map, x)).TryRandomElementByWeight((TraderKindDef traderDef) => traderDef.CalculatedCommonality, out TraderKindDef result))
+			if (DefDatabase<TraderKindDef>.AllDefs.Where((TraderKindDef x) => CanSpawn(map, x)).TryRandomElementByWeight((TraderKindDef traderDef) => traderDef.CalculatedCommonality, out var result))
 			{
 				TradeShip tradeShip = new TradeShip(result, GetFaction(result));
 				if (map.listerBuildings.allBuildingsColonist.Any((Building b) => b.def.IsCommsConsole && (b.GetComp<CompPowerTrader>() == null || b.GetComp<CompPowerTrader>().PowerOn)))
@@ -48,7 +48,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			if (!Find.FactionManager.AllFactions.Where((Faction f) => f.def == trader.faction).TryRandomElement(out Faction result))
+			if (!Find.FactionManager.AllFactions.Where((Faction f) => f.def == trader.faction).TryRandomElement(out var result))
 			{
 				return null;
 			}

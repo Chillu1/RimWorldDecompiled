@@ -95,7 +95,7 @@ namespace RimWorld
 			for (int num = contents.innerContainer.Count - 1; num >= 0; num--)
 			{
 				Thing thing = contents.innerContainer[num];
-				Rot4 rot = contents.setRotation.HasValue ? contents.setRotation.Value : Rot4.North;
+				Rot4 rot = (contents.setRotation.HasValue ? contents.setRotation.Value : Rot4.North);
 				if (contents.moveItemsAsideBeforeSpawning)
 				{
 					GenSpawn.CheckMoveItemsAside(base.Position, rot, thing.def, map);

@@ -1,8 +1,8 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
+using RimWorld.Planet;
 using Verse.AI;
 using Verse.AI.Group;
 
@@ -136,6 +136,8 @@ namespace Verse
 
 		public ListerArtificialBuildingsForMeditation listerArtificialBuildingsForMeditation;
 
+		public ListerBuldingOfDefInProximity listerBuldingOfDefInProximity;
+
 		public ListerFilthInHomeArea listerFilthInHomeArea;
 
 		public Reachability reachability;
@@ -187,6 +189,8 @@ namespace Verse
 		public WaterInfo waterInfo;
 
 		public RetainedCaravanData retainedCaravanData;
+
+		public TemporaryThingDrawer temporaryThingDrawer;
 
 		public const string ThingSaveKey = "thing";
 
@@ -252,6 +256,10 @@ namespace Verse
 			{
 				if (IsPlayerHome)
 				{
+					if (Find.Storyteller.difficultyValues.fixedWealthMode)
+					{
+						return StorytellerUtility.FixedWealthModeMapWealthFromTimeCurve.Evaluate(AgeInDays * Find.Storyteller.difficultyValues.fixedWealthTimeFactor);
+					}
 					return wealthWatcher.WealthItems + wealthWatcher.WealthBuildings * 0.5f + wealthWatcher.WealthPawns;
 				}
 				float num = 0f;
@@ -275,6 +283,8 @@ namespace Verse
 		public FloatRange IncidentPointsRandomFactorRange => FloatRange.One;
 
 		public MapParent Parent => info.parent;
+
+		public float AgeInDays => (float)(Find.TickManager.TicksGame - generationTick) / 60000f;
 
 		public int ConstantRandSeed => uniqueID ^ 0xFDA252;
 
@@ -351,6 +361,7 @@ namespace Verse
 			listerMergeables = new ListerMergeables(this);
 			listerFilthInHomeArea = new ListerFilthInHomeArea(this);
 			listerArtificialBuildingsForMeditation = new ListerArtificialBuildingsForMeditation(this);
+			listerBuldingOfDefInProximity = new ListerBuldingOfDefInProximity(this);
 			reachability = new Reachability(this);
 			itemAvailability = new ItemAvailability(this);
 			autoBuildRoofAreaSetter = new AutoBuildRoofAreaSetter(this);
@@ -374,6 +385,7 @@ namespace Verse
 			mineStrikeManager = new MineStrikeManager();
 			storyState = new StoryState(this);
 			retainedCaravanData = new RetainedCaravanData(this);
+			temporaryThingDrawer = new TemporaryThingDrawer();
 			components.Clear();
 			FillComponents();
 		}
@@ -579,6 +591,7 @@ namespace Verse
 			Scribe_Deep.Look(ref retainedCaravanData, "retainedCaravanData", this);
 			Scribe_Deep.Look(ref storyState, "storyState", this);
 			Scribe_Deep.Look(ref wildPlantSpawner, "wildPlantSpawner", this);
+			Scribe_Deep.Look(ref temporaryThingDrawer, "temporaryThingDrawer");
 			Scribe_Collections.Look(ref components, "components", LookMode.Deep, this);
 			FillComponents();
 			BackCompatibility.PostExposeData(this);
@@ -606,6 +619,7 @@ namespace Verse
 			{
 				Log.Error(ex2.ToString());
 			}
+			temporaryThingDrawer.Tick();
 		}
 
 		public void MapPostTick()
@@ -744,6 +758,7 @@ namespace Verse
 				MapEdgeClipDrawer.DrawClippers(this);
 				designationManager.DrawDesignations();
 				overlayDrawer.DrawAllOverlays();
+				temporaryThingDrawer.Draw();
 			}
 			try
 			{

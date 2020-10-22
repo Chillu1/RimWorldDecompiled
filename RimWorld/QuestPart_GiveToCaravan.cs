@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -100,21 +100,14 @@ namespace RimWorld
 		public override void PostQuestAdded()
 		{
 			base.PostQuestAdded();
-			int num = 0;
-			while (true)
+			for (int i = 0; i < items.Count; i++)
 			{
-				if (num < items.Count)
+				if (items[i].def == ThingDefOf.PsychicAmplifier)
 				{
-					if (items[num].def == ThingDefOf.PsychicAmplifier)
-					{
-						break;
-					}
-					num++;
-					continue;
+					Find.History.Notify_PsylinkAvailable();
+					break;
 				}
-				return;
 			}
-			Find.History.Notify_PsylinkAvailable();
 		}
 
 		public override bool QuestPartReserves(Pawn p)

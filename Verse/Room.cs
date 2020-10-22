@@ -1,6 +1,6 @@
-using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -575,7 +575,7 @@ namespace Verse
 		{
 			fields.Clear();
 			fields.AddRange(Cells);
-			Color color = isPrisonCell ? PrisonFieldColor : NonPrisonFieldColor;
+			Color color = (isPrisonCell ? PrisonFieldColor : NonPrisonFieldColor);
 			color.a = Pulser.PulseBrightness(1f, 0.6f);
 			GenDraw.DrawFieldEdges(fields, color);
 			fields.Clear();

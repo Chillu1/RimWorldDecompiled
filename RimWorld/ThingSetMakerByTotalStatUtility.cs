@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using Verse;
 
@@ -9,6 +8,14 @@ namespace RimWorld
 	public static class ThingSetMakerByTotalStatUtility
 	{
 		private static List<ThingStuffPairWithQuality> allowedThingStuffPairs = new List<ThingStuffPairWithQuality>();
+
+		private static List<ThingStuffPairWithQuality> candidatesTmp = new List<ThingStuffPairWithQuality>();
+
+		private static List<ThingStuffPairWithQuality> candidatesTmpNew = new List<ThingStuffPairWithQuality>();
+
+		private static Dictionary<ThingStuffPairWithQuality, float> minValuesTmp = new Dictionary<ThingStuffPairWithQuality, float>();
+
+		private static Dictionary<ThingStuffPairWithQuality, float> maxValuesTmp = new Dictionary<ThingStuffPairWithQuality, float>();
 
 		public static List<ThingStuffPairWithQuality> GenerateDefsWithPossibleTotalValue(IntRange countRange, float totalValue, IEnumerable<ThingDef> allowed, TechLevel techLevel, QualityGenerator qualityGenerator, Func<ThingStuffPairWithQuality, float> getMinValue, Func<ThingStuffPairWithQuality, float> getMaxValue, Func<ThingDef, float> weightSelector = null, int tries = 100, float maxMass = float.MaxValue)
 		{
@@ -27,6 +34,8 @@ namespace RimWorld
 
 		public static List<ThingStuffPairWithQuality> GenerateDefsWithPossibleTotalValue_NewTmp3(IntRange countRange, float totalValue, IEnumerable<ThingDef> allowed, TechLevel techLevel, QualityGenerator qualityGenerator, Func<ThingStuffPairWithQuality, float> getMinValue, Func<ThingStuffPairWithQuality, float> getMaxValue, Func<ThingStuffPairWithQuality, float> getSingleThingValue, Func<ThingDef, float> weightSelector = null, int tries = 100, float maxMass = float.MaxValue, bool allowNonStackableDuplicates = true, float minSingleItemValue = 0f)
 		{
+			minValuesTmp.Clear();
+			maxValuesTmp.Clear();
 			List<ThingStuffPairWithQuality> chosen = new List<ThingStuffPairWithQuality>();
 			if (countRange.max <= 0)
 			{
@@ -37,133 +46,157 @@ namespace RimWorld
 				countRange.min = 1;
 			}
 			CalculateAllowedThingStuffPairs(allowed, techLevel, qualityGenerator);
-			float trashThreshold = Mathf.Max(GetTrashThreshold(countRange, totalValue, getMaxValue), minSingleItemValue);
-			allowedThingStuffPairs.RemoveAll((ThingStuffPairWithQuality x) => getMaxValue(x) < trashThreshold);
+			float trashThreshold = Mathf.Max(GetTrashThreshold(countRange, totalValue, MaxValue), minSingleItemValue);
+			allowedThingStuffPairs.RemoveAll((ThingStuffPairWithQuality x) => MaxValue(x) < trashThreshold);
 			if (!allowedThingStuffPairs.Any())
 			{
 				return chosen;
 			}
-			float minCandidateValueEver = float.MaxValue;
-			float maxCandidateValueEver = float.MinValue;
-			float minMassEver = float.MaxValue;
+			float a = float.MaxValue;
+			float num = float.MinValue;
+			float num2 = float.MaxValue;
 			foreach (ThingStuffPairWithQuality allowedThingStuffPair in allowedThingStuffPairs)
 			{
-				minCandidateValueEver = Mathf.Min(minCandidateValueEver, getMinValue(allowedThingStuffPair));
-				maxCandidateValueEver = Mathf.Max(maxCandidateValueEver, getMaxValue(allowedThingStuffPair));
+				a = Mathf.Min(a, MinValue(allowedThingStuffPair));
+				num = Mathf.Max(num, MaxValue(allowedThingStuffPair));
 				if (allowedThingStuffPair.thing.category != ThingCategory.Pawn)
 				{
-					minMassEver = Mathf.Min(minMassEver, GetNonTrashMass(allowedThingStuffPair, trashThreshold, getMinValue));
+					num2 = Mathf.Min(num2, GetNonTrashMass(allowedThingStuffPair, trashThreshold, MinValue));
 				}
 			}
-			minCandidateValueEver = Mathf.Max(minCandidateValueEver, trashThreshold);
+			a = Mathf.Max(a, trashThreshold);
 			float totalMinValueSoFar = 0f;
 			float totalMaxValueSoFar = 0f;
 			float minMassSoFar = 0f;
-			int num = 0;
+			int num3 = 0;
 			do
 			{
-				num++;
-				if (num > 10000)
+				num3++;
+				if (num3 > 10000)
 				{
 					Log.Error("Too many iterations.");
 					break;
 				}
-				IEnumerable<ThingStuffPairWithQuality> enumerable = allowedThingStuffPairs.Where(delegate(ThingStuffPairWithQuality x)
+				candidatesTmp.Clear();
+				for (int i = 0; i < allowedThingStuffPairs.Count; i++)
 				{
-					if (!allowNonStackableDuplicates && x.thing.stackLimit == 1 && chosen.Any((ThingStuffPairWithQuality c) => c.thing == x.thing))
+					ThingStuffPairWithQuality candidate = allowedThingStuffPairs[i];
+					if (!allowNonStackableDuplicates && candidate.thing.stackLimit == 1 && chosen.Any((ThingStuffPairWithQuality c) => c.thing == candidate.thing))
 					{
-						return false;
+						continue;
 					}
-					if (maxMass != float.MaxValue && x.thing.category != ThingCategory.Pawn)
+					if (maxMass != float.MaxValue && candidate.thing.category != ThingCategory.Pawn)
 					{
-						float nonTrashMass = GetNonTrashMass(x, trashThreshold, getMinValue);
-						if (minMassSoFar + nonTrashMass > maxMass)
+						float nonTrashMass = GetNonTrashMass(candidate, trashThreshold, MinValue);
+						if (minMassSoFar + nonTrashMass > maxMass || (chosen.Count < countRange.min && minMassSoFar + num2 * (float)(countRange.min - chosen.Count - 1) + nonTrashMass > maxMass))
 						{
-							return false;
-						}
-						if (chosen.Count < countRange.min && minMassSoFar + minMassEver * (float)(countRange.min - chosen.Count - 1) + nonTrashMass > maxMass)
-						{
-							return false;
+							continue;
 						}
 					}
-					if (totalMinValueSoFar + Mathf.Max(getMinValue(x), trashThreshold) > totalValue)
+					if (!(totalMinValueSoFar + Mathf.Max(MinValue(candidate), trashThreshold) > totalValue) && (chosen.Count >= countRange.min || !(totalMinValueSoFar + a * (float)(countRange.min - chosen.Count - 1) + Mathf.Max(MinValue(candidate), trashThreshold) > totalValue)))
 					{
-						return false;
+						candidatesTmp.Add(candidate);
 					}
-					return (chosen.Count >= countRange.min || !(totalMinValueSoFar + minCandidateValueEver * (float)(countRange.min - chosen.Count - 1) + Mathf.Max(getMinValue(x), trashThreshold) > totalValue)) ? true : false;
-				});
+				}
 				if (countRange.max != int.MaxValue && totalMaxValueSoFar < totalValue * 0.5f)
 				{
-					IEnumerable<ThingStuffPairWithQuality> enumerable2 = enumerable;
-					enumerable = enumerable.Where((ThingStuffPairWithQuality x) => totalMaxValueSoFar + maxCandidateValueEver * (float)(countRange.max - chosen.Count - 1) + getMaxValue(x) >= totalValue * 0.5f);
-					if (!enumerable.Any())
+					candidatesTmpNew.Clear();
+					for (int j = 0; j < candidatesTmp.Count; j++)
 					{
-						enumerable = enumerable2;
+						ThingStuffPairWithQuality thingStuffPairWithQuality = candidatesTmp[j];
+						if (totalMaxValueSoFar + num * (float)(countRange.max - chosen.Count - 1) + MaxValue(thingStuffPairWithQuality) >= totalValue * 0.5f)
+						{
+							candidatesTmpNew.Add(thingStuffPairWithQuality);
+						}
+					}
+					if (candidatesTmpNew.Any())
+					{
+						candidatesTmp.Clear();
+						candidatesTmp.AddRange(candidatesTmpNew);
 					}
 				}
 				float maxCandidateMinValue = float.MinValue;
-				foreach (ThingStuffPairWithQuality item in enumerable)
+				for (int k = 0; k < candidatesTmp.Count; k++)
 				{
-					maxCandidateMinValue = Mathf.Max(maxCandidateMinValue, Mathf.Max(getMinValue(item), trashThreshold));
+					ThingStuffPairWithQuality t2 = candidatesTmp[k];
+					maxCandidateMinValue = Mathf.Max(maxCandidateMinValue, Mathf.Max(MinValue(t2), trashThreshold));
 				}
-				if (!enumerable.TryRandomElementByWeight(delegate(ThingStuffPairWithQuality x)
+				if (!candidatesTmp.TryRandomElementByWeight(delegate(ThingStuffPairWithQuality x)
 				{
-					float a = 1f;
+					float a2 = 1f;
 					if (countRange.max != int.MaxValue && chosen.Count < countRange.max && totalValue >= totalMaxValueSoFar)
 					{
-						int num2 = countRange.max - chosen.Count;
-						float b = (totalValue - totalMaxValueSoFar) / (float)num2;
-						a = Mathf.InverseLerp(0f, b, getMaxValue(x));
+						int num4 = countRange.max - chosen.Count;
+						float b = (totalValue - totalMaxValueSoFar) / (float)num4;
+						a2 = Mathf.InverseLerp(0f, b, MaxValue(x));
 					}
 					float b2 = 1f;
 					if (chosen.Count < countRange.min && totalValue >= totalMinValueSoFar)
 					{
-						int num3 = countRange.min - chosen.Count;
-						float num4 = (totalValue - totalMinValueSoFar) / (float)num3;
-						float num5 = Mathf.Max(getMinValue(x), trashThreshold);
-						if (num5 > num4)
+						int num5 = countRange.min - chosen.Count;
+						float num6 = (totalValue - totalMinValueSoFar) / (float)num5;
+						float num7 = Mathf.Max(MinValue(x), trashThreshold);
+						if (num7 > num6)
 						{
-							b2 = num4 / num5;
+							b2 = num6 / num7;
 						}
 					}
-					float num6 = Mathf.Max(Mathf.Min(a, b2), 1E-05f);
+					float num8 = Mathf.Max(Mathf.Min(a2, b2), 1E-05f);
 					if (weightSelector != null)
 					{
-						num6 *= weightSelector(x.thing);
+						num8 *= weightSelector(x.thing);
 					}
 					if (totalValue > totalMaxValueSoFar)
 					{
-						int num7 = Mathf.Max(countRange.min - chosen.Count, 1);
-						float num8 = Mathf.InverseLerp(0f, maxCandidateMinValue * 0.85f, GetMaxValueWithMaxMass(x, minMassSoFar, maxMass, getMinValue, getMaxValue) * (float)num7);
-						num6 *= num8 * num8;
+						int num9 = Mathf.Max(countRange.min - chosen.Count, 1);
+						float num10 = Mathf.InverseLerp(0f, maxCandidateMinValue * 0.85f, GetMaxValueWithMaxMass(x, minMassSoFar, maxMass, MinValue, MaxValue) * (float)num9);
+						num8 *= num10 * num10;
 					}
 					if (PawnWeaponGenerator.IsDerpWeapon(x.thing, x.stuff))
 					{
-						num6 *= 0.1f;
+						num8 *= 0.1f;
 					}
 					if (techLevel != 0)
 					{
 						TechLevel techLevel2 = x.thing.techLevel;
 						if ((int)techLevel2 < (int)techLevel && (int)techLevel2 <= 2 && (x.thing.IsApparel || x.thing.IsWeapon))
 						{
-							num6 *= 0.1f;
+							num8 *= 0.1f;
 						}
 					}
-					return num6;
-				}, out ThingStuffPairWithQuality result))
+					return num8;
+				}, out var result))
 				{
 					break;
 				}
 				chosen.Add(result);
-				totalMinValueSoFar += Mathf.Max(getMinValue(result), trashThreshold);
-				totalMaxValueSoFar += getMaxValue(result);
+				totalMinValueSoFar += Mathf.Max(MinValue(result), trashThreshold);
+				totalMaxValueSoFar += MaxValue(result);
 				if (result.thing.category != ThingCategory.Pawn)
 				{
-					minMassSoFar += GetNonTrashMass(result, trashThreshold, getMinValue);
+					minMassSoFar += GetNonTrashMass(result, trashThreshold, MinValue);
 				}
 			}
 			while (chosen.Count < countRange.max && (chosen.Count < countRange.min || !(totalMaxValueSoFar >= totalValue * 0.9f)));
 			return chosen;
+			float MaxValue(ThingStuffPairWithQuality t)
+			{
+				if (!maxValuesTmp.TryGetValue(t, out var value2))
+				{
+					value2 = getMaxValue(t);
+					maxValuesTmp[t] = value2;
+				}
+				return value2;
+			}
+			float MinValue(ThingStuffPairWithQuality t)
+			{
+				if (!minValuesTmp.TryGetValue(t, out var value))
+				{
+					value = getMinValue(t);
+					minValuesTmp[t] = value;
+				}
+				return value;
+			}
 		}
 
 		[Obsolete]
@@ -213,7 +246,7 @@ namespace RimWorld
 		{
 			float num = (totalValue - currentTotalValue) / (float)things.Count;
 			float num2 = maxMass - currentTotalMass;
-			float num3 = (maxMass == float.MaxValue) ? float.MaxValue : (num2 / (float)things.Count);
+			float num3 = ((maxMass == float.MaxValue) ? float.MaxValue : (num2 / (float)things.Count));
 			float num4 = 0f;
 			if (useValueMassRatio)
 			{
@@ -298,9 +331,9 @@ namespace RimWorld
 			{
 				for (int i = 0; i < 5; i++)
 				{
-					if (GenStuff.TryRandomStuffFor(td, out ThingDef stuff, techLevel, (ThingDef x) => !ThingSetMakerUtility.IsDerpAndDisallowed(td, x, qualityGenerator)))
+					if (GenStuff.TryRandomStuffFor(td, out var stuff, techLevel, (ThingDef x) => !ThingSetMakerUtility.IsDerpAndDisallowed(td, x, qualityGenerator)))
 					{
-						QualityCategory quality = td.HasComp(typeof(CompQuality)) ? QualityUtility.GenerateQuality(qualityGenerator) : QualityCategory.Normal;
+						QualityCategory quality = (td.HasComp(typeof(CompQuality)) ? QualityUtility.GenerateQuality(qualityGenerator) : QualityCategory.Normal);
 						allowedThingStuffPairs.Add(new ThingStuffPairWithQuality(td, stuff, quality));
 					}
 				}

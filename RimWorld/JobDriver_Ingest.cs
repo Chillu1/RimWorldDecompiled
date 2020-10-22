@@ -65,8 +65,8 @@ namespace RimWorld
 		public override void Notify_Starting()
 		{
 			base.Notify_Starting();
-			usingNutrientPasteDispenser = (IngestibleSource is Building_NutrientPasteDispenser);
-			eatingFromInventory = (pawn.inventory != null && pawn.inventory.Contains(IngestibleSource));
+			usingNutrientPasteDispenser = IngestibleSource is Building_NutrientPasteDispenser;
+			eatingFromInventory = pawn.inventory != null && pawn.inventory.Contains(IngestibleSource);
 		}
 
 		public override bool TryMakePreToilReservations(bool errorOnFailed)
@@ -134,31 +134,15 @@ namespace RimWorld
 				yield return Toils_Jump.Jump(chewToil);
 				yield return gotoToPickup;
 				yield return Toils_Ingest.PickupIngestible(TargetIndex.A, pawn);
-				JobDriver_Ingest jobDriver_Ingest = this;
-				Toil reserveExtraFoodToCollect = Toils_Ingest.ReserveFoodFromStackForIngesting(TargetIndex.C);
-				Toil findExtraFoodToCollect = new Toil
-				{
-					initAction = delegate
-					{
-						if (jobDriver_Ingest.pawn.inventory.innerContainer.TotalStackCountOfDef(jobDriver_Ingest.IngestibleSource.def) < jobDriver_Ingest.job.takeExtraIngestibles)
-						{
-							Thing thing = GenClosest.ClosestThingReachable(jobDriver_Ingest.pawn.Position, jobDriver_Ingest.pawn.Map, ThingRequest.ForDef(jobDriver_Ingest.IngestibleSource.def), PathEndMode.Touch, TraverseParms.For(jobDriver_Ingest.pawn), 12f, (Thing x) => jobDriver_Ingest.pawn.CanReserve(x, 10, 1) && !x.IsForbidden(jobDriver_Ingest.pawn) && x.IsSociallyProper(jobDriver_Ingest.pawn));
-							if (thing != null)
-							{
-								jobDriver_Ingest.job.SetTarget(TargetIndex.C, thing);
-								jobDriver_Ingest.JumpToToil(reserveExtraFoodToCollect);
-							}
-						}
-					},
-					defaultCompleteMode = ToilCompleteMode.Instant
-				};
-				yield return Toils_Jump.Jump(findExtraFoodToCollect);
-				yield return reserveExtraFoodToCollect;
-				yield return Toils_Goto.GotoThing(TargetIndex.C, PathEndMode.Touch);
-				yield return Toils_Haul.TakeToInventory(TargetIndex.C, () => job.takeExtraIngestibles - pawn.inventory.innerContainer.TotalStackCountOfDef(IngestibleSource.def));
-				yield return findExtraFoodToCollect;
 			}
-			if (!IngestibleSource.def.IsDrug)
+			if (job.takeExtraIngestibles > 0)
+			{
+				foreach (Toil item in TakeExtraIngestibles())
+				{
+					yield return item;
+				}
+			}
+			if (!pawn.Drafted)
 			{
 				yield return Toils_Ingest.CarryIngestibleToChewSpot(pawn, TargetIndex.A).FailOnDestroyedOrNull(TargetIndex.A);
 			}
@@ -169,6 +153,36 @@ namespace RimWorld
 		{
 			yield return ReserveFood();
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
+		}
+
+		private IEnumerable<Toil> TakeExtraIngestibles()
+		{
+			if (!pawn.health.capacities.CapableOf(PawnCapacityDefOf.Manipulation))
+			{
+				yield break;
+			}
+			Toil reserveExtraFoodToCollect = Toils_Ingest.ReserveFoodFromStackForIngesting(TargetIndex.C);
+			Toil findExtraFoodToCollect = new Toil
+			{
+				initAction = delegate
+				{
+					if (pawn.inventory.innerContainer.TotalStackCountOfDef(IngestibleSource.def) < job.takeExtraIngestibles)
+					{
+						Thing thing = GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(IngestibleSource.def), PathEndMode.Touch, TraverseParms.For(pawn), 30f, (Thing x) => pawn.CanReserve(x, 10, 1) && !x.IsForbidden(pawn) && x.IsSociallyProper(pawn));
+						if (thing != null)
+						{
+							job.SetTarget(TargetIndex.C, thing);
+							JumpToToil(reserveExtraFoodToCollect);
+						}
+					}
+				},
+				defaultCompleteMode = ToilCompleteMode.Instant
+			};
+			yield return Toils_Jump.Jump(findExtraFoodToCollect);
+			yield return reserveExtraFoodToCollect;
+			yield return Toils_Goto.GotoThing(TargetIndex.C, PathEndMode.Touch);
+			yield return Toils_Haul.TakeToInventory(TargetIndex.C, () => job.takeExtraIngestibles - pawn.inventory.innerContainer.TotalStackCountOfDef(IngestibleSource.def));
+			yield return findExtraFoodToCollect;
 		}
 
 		private Toil ReserveFood()

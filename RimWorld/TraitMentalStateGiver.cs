@@ -15,7 +15,7 @@ namespace RimWorld
 			float curMood = pawn.mindState.mentalBreaker.CurMood;
 			if (Rand.MTBEventOccurs(traitDegreeData.randomMentalStateMtbDaysMoodCurve.Evaluate(curMood), 60000f, checkInterval) && traitDegreeData.randomMentalState.Worker.StateCanOccur(pawn))
 			{
-				return pawn.mindState.mentalStateHandler.TryStartMentalState(traitDegreeData.randomMentalState, "MentalStateReason_Trait".Translate(traitDegreeData.label));
+				return pawn.mindState.mentalStateHandler.TryStartMentalState(traitDegreeData.randomMentalState, "MentalStateReason_Trait".Translate(traitDegreeData.GetLabelFor(pawn)));
 			}
 			return false;
 		}

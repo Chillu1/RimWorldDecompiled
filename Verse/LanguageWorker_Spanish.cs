@@ -32,7 +32,7 @@ namespace Verse
 				return str;
 			}
 			char c = str[str.Length - 1];
-			char c2 = (str.Length >= 2) ? str[str.Length - 2] : '\0';
+			char c2 = ((str.Length >= 2) ? str[str.Length - 2] : '\0');
 			if (IsVowel(c))
 			{
 				if (str == "sí")

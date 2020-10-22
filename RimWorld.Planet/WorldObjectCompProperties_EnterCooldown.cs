@@ -4,7 +4,7 @@ namespace RimWorld.Planet
 	{
 		public bool autoStartOnMapRemoved = true;
 
-		public float durationDays = 4f;
+		public float durationDays = 1f;
 
 		public WorldObjectCompProperties_EnterCooldown()
 		{

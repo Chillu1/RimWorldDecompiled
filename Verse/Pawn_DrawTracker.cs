@@ -77,7 +77,7 @@ namespace Verse
 
 		public void Notify_DamageApplied(DamageInfo dinfo)
 		{
-			if (!pawn.Destroyed)
+			if (!pawn.Destroyed && pawn.Spawned)
 			{
 				jitterer.Notify_DamageApplied(dinfo);
 				renderer.Notify_DamageApplied(dinfo);

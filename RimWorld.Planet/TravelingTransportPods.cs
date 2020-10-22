@@ -28,6 +28,27 @@ namespace RimWorld.Planet
 
 		public override Vector3 DrawPos => Vector3.Slerp(Start, End, traveledPct);
 
+		public override bool ExpandingIconFlipHorizontal => GenWorldUI.WorldToUIPosition(Start).x > GenWorldUI.WorldToUIPosition(End).x;
+
+		public override float ExpandingIconRotation
+		{
+			get
+			{
+				if (!def.rotateGraphicWhenTraveling)
+				{
+					return base.ExpandingIconRotation;
+				}
+				Vector2 vector = GenWorldUI.WorldToUIPosition(Start);
+				Vector2 vector2 = GenWorldUI.WorldToUIPosition(End);
+				float num = Mathf.Atan2(vector2.y - vector.y, vector2.x - vector.x) * 57.29578f;
+				if (num > 180f)
+				{
+					num -= 180f;
+				}
+				return num + 90f;
+			}
+		}
+
 		private float TraveledPctStepPerTick
 		{
 			get
@@ -268,7 +289,12 @@ namespace RimWorld.Planet
 				{
 					pods[l].innerContainer.ClearAndDestroyContentsOrPassToWorld();
 				}
-				Messages.Message("MessageTransportPodsArrivedAndLost".Translate(), new GlobalTargetInfo(destinationTile), MessageTypeDefOf.NegativeEvent);
+				string key = "MessageTransportPodsArrivedAndLost";
+				if (def == WorldObjectDefOf.TravelingShuttle)
+				{
+					key = "MessageShuttleArrivedContentsLost";
+				}
+				Messages.Message(key.Translate(), new GlobalTargetInfo(destinationTile), MessageTypeDefOf.NegativeEvent);
 			}
 			pods.Clear();
 			Destroy();

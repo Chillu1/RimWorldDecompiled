@@ -56,21 +56,13 @@ namespace RimWorld
 			{
 				return 1f;
 			}
-			float num;
-			switch (def.populationEffect)
+			float num = def.populationEffect switch
 			{
-			case IncidentPopulationEffect.IncreaseHard:
-				num = 0.4f;
-				break;
-			case IncidentPopulationEffect.IncreaseMedium:
-				num = 0f;
-				break;
-			case IncidentPopulationEffect.IncreaseEasy:
-				num = -0.4f;
-				break;
-			default:
-				throw new Exception();
-			}
+				IncidentPopulationEffect.IncreaseHard => 0.4f, 
+				IncidentPopulationEffect.IncreaseMedium => 0f, 
+				IncidentPopulationEffect.IncreaseEasy => -0.4f, 
+				_ => throw new Exception(), 
+			};
 			return Mathf.Max(StorytellerUtilityPopulation.PopulationIntent + num, props.minIncChancePopulationIntentFactor);
 		}
 
@@ -108,12 +100,12 @@ namespace RimWorld
 				select d, new TableDataGetter<IncidentDef>("defName", (IncidentDef d) => d.defName), new TableDataGetter<IncidentDef>("category", (IncidentDef d) => d.category), new TableDataGetter<IncidentDef>("can fire", (IncidentDef d) => CanFireLocal(d).ToStringCheckBlank()), new TableDataGetter<IncidentDef>("base\nchance", (IncidentDef d) => d.baseChance.ToString("F2")), new TableDataGetter<IncidentDef>("base\nchance\nwith\nRoyalty", (IncidentDef d) => (!(d.baseChanceWithRoyalty >= 0f)) ? "-" : d.baseChanceWithRoyalty.ToString("F2")), new TableDataGetter<IncidentDef>("base\nchance\nthis\ngame", (IncidentDef d) => d.Worker.BaseChanceThisGame.ToString("F2")), new TableDataGetter<IncidentDef>("final\nchance", (IncidentDef d) => IncidentChanceFinal(d).ToString("F2")), new TableDataGetter<IncidentDef>("final\nchance\npossible", (IncidentDef d) => (!CanFireLocal(d)) ? "-" : IncidentChanceFinal(d).ToString("F2")), new TableDataGetter<IncidentDef>("Factor from:\ncurrent pop", (IncidentDef d) => IncidentChanceFactor_CurrentPopulation(d).ToString()), new TableDataGetter<IncidentDef>("Factor from:\npop intent", (IncidentDef d) => IncidentChanceFactor_PopulationIntent(d).ToString()), new TableDataGetter<IncidentDef>("default target", (IncidentDef d) => (GetDefaultTarget(d) == null) ? "-" : GetDefaultTarget(d).ToString()), new TableDataGetter<IncidentDef>("current\npop", (IncidentDef d) => PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_Colonists.Count().ToString()), new TableDataGetter<IncidentDef>("pop\nintent", (IncidentDef d) => StorytellerUtilityPopulation.PopulationIntent.ToString("F2")), new TableDataGetter<IncidentDef>("cur\npoints", (IncidentDef d) => (GetDefaultTarget(d) == null) ? "-" : StorytellerUtility.DefaultThreatPointsNow(GetDefaultTarget(d)).ToString("F0")));
 			static bool CanFireLocal(IncidentDef d)
 			{
-				IIncidentTarget incidentTarget = GetDefaultTarget(d);
-				if (incidentTarget == null)
+				IIncidentTarget defaultTarget = GetDefaultTarget(d);
+				if (defaultTarget == null)
 				{
 					return false;
 				}
-				IncidentParms parms = StorytellerUtility.DefaultParmsNow(d.category, incidentTarget);
+				IncidentParms parms = StorytellerUtility.DefaultParmsNow(d.category, defaultTarget);
 				return d.Worker.CanFireNow(parms);
 			}
 			static IIncidentTarget GetDefaultTarget(IncidentDef d)

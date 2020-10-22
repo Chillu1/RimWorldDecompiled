@@ -1,11 +1,11 @@
-using RimWorld;
-using RimWorld.QuestGen;
-using Steamworks;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using RimWorld;
+using RimWorld.QuestGen;
+using Steamworks;
 using UnityEngine;
 
 namespace Verse
@@ -38,7 +38,7 @@ namespace Verse
 
 		public static int ParseIntPermissive(string str)
 		{
-			if (!int.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out int result))
+			if (!int.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
 			{
 				result = (int)float.Parse(str, CultureInfo.InvariantCulture);
 				Log.Warning("Parsed " + str + " as int.");
@@ -171,7 +171,7 @@ namespace Verse
 		{
 			string[] array = str.Split('.');
 			string methodName = array[array.Length - 1];
-			string typeName = (array.Length != 3) ? array[0] : (array[0] + "." + array[1]);
+			string typeName = ((array.Length != 3) ? array[0] : (array[0] + "." + array[1]));
 			MethodInfo method = GenTypes.GetTypeInAnyAssembly(typeName).GetMethods().First((MethodInfo m) => m.Name == methodName);
 			return (Action)Delegate.CreateDelegate(typeof(Action), method);
 		}
@@ -185,7 +185,7 @@ namespace Verse
 			float num2 = ParseFloat(array[1]);
 			float num3 = ParseFloat(array[2]);
 			bool num4 = num > 1f || num3 > 1f || num2 > 1f;
-			float num5 = (!num4) ? 1 : 255;
+			float num5 = ((!num4) ? 1 : 255);
 			if (array.Length == 4)
 			{
 				num5 = FromString<float>(array[3]);
@@ -337,7 +337,7 @@ namespace Verse
 		{
 			try
 			{
-				itemType = (Nullable.GetUnderlyingType(itemType) ?? itemType);
+				itemType = Nullable.GetUnderlyingType(itemType) ?? itemType;
 				if (itemType.IsEnum)
 				{
 					try
@@ -354,7 +354,7 @@ namespace Verse
 						throw new ArgumentException(string.Concat(string.Concat("'", str, "' is not a valid value for ", itemType, ". Valid values are: \n"), GenText.StringFromEnumerable(Enum.GetValues(itemType))), innerException);
 					}
 				}
-				if (parsers.TryGetValue(itemType, out Func<string, object> value))
+				if (parsers.TryGetValue(itemType, out var value))
 				{
 					return value(str);
 				}
@@ -374,7 +374,7 @@ namespace Verse
 
 		public static bool HandlesType(Type type)
 		{
-			type = (Nullable.GetUnderlyingType(type) ?? type);
+			type = Nullable.GetUnderlyingType(type) ?? type;
 			if (!type.IsPrimitive && !type.IsEnum && !parsers.ContainsKey(type))
 			{
 				return typeof(ISlateRef).IsAssignableFrom(type);

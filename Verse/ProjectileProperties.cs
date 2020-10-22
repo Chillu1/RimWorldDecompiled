@@ -1,6 +1,6 @@
-using RimWorld;
 using System.Collections.Generic;
 using System.Text;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -22,6 +22,10 @@ namespace Verse
 		public float stoppingPower = 0.5f;
 
 		public List<ExtraDamage> extraDamages;
+
+		public float arcHeightFactor;
+
+		public float shadowSize;
 
 		public SoundDef soundHitThickRoof;
 

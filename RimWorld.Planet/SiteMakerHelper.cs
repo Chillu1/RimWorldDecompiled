@@ -45,7 +45,7 @@ namespace RimWorld.Planet
 				{
 					if (sitePartsCandidate != null)
 					{
-						if (!TryFindNewRandomSitePartFor(siteParts, sitePartsCandidate, faction, out SitePartDef sitePart, disallowNonHostileFactions, extraFactionValidator))
+						if (!TryFindNewRandomSitePartFor(siteParts, sitePartsCandidate, faction, out var sitePart, disallowNonHostileFactions, extraFactionValidator))
 						{
 							return false;
 						}
@@ -123,13 +123,13 @@ namespace RimWorld.Planet
 					}
 				}
 			}
-			float num2 = (num != 0) ? (points / (float)num) : 0f;
+			float num2 = ((num != 0) ? (points / (float)num) : 0f);
 			if (siteParts != null)
 			{
 				List<SitePartDefWithParams> list = new List<SitePartDefWithParams>();
 				foreach (SitePartDef sitePart2 in siteParts)
 				{
-					float myThreatPoints = sitePart2.wantsThreatPoints ? num2 : 0f;
+					float myThreatPoints = (sitePart2.wantsThreatPoints ? num2 : 0f);
 					list.Add(new SitePartDefWithParams(sitePart2, sitePart2.Worker.GenerateDefaultParams(myThreatPoints, tile, faction)));
 				}
 				sitePartDefsWithParams = list;
@@ -169,6 +169,10 @@ namespace RimWorld.Planet
 			if (sitePart == null)
 			{
 				Log.Error("Called FactionCanOwn() with null SitePartDef.");
+				return false;
+			}
+			if (faction != null && faction.temporary)
+			{
 				return false;
 			}
 			if (!sitePart.FactionCanOwn(faction))

@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using UnityEngine;
 using Verse;
@@ -22,7 +23,7 @@ namespace RimWorld
 
 		private const float FactionIconSpacing = 5f;
 
-		public static void DoWindowContents(Rect fillRect, ref Vector2 scrollPosition, ref float scrollViewHeight)
+		public static void DoWindowContents_NewTemp(Rect fillRect, ref Vector2 scrollPosition, ref float scrollViewHeight, Faction scrollToFaction = null)
 		{
 			Rect position = new Rect(0f, 0f, fillRect.width, fillRect.height);
 			GUI.BeginGroup(position);
@@ -42,11 +43,15 @@ namespace RimWorld
 			float num = 0f;
 			foreach (Faction item in Find.FactionManager.AllFactionsInViewOrder)
 			{
-				if ((!item.IsPlayer && !item.def.hidden) || showAll)
+				if ((!item.IsPlayer && !item.Hidden) || showAll)
 				{
 					GUI.color = new Color(1f, 1f, 1f, 0.2f);
 					Widgets.DrawLineHorizontal(0f, num, rect.width);
 					GUI.color = Color.white;
+					if (item == scrollToFaction)
+					{
+						scrollPosition.y = num;
+					}
 					num += DrawFactionRow(item, num, rect);
 				}
 			}
@@ -58,10 +63,16 @@ namespace RimWorld
 			GUI.EndGroup();
 		}
 
+		[Obsolete("Only need this overload to not break mod compatibility.")]
+		public static void DoWindowContents(Rect fillRect, ref Vector2 scrollPosition, ref float scrollViewHeight)
+		{
+			DoWindowContents_NewTemp(fillRect, ref scrollPosition, ref scrollViewHeight);
+		}
+
 		private static float DrawFactionRow(Faction faction, float rowY, Rect fillRect)
 		{
 			float num = fillRect.width - 250f - 40f - 90f - 16f - 120f;
-			Faction[] array = Find.FactionManager.AllFactionsInViewOrder.Where((Faction f) => f != faction && f.HostileTo(faction) && ((!f.IsPlayer && !f.def.hidden) || showAll)).ToArray();
+			Faction[] array = Find.FactionManager.AllFactionsInViewOrder.Where((Faction f) => f != faction && f.HostileTo(faction) && ((!f.IsPlayer && !f.Hidden) || showAll)).ToArray();
 			Rect rect = new Rect(90f, rowY, 250f, 80f);
 			Rect r = new Rect(24f, rowY + 4f, 42f, 42f);
 			float num2 = 62f;
@@ -75,8 +86,8 @@ namespace RimWorld
 			Rect rect3 = new Rect(rect2.xMax, rowY, 90f, 80f);
 			if (!faction.IsPlayer)
 			{
-				string str = faction.PlayerGoodwill.ToStringWithSign();
-				str = str + "\n" + faction.PlayerRelationKind.GetLabel();
+				string str = (faction.HasGoodwill ? (faction.PlayerGoodwill.ToStringWithSign() + "\n") : "");
+				str += faction.PlayerRelationKind.GetLabel();
 				if (faction.defeated)
 				{
 					str += "\n(" + "DefeatedLower".Translate() + ")";
@@ -86,12 +97,12 @@ namespace RimWorld
 				GUI.color = Color.white;
 				if (Mouse.IsOver(rect3))
 				{
-					TaggedString str2 = "CurrentGoodwillTip".Translate();
-					if (faction.def.permanentEnemy)
+					TaggedString str2 = (faction.HasGoodwill ? "CurrentGoodwillTip".Translate() : "CurrentRelationTip".Translate());
+					if (faction.HasGoodwill && faction.def.permanentEnemy)
 					{
 						str2 += "\n\n" + "CurrentGoodwillTip_PermanentEnemy".Translate();
 					}
-					else
+					else if (faction.HasGoodwill)
 					{
 						str2 += "\n\n";
 						switch (faction.PlayerRelationKind)

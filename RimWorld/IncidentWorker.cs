@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -33,7 +33,7 @@ namespace RimWorld
 				{
 					return false;
 				}
-				if (Find.Storyteller.difficulty.difficulty < def.minDifficulty)
+				if (!Find.Storyteller.difficultyValues.AllowedBy(def.disabledWhen) || (def.category == IncidentCategoryDefOf.ThreatBig && !Find.Storyteller.difficultyValues.allowBigThreats))
 				{
 					return false;
 				}
@@ -82,7 +82,7 @@ namespace RimWorld
 		{
 			Dictionary<IncidentDef, int> lastFireTicks = target.StoryState.lastFireTicks;
 			int ticksGame = Find.TickManager.TicksGame;
-			if (lastFireTicks.TryGetValue(def, out int value) && (float)(ticksGame - value) / 60000f < def.minRefireDays)
+			if (lastFireTicks.TryGetValue(def, out var value) && (float)(ticksGame - value) / 60000f < def.minRefireDays)
 			{
 				return true;
 			}
@@ -108,7 +108,7 @@ namespace RimWorld
 		public bool TryExecute(IncidentParms parms)
 		{
 			Map map;
-			if ((map = (parms.target as Map)) != null && def.requireColonistsPresent && map.mapPawns.FreeColonistsSpawnedCount == 0)
+			if ((map = parms.target as Map) != null && def.requireColonistsPresent && map.mapPawns.FreeColonistsSpawnedCount == 0)
 			{
 				return true;
 			}

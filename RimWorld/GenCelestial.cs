@@ -50,7 +50,7 @@ namespace RimWorld
 					return GenTicks.TicksAbs;
 				}
 				int startingTile = Find.GameInitData.startingTile;
-				float longitude = (startingTile >= 0) ? Find.WorldGrid.LongLatOf(startingTile).x : 0f;
+				float longitude = ((startingTile >= 0) ? Find.WorldGrid.LongLatOf(startingTile).x : 0f);
 				return Mathf.RoundToInt(2500f * (12f - GenDate.TimeZoneFloatAt(longitude)));
 			}
 		}

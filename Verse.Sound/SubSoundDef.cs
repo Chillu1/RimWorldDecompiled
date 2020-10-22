@@ -108,6 +108,25 @@ namespace Verse.Sound
 		[Unsaved(false)]
 		private Queue<ResolvedGrain> recentlyPlayedResolvedGrains = new Queue<ResolvedGrain>();
 
+		public FloatRange Duration
+		{
+			get
+			{
+				float num = float.PositiveInfinity;
+				float num2 = float.NegativeInfinity;
+				foreach (ResolvedGrain resolvedGrain in resolvedGrains)
+				{
+					num = Mathf.Min(num, resolvedGrain.duration);
+					num2 = Mathf.Max(num2, resolvedGrain.duration);
+				}
+				if (num == float.PositiveInfinity || num2 == float.NegativeInfinity)
+				{
+					return new FloatRange(0f, 0f);
+				}
+				return new FloatRange(num / Mathf.Abs(pitchRange.min), num2 / Mathf.Abs(pitchRange.max));
+			}
+		}
+
 		public virtual void TryPlay(SoundInfo info)
 		{
 			if (resolvedGrains.Count == 0)

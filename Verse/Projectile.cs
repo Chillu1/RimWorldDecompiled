@@ -1,12 +1,15 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 using Verse.Sound;
 
 namespace Verse
 {
+	[StaticConstructorOnStartup]
 	public abstract class Projectile : ThingWithComps
 	{
+		private static readonly Material shadowMaterial = MaterialPool.MatFrom("Things/Skyfaller/SkyfallerShadowCircle", ShaderDatabase.Transparent);
+
 		protected Vector3 origin;
 
 		protected Vector3 destination;
@@ -74,12 +77,14 @@ namespace Verse
 		{
 			get
 			{
-				Vector3 b = (destination - origin) * Mathf.Clamp01(1f - (float)ticksToImpact / StartingTicksToImpact);
-				return origin + b + Vector3.up * def.Altitude;
+				Vector3 b = (destination - origin).Yto0() * DistanceCoveredFraction;
+				return origin.Yto0() + b + Vector3.up * def.Altitude;
 			}
 		}
 
-		public virtual Quaternion ExactRotation => Quaternion.LookRotation(destination - origin);
+		protected float DistanceCoveredFraction => Mathf.Clamp01(1f - (float)ticksToImpact / StartingTicksToImpact);
+
+		public virtual Quaternion ExactRotation => Quaternion.LookRotation((destination - origin).Yto0());
 
 		public override Vector3 DrawPos => ExactPosition;
 
@@ -90,6 +95,20 @@ namespace Verse
 		public ThingDef EquipmentDef => equipmentDef;
 
 		public Thing Launcher => launcher;
+
+		private float ArcHeightFactor
+		{
+			get
+			{
+				float num = def.projectile.arcHeightFactor;
+				float num2 = (destination - origin).MagnitudeHorizontalSquared();
+				if (num * num > num2 * 0.2f * 0.2f)
+				{
+					num = Mathf.Sqrt(num2) * 0.2f;
+				}
+				return num;
+			}
+		}
 
 		public override void ExposeData()
 		{
@@ -288,7 +307,7 @@ namespace Verse
 					}
 					if (launcher != null && pawn.Faction != null && launcher.Faction != null && !pawn.Faction.HostileTo(launcher.Faction))
 					{
-						num2 *= 0.4f;
+						num2 *= Find.Storyteller.difficultyValues.friendlyFireChanceFactor;
 					}
 				}
 				else if (thing.def.fillPercent > 0.2f)
@@ -325,7 +344,14 @@ namespace Verse
 
 		public override void Draw()
 		{
-			Graphics.DrawMesh(MeshPool.GridPlane(def.graphicData.drawSize), DrawPos, ExactRotation, def.DrawMatSingle, 0);
+			float num = ArcHeightFactor * GenMath.InverseParabola(DistanceCoveredFraction);
+			Vector3 drawPos = DrawPos;
+			Vector3 position = drawPos + new Vector3(0f, 0f, 1f) * num;
+			if (def.projectile.shadowSize > 0f)
+			{
+				DrawShadow(drawPos, num);
+			}
+			Graphics.DrawMesh(MeshPool.GridPlane(def.graphicData.drawSize), position, ExactRotation, def.DrawMatSingle, 0);
 			Comps_PostDraw();
 		}
 
@@ -469,6 +495,19 @@ namespace Verse
 		{
 			GenClamor.DoClamor(this, 2.1f, ClamorDefOf.Impact);
 			Destroy();
+		}
+
+		private void DrawShadow(Vector3 drawLoc, float height)
+		{
+			if (!(shadowMaterial == null))
+			{
+				float num = def.projectile.shadowSize * Mathf.Lerp(1f, 0.6f, height);
+				Vector3 s = new Vector3(num, 1f, num);
+				Vector3 b = new Vector3(0f, -0.01f, 0f);
+				Matrix4x4 matrix = default(Matrix4x4);
+				matrix.SetTRS(drawLoc + b, Quaternion.identity, s);
+				Graphics.DrawMesh(MeshPool.plane10, matrix, shadowMaterial, 0);
+			}
 		}
 	}
 }

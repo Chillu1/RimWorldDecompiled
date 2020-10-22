@@ -37,8 +37,9 @@ namespace RimWorld
 		{
 			base.DrawMouseAttachments();
 			Map currentMap = Find.CurrentMap;
+			currentMap.deepResourceGrid.DrawPlacingMouseAttachments(PlacingDef);
 			ThingDef thingDef;
-			if (currentMap == null || (thingDef = (PlacingDef as ThingDef)) == null || thingDef.displayNumbersBetweenSameDefDistRange.max <= 0f)
+			if (currentMap == null || (thingDef = PlacingDef as ThingDef) == null || thingDef.displayNumbersBetweenSameDefDistRange.max <= 0f)
 			{
 				return;
 			}
@@ -57,14 +58,14 @@ namespace RimWorld
 					{
 						Vector2 screenPos = (tmpThing.Position.ToUIPosition() + intVec.ToUIPosition()) / 2f;
 						screenPos.y = tmpThing.Position.ToUIPosition().y;
-						Color textColor = thingDef.displayNumbersBetweenSameDefDistRange.Includes(intVec2.x) ? Color.white : Color.red;
+						Color textColor = (thingDef.displayNumbersBetweenSameDefDistRange.Includes(intVec2.x) ? Color.white : Color.red);
 						Widgets.DrawNumberOnMap(screenPos, intVec2.x, textColor);
 					}
 					if (intVec2.z >= 3)
 					{
 						Vector2 screenPos2 = (tmpThing.Position.ToUIPosition() + intVec.ToUIPosition()) / 2f;
 						screenPos2.x = tmpThing.Position.ToUIPosition().x;
-						Color textColor2 = thingDef.displayNumbersBetweenSameDefDistRange.Includes(intVec2.z) ? Color.white : Color.red;
+						Color textColor2 = (thingDef.displayNumbersBetweenSameDefDistRange.Includes(intVec2.z) ? Color.white : Color.red);
 						Widgets.DrawNumberOnMap(screenPos2, intVec2.z, textColor2);
 					}
 				}
@@ -138,7 +139,7 @@ namespace RimWorld
 				GenUI.RenderMouseoverBracket();
 				return;
 			}
-			Color ghostCol = (!CanDesignateCell(intVec).Accepted) ? CannotPlaceColor : CanPlaceColor;
+			Color ghostCol = ((!CanDesignateCell(intVec).Accepted) ? CannotPlaceColor : CanPlaceColor);
 			DrawGhost(ghostCol);
 			if (CanDesignateCell(intVec).Accepted && PlacingDef.specialDisplayRadius > 0.01f)
 			{
@@ -150,11 +151,11 @@ namespace RimWorld
 		protected virtual void DrawGhost(Color ghostCol)
 		{
 			ThingDef def;
-			if ((def = (PlacingDef as ThingDef)) != null)
+			if ((def = PlacingDef as ThingDef) != null)
 			{
 				MeditationUtility.DrawMeditationFociAffectedByBuildingOverlay(base.Map, def, Faction.OfPlayer, UI.MouseCell(), placingRot);
 			}
-			GhostDrawer.DrawGhostThing(UI.MouseCell(), placingRot, (ThingDef)PlacingDef, null, ghostCol, AltitudeLayer.Blueprint);
+			GhostDrawer.DrawGhostThing_NewTmp(UI.MouseCell(), placingRot, (ThingDef)PlacingDef, null, ghostCol, AltitudeLayer.Blueprint);
 		}
 
 		private void HandleRotationShortcuts()

@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 using Verse.Sound;
 
@@ -203,40 +203,26 @@ namespace Verse
 
 		public void Notify_PressedCancel()
 		{
-			int num = windows.Count - 1;
-			while (true)
+			for (int num = windows.Count - 1; num >= 0; num--)
 			{
-				if (num >= 0)
+				if ((windows[num].closeOnCancel || windows[num].forceCatchAcceptAndCancelEventEvenIfUnfocused) && GetsInput(windows[num]))
 				{
-					if ((windows[num].closeOnCancel || windows[num].forceCatchAcceptAndCancelEventEvenIfUnfocused) && GetsInput(windows[num]))
-					{
-						break;
-					}
-					num--;
-					continue;
+					windows[num].OnCancelKeyPressed();
+					break;
 				}
-				return;
 			}
-			windows[num].OnCancelKeyPressed();
 		}
 
 		public void Notify_PressedAccept()
 		{
-			int num = windows.Count - 1;
-			while (true)
+			for (int num = windows.Count - 1; num >= 0; num--)
 			{
-				if (num >= 0)
+				if ((windows[num].closeOnAccept || windows[num].forceCatchAcceptAndCancelEventEvenIfUnfocused) && GetsInput(windows[num]))
 				{
-					if ((windows[num].closeOnAccept || windows[num].forceCatchAcceptAndCancelEventEvenIfUnfocused) && GetsInput(windows[num]))
-					{
-						break;
-					}
-					num--;
-					continue;
+					windows[num].OnAcceptKeyPressed();
+					break;
 				}
-				return;
 			}
-			windows[num].OnAcceptKeyPressed();
 		}
 
 		public void Notify_GameStartDialogOpened()
@@ -500,25 +486,21 @@ namespace Verse
 				return;
 			}
 			int num = windows.Count - 1;
-			while (true)
+			while (num >= 0)
 			{
-				if (num >= 0)
+				if (windows[num] == window)
 				{
-					if (windows[num] == window)
-					{
-						break;
-					}
-					if (windows[num] != focusedWindow)
-					{
-						num--;
-						continue;
-					}
-					return;
+					focusedWindow = windows[num];
+					updateInternalWindowsOrderLater = true;
+					break;
 				}
-				return;
+				if (windows[num] != focusedWindow)
+				{
+					num--;
+					continue;
+				}
+				break;
 			}
-			focusedWindow = windows[num];
-			updateInternalWindowsOrderLater = true;
 		}
 
 		private void AdjustWindowsIfResolutionChanged()

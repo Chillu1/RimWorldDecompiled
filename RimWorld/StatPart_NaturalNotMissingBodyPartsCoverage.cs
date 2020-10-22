@@ -6,7 +6,7 @@ namespace RimWorld
 	{
 		public override void TransformValue(StatRequest req, ref float val)
 		{
-			if (TryGetValue(req, out float value))
+			if (TryGetValue(req, out var value))
 			{
 				val *= value;
 			}
@@ -14,7 +14,7 @@ namespace RimWorld
 
 		public override string ExplanationPart(StatRequest req)
 		{
-			if (TryGetValue(req, out float value))
+			if (TryGetValue(req, out var value))
 			{
 				return "StatsReport_MissingBodyParts".Translate() + ": x" + value.ToStringPercent();
 			}

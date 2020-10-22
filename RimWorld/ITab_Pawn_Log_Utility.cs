@@ -182,8 +182,7 @@ namespace RimWorld
 
 		public static IEnumerable<LogLineDisplayable> GenerateLogLinesFor(Pawn pawn, bool showAll, bool showCombat, bool showSocial)
 		{
-			Pawn pawn2 = pawn;
-			LogEntry[] nonCombatLines = showSocial ? Find.PlayLog.AllEntries.Where((LogEntry e) => e.Concerns(pawn2)).ToArray() : new LogEntry[0];
+			LogEntry[] nonCombatLines = (showSocial ? Find.PlayLog.AllEntries.Where((LogEntry e) => e.Concerns(pawn)).ToArray() : new LogEntry[0]);
 			int nonCombatIndex = 0;
 			Battle currentBattle = null;
 			if (showCombat)
@@ -191,13 +190,13 @@ namespace RimWorld
 				bool atTop = true;
 				foreach (Battle battle in Find.BattleLog.Battles)
 				{
-					if (!battle.Concerns(pawn2))
+					if (!battle.Concerns(pawn))
 					{
 						continue;
 					}
 					foreach (LogEntry entry in battle.Entries)
 					{
-						if (!entry.Concerns(pawn2) || (!showAll && !entry.ShowInCompactView()))
+						if (!entry.Concerns(pawn) || (!showAll && !entry.ShowInCompactView()))
 						{
 							continue;
 						}
@@ -208,7 +207,7 @@ namespace RimWorld
 								yield return new LogLineDisplayableGap(BattleBottomPadding);
 								currentBattle = null;
 							}
-							yield return new LogLineDisplayableLog(nonCombatLines[nonCombatIndex++], pawn2);
+							yield return new LogLineDisplayableLog(nonCombatLines[nonCombatIndex++], pawn);
 							atTop = false;
 						}
 						if (currentBattle != battle)
@@ -221,7 +220,7 @@ namespace RimWorld
 							currentBattle = battle;
 							atTop = false;
 						}
-						yield return new LogLineDisplayableLog(entry, pawn2);
+						yield return new LogLineDisplayableLog(entry, pawn);
 					}
 				}
 			}
@@ -232,7 +231,7 @@ namespace RimWorld
 					yield return new LogLineDisplayableGap(BattleBottomPadding);
 					currentBattle = null;
 				}
-				yield return new LogLineDisplayableLog(nonCombatLines[nonCombatIndex++], pawn2);
+				yield return new LogLineDisplayableLog(nonCombatLines[nonCombatIndex++], pawn);
 			}
 		}
 	}

@@ -13,6 +13,8 @@ namespace RimWorld
 		[NoTranslate]
 		public string wornGraphicPath = "";
 
+		public WornGraphicData wornGraphicData;
+
 		public bool useWornGraphicMask;
 
 		[NoTranslate]
@@ -27,11 +29,17 @@ namespace RimWorld
 
 		public bool careIfWornByCorpse = true;
 
+		public bool careIfDamaged = true;
+
 		public bool hatRenderedFrontOfFace;
+
+		public bool shellRenderedBehindHead;
 
 		public bool useDeflectMetalEffect;
 
 		public Gender gender;
+
+		public float scoreOffset;
 
 		[Unsaved(false)]
 		private float cachedHumanBodyCoverage = -1f;
@@ -95,6 +103,10 @@ namespace RimWorld
 			{
 				yield return parentDef.defName + " apparel has no layers.";
 			}
+		}
+
+		public void PostLoadSpecial(ThingDef thingDef)
+		{
 		}
 
 		public bool CoversBodyPart(BodyPartRecord partRec)

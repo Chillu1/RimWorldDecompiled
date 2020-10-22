@@ -90,7 +90,7 @@ namespace Verse
 			}
 			req.color = (Color32)req.color;
 			req.colorTwo = (Color32)req.colorTwo;
-			if (!matDictionary.TryGetValue(req, out Material value))
+			if (!matDictionary.TryGetValue(req, out var value))
 			{
 				value = MaterialAllocator.Create(req.shader);
 				value.name = req.shader.name + "_" + req.mainTex.name;

@@ -114,7 +114,7 @@ namespace RimWorld.Planet
 				ticksAbs = GenTicks.TicksAbs;
 			}
 			Vector2 vector = Find.WorldGrid.LongLatOf(tile);
-			SeasonUtility.GetSeason(GenDate.YearPercent(ticksAbs.Value, vector.x), vector.y, out float _, out float _, out float _, out float winter, out float _, out float permanentWinter);
+			SeasonUtility.GetSeason(GenDate.YearPercent(ticksAbs.Value, vector.x), vector.y, out var _, out var _, out var _, out var winter, out var _, out var permanentWinter);
 			float num = winter + permanentWinter;
 			num *= Mathf.InverseLerp(5f, 0f, GenTemperature.GetTemperatureFromSeasonAtTile(ticksAbs.Value, tile));
 			if (num > 0.01f)
@@ -151,21 +151,15 @@ namespace RimWorld.Planet
 
 		private static float HillinessMovementDifficultyOffset(Hilliness hilliness)
 		{
-			switch (hilliness)
+			return hilliness switch
 			{
-			case Hilliness.Flat:
-				return 0f;
-			case Hilliness.SmallHills:
-				return 0.5f;
-			case Hilliness.LargeHills:
-				return 1.5f;
-			case Hilliness.Mountainous:
-				return 3f;
-			case Hilliness.Impassable:
-				return 1000f;
-			default:
-				return 0f;
-			}
+				Hilliness.Flat => 0f, 
+				Hilliness.SmallHills => 0.5f, 
+				Hilliness.LargeHills => 1.5f, 
+				Hilliness.Mountainous => 3f, 
+				Hilliness.Impassable => 1000f, 
+				_ => 0f, 
+			};
 		}
 	}
 }

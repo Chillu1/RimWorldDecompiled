@@ -6,7 +6,7 @@ namespace RimWorld
 	{
 		public override void TransformValue(StatRequest req, ref float val)
 		{
-			if (TryGetBodySize(req, out float bodySize))
+			if (TryGetBodySize(req, out var bodySize))
 			{
 				val *= bodySize;
 			}
@@ -14,7 +14,7 @@ namespace RimWorld
 
 		public override string ExplanationPart(StatRequest req)
 		{
-			if (TryGetBodySize(req, out float bodySize))
+			if (TryGetBodySize(req, out var bodySize))
 			{
 				return "StatsReport_BodySize".Translate(bodySize.ToString("F2")) + ": x" + bodySize.ToStringPercent();
 			}

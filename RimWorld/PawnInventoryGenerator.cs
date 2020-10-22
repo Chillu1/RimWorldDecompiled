@@ -71,7 +71,7 @@ namespace RimWorld
 					}
 					CompProperties_Drug compProperties = x.GetCompProperties<CompProperties_Drug>();
 					return compProperties != null && compProperties.chemical != null && compProperties.chemical.addictionHediff == addiction.def;
-				}).TryRandomElement(out ThingDef result))
+				}).TryRandomElement(out var result))
 				{
 					int stackCount = Rand.RangeInclusive(2, 5);
 					Thing thing = ThingMaker.MakeThing(result);
@@ -115,7 +115,7 @@ namespace RimWorld
 			});
 			for (int j = 0; j < randomInRange; j++)
 			{
-				if (!source.TryRandomElement(out ThingDef result))
+				if (!source.TryRandomElement(out var result))
 				{
 					break;
 				}

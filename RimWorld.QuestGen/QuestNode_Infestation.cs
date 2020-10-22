@@ -24,7 +24,7 @@ namespace RimWorld.QuestGen
 
 		protected override bool TestRunInt(Slate slate)
 		{
-			if (!Find.Storyteller.difficulty.allowViolentQuests)
+			if (!Find.Storyteller.difficultyValues.allowViolentQuests)
 			{
 				return false;
 			}
@@ -33,7 +33,7 @@ namespace RimWorld.QuestGen
 				return false;
 			}
 			Map map = slate.Get<Map>("map");
-			if (!InfestationCellFinder.TryFindCell(out IntVec3 _, map))
+			if (!InfestationCellFinder.TryFindCell(out var _, map))
 			{
 				return false;
 			}
@@ -66,7 +66,7 @@ namespace RimWorld.QuestGen
 					questPart.customLetterText = x;
 				}, QuestGenUtility.MergeRules(customLetterTextRules.GetValue(slate), customLetterText.GetValue(slate), "root"));
 			}
-			questPart.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			QuestGen.quest.AddPart(questPart);
 		}
 	}

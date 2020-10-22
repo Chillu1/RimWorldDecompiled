@@ -265,10 +265,10 @@ namespace RimWorld
 			{
 				ResetForcedTarget();
 			}
-			if (Active && (mannableComp == null || mannableComp.MannedNow) && base.Spawned)
+			if (Active && (mannableComp == null || mannableComp.MannedNow) && !stunner.Stunned && base.Spawned)
 			{
 				GunCompEq.verbTracker.VerbsTick();
-				if (stunner.Stunned || AttackVerb.state == VerbState.Bursting)
+				if (AttackVerb.state == VerbState.Bursting)
 				{
 					return;
 				}
@@ -366,7 +366,7 @@ namespace RimWorld
 				float num = AttackVerb.verbProps.EffectiveMinRange(x, this);
 				float num2 = x.Position.DistanceToSquared(base.Position);
 				return num2 > num * num && num2 < range * range;
-			}).TryRandomElement(out Building result))
+			}).TryRandomElement(out var result))
 			{
 				return result;
 			}
@@ -379,6 +379,10 @@ namespace RimWorld
 			if (AttackVerb.IsIncendiary())
 			{
 				targetScanFlags |= TargetScanFlags.NeedNonBurning;
+			}
+			if (IsMortar)
+			{
+				targetScanFlags |= TargetScanFlags.NeedNotUnderThickRoof;
 			}
 			return (Thing)AttackTargetFinder.BestShootTargetFromCurrentPosition(attackTargetSearcher, targetScanFlags, IsValidTarget);
 		}
@@ -497,7 +501,7 @@ namespace RimWorld
 			}
 			if (forcedTarget.IsValid && (!forcedTarget.HasThing || forcedTarget.Thing.Spawned))
 			{
-				Vector3 b = (!forcedTarget.HasThing) ? forcedTarget.Cell.ToVector3Shifted() : forcedTarget.Thing.TrueCenter();
+				Vector3 b = ((!forcedTarget.HasThing) ? forcedTarget.Cell.ToVector3Shifted() : forcedTarget.Thing.TrueCenter());
 				Vector3 a = this.TrueCenter();
 				b.y = AltitudeLayer.MetaOverlays.AltitudeFor();
 				a.y = b.y;
@@ -586,7 +590,7 @@ namespace RimWorld
 					ResetForcedTarget();
 				}
 			};
-			command_Toggle.isActive = (() => holdFire);
+			command_Toggle.isActive = () => holdFire;
 			yield return command_Toggle;
 		}
 

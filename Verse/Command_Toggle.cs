@@ -1,5 +1,5 @@
-using RimWorld;
 using System;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -39,7 +39,7 @@ namespace Verse
 			GizmoResult result = base.GizmoOnGUI(loc, maxWidth);
 			Rect rect = new Rect(loc.x, loc.y, GetWidth(maxWidth), 75f);
 			Rect position = new Rect(rect.x + rect.width - 24f, rect.y, 24f, 24f);
-			Texture2D image = isActive() ? Widgets.CheckboxOnTex : Widgets.CheckboxOffTex;
+			Texture2D image = (isActive() ? Widgets.CheckboxOnTex : Widgets.CheckboxOffTex);
 			GUI.DrawTexture(position, image);
 			return result;
 		}

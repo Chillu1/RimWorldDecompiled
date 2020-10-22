@@ -36,6 +36,7 @@ namespace RimWorld
 			toil.FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
 			toil.WithEffect(Building.def.repairEffect, TargetIndex.A);
 			toil.WithProgressBarToilDelay(TargetIndex.A);
+			toil.activeSkill = () => SkillDefOf.Construction;
 			yield return toil;
 			Toil toil2 = new Toil();
 			toil2.initAction = delegate

@@ -1,7 +1,7 @@
-using RimWorld;
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
+using RimWorld.Planet;
 
 namespace Verse.Grammar
 {
@@ -29,23 +29,16 @@ namespace Verse.Grammar
 			{
 				prefix = prefix + pawnSymbol + "_";
 			}
-			string kindLabel;
-			switch (gender)
+			string kindLabel = gender switch
 			{
-			case Gender.Female:
-				kindLabel = (kind.labelFemale.NullOrEmpty() ? kind.label : kind.labelFemale);
-				break;
-			case Gender.Male:
-				kindLabel = (kind.labelMale.NullOrEmpty() ? kind.label : kind.labelMale);
-				break;
-			default:
-				kindLabel = kind.label;
-				break;
-			}
+				Gender.Female => kind.labelFemale.NullOrEmpty() ? kind.label : kind.labelFemale, 
+				Gender.Male => kind.labelMale.NullOrEmpty() ? kind.label : kind.labelMale, 
+				_ => kind.label, 
+			};
 			yield return new Rule_String(output: ((name == null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(kindLabel, gender) : Find.ActiveLanguageWorker.WithIndefiniteArticle(name.ToStringFull, gender, plural: false, name: true)).ApplyTag(TagType.Name).Resolve(), keyword: prefix + "nameFull");
-			string nameShort = (name == null) ? kindLabel : name.ToStringShort;
+			string nameShort = ((name == null) ? kindLabel : name.ToStringShort);
 			yield return new Rule_String(prefix + "label", addTags ? nameShort.ApplyTag(TagType.Name).Resolve() : nameShort);
-			string nameShortDef2 = (name == null) ? Find.ActiveLanguageWorker.WithDefiniteArticle(kindLabel, gender) : Find.ActiveLanguageWorker.WithDefiniteArticle(name.ToStringShort, gender, plural: false, name: true);
+			string nameShortDef2 = ((name == null) ? Find.ActiveLanguageWorker.WithDefiniteArticle(kindLabel, gender) : Find.ActiveLanguageWorker.WithDefiniteArticle(name.ToStringShort, gender, plural: false, name: true));
 			yield return new Rule_String(prefix + "definite", addTags ? nameShortDef2.ApplyTag(TagType.Name).Resolve() : nameShortDef2);
 			yield return new Rule_String(prefix + "nameDef", addTags ? nameShortDef2.ApplyTag(TagType.Name).Resolve() : nameShortDef2);
 			nameShortDef2 = ((name == null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(kindLabel, gender) : Find.ActiveLanguageWorker.WithIndefiniteArticle(name.ToStringShort, gender, plural: false, name: true));
@@ -193,7 +186,7 @@ namespace Verse.Grammar
 				prefix += "_";
 			}
 			yield return new Rule_String(prefix + "label", def.label);
-			string output = (!def.labelNoun.NullOrEmpty()) ? def.labelNoun : def.label;
+			string output = ((!def.labelNoun.NullOrEmpty()) ? def.labelNoun : def.label);
 			yield return new Rule_String(prefix + "labelNoun", output);
 			string text = def.PrettyTextForPart(part);
 			if (!text.NullOrEmpty())
@@ -214,6 +207,9 @@ namespace Verse.Grammar
 				yield break;
 			}
 			yield return new Rule_String(prefix + "name", addTags ? faction.Name.ApplyTag(faction).Resolve() : faction.Name);
+			yield return new Rule_String(prefix + "pawnSingular", faction.def.pawnSingular);
+			yield return new Rule_String(prefix + "pawnSingularDef", Find.ActiveLanguageWorker.WithDefiniteArticle(faction.def.pawnSingular));
+			yield return new Rule_String(prefix + "pawnSingularIndef", Find.ActiveLanguageWorker.WithIndefiniteArticle(faction.def.pawnSingular));
 			yield return new Rule_String(prefix + "pawnsPlural", faction.def.pawnsPlural);
 			yield return new Rule_String(prefix + "pawnsPluralDef", Find.ActiveLanguageWorker.WithDefiniteArticle(faction.def.pawnsPlural, LanguageDatabase.activeLanguage.ResolveGender(faction.def.pawnsPlural, faction.def.pawnSingular), plural: true));
 			yield return new Rule_String(prefix + "pawnsPluralIndef", Find.ActiveLanguageWorker.WithIndefiniteArticle(faction.def.pawnsPlural, LanguageDatabase.activeLanguage.ResolveGender(faction.def.pawnsPlural, faction.def.pawnSingular), plural: true));
@@ -223,22 +219,20 @@ namespace Verse.Grammar
 
 		public static IEnumerable<Rule> RulesForWorldObject(string prefix, WorldObject worldObject, bool addTags = true)
 		{
-			WorldObject worldObject2 = worldObject;
-			bool addTags2 = addTags;
 			if (!prefix.NullOrEmpty())
 			{
 				prefix += "_";
 			}
-			yield return new Rule_String(prefix + "label", PossiblyWithTag(worldObject2.Label));
-			yield return new Rule_String(prefix + "definite", PossiblyWithTag(Find.ActiveLanguageWorker.WithDefiniteArticle(worldObject2.Label, plural: false, worldObject2.HasName)));
-			yield return new Rule_String(prefix + "indefinite", PossiblyWithTag(Find.ActiveLanguageWorker.WithIndefiniteArticle(worldObject2.Label, plural: false, worldObject2.HasName)));
+			yield return new Rule_String(prefix + "label", PossiblyWithTag(worldObject.Label));
+			yield return new Rule_String(prefix + "definite", PossiblyWithTag(Find.ActiveLanguageWorker.WithDefiniteArticle(worldObject.Label, plural: false, worldObject.HasName)));
+			yield return new Rule_String(prefix + "indefinite", PossiblyWithTag(Find.ActiveLanguageWorker.WithIndefiniteArticle(worldObject.Label, plural: false, worldObject.HasName)));
 			string PossiblyWithTag(string str)
 			{
-				if (!(worldObject2.Faction != null && addTags2))
+				if (!(worldObject.Faction != null && addTags))
 				{
 					return str;
 				}
-				return str.ApplyTag(TagType.Settlement, worldObject2.Faction.GetUniqueLoadID()).Resolve();
+				return str.ApplyTag(TagType.Settlement, worldObject.Faction.GetUniqueLoadID()).Resolve();
 			}
 		}
 	}

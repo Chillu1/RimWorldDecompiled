@@ -129,6 +129,7 @@ namespace RimWorld
 			obj.socialMode = RandomSocialMode.Off;
 			obj.defaultCompleteMode = ToilCompleteMode.Delay;
 			obj.defaultDuration = 350;
+			obj.activeSkill = () => SkillDefOf.Social;
 			return obj;
 		}
 
@@ -154,13 +155,14 @@ namespace RimWorld
 				Pawn pawn = (Pawn)actor.jobs.curJob.GetTarget(recruiteeInd).Thing;
 				if (pawn.Spawned && pawn.Awake())
 				{
-					InteractionDef intDef = pawn.AnimalOrWildMan() ? InteractionDefOf.TameAttempt : InteractionDefOf.RecruitAttempt;
+					InteractionDef intDef = (pawn.AnimalOrWildMan() ? InteractionDefOf.TameAttempt : InteractionDefOf.RecruitAttempt);
 					actor.interactions.TryInteractWith(pawn, intDef);
 				}
 			};
 			toil.socialMode = RandomSocialMode.Off;
 			toil.defaultCompleteMode = ToilCompleteMode.Delay;
 			toil.defaultDuration = 350;
+			toil.activeSkill = () => (!((Pawn)toil.actor.jobs.curJob.GetTarget(recruiteeInd).Thing).RaceProps.Animal) ? SkillDefOf.Social : SkillDefOf.Animals;
 			return toil;
 		}
 
@@ -210,6 +212,7 @@ namespace RimWorld
 			};
 			toil.defaultCompleteMode = ToilCompleteMode.Delay;
 			toil.defaultDuration = 100;
+			toil.activeSkill = () => SkillDefOf.Animals;
 			return toil;
 		}
 

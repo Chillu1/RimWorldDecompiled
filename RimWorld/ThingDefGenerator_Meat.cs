@@ -39,7 +39,7 @@ namespace RimWorld
 				thingDef.SetStatBaseValue(StatDefOf.Beauty, -4f);
 				thingDef.alwaysHaulable = true;
 				thingDef.rotatable = false;
-				thingDef.pathCost = 15;
+				thingDef.pathCost = DefGenerator.StandardItemPathCost;
 				thingDef.drawGUIOverlay = true;
 				thingDef.socialPropernessMatters = true;
 				thingDef.modContentPack = item.modContentPack;

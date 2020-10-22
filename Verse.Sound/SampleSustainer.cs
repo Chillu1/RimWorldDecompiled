@@ -66,7 +66,7 @@ namespace Verse.Sound
 			sampleSustainer.subSustainer = subSus;
 			sampleSustainer.scheduledEndTime = scheduledEndTime;
 			GameObject gameObject = new GameObject("SampleSource_" + sampleSustainer.subDef.name + "_" + sampleSustainer.startRealTime);
-			GameObject gameObject2 = subSus.subDef.onCamera ? Find.Camera.gameObject : subSus.parent.worldRootObject;
+			GameObject gameObject2 = (subSus.subDef.onCamera ? Find.Camera.gameObject : subSus.parent.worldRootObject);
 			gameObject.transform.parent = gameObject2.transform;
 			gameObject.transform.localPosition = Vector3.zero;
 			sampleSustainer.source = AudioSourceMaker.NewAudioSourceOn(gameObject);

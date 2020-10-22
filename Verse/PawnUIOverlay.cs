@@ -1,5 +1,6 @@
 using RimWorld;
 using UnityEngine;
+using Verse.AI.Group;
 
 namespace Verse
 {
@@ -51,6 +52,11 @@ namespace Verse
 			if (pawn.CanTradeNow)
 			{
 				pawn.Map.overlayDrawer.DrawOverlay(pawn, OverlayTypes.QuestionMark);
+			}
+			Lord lord = pawn.GetLord();
+			if (lord != null && lord.CurLordToil != null)
+			{
+				lord.CurLordToil.DrawPawnGUIOverlay(pawn);
 			}
 		}
 	}

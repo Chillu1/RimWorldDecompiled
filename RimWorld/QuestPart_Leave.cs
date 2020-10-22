@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -14,6 +14,8 @@ namespace RimWorld
 		public bool sendStandardLetter = true;
 
 		public bool leaveOnCleanup = true;
+
+		public string inSignalRemovePawn;
 
 		public override IEnumerable<GlobalTargetInfo> QuestLookTargets
 		{
@@ -33,6 +35,10 @@ namespace RimWorld
 		public override void Notify_QuestSignalReceived(Signal signal)
 		{
 			base.Notify_QuestSignalReceived(signal);
+			if (signal.tag == inSignalRemovePawn && signal.args.TryGetArg("SUBJECT", out Pawn arg) && pawns.Contains(arg))
+			{
+				pawns.Remove(arg);
+			}
 			if (signal.tag == inSignal)
 			{
 				LeaveQuestPartUtility.MakePawnsLeave(pawns, sendStandardLetter, quest);
@@ -55,6 +61,7 @@ namespace RimWorld
 			Scribe_Collections.Look(ref pawns, "pawns", LookMode.Reference);
 			Scribe_Values.Look(ref sendStandardLetter, "sendStandardLetter", defaultValue: true);
 			Scribe_Values.Look(ref leaveOnCleanup, "leaveOnCleanup", defaultValue: false);
+			Scribe_Values.Look(ref inSignalRemovePawn, "inSignalRemovePawn");
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				pawns.RemoveAll((Pawn x) => x == null);

@@ -48,6 +48,21 @@ namespace RimWorld
 		public void ExposeData()
 		{
 			Scribe_Collections.Look(ref allTraits, "allTraits", LookMode.Deep);
+			if (Scribe.mode == LoadSaveMode.LoadingVars)
+			{
+				if (allTraits.RemoveAll((Trait x) => x == null) != 0)
+				{
+					Log.Error("Some traits were null after loading.");
+				}
+				if (allTraits.RemoveAll((Trait x) => x.def == null) != 0)
+				{
+					Log.Error("Some traits had null def after loading.");
+				}
+				for (int i = 0; i < allTraits.Count; i++)
+				{
+					allTraits[i].pawn = pawn;
+				}
+			}
 		}
 
 		public void GainTrait(Trait trait)
@@ -58,6 +73,7 @@ namespace RimWorld
 				return;
 			}
 			allTraits.Add(trait);
+			trait.pawn = pawn;
 			pawn.Notify_DisabledWorkTypesChanged();
 			if (pawn.skills != null)
 			{

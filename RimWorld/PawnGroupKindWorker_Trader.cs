@@ -57,7 +57,7 @@ namespace RimWorld
 			{
 				Log.Warning("Deterministic seed not implemented for this pawn group kind worker. The result will be random anyway.");
 			}
-			TraderKindDef traderKindDef = (parms.traderKind != null) ? parms.traderKind : parms.faction.def.caravanTraderKinds.RandomElementByWeight((TraderKindDef traderDef) => traderDef.CalculatedCommonality);
+			TraderKindDef traderKindDef = ((parms.traderKind != null) ? parms.traderKind : parms.faction.def.caravanTraderKinds.RandomElementByWeight((TraderKindDef traderDef) => traderDef.CalculatedCommonality));
 			Pawn pawn = GenerateTrader(parms, groupMaker, traderKindDef);
 			outPawns.Add(pawn);
 			ThingSetMakerParams parms2 = default(ThingSetMakerParams);
@@ -137,7 +137,7 @@ namespace RimWorld
 				request.Tile = parms.tile;
 				request.MustBeCapableOfViolence = true;
 				request.Inhabitant = parms.inhabitants;
-				request.RedressValidator = ((Pawn x) => x.royalty == null || !x.royalty.AllTitlesForReading.Any());
+				request.RedressValidator = (Pawn x) => x.royalty == null || !x.royalty.AllTitlesForReading.Any();
 				Pawn item = PawnGenerator.GeneratePawn(request);
 				outPawns.Add(item);
 			}

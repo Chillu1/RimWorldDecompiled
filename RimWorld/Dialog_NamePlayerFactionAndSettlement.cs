@@ -14,12 +14,12 @@ namespace RimWorld
 			{
 				suggestingPawn = settlement.Map.mapPawns.FreeColonistsSpawned.RandomElement();
 			}
-			nameGenerator = (() => NameGenerator.GenerateName(Faction.OfPlayer.def.factionNameMaker, IsValidName));
+			nameGenerator = () => NameGenerator.GenerateName(Faction.OfPlayer.def.factionNameMaker, IsValidName);
 			curName = nameGenerator();
 			nameMessageKey = "NamePlayerFactionMessage";
 			invalidNameMessageKey = "PlayerFactionNameIsInvalid";
 			useSecondName = true;
-			secondNameGenerator = (() => NameGenerator.GenerateName(Faction.OfPlayer.def.settlementNameMaker, IsValidSecondName));
+			secondNameGenerator = () => NameGenerator.GenerateName(Faction.OfPlayer.def.settlementNameMaker, IsValidSecondName);
 			curSecondName = secondNameGenerator();
 			secondNameMessageKey = "NamePlayerFactionBaseMessage_NameFactionContinuation";
 			invalidSecondNameMessageKey = "PlayerFactionBaseNameIsInvalid";

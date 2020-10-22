@@ -70,7 +70,7 @@ namespace Verse.AI
 			}
 			if (!pawn.Dead && pawn.needs.mood != null && !otherPawn.Dead)
 			{
-				ThoughtDef def = (!(Rand.Value < 0.5f)) ? ThoughtDefOf.HadCatharticFight : ThoughtDefOf.HadAngeringFight;
+				ThoughtDef def = ((!(Rand.Value < 0.5f)) ? ThoughtDefOf.HadCatharticFight : ThoughtDefOf.HadAngeringFight);
 				pawn.needs.mood.thoughts.memories.TryGainMemory(def, otherPawn);
 			}
 		}

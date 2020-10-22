@@ -15,13 +15,19 @@ namespace RimWorld
 			doCloseX = true;
 		}
 
+		public override void PreOpen()
+		{
+			base.PreOpen();
+			StorytellerUI.ResetStorytellerSelectionInterface();
+		}
+
 		public override void DoWindowContents(Rect rect)
 		{
 			DrawPageTitle(rect);
 			Rect mainRect = GetMainRect(rect);
 			Storyteller storyteller = Current.Game.storyteller;
 			StorytellerDef def = Current.Game.storyteller.def;
-			StorytellerUI.DrawStorytellerSelectionInterface(mainRect, ref storyteller.def, ref storyteller.difficulty, selectedStorytellerInfoListing);
+			StorytellerUI.DrawStorytellerSelectionInterface_NewTemp(mainRect, ref storyteller.def, ref storyteller.difficulty, ref storyteller.difficultyValues, selectedStorytellerInfoListing);
 			if (storyteller.def != def)
 			{
 				storyteller.Notify_DefChanged();

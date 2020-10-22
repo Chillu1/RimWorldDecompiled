@@ -1,6 +1,6 @@
+using System.Collections.Generic;
 using RimWorld.Planet;
 using RimWorld.QuestGen;
-using System.Collections.Generic;
 using Verse;
 using Verse.Grammar;
 
@@ -103,7 +103,7 @@ namespace RimWorld
 				Thing innerIfMinified = items[i].GetInnerIfMinified();
 				if (!innerIfMinified.Destroyed)
 				{
-					if (!innerIfMinified.TryGetQuality(out QualityCategory qc))
+					if (!innerIfMinified.TryGetQuality(out var qc))
 					{
 						qc = QualityCategory.Normal;
 					}
@@ -135,7 +135,7 @@ namespace RimWorld
 				parms2.makingFaction = parms.giverFaction;
 				if (!parms.disallowedThingDefs.NullOrEmpty())
 				{
-					parms2.validator = ((ThingDef x) => !parms.disallowedThingDefs.Contains(x));
+					parms2.validator = (ThingDef x) => !parms.disallowedThingDefs.Contains(x);
 				}
 				items.AddRange(ThingSetMakerDefOf.Reward_ItemsStandard.root.Generate(parms2));
 			}

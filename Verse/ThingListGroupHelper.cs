@@ -1,5 +1,5 @@
-using RimWorld;
 using System;
+using RimWorld;
 using Verse.AI;
 
 namespace Verse
@@ -143,6 +143,16 @@ namespace Verse
 				return def.projectile != null;
 			case ThingRequestGroup.MeditationFocus:
 				return def.HasComp(typeof(CompMeditationFocus));
+			case ThingRequestGroup.Chunk:
+				if (!def.thingCategories.NullOrEmpty())
+				{
+					if (!def.thingCategories.Contains(ThingCategoryDefOf.Chunks))
+					{
+						return def.thingCategories.Contains(ThingCategoryDefOf.StoneChunks);
+					}
+					return true;
+				}
+				return false;
 			default:
 				throw new ArgumentException("group");
 			}

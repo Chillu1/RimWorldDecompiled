@@ -20,6 +20,10 @@ namespace RimWorld.BaseGen
 			{
 				return false;
 			}
+			if (BaseGen.globalSettings.basePart_landingPadsResolved < BaseGen.globalSettings.minLandingPads && rp.rect.Width >= 9 && rp.rect.Height >= 9)
+			{
+				return false;
+			}
 			if (BaseGen.globalSettings.basePart_emptyNodesResolved < BaseGen.globalSettings.minEmptyNodes)
 			{
 				return false;
@@ -49,7 +53,7 @@ namespace RimWorld.BaseGen
 				ThingDef thingDef = availablePowerPlants.RandomElement();
 				ResolveParams resolveParams = rp;
 				resolveParams.singleThingDef = thingDef;
-				resolveParams.fillWithThingsPadding = (rp.fillWithThingsPadding ?? Mathf.Max(5 - thingDef.size.x, 1));
+				resolveParams.fillWithThingsPadding = rp.fillWithThingsPadding ?? Mathf.Max(5 - thingDef.size.x, 1);
 				BaseGen.symbolStack.Push("fillWithThings", resolveParams);
 				BaseGen.globalSettings.basePart_powerPlantsCoverage += (float)rp.rect.Area / (float)BaseGen.globalSettings.mainRect.Area;
 			}

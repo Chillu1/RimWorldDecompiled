@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 
 namespace Verse.AI
 {
@@ -37,7 +37,12 @@ namespace Verse.AI
 			yield return Toils_Combat.FollowAndMeleeAttack(TargetIndex.A, delegate
 			{
 				Thing thing = job.GetTarget(TargetIndex.A).Thing;
-				if (pawn.meleeVerbs.TryMeleeAttack(thing, job.verbToUse) && pawn.CurJob != null && pawn.jobs.curDriver == this)
+				Pawn p;
+				if (job.reactingToMeleeThreat && (p = thing as Pawn) != null && !p.Awake())
+				{
+					EndJobWith(JobCondition.InterruptForced);
+				}
+				else if (pawn.meleeVerbs.TryMeleeAttack(thing, job.verbToUse) && pawn.CurJob != null && pawn.jobs.curDriver == this)
 				{
 					numMeleeAttacksMade++;
 					if (numMeleeAttacksMade >= job.maxNumMeleeAttacks)
@@ -59,7 +64,7 @@ namespace Verse.AI
 					{
 						return;
 					}
-					thing = pawnPath.FirstBlockingBuilding(out IntVec3 _, pawn);
+					thing = pawnPath.FirstBlockingBuilding(out var _, pawn);
 				}
 				if (thing != null && thing.Position.InHorDistOf(pawn.Position, 6f))
 				{

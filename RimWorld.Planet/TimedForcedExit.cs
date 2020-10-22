@@ -1,9 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Verse;
 
 namespace RimWorld.Planet
 {
+	[Obsolete]
 	public class TimedForcedExit : WorldObjectComp
 	{
 		private int ticksLeftToForceExitAndRemoveMap = -1;

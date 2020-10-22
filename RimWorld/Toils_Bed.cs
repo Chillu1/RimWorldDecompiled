@@ -43,7 +43,7 @@ namespace RimWorld
 			claim.initAction = delegate
 			{
 				Pawn actor = claim.GetActor();
-				Pawn pawn = (claimantIndex == TargetIndex.None) ? actor : ((Pawn)actor.CurJob.GetTarget(claimantIndex).Thing);
+				Pawn pawn = ((claimantIndex == TargetIndex.None) ? actor : ((Pawn)actor.CurJob.GetTarget(claimantIndex).Thing));
 				if (pawn.ownership != null)
 				{
 					pawn.ownership.ClaimBedIfNonMedical((Building_Bed)actor.CurJob.GetTarget(ind).Thing);
@@ -58,7 +58,7 @@ namespace RimWorld
 			f.AddEndCondition(delegate
 			{
 				Pawn actor = f.GetActor();
-				Pawn pawn = (claimantIndex == TargetIndex.None) ? actor : ((Pawn)actor.CurJob.GetTarget(claimantIndex).Thing);
+				Pawn pawn = ((claimantIndex == TargetIndex.None) ? actor : ((Pawn)actor.CurJob.GetTarget(claimantIndex).Thing));
 				if (pawn.ownership != null)
 				{
 					Building_Bed building_Bed = (Building_Bed)actor.CurJob.GetTarget(bedIndex).Thing;

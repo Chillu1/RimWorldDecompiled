@@ -1,5 +1,6 @@
-using RimWorld.QuestGen;
+using System;
 using System.Collections.Generic;
+using RimWorld.QuestGen;
 using Verse;
 using Verse.Grammar;
 
@@ -10,6 +11,8 @@ namespace RimWorld
 		public QuestNode root;
 
 		public float rootSelectionWeight;
+
+		public SimpleCurve rootSelectionWeightFactorFromPointsCurve;
 
 		public float rootMinPoints;
 
@@ -27,6 +30,8 @@ namespace RimWorld
 
 		public RulePack questDescriptionAndNameRules;
 
+		public RulePack questContentRules;
+
 		public bool autoAccept;
 
 		public FloatRange expireDaysRange = new FloatRange(-1f, -1f);
@@ -35,9 +40,19 @@ namespace RimWorld
 
 		public int defaultChallengeRating = -1;
 
+		public bool defaultHidden;
+
 		public bool isRootSpecial;
 
 		public bool canGiveRoyalFavor;
+
+		public LetterDef questAvailableLetterDef;
+
+		public bool hideFactionInfoInWindow;
+
+		public bool affectedByPopulation;
+
+		public bool affectedByPoints = true;
 
 		public bool IsRootRandomSelected => rootSelectionWeight != 0f;
 
@@ -70,12 +85,24 @@ namespace RimWorld
 				RimWorld.QuestGen.QuestGen.AddQuestDescriptionRules(questDescriptionAndNameRules);
 				RimWorld.QuestGen.QuestGen.AddQuestNameRules(questDescriptionAndNameRules);
 			}
+			if (questContentRules != null)
+			{
+				RimWorld.QuestGen.QuestGen.AddQuestContentRules(questContentRules);
+			}
 			root.Run();
 		}
 
 		public bool CanRun(Slate slate)
 		{
-			return root.TestRun(slate.DeepCopy());
+			try
+			{
+				return root.TestRun(slate.DeepCopy());
+			}
+			catch (Exception arg)
+			{
+				Log.Error("Error while checking if can generate quest: " + arg);
+			}
+			return false;
 		}
 
 		public bool CanRun(float points)

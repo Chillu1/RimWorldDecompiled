@@ -1,7 +1,8 @@
-using Steamworks;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using Steamworks;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
@@ -75,6 +76,21 @@ namespace RimWorld
 
 		private static readonly Color UnmetRequirementRowColorHighlighted = new Color(0.27f, 0.18f, 0.18f);
 
+		private static readonly List<List<string>> translationOnlyModFolders = new List<List<string>>
+		{
+			new List<string>
+			{
+				"Languages",
+				"About"
+			},
+			new List<string>
+			{
+				"Languages",
+				"About",
+				".git"
+			}
+		};
+
 		private Dictionary<string, string> truncatedStringCache = new Dictionary<string, string>();
 
 		public Page_ModsConfig()
@@ -91,6 +107,25 @@ namespace RimWorld
 			selectedMod = ModsInListOrder().FirstOrDefault();
 			activeModsWhenOpenedHash = ModLister.InstalledModsListHash(activeOnly: true);
 			RecacheSelectedModRequirements();
+			foreach (ModMetaData mod in ModLister.AllInstalledMods)
+			{
+				ModContentPack modContentPack = LoadedModManager.RunningModsListForReading.FirstOrDefault((ModContentPack p) => mod.SamePackageId(p.PackageId));
+				if (modContentPack != null)
+				{
+					mod.translationMod = !modContentPack.AnyNonTranslationContentLoaded() && modContentPack.AnyTranslationsLoaded();
+					continue;
+				}
+				List<string> list = (from d in mod.RootDir.EnumerateDirectories()
+					select d.Name).ToList();
+				for (int i = 0; i < translationOnlyModFolders.Count; i++)
+				{
+					if (list.Count == translationOnlyModFolders[i].Count && list.ListsEqualIgnoreOrder(translationOnlyModFolders[i]))
+					{
+						mod.translationMod = true;
+						break;
+					}
+				}
+			}
 		}
 
 		private List<ModMetaData> ModsInListOrder()
@@ -250,7 +285,7 @@ namespace RimWorld
 					}
 					Widgets.Label(rect7, "ModTargetVersion".Translate() + ": " + selectedMod.SupportedVersionsReadOnly.Select(delegate(System.Version v)
 					{
-						string text = VersionControl.IsCompatible(v) ? "<color=green>" : "<color=red>";
+						string text = (VersionControl.IsCompatible(v) ? "<color=green>" : "<color=red>");
 						string text2 = "</color>";
 						return (v.Build > 0) ? $"{text}{v.Major.ToString()}.{v.Minor.ToString()}.{v.Build.ToString()}{text2}" : $"{text}{v.Major.ToString()}.{v.Minor.ToString()}{text2}";
 					}).ToCommaList());
@@ -278,7 +313,7 @@ namespace RimWorld
 				float num14 = Text.CalcHeight(selectedMod.Description, width);
 				num14 = Mathf.Min(num14 * 1.25f, num14 + 200f);
 				Rect viewRect = new Rect(0f, 0f, width, num14 + modRequirementsHeightCached + (anyReqsInfoToShowCached ? 10f : 0f));
-				float num15 = (viewRect.height > outRect.height) ? 16f : 0f;
+				float num15 = ((viewRect.height > outRect.height) ? 16f : 0f);
 				Widgets.BeginScrollView(outRect, ref modDescriptionScrollPosition, viewRect);
 				float num16 = 0f;
 				if (anyReqsInfoToShowCached)
@@ -305,7 +340,7 @@ namespace RimWorld
 					}
 					else
 					{
-						Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("ConfirmSteamWorkshopUpload".Translate(), delegate
+						Find.WindowStack.Add(new Dialog_ConfirmModUpload(selectedMod, delegate
 						{
 							SoundDefOf.Tick_High.PlayOneShotOnCamera();
 							Dialog_MessageBox dialog_MessageBox = Dialog_MessageBox.CreateConfirmation("ConfirmContentAuthor".Translate(), delegate
@@ -317,7 +352,7 @@ namespace RimWorld
 							dialog_MessageBox.buttonBText = "No".Translate();
 							dialog_MessageBox.interactionDelay = 6f;
 							Find.WindowStack.Add(dialog_MessageBox);
-						}, destructive: true));
+						}));
 					}
 				}
 				if (!selectedMod.Url.NullOrEmpty())

@@ -29,9 +29,11 @@ namespace RimWorld
 				{
 					return base.Label;
 				}
-				return def.designatorDropdown.LabelCap;
+				return def.designatorDropdown.label;
 			}
 		}
+
+		public override string LabelCap => Label.CapitalizeFirst();
 
 		public override void DrawGhost(IntVec3 at, Color color)
 		{
@@ -92,7 +94,7 @@ namespace RimWorld
 			{
 				return true;
 			}
-			if (!at.InBounds(map))
+			if (!GenAdj.OccupiedRect(at, Rot4.North, def.Size).InBounds(map))
 			{
 				return true;
 			}
@@ -113,20 +115,9 @@ namespace RimWorld
 			{
 				return true;
 			}
-			foreach (IntVec3 item in GenAdj.OccupiedRect(at, Rot4.North, def.Size))
+			if (FirstPermanentBlockerAt(at, map) != null)
 			{
-				if (!item.InBounds(map))
-				{
-					return true;
-				}
-				List<Thing> thingList = item.GetThingList(map);
-				for (int i = 0; i < thingList.Count; i++)
-				{
-					if (!thingList[i].def.destroyable && !GenConstruct.CanPlaceBlueprintOver(def, thingList[i].def))
-					{
-						return true;
-					}
-				}
+				return true;
 			}
 			return false;
 		}

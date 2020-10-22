@@ -66,8 +66,8 @@ namespace RimWorld
 				{
 					break;
 				}
-				Rot4 growDir = (bagRoot.x <= center.x) ? Rot4.East : Rot4.West;
-				Rot4 growDirB = (bagRoot.z <= center.z) ? Rot4.North : Rot4.South;
+				Rot4 growDir = ((bagRoot.x <= center.x) ? Rot4.East : Rot4.West);
+				Rot4 growDirB = ((bagRoot.z <= center.z) ? Rot4.North : Rot4.South);
 				foreach (Blueprint_Build item in MakeCoverLine(bagRoot, map, growDir, CoverLengthRange.RandomInRange, coverThing, coverStuff))
 				{
 					yield return item;

@@ -74,7 +74,7 @@ namespace RimWorld
 			command_Toggle.defaultDesc = "CommandAllowSowDesc".Translate();
 			command_Toggle.hotKey = KeyBindingDefOf.Command_ItemForbid;
 			command_Toggle.icon = TexCommand.ForbidOff;
-			command_Toggle.isActive = (() => allowSow);
+			command_Toggle.isActive = () => allowSow;
 			command_Toggle.toggleAction = delegate
 			{
 				allowSow = !allowSow;

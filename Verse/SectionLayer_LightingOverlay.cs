@@ -24,7 +24,7 @@ namespace Verse
 		public string GlowReportAt(IntVec3 c)
 		{
 			Color32[] colors = GetSubMesh(MatBases.LightOverlay).mesh.colors32;
-			CalculateVertexIndices(c.x, c.z, out int botLeft, out int topLeft, out int topRight, out int botRight, out int center);
+			CalculateVertexIndices(c.x, c.z, out var botLeft, out var topLeft, out var topRight, out var botRight, out var center);
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.Append("BL=" + colors[botLeft]);
 			stringBuilder.Append("\nTL=" + colors[topLeft]);
@@ -52,7 +52,7 @@ namespace Verse
 			int num = array2.Length;
 			RoofGrid roofGrid = map.roofGrid;
 			CellIndices cellIndices = map.cellIndices;
-			CalculateVertexIndices(sectRect.minX, sectRect.minZ, out int botLeft, out int _, out int _, out int _, out int _);
+			CalculateVertexIndices(sectRect.minX, sectRect.minZ, out var botLeft, out var _, out var _, out var _, out var _);
 			int num2 = cellIndices.CellToIndex(new IntVec3(sectRect.minX, 0, sectRect.minZ));
 			int[] array3 = new int[4]
 			{
@@ -117,14 +117,15 @@ namespace Verse
 				botLeft += width + 1;
 				num2 += map.Size.x;
 			}
-			CalculateVertexIndices(sectRect.minX, sectRect.minZ, out int botLeft2, out int _, out int _, out int _, out int center2);
+			CalculateVertexIndices(sectRect.minX, sectRect.minZ, out var botLeft2, out var _, out var _, out var _, out var center2);
 			int num8 = cellIndices.CellToIndex(sectRect.minX, sectRect.minZ);
 			for (int k = sectRect.minZ; k <= maxZ; k++)
 			{
 				int num9 = sectRect.minX;
 				while (num9 <= maxX)
 				{
-					ColorInt colorInt = default(ColorInt) + array[botLeft2];
+					ColorInt colorInt = default(ColorInt);
+					colorInt += array[botLeft2];
 					colorInt += array[botLeft2 + 1];
 					colorInt += array[botLeft2 + width + 1];
 					colorInt += array[botLeft2 + width + 2];
@@ -177,7 +178,7 @@ namespace Verse
 			{
 				for (int n = sectRect.minX; n <= sectRect.maxX; n++)
 				{
-					CalculateVertexIndices(n, m, out int botLeft, out int topLeft, out int topRight, out int botRight, out int center);
+					CalculateVertexIndices(n, m, out var botLeft, out var topLeft, out var topRight, out var botRight, out var center);
 					sm.tris.Add(botLeft);
 					sm.tris.Add(center);
 					sm.tris.Add(botRight);

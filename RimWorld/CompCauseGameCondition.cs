@@ -1,5 +1,6 @@
-using RimWorld.Planet;
+using System;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -97,7 +98,7 @@ namespace RimWorld
 
 		protected GameCondition GetConditionInstance(Map map)
 		{
-			if (!causedConditions.TryGetValue(map, out GameCondition value) && Props.preventConditionStacking)
+			if (!causedConditions.TryGetValue(map, out var value) && Props.preventConditionStacking)
 			{
 				value = map.GameConditionManager.GetActiveCondition(Props.conditionDef);
 				if (value != null)
@@ -173,9 +174,9 @@ namespace RimWorld
 			}
 		}
 
-		public override void PostDeSpawn(Map map)
+		public override void PostDestroy(DestroyMode mode, Map previousMap)
 		{
-			Messages.Message("MessageConditionCauserDespawned".Translate(parent.def.LabelCap), new TargetInfo(parent.Position, map), MessageTypeDefOf.NeutralEvent);
+			Messages.Message("MessageConditionCauserDespawned".Translate(parent.def.LabelCap), new TargetInfo(parent.Position, previousMap), MessageTypeDefOf.NeutralEvent);
 		}
 
 		public override string CompInspectStringExtra()
@@ -192,6 +193,16 @@ namespace RimWorld
 			return base.CompInspectStringExtra();
 		}
 
+		[Obsolete]
+		public virtual void RandomizeSettings_NewTemp(float points)
+		{
+		}
+
+		public virtual void RandomizeSettings_NewTemp_NewTemp(Site site)
+		{
+		}
+
+		[Obsolete]
 		public virtual void RandomizeSettings()
 		{
 		}

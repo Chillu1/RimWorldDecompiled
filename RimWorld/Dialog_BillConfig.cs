@@ -64,15 +64,17 @@ namespace RimWorld
 		public override void DoWindowContents(Rect inRect)
 		{
 			Text.Font = GameFont.Medium;
-			Widgets.Label(new Rect(0f, 0f, 400f, 50f), bill.LabelCap);
+			Rect rect = new Rect(40f, 0f, 400f, 34f);
+			Widgets.Label(rect, bill.LabelCap);
+			Widgets.DefIcon(new Rect(0f, rect.y, 34f, 34f), bill.recipe, null, 1f, drawPlaceholder: true);
 			float width = (int)((inRect.width - 34f) / 3f);
-			Rect rect = new Rect(0f, 80f, width, inRect.height - 80f);
-			Rect rect2 = new Rect(rect.xMax + 17f, 50f, width, inRect.height - 50f - CloseButSize.y);
-			Rect rect3 = new Rect(rect2.xMax + 17f, 50f, 0f, inRect.height - 50f - CloseButSize.y);
-			rect3.xMax = inRect.xMax;
+			Rect rect2 = new Rect(0f, 80f, width, inRect.height - 80f);
+			Rect rect3 = new Rect(rect2.xMax + 17f, 50f, width, inRect.height - 50f - CloseButSize.y);
+			Rect rect4 = new Rect(rect3.xMax + 17f, 50f, 0f, inRect.height - 50f - CloseButSize.y);
+			rect4.xMax = inRect.xMax;
 			Text.Font = GameFont.Small;
 			Listing_Standard listing_Standard = new Listing_Standard();
-			listing_Standard.Begin(rect2);
+			listing_Standard.Begin(rect3);
 			Listing_Standard listing_Standard2 = listing_Standard.BeginSection(RepeatModeSubdialogHeight);
 			if (listing_Standard2.ButtonText(bill.repeatMode.LabelCap))
 			{
@@ -202,7 +204,7 @@ namespace RimWorld
 			}
 			listing_Standard.EndSection(listing_Standard4);
 			listing_Standard.End();
-			Rect rect4 = rect3;
+			Rect rect5 = rect4;
 			bool flag = true;
 			for (int j = 0; j < bill.recipe.ingredients.Count; j++)
 			{
@@ -214,10 +216,10 @@ namespace RimWorld
 			}
 			if (!flag)
 			{
-				rect4.yMin = rect4.yMax - (float)IngredientRadiusSubdialogHeight;
-				rect3.yMax = rect4.yMin - 17f;
+				rect5.yMin = rect5.yMax - (float)IngredientRadiusSubdialogHeight;
+				rect4.yMax = rect5.yMin - 17f;
 				bool num = bill.GetStoreZone() == null || bill.recipe.WorkerCounter.CanPossiblyStoreInStockpile(bill, bill.GetStoreZone());
-				ThingFilterUI.DoThingFilterConfigWindow(rect3, ref thingFilterScrollPosition, bill.ingredientFilter, bill.recipe.fixedIngredientFilter, 4, null, bill.recipe.forceHiddenSpecialFilters, forceHideHitPointsConfig: false, bill.recipe.GetPremultipliedSmallIngredients(), bill.Map);
+				ThingFilterUI.DoThingFilterConfigWindow(rect4, ref thingFilterScrollPosition, bill.ingredientFilter, bill.recipe.fixedIngredientFilter, 4, null, bill.recipe.forceHiddenSpecialFilters, forceHideHitPointsConfig: false, bill.recipe.GetPremultipliedSmallIngredients(), bill.Map);
 				bool flag2 = bill.GetStoreZone() == null || bill.recipe.WorkerCounter.CanPossiblyStoreInStockpile(bill, bill.GetStoreZone());
 				if (num && !flag2)
 				{
@@ -226,12 +228,12 @@ namespace RimWorld
 			}
 			else
 			{
-				rect4.yMin = 50f;
+				rect5.yMin = 50f;
 			}
 			Listing_Standard listing_Standard5 = new Listing_Standard();
-			listing_Standard5.Begin(rect4);
-			string str2 = "IngredientSearchRadius".Translate().Truncate(rect4.width * 0.6f);
-			string str3 = (bill.ingredientSearchRadius == 999f) ? "Unlimited".TranslateSimple().Truncate(rect4.width * 0.3f) : bill.ingredientSearchRadius.ToString("F0");
+			listing_Standard5.Begin(rect5);
+			string str2 = "IngredientSearchRadius".Translate().Truncate(rect5.width * 0.6f);
+			string str3 = ((bill.ingredientSearchRadius == 999f) ? "Unlimited".TranslateSimple().Truncate(rect5.width * 0.3f) : bill.ingredientSearchRadius.ToString("F0"));
 			listing_Standard5.Label(str2 + ": " + str3);
 			bill.ingredientSearchRadius = listing_Standard5.Slider((bill.ingredientSearchRadius > 100f) ? 100f : bill.ingredientSearchRadius, 3f, 100f);
 			if (bill.ingredientSearchRadius >= 100f)
@@ -240,7 +242,7 @@ namespace RimWorld
 			}
 			listing_Standard5.End();
 			Listing_Standard listing_Standard6 = new Listing_Standard();
-			listing_Standard6.Begin(rect);
+			listing_Standard6.Begin(rect2);
 			if (bill.suspended)
 			{
 				if (listing_Standard6.ButtonText("Suspended".Translate()))
@@ -283,7 +285,7 @@ namespace RimWorld
 			}
 			Text.Font = GameFont.Small;
 			string text3 = stringBuilder.ToString();
-			if (Text.CalcHeight(text3, rect.width) > rect.height)
+			if (Text.CalcHeight(text3, rect2.width) > rect2.height)
 			{
 				Text.Font = GameFont.Tiny;
 			}
@@ -293,19 +295,17 @@ namespace RimWorld
 			if (bill.recipe.products.Count == 1)
 			{
 				ThingDef thingDef = bill.recipe.products[0].thingDef;
-				Widgets.InfoCardButton(rect.x, rect3.y, thingDef, GenStuff.DefaultStuffFor(thingDef));
+				Widgets.InfoCardButton(rect2.x, rect4.y, thingDef, GenStuff.DefaultStuffFor(thingDef));
 			}
 		}
 
 		private IEnumerable<Widgets.DropdownMenuElement<Pawn>> GeneratePawnRestrictionOptions()
 		{
-			_003C_003Ec__DisplayClass16_0 CS_0024_003C_003E8__locals0 = new _003C_003Ec__DisplayClass16_0();
-			CS_0024_003C_003E8__locals0._003C_003E4__this = this;
 			Widgets.DropdownMenuElement<Pawn> dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
 			{
 				option = new FloatMenuOption("AnyWorker".Translate(), delegate
 				{
-					CS_0024_003C_003E8__locals0._003C_003E4__this.bill.pawnRestriction = null;
+					bill.pawnRestriction = null;
 				}),
 				payload = null
 			};
@@ -315,79 +315,74 @@ namespace RimWorld
 			allMaps_FreeColonists = allMaps_FreeColonists.OrderBy((Pawn pawn) => pawn.LabelShortCap);
 			if (workSkill != null)
 			{
-				allMaps_FreeColonists = allMaps_FreeColonists.OrderByDescending((Pawn pawn) => pawn.skills.GetSkill(CS_0024_003C_003E8__locals0._003C_003E4__this.bill.recipe.workSkill).Level);
+				allMaps_FreeColonists = allMaps_FreeColonists.OrderByDescending((Pawn pawn) => pawn.skills.GetSkill(bill.recipe.workSkill).Level);
 			}
-			CS_0024_003C_003E8__locals0.workGiver = bill.billStack.billGiver.GetWorkgiver();
-			if (CS_0024_003C_003E8__locals0.workGiver == null)
+			WorkGiverDef workGiver = bill.billStack.billGiver.GetWorkgiver();
+			if (workGiver == null)
 			{
 				Log.ErrorOnce("Generating pawn restrictions for a BillGiver without a Workgiver", 96455148);
 				yield break;
 			}
-			allMaps_FreeColonists = allMaps_FreeColonists.OrderByDescending((Pawn pawn) => pawn.workSettings.WorkIsActive(CS_0024_003C_003E8__locals0.workGiver.workType));
-			allMaps_FreeColonists = allMaps_FreeColonists.OrderBy((Pawn pawn) => pawn.WorkTypeIsDisabled(CS_0024_003C_003E8__locals0.workGiver.workType));
-			using (IEnumerator<Pawn> enumerator = allMaps_FreeColonists.GetEnumerator())
+			allMaps_FreeColonists = allMaps_FreeColonists.OrderByDescending((Pawn pawn) => pawn.workSettings.WorkIsActive(workGiver.workType));
+			allMaps_FreeColonists = allMaps_FreeColonists.OrderBy((Pawn pawn) => pawn.WorkTypeIsDisabled(workGiver.workType));
+			foreach (Pawn pawn2 in allMaps_FreeColonists)
 			{
-				while (enumerator.MoveNext())
+				if (pawn2.WorkTypeIsDisabled(workGiver.workType))
 				{
-					_003C_003Ec__DisplayClass16_0 _003C_003Ec__DisplayClass16_ = CS_0024_003C_003E8__locals0;
-					Pawn pawn2 = enumerator.Current;
-					if (pawn2.WorkTypeIsDisabled(_003C_003Ec__DisplayClass16_.workGiver.workType))
+					dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
 					{
-						dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
-						{
-							option = new FloatMenuOption(string.Format("{0} ({1})", pawn2.LabelShortCap, "WillNever".Translate(_003C_003Ec__DisplayClass16_.workGiver.verb)), null),
-							payload = pawn2
-						};
-						yield return dropdownMenuElement;
-					}
-					else if (bill.recipe.workSkill != null && !pawn2.workSettings.WorkIsActive(_003C_003Ec__DisplayClass16_.workGiver.workType))
+						option = new FloatMenuOption(string.Format("{0} ({1})", pawn2.LabelShortCap, "WillNever".Translate(workGiver.verb)), null),
+						payload = pawn2
+					};
+					yield return dropdownMenuElement;
+				}
+				else if (bill.recipe.workSkill != null && !pawn2.workSettings.WorkIsActive(workGiver.workType))
+				{
+					dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
 					{
-						dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
+						option = new FloatMenuOption(string.Format("{0} ({1} {2}, {3})", pawn2.LabelShortCap, pawn2.skills.GetSkill(bill.recipe.workSkill).Level, bill.recipe.workSkill.label, "NotAssigned".Translate()), delegate
 						{
-							option = new FloatMenuOption(string.Format("{0} ({1} {2}, {3})", pawn2.LabelShortCap, pawn2.skills.GetSkill(bill.recipe.workSkill).Level, bill.recipe.workSkill.label, "NotAssigned".Translate()), delegate
-							{
-								_003C_003Ec__DisplayClass16_._003C_003E4__this.bill.pawnRestriction = pawn2;
-							}),
-							payload = pawn2
-						};
-						yield return dropdownMenuElement;
-					}
-					else if (!pawn2.workSettings.WorkIsActive(_003C_003Ec__DisplayClass16_.workGiver.workType))
+							bill.pawnRestriction = pawn2;
+						}),
+						payload = pawn2
+					};
+					yield return dropdownMenuElement;
+				}
+				else if (!pawn2.workSettings.WorkIsActive(workGiver.workType))
+				{
+					dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
 					{
-						dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
+						option = new FloatMenuOption(string.Format("{0} ({1})", pawn2.LabelShortCap, "NotAssigned".Translate()), delegate
 						{
-							option = new FloatMenuOption(string.Format("{0} ({1})", pawn2.LabelShortCap, "NotAssigned".Translate()), delegate
-							{
-								_003C_003Ec__DisplayClass16_._003C_003E4__this.bill.pawnRestriction = pawn2;
-							}),
-							payload = pawn2
-						};
-						yield return dropdownMenuElement;
-					}
-					else if (bill.recipe.workSkill != null)
+							bill.pawnRestriction = pawn2;
+						}),
+						payload = pawn2
+					};
+					yield return dropdownMenuElement;
+				}
+				else if (bill.recipe.workSkill != null)
+				{
+					dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
 					{
-						dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
+						option = new FloatMenuOption($"{pawn2.LabelShortCap} ({pawn2.skills.GetSkill(bill.recipe.workSkill).Level} {bill.recipe.workSkill.label})", delegate
 						{
-							option = new FloatMenuOption($"{pawn2.LabelShortCap} ({pawn2.skills.GetSkill(bill.recipe.workSkill).Level} {bill.recipe.workSkill.label})", delegate
-							{
-								_003C_003Ec__DisplayClass16_._003C_003E4__this.bill.pawnRestriction = pawn2;
-							}),
-							payload = pawn2
-						};
-						yield return dropdownMenuElement;
-					}
-					else
+							bill.pawnRestriction = pawn2;
+						}),
+						payload = pawn2
+					};
+					yield return dropdownMenuElement;
+				}
+				else
+				{
+					dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
 					{
-						dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
+						option = new FloatMenuOption($"{pawn2.LabelShortCap}", delegate
 						{
-							option = new FloatMenuOption($"{pawn2.LabelShortCap}", delegate
-							{
-								_003C_003Ec__DisplayClass16_._003C_003E4__this.bill.pawnRestriction = pawn2;
-							}),
-							payload = pawn2
-						};
-						yield return dropdownMenuElement;
-					}
+							bill.pawnRestriction = pawn2;
+						}),
+						payload = pawn2
+					};
+					yield return dropdownMenuElement;
 				}
 			}
 		}
@@ -408,7 +403,6 @@ namespace RimWorld
 			int i = 0;
 			while (i < groupCount)
 			{
-				Dialog_BillConfig dialog_BillConfig = this;
 				SlotGroup slotGroup = groupList[i];
 				Zone_Stockpile stockpile = slotGroup.parent as Zone_Stockpile;
 				if (stockpile != null)
@@ -428,7 +422,7 @@ namespace RimWorld
 						{
 							option = new FloatMenuOption("IncludeSpecific".Translate(slotGroup.parent.SlotYielderLabel()), delegate
 							{
-								dialog_BillConfig.bill.includeFromZone = stockpile;
+								bill.includeFromZone = stockpile;
 							}),
 							payload = stockpile
 						};

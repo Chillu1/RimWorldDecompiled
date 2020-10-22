@@ -36,9 +36,10 @@ namespace RimWorld
 			}
 			float quality = CalculateBaseTendQuality(doctor, patient, medicine?.def);
 			GetOptimalHediffsToTendWithSingleTreatment(patient, medicine != null, tmpHediffsToTend);
+			float maxQuality = medicine?.def.GetStatValueAbstract(StatDefOf.MedicalQualityMax) ?? 0.7f;
 			for (int i = 0; i < tmpHediffsToTend.Count; i++)
 			{
-				tmpHediffsToTend[i].Tended(quality, i);
+				tmpHediffsToTend[i].Tended_NewTemp(quality, maxQuality, i);
 			}
 			if (doctor != null && doctor.Faction == Faction.OfPlayer && patient.Faction != doctor.Faction && !patient.IsPrisoner && patient.Faction != null)
 			{

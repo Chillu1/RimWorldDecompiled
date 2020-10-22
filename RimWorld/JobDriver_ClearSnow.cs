@@ -18,23 +18,22 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			JobDriver_ClearSnow jobDriver_ClearSnow = this;
 			yield return Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.Touch);
 			Toil clearToil = new Toil();
 			clearToil.tickAction = delegate
 			{
 				float statValue = clearToil.actor.GetStatValue(StatDefOf.GeneralLaborSpeed);
-				jobDriver_ClearSnow.workDone += statValue;
-				if (jobDriver_ClearSnow.workDone >= jobDriver_ClearSnow.TotalNeededWork)
+				workDone += statValue;
+				if (workDone >= TotalNeededWork)
 				{
-					jobDriver_ClearSnow.Map.snowGrid.SetDepth(jobDriver_ClearSnow.TargetLocA, 0f);
-					jobDriver_ClearSnow.ReadyForNextToil();
+					base.Map.snowGrid.SetDepth(base.TargetLocA, 0f);
+					ReadyForNextToil();
 				}
 			};
 			clearToil.defaultCompleteMode = ToilCompleteMode.Never;
 			clearToil.WithEffect(EffecterDefOf.ClearSnow, TargetIndex.A);
 			clearToil.PlaySustainerOrSound(() => SoundDefOf.Interact_CleanFilth);
-			clearToil.WithProgressBar(TargetIndex.A, () => jobDriver_ClearSnow.workDone / jobDriver_ClearSnow.TotalNeededWork, interpolateBetweenActorAndTarget: true);
+			clearToil.WithProgressBar(TargetIndex.A, () => workDone / TotalNeededWork, interpolateBetweenActorAndTarget: true);
 			clearToil.FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
 			yield return clearToil;
 		}

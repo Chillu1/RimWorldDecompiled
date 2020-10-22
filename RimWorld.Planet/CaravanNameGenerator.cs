@@ -8,7 +8,7 @@ namespace RimWorld.Planet
 		public static string GenerateCaravanName(Caravan caravan)
 		{
 			Pawn pawn = BestCaravanPawnUtility.FindBestNegotiator(caravan) ?? BestCaravanPawnUtility.FindBestDiplomat(caravan) ?? caravan.PawnsListForReading.Find((Pawn x) => caravan.IsOwner(x));
-			TaggedString taggedString = (pawn != null) ? "CaravanLeaderCaravanName".Translate(pawn.LabelShort, pawn).CapitalizeFirst() : ((TaggedString)caravan.def.label);
+			TaggedString taggedString = ((pawn != null) ? "CaravanLeaderCaravanName".Translate(pawn.LabelShort, pawn).CapitalizeFirst() : ((TaggedString)caravan.def.label));
 			for (int i = 1; i <= 1000; i++)
 			{
 				TaggedString taggedString2 = taggedString;

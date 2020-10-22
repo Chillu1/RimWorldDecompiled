@@ -20,7 +20,7 @@ namespace RimWorld
 			scenariosLocal.Clear();
 			foreach (FileInfo allCustomScenarioFile in GenFilePaths.AllCustomScenarioFiles)
 			{
-				if (GameDataSaveLoader.TryLoadScenario(allCustomScenarioFile.FullName, ScenarioCategory.CustomLocal, out Scenario scen))
+				if (GameDataSaveLoader.TryLoadScenario(allCustomScenarioFile.FullName, ScenarioCategory.CustomLocal, out var scen))
 				{
 					scenariosLocal.Add(scen);
 				}

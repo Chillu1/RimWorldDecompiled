@@ -81,8 +81,8 @@ namespace RimWorld.Planet
 
 		public static void DoOpenSpecificTabButton(Rect rowRect, Pawn p, ref Pawn specificTabForPawn)
 		{
-			Color baseColor = (p == specificTabForPawn) ? OpenedSpecificTabButtonColor : Color.white;
-			Color mouseoverColor = (p == specificTabForPawn) ? OpenedSpecificTabButtonMouseoverColor : GenUI.MouseoverColor;
+			Color baseColor = ((p == specificTabForPawn) ? OpenedSpecificTabButtonColor : Color.white);
+			Color mouseoverColor = ((p == specificTabForPawn) ? OpenedSpecificTabButtonMouseoverColor : GenUI.MouseoverColor);
 			Rect rect = new Rect(rowRect.width - 24f, (rowRect.height - 24f) / 2f, 24f, 24f);
 			if (Widgets.ButtonImage(rect, SpecificTabButtonTex, baseColor, mouseoverColor))
 			{

@@ -131,7 +131,7 @@ namespace Verse
 				Action action = delegate
 				{
 					owningNode.SetOpen(-1, val: true);
-					object obj = (!(creatingType == typeof(string))) ? Activator.CreateInstance(creatingType) : "";
+					object obj = ((!(creatingType == typeof(string))) ? Activator.CreateInstance(creatingType) : "");
 					addAction(obj);
 					if (owningNode != null)
 					{
@@ -177,7 +177,7 @@ namespace Verse
 			else if (objectType == typeof(int))
 			{
 				rect.width = 100f;
-				if (int.TryParse(Widgets.TextField(rect, obj.ToString()), out int result))
+				if (int.TryParse(Widgets.TextField(rect, obj.ToString()), out var result))
 				{
 					obj = result;
 				}
@@ -194,7 +194,7 @@ namespace Verse
 				rect.width = 60f;
 				string text3 = obj.ToString();
 				text3 = Widgets.TextField(rect, text3);
-				if (float.TryParse(text3, out float result2))
+				if (float.TryParse(text3, out var result2))
 				{
 					obj = result2;
 				}

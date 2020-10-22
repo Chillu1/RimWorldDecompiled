@@ -82,7 +82,7 @@ namespace Verse
 				num2++;
 				IntVec3 randomCell = section.CellRect.RandomCell;
 				string terrScatType = base.Map.terrainGrid.TerrainAt(randomCell).scatterType;
-				if (terrScatType != null && !randomCell.Filled(base.Map) && DefDatabase<ScatterableDef>.AllDefs.Where((ScatterableDef def) => def.scatterType == terrScatType).TryRandomElement(out ScatterableDef result))
+				if (terrScatType != null && !randomCell.Filled(base.Map) && DefDatabase<ScatterableDef>.AllDefs.Where((ScatterableDef def) => def.scatterType == terrScatType).TryRandomElement(out var result))
 				{
 					Scatterable scatterable = new Scatterable(loc: new Vector3((float)randomCell.x + Rand.Value, randomCell.y, (float)randomCell.z + Rand.Value), def: result, map: base.Map);
 					scats.Add(scatterable);

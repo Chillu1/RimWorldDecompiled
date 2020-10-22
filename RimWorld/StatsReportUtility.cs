@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
@@ -42,6 +42,8 @@ namespace RimWorld
 			selectedEntry = null;
 			mousedOverEntry = null;
 			cachedDrawEntries.Clear();
+			PermitsCardUtility.selectedPermit = null;
+			PermitsCardUtility.selectedFaction = Find.FactionManager.AllFactions.FirstOrDefault((Faction x) => x.def.HasRoyalTitles);
 		}
 
 		public static void DrawStatsReport(Rect rect, Def def, ThingDef stuff)
@@ -49,7 +51,7 @@ namespace RimWorld
 			if (cachedDrawEntries.NullOrEmpty())
 			{
 				BuildableDef buildableDef = def as BuildableDef;
-				StatRequest req = (buildableDef != null) ? StatRequest.For(buildableDef, stuff) : StatRequest.ForEmpty();
+				StatRequest req = ((buildableDef != null) ? StatRequest.For(buildableDef, stuff) : StatRequest.ForEmpty());
 				cachedDrawEntries.AddRange(def.SpecialDisplayStats(req));
 				cachedDrawEntries.AddRange(from r in StatsToDraw(def, stuff)
 					where r.ShouldDisplay
@@ -132,14 +134,22 @@ namespace RimWorld
 		{
 			yield return DescriptionEntry(def);
 			BuildableDef eDef = def as BuildableDef;
-			if (eDef == null)
+			if (eDef != null)
+			{
+				StatRequest statRequest = StatRequest.For(eDef, stuff);
+				foreach (StatDef item in DefDatabase<StatDef>.AllDefs.Where((StatDef st) => st.Worker.ShouldShowFor(statRequest)))
+				{
+					yield return new StatDrawEntry(item.category, item, eDef.GetStatValueAbstract(item, stuff), StatRequest.For(eDef, stuff));
+				}
+			}
+			ThingDef thingDef = def as ThingDef;
+			if (thingDef == null || !thingDef.IsStuff)
 			{
 				yield break;
 			}
-			StatRequest statRequest = StatRequest.For(eDef, stuff);
-			foreach (StatDef item in DefDatabase<StatDef>.AllDefs.Where((StatDef st) => st.Worker.ShouldShowFor(statRequest)))
+			foreach (StatDrawEntry item2 in StuffStats(thingDef))
 			{
-				yield return new StatDrawEntry(item.category, item, eDef.GetStatValueAbstract(item, stuff), StatRequest.For(eDef, stuff));
+				yield return item2;
 			}
 		}
 
@@ -165,21 +175,20 @@ namespace RimWorld
 
 		private static IEnumerable<StatDrawEntry> StatsToDraw(Thing thing)
 		{
-			Thing thing2 = thing;
-			yield return DescriptionEntry(thing2);
-			StatDrawEntry statDrawEntry = QualityEntry(thing2);
+			yield return DescriptionEntry(thing);
+			StatDrawEntry statDrawEntry = QualityEntry(thing);
 			if (statDrawEntry != null)
 			{
 				yield return statDrawEntry;
 			}
-			foreach (StatDef item in DefDatabase<StatDef>.AllDefs.Where((StatDef st) => st.Worker.ShouldShowFor(StatRequest.For(thing2))))
+			foreach (StatDef item in DefDatabase<StatDef>.AllDefs.Where((StatDef st) => st.Worker.ShouldShowFor(StatRequest.For(thing))))
 			{
-				if (!item.Worker.IsDisabledFor(thing2))
+				if (!item.Worker.IsDisabledFor(thing))
 				{
-					float statValue = thing2.GetStatValue(item);
+					float statValue = thing.GetStatValue(item);
 					if (item.showOnDefaultValue || statValue != item.defaultBaseValue)
 					{
-						yield return new StatDrawEntry(item.category, item, statValue, StatRequest.For(thing2));
+						yield return new StatDrawEntry(item.category, item, statValue, StatRequest.For(thing));
 					}
 				}
 				else
@@ -187,31 +196,21 @@ namespace RimWorld
 					yield return new StatDrawEntry(item.category, item);
 				}
 			}
-			if (thing2.def.useHitPoints)
+			if (thing.def.useHitPoints)
 			{
-				yield return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, "HitPointsBasic".Translate().CapitalizeFirst(), thing2.HitPoints + " / " + thing2.MaxHitPoints, "Stat_HitPoints_Desc".Translate(), 99998);
+				yield return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, "HitPointsBasic".Translate().CapitalizeFirst(), thing.HitPoints + " / " + thing.MaxHitPoints, "Stat_HitPoints_Desc".Translate(), 99998);
 			}
-			foreach (StatDrawEntry item2 in thing2.SpecialDisplayStats())
+			foreach (StatDrawEntry item2 in thing.SpecialDisplayStats())
 			{
 				yield return item2;
 			}
-			if (!thing2.def.IsStuff)
+			if (!thing.def.IsStuff)
 			{
 				yield break;
 			}
-			if (!thing2.def.stuffProps.statFactors.NullOrEmpty())
+			foreach (StatDrawEntry item3 in StuffStats(thing.def))
 			{
-				for (int j = 0; j < thing2.def.stuffProps.statFactors.Count; j++)
-				{
-					yield return new StatDrawEntry(StatCategoryDefOf.StuffStatFactors, thing2.def.stuffProps.statFactors[j].stat, thing2.def.stuffProps.statFactors[j].value, StatRequest.ForEmpty(), ToStringNumberSense.Factor);
-				}
-			}
-			if (!thing2.def.stuffProps.statOffsets.NullOrEmpty())
-			{
-				for (int j = 0; j < thing2.def.stuffProps.statOffsets.Count; j++)
-				{
-					yield return new StatDrawEntry(StatCategoryDefOf.StuffStatOffsets, thing2.def.stuffProps.statOffsets[j].stat, thing2.def.stuffProps.statOffsets[j].value, StatRequest.ForEmpty(), ToStringNumberSense.Offset);
-				}
+				yield return item3;
 			}
 		}
 
@@ -221,6 +220,24 @@ namespace RimWorld
 			foreach (StatDrawEntry specialDisplayStat in worldObject.SpecialDisplayStats)
 			{
 				yield return specialDisplayStat;
+			}
+		}
+
+		private static IEnumerable<StatDrawEntry> StuffStats(ThingDef stuffDef)
+		{
+			if (!stuffDef.stuffProps.statFactors.NullOrEmpty())
+			{
+				for (int i = 0; i < stuffDef.stuffProps.statFactors.Count; i++)
+				{
+					yield return new StatDrawEntry(StatCategoryDefOf.StuffStatFactors, stuffDef.stuffProps.statFactors[i].stat, stuffDef.stuffProps.statFactors[i].value, StatRequest.ForEmpty(), ToStringNumberSense.Factor);
+				}
+			}
+			if (!stuffDef.stuffProps.statOffsets.NullOrEmpty())
+			{
+				for (int i = 0; i < stuffDef.stuffProps.statOffsets.Count; i++)
+				{
+					yield return new StatDrawEntry(StatCategoryDefOf.StuffStatOffsets, stuffDef.stuffProps.statOffsets[i].stat, stuffDef.stuffProps.statOffsets[i].value, StatRequest.ForEmpty(), ToStringNumberSense.Offset);
+				}
 			}
 		}
 
@@ -258,7 +275,7 @@ namespace RimWorld
 
 		private static StatDrawEntry QualityEntry(Thing t)
 		{
-			if (!t.TryGetQuality(out QualityCategory qc))
+			if (!t.TryGetQuality(out var qc))
 			{
 				return null;
 			}
@@ -333,7 +350,7 @@ namespace RimWorld
 				return;
 			}
 			Rect rect4 = new Rect(0f, 0f, outRect.width - 16f, rightPanelHeight);
-			StatRequest statRequest = statDrawEntry.hasOptionalReq ? statDrawEntry.optionalReq : ((optionalThing == null) ? StatRequest.ForEmpty() : StatRequest.For(optionalThing));
+			StatRequest statRequest = (statDrawEntry.hasOptionalReq ? statDrawEntry.optionalReq : ((optionalThing == null) ? StatRequest.ForEmpty() : StatRequest.For(optionalThing)));
 			string explanationText = statDrawEntry.GetExplanationText(statRequest);
 			float num = 0f;
 			Widgets.BeginScrollView(outRect, ref scrollPositionRightPanel, rect4);

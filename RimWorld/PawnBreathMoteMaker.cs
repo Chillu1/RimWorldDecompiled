@@ -33,7 +33,7 @@ namespace RimWorld
 				int num = Mathf.Abs(Find.TickManager.TicksGame + pawn.HashOffset()) % 320;
 				if (num == 0)
 				{
-					doThisBreath = (pawn.AmbientTemperature < 0f && pawn.GetPosture() == PawnPosture.Standing);
+					doThisBreath = pawn.AmbientTemperature < 0f && pawn.GetPosture() == PawnPosture.Standing;
 				}
 				if (doThisBreath && num < 80 && num % 8 == 0)
 				{

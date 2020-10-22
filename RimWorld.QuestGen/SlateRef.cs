@@ -44,13 +44,13 @@ namespace RimWorld.QuestGen
 
 		public T GetValue(Slate slate)
 		{
-			TryGetValue(slate, out T value);
+			TryGetValue(slate, out var value);
 			return value;
 		}
 
 		public bool TryGetValue(Slate slate, out T value)
 		{
-			return TryGetConvertedValue(slate, out value);
+			return TryGetConvertedValue<T>(slate, out value);
 		}
 
 		public bool TryGetConvertedValue<TAnything>(Slate slate, out TAnything value)
@@ -62,7 +62,7 @@ namespace RimWorld.QuestGen
 			}
 			tmpCurSlate = slate;
 			string text = HighPriorityVarsRegex.Replace(slateRef, RegexMatchEvaluatorConcatenate);
-			if (!SlateRefUtility.CheckSingleVariableSyntax(text, slate, out object obj, out bool exists))
+			if (!SlateRefUtility.CheckSingleVariableSyntax(text, slate, out var obj, out var exists))
 			{
 				obj = MathExprRegex.Replace(text, RegexMatchEvaluatorEvaluateMathExpressionCached);
 				obj = VarsRegex.Replace((string)obj, RegexMatchEvaluatorConcatenateCached);
@@ -97,7 +97,7 @@ namespace RimWorld.QuestGen
 		private static string RegexMatchEvaluatorConcatenate(Match match)
 		{
 			string value = match.Groups[1].Value;
-			if (!tmpCurSlate.TryGet(value, out object var))
+			if (!tmpCurSlate.TryGet<object>(value, out var var))
 			{
 				return "";
 			}
@@ -111,7 +111,7 @@ namespace RimWorld.QuestGen
 		private static string RegexMatchEvaluatorConcatenateZeroIfEmpty(Match match)
 		{
 			string value = match.Groups[1].Value;
-			if (!tmpCurSlate.TryGet(value, out object var))
+			if (!tmpCurSlate.TryGet<object>(value, out var var))
 			{
 				Log.ErrorOnce("Tried to use variable \"" + value + "\" in a math expression but it doesn't exist.", value.GetHashCode() ^ 0xB9D489F);
 				return "0";
@@ -175,7 +175,7 @@ namespace RimWorld.QuestGen
 
 		public string ToString(Slate slate)
 		{
-			TryGetConvertedValue(slate, out string value);
+			TryGetConvertedValue<string>(slate, out var value);
 			return value;
 		}
 

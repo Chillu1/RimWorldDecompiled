@@ -1,10 +1,21 @@
-using RimWorld;
 using System;
+using RimWorld;
 
 namespace Verse.AI
 {
 	public static class Toils_General
 	{
+		public static Toil StopDead()
+		{
+			Toil toil = new Toil();
+			toil.initAction = delegate
+			{
+				toil.actor.pather.StopDead();
+			};
+			toil.defaultCompleteMode = ToilCompleteMode.Instant;
+			return toil;
+		}
+
 		public static Toil Wait(int ticks, TargetIndex face = TargetIndex.None)
 		{
 			Toil toil = new Toil();
@@ -83,7 +94,7 @@ namespace Verse.AI
 				Pawn actor = toil.GetActor();
 				if (actor.carryTracker.CarriedThing != null && !actor.carryTracker.innerContainer.TryTransferToContainer(actor.carryTracker.CarriedThing, actor.inventory.innerContainer))
 				{
-					actor.carryTracker.TryDropCarriedThing(actor.Position, actor.carryTracker.CarriedThing.stackCount, ThingPlaceMode.Near, out Thing _);
+					actor.carryTracker.TryDropCarriedThing(actor.Position, actor.carryTracker.CarriedThing.stackCount, ThingPlaceMode.Near, out var _);
 				}
 			};
 			return toil;

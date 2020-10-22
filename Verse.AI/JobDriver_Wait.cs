@@ -1,5 +1,6 @@
-using RimWorld;
+using System;
 using System.Collections.Generic;
+using RimWorld;
 
 namespace Verse.AI
 {
@@ -48,6 +49,15 @@ namespace Verse.AI
 			};
 			DecorateWaitToil(toil);
 			toil.defaultCompleteMode = ToilCompleteMode.Never;
+			if (pawn.mindState != null && pawn.mindState.duty != null && pawn.mindState.duty.focus != null)
+			{
+				LocalTargetInfo focusLocal = pawn.mindState.duty.focus;
+				toil.handlingFacing = false;
+				toil.tickAction = (Action)Delegate.Combine(toil.tickAction, (Action)delegate
+				{
+					pawn.rotationTracker.FaceTarget(focusLocal);
+				});
+			}
 			yield return toil;
 		}
 
@@ -120,7 +130,7 @@ namespace Verse.AI
 				Verb currentEffectiveVerb = base.pawn.CurrentEffectiveVerb;
 				if (currentEffectiveVerb != null && !currentEffectiveVerb.verbProps.IsMeleeAttack)
 				{
-					TargetScanFlags targetScanFlags = TargetScanFlags.NeedLOSToPawns | TargetScanFlags.NeedLOSToNonPawns | TargetScanFlags.NeedThreat | TargetScanFlags.NeedAutoTargetable;
+					TargetScanFlags targetScanFlags = TargetScanFlags.NeedLOSToAll | TargetScanFlags.NeedThreat | TargetScanFlags.NeedAutoTargetable;
 					if (currentEffectiveVerb.IsIncendiary())
 					{
 						targetScanFlags |= TargetScanFlags.NeedNonBurning;

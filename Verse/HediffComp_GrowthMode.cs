@@ -1,7 +1,7 @@
-using RimWorld;
 using System;
 using System.Linq;
 using System.Text;
+using RimWorld;
 
 namespace Verse
 {
@@ -48,17 +48,13 @@ namespace Verse
 
 		protected override float SeverityChangePerDay()
 		{
-			switch (growthMode)
+			return growthMode switch
 			{
-			case HediffGrowthMode.Growing:
-				return Props.severityPerDayGrowing * severityPerDayGrowingRandomFactor;
-			case HediffGrowthMode.Stable:
-				return 0f;
-			case HediffGrowthMode.Remission:
-				return Props.severityPerDayRemission * severityPerDayRemissionRandomFactor;
-			default:
-				throw new NotImplementedException("GrowthMode");
-			}
+				HediffGrowthMode.Growing => Props.severityPerDayGrowing * severityPerDayGrowingRandomFactor, 
+				HediffGrowthMode.Stable => 0f, 
+				HediffGrowthMode.Remission => Props.severityPerDayRemission * severityPerDayRemissionRandomFactor, 
+				_ => throw new NotImplementedException("GrowthMode"), 
+			};
 		}
 
 		private void ChangeGrowthMode()

@@ -1,8 +1,8 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.IO;
 using System.Linq;
+using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 using UnityEngine.Analytics;
 using Verse.AI;
@@ -93,6 +93,7 @@ namespace Verse
 				SteamManager.InitIfNeeded();
 				VersionControl.LogVersionNumber();
 				Prefs.Init();
+				Application.logMessageReceivedThreaded += Log.Notify_MessageReceivedThreadedInternal;
 				if (Prefs.DevMode)
 				{
 					StaticConstructorOnStartupUtility.ReportProbablyMissingAttributes();
@@ -108,7 +109,7 @@ namespace Verse
 			{
 				ResolutionUtility.Update();
 				RealTime.Update();
-				LongEventHandler.LongEventsUpdate(out bool sceneChanged);
+				LongEventHandler.LongEventsUpdate(out var sceneChanged);
 				if (sceneChanged)
 				{
 					destroyed = true;
@@ -173,17 +174,31 @@ namespace Verse
 
 		public static void Shutdown()
 		{
-			SteamManager.ShutdownSteam();
-			DirectoryInfo directoryInfo = new DirectoryInfo(GenFilePaths.TempFolderPath);
-			FileInfo[] files = directoryInfo.GetFiles();
-			for (int i = 0; i < files.Length; i++)
+			try
 			{
-				files[i].Delete();
+				SteamManager.ShutdownSteam();
 			}
-			DirectoryInfo[] directories = directoryInfo.GetDirectories();
-			for (int i = 0; i < directories.Length; i++)
+			catch (Exception arg)
 			{
-				directories[i].Delete(recursive: true);
+				Log.Error("Error in ShutdownSteam(): " + arg);
+			}
+			try
+			{
+				DirectoryInfo directoryInfo = new DirectoryInfo(GenFilePaths.TempFolderPath);
+				FileInfo[] files = directoryInfo.GetFiles();
+				for (int i = 0; i < files.Length; i++)
+				{
+					files[i].Delete();
+				}
+				DirectoryInfo[] directories = directoryInfo.GetDirectories();
+				for (int i = 0; i < directories.Length; i++)
+				{
+					directories[i].Delete(recursive: true);
+				}
+			}
+			catch (Exception arg2)
+			{
+				Log.Error("Could not delete temporary files: " + arg2);
 			}
 			Application.Quit();
 		}

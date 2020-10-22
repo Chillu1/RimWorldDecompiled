@@ -237,7 +237,7 @@ namespace RimWorld
 			Prefs.AutomaticPauseMode = automaticPauseMode;
 			int maxNumberOfPlayerSettlements = Prefs.MaxNumberOfPlayerSettlements;
 			listing_Standard.Label("MaxNumberOfPlayerSettlements".Translate(maxNumberOfPlayerSettlements));
-			int num2 = Prefs.MaxNumberOfPlayerSettlements = Mathf.RoundToInt(listing_Standard.Slider(maxNumberOfPlayerSettlements, 1f, 5f));
+			int num2 = (Prefs.MaxNumberOfPlayerSettlements = Mathf.RoundToInt(listing_Standard.Slider(maxNumberOfPlayerSettlements, 1f, 5f)));
 			if (maxNumberOfPlayerSettlements != num2 && num2 > 1)
 			{
 				TutorUtility.DoModalDialogIfNotKnown(ConceptDefOf.MaxNumberOfPlayerSettlements);

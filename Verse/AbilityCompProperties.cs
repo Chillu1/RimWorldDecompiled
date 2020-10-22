@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 
 namespace Verse
 {
@@ -8,6 +8,12 @@ namespace Verse
 	{
 		[TranslationHandle]
 		public Type compClass;
+
+		public virtual bool OverridesPsyfocusCost => false;
+
+		public virtual FloatRange PsyfocusCostRange => FloatRange.ZeroToOne;
+
+		public virtual string PsyfocusCostExplanation => "";
 
 		public virtual IEnumerable<string> ConfigErrors(AbilityDef parentDef)
 		{

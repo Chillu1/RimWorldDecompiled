@@ -8,17 +8,13 @@ namespace Verse
 			{
 				return str;
 			}
-			switch (gender)
+			return gender switch
 			{
-			case Gender.Male:
-				return "ein " + str;
-			case Gender.Female:
-				return "eine " + str;
-			case Gender.None:
-				return "ein " + str;
-			default:
-				return str;
-			}
+				Gender.Male => "ein " + str, 
+				Gender.Female => "eine " + str, 
+				Gender.None => "ein " + str, 
+				_ => str, 
+			};
 		}
 
 		public override string WithDefiniteArticle(string str, Gender gender, bool plural = false, bool name = false)
@@ -27,17 +23,13 @@ namespace Verse
 			{
 				return str;
 			}
-			switch (gender)
+			return gender switch
 			{
-			case Gender.Male:
-				return "der " + str;
-			case Gender.Female:
-				return "die " + str;
-			case Gender.None:
-				return "das " + str;
-			default:
-				return str;
-			}
+				Gender.Male => "der " + str, 
+				Gender.Female => "die " + str, 
+				Gender.None => "das " + str, 
+				_ => str, 
+			};
 		}
 
 		public override string OrdinalNumber(int number, Gender gender = Gender.None)
@@ -52,7 +44,7 @@ namespace Verse
 				return str;
 			}
 			char c = str[str.Length - 1];
-			char c2 = (str.Length >= 2) ? str[str.Length - 2] : '\0';
+			char c2 = ((str.Length >= 2) ? str[str.Length - 2] : '\0');
 			switch (gender)
 			{
 			case Gender.Male:

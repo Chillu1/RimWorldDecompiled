@@ -55,7 +55,7 @@ namespace Verse.Grammar
 
 		private void LoadStringsFromFile(string filePath)
 		{
-			if (!Translator.TryGetTranslatedStringsForFile(filePath, out List<string> stringList))
+			if (!Translator.TryGetTranslatedStringsForFile(filePath, out var stringList))
 			{
 				return;
 			}

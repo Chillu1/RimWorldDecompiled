@@ -22,7 +22,7 @@ namespace RimWorld
 			if (!AnyCoupleForWhichIsValid())
 			{
 				StringBuilder stringBuilder = new StringBuilder();
-				if (TryFindAnyFiancesCouple(out Pair<Pawn, Pawn> fiances))
+				if (TryFindAnyFiancesCouple(out var fiances))
 				{
 					if (!MarriageSpotUtility.IsValidMarriageSpotFor(base.Position, fiances.First, fiances.Second, stringBuilder))
 					{

@@ -1,14 +1,106 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
 {
 	public static class DebugOutputsEconomy
 	{
+		[DebugOutput("Economy", false)]
+		public static void ApparelByStuff()
+		{
+			List<FloatMenuOption> list = new List<FloatMenuOption>();
+			list.Add(new FloatMenuOption("Stuffless", delegate
+			{
+				DoTableInternalApparel(null);
+			}));
+			foreach (ThingDef item in DefDatabase<ThingDef>.AllDefs.Where((ThingDef td) => td.IsStuff))
+			{
+				ThingDef localStuff = item;
+				list.Add(new FloatMenuOption(localStuff.defName, delegate
+				{
+					DoTableInternalApparel(localStuff);
+				}));
+			}
+			Find.WindowStack.Add(new FloatMenu(list));
+		}
+
+		[DebugOutput("Economy", false)]
+		public static void ApparelArmor()
+		{
+			List<TableDataGetter<ThingDef>> list = new List<TableDataGetter<ThingDef>>();
+			list.Add(new TableDataGetter<ThingDef>("label", (ThingDef x) => x.LabelCap));
+			list.Add(new TableDataGetter<ThingDef>("stuff", (ThingDef x) => x.MadeFromStuff.ToStringCheckBlank()));
+			list.Add(new TableDataGetter<ThingDef>("mass", (ThingDef x) => x.BaseMass));
+			list.Add(new TableDataGetter<ThingDef>("mrkt\nvalue", (ThingDef x) => x.BaseMarketValue.ToString("F0")));
+			list.Add(new TableDataGetter<ThingDef>("hp", (ThingDef x) => x.BaseMaxHitPoints));
+			list.Add(new TableDataGetter<ThingDef>("flama\nbility", (ThingDef x) => x.BaseFlammability));
+			list.Add(new TableDataGetter<ThingDef>("recipe\nmin\nskill", (ThingDef x) => (x.recipeMaker == null || x.recipeMaker.skillRequirements.NullOrEmpty()) ? "" : (x.recipeMaker.skillRequirements[0].skill.defName + " " + x.recipeMaker.skillRequirements[0].minLevel)));
+			list.Add(new TableDataGetter<ThingDef>("equip\ndelay", (ThingDef x) => x.GetStatValueAbstract(StatDefOf.EquipDelay)));
+			list.Add(new TableDataGetter<ThingDef>("none", (ThingDef x) => x.MadeFromStuff ? "" : (x.GetStatValueAbstract(StatDefOf.ArmorRating_Sharp).ToStringPercent() + " / " + x.GetStatValueAbstract(StatDefOf.ArmorRating_Blunt).ToStringPercent() + " / " + x.GetStatValueAbstract(StatDefOf.ArmorRating_Heat).ToStringPercent())));
+			list.Add(new TableDataGetter<ThingDef>("verbs", (ThingDef x) => string.Join(",", x.Verbs.Select((VerbProperties v) => v.label))));
+			foreach (ThingDef item in new List<ThingDef>
+			{
+				ThingDefOf.Steel,
+				ThingDefOf.Plasteel,
+				ThingDefOf.Cloth,
+				ThingDef.Named("Leather_Patch"),
+				ThingDefOf.Leather_Plain,
+				ThingDef.Named("Leather_Heavy"),
+				ThingDef.Named("Leather_Thrumbo"),
+				ThingDef.Named("Synthread"),
+				ThingDef.Named("Hyperweave"),
+				ThingDef.Named("DevilstrandCloth"),
+				ThingDef.Named("WoolSheep"),
+				ThingDef.Named("WoolMegasloth"),
+				ThingDefOf.BlocksGranite,
+				ThingDefOf.Silver,
+				ThingDefOf.Gold
+			})
+			{
+				ThingDef stuffLocal = item;
+				if (DefDatabase<ThingDef>.AllDefs.Any((ThingDef x) => x.IsApparel && stuffLocal.stuffProps.CanMake(x)))
+				{
+					list.Add(new TableDataGetter<ThingDef>(stuffLocal.label.Shorten(), (ThingDef x) => (!stuffLocal.stuffProps.CanMake(x)) ? "" : (x.GetStatValueAbstract(StatDefOf.ArmorRating_Sharp, stuffLocal).ToStringPercent() + " / " + x.GetStatValueAbstract(StatDefOf.ArmorRating_Blunt, stuffLocal).ToStringPercent() + " / " + x.GetStatValueAbstract(StatDefOf.ArmorRating_Heat, stuffLocal).ToStringPercent())));
+				}
+			}
+			DebugTables.MakeTablesDialog(from x in DefDatabase<ThingDef>.AllDefs
+				where x.IsApparel
+				orderby x.BaseMarketValue
+				select x, list.ToArray());
+		}
+
+		[DebugOutput("Economy", false)]
+		public static void ApparelInsulation()
+		{
+			List<TableDataGetter<ThingDef>> list = new List<TableDataGetter<ThingDef>>();
+			list.Add(new TableDataGetter<ThingDef>("label", (ThingDef x) => x.LabelCap));
+			list.Add(new TableDataGetter<ThingDef>("none", (ThingDef x) => x.MadeFromStuff ? "" : (x.GetStatValueAbstract(StatDefOf.Insulation_Heat).ToStringTemperature() + " / " + x.GetStatValueAbstract(StatDefOf.Insulation_Cold).ToStringTemperature())));
+			foreach (ThingDef item in from x in DefDatabase<ThingDef>.AllDefs
+				where x.IsStuff
+				orderby x.BaseMarketValue
+				select x)
+			{
+				ThingDef stuffLocal = item;
+				if (DefDatabase<ThingDef>.AllDefs.Any((ThingDef x) => x.IsApparel && stuffLocal.stuffProps.CanMake(x)))
+				{
+					list.Add(new TableDataGetter<ThingDef>(stuffLocal.label.Shorten(), (ThingDef x) => (!stuffLocal.stuffProps.CanMake(x)) ? "" : (x.GetStatValueAbstract(StatDefOf.Insulation_Heat, stuffLocal).ToString("F1") + ", " + x.GetStatValueAbstract(StatDefOf.Insulation_Cold, stuffLocal).ToString("F1"))));
+				}
+			}
+			DebugTables.MakeTablesDialog(from x in DefDatabase<ThingDef>.AllDefs
+				where x.IsApparel
+				orderby x.BaseMarketValue
+				select x, list.ToArray());
+		}
+
+		private static void DoTableInternalApparel(ThingDef stuff)
+		{
+			DebugTables.MakeTablesDialog(DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.IsApparel && (stuff == null || (d.MadeFromStuff && stuff.stuffProps.CanMake(d)))), new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("body\nparts", (ThingDef d) => GenText.ToSpaceList(d.apparel.bodyPartGroups.Select((BodyPartGroupDef bp) => bp.defName))), new TableDataGetter<ThingDef>("layers", (ThingDef d) => GenText.ToSpaceList(d.apparel.layers.Select((ApparelLayerDef l) => l.ToString()))), new TableDataGetter<ThingDef>("tags", (ThingDef d) => GenText.ToSpaceList(d.apparel.tags.Select((string t) => t.ToString()))), new TableDataGetter<ThingDef>("work", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.WorkToMake, stuff).ToString("F0")), new TableDataGetter<ThingDef>("market\nvalue", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.MarketValue, stuff).ToString("F0")), new TableDataGetter<ThingDef>("insul.\ncold", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.Insulation_Cold, stuff).ToString("F1")), new TableDataGetter<ThingDef>("insul.\nheat", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.Insulation_Heat, stuff).ToString("F1")), new TableDataGetter<ThingDef>("armor\nblunt", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.ArmorRating_Blunt, stuff).ToString("F2")), new TableDataGetter<ThingDef>("armor\nsharp", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.ArmorRating_Sharp, stuff).ToString("F2")), new TableDataGetter<ThingDef>("StuffEffectMult.\narmor", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.StuffEffectMultiplierArmor, stuff).ToString("F2")), new TableDataGetter<ThingDef>("StuffEffectMult.\ncold", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.StuffEffectMultiplierInsulation_Cold, stuff).ToString("F2")), new TableDataGetter<ThingDef>("StuffEffectMult.\nheat", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.StuffEffectMultiplierInsulation_Heat, stuff).ToString("F2")), new TableDataGetter<ThingDef>("equip\ntime", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.EquipDelay, stuff).ToString("F1")), new TableDataGetter<ThingDef>("ingredients", (ThingDef d) => CostListString(d, divideByVolume: false, starIfOnlyBuyable: false)));
+		}
+
 		[DebugOutput("Economy", false)]
 		public static void RecipeSkills()
 		{

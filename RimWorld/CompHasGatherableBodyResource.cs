@@ -37,6 +37,10 @@ namespace RimWorld
 				{
 					return false;
 				}
+				if (parent.Suspended)
+				{
+					return false;
+				}
 				return true;
 			}
 		}

@@ -11,7 +11,7 @@ namespace RimWorld
 	{
 		public static Pawn FindRandomSickPawn(Pawn pawn, JoyCategory maxPatientJoy)
 		{
-			if (!pawn.Map.mapPawns.FreeColonistsSpawned.Where((Pawn x) => CanVisit(pawn, x, maxPatientJoy)).TryRandomElementByWeight((Pawn x) => VisitChanceScore(pawn, x), out Pawn result))
+			if (!pawn.Map.mapPawns.FreeColonistsSpawned.Where((Pawn x) => CanVisit(pawn, x, maxPatientJoy)).TryRandomElementByWeight((Pawn x) => VisitChanceScore(pawn, x), out var result))
 			{
 				return null;
 			}

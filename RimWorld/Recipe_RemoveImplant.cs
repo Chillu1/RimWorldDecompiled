@@ -45,7 +45,7 @@ namespace RimWorld
 			}
 			if (flag)
 			{
-				ReportViolation(pawn, billDoer, pawn.FactionOrExtraHomeFaction, -70, "GoodwillChangedReason_RemovedImplant".Translate(part.LabelShort));
+				ReportViolation(pawn, billDoer, pawn.FactionOrExtraMiniOrHomeFaction, -70, "GoodwillChangedReason_RemovedImplant".Translate(part.LabelShort));
 			}
 		}
 	}

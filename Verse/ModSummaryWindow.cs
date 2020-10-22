@@ -1,7 +1,7 @@
-using RimWorld;
-using Steamworks;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
+using Steamworks;
 using UnityEngine;
 
 namespace Verse
@@ -31,6 +31,8 @@ namespace Verse
 		private static readonly Color ModInfoListBackground = new Color(0.13f, 0.13f, 0.13f);
 
 		private static readonly Color ModInfoListItemBackground = new Color(0.32f, 0.32f, 0.32f);
+
+		private static readonly Color ModInfoListItemBackgroundIncompatible = new Color(0.31f, 0.29f, 0.15f);
 
 		private static readonly Color ModInfoListItemBackgroundDisabled = new Color(0.1f, 0.1f, 0.1f);
 
@@ -90,7 +92,7 @@ namespace Verse
 							SteamUtility.OpenUrl(exp.StoreURL);
 						}
 						GUI.color = (flag ? Color.white : DisabledIconTint);
-						Material material = flag ? null : TexUI.GrayscaleGUI;
+						Material material = (flag ? null : TexUI.GrayscaleGUI);
 						Rect rect9 = new Rect(r.x + itemListInnerMargin, r.y + 2f, 32f, 32f);
 						float num4 = 42f;
 						GenUI.DrawTextureWithMaterial(rect9, exp.Icon, material);
@@ -138,7 +140,7 @@ namespace Verse
 					{
 						drawer = delegate(Rect r)
 						{
-							Widgets.DrawBoxSolid(r, ModInfoListItemBackground);
+							Widgets.DrawBoxSolid(r, mod.VersionCompatible ? ModInfoListItemBackground : ModInfoListItemBackgroundIncompatible);
 							Widgets.DrawHighlightIfMouseover(r);
 							if (mod.OnSteamWorkshop && mod.GetPublishedFileId() != PublishedFileId_t.Invalid && Widgets.ButtonInvisible(r))
 							{
@@ -150,6 +152,10 @@ namespace Verse
 							if (Mouse.IsOver(r))
 							{
 								string description = mod.Name + "\n\n" + mod.Description.StripTags();
+								if (!mod.VersionCompatible)
+								{
+									description = description + "\n\n" + "ModNotMadeForThisVersionShort".Translate().RawText.Colorize(Color.yellow);
+								}
 								TooltipHandler.TipRegion(tip: new TipSignal(() => description, mod.GetHashCode() * 37), rect: r);
 							}
 							GUI.color = Color.white;

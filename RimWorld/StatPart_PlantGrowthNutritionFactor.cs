@@ -7,7 +7,7 @@ namespace RimWorld
 	{
 		public override void TransformValue(StatRequest req, ref float val)
 		{
-			if (TryGetFactor(req, out float factor))
+			if (TryGetFactor(req, out var factor))
 			{
 				val *= factor;
 			}
@@ -15,7 +15,7 @@ namespace RimWorld
 
 		public override string ExplanationPart(StatRequest req)
 		{
-			if (TryGetFactor(req, out float factor))
+			if (TryGetFactor(req, out var factor))
 			{
 				Plant plant = (Plant)req.Thing;
 				TaggedString taggedString = "StatsReport_PlantGrowth".Translate(plant.Growth.ToStringPercent()) + ": x" + factor.ToStringPercent();

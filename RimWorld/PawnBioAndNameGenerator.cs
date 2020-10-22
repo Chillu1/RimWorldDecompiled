@@ -73,7 +73,7 @@ namespace RimWorld
 
 		private static bool TryGiveSolidBioTo(Pawn pawn, string requiredLastName, List<BackstoryCategoryFilter> backstoryCategories)
 		{
-			if (!TryGetRandomUnusedSolidBioFor(backstoryCategories, pawn.kindDef, pawn.gender, requiredLastName, out PawnBio result))
+			if (!TryGetRandomUnusedSolidBioFor(backstoryCategories, pawn.kindDef, pawn.gender, requiredLastName, out var result))
 			{
 				return false;
 			}
@@ -165,9 +165,9 @@ namespace RimWorld
 		public static NameTriple TryGetRandomUnusedSolidName(Gender gender, string requiredLastName = null)
 		{
 			List<NameTriple> listForGender = PawnNameDatabaseSolid.GetListForGender(GenderPossibility.Either);
-			List<NameTriple> list = (gender == Gender.Male) ? PawnNameDatabaseSolid.GetListForGender(GenderPossibility.Male) : PawnNameDatabaseSolid.GetListForGender(GenderPossibility.Female);
+			List<NameTriple> list = ((gender == Gender.Male) ? PawnNameDatabaseSolid.GetListForGender(GenderPossibility.Male) : PawnNameDatabaseSolid.GetListForGender(GenderPossibility.Female));
 			float num = ((float)listForGender.Count + 0.1f) / ((float)(listForGender.Count + list.Count) + 0.1f);
-			List<NameTriple> list2 = (!(Rand.Value < num)) ? list : listForGender;
+			List<NameTriple> list2 = ((!(Rand.Value < num)) ? list : listForGender);
 			if (list2.Count == 0)
 			{
 				Log.Error(string.Concat("Empty solid pawn name list for gender: ", gender, "."));
@@ -334,7 +334,7 @@ namespace RimWorld
 			}
 			NameBank nameBank = PawnNameDatabaseShuffled.BankOf(pawnNameCategory);
 			string name = nameBank.GetName(PawnNameSlot.First, pawn.gender);
-			string text = (forcedLastName == null) ? nameBank.GetName(PawnNameSlot.Last) : forcedLastName;
+			string text = ((forcedLastName == null) ? nameBank.GetName(PawnNameSlot.Last) : forcedLastName);
 			int num = 0;
 			string nick;
 			do

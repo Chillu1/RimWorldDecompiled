@@ -80,8 +80,9 @@ namespace Verse
 			}
 		}
 
-		public override void CompTended(float quality, int batchPosition = 0)
+		public override void CompTended_NewTemp(float quality, float maxQuality, int batchPosition = 0)
 		{
+			base.CompTended_NewTemp(quality, maxQuality, batchPosition);
 			if (base.Pawn.Spawned)
 			{
 				Room room = base.Pawn.GetRoom();
@@ -109,7 +110,7 @@ namespace Verse
 			num *= InfectionChanceFactorFromSeverityCurve.Evaluate(parent.Severity);
 			if (base.Pawn.Faction == Faction.OfPlayer)
 			{
-				num *= Find.Storyteller.difficulty.playerPawnInfectionChanceFactor;
+				num *= Find.Storyteller.difficultyValues.playerPawnInfectionChanceFactor;
 			}
 			if (Rand.Value < num)
 			{

@@ -6,17 +6,13 @@ namespace Verse
 	{
 		public static string GetLabel(this HediffGrowthMode m)
 		{
-			switch (m)
+			return m switch
 			{
-			case HediffGrowthMode.Growing:
-				return "HediffGrowthMode_Growing".Translate();
-			case HediffGrowthMode.Stable:
-				return "HediffGrowthMode_Stable".Translate();
-			case HediffGrowthMode.Remission:
-				return "HediffGrowthMode_Remission".Translate();
-			default:
-				throw new ArgumentException();
-			}
+				HediffGrowthMode.Growing => "HediffGrowthMode_Growing".Translate(), 
+				HediffGrowthMode.Stable => "HediffGrowthMode_Stable".Translate(), 
+				HediffGrowthMode.Remission => "HediffGrowthMode_Remission".Translate(), 
+				_ => throw new ArgumentException(), 
+			};
 		}
 	}
 }

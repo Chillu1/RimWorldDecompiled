@@ -23,9 +23,9 @@ namespace RimWorld.QuestGen
 			if (pawns.GetValue(slate) != null)
 			{
 				QuestPart_DamageUntilDowned questPart_DamageUntilDowned = new QuestPart_DamageUntilDowned();
-				questPart_DamageUntilDowned.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+				questPart_DamageUntilDowned.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 				questPart_DamageUntilDowned.pawns.AddRange(pawns.GetValue(slate));
-				questPart_DamageUntilDowned.allowBleedingWounds = (allowBleedingWounds.GetValue(slate) ?? true);
+				questPart_DamageUntilDowned.allowBleedingWounds = allowBleedingWounds.GetValue(slate) ?? true;
 				QuestGen.quest.AddPart(questPart_DamageUntilDowned);
 			}
 		}

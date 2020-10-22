@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.AI.Group;
@@ -128,11 +128,11 @@ namespace RimWorld
 			string pawnsCountLabel2 = GetPawnsCountLabel(num3, num4, -1);
 			string pawnsCountLabel3 = GetPawnsCountLabel(num5, num6, num7);
 			float y = curY;
-			DoPeopleAndAnimalsEntry(inRect, Faction.OfPlayer.def.pawnsPlural.CapitalizeFirst(), pawnsCountLabel, ref curY, out float drawnWidth);
+			DoPeopleAndAnimalsEntry(inRect, Faction.OfPlayer.def.pawnsPlural.CapitalizeFirst(), pawnsCountLabel, ref curY, out var drawnWidth);
 			float y2 = curY;
-			DoPeopleAndAnimalsEntry(inRect, "CaravanPrisoners".Translate(), pawnsCountLabel2, ref curY, out float drawnWidth2);
+			DoPeopleAndAnimalsEntry(inRect, "CaravanPrisoners".Translate(), pawnsCountLabel2, ref curY, out var drawnWidth2);
 			float y3 = curY;
-			DoPeopleAndAnimalsEntry(inRect, "CaravanAnimals".Translate(), pawnsCountLabel3, ref curY, out float drawnWidth3);
+			DoPeopleAndAnimalsEntry(inRect, "CaravanAnimals".Translate(), pawnsCountLabel3, ref curY, out var drawnWidth3);
 			float width = Mathf.Max(drawnWidth, drawnWidth2, drawnWidth3) + 2f;
 			Rect rect = new Rect(0f, y, width, 22f);
 			if (Mouse.IsOver(rect))
@@ -397,7 +397,7 @@ namespace RimWorld
 			Text.Anchor = TextAnchor.MiddleLeft;
 			GUI.color = ThingLabelColor;
 			Rect rect3 = new Rect(36f, curY, rect.width - 36f, rect.height);
-			string str = (things.Count != 1) ? GenLabel.ThingLabel(thingDef, null, count).CapitalizeFirst() : things[0].LabelCap;
+			string str = ((things.Count != 1) ? GenLabel.ThingLabel(thingDef, null, count).CapitalizeFirst() : things[0].LabelCap);
 			Text.WordWrap = false;
 			Widgets.Label(rect3, str.Truncate(rect3.width));
 			Text.WordWrap = true;

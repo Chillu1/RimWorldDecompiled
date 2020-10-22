@@ -1,8 +1,8 @@
-using RimWorld;
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
+using RimWorld.Planet;
 
 namespace Verse
 {
@@ -139,7 +139,7 @@ namespace Verse
 						int result = -1;
 						if (int.TryParse(text, out result))
 						{
-							if (result >= 0 && result < list2.Count && TryResolveSymbol(list2[result], stringBuilder4.ToString(), stringBuilder5.ToString(), out TaggedString resolvedStr, str))
+							if (result >= 0 && result < list2.Count && TryResolveSymbol(list2[result], stringBuilder4.ToString(), stringBuilder5.ToString(), out var resolvedStr, str))
 							{
 								flag6 = true;
 								stringBuilder.Append(resolvedStr.RawText);
@@ -151,7 +151,7 @@ namespace Verse
 							{
 								if (list[j] == text)
 								{
-									if (TryResolveSymbol(list2[j], stringBuilder4.ToString(), stringBuilder5.ToString(), out TaggedString resolvedStr2, str))
+									if (TryResolveSymbol(list2[j], stringBuilder4.ToString(), stringBuilder5.ToString(), out var resolvedStr2, str))
 									{
 										flag6 = true;
 										stringBuilder.Append(resolvedStr2.RawText);
@@ -596,6 +596,22 @@ namespace Verse
 					resolvedStr = faction.def.royalFavorLabel;
 					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 					return true;
+				case "leaderNameDef":
+					resolvedStr = ((faction.leader != null && faction.leader.Name != null) ? Find.ActiveLanguageWorker.WithDefiniteArticle(faction.leader.Name.ToStringShort, faction.leader.gender, plural: false, name: true).ApplyTag(TagType.Name) : ((TaggedString)""));
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "leaderPossessive":
+					resolvedStr = ((faction.leader != null) ? faction.leader.gender.GetPossessive() : "");
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "leaderObjective":
+					resolvedStr = ((faction.leader != null) ? faction.leader.gender.GetObjective() : "");
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "leaderPronoun":
+					resolvedStr = ((faction.leader != null) ? faction.leader.gender.GetPronoun() : "");
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
 				default:
 					resolvedStr = "";
 					return false;
@@ -673,6 +689,30 @@ namespace Verse
 					return false;
 				}
 			}
+			RoyalTitle royalTitle = obj as RoyalTitle;
+			if (royalTitle != null)
+			{
+				if (subSymbol == null || subSymbol.Length != 0)
+				{
+					if (!(subSymbol == "label"))
+					{
+						if (subSymbol == "indefinite")
+						{
+							resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticlePostProcessed(royalTitle.Label);
+							EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+							return true;
+						}
+						resolvedStr = "";
+						return false;
+					}
+					resolvedStr = royalTitle.Label;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				}
+				resolvedStr = royalTitle.Label;
+				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+				return true;
+			}
 			string text2 = obj as string;
 			if (text2 != null)
 			{
@@ -724,19 +764,24 @@ namespace Verse
 			}
 			if (obj is int || obj is long)
 			{
-				int number = (int)((obj is int) ? ((int)obj) : ((long)obj));
+				int num = (int)((obj is int) ? ((int)obj) : ((long)obj));
 				if (subSymbol == null || subSymbol.Length != 0)
 				{
-					if (subSymbol == "ordinal")
+					if (!(subSymbol == "ordinal"))
 					{
-						resolvedStr = Find.ActiveLanguageWorker.OrdinalNumber(number).ToString();
-						EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-						return true;
+						if (subSymbol == "multiple")
+						{
+							resolvedStr = ResolveMultipleSymbol(num, symbolArgs, fullStringForReference);
+							return true;
+						}
+						resolvedStr = "";
+						return false;
 					}
-					resolvedStr = "";
-					return false;
+					resolvedStr = Find.ActiveLanguageWorker.OrdinalNumber(num).ToString();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
 				}
-				resolvedStr = number.ToString();
+				resolvedStr = num.ToString();
 				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 				return true;
 			}
@@ -779,29 +824,21 @@ namespace Verse
 			switch (GetArgsCount(args))
 			{
 			case 2:
-				switch (gender)
+				return gender switch
 				{
-				case Gender.Male:
-					return GetArg(args, 0);
-				case Gender.Female:
-					return GetArg(args, 1);
-				case Gender.None:
-					return GetArg(args, 0);
-				default:
-					return "";
-				}
+					Gender.Male => GetArg(args, 0), 
+					Gender.Female => GetArg(args, 1), 
+					Gender.None => GetArg(args, 0), 
+					_ => "", 
+				};
 			case 3:
-				switch (gender)
+				return gender switch
 				{
-				case Gender.Male:
-					return GetArg(args, 0);
-				case Gender.Female:
-					return GetArg(args, 1);
-				case Gender.None:
-					return GetArg(args, 2);
-				default:
-					return "";
-				}
+					Gender.Male => GetArg(args, 0), 
+					Gender.Female => GetArg(args, 1), 
+					Gender.None => GetArg(args, 2), 
+					_ => "", 
+				};
 			default:
 				Log.ErrorOnce("Invalid args count in \"" + fullStringForReference + "\" for symbol \"gender\".", args.GetHashCode() ^ fullStringForReference.GetHashCode() ^ 0x2EF21A43);
 				return "";
@@ -819,6 +856,20 @@ namespace Verse
 				return GetArg(args, 1);
 			}
 			Log.ErrorOnce("Invalid args count in \"" + fullStringForReference + "\" for symbol \"humanlike\".", args.GetHashCode() ^ fullStringForReference.GetHashCode() ^ 0x355A4AD5);
+			return "";
+		}
+
+		private static string ResolveMultipleSymbol(int count, string args, string fullStringForReference)
+		{
+			if (GetArgsCount(args) == 2)
+			{
+				if (count > 1)
+				{
+					return GetArg(args, 0);
+				}
+				return GetArg(args, 1);
+			}
+			Log.ErrorOnce("Invalid args count in \"" + fullStringForReference + "\" for symbol \"multiple\".", args.GetHashCode() ^ fullStringForReference.GetHashCode() ^ 0xDC89D8D);
 			return "";
 		}
 

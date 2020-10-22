@@ -1,8 +1,8 @@
-using Ionic.Crc;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Ionic.Crc;
 
 namespace Ionic.Zlib
 {
@@ -155,28 +155,24 @@ namespace Ionic.Zlib
 			_z.NextIn = offset;
 			_z.AvailableBytesIn = count;
 			bool flag = false;
-			while (true)
+			do
 			{
 				_z.OutputBuffer = workingBuffer;
 				_z.NextOut = 0;
 				_z.AvailableBytesOut = _workingBuffer.Length;
-				int num = _wantCompress ? _z.Deflate(_flushMode) : _z.Inflate(_flushMode);
+				int num = (_wantCompress ? _z.Deflate(_flushMode) : _z.Inflate(_flushMode));
 				if (num != 0 && num != 1)
 				{
-					break;
+					throw new ZlibException((_wantCompress ? "de" : "in") + "flating: " + _z.Message);
 				}
 				_stream.Write(_workingBuffer, 0, _workingBuffer.Length - _z.AvailableBytesOut);
-				flag = (_z.AvailableBytesIn == 0 && _z.AvailableBytesOut != 0);
+				flag = _z.AvailableBytesIn == 0 && _z.AvailableBytesOut != 0;
 				if (_flavor == ZlibStreamFlavor.GZIP && !_wantCompress)
 				{
-					flag = (_z.AvailableBytesIn == 8 && _z.AvailableBytesOut != 0);
-				}
-				if (flag)
-				{
-					return;
+					flag = _z.AvailableBytesIn == 8 && _z.AvailableBytesOut != 0;
 				}
 			}
-			throw new ZlibException((_wantCompress ? "de" : "in") + "flating: " + _z.Message);
+			while (!flag);
 		}
 
 		private void finish()
@@ -193,7 +189,7 @@ namespace Ionic.Zlib
 					_z.OutputBuffer = workingBuffer;
 					_z.NextOut = 0;
 					_z.AvailableBytesOut = _workingBuffer.Length;
-					int num = _wantCompress ? _z.Deflate(FlushType.Finish) : _z.Inflate(FlushType.Finish);
+					int num = (_wantCompress ? _z.Deflate(FlushType.Finish) : _z.Inflate(FlushType.Finish));
 					if (num != 1 && num != 0)
 					{
 						string text = (_wantCompress ? "de" : "in") + "flating";
@@ -207,10 +203,10 @@ namespace Ionic.Zlib
 					{
 						_stream.Write(_workingBuffer, 0, _workingBuffer.Length - _z.AvailableBytesOut);
 					}
-					flag = (_z.AvailableBytesIn == 0 && _z.AvailableBytesOut != 0);
+					flag = _z.AvailableBytesIn == 0 && _z.AvailableBytesOut != 0;
 					if (_flavor == ZlibStreamFlavor.GZIP && !_wantCompress)
 					{
-						flag = (_z.AvailableBytesIn == 8 && _z.AvailableBytesOut != 0);
+						flag = _z.AvailableBytesIn == 8 && _z.AvailableBytesOut != 0;
 					}
 				}
 				while (!flag);
@@ -223,7 +219,7 @@ namespace Ionic.Zlib
 					}
 					int crc32Result = crc.Crc32Result;
 					_stream.Write(BitConverter.GetBytes(crc32Result), 0, 4);
-					int value = (int)(crc.TotalBytesRead & uint.MaxValue);
+					int value = (int)(crc.TotalBytesRead & 0xFFFFFFFFu);
 					_stream.Write(BitConverter.GetBytes(value), 0, 4);
 				}
 			}
@@ -259,7 +255,7 @@ namespace Ionic.Zlib
 				int num4 = BitConverter.ToInt32(array, 0);
 				int crc32Result2 = crc.Crc32Result;
 				int num5 = BitConverter.ToInt32(array, 4);
-				int num6 = (int)(_z.TotalBytesOut & uint.MaxValue);
+				int num6 = (int)(_z.TotalBytesOut & 0xFFFFFFFFu);
 				if (crc32Result2 != num4)
 				{
 					throw new ZlibException($"Bad CRC32 in GZIP trailer. (actual({crc32Result2:X8})!=expected({num4:X8}))");
@@ -515,36 +511,32 @@ namespace Ionic.Zlib
 		{
 			byte[] array = new byte[1024];
 			Encoding uTF = Encoding.UTF8;
-			using (MemoryStream memoryStream = new MemoryStream())
+			using MemoryStream memoryStream = new MemoryStream();
+			using (decompressor)
 			{
-				using (decompressor)
+				int count;
+				while ((count = decompressor.Read(array, 0, array.Length)) != 0)
 				{
-					int count;
-					while ((count = decompressor.Read(array, 0, array.Length)) != 0)
-					{
-						memoryStream.Write(array, 0, count);
-					}
+					memoryStream.Write(array, 0, count);
 				}
-				memoryStream.Seek(0L, SeekOrigin.Begin);
-				return new StreamReader(memoryStream, uTF).ReadToEnd();
 			}
+			memoryStream.Seek(0L, SeekOrigin.Begin);
+			return new StreamReader(memoryStream, uTF).ReadToEnd();
 		}
 
 		public static byte[] UncompressBuffer(byte[] compressed, Stream decompressor)
 		{
 			byte[] array = new byte[1024];
-			using (MemoryStream memoryStream = new MemoryStream())
+			using MemoryStream memoryStream = new MemoryStream();
+			using (decompressor)
 			{
-				using (decompressor)
+				int count;
+				while ((count = decompressor.Read(array, 0, array.Length)) != 0)
 				{
-					int count;
-					while ((count = decompressor.Read(array, 0, array.Length)) != 0)
-					{
-						memoryStream.Write(array, 0, count);
-					}
+					memoryStream.Write(array, 0, count);
 				}
-				return memoryStream.ToArray();
 			}
+			return memoryStream.ToArray();
 		}
 	}
 }

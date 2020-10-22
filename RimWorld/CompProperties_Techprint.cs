@@ -24,11 +24,11 @@ namespace RimWorld
 			{
 				ThingDef def;
 				RecipeDef recipeDef;
-				if ((def = (unlockedDefs[i] as ThingDef)) != null)
+				if ((def = unlockedDefs[i] as ThingDef) != null)
 				{
 					parentDef.descriptionHyperlinks.Add(def);
 				}
-				else if ((recipeDef = (unlockedDefs[i] as RecipeDef)) != null && !recipeDef.products.NullOrEmpty())
+				else if ((recipeDef = unlockedDefs[i] as RecipeDef) != null && !recipeDef.products.NullOrEmpty())
 				{
 					for (int j = 0; j < recipeDef.products.Count; j++)
 					{

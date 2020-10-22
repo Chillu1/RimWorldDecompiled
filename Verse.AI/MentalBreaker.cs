@@ -1,9 +1,9 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
+using RimWorld.Planet;
 
 namespace Verse.AI
 {
@@ -123,11 +123,10 @@ namespace Verse.AI
 		{
 			get
 			{
-				MentalBreaker mentalBreaker = this;
 				MentalBreakIntensity intensity;
 				for (intensity = CurrentDesiredMoodBreakIntensity; intensity != 0; intensity--)
 				{
-					IEnumerable<MentalBreakDef> enumerable = DefDatabase<MentalBreakDef>.AllDefsListForReading.Where((MentalBreakDef d) => d.intensity == intensity && d.Worker.BreakCanOccur(mentalBreaker.pawn));
+					IEnumerable<MentalBreakDef> enumerable = DefDatabase<MentalBreakDef>.AllDefsListForReading.Where((MentalBreakDef d) => d.intensity == intensity && d.Worker.BreakCanOccur(pawn));
 					bool flag = false;
 					foreach (MentalBreakDef item in enumerable)
 					{
@@ -264,7 +263,7 @@ namespace Verse.AI
 			{
 				return false;
 			}
-			if (!CurrentPossibleMoodBreaks.TryRandomElementByWeight((MentalBreakDef d) => d.Worker.CommonalityFor(pawn, moodCaused: true), out MentalBreakDef result))
+			if (!CurrentPossibleMoodBreaks.TryRandomElementByWeight((MentalBreakDef d) => d.Worker.CommonalityFor(pawn, moodCaused: true), out var result))
 			{
 				return false;
 			}
@@ -303,17 +302,13 @@ namespace Verse.AI
 
 		public float MentalBreakThresholdFor(MentalBreakIntensity intensity)
 		{
-			switch (intensity)
+			return intensity switch
 			{
-			case MentalBreakIntensity.Extreme:
-				return BreakThresholdExtreme;
-			case MentalBreakIntensity.Major:
-				return BreakThresholdMajor;
-			case MentalBreakIntensity.Minor:
-				return BreakThresholdMinor;
-			default:
-				throw new NotImplementedException();
-			}
+				MentalBreakIntensity.Extreme => BreakThresholdExtreme, 
+				MentalBreakIntensity.Major => BreakThresholdMajor, 
+				MentalBreakIntensity.Minor => BreakThresholdMinor, 
+				_ => throw new NotImplementedException(), 
+			};
 		}
 
 		internal string DebugString()

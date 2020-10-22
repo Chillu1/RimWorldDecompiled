@@ -8,7 +8,7 @@ namespace RimWorld
 	{
 		protected override IntVec3 GetExactWanderDest(Pawn pawn)
 		{
-			if (!GatheringsUtility.TryFindRandomCellInGatheringArea(pawn, out IntVec3 result))
+			if (!GatheringsUtility.TryFindRandomCellInGatheringArea(pawn, out var result))
 			{
 				return IntVec3.Invalid;
 			}

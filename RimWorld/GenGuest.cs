@@ -26,7 +26,7 @@ namespace RimWorld
 			else
 			{
 				p.guest.Released = true;
-				if (RCellFinder.TryFindBestExitSpot(p, out IntVec3 spot))
+				if (RCellFinder.TryFindBestExitSpot(p, out var spot))
 				{
 					Job job = JobMaker.MakeJob(JobDefOf.Goto, spot);
 					job.exitMapOnArrival = true;

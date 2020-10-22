@@ -25,7 +25,7 @@ namespace RimWorld.QuestGen
 			if (!value.EnumerableNullOrEmpty())
 			{
 				QuestPart_DisableRandomMoodCausedMentalBreaks questPart_DisableRandomMoodCausedMentalBreaks = new QuestPart_DisableRandomMoodCausedMentalBreaks();
-				questPart_DisableRandomMoodCausedMentalBreaks.inSignalEnable = (QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? slate.Get<string>("inSignal"));
+				questPart_DisableRandomMoodCausedMentalBreaks.inSignalEnable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? slate.Get<string>("inSignal");
 				questPart_DisableRandomMoodCausedMentalBreaks.inSignalDisable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalDisable.GetValue(slate));
 				questPart_DisableRandomMoodCausedMentalBreaks.pawns.AddRange(value);
 				QuestGen.quest.AddPart(questPart_DisableRandomMoodCausedMentalBreaks);

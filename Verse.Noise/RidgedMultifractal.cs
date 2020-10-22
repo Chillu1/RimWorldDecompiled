@@ -119,7 +119,7 @@ namespace Verse.Noise
 				double x2 = Utils.MakeInt32Range(x);
 				double y2 = Utils.MakeInt32Range(y);
 				double z2 = Utils.MakeInt32Range(z);
-				long num6 = (seed + i) & int.MaxValue;
+				long num6 = (seed + i) & 0x7FFFFFFF;
 				num = Utils.GradientCoherentNoise3D(x2, y2, z2, num6, quality);
 				num = Math.Abs(num);
 				num = num4 - num;

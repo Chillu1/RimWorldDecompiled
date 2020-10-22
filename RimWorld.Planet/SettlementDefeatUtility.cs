@@ -17,8 +17,15 @@ namespace RimWorld.Planet
 			{
 				return;
 			}
+			DestroyedSettlement destroyedSettlement = (DestroyedSettlement)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.DestroyedSettlement);
+			destroyedSettlement.Tile = factionBase.Tile;
+			destroyedSettlement.SetFaction(factionBase.Faction);
+			Find.WorldObjects.Add(destroyedSettlement);
+			TimedDetectionRaids component = destroyedSettlement.GetComponent<TimedDetectionRaids>();
+			component.CopyFrom(factionBase.GetComponent<TimedDetectionRaids>());
+			component.SetNotifiedSilently();
 			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.Append("LetterFactionBaseDefeated".Translate(factionBase.Label, TimedForcedExit.GetForceExitAndRemoveMapCountdownTimeLeftString(60000)));
+			stringBuilder.Append("LetterFactionBaseDefeated".Translate(factionBase.Label, component.DetectionCountdownTimeLeftString));
 			if (!HasAnyOtherBase(factionBase))
 			{
 				factionBase.Faction.defeated = true;
@@ -28,7 +35,7 @@ namespace RimWorld.Planet
 			}
 			foreach (Faction allFaction in Find.FactionManager.AllFactions)
 			{
-				if (!allFaction.def.hidden && !allFaction.IsPlayer && allFaction != factionBase.Faction && allFaction.HostileTo(factionBase.Faction))
+				if (!allFaction.Hidden && !allFaction.IsPlayer && allFaction != factionBase.Faction && allFaction.HostileTo(factionBase.Faction))
 				{
 					FactionRelationKind playerRelationKind = allFaction.PlayerRelationKind;
 					if (allFaction.TryAffectGoodwillWith(Faction.OfPlayer, 20, canSendMessage: false, canSendHostilityLetter: false))
@@ -41,12 +48,8 @@ namespace RimWorld.Planet
 				}
 			}
 			Find.LetterStack.ReceiveLetter("LetterLabelFactionBaseDefeated".Translate(), stringBuilder.ToString(), LetterDefOf.PositiveEvent, new GlobalTargetInfo(factionBase.Tile), factionBase.Faction);
-			DestroyedSettlement destroyedSettlement = (DestroyedSettlement)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.DestroyedSettlement);
-			destroyedSettlement.Tile = factionBase.Tile;
-			Find.WorldObjects.Add(destroyedSettlement);
 			map.info.parent = destroyedSettlement;
 			factionBase.Destroy();
-			destroyedSettlement.GetComponent<TimedForcedExit>().StartForceExitAndRemoveMapCountdown();
 			TaleRecorder.RecordTale(TaleDefOf.CaravanAssaultSuccessful, map.mapPawns.FreeColonists.RandomElement());
 		}
 

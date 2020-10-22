@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using UnityEngine;
 using Verse;
 
@@ -45,6 +44,10 @@ namespace RimWorld
 			}
 		}
 
+		protected virtual void GenerateRaidLoot(IncidentParms parms, float raidLootPoints, List<Pawn> pawns)
+		{
+		}
+
 		protected override bool TryExecuteWorker(IncidentParms parms)
 		{
 			ResolveRaidPoints(parms);
@@ -60,6 +63,7 @@ namespace RimWorld
 			{
 				return false;
 			}
+			float points = parms.points;
 			parms.points = AdjustedRaidPoints(parms.points, parms.raidArrivalMode, parms.raidStrategy, parms.faction, combat);
 			List<Pawn> list = parms.raidStrategy.Worker.SpawnThreats(parms);
 			if (list == null)
@@ -72,13 +76,7 @@ namespace RimWorld
 				}
 				parms.raidArrivalMode.Worker.Arrive(list, parms);
 			}
-			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.AppendLine("Points = " + parms.points.ToString("F0"));
-			foreach (Pawn item in list)
-			{
-				string str = (item.equipment != null && item.equipment.Primary != null) ? item.equipment.Primary.LabelCap : "unarmed";
-				stringBuilder.AppendLine(item.KindLabel + " - " + str);
-			}
+			GenerateRaidLoot(parms, points, list);
 			TaggedString letterLabel = GetLetterLabel(parms);
 			TaggedString letterText = GetLetterText(parms, list);
 			PawnRelationUtility.Notify_PawnsSeenByPlayer_Letter(list, ref letterLabel, ref letterText, GetRelatedPawnsInfoLetterText(parms), informEvenIfSeenBefore: true);
@@ -101,9 +99,9 @@ namespace RimWorld
 			}
 			else if (list.Any())
 			{
-				foreach (Pawn item2 in list)
+				foreach (Pawn item in list)
 				{
-					list2.Add(item2);
+					list2.Add(item);
 				}
 			}
 			SendStandardLetter(letterLabel, letterText, GetLetterDef(), parms, list2);

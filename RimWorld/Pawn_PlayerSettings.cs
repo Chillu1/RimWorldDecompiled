@@ -210,7 +210,7 @@ namespace RimWorld
 			command_Toggle.defaultDesc = "CommandReleaseAnimalsDesc".Translate();
 			command_Toggle.icon = TexCommand.ReleaseAnimals;
 			command_Toggle.hotKey = KeyBindingDefOf.Misc7;
-			command_Toggle.isActive = (() => animalsReleased);
+			command_Toggle.isActive = () => animalsReleased;
 			command_Toggle.toggleAction = delegate
 			{
 				animalsReleased = !animalsReleased;

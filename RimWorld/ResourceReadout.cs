@@ -30,7 +30,7 @@ namespace RimWorld
 			{
 				GenUI.DrawTextWinterShadow(new Rect(256f, 512f, -256f, -512f));
 				Text.Font = GameFont.Small;
-				Rect rect = Prefs.ResourceReadoutCategorized ? new Rect(2f, 7f, 124f, (float)(UI.screenHeight - 7) - 200f) : new Rect(7f, 7f, 110f, (float)(UI.screenHeight - 7) - 200f);
+				Rect rect = (Prefs.ResourceReadoutCategorized ? new Rect(2f, 7f, 124f, (float)(UI.screenHeight - 7) - 200f) : new Rect(7f, 7f, 110f, (float)(UI.screenHeight - 7) - 200f));
 				Rect rect2 = new Rect(0f, 0f, rect.width, lastDrawnHeight);
 				bool num = rect2.height > rect.height;
 				if (num)

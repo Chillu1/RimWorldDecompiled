@@ -295,7 +295,7 @@ namespace RimWorld
 				return "";
 			}
 			InitPriceDataIfNeeded();
-			string text = (action == TradeAction.PlayerBuys) ? "BuyPriceDesc".Translate() : "SellPriceDesc".Translate();
+			string text = ((action == TradeAction.PlayerBuys) ? "BuyPriceDesc".Translate() : "SellPriceDesc".Translate());
 			if (TradeSession.TradeCurrency != 0)
 			{
 				return text;
@@ -309,9 +309,9 @@ namespace RimWorld
 				{
 					text += "\n  x " + priceFactorBuy_TraderPriceType.ToString("F2") + " (" + "TraderTypePrice".Translate() + ")";
 				}
-				if (Find.Storyteller.difficulty.tradePriceFactorLoss != 0f)
+				if (Find.Storyteller.difficultyValues.tradePriceFactorLoss != 0f)
 				{
-					text += "\n  x " + (1f + Find.Storyteller.difficulty.tradePriceFactorLoss).ToString("F2") + " (" + "DifficultyLevel".Translate() + ")";
+					text += "\n  x " + (1f + Find.Storyteller.difficultyValues.tradePriceFactorLoss).ToString("F2") + " (" + "DifficultyLevel".Translate() + ")";
 				}
 				text += "\n";
 				text += "\n" + "YourNegotiatorBonus".Translate() + ": -" + priceGain_PlayerNegotiator.ToStringPercent();
@@ -331,9 +331,9 @@ namespace RimWorld
 				{
 					text += "\n  x " + priceFactorSell_ItemSellPriceFactor.ToString("F2") + " (" + "ItemSellPriceFactor".Translate() + ")";
 				}
-				if (Find.Storyteller.difficulty.tradePriceFactorLoss != 0f)
+				if (Find.Storyteller.difficultyValues.tradePriceFactorLoss != 0f)
 				{
-					text += "\n  x " + (1f - Find.Storyteller.difficulty.tradePriceFactorLoss).ToString("F2") + " (" + "DifficultyLevel".Translate() + ")";
+					text += "\n  x " + (1f - Find.Storyteller.difficultyValues.tradePriceFactorLoss).ToString("F2") + " (" + "DifficultyLevel".Translate() + ")";
 				}
 				text += "\n";
 				text += "\n" + "YourNegotiatorBonus".Translate() + ": " + priceGain_PlayerNegotiator.ToStringPercent();
@@ -454,7 +454,7 @@ namespace RimWorld
 				MinifiedThing minifiedThing = boughtThing as MinifiedThing;
 				if (minifiedThing != null)
 				{
-					building = (minifiedThing.InnerThing as Building);
+					building = minifiedThing.InnerThing as Building;
 				}
 			}
 			if (building != null && building.def.building != null && building.def.building.boughtConceptLearnOpportunity != null)

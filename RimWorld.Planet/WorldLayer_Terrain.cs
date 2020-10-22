@@ -41,7 +41,7 @@ namespace RimWorld.Planet
 				}
 				int count = subMesh.verts.Count;
 				int num2 = 0;
-				int num3 = (i + 1 < tileIDToVerts_offsets.Count) ? tileIDToVerts_offsets[i + 1] : verts.Count;
+				int num3 = ((i + 1 < tileIDToVerts_offsets.Count) ? tileIDToVerts_offsets[i + 1] : verts.Count);
 				for (int j = tileIDToVerts_offsets[i]; j < num3; j++)
 				{
 					subMesh.verts.Add(verts[j]);
@@ -111,8 +111,8 @@ namespace RimWorld.Planet
 			{
 				Tile tile = tiles[i];
 				float elevation = tile.elevation;
-				int num = (i + 1 < tileIDToNeighbors_offsets.Count) ? tileIDToNeighbors_offsets[i + 1] : tileIDToNeighbors_values.Count;
-				int num2 = (i + 1 < tilesCount) ? tileIDToVerts_offsets[i + 1] : verts.Count;
+				int num = ((i + 1 < tileIDToNeighbors_offsets.Count) ? tileIDToNeighbors_offsets[i + 1] : tileIDToNeighbors_values.Count);
+				int num2 = ((i + 1 < tilesCount) ? tileIDToVerts_offsets[i + 1] : verts.Count);
 				for (int j = tileIDToVerts_offsets[i]; j < num2; j++)
 				{
 					Vector3 item = default(Vector3);
@@ -120,7 +120,7 @@ namespace RimWorld.Planet
 					bool flag = false;
 					for (int k = tileIDToNeighbors_offsets[i]; k < num; k++)
 					{
-						int num3 = (tileIDToNeighbors_values[k] + 1 < tileIDToVerts_offsets.Count) ? tileIDToVerts_offsets[tileIDToNeighbors_values[k] + 1] : verts.Count;
+						int num3 = ((tileIDToNeighbors_values[k] + 1 < tileIDToVerts_offsets.Count) ? tileIDToVerts_offsets[tileIDToNeighbors_values[k] + 1] : verts.Count);
 						for (int l = tileIDToVerts_offsets[tileIDToNeighbors_values[k]]; l < num3; l++)
 						{
 							if (!(verts[l] == verts[j]))

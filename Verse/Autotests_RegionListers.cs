@@ -69,7 +69,7 @@ namespace Verse
 		{
 			foreach (Region allRegion in map.regionGrid.AllRegions)
 			{
-				if (!expectedListers.TryGetValue(allRegion, out List<Thing> value))
+				if (!expectedListers.TryGetValue(allRegion, out var value))
 				{
 					value = null;
 				}
@@ -99,7 +99,7 @@ namespace Verse
 				for (int j = 0; j < tmpTouchableRegions.Count; j++)
 				{
 					Region key = tmpTouchableRegions[j];
-					if (!expectedListers.TryGetValue(key, out List<Thing> value))
+					if (!expectedListers.TryGetValue(key, out var value))
 					{
 						value = new List<Thing>();
 						expectedListers.Add(key, value);

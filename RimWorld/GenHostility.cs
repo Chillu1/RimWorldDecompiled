@@ -12,6 +12,10 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if ((a.Faction == null && a.TryGetComp<CompCauseGameCondition>() != null) || (b.Faction == null && b.TryGetComp<CompCauseGameCondition>() != null))
+			{
+				return true;
+			}
 			Pawn pawn = a as Pawn;
 			Pawn pawn2 = b as Pawn;
 			if ((pawn != null && pawn.MentalState != null && pawn.MentalState.ForceHostileTo(b)) || (pawn2 != null && pawn2.MentalState != null && pawn2.MentalState.ForceHostileTo(a)))
@@ -100,6 +104,10 @@ namespace RimWorld
 					return true;
 				}
 			}
+			else if (t.Faction == null && t.TryGetComp<CompCauseGameCondition>() != null)
+			{
+				return true;
+			}
 			if (t.Faction == null)
 			{
 				return false;
@@ -159,22 +167,31 @@ namespace RimWorld
 
 		public static bool AnyHostileActiveThreatTo(Map map, Faction faction, bool countDormantPawnsAsHostile = false)
 		{
+			IAttackTarget threat;
+			return AnyHostileActiveThreatTo(map, faction, out threat, countDormantPawnsAsHostile);
+		}
+
+		public static bool AnyHostileActiveThreatTo(Map map, Faction faction, out IAttackTarget threat, bool countDormantPawnsAsHostile = false)
+		{
 			foreach (IAttackTarget item in map.attackTargetsCache.TargetsHostileToFaction(faction))
 			{
 				if (IsActiveThreatTo(item, faction))
 				{
+					threat = item;
 					return true;
 				}
 				Pawn pawn;
-				if (countDormantPawnsAsHostile && item.Thing.HostileTo(faction) && !item.Thing.Fogged() && !item.ThreatDisabled(null) && (pawn = (item.Thing as Pawn)) != null)
+				if (countDormantPawnsAsHostile && item.Thing.HostileTo(faction) && !item.Thing.Fogged() && !item.ThreatDisabled(null) && (pawn = item.Thing as Pawn) != null)
 				{
 					CompCanBeDormant comp = pawn.GetComp<CompCanBeDormant>();
 					if (comp != null && !comp.Awake)
 					{
+						threat = item;
 						return true;
 					}
 				}
 			}
+			threat = null;
 			return false;
 		}
 
@@ -223,7 +240,7 @@ namespace RimWorld
 			}
 			if (target.Thing.Spawned)
 			{
-				TraverseParms traverseParms = (pawn2 != null) ? TraverseParms.For(pawn2) : TraverseParms.For(TraverseMode.PassDoors);
+				TraverseParms traverseParms = ((pawn2 != null) ? TraverseParms.For(pawn2) : TraverseParms.For(TraverseMode.PassDoors));
 				if (!target.Thing.Map.reachability.CanReachUnfogged(target.Thing.Position, traverseParms))
 				{
 					return false;

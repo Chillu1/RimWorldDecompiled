@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -74,6 +74,11 @@ namespace RimWorld
 			return false;
 		}
 
+		public virtual bool QuestPartReserves(Faction f)
+		{
+			return false;
+		}
+
 		public virtual void Cleanup()
 		{
 		}
@@ -105,6 +110,10 @@ namespace RimWorld
 		}
 
 		public virtual void Notify_PawnKilled(Pawn pawn, DamageInfo? dinfo)
+		{
+		}
+
+		public virtual void Notify_FactionRemoved(Faction faction)
 		{
 		}
 

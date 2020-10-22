@@ -9,7 +9,7 @@ namespace RimWorld
 
 		public override void TransformValue(StatRequest req, ref float val)
 		{
-			if (TryGetValue(req, out float value))
+			if (TryGetValue(req, out var value))
 			{
 				val += value;
 			}
@@ -17,7 +17,7 @@ namespace RimWorld
 
 		public override string ExplanationPart(StatRequest req)
 		{
-			if (TryGetValue(req, out float value) && value != 0f)
+			if (TryGetValue(req, out var value) && value != 0f)
 			{
 				return "StatsReport_AddedBodyPartsMass".Translate() + ": " + value.ToStringMassOffset();
 			}

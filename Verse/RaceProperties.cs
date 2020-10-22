@@ -1,7 +1,7 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -151,29 +151,16 @@ namespace Verse
 
 		public bool EatsFood => foodType != FoodTypeFlags.None;
 
-		public float FoodLevelPercentageWantEat
+		public float FoodLevelPercentageWantEat => ResolvedDietCategory switch
 		{
-			get
-			{
-				switch (ResolvedDietCategory)
-				{
-				case DietCategory.NeverEats:
-					return 0.3f;
-				case DietCategory.Omnivorous:
-					return 0.3f;
-				case DietCategory.Carnivorous:
-					return 0.3f;
-				case DietCategory.Ovivorous:
-					return 0.4f;
-				case DietCategory.Herbivorous:
-					return 0.45f;
-				case DietCategory.Dendrovorous:
-					return 0.45f;
-				default:
-					throw new InvalidOperationException();
-				}
-			}
-		}
+			DietCategory.NeverEats => 0.3f, 
+			DietCategory.Omnivorous => 0.3f, 
+			DietCategory.Carnivorous => 0.3f, 
+			DietCategory.Ovivorous => 0.4f, 
+			DietCategory.Herbivorous => 0.45f, 
+			DietCategory.Dendrovorous => 0.45f, 
+			_ => throw new InvalidOperationException(), 
+		};
 
 		public DietCategory ResolvedDietCategory
 		{

@@ -25,6 +25,14 @@ namespace Verse
 			}
 		}
 
+		public override void CompPostPostRemoved()
+		{
+			if (Props.endMentalStateOnCure && ((base.Pawn.RaceProps.Humanlike && base.Pawn.mindState.mentalStateHandler.CurStateDef == Props.humanMentalState) || (base.Pawn.RaceProps.Animal && (base.Pawn.mindState.mentalStateHandler.CurStateDef == Props.animalMentalState || base.Pawn.mindState.mentalStateHandler.CurStateDef == Props.animalMentalStateAlias))) && !base.Pawn.mindState.mentalStateHandler.CurState.causedByMood)
+			{
+				base.Pawn.mindState.mentalStateHandler.CurState.RecoverFromState();
+			}
+		}
+
 		private void SendLetter(MentalStateDef mentalStateDef)
 		{
 			Find.LetterStack.ReceiveLetter((mentalStateDef.beginLetterLabel ?? ((string)mentalStateDef.LabelCap)).CapitalizeFirst() + ": " + base.Pawn.LabelShortCap, base.Pawn.mindState.mentalStateHandler.CurState.GetBeginLetterText() + "\n\n" + "CausedByHediff".Translate(parent.LabelCap), Props.letterDef, base.Pawn);

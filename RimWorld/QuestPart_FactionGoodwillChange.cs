@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -56,7 +56,7 @@ namespace RimWorld
 			if (signal.tag == inSignal && faction != null && faction != Faction.OfPlayer)
 			{
 				LookTargets lookTargets;
-				GlobalTargetInfo value = lookTarget.IsValid ? lookTarget : ((!getLookTargetFromSignal) ? GlobalTargetInfo.Invalid : ((!SignalArgsUtility.TryGetLookTargets(signal.args, "SUBJECT", out lookTargets)) ? GlobalTargetInfo.Invalid : lookTargets.TryGetPrimaryTarget()));
+				GlobalTargetInfo value = (lookTarget.IsValid ? lookTarget : ((!getLookTargetFromSignal) ? GlobalTargetInfo.Invalid : ((!SignalArgsUtility.TryGetLookTargets(signal.args, "SUBJECT", out lookTargets)) ? GlobalTargetInfo.Invalid : lookTargets.TryGetPrimaryTarget())));
 				FactionRelationKind playerRelationKind = faction.PlayerRelationKind;
 				int arg = 0;
 				if (!signal.args.TryGetArg("GOODWILL", out arg))

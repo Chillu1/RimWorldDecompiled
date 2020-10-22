@@ -1,5 +1,6 @@
-using RimWorld;
+using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -8,7 +9,13 @@ namespace Verse
 	{
 		private Vector3 clickPos;
 
-		public const int RevalidateEveryFrame = 3;
+		private static Dictionary<Vector3, List<FloatMenuOption>> cachedChoices = new Dictionary<Vector3, List<FloatMenuOption>>();
+
+		private List<FloatMenuOption> lastOptionsForRevalidation;
+
+		private int nextOptionToRevalidate;
+
+		public const int RevalidateEveryFrame = 4;
 
 		public FloatMenuMap(List<FloatMenuOption> options, string title, Vector3 clickPos)
 			: base(options, title)
@@ -18,36 +25,60 @@ namespace Verse
 
 		public override void DoWindowContents(Rect inRect)
 		{
-			Pawn pawn = Find.Selector.SingleSelectedThing as Pawn;
-			if (pawn == null)
+			Pawn selPawn = Find.Selector.SingleSelectedThing as Pawn;
+			if (selPawn == null)
 			{
 				Find.WindowStack.TryRemove(this);
 				return;
 			}
-			if (Time.frameCount % 3 == 0)
+			bool flag = options.Count >= 3;
+			if (Time.frameCount % 4 == 0 || lastOptionsForRevalidation == null)
 			{
-				List<FloatMenuOption> list = FloatMenuMakerMap.ChoicesAtFor(clickPos, pawn);
-				List<FloatMenuOption> cachedChoices = list;
-				Vector3 cachedChoicesForPos = clickPos;
-				for (int i = 0; i < options.Count; i++)
+				lastOptionsForRevalidation = FloatMenuMakerMap.ChoicesAtFor(clickPos, selPawn);
+				cachedChoices.Clear();
+				cachedChoices.Add(clickPos, lastOptionsForRevalidation);
+				if (!flag)
 				{
-					if (!options[i].Disabled && !StillValid(options[i], list, pawn, ref cachedChoices, ref cachedChoicesForPos))
+					for (int i = 0; i < options.Count; i++)
 					{
-						options[i].Disabled = true;
+						RevalidateOption(options[i]);
 					}
 				}
 			}
+			else if (flag)
+			{
+				if (nextOptionToRevalidate >= options.Count)
+				{
+					nextOptionToRevalidate = 0;
+				}
+				int num = Mathf.CeilToInt((float)options.Count / 3f);
+				int num2 = nextOptionToRevalidate;
+				int num3 = 0;
+				while (num2 < options.Count && num3 < num)
+				{
+					RevalidateOption(options[num2]);
+					nextOptionToRevalidate++;
+					num2++;
+					num3++;
+				}
+			}
 			base.DoWindowContents(inRect);
+			void RevalidateOption(FloatMenuOption option)
+			{
+				if (!option.Disabled && !StillValid(option, lastOptionsForRevalidation, selPawn))
+				{
+					option.Disabled = true;
+				}
+			}
+		}
+
+		[Obsolete("Only need this overload to not break mod compatibility.")]
+		private static bool StillValid(FloatMenuOption opt, List<FloatMenuOption> curOpts, Pawn forPawn, ref List<FloatMenuOption> cachedChoices, ref Vector3 cachedChoicesForPos)
+		{
+			return StillValid(opt, curOpts, forPawn);
 		}
 
 		private static bool StillValid(FloatMenuOption opt, List<FloatMenuOption> curOpts, Pawn forPawn)
-		{
-			List<FloatMenuOption> cachedChoices = null;
-			Vector3 cachedChoicesForPos = new Vector3(-9999f, -9999f, -9999f);
-			return StillValid(opt, curOpts, forPawn, ref cachedChoices, ref cachedChoicesForPos);
-		}
-
-		private static bool StillValid(FloatMenuOption opt, List<FloatMenuOption> curOpts, Pawn forPawn, ref List<FloatMenuOption> cachedChoices, ref Vector3 cachedChoicesForPos)
 		{
 			if (opt.revalidateClickTarget == null)
 			{
@@ -65,23 +96,18 @@ namespace Verse
 				{
 					return false;
 				}
-				Vector3 vector = opt.revalidateClickTarget.Position.ToVector3Shifted();
-				List<FloatMenuOption> list;
-				if (vector == cachedChoicesForPos)
+				Vector3 key = opt.revalidateClickTarget.Position.ToVector3Shifted();
+				if (!cachedChoices.TryGetValue(key, out var value))
 				{
-					list = cachedChoices;
+					List<FloatMenuOption> list = FloatMenuMakerMap.ChoicesAtFor(key, forPawn);
+					cachedChoices.Add(key, list);
+					value = list;
 				}
-				else
+				for (int j = 0; j < value.Count; j++)
 				{
-					cachedChoices = FloatMenuMakerMap.ChoicesAtFor(vector, forPawn);
-					cachedChoicesForPos = vector;
-					list = cachedChoices;
-				}
-				for (int j = 0; j < list.Count; j++)
-				{
-					if (OptionsMatch(opt, list[j]))
+					if (OptionsMatch(opt, value[j]))
 					{
-						return !list[j].Disabled;
+						return !value[j].Disabled;
 					}
 				}
 			}

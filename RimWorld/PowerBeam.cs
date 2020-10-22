@@ -45,7 +45,7 @@ namespace RimWorld
 			tmpThings.AddRange(c.GetThingList(base.Map));
 			for (int i = 0; i < tmpThings.Count; i++)
 			{
-				int num = (tmpThings[i] is Corpse) ? CorpseFlameDamageAmountRange.RandomInRange : FlameDamageAmountRange.RandomInRange;
+				int num = ((tmpThings[i] is Corpse) ? CorpseFlameDamageAmountRange.RandomInRange : FlameDamageAmountRange.RandomInRange);
 				Pawn pawn = tmpThings[i] as Pawn;
 				BattleLogEntry_DamageTaken battleLogEntry_DamageTaken = null;
 				if (pawn != null)

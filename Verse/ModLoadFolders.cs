@@ -1,9 +1,9 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml;
+using RimWorld;
 
 namespace Verse
 {
@@ -100,11 +100,11 @@ namespace Verse
 						{
 							list.Add("ModLoadFolderMalformedVersion".Translate(key));
 						}
-						if (key.Equals("default") && text != null)
+						if (key.Equals("default"))
 						{
-							list.Add("ModLoadFolderOutOfOrderDefault".Translate());
+							list.Add("ModLoadFolderDefaultDeprecated".Translate());
 						}
-						if (text != null && VersionControl.TryParseVersionString(key, out Version version) && VersionControl.TryParseVersionString(text, out Version version2) && version < version2)
+						if (text != null && VersionControl.TryParseVersionString(key, out var version) && VersionControl.TryParseVersionString(text, out var version2) && version < version2)
 						{
 							list.Add("ModLoadFolderOutOfOrder".Translate(key, text));
 						}
@@ -116,7 +116,7 @@ namespace Verse
 								list.Add("ModLoadFolderDoesntExist".Translate(loadFolder.folderName, key));
 							}
 						}
-						if (VersionControl.TryParseVersionString(key, out Version version3) && !mod.SupportedVersionsReadOnly.Contains(version3))
+						if (VersionControl.TryParseVersionString(key, out var version3) && !mod.SupportedVersionsReadOnly.Contains(version3))
 						{
 							list.Add("ModLoadFolderDefinesUnsupportedGameVersion".Translate(key));
 						}

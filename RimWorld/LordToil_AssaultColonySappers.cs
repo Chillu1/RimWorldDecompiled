@@ -77,7 +77,7 @@ namespace RimWorld
 				}
 				else if (!list.NullOrEmpty())
 				{
-					float radius = (pawn3.equipment == null || pawn3.equipment.Primary == null || !pawn3.equipment.Primary.def.IsRangedWeapon) ? EscortRadiusMelee.RandomInRange : EscortRadiusRanged.RandomInRange;
+					float radius = ((pawn3.equipment == null || pawn3.equipment.Primary == null || !pawn3.equipment.Primary.def.IsRangedWeapon) ? EscortRadiusMelee.RandomInRange : EscortRadiusRanged.RandomInRange);
 					pawn3.mindState.duty = new PawnDuty(DutyDefOf.Escort, list.RandomElement(), radius);
 				}
 				else

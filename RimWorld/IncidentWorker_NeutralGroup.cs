@@ -10,7 +10,7 @@ namespace RimWorld
 
 		protected override bool FactionCanBeGroupSource(Faction f, Map map, bool desperate = false)
 		{
-			if (base.FactionCanBeGroupSource(f, map, desperate) && !f.def.hidden && !f.HostileTo(Faction.OfPlayer) && f.def.pawnGroupMakers != null && f.def.pawnGroupMakers.Any((PawnGroupMaker x) => x.kindDef == PawnGroupKindDef))
+			if (base.FactionCanBeGroupSource(f, map, desperate) && !f.Hidden && !f.HostileTo(Faction.OfPlayer) && f.def.pawnGroupMakers != null && f.def.pawnGroupMakers.Any((PawnGroupMaker x) => x.kindDef == PawnGroupKindDef))
 			{
 				return !NeutralGroupIncidentUtility.AnyBlockingHostileLord(map, f);
 			}

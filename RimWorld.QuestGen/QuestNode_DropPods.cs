@@ -45,7 +45,7 @@ namespace RimWorld.QuestGen
 				return;
 			}
 			QuestPart_DropPods dropPods = new QuestPart_DropPods();
-			dropPods.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			dropPods.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			if (!customLetterLabel.GetValue(slate).NullOrEmpty() || customLetterLabelRules.GetValue(slate) != null)
 			{
 				QuestGen.AddTextRequest("root", delegate(string x)
@@ -60,7 +60,7 @@ namespace RimWorld.QuestGen
 					dropPods.customLetterText = x;
 				}, QuestGenUtility.MergeRules(customLetterTextRules.GetValue(slate), customLetterText.GetValue(slate), "root"));
 			}
-			dropPods.sendStandardLetter = (sendStandardLetter.GetValue(slate) ?? dropPods.sendStandardLetter);
+			dropPods.sendStandardLetter = sendStandardLetter.GetValue(slate) ?? dropPods.sendStandardLetter;
 			dropPods.useTradeDropSpot = useTradeDropSpot.GetValue(slate);
 			dropPods.joinPlayer = joinPlayer.GetValue(slate);
 			dropPods.makePrisoners = makePrisoners.GetValue(slate);

@@ -1,8 +1,9 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
+using Verse.Sound;
 
 namespace RimWorld
 {
@@ -94,6 +95,7 @@ namespace RimWorld
 					compHibernatable.Startup();
 				}
 			}
+			SoundDefOf.ShipReactor_Startup.PlayOneShot(SoundInfo.InMap(rootBuilding));
 		}
 
 		public static List<Building> ShipBuildingsAttachedTo(Building root)
@@ -124,8 +126,7 @@ namespace RimWorld
 
 		public static IEnumerable<Gizmo> ShipStartupGizmos(Building building)
 		{
-			Building building2 = building;
-			if (!HasHibernatingParts(building2))
+			if (!HasHibernatingParts(building))
 			{
 				yield break;
 			}
@@ -133,11 +134,11 @@ namespace RimWorld
 			command_Action.action = delegate
 			{
 				string text = "HibernateWarning";
-				if (building2.Map.info.parent.GetComponent<EscapeShipComp>() == null)
+				if (building.Map.info.parent.GetComponent<EscapeShipComp>() == null)
 				{
 					text += "Standalone";
 				}
-				if (!Find.Storyteller.difficulty.allowBigThreats)
+				if (!Find.Storyteller.difficultyValues.allowBigThreats)
 				{
 					text += "Pacifist";
 				}
@@ -146,7 +147,7 @@ namespace RimWorld
 				{
 					action = delegate
 					{
-						StartupHibernatingParts(building2);
+						StartupHibernatingParts(building);
 					},
 					resolveTree = true
 				};

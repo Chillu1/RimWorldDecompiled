@@ -1,7 +1,7 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -213,6 +213,11 @@ namespace Verse
 			verb.tool = tool;
 			verb.maneuver = maneuver;
 			verb.caster = directOwner.ConstantCaster;
+		}
+
+		public void VerbsNeedReinitOnLoad()
+		{
+			verbs = null;
 		}
 	}
 }

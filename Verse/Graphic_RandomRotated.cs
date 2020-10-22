@@ -14,6 +14,7 @@ namespace Verse
 		{
 			this.subGraphic = subGraphic;
 			this.maxAngle = maxAngle;
+			drawSize = subGraphic.drawSize;
 		}
 
 		public override void DrawWorker(Vector3 loc, Rot4 rot, ThingDef thingDef, Thing thing, float extraRotation)
@@ -37,7 +38,8 @@ namespace Verse
 		{
 			return new Graphic_RandomRotated(subGraphic.GetColoredVersion(newShader, newColor, newColorTwo), maxAngle)
 			{
-				data = data
+				data = data,
+				drawSize = drawSize
 			};
 		}
 	}

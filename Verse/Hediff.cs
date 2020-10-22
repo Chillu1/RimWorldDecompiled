@@ -1,8 +1,9 @@
-using RimWorld;
-using RimWorld.Planet;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse.AI;
 
@@ -350,7 +351,7 @@ namespace Verse
 			{
 				pawn.jobs.StartJob(JobMaker.MakeJob(JobDefOf.Vomit), JobCondition.InterruptForced, null, resumeCurJobAfterwards: true);
 			}
-			if (curStage.forgetMemoryThoughtMtbDays > 0f && pawn.needs != null && pawn.needs.mood != null && pawn.IsHashIntervalTick(400) && Rand.MTBEventOccurs(curStage.forgetMemoryThoughtMtbDays, 60000f, 400f) && pawn.needs.mood.thoughts.memories.Memories.TryRandomElement(out Thought_Memory result))
+			if (curStage.forgetMemoryThoughtMtbDays > 0f && pawn.needs != null && pawn.needs.mood != null && pawn.IsHashIntervalTick(400) && Rand.MTBEventOccurs(curStage.forgetMemoryThoughtMtbDays, 60000f, 400f) && pawn.needs.mood.thoughts.memories.Memories.TryRandomElement(out var result))
 			{
 				pawn.needs.mood.thoughts.memories.RemoveMemory(result);
 			}
@@ -378,7 +379,7 @@ namespace Verse
 		private void TryDoRandomMentalBreak()
 		{
 			HediffStage curStage = CurStage;
-			if (curStage != null && DefDatabase<MentalBreakDef>.AllDefsListForReading.Where((MentalBreakDef x) => x.Worker.BreakCanOccur(pawn) && (curStage.allowedMentalBreakIntensities == null || curStage.allowedMentalBreakIntensities.Contains(x.intensity))).TryRandomElementByWeight((MentalBreakDef x) => x.Worker.CommonalityFor(pawn), out MentalBreakDef result))
+			if (curStage != null && DefDatabase<MentalBreakDef>.AllDefsListForReading.Where((MentalBreakDef x) => x.Worker.BreakCanOccur(pawn) && (curStage.allowedMentalBreakIntensities == null || curStage.allowedMentalBreakIntensities.Contains(x.intensity))).TryRandomElementByWeight((MentalBreakDef x) => x.Worker.CommonalityFor(pawn), out var result))
 			{
 				result.Worker.TryStart(pawn, "MentalStateReason_Hediff".Translate(Label), causedByMood: false);
 			}
@@ -387,7 +388,7 @@ namespace Verse
 		public virtual void PostMake()
 		{
 			Severity = Mathf.Max(Severity, def.initialSeverity);
-			causesNoPain = (Rand.Value < def.chanceToCauseNoPain);
+			causesNoPain = Rand.Value < def.chanceToCauseNoPain;
 		}
 
 		public virtual void PostAdd(DamageInfo? dinfo)
@@ -410,7 +411,12 @@ namespace Verse
 		{
 		}
 
+		[Obsolete("Only need this overload to not break mod compatibility.")]
 		public virtual void Tended(float quality, int batchPosition = 0)
+		{
+		}
+
+		public virtual void Tended_NewTemp(float quality, float maxQuality, int batchPosition = 0)
 		{
 		}
 
@@ -442,7 +448,12 @@ namespace Verse
 		{
 			if (def.lethalSeverity >= 0f)
 			{
-				return Severity >= def.lethalSeverity;
+				bool flag = Severity >= def.lethalSeverity;
+				if (flag && DebugViewSettings.logCauseOfDeath)
+				{
+					Log.Message("CauseOfDeath: lethal severity exceeded " + Severity + " >= " + def.lethalSeverity);
+				}
+				return flag;
 			}
 			return false;
 		}
@@ -464,6 +475,10 @@ namespace Verse
 		}
 
 		public virtual void Notify_EntropyGained(float baseAmount, float finalAmount, Thing source = null)
+		{
+		}
+
+		public virtual void Notify_RelationAdded(Pawn otherPawn, PawnRelationDef relationDef)
 		{
 		}
 

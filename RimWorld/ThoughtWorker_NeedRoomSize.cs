@@ -16,19 +16,14 @@ namespace RimWorld
 			{
 				return ThoughtState.Inactive;
 			}
-			switch (p.needs.roomsize.CurCategory)
+			return p.needs.roomsize.CurCategory switch
 			{
-			case RoomSizeCategory.VeryCramped:
-				return ThoughtState.ActiveAtStage(0);
-			case RoomSizeCategory.Cramped:
-				return ThoughtState.ActiveAtStage(1);
-			case RoomSizeCategory.Normal:
-				return ThoughtState.Inactive;
-			case RoomSizeCategory.Spacious:
-				return ThoughtState.ActiveAtStage(2);
-			default:
-				throw new InvalidOperationException("Unknown RoomSizeCategory");
-			}
+				RoomSizeCategory.VeryCramped => ThoughtState.ActiveAtStage(0), 
+				RoomSizeCategory.Cramped => ThoughtState.ActiveAtStage(1), 
+				RoomSizeCategory.Normal => ThoughtState.Inactive, 
+				RoomSizeCategory.Spacious => ThoughtState.ActiveAtStage(2), 
+				_ => throw new InvalidOperationException("Unknown RoomSizeCategory"), 
+			};
 		}
 	}
 }

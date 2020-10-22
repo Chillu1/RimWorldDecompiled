@@ -1,8 +1,8 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse
@@ -17,7 +17,7 @@ namespace Verse
 		protected override void ApplySpecialEffectsToPart(Pawn pawn, float totalDamage, DamageInfo dinfo, DamageResult result)
 		{
 			bool flag = Rand.Chance(def.bluntInnerHitChance);
-			float num = flag ? def.bluntInnerHitDamageFractionToConvert.RandomInRange : 0f;
+			float num = (flag ? def.bluntInnerHitDamageFractionToConvert.RandomInRange : 0f);
 			float num2 = totalDamage * (1f - num);
 			DamageInfo lastInfo = dinfo;
 			while (true)
@@ -36,7 +36,7 @@ namespace Verse
 			}
 			if (flag && !lastInfo.HitPart.def.IsSolid(lastInfo.HitPart, pawn.health.hediffSet.hediffs) && lastInfo.HitPart.depth == BodyPartDepth.Outside && (from x in pawn.health.hediffSet.GetNotMissingParts()
 				where x.parent == lastInfo.HitPart && x.def.IsSolid(x, pawn.health.hediffSet.hediffs) && x.depth == BodyPartDepth.Inside
-				select x).TryRandomElementByWeight((BodyPartRecord x) => x.coverageAbs, out BodyPartRecord result2))
+				select x).TryRandomElementByWeight((BodyPartRecord x) => x.coverageAbs, out var result2))
 			{
 				DamageInfo dinfo2 = lastInfo;
 				dinfo2.SetHitPart(result2);
@@ -81,7 +81,7 @@ namespace Verse
 		{
 			Func<ThingDef, float, bool, string> bluntBodyStunChance = delegate(ThingDef d, float dam, bool onHead)
 			{
-				SimpleCurve obj = onHead ? DamageDefOf.Blunt.bluntStunChancePerDamagePctOfCorePartToHeadCurve : DamageDefOf.Blunt.bluntStunChancePerDamagePctOfCorePartToBodyCurve;
+				SimpleCurve obj = (onHead ? DamageDefOf.Blunt.bluntStunChancePerDamagePctOfCorePartToHeadCurve : DamageDefOf.Blunt.bluntStunChancePerDamagePctOfCorePartToBodyCurve);
 				Pawn pawn2 = PawnGenerator.GeneratePawn(new PawnGenerationRequest(d.race.AnyPawnKind, Find.FactionManager.FirstFactionOfDef(d.race.AnyPawnKind.defaultFactionType), PawnGenerationContext.NonPlayer, -1, forceGenerateNewPawn: true));
 				float x = dam / d.race.body.corePart.def.GetMaxHealth(pawn2);
 				Find.WorldPawns.PassToWorld(pawn2, PawnDiscardDecideMode.Discard);

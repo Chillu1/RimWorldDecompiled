@@ -28,7 +28,7 @@ namespace RimWorld
 		{
 			if (p.Downed && !p.InBed() && !(p.ParentHolder is Pawn_CarryTracker))
 			{
-				if (p.jobs.jobQueue != null && p.jobs.jobQueue.Count > 0 && p.jobs.jobQueue.Peek().job.CanBeginNow(p))
+				if (p.jobs?.jobQueue != null && p.jobs.jobQueue.Count > 0 && p.jobs.jobQueue.Peek().job.CanBeginNow(p))
 				{
 					return false;
 				}

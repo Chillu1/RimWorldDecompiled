@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using UnityEngine;
 
 namespace Verse
 {
@@ -22,6 +23,30 @@ namespace Verse
 
 		public override bool IsDebug => true;
 
+		protected override int HighlightedIndex
+		{
+			get
+			{
+				if (FilterAllows(debugOutputs[prioritizedHighlightedIndex].label))
+				{
+					return prioritizedHighlightedIndex;
+				}
+				if (filter.NullOrEmpty())
+				{
+					return 0;
+				}
+				for (int i = 0; i < debugOutputs.Count; i++)
+				{
+					if (FilterAllows(debugOutputs[i].label))
+					{
+						currentHighlightIndex = i;
+						break;
+					}
+				}
+				return currentHighlightIndex;
+			}
+		}
+
 		public Dialog_DebugOutputMenu()
 		{
 			forcePause = true;
@@ -30,7 +55,7 @@ namespace Verse
 				MethodInfo[] methods = allType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 				foreach (MethodInfo methodInfo in methods)
 				{
-					if (methodInfo.TryGetAttribute(out DebugOutputAttribute customAttribute))
+					if (methodInfo.TryGetAttribute<DebugOutputAttribute>(out var customAttribute))
 					{
 						GenerateCacheForMethod(methodInfo, customAttribute);
 					}
@@ -63,23 +88,54 @@ namespace Verse
 
 		protected override void DoListingItems()
 		{
+			base.DoListingItems();
+			int highlightedIndex = HighlightedIndex;
 			string b = null;
-			foreach (DebugOutputOption debugOutput in debugOutputs)
+			for (int i = 0; i < debugOutputs.Count; i++)
 			{
-				if (debugOutput.category != b)
+				DebugOutputOption debugOutputOption = debugOutputs[i];
+				if (debugOutputOption.category != b)
 				{
-					DoLabel(debugOutput.category);
-					b = debugOutput.category;
+					DoLabel(debugOutputOption.category);
+					b = debugOutputOption.category;
 				}
 				Log.openOnMessage = true;
 				try
 				{
-					DebugAction(debugOutput.label, debugOutput.action);
+					DebugAction_NewTmp(debugOutputOption.label, debugOutputOption.action, highlightedIndex == i);
 				}
 				finally
 				{
 					Log.openOnMessage = false;
 				}
+			}
+		}
+
+		protected override void ChangeHighlightedOption()
+		{
+			int highlightedIndex = HighlightedIndex;
+			for (int i = 0; i < debugOutputs.Count; i++)
+			{
+				int num = (highlightedIndex + i + 1) % debugOutputs.Count;
+				if (FilterAllows(debugOutputs[num].label))
+				{
+					prioritizedHighlightedIndex = num;
+					break;
+				}
+			}
+		}
+
+		public override void OnAcceptKeyPressed()
+		{
+			if (GUI.GetNameOfFocusedControl() == "DebugFilter")
+			{
+				int highlightedIndex = HighlightedIndex;
+				if (highlightedIndex >= 0)
+				{
+					Close();
+					debugOutputs[highlightedIndex].action();
+				}
+				Event.current.Use();
 			}
 		}
 	}

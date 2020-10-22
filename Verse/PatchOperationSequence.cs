@@ -30,7 +30,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			int num = (operations != null) ? operations.Count : 0;
+			int num = ((operations != null) ? operations.Count : 0);
 			string text = $"{base.ToString()}(count={num}";
 			if (lastFailedOperation != null)
 			{

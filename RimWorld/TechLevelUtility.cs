@@ -7,27 +7,18 @@ namespace RimWorld
 	{
 		public static string ToStringHuman(this TechLevel tl)
 		{
-			switch (tl)
+			return tl switch
 			{
-			case TechLevel.Undefined:
-				return "Undefined".Translate();
-			case TechLevel.Animal:
-				return "TechLevel_Animal".Translate();
-			case TechLevel.Neolithic:
-				return "TechLevel_Neolithic".Translate();
-			case TechLevel.Medieval:
-				return "TechLevel_Medieval".Translate();
-			case TechLevel.Industrial:
-				return "TechLevel_Industrial".Translate();
-			case TechLevel.Spacer:
-				return "TechLevel_Spacer".Translate();
-			case TechLevel.Ultra:
-				return "TechLevel_Ultra".Translate();
-			case TechLevel.Archotech:
-				return "TechLevel_Archotech".Translate();
-			default:
-				throw new NotImplementedException();
-			}
+				TechLevel.Undefined => "Undefined".Translate(), 
+				TechLevel.Animal => "TechLevel_Animal".Translate(), 
+				TechLevel.Neolithic => "TechLevel_Neolithic".Translate(), 
+				TechLevel.Medieval => "TechLevel_Medieval".Translate(), 
+				TechLevel.Industrial => "TechLevel_Industrial".Translate(), 
+				TechLevel.Spacer => "TechLevel_Spacer".Translate(), 
+				TechLevel.Ultra => "TechLevel_Ultra".Translate(), 
+				TechLevel.Archotech => "TechLevel_Archotech".Translate(), 
+				_ => throw new NotImplementedException(), 
+			};
 		}
 
 		public static bool CanSpawnWithEquipmentFrom(this TechLevel pawnLevel, TechLevel gearLevel)

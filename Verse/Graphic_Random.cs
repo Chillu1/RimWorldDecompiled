@@ -35,7 +35,7 @@ namespace Verse
 
 		public override void DrawWorker(Vector3 loc, Rot4 rot, ThingDef thingDef, Thing thing, float extraRotation)
 		{
-			Graphic graphic = (thing == null) ? subGraphics[0] : SubGraphicFor(thing);
+			Graphic graphic = ((thing == null) ? subGraphics[0] : SubGraphicFor(thing));
 			graphic.DrawWorker(loc, rot, thingDef, thing, extraRotation);
 		}
 

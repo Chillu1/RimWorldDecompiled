@@ -21,7 +21,7 @@ namespace RimWorld.QuestGen
 			if (pawns.GetValue(slate) != null)
 			{
 				QuestPart_BiocodeWeapons questPart_BiocodeWeapons = new QuestPart_BiocodeWeapons();
-				questPart_BiocodeWeapons.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? slate.Get<string>("inSignal"));
+				questPart_BiocodeWeapons.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? slate.Get<string>("inSignal");
 				questPart_BiocodeWeapons.pawns.AddRange(pawns.GetValue(slate));
 				QuestGen.quest.AddPart(questPart_BiocodeWeapons);
 			}

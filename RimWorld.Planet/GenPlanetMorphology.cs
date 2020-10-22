@@ -41,7 +41,7 @@ namespace RimWorld.Planet
 				return;
 			}
 			tmpOutput.Clear();
-			Predicate<int> passCheck = (extraPredicate == null) ? ((Predicate<int>)((int x) => tilesSet.Contains(x))) : ((Predicate<int>)((int x) => tilesSet.Contains(x) && extraPredicate(x)));
+			Predicate<int> passCheck = ((extraPredicate == null) ? ((Predicate<int>)((int x) => tilesSet.Contains(x))) : ((Predicate<int>)((int x) => tilesSet.Contains(x) && extraPredicate(x))));
 			Find.WorldFloodFiller.FloodFill(-1, passCheck, delegate(int tile, int traversalDist)
 			{
 				if (traversalDist >= count)

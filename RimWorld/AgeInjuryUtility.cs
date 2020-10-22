@@ -1,8 +1,8 @@
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -46,10 +46,10 @@ namespace RimWorld
 
 		public static void GenerateRandomOldAgeInjuries(Pawn pawn, bool tryNotToKillPawn)
 		{
-			float num = pawn.RaceProps.IsMechanoid ? 2500f : pawn.RaceProps.lifeExpectancy;
+			float num = (pawn.RaceProps.IsMechanoid ? 2500f : pawn.RaceProps.lifeExpectancy);
 			float num2 = num / 8f;
 			float b = num * 1.5f;
-			float chance = pawn.RaceProps.Humanlike ? 0.15f : 0.03f;
+			float chance = (pawn.RaceProps.Humanlike ? 0.15f : 0.03f);
 			int num3 = 0;
 			for (float num4 = num2; num4 < Mathf.Min(pawn.ageTracker.AgeBiologicalYears, b); num4 += num2)
 			{
@@ -115,21 +115,15 @@ namespace RimWorld
 
 		private static DamageDef RandomPermanentInjuryDamageType(bool allowFrostbite)
 		{
-			switch (Rand.RangeInclusive(0, 3 + (allowFrostbite ? 1 : 0)))
+			return Rand.RangeInclusive(0, 3 + (allowFrostbite ? 1 : 0)) switch
 			{
-			case 0:
-				return DamageDefOf.Bullet;
-			case 1:
-				return DamageDefOf.Scratch;
-			case 2:
-				return DamageDefOf.Bite;
-			case 3:
-				return DamageDefOf.Stab;
-			case 4:
-				return DamageDefOf.Frostbite;
-			default:
-				throw new Exception();
-			}
+				0 => DamageDefOf.Bullet, 
+				1 => DamageDefOf.Scratch, 
+				2 => DamageDefOf.Bite, 
+				3 => DamageDefOf.Stab, 
+				4 => DamageDefOf.Frostbite, 
+				_ => throw new Exception(), 
+			};
 		}
 
 		[DebugOutput]

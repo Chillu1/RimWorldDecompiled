@@ -1,7 +1,7 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Xml;
+using RimWorld;
+using RimWorld.Planet;
 
 namespace Verse
 {
@@ -84,7 +84,7 @@ namespace Verse
 			try
 			{
 				XmlAttribute xmlAttribute2 = subNode.Attributes["Class"];
-				string text = (xmlAttribute2 != null) ? xmlAttribute2.Value : typeof(T).FullName;
+				string text = ((xmlAttribute2 != null) ? xmlAttribute2.Value : typeof(T).FullName);
 				Type type = BackCompatibility.GetBackCompatibleType(typeof(T), text, subNode);
 				if (type == null)
 				{
@@ -214,7 +214,7 @@ namespace Verse
 					string innerText = node.InnerText;
 					if (innerText.Length != 0 && innerText[0] == '(')
 					{
-						ExtractCellAndMapPairFromTargetInfo(innerText, out string cell, out string map);
+						ExtractCellAndMapPairFromTargetInfo(innerText, out var cell, out var map);
 						loadIDs.RegisterLoadIDReadFromXml(null, typeof(Thing), "thing");
 						loadIDs.RegisterLoadIDReadFromXml(map, typeof(Map), "map");
 						return new TargetInfo(IntVec3.FromString(cell), null, allowNullMap: true);
@@ -243,13 +243,13 @@ namespace Verse
 					string innerText = node.InnerText;
 					if (innerText.Length != 0 && innerText[0] == '(')
 					{
-						ExtractCellAndMapPairFromTargetInfo(innerText, out string cell, out string map);
+						ExtractCellAndMapPairFromTargetInfo(innerText, out var cell, out var map);
 						loadIDs.RegisterLoadIDReadFromXml(null, typeof(Thing), "thing");
 						loadIDs.RegisterLoadIDReadFromXml(map, typeof(Map), "map");
 						loadIDs.RegisterLoadIDReadFromXml(null, typeof(WorldObject), "worldObject");
 						return new GlobalTargetInfo(IntVec3.FromString(cell), null, allowNullMap: true);
 					}
-					if (int.TryParse(innerText, out int result))
+					if (int.TryParse(innerText, out var result))
 					{
 						loadIDs.RegisterLoadIDReadFromXml(null, typeof(Thing), "thing");
 						loadIDs.RegisterLoadIDReadFromXml(null, typeof(Map), "map");
@@ -386,7 +386,7 @@ namespace Verse
 						return null;
 					}
 					XmlElement xmlElement = Scribe.loader.curXmlParent["index"];
-					int index = (xmlElement != null) ? int.Parse(xmlElement.InnerText) : (-1);
+					int index = ((xmlElement != null) ? int.Parse(xmlElement.InnerText) : (-1));
 					index = BackCompatibility.GetBackCompatibleBodyPartIndex(bodyDef, index);
 					return bodyDef.GetPartAtIndex(index);
 				}

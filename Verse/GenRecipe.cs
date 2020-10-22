@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -8,7 +8,7 @@ namespace Verse
 	{
 		public static IEnumerable<Thing> MakeRecipeProducts(RecipeDef recipeDef, Pawn worker, List<Thing> ingredients, Thing dominantIngredient, IBillGiver billGiver)
 		{
-			float efficiency = (recipeDef.efficiencyStat != null) ? worker.GetStatValue(recipeDef.efficiencyStat) : 1f;
+			float efficiency = ((recipeDef.efficiencyStat != null) ? worker.GetStatValue(recipeDef.efficiencyStat) : 1f);
 			if (recipeDef.workTableEfficiencyStat != null)
 			{
 				Building_WorkTable building_WorkTable = billGiver as Building_WorkTable;
@@ -24,7 +24,7 @@ namespace Verse
 					ThingDefCountClass thingDefCountClass = recipeDef.products[j];
 					Thing thing = ThingMaker.MakeThing(stuff: (!thingDefCountClass.thingDef.MadeFromStuff) ? null : dominantIngredient.def, def: thingDefCountClass.thingDef);
 					thing.stackCount = Mathf.CeilToInt((float)thingDefCountClass.count * efficiency);
-					if (dominantIngredient != null)
+					if (dominantIngredient != null && recipeDef.useIngredientsForColor)
 					{
 						thing.SetColor(dominantIngredient.DrawColor, reportFailure: false);
 					}

@@ -25,7 +25,7 @@ namespace RimWorld.QuestGen
 		{
 			Slate slate = QuestGen.slate;
 			QuestPart_SituationalThought questPart_SituationalThought = new QuestPart_SituationalThought();
-			questPart_SituationalThought.inSignalEnable = (QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart_SituationalThought.inSignalEnable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			questPart_SituationalThought.inSignalDisable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalDisable.GetValue(slate));
 			questPart_SituationalThought.def = def.GetValue(slate);
 			questPart_SituationalThought.pawn = pawn.GetValue(slate);

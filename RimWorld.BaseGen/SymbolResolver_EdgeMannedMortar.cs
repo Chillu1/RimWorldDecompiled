@@ -17,9 +17,9 @@ namespace RimWorld.BaseGen
 
 		public override void Resolve(ResolveParams rp)
 		{
-			if (TryFindRandomInnerRectTouchingEdge(rp.rect, out CellRect mortarRect))
+			if (TryFindRandomInnerRectTouchingEdge(rp.rect, out var mortarRect))
 			{
-				Rot4 value = mortarRect.Cells.Any((IntVec3 x) => x.x == rp.rect.minX) ? Rot4.West : (mortarRect.Cells.Any((IntVec3 x) => x.x == rp.rect.maxX) ? Rot4.East : ((!mortarRect.Cells.Any((IntVec3 x) => x.z == rp.rect.minZ)) ? Rot4.North : Rot4.South));
+				Rot4 value = (mortarRect.Cells.Any((IntVec3 x) => x.x == rp.rect.minX) ? Rot4.West : (mortarRect.Cells.Any((IntVec3 x) => x.x == rp.rect.maxX) ? Rot4.East : ((!mortarRect.Cells.Any((IntVec3 x) => x.z == rp.rect.minZ)) ? Rot4.North : Rot4.South)));
 				ResolveParams resolveParams = rp;
 				resolveParams.rect = mortarRect;
 				resolveParams.thingRot = value;

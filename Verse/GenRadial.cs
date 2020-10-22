@@ -164,7 +164,7 @@ namespace Verse
 		public static IEnumerable<IntVec3> RadialCellsAround(IntVec3 center, float radius, bool useCenter)
 		{
 			int numSquares = NumCellsInRadius(radius);
-			for (int i = (!useCenter) ? 1 : 0; i < numSquares; i++)
+			for (int i = ((!useCenter) ? 1 : 0); i < numSquares; i++)
 			{
 				yield return RadialPattern[i] + center;
 			}
@@ -186,7 +186,7 @@ namespace Verse
 		{
 			int numCells = NumCellsInRadius(radius);
 			HashSet<Thing> returnedThings = null;
-			for (int i = (!useCenter) ? 1 : 0; i < numCells; i++)
+			for (int i = ((!useCenter) ? 1 : 0); i < numCells; i++)
 			{
 				IntVec3 c = RadialPattern[i] + center;
 				if (!c.InBounds(map))
@@ -197,7 +197,7 @@ namespace Verse
 				for (int j = 0; j < thingList.Count; j++)
 				{
 					Thing thing = thingList[j];
-					if (thing.def.size.x > 1 && thing.def.size.z > 1)
+					if (thing.def.size.x > 1 || thing.def.size.z > 1)
 					{
 						if (returnedThings == null)
 						{

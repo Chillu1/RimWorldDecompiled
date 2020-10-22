@@ -1,11 +1,70 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
 {
 	public class Alert_UnusableMeditationFocus : Alert
 	{
+		public class Alert_PermitAvailable : Alert
+		{
+			private List<GlobalTargetInfo> targets = new List<GlobalTargetInfo>();
+
+			private List<GlobalTargetInfo> Targets
+			{
+				get
+				{
+					targets.Clear();
+					foreach (Pawn item in PawnsFinder.HomeMaps_FreeColonistsSpawned)
+					{
+						if (item.royalty != null && item.royalty.PermitPointsAvailable)
+						{
+							targets.Add(item);
+						}
+					}
+					return targets;
+				}
+			}
+
+			private Pawn FirstPawn
+			{
+				get
+				{
+					List<GlobalTargetInfo> list = Targets;
+					if (!list.Any())
+					{
+						return null;
+					}
+					return (Pawn)(Thing)list[0];
+				}
+			}
+
+			public Alert_PermitAvailable()
+			{
+				defaultLabel = "PermitChoiceReadyAlert".Translate();
+			}
+
+			public override AlertReport GetReport()
+			{
+				if (!ModsConfig.RoyaltyActive)
+				{
+					return false;
+				}
+				return AlertReport.CulpritsAre(Targets);
+			}
+
+			public override TaggedString GetExplanation()
+			{
+				return "PermitChoiceReadyAlertDesc".Translate(FirstPawn.Named("PAWN"));
+			}
+
+			protected override void OnClick()
+			{
+				base.OnClick();
+				FirstPawn.royalty.OpenPermitWindow();
+			}
+		}
+
 		private List<GlobalTargetInfo> targets = new List<GlobalTargetInfo>();
 
 		private List<string> pawnEntries = new List<string>();

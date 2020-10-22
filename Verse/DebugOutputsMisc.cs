@@ -1,8 +1,8 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -26,7 +26,7 @@ namespace Verse
 			};
 			Func<ThingDef, float> mineableCommonality = (ThingDef d) => (mineable(d) != null) ? mineable(d).building.mineableScatterCommonality : 0f;
 			Func<ThingDef, IntRange> mineableLumpSizeRange = (ThingDef d) => (mineable(d) != null) ? mineable(d).building.mineableScatterLumpSizeRange : IntRange.zero;
-			Func<ThingDef, float> mineableYield = (ThingDef d) => (mineable(d) != null) ? ((float)mineable(d).building.mineableYield) : 0f;
+			Func<ThingDef, float> mineableYield = (ThingDef d) => (mineable(d) != null) ? ((float)mineable(d).building.EffectiveMineableYield) : 0f;
 			DebugTables.MakeTablesDialog(DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.deepCommonality > 0f || mineableCommonality(d) > 0f), new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("market value", (ThingDef d) => d.BaseMarketValue.ToString("F2")), new TableDataGetter<ThingDef>("stackLimit", (ThingDef d) => d.stackLimit), new TableDataGetter<ThingDef>("deep\ncommonality", (ThingDef d) => d.deepCommonality.ToString("F2")), new TableDataGetter<ThingDef>("deep\nlump size", (ThingDef d) => d.deepLumpSizeRange), new TableDataGetter<ThingDef>("deep lump\nvalue min", (ThingDef d) => ((float)d.deepLumpSizeRange.min * d.BaseMarketValue * (float)d.deepCountPerCell).ToStringMoney()), new TableDataGetter<ThingDef>("deep lump\nvalue avg", (ThingDef d) => (d.deepLumpSizeRange.Average * d.BaseMarketValue * (float)d.deepCountPerCell).ToStringMoney()), new TableDataGetter<ThingDef>("deep lump\nvalue max", (ThingDef d) => ((float)d.deepLumpSizeRange.max * d.BaseMarketValue * (float)d.deepCountPerCell).ToStringMoney()), new TableDataGetter<ThingDef>("deep count\nper cell", (ThingDef d) => d.deepCountPerCell), new TableDataGetter<ThingDef>("deep count\nper portion", (ThingDef d) => d.deepCountPerPortion), new TableDataGetter<ThingDef>("deep portion\nvalue", (ThingDef d) => ((float)d.deepCountPerPortion * d.BaseMarketValue).ToStringMoney()), new TableDataGetter<ThingDef>("mineable\ncommonality", (ThingDef d) => mineableCommonality(d).ToString("F2")), new TableDataGetter<ThingDef>("mineable\nlump size", (ThingDef d) => mineableLumpSizeRange(d)), new TableDataGetter<ThingDef>("mineable yield\nper cell", (ThingDef d) => mineableYield(d)));
 		}
 
@@ -37,7 +37,7 @@ namespace Verse
 				where d.category == ThingCategory.Building && (d.building.isNaturalRock || d.building.isResourceRock) && !d.IsSmoothed
 				select d into x
 				orderby x.building.isNaturalRock descending, x.building.isResourceRock descending
-				select x, new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("isNaturalRock", (ThingDef d) => d.building.isNaturalRock.ToStringCheckBlank()), new TableDataGetter<ThingDef>("isResourceRock", (ThingDef d) => d.building.isResourceRock.ToStringCheckBlank()), new TableDataGetter<ThingDef>("smoothed", (ThingDef d) => (d.building.smoothedThing == null) ? "" : d.building.smoothedThing.defName), new TableDataGetter<ThingDef>("mineableThing", (ThingDef d) => (d.building.mineableThing == null) ? "" : d.building.mineableThing.defName), new TableDataGetter<ThingDef>("mineableYield", (ThingDef d) => d.building.mineableYield), new TableDataGetter<ThingDef>("mineableYieldWasteable", (ThingDef d) => d.building.mineableYieldWasteable), new TableDataGetter<ThingDef>("NaturalRockType\never possible", (ThingDef d) => d.IsNonResourceNaturalRock.ToStringCheckBlank()), new TableDataGetter<ThingDef>("NaturalRockType\nin CurrentMap", (ThingDef d) => (Find.CurrentMap == null) ? "" : Find.World.NaturalRockTypesIn(Find.CurrentMap.Tile).Contains(d).ToStringCheckBlank()));
+				select x, new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("isNaturalRock", (ThingDef d) => d.building.isNaturalRock.ToStringCheckBlank()), new TableDataGetter<ThingDef>("isResourceRock", (ThingDef d) => d.building.isResourceRock.ToStringCheckBlank()), new TableDataGetter<ThingDef>("smoothed", (ThingDef d) => (d.building.smoothedThing == null) ? "" : d.building.smoothedThing.defName), new TableDataGetter<ThingDef>("mineableThing", (ThingDef d) => (d.building.mineableThing == null) ? "" : d.building.mineableThing.defName), new TableDataGetter<ThingDef>("mineableYield", (ThingDef d) => d.building.EffectiveMineableYield), new TableDataGetter<ThingDef>("mineableYieldWasteable", (ThingDef d) => d.building.mineableYieldWasteable), new TableDataGetter<ThingDef>("NaturalRockType\never possible", (ThingDef d) => d.IsNonResourceNaturalRock.ToStringCheckBlank()), new TableDataGetter<ThingDef>("NaturalRockType\nin CurrentMap", (ThingDef d) => (Find.CurrentMap == null) ? "" : Find.World.NaturalRockTypesIn(Find.CurrentMap.Tile).Contains(d).ToStringCheckBlank()));
 		}
 
 		[DebugOutput]
@@ -46,7 +46,7 @@ namespace Verse
 			DebugTables.MakeTablesDialog(DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.StatBaseDefined(StatDefOf.MeditationFocusStrength)), new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("base", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.MeditationFocusStrength).ToStringPercent()), new TableDataGetter<ThingDef>("max\ntotal", (ThingDef d) => TotalMax(d).ToStringPercent()), new TableDataGetter<ThingDef>("offset 0\nname", (ThingDef d) => GetOffsetClassName(d, 0)), new TableDataGetter<ThingDef>("offset 0\nmax", (ThingDef d) => GetOffsetMax(d, 0).ToStringPercentEmptyZero()), new TableDataGetter<ThingDef>("offset 1\nname", (ThingDef d) => GetOffsetClassName(d, 1)), new TableDataGetter<ThingDef>("offset 1\nmax", (ThingDef d) => GetOffsetMax(d, 1).ToStringPercentEmptyZero()), new TableDataGetter<ThingDef>("offset 2\nname", (ThingDef d) => GetOffsetClassName(d, 2)), new TableDataGetter<ThingDef>("offset 2\nmax", (ThingDef d) => GetOffsetMax(d, 2).ToStringPercentEmptyZero()), new TableDataGetter<ThingDef>("offset 3\nname", (ThingDef d) => GetOffsetClassName(d, 3)), new TableDataGetter<ThingDef>("offset 3\nmax", (ThingDef d) => GetOffsetMax(d, 3).ToStringPercentEmptyZero()), new TableDataGetter<ThingDef>("offset 4\nname", (ThingDef d) => GetOffsetClassName(d, 4)), new TableDataGetter<ThingDef>("offset 4\nmax", (ThingDef d) => GetOffsetMax(d, 4).ToStringPercentEmptyZero()));
 			static string GetOffsetClassName(ThingDef d, int index)
 			{
-				if (!TryGetOffset(d, index, out FocusStrengthOffset result2))
+				if (!TryGetOffset(d, index, out var result2))
 				{
 					return "";
 				}
@@ -54,11 +54,11 @@ namespace Verse
 			}
 			static float GetOffsetMax(ThingDef d, int index)
 			{
-				if (!TryGetOffset(d, index, out FocusStrengthOffset result3))
+				if (!TryGetOffset(d, index, out var result3))
 				{
 					return 0f;
 				}
-				return Mathf.Max(result3.MaxOffset(forAbstract: true), 0f);
+				return Mathf.Max(result3.MaxOffset(), 0f);
 			}
 			static float TotalMax(ThingDef d)
 			{
@@ -642,8 +642,8 @@ namespace Verse
 			parms.allowGoodwill = true;
 			parms.allowRoyalFavor = true;
 			parms.populationIntent = StorytellerUtilityPopulation.PopulationIntentForQuest;
-			parms.giverFaction = (from x in Find.FactionManager.GetFactions()
-				where !x.def.hidden && x.def.humanlikeFaction && !x.HostileTo(Faction.OfPlayer)
+			parms.giverFaction = (from x in Find.FactionManager.GetFactions_NewTemp()
+				where !x.Hidden && x.def.humanlikeFaction && !x.HostileTo(Faction.OfPlayer)
 				select x).First();
 			List<DebugMenuOption> list = new List<DebugMenuOption>();
 			foreach (float item in DebugActionsUtility.PointsOptions(extended: false))
@@ -776,6 +776,12 @@ namespace Verse
 		public static void IngestibleMaxSatisfiedTitle()
 		{
 			RoyalTitleUtility.DoTable_IngestibleMaxSatisfiedTitle();
+		}
+
+		[DebugOutput]
+		public static void AbilityCosts()
+		{
+			AbilityUtility.DoTable_AbilityCosts();
 		}
 
 		[DebugOutput]

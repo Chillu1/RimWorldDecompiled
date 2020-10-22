@@ -27,13 +27,9 @@ namespace RimWorld
 				{
 					pawn.mindState.duty = new PawnDuty(DutyDefOf.PrepareCaravan_GatherItems);
 				}
-				else if (pawn.RaceProps.Animal)
-				{
-					pawn.mindState.duty = new PawnDuty(DutyDefOf.PrepareCaravan_Wait, meetingPoint);
-				}
 				else
 				{
-					pawn.mindState.duty = new PawnDuty(DutyDefOf.PrepareCaravan_Wait);
+					pawn.mindState.duty = new PawnDuty(DutyDefOf.PrepareCaravan_Wait, meetingPoint);
 				}
 			}
 		}

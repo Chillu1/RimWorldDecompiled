@@ -42,6 +42,7 @@ namespace RimWorld
 			Job job = JobMaker.MakeJob(JobDefOf.AttackMelee, meleeThreat);
 			job.maxNumMeleeAttacks = 1;
 			job.expiryInterval = 200;
+			job.reactingToMeleeThreat = true;
 			return job;
 		}
 

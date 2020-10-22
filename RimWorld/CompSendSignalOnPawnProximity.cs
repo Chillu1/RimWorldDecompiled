@@ -51,7 +51,7 @@ namespace RimWorld
 			Predicate<Thing> predicate = null;
 			if (Props.onlyHumanlike)
 			{
-				predicate = ((Thing t) => (t as Pawn)?.RaceProps.Humanlike ?? false);
+				predicate = (Thing t) => (t as Pawn)?.RaceProps.Humanlike ?? false;
 			}
 			Thing thing = null;
 			if (Props.triggerOnPawnInRoom)

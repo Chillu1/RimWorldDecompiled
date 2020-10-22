@@ -15,8 +15,13 @@ namespace RimWorld
 
 		public static FactionDef Insect;
 
+		public static FactionDef OutlanderCivil;
+
 		[MayRequireRoyalty]
 		public static FactionDef Empire;
+
+		[MayRequireRoyalty]
+		public static FactionDef OutlanderRefugee;
 
 		static FactionDefOf()
 		{

@@ -1,9 +1,9 @@
-using RimWorld;
-using RimWorld.BaseGen;
-using RimWorld.SketchGen;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
+using RimWorld.BaseGen;
+using RimWorld.SketchGen;
 using UnityEngine;
 using Verse.AI;
 
@@ -47,51 +47,18 @@ namespace Verse
 			}
 		}
 
-		[DebugAction("General", "5000 flame damage", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void Take5000FlameDamage()
-		{
-			foreach (Thing item in Find.CurrentMap.thingGrid.ThingsAt(UI.MouseCell()).ToList())
-			{
-				item.TakeDamage(new DamageInfo(DamageDefOf.Flame, 5000f));
-			}
-		}
-
 		[DebugAction("General", "Clear area 21x21", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void ClearArea21x21()
 		{
-			foreach (Thing item in Find.CurrentMap.thingGrid.ThingsAt(UI.MouseCell()).ToList())
-			{
-				_ = item;
-				GenDebug.ClearArea(CellRect.CenteredOn(UI.MouseCell(), 10), Find.CurrentMap);
-			}
+			GenDebug.ClearArea(CellRect.CenteredOn(UI.MouseCell(), 10), Find.CurrentMap);
 		}
 
-		[DebugAction("General", "Rock 21x21", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("General", "Make rock 11x11", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void Rock21x21()
 		{
-			CellRect cellRect = CellRect.CenteredOn(UI.MouseCell(), 10);
-			cellRect.ClipInsideMap(Find.CurrentMap);
-			foreach (IntVec3 item in cellRect)
+			foreach (IntVec3 item in CellRect.CenteredOn(UI.MouseCell(), 5).ClipInsideMap(Find.CurrentMap))
 			{
 				GenSpawn.Spawn(ThingDefOf.Granite, item, Find.CurrentMap);
-			}
-		}
-
-		[DebugAction("General", "Destroy trees 21x21", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void DestroyTrees21x21()
-		{
-			CellRect cellRect = CellRect.CenteredOn(UI.MouseCell(), 10);
-			cellRect.ClipInsideMap(Find.CurrentMap);
-			foreach (IntVec3 item in cellRect)
-			{
-				List<Thing> thingList = item.GetThingList(Find.CurrentMap);
-				for (int num = thingList.Count - 1; num >= 0; num--)
-				{
-					if (thingList[num].def.category == ThingCategory.Plant && thingList[num].def.plant.IsTree)
-					{
-						thingList[num].Destroy();
-					}
-				}
 			}
 		}
 
@@ -426,7 +393,7 @@ namespace Verse
 		private static void FlashSkygazeCell()
 		{
 			Pawn pawn = Find.CurrentMap.mapPawns.FreeColonists.First();
-			RCellFinder.TryFindSkygazeCell(UI.MouseCell(), pawn, out IntVec3 result);
+			RCellFinder.TryFindSkygazeCell(UI.MouseCell(), pawn, out var result);
 			Find.CurrentMap.debugDrawer.FlashCell(result);
 			MoteMaker.ThrowText(result.ToVector3Shifted(), Find.CurrentMap, "for " + pawn.Label, Color.white);
 		}
@@ -528,7 +495,7 @@ namespace Verse
 								flag = Find.CurrentMap.reachability.CanReach(from, c, PathEndMode.OnCell, traverseMode, Danger.Deadly);
 								intVec = from;
 							}
-							Color color = flag ? Color.green : Color.red;
+							Color color = (flag ? Color.green : Color.red);
 							Widgets.DrawLine(intVec.ToUIPosition(), c.ToUIPosition(), color, 2f);
 						});
 					});
@@ -541,7 +508,7 @@ namespace Verse
 		[DebugAction("General", "Flash TryFindRandomPawnExitCell", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void FlashTryFindRandomPawnExitCell(Pawn p)
 		{
-			if (CellFinder.TryFindRandomPawnExitCell(p, out IntVec3 result))
+			if (CellFinder.TryFindRandomPawnExitCell(p, out var result))
 			{
 				p.Map.debugDrawer.FlashCell(result, 0.5f);
 				p.Map.debugDrawer.FlashLine(p.Position, result);
@@ -555,7 +522,7 @@ namespace Verse
 		[DebugAction("General", "RandomSpotJustOutsideColony", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void RandomSpotJustOutsideColony(Pawn p)
 		{
-			if (RCellFinder.TryFindRandomSpotJustOutsideColony(p, out IntVec3 result))
+			if (RCellFinder.TryFindRandomSpotJustOutsideColony(p, out var result))
 			{
 				p.Map.debugDrawer.FlashCell(result, 0.5f);
 				p.Map.debugDrawer.FlashLine(p.Position, result);
@@ -563,6 +530,29 @@ namespace Verse
 			else
 			{
 				p.Map.debugDrawer.FlashCell(p.Position, 0.2f, "no cell");
+			}
+		}
+
+		[DebugAction("General", null, actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void RandomSpotNearThingAvoidingHostiles()
+		{
+			List<Thing> list = Find.CurrentMap.thingGrid.ThingsAt(UI.MouseCell()).ToList();
+			if (list.Count != 0)
+			{
+				Thing thing = list.Where((Thing t) => t is Pawn && t.Faction != null).FirstOrDefault();
+				if (thing == null)
+				{
+					thing = list.First();
+				}
+				if (RCellFinder.TryFindRandomSpotNearAvoidingHostilePawns(thing, thing.Map, (IntVec3 s) => true, out var result))
+				{
+					thing.Map.debugDrawer.FlashCell(result, 0.5f);
+					thing.Map.debugDrawer.FlashLine(thing.Position, result);
+				}
+				else
+				{
+					thing.Map.debugDrawer.FlashCell(thing.Position, 0.2f, "no cell");
+				}
 			}
 		}
 	}

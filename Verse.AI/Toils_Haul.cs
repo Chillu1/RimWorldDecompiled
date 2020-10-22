@@ -1,7 +1,7 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 using UnityEngine;
 using Verse.Sound;
 
@@ -112,27 +112,21 @@ namespace Verse.AI
 					}
 					else if (actor.carryTracker.AvailableStackSpace(actor.carryTracker.CarriedThing.def) > 0)
 					{
-						int num = 0;
-						while (true)
+						for (int i = 0; i < targetQueue.Count; i++)
 						{
-							if (num >= targetQueue.Count)
-							{
-								return;
-							}
-							if (!GenAI.CanUseItemForWork(actor, targetQueue[num].Thing))
+							if (!GenAI.CanUseItemForWork(actor, targetQueue[i].Thing))
 							{
 								actor.jobs.EndCurrentJob(JobCondition.Incompletable);
-								return;
-							}
-							if (targetQueue[num].Thing.def == actor.carryTracker.CarriedThing.def)
-							{
 								break;
 							}
-							num++;
+							if (targetQueue[i].Thing.def == actor.carryTracker.CarriedThing.def)
+							{
+								curJob.SetTarget(ind, targetQueue[i].Thing);
+								targetQueue.RemoveAt(i);
+								actor.jobs.curDriver.JumpToToil(gotoGetTargetToil);
+								break;
+							}
 						}
-						curJob.SetTarget(ind, targetQueue[num].Thing);
-						targetQueue.RemoveAt(num);
-						actor.jobs.curDriver.JumpToToil(gotoGetTargetToil);
 					}
 				}
 			};
@@ -223,9 +217,9 @@ namespace Verse.AI
 				else
 				{
 					LocalTargetInfo target = actor.CurJob.GetTarget(facingTargetInd);
-					IntVec3 b = (!target.HasThing) ? target.Cell : target.Thing.OccupiedRect().ClosestCellTo(actor.Position);
+					IntVec3 b = ((!target.HasThing) ? target.Cell : target.Thing.OccupiedRect().ClosestCellTo(actor.Position));
 					IntVec3 dropLoc = actor.Position + Pawn_RotationTracker.RotFromAngleBiased((actor.Position - b).AngleFlat).FacingCell;
-					if (!actor.carryTracker.TryDropCarriedThing(dropLoc, ThingPlaceMode.Direct, out Thing _))
+					if (!actor.carryTracker.TryDropCarriedThing(dropLoc, ThingPlaceMode.Direct, out var _))
 					{
 						actor.jobs.EndCurrentJob(JobCondition.Incompletable);
 					}
@@ -273,11 +267,11 @@ namespace Verse.AI
 							}
 						};
 					}
-					if (!actor.carryTracker.TryDropCarriedThing(cell, ThingPlaceMode.Direct, out Thing _, placedAction))
+					if (!actor.carryTracker.TryDropCarriedThing(cell, ThingPlaceMode.Direct, out var _, placedAction))
 					{
 						if (storageMode)
 						{
-							if (nextToilOnPlaceFailOrIncomplete != null && ((tryStoreInSameStorageIfSpotCantHoldWholeStack && StoreUtility.TryFindBestBetterStoreCellForIn(actor.carryTracker.CarriedThing, actor, actor.Map, StoragePriority.Unstored, actor.Faction, cell.GetSlotGroup(actor.Map), out IntVec3 foundCell)) || StoreUtility.TryFindBestBetterStoreCellFor(actor.carryTracker.CarriedThing, actor, actor.Map, StoragePriority.Unstored, actor.Faction, out foundCell)))
+							if (nextToilOnPlaceFailOrIncomplete != null && ((tryStoreInSameStorageIfSpotCantHoldWholeStack && StoreUtility.TryFindBestBetterStoreCellForIn(actor.carryTracker.CarriedThing, actor, actor.Map, StoragePriority.Unstored, actor.Faction, cell.GetSlotGroup(actor.Map), out var foundCell)) || StoreUtility.TryFindBestBetterStoreCellFor(actor.carryTracker.CarriedThing, actor, actor.Map, StoragePriority.Unstored, actor.Faction, out foundCell)))
 							{
 								if (actor.CanReserve(foundCell))
 								{

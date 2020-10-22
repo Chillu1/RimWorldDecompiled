@@ -12,7 +12,7 @@ namespace RimWorld.BaseGen
 		public override void Resolve(ResolveParams rp)
 		{
 			Map map = BaseGen.globalSettings.map;
-			ThingDef thingDef = (rp.faction != null && (int)rp.faction.def.techLevel < 4) ? ThingDefOf.TorchLamp : ThingDefOf.StandingLamp;
+			ThingDef thingDef = ((rp.faction != null && (int)rp.faction.def.techLevel < 4) ? ThingDefOf.TorchLamp : ThingDefOf.StandingLamp);
 			FindNearbyGlowers(rp.rect);
 			for (int i = 0; i < rp.rect.Area / 4; i++)
 			{

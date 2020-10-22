@@ -6,6 +6,11 @@ namespace RimWorld
 	{
 		public int delayTicks;
 
+		public DestroyMode destroyMode;
+
+		[MustTranslate]
+		public string countdownLabel;
+
 		public CompProperties_DestroyAfterDelay()
 		{
 			compClass = typeof(CompDestroyAfterDelay);

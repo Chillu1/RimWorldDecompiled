@@ -281,7 +281,7 @@ namespace RimWorld.Planet
 
 		private void ApplyPositionToGameObject()
 		{
-			Quaternion invRot = (!(rotationAnimation_lerpFactor < 1f)) ? sphereRotation : Quaternion.Lerp(rotationAnimation_prevSphereRotation, sphereRotation, rotationAnimation_lerpFactor);
+			Quaternion invRot = ((!(rotationAnimation_lerpFactor < 1f)) ? sphereRotation : Quaternion.Lerp(rotationAnimation_prevSphereRotation, sphereRotation, rotationAnimation_lerpFactor));
 			if (Find.PlaySettings.lockNorthUp)
 			{
 				ClampXRotation(ref invRot);

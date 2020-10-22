@@ -86,7 +86,7 @@ namespace RimWorld
 			Command_Toggle command_Toggle = new Command_Toggle();
 			command_Toggle.hotKey = KeyBindingDefOf.Command_ItemForbid;
 			command_Toggle.icon = TexCommand.ForbidOff;
-			command_Toggle.isActive = (() => !Forbidden);
+			command_Toggle.isActive = () => !Forbidden;
 			command_Toggle.defaultLabel = "CommandAllow".TranslateWithBackup("DesignatorUnforbid");
 			command_Toggle.activateIfAmbiguous = false;
 			if (forbiddenInt)

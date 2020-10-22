@@ -26,7 +26,7 @@ namespace RimWorld.Planet
 		public static void UpdateWorldShadersParams()
 		{
 			Vector3 v = -GenCelestial.CurSunPositionInWorldSpace();
-			float value = Find.PlaySettings.usePlanetDayNightSystem ? 1f : 0f;
+			float value = (Find.PlaySettings.usePlanetDayNightSystem ? 1f : 0f);
 			Shader.SetGlobalVector(ShaderPropertyIDs.PlanetSunLightDirection, v);
 			Shader.SetGlobalFloat(ShaderPropertyIDs.PlanetSunLightEnabled, value);
 			WorldMaterials.PlanetGlow.SetFloat(ShaderPropertyIDs.PlanetRadius, 100f);
@@ -40,7 +40,7 @@ namespace RimWorld.Planet
 
 		public static void PrintQuadTangentialToPlanet(Vector3 pos, Vector3 posForTangents, float size, float altOffset, LayerSubMesh subMesh, bool counterClockwise = false, bool randomizeRotation = false, bool printUVs = true)
 		{
-			GetTangentsToPlanet(posForTangents, out Vector3 first, out Vector3 second, randomizeRotation);
+			GetTangentsToPlanet(posForTangents, out var first, out var second, randomizeRotation);
 			Vector3 normalized = posForTangents.normalized;
 			float d = size * 0.5f;
 			Vector3 item = pos - first * d - second * d + normalized * altOffset;
@@ -87,12 +87,12 @@ namespace RimWorld.Planet
 				return;
 			}
 			Vector3 normalized = pos.normalized;
-			Vector3 vector = (!counterClockwise) ? normalized : (-normalized);
+			Vector3 vector = ((!counterClockwise) ? normalized : (-normalized));
 			Quaternion q = Quaternion.LookRotation(Vector3.Cross(vector, Vector3.up), vector);
 			Vector3 s = new Vector3(size, 1f, size);
 			Matrix4x4 matrix = default(Matrix4x4);
 			matrix.SetTRS(pos + normalized * altOffset, q, s);
-			int layer = useSkyboxLayer ? WorldCameraManager.WorldSkyboxLayer : WorldCameraManager.WorldLayer;
+			int layer = (useSkyboxLayer ? WorldCameraManager.WorldSkyboxLayer : WorldCameraManager.WorldLayer);
 			if (propertyBlock != null)
 			{
 				Graphics.DrawMesh(MeshPool.plane10, matrix, material, layer, null, 0, propertyBlock);
@@ -112,7 +112,7 @@ namespace RimWorld.Planet
 
 		public static Vector3 ProjectOnQuadTangentialToPlanet(Vector3 center, Vector2 point)
 		{
-			GetTangentsToPlanet(center, out Vector3 first, out Vector3 second);
+			GetTangentsToPlanet(center, out var first, out var second);
 			return point.x * first + point.y * second;
 		}
 

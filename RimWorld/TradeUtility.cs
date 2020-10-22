@@ -131,12 +131,8 @@ namespace RimWorld
 
 		public static void LaunchThingsOfType(ThingDef resDef, int debt, Map map, TradeShip trader)
 		{
-			while (true)
+			while (debt > 0)
 			{
-				if (debt <= 0)
-				{
-					return;
-				}
 				Thing thing = null;
 				foreach (Building_OrbitalTradeBeacon item in Building_OrbitalTradeBeacon.AllPowered(map))
 				{
@@ -157,6 +153,7 @@ namespace RimWorld
 				IL_009d:
 				if (thing == null)
 				{
+					Log.Error(string.Concat("Could not find any ", resDef, " to transfer to trader."));
 					break;
 				}
 				int num = Math.Min(debt, thing.stackCount);
@@ -170,7 +167,6 @@ namespace RimWorld
 				}
 				debt -= num;
 			}
-			Log.Error(string.Concat("Could not find any ", resDef, " to transfer to trader."));
 		}
 
 		public static void LaunchSilver(Map map, int fee)
@@ -211,7 +207,7 @@ namespace RimWorld
 				return thing.RoyalFavorValue;
 			}
 			float statValue = thing.GetStatValue(StatDefOf.SellPriceFactor);
-			float num = thing.MarketValue * 0.6f * priceFactorSell_TraderPriceType * statValue * (1f - Find.Storyteller.difficulty.tradePriceFactorLoss);
+			float num = thing.MarketValue * 0.6f * priceFactorSell_TraderPriceType * statValue * (1f - Find.Storyteller.difficultyValues.tradePriceFactorLoss);
 			num *= 1f + priceGain_PlayerNegotiator + priceGain_FactionBase;
 			num = Mathf.Max(num, 0.01f);
 			if (num > 99.5f)
@@ -223,7 +219,7 @@ namespace RimWorld
 
 		public static float GetPricePlayerBuy(Thing thing, float priceFactorBuy_TraderPriceType, float priceGain_PlayerNegotiator, float priceGain_FactionBase)
 		{
-			float num = thing.MarketValue * 1.4f * priceFactorBuy_TraderPriceType * (1f + Find.Storyteller.difficulty.tradePriceFactorLoss);
+			float num = thing.MarketValue * 1.4f * priceFactorBuy_TraderPriceType * (1f + Find.Storyteller.difficultyValues.tradePriceFactorLoss);
 			num *= 1f - priceGain_PlayerNegotiator - priceGain_FactionBase;
 			num = Mathf.Max(num, 0.5f);
 			if (num > 99.5f)

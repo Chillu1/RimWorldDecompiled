@@ -99,7 +99,7 @@ namespace Verse
 			Rect rect2 = new Rect(0f, 0f, 50f, 24f);
 			rect2.x = screenRect.x;
 			rect2.y = screenRect.y + screenRect.height / 2f - 12f;
-			if (float.TryParse(Widgets.TextField(rect2, curve.View.rect.x.ToString()), out float result))
+			if (float.TryParse(Widgets.TextField(rect2, curve.View.rect.x.ToString()), out var result))
 			{
 				curve.View.rect.x = result;
 			}

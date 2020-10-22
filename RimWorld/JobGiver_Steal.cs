@@ -12,11 +12,11 @@ namespace RimWorld
 
 		protected override Job TryGiveJob(Pawn pawn)
 		{
-			if (!RCellFinder.TryFindBestExitSpot(pawn, out IntVec3 spot))
+			if (!RCellFinder.TryFindBestExitSpot(pawn, out var spot))
 			{
 				return null;
 			}
-			if (StealAIUtility.TryFindBestItemToSteal(pawn.Position, pawn.Map, 12f, out Thing item, pawn) && !GenAI.InDangerousCombat(pawn))
+			if (StealAIUtility.TryFindBestItemToSteal(pawn.Position, pawn.Map, 12f, out var item, pawn) && !GenAI.InDangerousCombat(pawn))
 			{
 				Job job = JobMaker.MakeJob(JobDefOf.Steal);
 				job.targetA = item;

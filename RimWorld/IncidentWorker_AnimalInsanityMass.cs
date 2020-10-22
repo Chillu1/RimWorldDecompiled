@@ -36,7 +36,7 @@ namespace RimWorld
 				adjustedPoints *= 0.5f;
 				adjustedPoints += 250f;
 			}
-			if (!DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef def) => def.RaceProps.Animal && def.combatPower <= adjustedPoints && map.mapPawns.AllPawnsSpawned.Where((Pawn p) => p.kindDef == def && AnimalUsable(p)).Count() >= 3).TryRandomElement(out PawnKindDef animalDef))
+			if (!DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef def) => def.RaceProps.Animal && def.combatPower <= adjustedPoints && map.mapPawns.AllPawnsSpawned.Where((Pawn p) => p.kindDef == def && AnimalUsable(p)).Count() >= 3).TryRandomElement(out var animalDef))
 			{
 				return false;
 			}

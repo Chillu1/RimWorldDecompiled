@@ -21,7 +21,7 @@ namespace RimWorld.QuestGen
 
 		protected override void RunInt()
 		{
-			if (GetNodesCanRun(QuestGen.slate).TryRandomElementByWeight((QuestNode e) => e.SelectionWeight(QuestGen.slate), out QuestNode result))
+			if (GetNodesCanRun(QuestGen.slate).TryRandomElementByWeight((QuestNode e) => e.SelectionWeight(QuestGen.slate), out var result))
 			{
 				result.Run();
 			}

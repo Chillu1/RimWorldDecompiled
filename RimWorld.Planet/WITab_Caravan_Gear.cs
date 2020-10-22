@@ -294,7 +294,7 @@ namespace RimWorld.Planet
 			{
 				Widgets.DrawHighlight(rect2);
 			}
-			float num = (t == draggedItem) ? 0.5f : 1f;
+			float num = ((t == draggedItem) ? 0.5f : 1f);
 			Rect rect3 = new Rect(4f, (rect.height - 27f) / 2f, 27f, 27f);
 			Widgets.ThingIcon(rect3, t, num);
 			GUI.color = new Color(1f, 1f, 1f, num);
@@ -382,7 +382,7 @@ namespace RimWorld.Planet
 		{
 			droppedDraggedItem = false;
 			Apparel apparel;
-			if ((apparel = (draggedItem as Apparel)) != null && CurrentWearerOf(apparel) != null && CurrentWearerOf(apparel).apparel.IsLocked(apparel))
+			if ((apparel = draggedItem as Apparel) != null && CurrentWearerOf(apparel) != null && CurrentWearerOf(apparel).apparel.IsLocked(apparel))
 			{
 				Messages.Message("MessageCantUnequipLockedApparel".Translate(), CurrentWearerOf(apparel), MessageTypeDefOf.RejectInput, historical: false);
 				draggedItem = null;
@@ -403,7 +403,7 @@ namespace RimWorld.Planet
 		private void TryEquipDraggedItem(Pawn p)
 		{
 			droppedDraggedItem = false;
-			if (!EquipmentUtility.CanEquip(draggedItem, p, out string cantReason))
+			if (!EquipmentUtility.CanEquip_NewTmp(draggedItem, p, out var cantReason))
 			{
 				Messages.Message("MessageCantEquipCustom".Translate(cantReason.CapitalizeFirst()), p, MessageTypeDefOf.RejectInput, historical: false);
 				draggedItem = null;
@@ -411,6 +411,12 @@ namespace RimWorld.Planet
 			}
 			if (draggedItem.def.IsWeapon)
 			{
+				if (p.guest.IsPrisoner)
+				{
+					Messages.Message("MessageCantEquipCustom".Translate("MessagePrisonerCannotEquipWeapon".Translate(p.Named("PAWN"))), p, MessageTypeDefOf.RejectInput, historical: false);
+					draggedItem = null;
+					return;
+				}
 				if (p.WorkTagIsDisabled(WorkTags.Violent))
 				{
 					Messages.Message("MessageCantEquipIncapableOfViolence".Translate(p.LabelShort, p), p, MessageTypeDefOf.RejectInput, historical: false);
@@ -471,6 +477,26 @@ namespace RimWorld.Planet
 			}
 			else if (thingWithComps != null && p.equipment != null)
 			{
+				string personaWeaponConfirmationText = EquipmentUtility.GetPersonaWeaponConfirmationText(draggedItem, p);
+				if (!personaWeaponConfirmationText.NullOrEmpty())
+				{
+					_ = draggedItem;
+					Find.WindowStack.Add(new Dialog_MessageBox(personaWeaponConfirmationText, "Yes".Translate(), delegate
+					{
+						AddEquipment();
+					}, "No".Translate()));
+					draggedItem = null;
+					return;
+				}
+				AddEquipment();
+			}
+			else
+			{
+				Log.Warning(string.Concat("Could not make ", p, " equip or wear ", draggedItem));
+			}
+			draggedItem = null;
+			void AddEquipment()
+			{
 				tmpExistingEquipment.Clear();
 				tmpExistingEquipment.AddRange(p.equipment.AllEquipmentListForReading);
 				for (int j = 0; j < tmpExistingEquipment.Count; j++)
@@ -480,18 +506,15 @@ namespace RimWorld.Planet
 					if (pawn2 != null)
 					{
 						pawn2.inventory.innerContainer.TryAdd(tmpExistingEquipment[j]);
-						continue;
 					}
-					Log.Warning(string.Concat("Could not find any pawn to move ", tmpExistingEquipment[j], " to."));
-					tmpExistingEquipment[j].Destroy();
+					else
+					{
+						Log.Warning(string.Concat("Could not find any pawn to move ", tmpExistingEquipment[j], " to."));
+						tmpExistingEquipment[j].Destroy();
+					}
 				}
 				p.equipment.AddEquipment((ThingWithComps)thingWithComps.SplitOff(1));
 			}
-			else
-			{
-				Log.Warning(string.Concat("Could not make ", p, " equip or wear ", draggedItem));
-			}
-			draggedItem = null;
 		}
 	}
 }

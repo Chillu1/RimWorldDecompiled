@@ -24,7 +24,7 @@ namespace RimWorld
 				return list;
 			}
 			int maxGroupsCount = GetMaxGroupsCount(pawns.Count);
-			int num = (maxGroupsCount == 1) ? 1 : Rand.RangeInclusive(2, maxGroupsCount);
+			int num = ((maxGroupsCount == 1) ? 1 : Rand.RangeInclusive(2, maxGroupsCount));
 			for (int i = 0; i < num; i++)
 			{
 				IntVec3 second = FindNewMapEdgeGroupCenter(map, list, arriveInPods);

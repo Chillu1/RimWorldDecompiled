@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse.AI
@@ -188,7 +188,7 @@ namespace Verse.AI
 				{
 					return;
 				}
-				if (CellFinder.TryFindBestPawnStandCell(this.pawn, out IntVec3 cell, cellByCell: true) && cell != this.pawn.Position)
+				if (CellFinder.TryFindBestPawnStandCell(this.pawn, out var cell, cellByCell: true) && cell != this.pawn.Position)
 				{
 					this.pawn.Position = cell;
 					ResetToCurrentPosition();
@@ -487,7 +487,7 @@ namespace Verse.AI
 
 		private static int CostToMoveIntoCell(Pawn pawn, IntVec3 c)
 		{
-			int num = (c.x != pawn.Position.x && c.z != pawn.Position.z) ? pawn.TicksPerMoveDiagonal : pawn.TicksPerMoveCardinal;
+			int num = ((c.x != pawn.Position.x && c.z != pawn.Position.z) ? pawn.TicksPerMoveDiagonal : pawn.TicksPerMoveCardinal);
 			num += pawn.Map.pathGrid.CalculatedCostAt(c, perceivedStatic: false, pawn.Position);
 			Building edifice = c.GetEdifice(pawn.Map);
 			if (edifice != null)
@@ -617,7 +617,7 @@ namespace Verse.AI
 			if (lastPathedTargetPosition != destination.Cell)
 			{
 				float num = (pawn.Position - destination.Cell).LengthHorizontalSquared;
-				float num2 = (num > 900f) ? 10f : ((num > 289f) ? 5f : ((num > 100f) ? 3f : ((!(num > 49f)) ? 0.5f : 2f)));
+				float num2 = ((num > 900f) ? 10f : ((num > 289f) ? 5f : ((num > 100f) ? 3f : ((!(num > 49f)) ? 0.5f : 2f))));
 				if ((float)(lastPathedTargetPosition - destination.Cell).LengthHorizontalSquared > num2 * num2)
 				{
 					return true;

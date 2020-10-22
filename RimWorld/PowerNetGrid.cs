@@ -52,7 +52,7 @@ namespace RimWorld
 
 		public void Notify_PowerNetDeleted(PowerNet deadNet)
 		{
-			if (!powerNetCells.TryGetValue(deadNet, out List<IntVec3> value))
+			if (!powerNetCells.TryGetValue(deadNet, out var value))
 			{
 				Log.Warning(string.Concat("Net ", deadNet, " does not exist in PowerNetGrid's dictionary."));
 				return;

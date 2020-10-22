@@ -139,7 +139,7 @@ namespace RimWorld
 		{
 			for (int i = 0; i < count; i++)
 			{
-				PawnKindDef kindDef = (animalKind == null) ? RandomPets().RandomElementByWeight((PawnKindDef td) => td.RaceProps.petness) : animalKind;
+				PawnKindDef kindDef = ((animalKind == null) ? RandomPets().RandomElementByWeight((PawnKindDef td) => td.RaceProps.petness) : animalKind);
 				Pawn animal = PawnGenerator.GeneratePawn(kindDef, Faction.OfPlayer);
 				if (animal.Name == null || animal.Name.Numerical)
 				{

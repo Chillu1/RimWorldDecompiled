@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -26,6 +26,8 @@ namespace RimWorld
 		public bool joinPlayer;
 
 		public bool makePrisoners;
+
+		public bool destroyItemsOnCleanup = true;
 
 		public string customLetterText;
 
@@ -110,7 +112,7 @@ namespace RimWorld
 			if (mapParent != null && mapParent.HasMap && Things.Any())
 			{
 				Map map = mapParent.Map;
-				IntVec3 intVec = dropSpot.IsValid ? dropSpot : GetRandomDropSpot();
+				IntVec3 intVec = (dropSpot.IsValid ? dropSpot : GetRandomDropSpot());
 				if (sendStandardLetter)
 				{
 					TaggedString title;
@@ -193,26 +195,23 @@ namespace RimWorld
 		public override void PostQuestAdded()
 		{
 			base.PostQuestAdded();
-			int num = 0;
-			while (true)
+			for (int i = 0; i < items.Count; i++)
 			{
-				if (num < items.Count)
+				if (items[i].def == ThingDefOf.PsychicAmplifier)
 				{
-					if (items[num].def == ThingDefOf.PsychicAmplifier)
-					{
-						break;
-					}
-					num++;
-					continue;
+					Find.History.Notify_PsylinkAvailable();
+					break;
 				}
-				return;
 			}
-			Find.History.Notify_PsylinkAvailable();
 		}
 
 		public override void Cleanup()
 		{
 			base.Cleanup();
+			if (!destroyItemsOnCleanup)
+			{
+				return;
+			}
 			for (int i = 0; i < items.Count; i++)
 			{
 				if (!items[i].Destroyed)
@@ -230,7 +229,7 @@ namespace RimWorld
 			{
 				return DropCellFinder.TradeDropSpot(map);
 			}
-			if (CellFinderLoose.TryGetRandomCellWith((IntVec3 x) => x.Standable(map) && !x.Roofed(map) && !x.Fogged(map) && map.reachability.CanReachColony(x), map, 1000, out IntVec3 result))
+			if (CellFinderLoose.TryGetRandomCellWith((IntVec3 x) => x.Standable(map) && !x.Roofed(map) && !x.Fogged(map) && map.reachability.CanReachColony(x), map, 1000, out var result))
 			{
 				return result;
 			}
@@ -255,6 +254,7 @@ namespace RimWorld
 			Scribe_Values.Look(ref sendStandardLetter, "sendStandardLetter", defaultValue: true);
 			Scribe_References.Look(ref importantLookTarget, "importantLookTarget");
 			Scribe_Collections.Look(ref thingsToExcludeFromHyperlinks, "thingsToExcludeFromHyperlinks", LookMode.Def);
+			Scribe_Values.Look(ref destroyItemsOnCleanup, "destroyItemsOnCleanup", defaultValue: false);
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				if (thingsToExcludeFromHyperlinks == null)

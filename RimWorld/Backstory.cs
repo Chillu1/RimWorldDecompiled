@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using UnityEngine;
 using Verse;
@@ -207,7 +208,10 @@ namespace RimWorld
 					stringBuilder.AppendLine(skillDef.skillLabel.CapitalizeFirst() + ":   " + skillGainsResolved[skillDef].ToString("+##;-##"));
 				}
 			}
-			stringBuilder.AppendLine();
+			if (DisabledWorkTypes.Any() || DisabledWorkGivers.Any())
+			{
+				stringBuilder.AppendLine();
+			}
 			foreach (WorkTypeDef disabledWorkType in DisabledWorkTypes)
 			{
 				stringBuilder.AppendLine(disabledWorkType.gerundLabel.CapitalizeFirst() + " " + "DisabledLower".Translate());

@@ -51,7 +51,7 @@ namespace RimWorld
 
 		public DrugPolicy MakeNewDrugPolicy()
 		{
-			int uniqueId = (!policies.Any()) ? 1 : (policies.Max((DrugPolicy o) => o.uniqueId) + 1);
+			int uniqueId = ((!policies.Any()) ? 1 : (policies.Max((DrugPolicy o) => o.uniqueId) + 1));
 			DrugPolicy drugPolicy = new DrugPolicy(uniqueId, "DrugPolicy".Translate() + " " + uniqueId.ToString());
 			policies.Add(drugPolicy);
 			return drugPolicy;

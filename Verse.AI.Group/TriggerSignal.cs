@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Text;
+using RimWorld;
 
 namespace Verse.AI.Group
 {
@@ -8,6 +8,8 @@ namespace Verse.AI.Group
 		public TriggerSignalType type;
 
 		public string memo;
+
+		public Signal signal;
 
 		public Thing thing;
 
@@ -29,6 +31,7 @@ namespace Verse.AI.Group
 		{
 			this.type = type;
 			memo = null;
+			signal = default(Signal);
 			thing = null;
 			dinfo = default(DamageInfo);
 			condition = PawnLostCondition.Undefined;
@@ -41,6 +44,13 @@ namespace Verse.AI.Group
 		{
 			TriggerSignal result = new TriggerSignal(TriggerSignalType.Memo);
 			result.memo = memo;
+			return result;
+		}
+
+		public static TriggerSignal ForSignal(Signal signal)
+		{
+			TriggerSignal result = new TriggerSignal(TriggerSignalType.Signal);
+			result.signal = signal;
 			return result;
 		}
 
@@ -64,6 +74,10 @@ namespace Verse.AI.Group
 			if (condition != 0)
 			{
 				stringBuilder.Append(", condition=" + condition);
+			}
+			if (signal.tag != null)
+			{
+				stringBuilder.Append(", signal=" + signal);
 			}
 			stringBuilder.Append(")");
 			return stringBuilder.ToString();

@@ -52,7 +52,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			if (req.HasThing && req.Thing.TryGetQuality(out QualityCategory qc))
+			if (req.HasThing && req.Thing.TryGetQuality(out var qc))
 			{
 				string text = "StatsReport_QualityMultiplier".Translate() + ": x" + QualityMultiplier(qc).ToStringPercent();
 				float num = MaxGain(qc);
@@ -67,48 +67,32 @@ namespace RimWorld
 
 		private float QualityMultiplier(QualityCategory qc)
 		{
-			switch (qc)
+			return qc switch
 			{
-			case QualityCategory.Awful:
-				return factorAwful;
-			case QualityCategory.Poor:
-				return factorPoor;
-			case QualityCategory.Normal:
-				return factorNormal;
-			case QualityCategory.Good:
-				return factorGood;
-			case QualityCategory.Excellent:
-				return factorExcellent;
-			case QualityCategory.Masterwork:
-				return factorMasterwork;
-			case QualityCategory.Legendary:
-				return factorLegendary;
-			default:
-				throw new ArgumentOutOfRangeException();
-			}
+				QualityCategory.Awful => factorAwful, 
+				QualityCategory.Poor => factorPoor, 
+				QualityCategory.Normal => factorNormal, 
+				QualityCategory.Good => factorGood, 
+				QualityCategory.Excellent => factorExcellent, 
+				QualityCategory.Masterwork => factorMasterwork, 
+				QualityCategory.Legendary => factorLegendary, 
+				_ => throw new ArgumentOutOfRangeException(), 
+			};
 		}
 
 		private float MaxGain(QualityCategory qc)
 		{
-			switch (qc)
+			return qc switch
 			{
-			case QualityCategory.Awful:
-				return maxGainAwful;
-			case QualityCategory.Poor:
-				return maxGainPoor;
-			case QualityCategory.Normal:
-				return maxGainNormal;
-			case QualityCategory.Good:
-				return maxGainGood;
-			case QualityCategory.Excellent:
-				return maxGainExcellent;
-			case QualityCategory.Masterwork:
-				return maxGainMasterwork;
-			case QualityCategory.Legendary:
-				return maxGainLegendary;
-			default:
-				throw new ArgumentOutOfRangeException();
-			}
+				QualityCategory.Awful => maxGainAwful, 
+				QualityCategory.Poor => maxGainPoor, 
+				QualityCategory.Normal => maxGainNormal, 
+				QualityCategory.Good => maxGainGood, 
+				QualityCategory.Excellent => maxGainExcellent, 
+				QualityCategory.Masterwork => maxGainMasterwork, 
+				QualityCategory.Legendary => maxGainLegendary, 
+				_ => throw new ArgumentOutOfRangeException(), 
+			};
 		}
 	}
 }

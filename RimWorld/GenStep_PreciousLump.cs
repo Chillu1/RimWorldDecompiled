@@ -32,7 +32,7 @@ namespace RimWorld
 
 		protected override bool CanScatterAt(IntVec3 c, Map map)
 		{
-			if (MapGenerator.TryGetVar("UsedRects", out List<CellRect> var) && var.Any((CellRect x) => x.Contains(c)))
+			if (MapGenerator.TryGetVar<List<CellRect>>("UsedRects", out var var) && var.Any((CellRect x) => x.Contains(c)))
 			{
 				return false;
 			}

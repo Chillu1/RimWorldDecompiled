@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using Verse;
 
@@ -9,6 +10,8 @@ namespace RimWorld
 
 		public RoyalTitleDef def;
 
+		public Pawn pawn;
+
 		public int receivedTick = -1;
 
 		public bool wasInherited;
@@ -18,6 +21,8 @@ namespace RimWorld
 		private const int DecreeCheckInterval = 833;
 
 		private const int RoomRequirementsGracePeriodTicks = 180000;
+
+		public string Label => def.GetLabelFor(pawn);
 
 		public float RoomRequirementGracePeriodDaysLeft => Mathf.Max((180000 - (GenTicks.TicksGame - receivedTick)).TicksToDays(), 0f);
 
@@ -39,14 +44,21 @@ namespace RimWorld
 			faction = other.faction;
 			def = other.def;
 			receivedTick = other.receivedTick;
+			pawn = other.pawn;
 		}
 
-		public void RoyalTitleTick(Pawn pawn)
+		public void RoyalTitleTick_NewTemp()
 		{
 			if (pawn.IsHashIntervalTick(833) && conceited && pawn.Spawned && pawn.IsFreeColonist && (!pawn.IsQuestLodger() || pawn.LodgerAllowedDecrees()) && def.decreeMtbDays > 0f && pawn.Awake() && Rand.MTBEventOccurs(def.decreeMtbDays, 60000f, 833f) && (float)(Find.TickManager.TicksGame - pawn.royalty.lastDecreeTicks) >= def.decreeMinIntervalDays * 60000f)
 			{
 				pawn.royalty.IssueDecree(causedByMentalBreak: false);
 			}
+		}
+
+		[Obsolete("Will be removed in the future")]
+		public void RoyalTitleTick(Pawn pawn)
+		{
+			RoyalTitleTick_NewTemp();
 		}
 
 		public void ExposeData()

@@ -13,6 +13,10 @@ namespace RimWorld
 
 		private static float WanderRadius = 10f;
 
+		public static readonly Color ArtificialBuildingRingColor = new Color(0.8f, 0.49f, 0.43f);
+
+		private static Dictionary<MeditationFocusDef, List<Dialog_InfoCard.Hyperlink>> focusObjectHyperlinksPerTypeCache = new Dictionary<MeditationFocusDef, List<Dialog_InfoCard.Hyperlink>>();
+
 		private static Dictionary<MeditationFocusDef, string> focusObjectsPerTypeCache = new Dictionary<MeditationFocusDef, string>();
 
 		public static Job GetMeditationJob(Pawn pawn, bool forJoy = false)
@@ -21,7 +25,7 @@ namespace RimWorld
 			if (meditationSpotAndFocus.IsValid)
 			{
 				Building_Throne t;
-				Job job = ((t = (meditationSpotAndFocus.focus.Thing as Building_Throne)) == null) ? JobMaker.MakeJob(JobDefOf.Meditate, meditationSpotAndFocus.spot, null, meditationSpotAndFocus.focus) : JobMaker.MakeJob(JobDefOf.Reign, t, null, t);
+				Job job = (((t = meditationSpotAndFocus.focus.Thing as Building_Throne) == null) ? JobMaker.MakeJob(JobDefOf.Meditate, meditationSpotAndFocus.spot, null, meditationSpotAndFocus.focus) : JobMaker.MakeJob(JobDefOf.Reign, t, null, t));
 				job.ignoreJoyTimeAssignment = !forJoy;
 				return job;
 			}
@@ -43,7 +47,7 @@ namespace RimWorld
 			{
 				if (SafeEnvironmentalConditions(pawn, item.Cell, pawn.Map))
 				{
-					LocalTargetInfo localTargetInfo = (item.Thing is Building_Throne) ? ((LocalTargetInfo)item.Thing) : BestFocusAt(item, pawn);
+					LocalTargetInfo localTargetInfo = ((item.Thing is Building_Throne) ? ((LocalTargetInfo)item.Thing) : BestFocusAt(item, pawn));
 					float num2 = 1f / Mathf.Max(item.Cell.DistanceToSquared(pawn.Position), 0.1f);
 					if (pawn.HasPsylink && localTargetInfo.IsValid)
 					{
@@ -55,9 +59,9 @@ namespace RimWorld
 						num2 += 1f;
 					}
 					Building building;
-					if (item.Thing != null && (building = (item.Thing as Building)) != null && building.GetAssignedPawn() == pawn)
+					if (item.Thing != null && (building = item.Thing as Building) != null && building.GetAssignedPawn() == pawn)
 					{
-						num2 = float.PositiveInfinity;
+						num2 += (float)((building.def == ThingDefOf.MeditationSpot) ? 200 : 100);
 					}
 					if (!item.Cell.Standable(pawn.Map))
 					{
@@ -76,31 +80,30 @@ namespace RimWorld
 
 		public static IEnumerable<LocalTargetInfo> AllMeditationSpotCandidates(Pawn pawn, bool allowFallbackSpots = true)
 		{
-			Pawn pawn2 = pawn;
 			bool flag = false;
-			if (pawn2.royalty != null && pawn2.royalty.AllTitlesInEffectForReading.Count > 0 && !pawn2.IsPrisonerOfColony)
+			if (pawn.royalty != null && pawn.royalty.AllTitlesInEffectForReading.Count > 0 && !pawn.IsPrisonerOfColony)
 			{
-				Building_Throne building_Throne = RoyalTitleUtility.FindBestUsableThrone(pawn2);
+				Building_Throne building_Throne = RoyalTitleUtility.FindBestUsableThrone(pawn);
 				if (building_Throne != null)
 				{
 					yield return building_Throne;
 					flag = true;
 				}
 			}
-			if (!pawn2.IsPrisonerOfColony)
+			if (!pawn.IsPrisonerOfColony)
 			{
-				foreach (Building item in pawn2.Map.listerBuildings.AllBuildingsColonistOfDef(ThingDefOf.MeditationSpot).Where(delegate(Building s)
+				foreach (Building item in pawn.Map.listerBuildings.AllBuildingsColonistOfDef(ThingDefOf.MeditationSpot).Where(delegate(Building s)
 				{
-					if (s.IsForbidden(pawn2) || !s.Position.Standable(s.Map))
+					if (s.IsForbidden(pawn) || !s.Position.Standable(s.Map))
 					{
 						return false;
 					}
-					if (s.GetAssignedPawn() != null && s.GetAssignedPawn() != pawn2)
+					if (s.GetAssignedPawn() != null && s.GetAssignedPawn() != pawn)
 					{
 						return false;
 					}
 					Room room4 = s.GetRoom();
-					return (room4 == null || CanUseRoomToMeditate(room4, pawn2)) && pawn2.CanReserveAndReach(s, PathEndMode.OnCell, pawn2.NormalMaxDanger());
+					return (room4 == null || CanUseRoomToMeditate(room4, pawn)) && pawn.CanReserveAndReach(s, PathEndMode.OnCell, pawn.NormalMaxDanger());
 				}))
 				{
 					yield return item;
@@ -111,7 +114,7 @@ namespace RimWorld
 			{
 				yield break;
 			}
-			List<Thing> list = pawn2.Map.listerThings.ThingsInGroup(ThingRequestGroup.MeditationFocus);
+			List<Thing> list = pawn.Map.listerThings.ThingsInGroup(ThingRequestGroup.MeditationFocus);
 			foreach (Thing item2 in list)
 			{
 				if (item2.def == ThingDefOf.Wall)
@@ -119,44 +122,44 @@ namespace RimWorld
 					continue;
 				}
 				Room room = item2.GetRoom();
-				if ((room == null || CanUseRoomToMeditate(room, pawn2)) && item2.GetStatValueForPawn(StatDefOf.MeditationFocusStrength, pawn2) > 0f)
+				if ((room == null || CanUseRoomToMeditate(room, pawn)) && item2.GetStatValueForPawn(StatDefOf.MeditationFocusStrength, pawn) > 0f)
 				{
-					LocalTargetInfo localTargetInfo = MeditationSpotForFocus(item2, pawn2);
+					LocalTargetInfo localTargetInfo = MeditationSpotForFocus(item2, pawn);
 					if (localTargetInfo.IsValid)
 					{
 						yield return localTargetInfo;
 					}
 				}
 			}
-			Building_Bed bed = pawn2.ownership.OwnedBed;
+			Building_Bed bed = pawn.ownership.OwnedBed;
 			Room room2 = bed?.GetRoom();
 			IntVec3 c2;
-			if (room2 != null && !room2.PsychologicallyOutdoors && pawn2.CanReserveAndReach(bed, PathEndMode.OnCell, pawn2.NormalMaxDanger()))
+			if (room2 != null && !room2.PsychologicallyOutdoors && pawn.CanReserveAndReach(bed, PathEndMode.OnCell, pawn.NormalMaxDanger()))
 			{
-				foreach (LocalTargetInfo item3 in FocusSpotsInTheRoom(pawn2, room2))
+				foreach (LocalTargetInfo item3 in FocusSpotsInTheRoom(pawn, room2))
 				{
 					yield return item3;
 				}
-				c2 = RCellFinder.RandomWanderDestFor(pawn2, bed.Position, WanderRadius, (Pawn p, IntVec3 c, IntVec3 r) => c.Standable(p.Map) && c.GetDoor(p.Map) == null && WanderRoomUtility.IsValidWanderDest(p, c, r), pawn2.NormalMaxDanger());
+				c2 = RCellFinder.RandomWanderDestFor(pawn, bed.Position, WanderRadius, (Pawn p, IntVec3 c, IntVec3 r) => c.Standable(p.Map) && c.GetDoor(p.Map) == null && WanderRoomUtility.IsValidWanderDest(p, c, r), pawn.NormalMaxDanger());
 				if (c2.IsValid)
 				{
 					yield return c2;
 				}
 			}
-			if (pawn2.IsPrisonerOfColony)
+			if (pawn.IsPrisonerOfColony)
 			{
 				yield break;
 			}
-			IntVec3 colonyWanderRoot = WanderUtility.GetColonyWanderRoot(pawn2);
-			c2 = RCellFinder.RandomWanderDestFor(pawn2, colonyWanderRoot, WanderRadius, delegate(Pawn p, IntVec3 c, IntVec3 r)
+			IntVec3 colonyWanderRoot = WanderUtility.GetColonyWanderRoot(pawn);
+			c2 = RCellFinder.RandomWanderDestFor(pawn, colonyWanderRoot, WanderRadius, delegate(Pawn p, IntVec3 c, IntVec3 r)
 			{
 				if (!c.Standable(p.Map) || c.GetDoor(p.Map) != null || !p.CanReserveAndReach(c, PathEndMode.OnCell, p.NormalMaxDanger()))
 				{
 					return false;
 				}
 				Room room3 = c.GetRoom(p.Map);
-				return (room3 == null || CanUseRoomToMeditate(room3, pawn2)) ? true : false;
-			}, pawn2.NormalMaxDanger());
+				return (room3 == null || CanUseRoomToMeditate(room3, pawn)) ? true : false;
+			}, pawn.NormalMaxDanger());
 			if (c2.IsValid)
 			{
 				yield return c2;
@@ -190,11 +193,29 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (pawn.health.hediffSet.BleedRateTotal > 0f)
+			if (pawn.health.hediffSet.BleedRateTotal > 0f || (HealthAIUtility.ShouldSeekMedicalRest(pawn) && pawn.timetable?.CurrentAssignment != TimeAssignmentDefOf.Meditate) || HealthAIUtility.ShouldSeekMedicalRestUrgent(pawn))
 			{
 				return false;
 			}
 			return true;
+		}
+
+		public static bool CanOnlyMeditateInBed(Pawn pawn)
+		{
+			return pawn.Downed;
+		}
+
+		public static bool ShouldMeditateInBed(Pawn pawn)
+		{
+			if (pawn.Downed)
+			{
+				return true;
+			}
+			if (pawn.health.hediffSet.AnyHediffMakesSickThought)
+			{
+				return true;
+			}
+			return false;
 		}
 
 		public static LocalTargetInfo BestFocusAt(LocalTargetInfo spot, Pawn pawn)
@@ -258,6 +279,36 @@ namespace RimWorld
 		{
 			return (from f in FocusTypesAvailableForPawn(pawn)
 				select f.label).ToCommaList();
+		}
+
+		public static IEnumerable<Dialog_InfoCard.Hyperlink> FocusObjectsForPawnHyperlinks(Pawn pawn)
+		{
+			for (int i = 0; i < DefDatabase<MeditationFocusDef>.AllDefsListForReading.Count; i++)
+			{
+				MeditationFocusDef meditationFocusDef = DefDatabase<MeditationFocusDef>.AllDefsListForReading[i];
+				if (!meditationFocusDef.CanPawnUse(pawn))
+				{
+					continue;
+				}
+				if (!focusObjectHyperlinksPerTypeCache.ContainsKey(meditationFocusDef))
+				{
+					List<Dialog_InfoCard.Hyperlink> list2 = new List<Dialog_InfoCard.Hyperlink>();
+					foreach (ThingDef item in DefDatabase<ThingDef>.AllDefsListForReading)
+					{
+						CompProperties_MeditationFocus compProperties = item.GetCompProperties<CompProperties_MeditationFocus>();
+						if (compProperties != null && compProperties.focusTypes.Contains(meditationFocusDef))
+						{
+							list2.Add(new Dialog_InfoCard.Hyperlink(item));
+						}
+					}
+					focusObjectHyperlinksPerTypeCache[meditationFocusDef] = list2;
+				}
+				List<Dialog_InfoCard.Hyperlink> list = focusObjectHyperlinksPerTypeCache[meditationFocusDef];
+				for (int j = 0; j < list.Count; j++)
+				{
+					yield return list[j];
+				}
+			}
 		}
 
 		public static string FocusTypeAvailableExplanation(Pawn pawn)
@@ -350,7 +401,7 @@ namespace RimWorld
 
 		public static bool CountsAsArtificialBuilding(ThingDef def, Faction faction)
 		{
-			if (typeof(Building).IsAssignableFrom(def.thingClass) && faction != null)
+			if (def.category == ThingCategory.Building && faction != null)
 			{
 				return def.building.artificialForMeditationPurposes;
 			}
@@ -364,7 +415,7 @@ namespace RimWorld
 
 		public static void DrawArtificialBuildingOverlay(IntVec3 pos, ThingDef def, Map map, float radius)
 		{
-			GenDraw.DrawRadiusRing(pos, radius);
+			GenDraw.DrawRadiusRing(pos, radius, ArtificialBuildingRingColor);
 			int num = 0;
 			foreach (Thing item in map.listerArtificialBuildingsForMeditation.GetForCell(pos, radius))
 			{

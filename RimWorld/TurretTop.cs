@@ -60,7 +60,7 @@ namespace RimWorld
 			LocalTargetInfo currentTarget = parentTurret.CurrentTarget;
 			if (currentTarget.IsValid)
 			{
-				float num2 = CurRotation = (currentTarget.Cell.ToVector3Shifted() - parentTurret.DrawPos).AngleFlat();
+				float num2 = (CurRotation = (currentTarget.Cell.ToVector3Shifted() - parentTurret.DrawPos).AngleFlat());
 				ticksUntilIdleTurn = Rand.RangeInclusive(150, 350);
 			}
 			else if (ticksUntilIdleTurn > 0)

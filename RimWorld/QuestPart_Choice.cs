@@ -93,7 +93,7 @@ namespace RimWorld
 				for (int j = 0; j < choices[i].rewards.Count; j++)
 				{
 					Reward_Items reward_Items;
-					if ((reward_Items = (choices[i].rewards[j] as Reward_Items)) == null)
+					if ((reward_Items = choices[i].rewards[j] as Reward_Items) == null)
 					{
 						continue;
 					}

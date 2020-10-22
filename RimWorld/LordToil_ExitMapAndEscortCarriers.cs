@@ -13,7 +13,7 @@ namespace RimWorld
 
 		public override void UpdateAllDuties()
 		{
-			UpdateTraderDuty(out Pawn trader);
+			UpdateTraderDuty(out var trader);
 			UpdateCarriersDuties(trader);
 			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{

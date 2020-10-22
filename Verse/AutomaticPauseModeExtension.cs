@@ -6,19 +6,14 @@ namespace Verse
 	{
 		public static string ToStringHuman(this AutomaticPauseMode mode)
 		{
-			switch (mode)
+			return mode switch
 			{
-			case AutomaticPauseMode.Never:
-				return "AutomaticPauseMode_Never".Translate();
-			case AutomaticPauseMode.MajorThreat:
-				return "AutomaticPauseMode_MajorThreat".Translate();
-			case AutomaticPauseMode.AnyThreat:
-				return "AutomaticPauseMode_AnyThreat".Translate();
-			case AutomaticPauseMode.AnyLetter:
-				return "AutomaticPauseMode_AnyLetter".Translate();
-			default:
-				throw new NotImplementedException();
-			}
+				AutomaticPauseMode.Never => "AutomaticPauseMode_Never".Translate(), 
+				AutomaticPauseMode.MajorThreat => "AutomaticPauseMode_MajorThreat".Translate(), 
+				AutomaticPauseMode.AnyThreat => "AutomaticPauseMode_AnyThreat".Translate(), 
+				AutomaticPauseMode.AnyLetter => "AutomaticPauseMode_AnyLetter".Translate(), 
+				_ => throw new NotImplementedException(), 
+			};
 		}
 	}
 }

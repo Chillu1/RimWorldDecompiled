@@ -32,14 +32,12 @@ namespace RimWorld
 
 		public override IEnumerable<Thing> GenerateThings(int forTile, Faction faction = null)
 		{
-			StockGenerator_Animals stockGenerator_Animals = this;
-			int forTile2 = forTile;
 			int randomInRange = kindCountRange.RandomInRange;
 			int count = countRange.RandomInRange;
 			List<PawnKindDef> kinds = new List<PawnKindDef>();
 			for (int j = 0; j < randomInRange; j++)
 			{
-				if (!DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef k) => !kinds.Contains(k) && stockGenerator_Animals.PawnKindAllowed(k, forTile2)).TryRandomElementByWeight((PawnKindDef k) => stockGenerator_Animals.SelectionChance(k), out PawnKindDef result))
+				if (!DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef k) => !kinds.Contains(k) && PawnKindAllowed(k, forTile)).TryRandomElementByWeight((PawnKindDef k) => SelectionChance(k), out var result))
 				{
 					break;
 				}
@@ -47,11 +45,11 @@ namespace RimWorld
 			}
 			for (int i = 0; i < count; i++)
 			{
-				if (!kinds.TryRandomElement(out PawnKindDef result2))
+				if (!kinds.TryRandomElement(out var result2))
 				{
 					break;
 				}
-				PawnGenerationRequest request = new PawnGenerationRequest(result2, null, PawnGenerationContext.NonPlayer, forTile2);
+				PawnGenerationRequest request = new PawnGenerationRequest(result2, null, PawnGenerationContext.NonPlayer, forTile);
 				yield return PawnGenerator.GeneratePawn(request);
 			}
 		}

@@ -1,9 +1,9 @@
-using RimWorld;
-using RimWorld.IO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
+using RimWorld;
+using RimWorld.IO;
 
 namespace Verse
 {
@@ -68,7 +68,7 @@ namespace Verse
 					string text4 = GetText(item, "titleShort");
 					string text5 = GetText(item, "titleShortFemale");
 					string text6 = GetText(item, "desc");
-					if (!BackstoryDatabase.TryGetWithIdentifier(text, out Backstory bs, closestMatchWarning: false))
+					if (!BackstoryDatabase.TryGetWithIdentifier(text, out var bs, closestMatchWarning: false))
 					{
 						throw new Exception("Backstory not found matching identifier " + text);
 					}
@@ -177,7 +177,7 @@ namespace Verse
 				try
 				{
 					string text = item.Name.ToString();
-					if (BackstoryDatabase.allBackstories.TryGetValue(BackstoryDatabase.GetIdentifierClosestMatch(text), out Backstory value))
+					if (BackstoryDatabase.allBackstories.TryGetValue(BackstoryDatabase.GetIdentifierClosestMatch(text), out var value))
 					{
 						string text2 = GetText(item, "title");
 						string text3 = GetText(item, "titleFemale");

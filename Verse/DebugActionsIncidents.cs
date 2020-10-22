@@ -1,7 +1,7 @@
-using RimWorld;
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
+using RimWorld.Planet;
 
 namespace Verse
 {
@@ -12,7 +12,7 @@ namespace Verse
 		{
 			if (Current.ProgramState == ProgramState.Playing)
 			{
-				IIncidentTarget target = WorldRendererUtility.WorldRenderedNow ? (Find.WorldSelector.SingleSelectedObject as IIncidentTarget) : null;
+				IIncidentTarget target = (WorldRendererUtility.WorldRenderedNow ? (Find.WorldSelector.SingleSelectedObject as IIncidentTarget) : null);
 				if (target == null)
 				{
 					target = Find.CurrentMap;
@@ -74,11 +74,14 @@ namespace Verse
 							List<RaidStrategyDef> source = DefDatabase<RaidStrategyDef>.AllDefs.Where((RaidStrategyDef s) => s.Worker.CanUseWith(parms, PawnGroupKindDefOf.Combat)).ToList();
 							Log.Message("Available strategies: " + string.Join(", ", source.Select((RaidStrategyDef s) => s.defName).ToArray()));
 							parms.raidStrategy = source.RandomElement();
-							Log.Message("Strategy: " + parms.raidStrategy.defName);
-							List<PawnsArrivalModeDef> source2 = DefDatabase<PawnsArrivalModeDef>.AllDefs.Where((PawnsArrivalModeDef a) => a.Worker.CanUseWith(parms) && parms.raidStrategy.arriveModes.Contains(a)).ToList();
-							Log.Message("Available arrival modes: " + string.Join(", ", source2.Select((PawnsArrivalModeDef s) => s.defName).ToArray()));
-							parms.raidArrivalMode = source2.RandomElement();
-							Log.Message("Arrival mode: " + parms.raidArrivalMode.defName);
+							if (parms.raidStrategy != null)
+							{
+								Log.Message("Strategy: " + parms.raidStrategy.defName);
+								List<PawnsArrivalModeDef> source2 = DefDatabase<PawnsArrivalModeDef>.AllDefs.Where((PawnsArrivalModeDef a) => a.Worker.CanUseWith(parms) && parms.raidStrategy.arriveModes.Contains(a)).ToList();
+								Log.Message("Available arrival modes: " + string.Join(", ", source2.Select((PawnsArrivalModeDef s) => s.defName).ToArray()));
+								parms.raidArrivalMode = source2.RandomElement();
+								Log.Message("Arrival mode: " + parms.raidArrivalMode.defName);
+							}
 							DoRaid(parms);
 						}));
 					}
@@ -282,7 +285,7 @@ namespace Verse
 
 		private static void DoRaid(IncidentParms parms)
 		{
-			IncidentDef incidentDef = (!parms.faction.HostileTo(Faction.OfPlayer)) ? IncidentDefOf.RaidFriendly : IncidentDefOf.RaidEnemy;
+			IncidentDef incidentDef = ((!parms.faction.HostileTo(Faction.OfPlayer)) ? IncidentDefOf.RaidFriendly : IncidentDefOf.RaidEnemy);
 			incidentDef.Worker.TryExecute(parms);
 		}
 	}

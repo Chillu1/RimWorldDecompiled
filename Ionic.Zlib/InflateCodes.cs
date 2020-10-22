@@ -79,7 +79,7 @@ namespace Ionic.Zlib
 			num = blocks.bitb;
 			num2 = blocks.bitk;
 			int num5 = blocks.writeAt;
-			int num6 = (num5 < blocks.readAt) ? (blocks.readAt - num5 - 1) : (blocks.end - num5);
+			int num6 = ((num5 < blocks.readAt) ? (blocks.readAt - num5 - 1) : (blocks.end - num5));
 			while (true)
 			{
 				switch (mode)
@@ -141,9 +141,9 @@ namespace Ionic.Zlib
 						mode = 6;
 						break;
 					}
-					if ((num9 & 0x10) != 0)
+					if (((uint)num9 & 0x10u) != 0)
 					{
-						bitsToGet = (num9 & 0xF);
+						bitsToGet = num9 & 0xF;
 						len = tree[num8 + 2];
 						mode = 2;
 						break;
@@ -154,7 +154,7 @@ namespace Ionic.Zlib
 						tree_index = num8 / 3 + tree[num8 + 2];
 						break;
 					}
-					if ((num9 & 0x20) != 0)
+					if (((uint)num9 & 0x20u) != 0)
 					{
 						mode = 7;
 						break;
@@ -190,7 +190,7 @@ namespace Ionic.Zlib
 						blocks.writeAt = num5;
 						return blocks.Flush(r);
 					}
-					len += (num & InternalInflateConstants.InflateMask[num7]);
+					len += num & InternalInflateConstants.InflateMask[num7];
 					num >>= num7;
 					num2 -= num7;
 					need = dbits;
@@ -223,9 +223,9 @@ namespace Ionic.Zlib
 					num >>= tree[num8 + 1];
 					num2 -= tree[num8 + 1];
 					int num9 = tree[num8];
-					if ((num9 & 0x10) != 0)
+					if (((uint)num9 & 0x10u) != 0)
 					{
-						bitsToGet = (num9 & 0xF);
+						bitsToGet = num9 & 0xF;
 						dist = tree[num8 + 2];
 						mode = 4;
 						break;
@@ -267,7 +267,7 @@ namespace Ionic.Zlib
 						blocks.writeAt = num5;
 						return blocks.Flush(r);
 					}
-					dist += (num & InternalInflateConstants.InflateMask[num7]);
+					dist += num & InternalInflateConstants.InflateMask[num7];
 					num >>= num7;
 					num2 -= num7;
 					mode = 5;
@@ -419,7 +419,7 @@ namespace Ionic.Zlib
 			int num2 = s.bitb;
 			int num3 = s.bitk;
 			int num4 = s.writeAt;
-			int num5 = (num4 < s.readAt) ? (s.readAt - num4 - 1) : (s.end - num4);
+			int num5 = ((num4 < s.readAt) ? (s.readAt - num4 - 1) : (s.end - num4));
 			int num6 = InternalInflateConstants.InflateMask[bl];
 			int num7 = InternalInflateConstants.InflateMask[bd];
 			int num12;
@@ -450,7 +450,7 @@ namespace Ionic.Zlib
 					{
 						num2 >>= array[num10 + 1];
 						num3 -= array[num10 + 1];
-						if ((num11 & 0x10) != 0)
+						if (((uint)num11 & 0x10u) != 0)
 						{
 							num11 &= 0xF;
 							num12 = array[num10 + 2] + (num2 & InternalInflateConstants.InflateMask[num11]);
@@ -460,7 +460,7 @@ namespace Ionic.Zlib
 								num--;
 								num2 |= (z.InputBuffer[nextIn++] & 0xFF) << num3;
 							}
-							num8 = (num2 & num7);
+							num8 = num2 & num7;
 							array = td;
 							num9 = td_index;
 							num10 = (num9 + num8) * 3;
@@ -469,14 +469,14 @@ namespace Ionic.Zlib
 							{
 								num2 >>= array[num10 + 1];
 								num3 -= array[num10 + 1];
-								if ((num11 & 0x10) != 0)
+								if (((uint)num11 & 0x10u) != 0)
 								{
 									break;
 								}
 								if ((num11 & 0x40) == 0)
 								{
 									num8 += array[num10 + 2];
-									num8 += (num2 & InternalInflateConstants.InflateMask[num11]);
+									num8 += num2 & InternalInflateConstants.InflateMask[num11];
 									num10 = (num9 + num8) * 3;
 									num11 = array[num10];
 									continue;
@@ -570,7 +570,7 @@ namespace Ionic.Zlib
 						if ((num11 & 0x40) == 0)
 						{
 							num8 += array[num10 + 2];
-							num8 += (num2 & InternalInflateConstants.InflateMask[num11]);
+							num8 += num2 & InternalInflateConstants.InflateMask[num11];
 							num10 = (num9 + num8) * 3;
 							if ((num11 = array[num10]) == 0)
 							{
@@ -582,7 +582,7 @@ namespace Ionic.Zlib
 							}
 							continue;
 						}
-						if ((num11 & 0x20) != 0)
+						if (((uint)num11 & 0x20u) != 0)
 						{
 							num12 = z.AvailableBytesIn - num;
 							num12 = ((num3 >> 3 < num12) ? (num3 >> 3) : num12);

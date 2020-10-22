@@ -124,26 +124,19 @@ namespace RimWorld
 				return;
 			}
 			List<ThingCountClass> placedThings = billDoer.CurJob.placedThings;
-			int num = 0;
-			while (true)
+			for (int i = 0; i < placedThings.Count; i++)
 			{
-				if (num < placedThings.Count)
+				if (placedThings[i].thing is Medicine)
 				{
-					if (placedThings[num].thing is Medicine)
+					recipe.Worker.ConsumeIngredient(placedThings[i].thing.SplitOff(1), recipe, billDoer.MapHeld);
+					placedThings[i].Count--;
+					consumedInitialMedicineDef = placedThings[i].thing.def;
+					if (placedThings[i].thing.Destroyed || placedThings[i].Count <= 0)
 					{
-						break;
+						placedThings.RemoveAt(i);
 					}
-					num++;
-					continue;
+					break;
 				}
-				return;
-			}
-			recipe.Worker.ConsumeIngredient(placedThings[num].thing.SplitOff(1), recipe, billDoer.MapHeld);
-			placedThings[num].Count--;
-			consumedInitialMedicineDef = placedThings[num].thing.def;
-			if (placedThings[num].thing.Destroyed || placedThings[num].Count <= 0)
-			{
-				placedThings.RemoveAt(num);
 			}
 		}
 

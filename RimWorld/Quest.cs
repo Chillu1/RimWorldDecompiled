@@ -1,7 +1,7 @@
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 using Verse.Sound;
 
@@ -26,6 +26,8 @@ namespace RimWorld
 		public string lastSlateStateDebug;
 
 		public QuestScriptDef root;
+
+		public bool hidden;
 
 		public int appearanceTick = -1;
 
@@ -299,7 +301,7 @@ namespace RimWorld
 			ended = true;
 			endOutcome = outcome;
 			CleanupQuestParts();
-			if ((EverAccepted || State != QuestState.EndedOfferExpired) && sendLetter)
+			if ((EverAccepted || State != QuestState.EndedOfferExpired) && sendLetter && !hidden)
 			{
 				string key = null;
 				string key2 = null;
@@ -345,6 +347,22 @@ namespace RimWorld
 			return false;
 		}
 
+		public bool QuestReserves(Faction f)
+		{
+			if (Historical)
+			{
+				return false;
+			}
+			for (int i = 0; i < parts.Count; i++)
+			{
+				if (parts[i].QuestPartReserves(f))
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
 		public void SetInitiallyAccepted()
 		{
 			acceptanceTick = Find.TickManager.TicksGame;
@@ -372,6 +390,7 @@ namespace RimWorld
 			Scribe_Values.Look(ref description, "description");
 			Scribe_Values.Look(ref lastSlateStateDebug, "lastSlateStateDebug");
 			Scribe_Defs.Look(ref root, "root");
+			Scribe_Values.Look(ref hidden, "hidden", defaultValue: false);
 			Scribe_Collections.Look(ref signalsReceivedDebug, "signalsReceivedDebug", LookMode.Undefined);
 			Scribe_Collections.Look(ref parts, "parts", LookMode.Deep);
 			Scribe_Collections.Look(ref tags, "tags", LookMode.Value);
@@ -407,29 +426,15 @@ namespace RimWorld
 			{
 				try
 				{
-					bool flag;
-					switch (parts[i].signalListenMode)
+					if (parts[i].signalListenMode switch
 					{
-					case QuestPart.SignalListenMode.OngoingOnly:
-						flag = (State == QuestState.Ongoing);
-						break;
-					case QuestPart.SignalListenMode.NotYetAcceptedOnly:
-						flag = (State == QuestState.NotYetAccepted);
-						break;
-					case QuestPart.SignalListenMode.OngoingOrNotYetAccepted:
-						flag = (State == QuestState.Ongoing || State == QuestState.NotYetAccepted);
-						break;
-					case QuestPart.SignalListenMode.HistoricalOnly:
-						flag = Historical;
-						break;
-					case QuestPart.SignalListenMode.Always:
-						flag = true;
-						break;
-					default:
-						flag = false;
-						break;
-					}
-					if (flag)
+						QuestPart.SignalListenMode.OngoingOnly => State == QuestState.Ongoing, 
+						QuestPart.SignalListenMode.NotYetAcceptedOnly => State == QuestState.NotYetAccepted, 
+						QuestPart.SignalListenMode.OngoingOrNotYetAccepted => State == QuestState.Ongoing || State == QuestState.NotYetAccepted, 
+						QuestPart.SignalListenMode.HistoricalOnly => Historical, 
+						QuestPart.SignalListenMode.Always => true, 
+						_ => false, 
+					})
 					{
 						parts[i].Notify_QuestSignalReceived(signal);
 					}
@@ -476,6 +481,7 @@ namespace RimWorld
 				}
 			}
 			cleanedUp = true;
+			Find.FactionManager.Notify_QuestCleanedUp(this);
 		}
 
 		public void Notify_ThingsProduced(Pawn worker, List<Thing> things)
@@ -499,6 +505,14 @@ namespace RimWorld
 			for (int i = 0; i < parts.Count; i++)
 			{
 				parts[i].Notify_PawnKilled(pawn, dinfo);
+			}
+		}
+
+		public void Notify_FactionRemoved(Faction faction)
+		{
+			for (int i = 0; i < parts.Count; i++)
+			{
+				parts[i].Notify_FactionRemoved(faction);
 			}
 		}
 

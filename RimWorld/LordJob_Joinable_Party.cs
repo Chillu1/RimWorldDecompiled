@@ -84,11 +84,11 @@ namespace RimWorld
 			{
 				Pawn pawn = ownedPawns[i];
 				bool flag = pawn == organizer;
-				if (lordToilData_Party.presentForTicks.TryGetValue(pawn, out int value) && value > 0)
+				if (lordToilData_Party.presentForTicks.TryGetValue(pawn, out var value) && value > 0)
 				{
 					if (ownedPawns[i].needs.mood != null)
 					{
-						ThoughtDef thoughtDef = flag ? OrganizerThought : AttendeeThought;
+						ThoughtDef thoughtDef = (flag ? OrganizerThought : AttendeeThought);
 						float num = 0.5f / thoughtDef.stages[0].baseMoodEffect;
 						float moodPowerFactor = Mathf.Min((float)value / (float)durationTicks + num, 1f);
 						Thought_Memory thought_Memory = (Thought_Memory)ThoughtMaker.MakeThought(thoughtDef);

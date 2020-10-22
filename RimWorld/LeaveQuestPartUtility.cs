@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 using Verse.AI;
 using Verse.AI.Group;
@@ -25,9 +25,13 @@ namespace RimWorld
 				{
 					result = pawn.GetExtraHomeFaction(quest);
 				}
-				else if (!(from x in Find.FactionManager.GetFactions(allowHidden: false, allowDefeated: false, allowNonHumanlike: false)
+				else if (pawn.HasExtraMiniFaction(quest) && pawn.GetExtraMiniFaction(quest) != Faction.OfPlayer)
+				{
+					result = pawn.GetExtraMiniFaction(quest);
+				}
+				else if (!(from x in Find.FactionManager.GetFactions_NewTemp(allowHidden: false, allowDefeated: false, allowNonHumanlike: false)
 					where !x.HostileTo(Faction.OfPlayer)
-					select x).TryRandomElement(out result) && !Find.FactionManager.GetFactions(allowHidden: false, allowDefeated: false, allowNonHumanlike: false).TryRandomElement(out result))
+					select x).TryRandomElement(out result) && !Find.FactionManager.GetFactions_NewTemp(allowHidden: false, allowDefeated: false, allowNonHumanlike: false).TryRandomElement(out result))
 				{
 					result = null;
 				}

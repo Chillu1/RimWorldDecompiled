@@ -128,7 +128,7 @@ namespace RimWorld
 
 		private void CheckStartRandomInspiration()
 		{
-			if (Inspired)
+			if (Inspired || !pawn.health.capacities.CanBeAwake)
 			{
 				return;
 			}
@@ -143,7 +143,7 @@ namespace RimWorld
 			}
 		}
 
-		private InspirationDef GetRandomAvailableInspirationDef()
+		public InspirationDef GetRandomAvailableInspirationDef()
 		{
 			return DefDatabase<InspirationDef>.AllDefsListForReading.Where((InspirationDef x) => x.Worker.InspirationCanOccur(pawn)).RandomElementByWeightWithFallback((InspirationDef x) => x.Worker.CommonalityFor(pawn));
 		}

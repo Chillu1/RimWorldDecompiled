@@ -12,11 +12,11 @@ namespace RimWorld
 			get
 			{
 				huntersWithoutRangedWeaponResult.Clear();
-				foreach (Pawn item in PawnsFinder.AllMaps_FreeColonistsSpawned)
+				foreach (Pawn allMaps_FreeColonist in PawnsFinder.AllMaps_FreeColonists)
 				{
-					if (item.workSettings.WorkIsActive(WorkTypeDefOf.Hunting) && !WorkGiver_HunterHunt.HasHuntingWeapon(item) && !item.Downed)
+					if ((allMaps_FreeColonist.Spawned || allMaps_FreeColonist.BrieflyDespawned()) && allMaps_FreeColonist.workSettings.WorkIsActive(WorkTypeDefOf.Hunting) && !WorkGiver_HunterHunt.HasHuntingWeapon(allMaps_FreeColonist) && !allMaps_FreeColonist.Downed)
 					{
-						huntersWithoutRangedWeaponResult.Add(item);
+						huntersWithoutRangedWeaponResult.Add(allMaps_FreeColonist);
 					}
 				}
 				return huntersWithoutRangedWeaponResult;

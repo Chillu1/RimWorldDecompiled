@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -21,8 +21,8 @@ namespace Verse
 				{
 					return Vector3.zero;
 				}
-				IntVec3 at = (!flag) ? pawn.Position : pawn.pather.nextCell;
-				GetPawnsStandingAtOrAboutToStandAt(at, pawn.Map, out int pawnsCount, out int pawnsWithLowerIdCount, out bool forPawnFound, pawn);
+				IntVec3 at = ((!flag) ? pawn.Position : pawn.pather.nextCell);
+				GetPawnsStandingAtOrAboutToStandAt(at, pawn.Map, out var pawnsCount, out var pawnsWithLowerIdCount, out var forPawnFound, pawn);
 				if (!forPawnFound)
 				{
 					return Vector3.zero;

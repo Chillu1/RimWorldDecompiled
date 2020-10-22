@@ -153,8 +153,8 @@ namespace RimWorld
 
 		public static CellRect WaterUseRect(IntVec3 loc, Rot4 rot)
 		{
-			int width = rot.IsHorizontal ? 7 : 13;
-			int height = rot.IsHorizontal ? 13 : 7;
+			int width = (rot.IsHorizontal ? 7 : 13);
+			int height = (rot.IsHorizontal ? 13 : 7);
 			return CellRect.CenteredOn(loc + rot.FacingCell * 4, width, height);
 		}
 
@@ -203,7 +203,7 @@ namespace RimWorld
 				Vector2 vector = new Vector2(x, 1f);
 				Vector3 s = new Vector3(vector.x, 1f, vector.y);
 				Matrix4x4 matrix = default(Matrix4x4);
-				matrix.SetTRS(a + Vector3.up * 0.0454545468f * Mathf.Cos(num), parent.Rotation.AsQuat, s);
+				matrix.SetTRS(a + Vector3.up * (3f / 70f) * Mathf.Cos(num), parent.Rotation.AsQuat, s);
 				Graphics.DrawMesh(num2 ? MeshPool.plane10 : MeshPool.plane10Flip, matrix, BladesMat, 0);
 			}
 		}

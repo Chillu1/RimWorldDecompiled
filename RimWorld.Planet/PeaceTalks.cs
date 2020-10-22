@@ -111,7 +111,7 @@ namespace RimWorld.Planet
 					LordMaker.MakeNewLord(incidentParms.faction, new LordJob_AssaultColony(base.Faction), map, list);
 				}
 				Find.TickManager.Notify_GeneratedPotentiallyHostileMap();
-				GlobalTargetInfo target = list.Any() ? new GlobalTargetInfo(list[0].Position, map) : GlobalTargetInfo.Invalid;
+				GlobalTargetInfo target = (list.Any() ? new GlobalTargetInfo(list[0].Position, map) : GlobalTargetInfo.Invalid);
 				TaggedString letterLabel = "LetterLabelPeaceTalks_Disaster".Translate();
 				TaggedString letterText = GetLetterText("LetterPeaceTalks_Disaster".Translate(base.Faction.def.pawnsPlural.CapitalizeFirst(), base.Faction.NameColored, Mathf.RoundToInt(randomInRange)), caravan, playerRelationKind);
 				PawnRelationUtility.Notify_PawnsSeenByPlayer_Letter(list, ref letterLabel, ref letterText, "LetterRelatedPawnsGroupGeneric".Translate(Faction.OfPlayer.def.pawnsPlural), informEvenIfSeenBefore: true);

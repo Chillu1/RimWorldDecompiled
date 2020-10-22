@@ -15,6 +15,7 @@ namespace Verse.AI
 		NeedThreat = 0x20,
 		NeedActiveThreat = 0x40,
 		LOSBlockableByGas = 0x80,
-		NeedAutoTargetable = 0x100
+		NeedAutoTargetable = 0x100,
+		NeedNotUnderThickRoof = 0x200
 	}
 }

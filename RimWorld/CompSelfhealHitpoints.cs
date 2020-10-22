@@ -15,8 +15,23 @@ namespace RimWorld
 
 		public override void CompTick()
 		{
-			ticksPassedSinceLastHeal++;
-			if (ticksPassedSinceLastHeal == Props.ticksPerHeal)
+			Tick(1);
+		}
+
+		public override void CompTickRare()
+		{
+			Tick(250);
+		}
+
+		public override void CompTickLong()
+		{
+			Tick(2000);
+		}
+
+		private void Tick(int ticks)
+		{
+			ticksPassedSinceLastHeal += ticks;
+			if (ticksPassedSinceLastHeal >= Props.ticksPerHeal)
 			{
 				ticksPassedSinceLastHeal = 0;
 				if (parent.HitPoints < parent.MaxHitPoints)

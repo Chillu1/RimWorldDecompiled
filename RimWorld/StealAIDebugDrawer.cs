@@ -31,7 +31,7 @@ namespace RimWorld
 			{
 				foreach (IntVec3 allCell in Find.CurrentMap.AllCells)
 				{
-					debugDrawGrid[allCell] = (TotalMarketValueAround(allCell, Find.CurrentMap, debugDrawLord.ownedPawns.Count) > num);
+					debugDrawGrid[allCell] = TotalMarketValueAround(allCell, Find.CurrentMap, debugDrawLord.ownedPawns.Count) > num;
 				}
 			}
 			foreach (IntVec3 allCell2 in Find.CurrentMap.AllCells)
@@ -45,7 +45,7 @@ namespace RimWorld
 			for (int i = 0; i < debugDrawLord.ownedPawns.Count; i++)
 			{
 				Pawn pawn = debugDrawLord.ownedPawns[i];
-				if (StealAIUtility.TryFindBestItemToSteal(pawn.Position, pawn.Map, 7f, out Thing item, pawn, tmpToSteal))
+				if (StealAIUtility.TryFindBestItemToSteal(pawn.Position, pawn.Map, 7f, out var item, pawn, tmpToSteal))
 				{
 					GenDraw.DrawLineBetween(pawn.TrueCenter(), item.TrueCenter());
 					tmpToSteal.Add(item);
@@ -77,7 +77,7 @@ namespace RimWorld
 				IntVec3 intVec = thing.Position + GenRadial.RadialPattern[i];
 				if (intVec.InBounds(thing.Map))
 				{
-					debugDrawGrid[intVec] = (TotalMarketValueAround(intVec, Find.CurrentMap, debugDrawLord.ownedPawns.Count) > num2);
+					debugDrawGrid[intVec] = TotalMarketValueAround(intVec, Find.CurrentMap, debugDrawLord.ownedPawns.Count) > num2;
 				}
 			}
 		}
@@ -97,7 +97,7 @@ namespace RimWorld
 				{
 					intVec = center;
 				}
-				if (StealAIUtility.TryFindBestItemToSteal(intVec, map, 7f, out Thing item, null, tmpToSteal))
+				if (StealAIUtility.TryFindBestItemToSteal(intVec, map, 7f, out var item, null, tmpToSteal))
 				{
 					num += StealAIUtility.GetValue(item);
 					tmpToSteal.Add(item);

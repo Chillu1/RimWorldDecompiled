@@ -9,7 +9,7 @@ namespace RimWorld
 
 		private int GetValueFor(Transferable t)
 		{
-			if (!t.AnyThing.TryGetQuality(out QualityCategory qc))
+			if (!t.AnyThing.TryGetQuality(out var qc))
 			{
 				return -1;
 			}

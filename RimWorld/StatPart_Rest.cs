@@ -40,19 +40,14 @@ namespace RimWorld
 
 		private float RestMultiplier(RestCategory fatigue)
 		{
-			switch (fatigue)
+			return fatigue switch
 			{
-			case RestCategory.Exhausted:
-				return factorExhausted;
-			case RestCategory.VeryTired:
-				return factorVeryTired;
-			case RestCategory.Tired:
-				return factorTired;
-			case RestCategory.Rested:
-				return factorRested;
-			default:
-				throw new InvalidOperationException();
-			}
+				RestCategory.Exhausted => factorExhausted, 
+				RestCategory.VeryTired => factorVeryTired, 
+				RestCategory.Tired => factorTired, 
+				RestCategory.Rested => factorRested, 
+				_ => throw new InvalidOperationException(), 
+			};
 		}
 	}
 }

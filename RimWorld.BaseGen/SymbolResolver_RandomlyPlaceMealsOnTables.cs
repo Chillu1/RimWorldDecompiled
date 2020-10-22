@@ -9,7 +9,7 @@ namespace RimWorld.BaseGen
 		public override void Resolve(ResolveParams rp)
 		{
 			Map map = BaseGen.globalSettings.map;
-			ThingDef thingDef = (rp.faction == null || !rp.faction.def.techLevel.IsNeolithicOrWorse()) ? ThingDefOf.MealSimple : ThingDefOf.Pemmican;
+			ThingDef thingDef = ((rp.faction == null || !rp.faction.def.techLevel.IsNeolithicOrWorse()) ? ThingDefOf.MealSimple : ThingDefOf.Pemmican);
 			foreach (IntVec3 item in rp.rect)
 			{
 				List<Thing> thingList = item.GetThingList(map);

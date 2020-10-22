@@ -16,6 +16,12 @@ namespace Verse
 
 		private float thickRoofCoverage;
 
+		public const float FractionWallEqualizeCells = 0.2f;
+
+		public const float WallEqualizeFactor = 0.00017f;
+
+		public const float EqualizationPowerOfFilledCells = 0.5f;
+
 		private int cycleIndex;
 
 		private const float ThinRoofEqualizeRate = 5E-05f;
@@ -31,6 +37,8 @@ namespace Verse
 		private Map Map => roomGroup.Map;
 
 		private float ThinRoofCoverage => 1f - (thickRoofCoverage + noRoofCoverage);
+
+		public List<IntVec3> EqualizeCellsForReading => equalizeCells;
 
 		public float Temperature
 		{
@@ -155,11 +163,33 @@ namespace Verse
 
 		public void EqualizeTemperature()
 		{
-			if (roomGroup.UsesOutdoorTemperature)
+			if (this.roomGroup.UsesOutdoorTemperature)
 			{
 				Temperature = Map.mapTemperature.OutdoorTemp;
 			}
-			else if (roomGroup.RoomCount == 0 || roomGroup.Rooms[0].RegionType != RegionType.Portal)
+			else if (this.roomGroup.RoomCount != 0 && this.roomGroup.Rooms[0].RegionType == RegionType.Portal)
+			{
+				bool flag = true;
+				IntVec3 a = this.roomGroup.Rooms[0].Cells.First();
+				for (int i = 0; i < 4; i++)
+				{
+					IntVec3 intVec = a + GenAdj.CardinalDirections[i];
+					if (intVec.InBounds(Map))
+					{
+						RoomGroup roomGroup = intVec.GetRoomGroup(Map);
+						if (roomGroup != null && (roomGroup.RoomCount != 1 || roomGroup.Rooms[0].RegionType != RegionType.Portal))
+						{
+							flag = false;
+							break;
+						}
+					}
+				}
+				if (flag)
+				{
+					this.roomGroup.Temperature += WallEqualizationTempChangePerInterval();
+				}
+			}
+			else
 			{
 				float num = ThinRoofEqualizationTempChangePerInterval();
 				float num2 = NoRoofEqualizationTempChangePerInterval();
@@ -181,7 +211,7 @@ namespace Verse
 			{
 				cycleIndex++;
 				int index = cycleIndex % equalizeCells.Count;
-				num = ((!GenTemperature.TryGetDirectAirTemperatureForCell(equalizeCells[index], Map, out float temperature)) ? (num + (Mathf.Lerp(Temperature, Map.mapTemperature.OutdoorTemp, 0.5f) - Temperature)) : (num + (temperature - Temperature)));
+				num = ((!GenTemperature.TryGetDirectAirTemperatureForCell(equalizeCells[index], Map, out var temperature)) ? (num + (Mathf.Lerp(Temperature, Map.mapTemperature.OutdoorTemp, 0.5f) - Temperature)) : (num + (temperature - Temperature)));
 			}
 			return num / (float)num2 * (float)equalizeCells.Count * 120f * 0.00017f / (float)roomGroup.CellCount;
 		}

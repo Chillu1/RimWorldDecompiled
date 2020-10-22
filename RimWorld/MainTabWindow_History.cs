@@ -116,8 +116,7 @@ namespace RimWorld
 			TimeSpan timeSpan = new TimeSpan(0, 0, (int)Find.GameInfo.RealPlayTimeInteracting);
 			stringBuilder.AppendLine((string)((string)((string)((string)("Playtime".Translate() + ": ") + timeSpan.Days + "LetterDay".Translate() + " ") + timeSpan.Hours + "LetterHour".Translate() + " ") + timeSpan.Minutes + "LetterMinute".Translate() + " ") + timeSpan.Seconds + "LetterSecond".Translate());
 			stringBuilder.AppendLine("Storyteller".Translate() + ": " + Find.Storyteller.def.LabelCap);
-			DifficultyDef difficulty = Find.Storyteller.difficulty;
-			stringBuilder.AppendLine("Difficulty".Translate() + ": " + difficulty.LabelCap);
+			stringBuilder.AppendLine("Difficulty".Translate() + ": " + Find.Storyteller.difficulty.LabelCap);
 			if (Find.CurrentMap != null)
 			{
 				stringBuilder.AppendLine();
@@ -203,7 +202,7 @@ namespace RimWorld
 			Rect rect3 = rect2;
 			rect3.width = 30f;
 			rect2.xMin += 35f;
-			float num = Find.Archive.IsPinned(archivable) ? 1f : ((!Mouse.IsOver(rect3)) ? 0f : 0.25f);
+			float num = (Find.Archive.IsPinned(archivable) ? 1f : ((!Mouse.IsOver(rect3)) ? 0f : 0.25f));
 			Rect position = new Rect(rect3.x + (rect3.width - 22f) / 2f, rect3.y + (rect3.height - 22f) / 2f, 22f, 22f).Rounded();
 			if (num > 0f)
 			{
@@ -230,7 +229,7 @@ namespace RimWorld
 			Rect rect5 = rect2;
 			rect5.width = 80f;
 			rect2.xMin += 85f;
-			Vector2 location = (Find.CurrentMap != null) ? Find.WorldGrid.LongLatOf(Find.CurrentMap.Tile) : default(Vector2);
+			Vector2 location = ((Find.CurrentMap != null) ? Find.WorldGrid.LongLatOf(Find.CurrentMap.Tile) : default(Vector2));
 			GUI.color = new Color(0.75f, 0.75f, 0.75f);
 			Widgets.Label(label: GenDate.DateShortStringAt(GenDate.TickGameToAbs(archivable.CreatedTicksGame), location).Truncate(rect5.width), rect: rect5);
 			GUI.color = Color.white;

@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -40,29 +40,16 @@ namespace RimWorld
 			}
 		}
 
-		private float FallPerInterval
+		private float FallPerInterval => CurCategory switch
 		{
-			get
-			{
-				switch (CurCategory)
-				{
-				case JoyCategory.Empty:
-					return 0.0015f;
-				case JoyCategory.VeryLow:
-					return 0.0006f;
-				case JoyCategory.Low:
-					return 0.00105f;
-				case JoyCategory.Satisfied:
-					return 0.0015f;
-				case JoyCategory.High:
-					return 0.0015f;
-				case JoyCategory.Extreme:
-					return 0.0015f;
-				default:
-					throw new InvalidOperationException();
-				}
-			}
-		}
+			JoyCategory.Empty => 0.0015f, 
+			JoyCategory.VeryLow => 0.0006f, 
+			JoyCategory.Low => 0.00105f, 
+			JoyCategory.Satisfied => 0.0015f, 
+			JoyCategory.High => 0.0015f, 
+			JoyCategory.Extreme => 0.0015f, 
+			_ => throw new InvalidOperationException(), 
+		};
 
 		public override int GUIChangeArrow
 		{

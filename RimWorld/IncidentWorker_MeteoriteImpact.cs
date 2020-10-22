@@ -16,13 +16,13 @@ namespace RimWorld
 		protected override bool TryExecuteWorker(IncidentParms parms)
 		{
 			Map map = (Map)parms.target;
-			if (!TryFindCell(out IntVec3 cell, map))
+			if (!TryFindCell(out var cell, map))
 			{
 				return false;
 			}
 			List<Thing> list = ThingSetMakerDefOf.Meteorite.root.Generate();
 			SkyfallerMaker.SpawnSkyfaller(ThingDefOf.MeteoriteIncoming, list, cell, map);
-			LetterDef baseLetterDef = list[0].def.building.isResourceRock ? LetterDefOf.PositiveEvent : LetterDefOf.NeutralEvent;
+			LetterDef baseLetterDef = (list[0].def.building.isResourceRock ? LetterDefOf.PositiveEvent : LetterDefOf.NeutralEvent);
 			string str = string.Format(def.letterText, list[0].def.label).CapitalizeFirst();
 			SendStandardLetter(def.letterLabel + ": " + list[0].def.LabelCap, str, baseLetterDef, parms, new TargetInfo(cell, map));
 			return true;

@@ -14,9 +14,9 @@ namespace RimWorld
 		public override void Generate(Map map, GenStepParams parms)
 		{
 			TraverseParms traverseParams = TraverseParms.For(TraverseMode.NoPassClosedDoors);
-			if (RCellFinder.TryFindRandomCellNearTheCenterOfTheMapWith((IntVec3 x) => x.Standable(map) && !x.Fogged(map) && map.reachability.CanReachMapEdge(x, traverseParams) && x.GetRoom(map).CellCount >= MinRoomCells, map, out IntVec3 result))
+			if (RCellFinder.TryFindRandomCellNearTheCenterOfTheMapWith((IntVec3 x) => x.Standable(map) && !x.Fogged(map) && map.reachability.CanReachMapEdge(x, traverseParams) && x.GetRoom(map).CellCount >= MinRoomCells, map, out var result))
 			{
-				float points = (parms.sitePart != null) ? parms.sitePart.parms.threatPoints : defaultPointsRange.RandomInRange;
+				float points = ((parms.sitePart != null) ? parms.sitePart.parms.threatPoints : defaultPointsRange.RandomInRange);
 				PawnKindDef animalKind;
 				if (parms.sitePart != null && parms.sitePart.parms.animalKind != null)
 				{

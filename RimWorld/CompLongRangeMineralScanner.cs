@@ -1,5 +1,5 @@
-using RimWorld.QuestGen;
 using System.Collections.Generic;
+using RimWorld.QuestGen;
 using UnityEngine;
 using Verse;
 
@@ -37,6 +37,7 @@ namespace RimWorld
 			Slate slate = new Slate();
 			slate.Set("map", parent.Map);
 			slate.Set("targetMineable", targetMineable);
+			slate.Set("targetMineableThing", targetMineable.building.mineableThing);
 			slate.Set("worker", worker);
 			if (QuestScriptDefOf.LongRangeMineralScannerLump.CanRun(slate))
 			{

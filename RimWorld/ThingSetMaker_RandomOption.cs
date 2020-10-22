@@ -34,7 +34,7 @@ namespace RimWorld
 
 		protected override void Generate(ThingSetMakerParams parms, List<Thing> outThings)
 		{
-			if (options.Where((Option x) => x.thingSetMaker.CanGenerate(parms)).TryRandomElementByWeight((Option x) => GetSelectionWeight(x, parms), out Option result))
+			if (options.Where((Option x) => x.thingSetMaker.CanGenerate(parms)).TryRandomElementByWeight((Option x) => GetSelectionWeight(x, parms), out var result))
 			{
 				outThings.AddRange(result.thingSetMaker.Generate(parms));
 			}

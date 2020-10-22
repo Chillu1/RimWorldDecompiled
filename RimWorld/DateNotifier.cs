@@ -15,8 +15,8 @@ namespace RimWorld
 		public void DateNotifierTick()
 		{
 			Map map = FindPlayerHomeWithMinTimezone();
-			float latitude = (map != null) ? Find.WorldGrid.LongLatOf(map.Tile).y : 0f;
-			float longitude = (map != null) ? Find.WorldGrid.LongLatOf(map.Tile).x : 0f;
+			float latitude = ((map != null) ? Find.WorldGrid.LongLatOf(map.Tile).y : 0f);
+			float longitude = ((map != null) ? Find.WorldGrid.LongLatOf(map.Tile).x : 0f);
 			Season season = GenDate.Season(Find.TickManager.TicksAbs, latitude, longitude);
 			if (season == lastSeason || (lastSeason != 0 && season == lastSeason.GetPreviousSeason()))
 			{

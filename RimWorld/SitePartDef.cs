@@ -59,9 +59,11 @@ namespace RimWorld
 
 		public bool badEvenIfNoMap;
 
-		public float forceExitAndRemoveMapCountdownDurationDays = 3f;
+		public float forceExitAndRemoveMapCountdownDurationDays = 4f;
 
 		public bool handlesWorldObjectTimeoutInspectString;
+
+		public string mainPartAllThreatsLabel;
 
 		[Unsaved(false)]
 		private SitePartWorker workerInt;
@@ -139,7 +141,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (faction != null && (faction.IsPlayer || faction.defeated || faction.def.hidden))
+			if (faction != null && (faction.IsPlayer || faction.defeated || faction.Hidden))
 			{
 				return false;
 			}

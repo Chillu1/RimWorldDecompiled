@@ -6,6 +6,8 @@ namespace RimWorld
 	{
 		public MentalStateDef stateDef;
 
+		public MentalStateDef stateDefForMechs;
+
 		public StatDef durationMultiplier;
 	}
 }

@@ -36,14 +36,14 @@ namespace RimWorld.QuestGen
 		{
 			Slate slate = QuestGen.slate;
 			Map map = slate.Get<Map>("map");
-			slate.Set(storeAs.GetValue(slate), RandomOfferDurationTicks(map.Tile, settlement.GetValue(slate).Tile, out int travelTicks));
+			slate.Set(storeAs.GetValue(slate), RandomOfferDurationTicks(map.Tile, settlement.GetValue(slate).Tile, out var travelTicks));
 			slate.Set(storeEstimatedTravelTimeAs.GetValue(slate), travelTicks);
 		}
 
 		protected override bool TestRunInt(Slate slate)
 		{
 			Map map = slate.Get<Map>("map");
-			slate.Set(storeAs.GetValue(slate), RandomOfferDurationTicks(map.Tile, settlement.GetValue(slate).Tile, out int travelTicks));
+			slate.Set(storeAs.GetValue(slate), RandomOfferDurationTicks(map.Tile, settlement.GetValue(slate).Tile, out var travelTicks));
 			slate.Set(storeEstimatedTravelTimeAs.GetValue(slate), travelTicks);
 			return true;
 		}

@@ -1,6 +1,6 @@
-using RimWorld.BaseGen;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.BaseGen;
 using UnityEngine;
 using Verse;
 
@@ -25,13 +25,13 @@ namespace RimWorld
 		public override void Generate(Map map, GenStepParams parms)
 		{
 			int num = 0;
-			if (!MapGenerator.TryGetVar("RectOfInterest", out CellRect var))
+			if (!MapGenerator.TryGetVar<CellRect>("RectOfInterest", out var var))
 			{
 				var = FindRandomRectToDefend(map);
 			}
 			else
 			{
-				if (!MapGenerator.TryGetVar("RectOfInterestTurretsGenStepsCount", out int var2))
+				if (!MapGenerator.TryGetVar<int>("RectOfInterestTurretsGenStepsCount", out var var2))
 				{
 					var2 = 0;
 				}
@@ -39,7 +39,7 @@ namespace RimWorld
 				var2++;
 				MapGenerator.SetVar("RectOfInterestTurretsGenStepsCount", var2);
 			}
-			Faction faction = (map.ParentFaction != null && map.ParentFaction != Faction.OfPlayer) ? map.ParentFaction : Find.FactionManager.AllFactions.Where((Faction x) => !x.defeated && x.HostileTo(Faction.OfPlayer) && !x.def.hidden && (int)x.def.techLevel >= 4).RandomElementWithFallback(Find.FactionManager.RandomEnemyFaction());
+			Faction faction = ((map.ParentFaction != null && map.ParentFaction != Faction.OfPlayer) ? map.ParentFaction : Find.FactionManager.AllFactions.Where((Faction x) => !x.defeated && x.HostileTo(Faction.OfPlayer) && !x.Hidden && (int)x.def.techLevel >= 4 && !x.temporary).RandomElementWithFallback(Find.FactionManager.RandomEnemyFaction()));
 			int randomInRange = widthRange.RandomInRange;
 			CellRect rect = var.ExpandedBy(7 + randomInRange + num).ClipInsideMap(map);
 			int value;
@@ -75,7 +75,7 @@ namespace RimWorld
 
 		private CellRect FindRandomRectToDefend(Map map)
 		{
-			if (!MapGenerator.TryGetVar("UsedRects", out List<CellRect> usedRects))
+			if (!MapGenerator.TryGetVar<List<CellRect>>("UsedRects", out var usedRects))
 			{
 				usedRects = null;
 			}
@@ -105,7 +105,7 @@ namespace RimWorld
 					}
 				}
 				return (float)num / (float)cellRect.Area >= 0.6f;
-			}, map, out IntVec3 result))
+			}, map, out var result))
 			{
 				return CellRect.CenteredOn(result, rectRadius);
 			}

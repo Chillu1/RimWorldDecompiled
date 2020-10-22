@@ -173,7 +173,7 @@ namespace Ionic.Zlib
 					num2 = num;
 					_codec.AvailableBytesIn--;
 					_codec.TotalBytesIn++;
-					expectedCheck = (uint)((_codec.InputBuffer[_codec.NextIn++] << 24) & 4278190080u);
+					expectedCheck = (uint)((_codec.InputBuffer[_codec.NextIn++] << 24) & 0xFF000000u);
 					mode = InflateManagerMode.DICT3;
 					break;
 				case InflateManagerMode.DICT3:
@@ -248,7 +248,7 @@ namespace Ionic.Zlib
 					num2 = num;
 					_codec.AvailableBytesIn--;
 					_codec.TotalBytesIn++;
-					expectedCheck = (uint)((_codec.InputBuffer[_codec.NextIn++] << 24) & 4278190080u);
+					expectedCheck = (uint)((_codec.InputBuffer[_codec.NextIn++] << 24) & 0xFF000000u);
 					mode = InflateManagerMode.CHECK3;
 					break;
 				case InflateManagerMode.CHECK3:

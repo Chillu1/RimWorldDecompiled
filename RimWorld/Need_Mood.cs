@@ -20,7 +20,7 @@ namespace RimWorld
 				float num = thoughts.TotalMoodOffset();
 				if (pawn.IsColonist || pawn.IsPrisonerOfColony)
 				{
-					num += Find.Storyteller.difficulty.colonistMoodOffset;
+					num += Find.Storyteller.difficultyValues.colonistMoodOffset;
 				}
 				return Mathf.Clamp01(def.baseLevel + num / 100f);
 			}

@@ -29,7 +29,7 @@ namespace RimWorld.Planet
 			Widgets.DrawWindowBackground(rect);
 			GUI.BeginGroup(rect);
 			Rect rect2 = rect.AtZero();
-			int? ticksToArrive = caravan.pather.Moving ? new int?(CaravanArrivalTimeEstimator.EstimatedTicksToArrive(caravan, allowCaching: true)) : null;
+			int? ticksToArrive = (caravan.pather.Moving ? new int?(CaravanArrivalTimeEstimator.EstimatedTicksToArrive(caravan, allowCaching: true)) : null);
 			StringBuilder stringBuilder = new StringBuilder();
 			CaravanUIUtility.DrawCaravanInfo(new CaravanUIUtility.CaravanInfo(tilesPerDay: TilesPerDayCalculator.ApproxTilesPerDay(caravan, stringBuilder), massUsage: caravan.MassUsage, massCapacity: caravan.MassCapacity, massCapacityExplanation: caravan.MassCapacityExplanation, tilesPerDayExplanation: stringBuilder.ToString(), daysWorthOfFood: caravan.DaysWorthOfFood, foragedFoodPerDay: caravan.forage.ForagedFoodPerDay, foragedFoodPerDayExplanation: caravan.forage.ForagedFoodPerDayExplanation, visibility: caravan.Visibility, visibilityExplanation: caravan.VisibilityExplanation), null, caravan.Tile, ticksToArrive, -9999f, rect2, lerpMassColor: true, null, multiline: true);
 			GUI.EndGroup();

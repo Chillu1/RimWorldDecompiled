@@ -44,7 +44,7 @@ namespace RimWorld
 			{
 				foreach (Pawn allMapsCaravansAndTravelingTransportPods_Alive_Colonist in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_Colonists)
 				{
-					RoyalTitleDef royalTitleDef = (allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty != null) ? allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty.GetCurrentTitle(parms.makingFaction) : null;
+					RoyalTitleDef royalTitleDef = ((allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty != null) ? allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty.GetCurrentTitle(parms.makingFaction) : null);
 					if (royalTitleDef != null && (highestTitle == null || royalTitleDef.seniority > highestTitle.seniority))
 					{
 						highestTitle = royalTitleDef;
@@ -141,7 +141,7 @@ namespace RimWorld
 
 		public static bool TryGetRandomThingWhichCanWeighNoMoreThan(IEnumerable<ThingDef> candidates, TechLevel stuffTechLevel, float maxMass, QualityGenerator? qualityGenerator, out ThingStuffPair thingStuffPair)
 		{
-			if (!candidates.Where((ThingDef x) => PossibleToWeighNoMoreThan(x, maxMass, GenStuff.AllowedStuffsFor(x, stuffTechLevel))).TryRandomElement(out ThingDef thingDef))
+			if (!candidates.Where((ThingDef x) => PossibleToWeighNoMoreThan(x, maxMass, GenStuff.AllowedStuffsFor(x, stuffTechLevel))).TryRandomElement(out var thingDef))
 			{
 				thingStuffPair = default(ThingStuffPair);
 				return false;

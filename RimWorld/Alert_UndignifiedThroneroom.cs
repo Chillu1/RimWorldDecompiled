@@ -19,7 +19,7 @@ namespace RimWorld
 				{
 					foreach (Pawn freeColonist in maps[i].mapPawns.FreeColonists)
 					{
-						if (freeColonist.royalty != null && freeColonist.royalty.GetUnmetThroneroomRequirements().Any())
+						if (freeColonist.royalty != null && !freeColonist.Suspended && freeColonist.royalty.GetUnmetThroneroomRequirements().Any())
 						{
 							targetsResult.Add(freeColonist);
 						}
@@ -45,7 +45,7 @@ namespace RimWorld
 			return defaultExplanation + "\n" + Targets.Select(delegate(Pawn t)
 			{
 				RoyalTitle royalTitle = t.royalty.HighestTitleWithThroneRoomRequirements();
-				RoyalTitleDef royalTitleDef = royalTitle.RoomRequirementGracePeriodActive(t) ? royalTitle.def.GetPreviousTitle(royalTitle.faction) : royalTitle.def;
+				RoyalTitleDef royalTitleDef = (royalTitle.RoomRequirementGracePeriodActive(t) ? royalTitle.def.GetPreviousTitle(royalTitle.faction) : royalTitle.def);
 				string[] array = t.royalty.GetUnmetThroneroomRequirements(includeOnGracePeriod: false).ToArray();
 				string[] array2 = t.royalty.GetUnmetThroneroomRequirements(includeOnGracePeriod: true, onlyOnGracePeriod: true).ToArray();
 				StringBuilder stringBuilder = new StringBuilder();

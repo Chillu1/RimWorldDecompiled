@@ -25,7 +25,7 @@ namespace RimWorld
 
 		private void SpawnItems()
 		{
-			if (Props.MatchingItems.TryRandomElement(out ThingDef result))
+			if (Props.MatchingItems.TryRandomElement(out var result))
 			{
 				int stackCount = Mathf.CeilToInt(Props.approxMarketValuePerDay / result.BaseMarketValue);
 				Thing thing = ThingMaker.MakeThing(result);

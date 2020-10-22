@@ -1,6 +1,6 @@
+using System.Collections.Generic;
 using RimWorld.BaseGen;
 using RimWorld.Planet;
-using System.Collections.Generic;
 using Verse;
 
 namespace RimWorld
@@ -28,7 +28,7 @@ namespace RimWorld
 				return false;
 			}
 			CellRect rect = CellRect.CenteredOn(c, 7, 7);
-			if (MapGenerator.TryGetVar("UsedRects", out List<CellRect> var) && var.Any((CellRect x) => x.Overlaps(rect)))
+			if (MapGenerator.TryGetVar<List<CellRect>>("UsedRects", out var var) && var.Any((CellRect x) => x.Overlaps(rect)))
 			{
 				return false;
 			}
@@ -45,7 +45,7 @@ namespace RimWorld
 		protected override void ScatterAt(IntVec3 loc, Map map, GenStepParams parms, int count = 1)
 		{
 			CellRect cellRect = CellRect.CenteredOn(loc, 7, 7).ClipInsideMap(map);
-			if (!MapGenerator.TryGetVar("UsedRects", out List<CellRect> var))
+			if (!MapGenerator.TryGetVar<List<CellRect>>("UsedRects", out var var))
 			{
 				var = new List<CellRect>();
 				MapGenerator.SetVar("UsedRects", var);
@@ -66,7 +66,7 @@ namespace RimWorld
 				}
 				else
 				{
-					resolveParams.thingSetMakerDef = (thingSetMakerDef ?? ThingSetMakerDefOf.MapGen_DefaultStockpile);
+					resolveParams.thingSetMakerDef = thingSetMakerDef ?? ThingSetMakerDefOf.MapGen_DefaultStockpile;
 				}
 			}
 			RimWorld.BaseGen.BaseGen.globalSettings.map = map;

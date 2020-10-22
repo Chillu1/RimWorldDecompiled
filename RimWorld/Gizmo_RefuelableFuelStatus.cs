@@ -32,7 +32,7 @@ namespace RimWorld
 			Find.WindowStack.ImmediateWindow(1523289473, overRect, WindowLayer.GameUI, delegate
 			{
 				Rect rect;
-				Rect rect2 = rect = overRect.AtZero().ContractedBy(6f);
+				Rect rect2 = (rect = overRect.AtZero().ContractedBy(6f));
 				rect.height = overRect.height / 2f;
 				Text.Font = GameFont.Tiny;
 				Widgets.Label(rect, refuelable.Props.FuelGizmoLabel);

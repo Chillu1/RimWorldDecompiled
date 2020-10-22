@@ -182,7 +182,7 @@ namespace RimWorld
 
 		private static float GetOpportunity(ConceptDef conc)
 		{
-			if (opportunities.TryGetValue(conc, out float value))
+			if (opportunities.TryGetValue(conc, out var value))
 			{
 				return value;
 			}

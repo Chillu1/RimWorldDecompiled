@@ -95,13 +95,13 @@ namespace RimWorld
 		{
 			if (ambushType == SignalActionAmbushType.Manhunters)
 			{
-				if (!ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(points, base.Map.Tile, out PawnKindDef animalKind) && !ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(points, -1, out animalKind))
+				if (!ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(points, base.Map.Tile, out var animalKind) && !ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(points, -1, out animalKind))
 				{
 					return Enumerable.Empty<Pawn>();
 				}
 				return ManhunterPackIncidentUtility.GenerateAnimals_NewTmp(animalKind, base.Map.Tile, points);
 			}
-			Faction faction = (ambushType != SignalActionAmbushType.Mechanoids) ? (base.Map.ParentFaction ?? Find.FactionManager.RandomEnemyFaction(allowHidden: false, allowDefeated: false, allowNonHumanlike: false)) : Faction.OfMechanoids;
+			Faction faction = ((ambushType != SignalActionAmbushType.Mechanoids) ? (base.Map.ParentFaction ?? Find.FactionManager.RandomEnemyFaction(allowHidden: false, allowDefeated: false, allowNonHumanlike: false)) : Faction.OfMechanoids);
 			if (faction == null)
 			{
 				return Enumerable.Empty<Pawn>();

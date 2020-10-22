@@ -1,3 +1,6 @@
+using Verse;
+using Verse.Sound;
+
 namespace RimWorld
 {
 	public class CompPowerPlant : CompPowerTrader
@@ -5,6 +8,8 @@ namespace RimWorld
 		protected CompRefuelable refuelableComp;
 
 		protected CompBreakdownable breakdownableComp;
+
+		private Sustainer sustainerProducingPower;
 
 		protected virtual float DesiredPowerOutput => 0f - base.Props.basePowerConsumption;
 
@@ -19,10 +24,36 @@ namespace RimWorld
 			}
 		}
 
+		public override void PostDeSpawn(Map map)
+		{
+			base.PostDeSpawn(map);
+			if (sustainerProducingPower != null && !sustainerProducingPower.Ended)
+			{
+				sustainerProducingPower.End();
+			}
+		}
+
 		public override void CompTick()
 		{
 			base.CompTick();
 			UpdateDesiredPowerOutput();
+			if (base.Props.soundAmbientProducingPower == null)
+			{
+				return;
+			}
+			if (base.PowerOutput > 0.01f)
+			{
+				if (sustainerProducingPower == null || sustainerProducingPower.Ended)
+				{
+					sustainerProducingPower = base.Props.soundAmbientProducingPower.TrySpawnSustainer(SoundInfo.InMap(parent));
+				}
+				sustainerProducingPower.Maintain();
+			}
+			else if (sustainerProducingPower != null)
+			{
+				sustainerProducingPower.End();
+				sustainerProducingPower = null;
+			}
 		}
 
 		public void UpdateDesiredPowerOutput()

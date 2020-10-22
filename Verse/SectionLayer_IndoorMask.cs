@@ -9,7 +9,7 @@ namespace Verse
 		public SectionLayer_IndoorMask(Section section)
 			: base(section)
 		{
-			relevantChangeTypes = (MapMeshFlag.FogOfWar | MapMeshFlag.Roofs);
+			relevantChangeTypes = MapMeshFlag.FogOfWar | MapMeshFlag.Roofs;
 		}
 
 		private bool HideRainPrimary(IntVec3 c)
@@ -79,7 +79,7 @@ namespace Verse
 						}
 					}
 					Thing thing = innerArray[cellIndices.CellToIndex(i, j)];
-					float num = (thing == null || (thing.def.passability != Traversability.Impassable && !thing.def.IsDoor)) ? 0.16f : 0f;
+					float num = ((thing == null || (thing.def.passability != Traversability.Impassable && !thing.def.IsDoor)) ? 0.16f : 0f);
 					subMesh.verts.Add(new Vector3((float)i - num, y, (float)j - num));
 					subMesh.verts.Add(new Vector3((float)i - num, y, (float)(j + 1) + num));
 					subMesh.verts.Add(new Vector3((float)(i + 1) + num, y, (float)(j + 1) + num));

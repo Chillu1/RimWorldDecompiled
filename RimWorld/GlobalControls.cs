@@ -51,8 +51,8 @@ namespace RimWorld
 				{
 					GlobalControlsUtility.DoRealtimeClock(num, 200f, ref num2);
 				}
-				TimedForcedExit component = Find.CurrentMap.Parent.GetComponent<TimedForcedExit>();
-				if (component != null && component.ForceExitAndRemoveMapCountdownActive)
+				TimedDetectionRaids component = Find.CurrentMap.Parent.GetComponent<TimedDetectionRaids>();
+				if (component != null && component.NextRaidCountdownActiveAndVisible)
 				{
 					Rect rect4 = new Rect(num, num2 - 26f, 193f, 26f);
 					Text.Anchor = TextAnchor.MiddleRight;
@@ -123,7 +123,7 @@ namespace RimWorld
 			{
 				text = "Outdoors".Translate();
 			}
-			float num = (room == null || c.Fogged(Find.CurrentMap)) ? Find.CurrentMap.mapTemperature.OutdoorTemp : room.Temperature;
+			float num = ((room == null || c.Fogged(Find.CurrentMap)) ? Find.CurrentMap.mapTemperature.OutdoorTemp : room.Temperature);
 			int num2 = Mathf.RoundToInt(GenTemperature.CelsiusTo(cachedTemperatureStringForTemperature, Prefs.TemperatureMode));
 			int num3 = Mathf.RoundToInt(GenTemperature.CelsiusTo(num, Prefs.TemperatureMode));
 			if (cachedTemperatureStringForLabel != text || num2 != num3)
@@ -135,17 +135,17 @@ namespace RimWorld
 			return cachedTemperatureString;
 		}
 
-		private static void DoCountdownTimer(Rect rect, TimedForcedExit timedForcedExit)
+		private static void DoCountdownTimer(Rect rect, TimedDetectionRaids timedForcedExit)
 		{
-			string forceExitAndRemoveMapCountdownTimeLeftString = timedForcedExit.ForceExitAndRemoveMapCountdownTimeLeftString;
-			string text = "ForceExitAndRemoveMapCountdown".Translate(forceExitAndRemoveMapCountdownTimeLeftString);
+			string detectionCountdownTimeLeftString = timedForcedExit.DetectionCountdownTimeLeftString;
+			string text = "CaravanDetectedRaidCountdown".Translate(detectionCountdownTimeLeftString);
 			float x = Text.CalcSize(text).x;
 			Rect rect2 = new Rect(rect.xMax - x, rect.y, x, rect.height);
 			if (Mouse.IsOver(rect2))
 			{
 				Widgets.DrawHighlight(rect2);
 			}
-			TooltipHandler.TipRegionByKey(rect2, "ForceExitAndRemoveMapCountdownTip", forceExitAndRemoveMapCountdownTimeLeftString);
+			TooltipHandler.TipRegionByKey(rect2, "CaravanDetectedRaidCountdownTip", detectionCountdownTimeLeftString);
 			Widgets.Label(rect2, text);
 		}
 	}

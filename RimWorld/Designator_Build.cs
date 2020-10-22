@@ -70,6 +70,10 @@ namespace RimWorld
 				{
 					return false;
 				}
+				if (!Find.Storyteller.difficultyValues.AllowedToBuild(entDef))
+				{
+					return false;
+				}
 				if (entDef.PlaceWorkers != null)
 				{
 					foreach (PlaceWorker placeWorker in entDef.PlaceWorkers)
@@ -158,7 +162,7 @@ namespace RimWorld
 		public Texture2D ResolvedIcon()
 		{
 			Graphic_Appearances graphic_Appearances;
-			if (stuffDef != null && (graphic_Appearances = (entDef.graphic as Graphic_Appearances)) != null)
+			if (stuffDef != null && (graphic_Appearances = entDef.graphic as Graphic_Appearances) != null)
 			{
 				return (Texture2D)graphic_Appearances.SubGraphicFor(stuffDef).MatAt(entDef.defaultPlacingRot).mainTexture;
 			}
@@ -182,7 +186,7 @@ namespace RimWorld
 				return;
 			}
 			DesignationDragger dragger = Find.DesignatorManager.Dragger;
-			int num = (!dragger.Dragging) ? 1 : dragger.DragCells.Count();
+			int num = ((!dragger.Dragging) ? 1 : dragger.DragCells.Count());
 			float num2 = 0f;
 			Vector2 vector = Event.current.mousePosition + DragPriceDrawOffset;
 			List<ThingDefCountClass> list = entDef.CostListAdjusted(stuffDef);
@@ -335,7 +339,7 @@ namespace RimWorld
 				}
 				Widgets.Label(new Rect(26f, curY + 2f, 50f, 100f), thingDefCountClass.count.ToString());
 				GUI.color = Color.white;
-				string text = (thingDefCountClass.thingDef != null) ? ((string)thingDefCountClass.thingDef.LabelCap) : ((string)("(" + "UnchosenStuff".Translate() + ")"));
+				string text = ((thingDefCountClass.thingDef != null) ? ((string)thingDefCountClass.thingDef.LabelCap) : ((string)("(" + "UnchosenStuff".Translate() + ")")));
 				float width2 = width - 60f;
 				float num = Text.CalcHeight(text, width2) - 5f;
 				Widgets.Label(new Rect(60f, curY + 2f, width2, num + 5f), text);

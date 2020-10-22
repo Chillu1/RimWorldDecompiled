@@ -174,7 +174,7 @@ namespace RimWorld
 				List<FloatMenuOption> list = new List<FloatMenuOption>();
 				list.Add(new FloatMenuOption("ResetBinding".Translate(), delegate
 				{
-					KeyCode keyCode = (slot == KeyPrefs.BindingSlot.A) ? keyDef.defaultKeyCodeA : keyDef.defaultKeyCodeB;
+					KeyCode keyCode = ((slot == KeyPrefs.BindingSlot.A) ? keyDef.defaultKeyCodeA : keyDef.defaultKeyCodeB);
 					keyPrefsData.SetBinding(keyDef, slot, keyCode);
 				}));
 				list.Add(new FloatMenuOption("ClearBinding".Translate(), delegate

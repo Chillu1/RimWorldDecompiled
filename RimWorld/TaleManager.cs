@@ -142,7 +142,7 @@ namespace RimWorld
 			{
 				return TaleReference.Taleless;
 			}
-			if (!tales.Where((Tale x) => x.def.usableForArt).TryRandomElementByWeight((Tale ta) => ta.InterestLevel, out Tale result))
+			if (!tales.Where((Tale x) => x.def.usableForArt).TryRandomElementByWeight((Tale ta) => ta.InterestLevel, out var result))
 			{
 				return TaleReference.Taleless;
 			}
@@ -156,7 +156,7 @@ namespace RimWorld
 			{
 				return TaleReference.Taleless;
 			}
-			if (!tales.Where((Tale x) => x.def.usableForArt && x.Concerns(th)).TryRandomElementByWeight((Tale x) => x.InterestLevel, out Tale result))
+			if (!tales.Where((Tale x) => x.def.usableForArt && x.Concerns(th)).TryRandomElementByWeight((Tale x) => x.InterestLevel, out var result))
 			{
 				return TaleReference.Taleless;
 			}
@@ -206,6 +206,14 @@ namespace RimWorld
 					}
 					RemoveTale(tales[num]);
 				}
+			}
+		}
+
+		public void Notify_FactionRemoved(Faction faction)
+		{
+			for (int i = 0; i < tales.Count; i++)
+			{
+				tales[i].Notify_FactionRemoved(faction);
 			}
 		}
 

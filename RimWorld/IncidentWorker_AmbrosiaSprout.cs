@@ -29,7 +29,7 @@ namespace RimWorld
 		protected override bool TryExecuteWorker(IncidentParms parms)
 		{
 			Map map = (Map)parms.target;
-			if (!TryFindRootCell(map, out IntVec3 cell))
+			if (!TryFindRootCell(map, out var cell))
 			{
 				return false;
 			}
@@ -37,7 +37,7 @@ namespace RimWorld
 			int randomInRange = CountRange.RandomInRange;
 			for (int i = 0; i < randomInRange; i++)
 			{
-				if (!CellFinder.TryRandomClosewalkCellNear(cell, map, 6, out IntVec3 result, (IntVec3 x) => CanSpawnAt(x, map)))
+				if (!CellFinder.TryRandomClosewalkCellNear(cell, map, 6, out var result, (IntVec3 x) => CanSpawnAt(x, map)))
 				{
 					break;
 				}

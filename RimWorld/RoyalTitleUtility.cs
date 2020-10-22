@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld.QuestGen;
 using Verse;
 using Verse.AI;
 
@@ -42,7 +43,7 @@ namespace RimWorld
 			StringBuilder stringBuilder = new StringBuilder();
 			bool flag = ShouldBecomeConceitedOnNewTitle(pawn);
 			List<WorkTags> list = pawn.story.DisabledWorkTagsBackstoryAndTraits.GetAllSelectedItems<WorkTags>().ToList();
-			List<WorkTags> obj = (newTitle == null) ? new List<WorkTags>() : newTitle.disabledWorkTags.GetAllSelectedItems<WorkTags>().ToList();
+			List<WorkTags> obj = ((newTitle == null) ? new List<WorkTags>() : newTitle.disabledWorkTags.GetAllSelectedItems<WorkTags>().ToList());
 			List<WorkTags> list2 = new List<WorkTags>();
 			foreach (WorkTags item in obj)
 			{
@@ -51,11 +52,11 @@ namespace RimWorld
 					list2.Add(item);
 				}
 			}
-			int num = (newTitle != null) ? faction.def.RoyalTitlesAwardableInSeniorityOrderForReading.IndexOf(newTitle) : (-1);
+			int num = ((newTitle != null) ? faction.def.RoyalTitlesAwardableInSeniorityOrderForReading.IndexOf(newTitle) : (-1));
 			if (newTitle != null && flag)
 			{
 				stringBuilder.AppendLine("LetterRoyalTitleConceitedTrait".Translate(pawn.Named("PAWN"), (from t in GetConceitedTraits(pawn)
-					select t.CurrentData.label).ToCommaList(useAnd: true)));
+					select t.Label).ToCommaList(useAnd: true)));
 				stringBuilder.AppendLine();
 				if (newTitle.minExpectation != null)
 				{
@@ -68,7 +69,7 @@ namespace RimWorld
 				if (newTitle.canBeInherited)
 				{
 					Pawn heir = pawn.royalty.GetHeir(faction);
-					TaggedString taggedString = (heir != null) ? "LetterRoyalTitleHeir".Translate(pawn.Named("PAWN"), heir.Named("HEIR")) : "LetterRoyalTitleNoHeir".Translate(pawn.Named("PAWN"));
+					TaggedString taggedString = ((heir != null) ? "LetterRoyalTitleHeir".Translate(pawn.Named("PAWN"), heir.Named("HEIR")) : "LetterRoyalTitleNoHeir".Translate(pawn.Named("PAWN")));
 					stringBuilder.Append(taggedString);
 					if (heir != null && heir.Faction != Faction.OfPlayer)
 					{
@@ -83,6 +84,11 @@ namespace RimWorld
 					stringBuilder.AppendLine();
 				}
 				stringBuilder.AppendLine();
+				if (newTitle.permitPointsAwarded > 0 && pawn.royalty.NewHighestTitle(faction, newTitle))
+				{
+					stringBuilder.AppendLine("PermitPointsAwarded".Translate(newTitle.permitPointsAwarded));
+					stringBuilder.AppendLine();
+				}
 			}
 			if (flag && list2.Count > 0)
 			{
@@ -107,7 +113,7 @@ namespace RimWorld
 						stringBuilder.Append("- ");
 						stringBuilder.AppendLine(string.Join(", ", item2.AllRequiredApparelForPawn(pawn, ignoreGender: false, includeWorn: true).Select(delegate(ThingDef a)
 						{
-							string result = (j == 0) ? a.LabelCap.Resolve() : a.label;
+							string result = ((j == 0) ? a.LabelCap.Resolve() : a.label);
 							j++;
 							return result;
 						}).ToArray()));
@@ -134,7 +140,7 @@ namespace RimWorld
 					stringBuilder.AppendLine();
 				}
 			}
-			FindLostAndGainedPermits(currentTitle, newTitle, out List<RoyalTitlePermitDef> _, out List<RoyalTitlePermitDef> lostPermits);
+			FindLostAndGainedPermits(currentTitle, newTitle, out var _, out var lostPermits);
 			if (newTitle != null && newTitle.permits != null)
 			{
 				stringBuilder.AppendLine("LetterRoyalTitlePermits".Translate(pawn.Named("PAWN")).CapitalizeFirst());
@@ -290,7 +296,7 @@ namespace RimWorld
 				if (building_Throne != null && building_Throne.CompAssignableToPawn.HasFreeSlot && building_Throne.Spawned && !building_Throne.IsForbidden(pawn) && pawn.CanReserveAndReach(building_Throne, PathEndMode.InteractionCell, pawn.NormalMaxDanger()) && RoomRoleWorker_ThroneRoom.Validate(building_Throne.GetRoom()) == null)
 				{
 					PawnPath pawnPath = pawn.Map.pathFinder.FindPath(pawn.Position, building_Throne, pawn, PathEndMode.InteractionCell);
-					float num2 = pawnPath.Found ? pawnPath.TotalCost : float.PositiveInfinity;
+					float num2 = (pawnPath.Found ? pawnPath.TotalCost : float.PositiveInfinity);
 					pawnPath.ReleaseToPool();
 					if (num > num2)
 					{
@@ -421,6 +427,67 @@ namespace RimWorld
 				return GetConceitedTraits(p).Any();
 			}
 			return true;
+		}
+
+		public static Quest GetCurrentBestowingCeremonyQuest(Pawn pawn, Faction faction)
+		{
+			foreach (Quest item in Find.QuestManager.QuestsListForReading)
+			{
+				if (!item.Historical)
+				{
+					QuestPart_BestowingCeremony questPart_BestowingCeremony = (QuestPart_BestowingCeremony)item.PartsListForReading.FirstOrDefault((QuestPart p) => p is QuestPart_BestowingCeremony);
+					if (questPart_BestowingCeremony != null && questPart_BestowingCeremony.target == pawn && questPart_BestowingCeremony.bestower.Faction == faction)
+					{
+						return item;
+					}
+				}
+			}
+			return null;
+		}
+
+		public static bool ShouldGetBestowingCeremonyQuest(Pawn pawn, out Faction faction)
+		{
+			faction = null;
+			if (pawn.Faction != null && pawn.Faction.IsPlayer && pawn.royalty != null && pawn.royalty.CanUpdateTitleOfAnyFaction(out faction))
+			{
+				return GetCurrentBestowingCeremonyQuest(pawn, faction) == null;
+			}
+			return false;
+		}
+
+		public static bool ShouldGetBestowingCeremonyQuest(Pawn pawn, Faction faction)
+		{
+			if (pawn.Faction != null && pawn.Faction.IsPlayer && pawn.royalty != null && pawn.royalty.CanUpdateTitle(faction))
+			{
+				return GetCurrentBestowingCeremonyQuest(pawn, faction) == null;
+			}
+			return false;
+		}
+
+		public static void EndExistingBestowingCeremonyQuest(Pawn pawn, Faction faction)
+		{
+			foreach (Quest item in Find.QuestManager.QuestsListForReading)
+			{
+				if (!item.Historical && item.State != QuestState.Ongoing)
+				{
+					QuestPart_BestowingCeremony questPart_BestowingCeremony = (QuestPart_BestowingCeremony)item.PartsListForReading.FirstOrDefault((QuestPart p) => p is QuestPart_BestowingCeremony);
+					if (questPart_BestowingCeremony != null && questPart_BestowingCeremony.target == pawn && questPart_BestowingCeremony.bestower.Faction == faction)
+					{
+						item.End(QuestEndOutcome.InvalidPreAcceptance, sendLetter: false);
+					}
+				}
+			}
+		}
+
+		public static void GenerateBestowingCeremonyQuest(Pawn pawn, Faction faction)
+		{
+			Slate slate = new Slate();
+			slate.Set("titleHolder", pawn);
+			slate.Set("bestowingFaction", faction);
+			if (QuestScriptDefOf.BestowingCeremony.CanRun(slate))
+			{
+				QuestUtility.SendLetterQuestAvailable(QuestUtility.GenerateQuestAndMakeAvailable(QuestScriptDefOf.BestowingCeremony, slate));
+			}
 		}
 
 		public static void ResetStaticData()

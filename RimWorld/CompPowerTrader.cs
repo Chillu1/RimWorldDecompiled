@@ -138,6 +138,13 @@ namespace RimWorld
 		{
 			base.PostSpawnSetup(respawningAfterLoad);
 			flickableComp = parent.GetComp<CompFlickable>();
+			if (PowerOn)
+			{
+				LongEventHandler.ExecuteWhenFinished(delegate
+				{
+					StartSustainerPoweredIfInactive();
+				});
+			}
 		}
 
 		public override void PostDeSpawn(Map map)
@@ -174,7 +181,7 @@ namespace RimWorld
 			base.SetUpPowerVars();
 			CompProperties_Power props = base.Props;
 			PowerOutput = -1f * props.basePowerConsumption;
-			powerLastOutputted = (props.basePowerConsumption <= 0f);
+			powerLastOutputted = props.basePowerConsumption <= 0f;
 		}
 
 		public override void ResetPowerVars()
@@ -198,7 +205,7 @@ namespace RimWorld
 
 		public override string CompInspectStringExtra()
 		{
-			string str = (!powerLastOutputted) ? ((string)("PowerNeeded".Translate() + ": " + (0f - PowerOutput).ToString("#####0") + " W")) : ((string)("PowerOutput".Translate() + ": " + PowerOutput.ToString("#####0") + " W"));
+			string str = ((!powerLastOutputted) ? ((string)("PowerNeeded".Translate() + ": " + (0f - PowerOutput).ToString("#####0") + " W")) : ((string)("PowerOutput".Translate() + ": " + PowerOutput.ToString("#####0") + " W")));
 			return str + "\n" + base.CompInspectStringExtra();
 		}
 

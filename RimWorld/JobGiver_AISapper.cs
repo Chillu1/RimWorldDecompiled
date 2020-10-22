@@ -25,7 +25,7 @@ namespace RimWorld
 
 		protected override Job TryGiveJob(Pawn pawn)
 		{
-			IntVec3 intVec = (IntVec3)pawn.mindState.duty.focus;
+			IntVec3 intVec = pawn.mindState.duty.focus.Cell;
 			if (intVec.IsValid && (float)intVec.DistanceToSquared(pawn.Position) < 100f && intVec.GetRoom(pawn.Map) == pawn.GetRoom() && intVec.WithinRegions(pawn.Position, pawn.Map, 9, TraverseMode.NoPassClosedDoors))
 			{
 				pawn.GetLord().Notify_ReachedDutyLocation(pawn);
@@ -35,7 +35,7 @@ namespace RimWorld
 			{
 				if (!(from x in pawn.Map.attackTargetsCache.GetPotentialTargetsFor(pawn)
 					where !x.ThreatDisabled(pawn) && x.Thing.Faction == Faction.OfPlayer && pawn.CanReach(x.Thing, PathEndMode.OnCell, Danger.Deadly, canBash: false, TraverseMode.PassAllDestroyableThings)
-					select x).TryRandomElement(out IAttackTarget result))
+					select x).TryRandomElement(out var result))
 				{
 					return null;
 				}

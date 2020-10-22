@@ -57,7 +57,7 @@ namespace RimWorld
 			if (gatheringSpot.IsValid)
 			{
 				Predicate<Thing> oldValidator = predicate;
-				predicate = ((Thing x) => GatheringsUtility.InGatheringArea(x.Position, gatheringSpot, pawn.Map) && oldValidator(x));
+				predicate = (Thing x) => GatheringsUtility.InGatheringArea(x.Position, gatheringSpot, pawn.Map) && oldValidator(x);
 			}
 			Thing result = GenClosest.ClosestThing_Global_Reachable(pawn.Position, pawn.Map, tmpCandidates, PathEndMode.OnCell, TraverseParms.For(pawn), 9999f, predicate);
 			tmpCandidates.Clear();

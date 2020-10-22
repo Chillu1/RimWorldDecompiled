@@ -6,11 +6,9 @@ namespace RimWorld
 {
 	public class Building_Throne : Building
 	{
-		private static List<RoyalTitleDef> tmpTitles = new List<RoyalTitleDef>();
-
 		public static IEnumerable<RoyalTitleDef> AllTitlesForThroneStature => from title in DefDatabase<RoyalTitleDef>.AllDefsListForReading
-			where title.MinThroneRoomImpressiveness > 0f
-			orderby title.MinThroneRoomImpressiveness
+			where !title.throneRoomRequirements.NullOrEmpty()
+			orderby title.seniority
 			select title;
 
 		public Pawn AssignedPawn
@@ -41,11 +39,19 @@ namespace RimWorld
 				{
 					return null;
 				}
-				float stat = room.GetStat(RoomStatDefOf.Impressiveness);
 				RoyalTitleDef result = null;
 				foreach (RoyalTitleDef item in AllTitlesForThroneStature)
 				{
-					if (stat > item.MinThroneRoomImpressiveness)
+					bool flag = true;
+					for (int i = 0; i < item.throneRoomRequirements.Count; i++)
+					{
+						if (!(item.throneRoomRequirements[i] is RoomRequirement_HasAssignedThroneAnyOf) && !item.throneRoomRequirements[i].Met(room))
+						{
+							flag = false;
+							break;
+						}
+					}
+					if (flag)
 					{
 						result = item;
 						continue;
@@ -60,26 +66,13 @@ namespace RimWorld
 		{
 			string inspectString = base.GetInspectString();
 			Room room = this.GetRoom();
-			Pawn p = (CompAssignableToPawn.AssignedPawnsForReading.Count == 1) ? CompAssignableToPawn.AssignedPawnsForReading[0] : null;
+			Pawn p = ((CompAssignableToPawn.AssignedPawnsForReading.Count == 1) ? CompAssignableToPawn.AssignedPawnsForReading[0] : null);
 			RoyalTitleDef titleStature = TitleStature;
-			inspectString += "\n" + "ThroneTitleStature".Translate((titleStature == null) ? "None".Translate() : (titleStature.GetLabelCapFor(p) + " " + "ThroneRoomImpressivenessInfo".Translate(titleStature.MinThroneRoomImpressiveness.ToString())));
+			inspectString += "\n" + "ThroneMaxSatisfiedTitle".Translate() + ": " + ((titleStature == null) ? "None".Translate() : ((TaggedString)titleStature.GetLabelCapFor(p)));
 			string text = RoomRoleWorker_ThroneRoom.Validate(room);
 			if (text != null)
 			{
 				return inspectString + "\n" + text;
-			}
-			tmpTitles.Clear();
-			tmpTitles.AddRange(AllTitlesForThroneStature);
-			int num = tmpTitles.IndexOf(titleStature);
-			int num2 = num - 1;
-			int num3 = num + 1;
-			if (num2 >= 0)
-			{
-				inspectString += "\n" + "ThronePrevTitleStature".Translate(tmpTitles[num2].GetLabelCapFor(p)) + " " + "ThroneRoomImpressivenessInfo".Translate(tmpTitles[num2].MinThroneRoomImpressiveness.ToString());
-			}
-			if (num3 < tmpTitles.Count)
-			{
-				inspectString += "\n" + "ThroneNextTitleStature".Translate(tmpTitles[num3].GetLabelCapFor(p)) + " " + "ThroneRoomImpressivenessInfo".Translate(tmpTitles[num3].MinThroneRoomImpressiveness.ToString());
 			}
 			return inspectString;
 		}

@@ -23,7 +23,7 @@ namespace RimWorld
 					CompPower powerComp = building.PowerComp;
 					if (powerComp != null)
 					{
-						if (!tmpPowerNetHasActivePowerSource.TryGetValue(powerComp.PowerNet, out bool value))
+						if (!tmpPowerNetHasActivePowerSource.TryGetValue(powerComp.PowerNet, out var value))
 						{
 							value = powerComp.PowerNet.HasActivePowerSource;
 							tmpPowerNetHasActivePowerSource.Add(powerComp.PowerNet, value);
@@ -56,7 +56,7 @@ namespace RimWorld
 			{
 				flag = TryStartFireNear(culprit);
 			}
-			string value = (culprit.def != ThingDefOf.PowerConduit) ? Find.ActiveLanguageWorker.WithIndefiniteArticlePostProcessed(culprit.Label) : ((string)"AnElectricalConduit".Translate());
+			string value = ((culprit.def != ThingDefOf.PowerConduit) ? Find.ActiveLanguageWorker.WithIndefiniteArticlePostProcessed(culprit.Label) : ((string)"AnElectricalConduit".Translate()));
 			StringBuilder stringBuilder = new StringBuilder();
 			if (flag)
 			{

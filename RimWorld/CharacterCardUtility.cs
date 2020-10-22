@@ -116,7 +116,7 @@ namespace RimWorld
 			else if (!pawn.health.Dead)
 			{
 				float num = PawnCardSize(pawn).x - 85f;
-				if (pawn.IsFreeColonist && pawn.Spawned)
+				if (pawn.IsFreeColonist && pawn.Spawned && !pawn.IsQuestLodger())
 				{
 					Rect rect7 = new Rect(num, 0f, 30f, 30f);
 					if (Mouse.IsOver(rect7))
@@ -157,7 +157,7 @@ namespace RimWorld
 							object _003CDrawCharacterCard_003Eb__3S_0;
 							return delegate
 							{
-								RoyalTitleUtility.FindLostAndGainedPermits(title.def, null, out List<RoyalTitlePermitDef> _, out List<RoyalTitlePermitDef> lostPermits);
+								RoyalTitleUtility.FindLostAndGainedPermits(title.def, null, out var _, out var lostPermits);
 								StringBuilder stringBuilder = new StringBuilder();
 								if (lostPermits.Count > 0)
 								{
@@ -175,6 +175,7 @@ namespace RimWorld
 								Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("RenounceTitleDescription".Translate(pawn.Named("PAWN"), "TitleOfFaction".Translate(title.def.GetLabelCapFor(pawn), title.faction.GetCallLabel()).Named("TITLE"), stringBuilder.ToString().TrimEndNewlines().Named("EFFECTS")), delegate
 								{
 									pawn.royalty.SetTitle(title.faction, null, grantRewards: false);
+									pawn.royalty.ResetPermitsAndPoints(title.faction, title.def);
 								}, destructive: true));
 							};
 							RoyalTitleDef FirstTitleWithPermit(RoyalTitlePermitDef permitDef)
@@ -199,7 +200,7 @@ namespace RimWorld
 				TooltipHandler.TipRegion(rect11, () => pawn.ageTracker.AgeTooltipString, 6873641);
 			}
 			float num2 = 0f;
-			if (pawn.Faction != null && !pawn.Faction.def.hidden)
+			if (pawn.Faction != null && !pawn.Faction.Hidden)
 			{
 				float num3 = Text.CalcSize(pawn.Faction.Name).x + 22f + 15f;
 				stackElements.Add(new GenUI.AnonymousStackElement
@@ -231,7 +232,8 @@ namespace RimWorld
 						}
 						if (Mouse.IsOver(rect23))
 						{
-							TipSignal tip6 = new TipSignal(() => "Faction".Translate() + "\n\n" + "FactionDesc".Translate(pawn.Named("PAWN")) + "\n\n" + "ClickToViewFactions".Translate(), pawn.Faction.loadID * 37);
+							TaggedString taggedString2 = "Faction".Translate() + "\n\n" + "FactionDesc".Translate(pawn.Named("PAWN")) + "\n\n" + "ClickToViewFactions".Translate();
+							TipSignal tip6 = new TipSignal(taggedString2, pawn.Faction.loadID * 37);
 							TooltipHandler.TipRegion(rect23, tip6);
 						}
 					},
@@ -245,9 +247,13 @@ namespace RimWorld
 			QuestUtility.GetExtraFactionsFromQuestParts(pawn, tmpExtraFactions);
 			foreach (ExtraFaction tmpExtraFaction in tmpExtraFactions)
 			{
+				if (pawn.Faction == tmpExtraFaction.faction)
+				{
+					continue;
+				}
 				ExtraFaction localExtraFaction = tmpExtraFaction;
 				string factionName = localExtraFaction.faction.Name;
-				bool drawExtraFactionIcon = localExtraFaction.factionType == ExtraFactionType.HomeFaction;
+				bool drawExtraFactionIcon = localExtraFaction.factionType == ExtraFactionType.HomeFaction || localExtraFaction.factionType == ExtraFactionType.MiniFaction;
 				float num5 = ElementWidth();
 				if (flag || num2 + num5 >= num4)
 				{
@@ -260,7 +266,7 @@ namespace RimWorld
 					drawer = delegate(Rect r)
 					{
 						Rect rect20 = new Rect(r.x, r.y, r.width, r.height);
-						Rect rect21 = drawExtraFactionIcon ? rect20 : r;
+						Rect rect21 = (drawExtraFactionIcon ? rect20 : r);
 						Color color6 = GUI.color;
 						GUI.color = StackElementBackground;
 						GUI.DrawTexture(rect21, BaseContent.WhiteTex);
@@ -285,7 +291,8 @@ namespace RimWorld
 						}
 						if (Mouse.IsOver(rect21))
 						{
-							TipSignal tip5 = new TipSignal(() => localExtraFaction.factionType.GetLabel().CapitalizeFirst() + "\n\n" + "ExtraFactionDesc".Translate(pawn.Named("PAWN")) + "\n\n" + "ClickToViewFactions".Translate(), localExtraFaction.faction.loadID ^ 0x738AC053);
+							TaggedString taggedString = localExtraFaction.factionType.GetLabel().CapitalizeFirst() + "\n\n" + "ExtraFactionDesc".Translate(pawn.Named("PAWN")) + "\n\n" + "ClickToViewFactions".Translate();
+							TipSignal tip5 = new TipSignal(taggedString, localExtraFaction.faction.loadID ^ 0x738AC053);
 							TooltipHandler.TipRegion(rect21, tip5);
 						}
 					},
@@ -357,7 +364,7 @@ namespace RimWorld
 					},
 					width = GetQuestLineSize(str, quest).x
 				});
-			}, pawn, out int _);
+			}, pawn, out var _);
 			curY += GenUI.DrawElementStack(new Rect(0f, curY, rect.width - 5f, 50f), 22f, stackElements, delegate(Rect r, GenUI.AnonymousStackElement obj)
 			{
 				obj.drawer(r);
@@ -374,7 +381,7 @@ namespace RimWorld
 			List<Ability> abilities = (from a in pawn.abilities.abilities
 				orderby a.def.level, a.def.EntropyGain
 				select a).ToList();
-			int numSections = abilities.Any() ? 5 : 4;
+			int numSections = (abilities.Any() ? 5 : 4);
 			float num6 = (float)Enum.GetValues(typeof(BackstorySlot)).Length * 22f;
 			if (pawn.story != null && pawn.story.title != null)
 			{
@@ -403,7 +410,7 @@ namespace RimWorld
 								TooltipHandler.TipRegion(rect14, backstory.FullDescriptionFor(pawn).Resolve());
 							}
 							Text.Anchor = TextAnchor.MiddleLeft;
-							string str2 = (value6 == BackstorySlot.Adulthood) ? "Adulthood".Translate() : "Childhood".Translate();
+							string str2 = ((value6 == BackstorySlot.Adulthood) ? "Adulthood".Translate() : "Childhood".Translate());
 							Widgets.Label(rect14, str2 + ":");
 							Text.Anchor = TextAnchor.UpperLeft;
 							Rect rect15 = new Rect(rect14);
@@ -442,17 +449,17 @@ namespace RimWorld
 			{
 				disabledTagsList.Sort(delegate(WorkTags a, WorkTags b)
 				{
-					int num11 = GetWorkTypeDisableCauses(pawn, a).Any((object c) => c is RoyalTitleDef) ? 1 : (-1);
-					int value5 = GetWorkTypeDisableCauses(pawn, b).Any((object c) => c is RoyalTitleDef) ? 1 : (-1);
+					int num11 = (GetWorkTypeDisableCauses(pawn, a).Any((object c) => c is RoyalTitleDef) ? 1 : (-1));
+					int value5 = (GetWorkTypeDisableCauses(pawn, b).Any((object c) => c is RoyalTitleDef) ? 1 : (-1));
 					return num11.CompareTo(value5);
 				});
 				num6 += GenUI.DrawElementStack(new Rect(0f, 0f, leftRect.width - 5f, leftRect.height), 22f, disabledTagsList, delegate
 				{
 				}, workTagWidthGetter, 4f, 5f, allowOrderOptimization: false).height;
 				num6 += 12f;
-				allowWorkTagVerticalLayout = (GenUI.DrawElementStackVertical(new Rect(0f, 0f, rect.width, leftRect.height / (float)numSections), 22f, disabledTagsList, delegate
+				allowWorkTagVerticalLayout = GenUI.DrawElementStackVertical(new Rect(0f, 0f, rect.width, leftRect.height / (float)numSections), 22f, disabledTagsList, delegate
 				{
-				}, workTagWidthGetter).width <= leftRect.width);
+				}, workTagWidthGetter).width <= leftRect.width;
 			}
 			item = new LeftRectSection
 			{
@@ -840,7 +847,7 @@ namespace RimWorld
 		{
 			Vector2 basePawnCardSize = BasePawnCardSize;
 			tmpInspectStrings.Length = 0;
-			QuestUtility.AppendInspectStringsFromQuestParts(tmpInspectStrings, pawn, out int count);
+			QuestUtility.AppendInspectStringsFromQuestParts(tmpInspectStrings, pawn, out var count);
 			if (count >= 2)
 			{
 				basePawnCardSize.y += (count - 1) * 20;
@@ -881,11 +888,14 @@ namespace RimWorld
 			rect2.height = Text.CalcSize(line).y;
 			float x = Text.CalcSize(line).x;
 			Rect rect3 = new Rect(rect.x, rect.y, Mathf.Min(x, rect2.width) + 24f + -7f, rect.height);
-			Widgets.DrawHighlightIfMouseover(rect3);
-			TooltipHandler.TipRegionByKey(rect3, "ClickToViewInQuestsTab");
+			if (!quest.hidden)
+			{
+				Widgets.DrawHighlightIfMouseover(rect3);
+				TooltipHandler.TipRegionByKey(rect3, "ClickToViewInQuestsTab");
+			}
 			GUI.DrawTexture(new Rect(rect.x + -7f, rect.y - 2f, 24f, 24f), QuestIcon);
 			Widgets.Label(rect2, line.Truncate(rect2.width));
-			if (Widgets.ButtonInvisible(rect3))
+			if (!quest.hidden && Widgets.ButtonInvisible(rect3))
 			{
 				Find.MainTabsRoot.SetCurrentTab(MainButtonDefOf.Quests);
 				((MainTabWindow_Quests)MainButtonDefOf.Quests.TabWindow).Select(quest);

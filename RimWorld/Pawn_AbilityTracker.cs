@@ -56,7 +56,7 @@ namespace RimWorld
 		public IEnumerable<Gizmo> GetGizmos()
 		{
 			foreach (Ability item in from a in abilities
-				orderby a.def.level, a.def.EntropyGain
+				orderby (a.def.category != null) ? a.def.category.displayOrder : 0, a.def.level
 				select a)
 			{
 				if (!pawn.Drafted && !item.def.displayGizmoWhileUndrafted)

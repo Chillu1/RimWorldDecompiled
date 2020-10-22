@@ -39,7 +39,7 @@ namespace RimWorld
 					{
 						return null;
 					}
-					if (!pawnPath.TryFindLastCellBeforeBlockingDoor(pawn, out IntVec3 result))
+					if (!pawnPath.TryFindLastCellBeforeBlockingDoor(pawn, out var result))
 					{
 						Log.Error(string.Concat(pawn, " did TryFindLastCellBeforeDoor but found none when it should have been one. Target: ", pawn2.LabelCap));
 						return null;
@@ -71,7 +71,7 @@ namespace RimWorld
 
 		private Building FindTurretTarget(Pawn pawn)
 		{
-			return (Building)AttackTargetFinder.BestAttackTarget(pawn, TargetScanFlags.NeedLOSToPawns | TargetScanFlags.NeedLOSToNonPawns | TargetScanFlags.NeedReachable | TargetScanFlags.NeedThreat | TargetScanFlags.NeedAutoTargetable, (Thing t) => t is Building, 0f, 70f);
+			return (Building)AttackTargetFinder.BestAttackTarget(pawn, TargetScanFlags.NeedLOSToAll | TargetScanFlags.NeedReachable | TargetScanFlags.NeedThreat | TargetScanFlags.NeedAutoTargetable, (Thing t) => t is Building, 0f, 70f);
 		}
 	}
 }

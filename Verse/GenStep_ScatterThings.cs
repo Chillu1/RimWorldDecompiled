@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -63,11 +63,11 @@ namespace Verse
 				return;
 			}
 			int count = CalculateFinalCount(map);
-			IntRange stackSizeRange = (thingDef.ingestible != null && thingDef.ingestible.IsMeal && thingDef.stackLimit <= 10) ? IntRange.one : ((thingDef.stackLimit > 5) ? new IntRange(Mathf.RoundToInt((float)thingDef.stackLimit * 0.5f), thingDef.stackLimit) : new IntRange(thingDef.stackLimit, thingDef.stackLimit));
+			IntRange stackSizeRange = ((thingDef.ingestible != null && thingDef.ingestible.IsMeal && thingDef.stackLimit <= 10) ? IntRange.one : ((thingDef.stackLimit > 5) ? new IntRange(Mathf.RoundToInt((float)thingDef.stackLimit * 0.5f), thingDef.stackLimit) : new IntRange(thingDef.stackLimit, thingDef.stackLimit)));
 			List<int> list = CountDividedIntoStacks(count, stackSizeRange);
 			for (int i = 0; i < list.Count; i++)
 			{
-				if (!TryFindScatterCell(map, out IntVec3 result))
+				if (!TryFindScatterCell(map, out var result))
 				{
 					return;
 				}
@@ -92,7 +92,7 @@ namespace Verse
 					leftInCluster = clusterSize;
 				}
 				leftInCluster--;
-				result = CellFinder.RandomClosewalkCellNear(clusterCenter, map, 4, (IntVec3 x) => TryGetRandomValidRotation(x, map, out Rot4 _));
+				result = CellFinder.RandomClosewalkCellNear(clusterCenter, map, 4, (IntVec3 x) => TryGetRandomValidRotation(x, map, out var _));
 				return result.IsValid;
 			}
 			return base.TryFindScatterCell(map, out result);
@@ -100,7 +100,7 @@ namespace Verse
 
 		protected override void ScatterAt(IntVec3 loc, Map map, GenStepParams parms, int stackCount = 1)
 		{
-			if (!TryGetRandomValidRotation(loc, map, out Rot4 rot))
+			if (!TryGetRandomValidRotation(loc, map, out var rot))
 			{
 				Log.Warning("Could not find any valid rotation for " + thingDef);
 				return;
@@ -121,7 +121,7 @@ namespace Verse
 			{
 				thing.stackCount = stackCount;
 				thing.SetForbidden(value: true, warnOnFail: false);
-				GenPlace.TryPlaceThing(thing, loc, map, ThingPlaceMode.Near, out Thing lastResultingThing);
+				GenPlace.TryPlaceThing(thing, loc, map, ThingPlaceMode.Near, out var lastResultingThing);
 				if (nearPlayerStart && lastResultingThing != null && lastResultingThing.def.category == ThingCategory.Item && TutorSystem.TutorialMode)
 				{
 					Find.TutorialState.AddStartingItem(lastResultingThing);
@@ -139,7 +139,7 @@ namespace Verse
 			{
 				return false;
 			}
-			if (!TryGetRandomValidRotation(loc, map, out Rot4 _))
+			if (!TryGetRandomValidRotation(loc, map, out var _))
 			{
 				return false;
 			}

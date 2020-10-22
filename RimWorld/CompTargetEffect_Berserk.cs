@@ -10,6 +10,7 @@ namespace RimWorld
 			if (!pawn.Dead)
 			{
 				pawn.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.Berserk, null, forceWake: true);
+				Find.BattleLog.Add(new BattleLogEntry_ItemUsed(user, target, parent.def, RulePackDefOf.Event_ItemUsed));
 			}
 		}
 	}

@@ -9,6 +9,8 @@ namespace RimWorld
 
 		public IncidentTargetTagDef incidentTargetWhileStarting;
 
+		public SoundDef sustainerActive;
+
 		public CompProperties_Hibernatable()
 		{
 			compClass = typeof(CompHibernatable);

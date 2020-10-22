@@ -81,7 +81,7 @@ namespace RimWorld
 				{
 					return false;
 				}
-				string last = (changeName == MarriageNameChange.MansName) ? nameTriple.Last : nameTriple2.Last;
+				string last = ((changeName == MarriageNameChange.MansName) ? nameTriple.Last : nameTriple2.Last);
 				man.Name = new NameTriple(nameTriple.First, nameTriple.Nick, last);
 				woman.Name = new NameTriple(nameTriple2.First, nameTriple2.Nick, last);
 				return true;
@@ -130,7 +130,7 @@ namespace RimWorld
 				return;
 			}
 			Pawn spouse = generated.GetSpouse();
-			DetermineManAndWomanSpouses(generated, spouse, out Pawn man, out Pawn woman);
+			DetermineManAndWomanSpouses(generated, spouse, out var man, out var woman);
 			NameTriple nameTriple = man.Name as NameTriple;
 			NameTriple nameTriple2 = woman.Name as NameTriple;
 			if (generated == woman && marriageNameChange == MarriageNameChange.WomansName)

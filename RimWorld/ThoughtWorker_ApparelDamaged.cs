@@ -15,7 +15,7 @@ namespace RimWorld
 			List<Apparel> wornApparel = p.apparel.WornApparel;
 			for (int i = 0; i < wornApparel.Count; i++)
 			{
-				if (wornApparel[i].def.useHitPoints && !p.apparel.IsLocked(wornApparel[i]))
+				if (wornApparel[i].def.useHitPoints && !p.apparel.IsLocked(wornApparel[i]) && wornApparel[i].def.apparel.careIfDamaged)
 				{
 					float num2 = (float)wornApparel[i].HitPoints / (float)wornApparel[i].MaxHitPoints;
 					if (num2 < num)

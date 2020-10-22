@@ -1,7 +1,7 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Xml;
+using RimWorld;
+using RimWorld.Planet;
 using Verse.AI;
 
 namespace Verse
@@ -299,54 +299,100 @@ namespace Verse
 			}
 			else if (defType == typeof(KeyBindingDef))
 			{
+				if (defName == "MapDollyUp")
+				{
+					return "MapDolly_Up";
+				}
+				if (defName == "MapDollyDown")
+				{
+					return "MapDolly_Down";
+				}
+				if (defName == "MapDollyLeft")
+				{
+					return "MapDolly_Left";
+				}
+				if (defName == "MapDollyRight")
+				{
+					return "MapDolly_Right";
+				}
+				if (defName == "MapZoomIn")
+				{
+					return "MapZoom_In";
+				}
+				if (defName == "MapZoomOut")
+				{
+					return "MapZoom_Out";
+				}
+				if (defName == "TimeSpeedNormal")
+				{
+					return "TimeSpeed_Normal";
+				}
+				if (defName == "TimeSpeedFast")
+				{
+					return "TimeSpeed_Fast";
+				}
+				if (defName == "TimeSpeedSuperfast")
+				{
+					return "TimeSpeed_Superfast";
+				}
+				if (defName == "TimeSpeedUltrafast")
+				{
+					return "TimeSpeed_Ultrafast";
+				}
+				if (defName == "CommandTogglePower")
+				{
+					return "Command_TogglePower";
+				}
+				if (defName == "CommandItemForbid")
+				{
+					return "Command_ItemForbid";
+				}
+				if (defName == "CommandColonistDraft")
+				{
+					return "Command_ColonistDraft";
+				}
+				if (defName == "DesignatorCancel")
+				{
+					return "Designator_Cancel";
+				}
+				if (defName == "DesignatorDeconstruct")
+				{
+					return "Designator_Deconstruct";
+				}
+				if (defName == "DesignatorRotateLeft")
+				{
+					return "Designator_RotateLeft";
+				}
+				if (defName == "DesignatorRotateRight")
+				{
+					return "Designator_RotateRight";
+				}
+				if (defName == "ModifierIncrement10x")
+				{
+					return "ModifierIncrement_10x";
+				}
+				if (defName == "ModifierIncrement100x")
+				{
+					return "ModifierIncrement_100x";
+				}
+				if (defName == "TickOnce")
+				{
+					return "Dev_TickOnce";
+				}
+				if (defName == "ToggleGodMode")
+				{
+					return "Dev_ToggleGodMode";
+				}
+				if (defName == "ToggleDebugLog")
+				{
+					return "Dev_ToggleDebugLog";
+				}
+				if (defName == "ToggleDebugActionsMenu")
+				{
+					return "Dev_ToggleDebugActionsMenu";
+				}
 				switch (defName)
 				{
-				case "MapDollyUp":
-					return "MapDolly_Up";
-				case "MapDollyDown":
-					return "MapDolly_Down";
-				case "MapDollyLeft":
-					return "MapDolly_Left";
-				case "MapDollyRight":
-					return "MapDolly_Right";
-				case "MapZoomIn":
-					return "MapZoom_In";
-				case "MapZoomOut":
-					return "MapZoom_Out";
-				case "TimeSpeedNormal":
-					return "TimeSpeed_Normal";
-				case "TimeSpeedFast":
-					return "TimeSpeed_Fast";
-				case "TimeSpeedSuperfast":
-					return "TimeSpeed_Superfast";
-				case "TimeSpeedUltrafast":
-					return "TimeSpeed_Ultrafast";
-				case "CommandTogglePower":
-					return "Command_TogglePower";
-				case "CommandItemForbid":
-					return "Command_ItemForbid";
-				case "CommandColonistDraft":
-					return "Command_ColonistDraft";
-				case "DesignatorCancel":
-					return "Designator_Cancel";
-				case "DesignatorDeconstruct":
-					return "Designator_Deconstruct";
-				case "DesignatorRotateLeft":
-					return "Designator_RotateLeft";
-				case "DesignatorRotateRight":
-					return "Designator_RotateRight";
-				case "ModifierIncrement10x":
-					return "ModifierIncrement_10x";
-				case "ModifierIncrement100x":
-					return "ModifierIncrement_100x";
-				case "TickOnce":
-					return "Dev_TickOnce";
-				case "ToggleGodMode":
-					return "Dev_ToggleGodMode";
-				case "ToggleDebugLog":
-					return "Dev_ToggleDebugLog";
-				case "ToggleDebugActionsMenu":
-					return "Dev_ToggleDebugActionsMenu";
 				case "ToggleDebugActionsMenu":
 					return "Dev_ToggleDebugActionsMenu";
 				case "ToggleDebugLogMenu":

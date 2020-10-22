@@ -8,7 +8,7 @@ namespace RimWorld
 		public override bool AvailableOnNow(Thing thing)
 		{
 			Pawn pawn;
-			if ((pawn = (thing as Pawn)) == null)
+			if ((pawn = thing as Pawn) == null)
 			{
 				return false;
 			}
@@ -46,7 +46,7 @@ namespace RimWorld
 				TaleRecorder.RecordTale(TaleDefOf.DidSurgery, billDoer, pawn);
 				if (PawnUtility.ShouldSendNotificationAbout(pawn) || PawnUtility.ShouldSendNotificationAbout(billDoer))
 				{
-					string text = recipe.successfullyRemovedHediffMessage.NullOrEmpty() ? ((string)"MessageSuccessfullyRemovedHediff".Translate(billDoer.LabelShort, pawn.LabelShort, recipe.removesHediff.label.Named("HEDIFF"), billDoer.Named("SURGEON"), pawn.Named("PATIENT"))) : string.Format(recipe.successfullyRemovedHediffMessage, billDoer.LabelShort, pawn.LabelShort);
+					string text = (recipe.successfullyRemovedHediffMessage.NullOrEmpty() ? ((string)"MessageSuccessfullyRemovedHediff".Translate(billDoer.LabelShort, pawn.LabelShort, recipe.removesHediff.label.Named("HEDIFF"), billDoer.Named("SURGEON"), pawn.Named("PATIENT"))) : ((string)recipe.successfullyRemovedHediffMessage.Formatted(billDoer.LabelShort, pawn.LabelShort)));
 					Messages.Message(text, pawn, MessageTypeDefOf.PositiveEvent);
 				}
 			}

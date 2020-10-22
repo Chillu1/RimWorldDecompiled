@@ -1,5 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using System.Linq;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -7,6 +8,8 @@ namespace RimWorld
 	public class QuestPart_ShuttleDelay : QuestPart_Delay
 	{
 		public List<Pawn> lodgers = new List<Pawn>();
+
+		public bool alert;
 
 		public override IEnumerable<GlobalTargetInfo> QuestLookTargets
 		{
@@ -20,6 +23,34 @@ namespace RimWorld
 				{
 					yield return lodgers[i];
 				}
+			}
+		}
+
+		public override AlertReport AlertReport
+		{
+			get
+			{
+				if (!alert || base.State != QuestPartState.Enabled)
+				{
+					return false;
+				}
+				return AlertReport.CulpritsAre(lodgers);
+			}
+		}
+
+		public override bool AlertCritical => base.TicksLeft < 60000;
+
+		public override string AlertLabel => "QuestPartShuttleArriveDelay".Translate(base.TicksLeft.ToStringTicksToPeriod());
+
+		public override string AlertExplanation
+		{
+			get
+			{
+				if (quest.hidden)
+				{
+					return "QuestPartShuttleArriveDelayDescHidden".Translate(base.TicksLeft.ToStringTicksToPeriod().Colorize(ColoredText.DateTimeColor));
+				}
+				return "QuestPartShuttleArriveDelayDesc".Translate(quest.name, base.TicksLeft.ToStringTicksToPeriod().Colorize(ColoredText.DateTimeColor), lodgers.Select((Pawn p) => p.LabelShort).ToLineList("- "));
 			}
 		}
 
@@ -37,6 +68,7 @@ namespace RimWorld
 		{
 			base.ExposeData();
 			Scribe_Collections.Look(ref lodgers, "lodgers", LookMode.Reference);
+			Scribe_Values.Look(ref alert, "alert", defaultValue: false);
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				lodgers.RemoveAll((Pawn x) => x == null);

@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -54,6 +54,12 @@ namespace RimWorld
 		private Texture2D expandingIconTextureInt;
 
 		public bool expandMore;
+
+		public bool rotateGraphicWhenTraveling;
+
+		public Color? expandingIconColor;
+
+		public float expandingIconDrawSize = 1f;
 
 		public bool blockExitGridUntilBattleIsWon;
 

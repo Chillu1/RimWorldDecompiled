@@ -39,7 +39,7 @@ namespace RimWorld
 			list.Add(new RoomOutline(initialRect));
 			for (int i = 0; i < divisionsCount; i++)
 			{
-				if (!list.Where((RoomOutline x) => x.CellsCountIgnoringWalls >= 32).TryRandomElementByWeight((RoomOutline x) => Mathf.Max(x.rect.Width, x.rect.Height), out RoomOutline result))
+				if (!list.Where((RoomOutline x) => x.CellsCountIgnoringWalls >= 32).TryRandomElementByWeight((RoomOutline x) => Mathf.Max(x.rect.Width, x.rect.Height), out var result))
 				{
 					break;
 				}

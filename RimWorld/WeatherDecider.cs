@@ -103,7 +103,7 @@ namespace RimWorld
 			{
 				return forcedWeather;
 			}
-			if (!DefDatabase<WeatherDef>.AllDefs.TryRandomElementByWeight((WeatherDef w) => CurrentWeatherCommonality(w), out WeatherDef result))
+			if (!DefDatabase<WeatherDef>.AllDefs.TryRandomElementByWeight((WeatherDef w) => CurrentWeatherCommonality(w), out var result))
 			{
 				Log.Warning("All weather commonalities were zero. Defaulting to " + WeatherDefOf.Clear.defName + ".");
 				return WeatherDefOf.Clear;

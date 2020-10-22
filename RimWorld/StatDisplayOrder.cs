@@ -56,6 +56,8 @@ namespace RimWorld
 
 		public const int Thing_Apparel_Biocoded = 2753;
 
+		public const int Thing_Apparel_Reloadable = 2749;
+
 		public const int Thing_Apparel_Covers = 2750;
 
 		public const int Thing_Apparel_Layer = 2751;

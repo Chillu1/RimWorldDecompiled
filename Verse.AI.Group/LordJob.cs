@@ -18,6 +18,14 @@ namespace Verse.AI.Group
 
 		public virtual bool OrganizerIsStartingPawn => false;
 
+		public virtual bool KeepExistingWhileHasAnyBuilding => false;
+
+		public virtual bool AlwaysShowWeapon => false;
+
+		public virtual bool IsCaravanSendable => false;
+
+		public virtual bool RemoveDownedPawns => true;
+
 		protected Map Map => lord.lordManager.map;
 
 		public abstract StateGraph CreateGraph();

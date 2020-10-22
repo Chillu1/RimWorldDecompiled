@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -22,6 +23,14 @@ namespace RimWorld
 		public Rot4? setRotation;
 
 		public bool moveItemsAsideBeforeSpawning;
+
+		public WorldObject missionShuttleTarget;
+
+		public WorldObject missionShuttleHome;
+
+		public Quest sendAwayIfQuestFinished;
+
+		public List<string> questTags;
 
 		public const int DefaultOpenDelay = 110;
 
@@ -93,6 +102,10 @@ namespace RimWorld
 			Scribe_Values.Look(ref despawnPodBeforeSpawningThing, "despawnPodBeforeSpawningThing", defaultValue: false);
 			Scribe_Values.Look(ref setRotation, "setRotation");
 			Scribe_Values.Look(ref moveItemsAsideBeforeSpawning, "moveItemsAsideBeforeSpawning", defaultValue: false);
+			Scribe_References.Look(ref missionShuttleTarget, "missionShuttleTarget");
+			Scribe_References.Look(ref missionShuttleHome, "missionShuttleHome");
+			Scribe_References.Look(ref sendAwayIfQuestFinished, "sendAwayIfQuestFinished");
+			Scribe_Collections.Look(ref questTags, "questTags", LookMode.Value);
 			if (savePawnsWithReferenceMode && (Scribe.mode == LoadSaveMode.PostLoadInit || Scribe.mode == LoadSaveMode.Saving))
 			{
 				for (int j = 0; j < tmpSavedPawns.Count; j++)

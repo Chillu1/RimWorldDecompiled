@@ -71,7 +71,7 @@ namespace Verse
 			foreach (TKeyRef key in keys)
 			{
 				string normalizedTranslationKey = GetNormalizedTranslationKey(key);
-				if (tKeyToNormalizedTranslationKey.TryGetValue(key.tKeyPath, out string value))
+				if (tKeyToNormalizedTranslationKey.TryGetValue(key.tKeyPath, out var value))
 				{
 					loadErrors.Add("Duplicate TKey: " + key.tKeyPath + " -> NEW=" + normalizedTranslationKey + " | OLD" + value + " - Ignoring old");
 				}
@@ -85,7 +85,7 @@ namespace Verse
 			{
 				DefInjectionUtility.ForEachPossibleDefInjection(GenTypes.GetTypeInAnyAssembly(item), delegate(string suggestedPath, string normalizedPath, bool isCollection, string currentValue, IEnumerable<string> currentValueCollection, bool translationAllowed, bool fullListTranslationAllowed, FieldInfo fieldInfo, Def def)
 				{
-					if (translationAllowed && !TryGetNormalizedPath(suggestedPath, out string _) && TrySuggestTKeyPath(normalizedPath, out string tKeyPath, tmpTranslationKeyToTKey))
+					if (translationAllowed && !TryGetNormalizedPath(suggestedPath, out var _) && TrySuggestTKeyPath(normalizedPath, out var tKeyPath, tmpTranslationKeyToTKey))
 					{
 						tmpTranslationKeyToTKey.Add(suggestedPath, tKeyPath);
 					}

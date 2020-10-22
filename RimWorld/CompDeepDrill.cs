@@ -132,7 +132,7 @@ namespace RimWorld
 		{
 			if (parent.Spawned)
 			{
-				GetNextResource(out ThingDef resDef, out int _, out IntVec3 _);
+				GetNextResource(out var resDef, out var _, out var _);
 				if (resDef == null)
 				{
 					return "DeepDrillNoResources".Translate();

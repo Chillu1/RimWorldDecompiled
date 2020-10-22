@@ -26,6 +26,10 @@ namespace RimWorld
 
 		private Texture2D mouseAttachment;
 
+		private Action<LocalTargetInfo> highlightAction;
+
+		private Func<LocalTargetInfo, bool> targetValidator;
+
 		private bool needsStopTargetingCall;
 
 		public bool IsTargeting
@@ -49,9 +53,15 @@ namespace RimWorld
 			}
 			else
 			{
-				Job job = JobMaker.MakeJob(JobDefOf.UseVerbOnThing);
-				job.verbToUse = targetingSource.GetVerb;
-				source.CasterPawn.jobs.StartJob(job);
+				Verb getVerb = source.GetVerb;
+				if (getVerb.verbProps.nonInterruptingSelfCast)
+				{
+					getVerb.TryStartCastOn(getVerb.Caster);
+					return;
+				}
+				Job job = JobMaker.MakeJob(JobDefOf.UseVerbOnThing, getVerb.Caster);
+				job.verbToUse = getVerb;
+				source.CasterPawn.jobs.StartJob(job, JobCondition.InterruptForced);
 			}
 			action = null;
 			caster = null;
@@ -72,6 +82,23 @@ namespace RimWorld
 			this.caster = caster;
 			this.actionWhenFinished = actionWhenFinished;
 			this.mouseAttachment = mouseAttachment;
+			highlightAction = null;
+			targetValidator = null;
+			needsStopTargetingCall = false;
+		}
+
+		public void BeginTargeting(TargetingParameters targetParams, Action<LocalTargetInfo> action, Action<LocalTargetInfo> highlightAction, Func<LocalTargetInfo, bool> targetValidator, Pawn caster = null, Action actionWhenFinished = null, Texture2D mouseAttachment = null)
+		{
+			targetingSource = null;
+			targetingSourceParent = null;
+			targetingSourceAdditionalPawns = null;
+			this.action = action;
+			this.targetParams = targetParams;
+			this.caster = caster;
+			this.actionWhenFinished = actionWhenFinished;
+			this.mouseAttachment = mouseAttachment;
+			this.highlightAction = highlightAction;
+			this.targetValidator = targetValidator;
 			needsStopTargetingCall = false;
 		}
 
@@ -86,6 +113,8 @@ namespace RimWorld
 			this.targetParams = targetParams;
 			this.mouseAttachment = mouseAttachment;
 			targetingSource = ability;
+			highlightAction = null;
+			targetValidator = null;
 			needsStopTargetingCall = false;
 		}
 
@@ -100,6 +129,8 @@ namespace RimWorld
 			targetingSource = null;
 			action = null;
 			targetParams = null;
+			highlightAction = null;
+			targetValidator = null;
 		}
 
 		public void ProcessInputEvents()
@@ -122,9 +153,23 @@ namespace RimWorld
 					}
 					OrderVerbForceTarget();
 				}
-				if (action != null && localTargetInfo.IsValid)
+				if (action != null)
 				{
-					action(localTargetInfo);
+					if (targetValidator != null)
+					{
+						if (targetValidator(localTargetInfo))
+						{
+							action(localTargetInfo);
+						}
+						else
+						{
+							needsStopTargetingCall = false;
+						}
+					}
+					else if (localTargetInfo.IsValid)
+					{
+						action(localTargetInfo);
+					}
 				}
 				SoundDefOf.Tick_High.PlayOneShotOnCamera();
 				if (targetingSource != null)
@@ -177,10 +222,14 @@ namespace RimWorld
 			}
 			if (action != null)
 			{
-				LocalTargetInfo targ = CurrentTargetUnderMouse(mustBeHittableNowIfNotMelee: false);
-				if (targ.IsValid)
+				LocalTargetInfo localTargetInfo = CurrentTargetUnderMouse(mustBeHittableNowIfNotMelee: false);
+				if (highlightAction != null)
 				{
-					GenDraw.DrawTargetHighlight(targ);
+					highlightAction(localTargetInfo);
+				}
+				else if (localTargetInfo.IsValid)
+				{
+					GenDraw.DrawTargetHighlight(localTargetInfo);
 				}
 			}
 		}
@@ -219,26 +268,19 @@ namespace RimWorld
 				return;
 			}
 			Selector selector = Find.Selector;
-			if (targetingSource.Caster.Map != Find.CurrentMap || targetingSource.Caster.Destroyed || !selector.IsSelected(targetingSource.Caster))
+			if (targetingSource.Caster.Map != Find.CurrentMap || targetingSource.Caster.Destroyed || !selector.IsSelected(targetingSource.Caster) || (targetingSource.GetVerb != null && !targetingSource.GetVerb.Available()))
 			{
 				StopTargeting();
 				return;
 			}
-			int num = 0;
-			while (true)
+			for (int i = 0; i < targetingSourceAdditionalPawns.Count; i++)
 			{
-				if (num < targetingSourceAdditionalPawns.Count)
+				if (targetingSourceAdditionalPawns[i].Destroyed || !selector.IsSelected(targetingSourceAdditionalPawns[i]))
 				{
-					if (targetingSourceAdditionalPawns[num].Destroyed || !selector.IsSelected(targetingSourceAdditionalPawns[num]))
-					{
-						break;
-					}
-					num++;
-					continue;
+					StopTargeting();
+					break;
 				}
-				return;
 			}
-			StopTargeting();
 		}
 
 		private void OrderVerbForceTarget()
@@ -284,7 +326,7 @@ namespace RimWorld
 			{
 				return LocalTargetInfo.Invalid;
 			}
-			TargetingParameters targetingParameters = (targetingSource != null) ? targetingSource.targetParams : targetParams;
+			TargetingParameters targetingParameters = ((targetingSource != null) ? targetingSource.targetParams : targetParams);
 			LocalTargetInfo localTargetInfo = GenUI.TargetsAtMouse_NewTemp(targetingParameters, thingsOnly: false, targetingSource).FirstOrFallback(LocalTargetInfo.Invalid);
 			if (localTargetInfo.IsValid && targetingSource != null)
 			{
@@ -322,7 +364,16 @@ namespace RimWorld
 
 		private Verb GetTargetingVerb(Pawn pawn)
 		{
-			return pawn.equipment.AllEquipmentVerbs.FirstOrDefault((Verb x) => x.verbProps == targetingSource.GetVerb.verbProps);
+			Verb verb = pawn.equipment?.AllEquipmentVerbs.FirstOrDefault(SameVerb);
+			if (verb != null)
+			{
+				return verb;
+			}
+			return pawn.apparel?.AllApparelVerbs.FirstOrDefault(SameVerb);
+			bool SameVerb(Verb x)
+			{
+				return x.verbProps == targetingSource.GetVerb.verbProps;
+			}
 		}
 	}
 }

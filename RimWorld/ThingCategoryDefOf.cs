@@ -27,6 +27,8 @@ namespace RimWorld
 
 		public static ThingCategoryDef NeurotrainersPsycast;
 
+		public static ThingCategoryDef NeurotrainersSkill;
+
 		public static ThingCategoryDef Techprints;
 
 		public static ThingCategoryDef BuildingsArt;

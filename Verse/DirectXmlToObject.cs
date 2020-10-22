@@ -1,8 +1,8 @@
-using RimWorld.QuestGen;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Xml;
+using RimWorld.QuestGen;
 
 namespace Verse
 {
@@ -60,7 +60,7 @@ namespace Verse
 
 		public static Func<XmlNode, bool, object> GetObjectFromXmlMethod(Type type)
 		{
-			if (!objectFromXmlMethods.TryGetValue(type, out Func<XmlNode, bool, object> value))
+			if (!objectFromXmlMethods.TryGetValue(type, out var value))
 			{
 				MethodInfo method = typeof(DirectXmlToObject).GetMethod("ObjectFromXmlReflection", BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 				tmpOneTypeArray[0] = type;
@@ -77,6 +77,11 @@ namespace Verse
 
 		public static T ObjectFromXml<T>(XmlNode xmlRoot, bool doPostLoad)
 		{
+			XmlAttribute xmlAttribute = xmlRoot.Attributes["IsNull"];
+			if (xmlAttribute != null && xmlAttribute.Value.ToUpperInvariant() == "TRUE")
+			{
+				return default(T);
+			}
 			MethodInfo methodInfo = CustomDataLoadMethodOf(typeof(T));
 			if (methodInfo != null)
 			{
@@ -184,8 +189,8 @@ namespace Verse
 				{
 					return (T)(object)"";
 				}
-				XmlAttribute xmlAttribute = xmlRoot.Attributes["IsNull"];
-				if (xmlAttribute != null && xmlAttribute.Value.ToUpperInvariant() == "TRUE")
+				XmlAttribute xmlAttribute2 = xmlRoot.Attributes["IsNull"];
+				if (xmlAttribute2 != null && xmlAttribute2.Value.ToUpperInvariant() == "TRUE")
 				{
 					return default(T);
 				}
@@ -287,8 +292,8 @@ namespace Verse
 					try
 					{
 						bool flag = false;
-						XmlAttribute xmlAttribute2 = xmlNode.Attributes?["IgnoreIfNoMatchingField"];
-						if (xmlAttribute2 != null && xmlAttribute2.Value.ToUpperInvariant() == "TRUE")
+						XmlAttribute xmlAttribute3 = xmlNode.Attributes?["IgnoreIfNoMatchingField"];
+						if (xmlAttribute3 != null && xmlAttribute3.Value.ToUpperInvariant() == "TRUE")
 						{
 							flag = true;
 						}
@@ -321,8 +326,8 @@ namespace Verse
 						value3.SetValue(val2, null);
 						continue;
 					}
-					XmlAttribute xmlAttribute3 = xmlNode.Attributes["MayRequire"];
-					DirectXmlCrossRefLoader.RegisterObjectWantsCrossRef(val2, value3, xmlNode.InnerText, xmlAttribute3?.Value.ToLower());
+					XmlAttribute xmlAttribute4 = xmlNode.Attributes["MayRequire"];
+					DirectXmlCrossRefLoader.RegisterObjectWantsCrossRef(val2, value3, xmlNode.InnerText, xmlAttribute4?.Value.ToLower());
 				}
 				else
 				{

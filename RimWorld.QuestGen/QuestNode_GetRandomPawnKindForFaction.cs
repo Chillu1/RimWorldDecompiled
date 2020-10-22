@@ -48,7 +48,7 @@ namespace RimWorld.QuestGen
 			List<Choice> value2 = choices.GetValue(slate);
 			for (int i = 0; i < value2.Count; i++)
 			{
-				if (((value2[i].factionDef != null && faction.def == value2[i].factionDef) || (!value2[i].categoryTag.NullOrEmpty() && value2[i].categoryTag == faction.def.categoryTag)) && value2[i].pawnKinds.TryRandomElement(out PawnKindDef result))
+				if (((value2[i].factionDef != null && faction.def == value2[i].factionDef) || (!value2[i].categoryTag.NullOrEmpty() && value2[i].categoryTag == faction.def.categoryTag)) && value2[i].pawnKinds.TryRandomElement(out var result))
 				{
 					slate.Set(storeAs.GetValue(slate), result);
 					return true;

@@ -34,23 +34,21 @@ namespace Verse.AI
 		protected override Job TryGiveJob(Pawn pawn)
 		{
 			bool flag = forceCanDig || (pawn.mindState.duty != null && pawn.mindState.duty.canDig && !pawn.CanReachMapEdge()) || (forceCanDigIfCantReachMapEdge && !pawn.CanReachMapEdge()) || (forceCanDigIfAnyHostileActiveThreat && pawn.Faction != null && GenHostility.AnyHostileActiveThreatTo(pawn.Map, pawn.Faction, countDormantPawnsAsHostile: true));
-			if (!TryFindGoodExitDest(pawn, flag, out IntVec3 dest))
+			if (!TryFindGoodExitDest(pawn, flag, out var dest))
 			{
 				return null;
 			}
 			if (flag)
 			{
-				using (PawnPath path = pawn.Map.pathFinder.FindPath(pawn.Position, dest, TraverseParms.For(pawn, Danger.Deadly, TraverseMode.PassAllDestroyableThings)))
+				using PawnPath path = pawn.Map.pathFinder.FindPath(pawn.Position, dest, TraverseParms.For(pawn, Danger.Deadly, TraverseMode.PassAllDestroyableThings));
+				IntVec3 cellBefore;
+				Thing thing = path.FirstBlockingBuilding(out cellBefore, pawn);
+				if (thing != null)
 				{
-					IntVec3 cellBefore;
-					Thing thing = path.FirstBlockingBuilding(out cellBefore, pawn);
-					if (thing != null)
+					Job job = DigUtility.PassBlockerJob(pawn, thing, cellBefore, canMineMineables: true, canMineNonMineables: true);
+					if (job != null)
 					{
-						Job job = DigUtility.PassBlockerJob(pawn, thing, cellBefore, canMineMineables: true, canMineNonMineables: true);
-						if (job != null)
-						{
-							return job;
-						}
+						return job;
 					}
 				}
 			}

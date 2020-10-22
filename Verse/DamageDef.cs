@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 using Verse.Sound;
 
@@ -40,6 +40,8 @@ namespace Verse
 
 		[MustTranslate]
 		public string deathMessage = "{0} has been killed.";
+
+		public EffecterDef damageEffecter;
 
 		public int defaultDamage = -1;
 

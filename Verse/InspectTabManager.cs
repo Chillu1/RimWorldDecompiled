@@ -9,7 +9,7 @@ namespace Verse
 
 		public static InspectTabBase GetSharedInstance(Type tabType)
 		{
-			if (sharedInstances.TryGetValue(tabType, out InspectTabBase value))
+			if (sharedInstances.TryGetValue(tabType, out var value))
 			{
 				return value;
 			}

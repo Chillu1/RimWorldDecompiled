@@ -27,7 +27,7 @@ namespace RimWorld
 
 		public override bool AllowStackWith(Thing other)
 		{
-			if (other.TryGetQuality(out QualityCategory qc))
+			if (other.TryGetQuality(out var qc))
 			{
 				return qualityInt == qc;
 			}

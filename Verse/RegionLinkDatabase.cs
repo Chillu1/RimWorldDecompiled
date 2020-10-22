@@ -10,7 +10,7 @@ namespace Verse
 		public RegionLink LinkFrom(EdgeSpan span)
 		{
 			ulong key = span.UniqueHashCode();
-			if (!links.TryGetValue(key, out RegionLink value))
+			if (!links.TryGetValue(key, out var value))
 			{
 				value = new RegionLink();
 				value.span = span;

@@ -7,10 +7,21 @@ namespace RimWorld
 {
 	public static class ThreatsGenerator
 	{
+		private static readonly SimpleCurve ThreatScaleToCountFactorCurve = new SimpleCurve
+		{
+			new CurvePoint(0f, 0.1f),
+			new CurvePoint(0.3f, 0.5f),
+			new CurvePoint(0.6f, 0.8f),
+			new CurvePoint(1f, 1f),
+			new CurvePoint(1.55f, 1.1f),
+			new CurvePoint(2.2f, 1.2f),
+			new CurvePoint(10f, 2f)
+		};
+
 		public static IEnumerable<FiringIncident> MakeIntervalIncidents(ThreatsGeneratorParams parms, IIncidentTarget target, int startTick)
 		{
-			float threatsGeneratorThreatCountFactor = Find.Storyteller.difficulty.threatsGeneratorThreatCountFactor;
-			int incCount = IncidentCycleUtility.IncidentCountThisInterval(target, parms.randSeed, (float)startTick / 60000f, parms.onDays, parms.offDays, parms.minSpacingDays, parms.numIncidentsRange.min * threatsGeneratorThreatCountFactor, parms.numIncidentsRange.max * threatsGeneratorThreatCountFactor);
+			float num = ThreatScaleToCountFactorCurve.Evaluate(Find.Storyteller.difficultyValues.threatScale);
+			int incCount = IncidentCycleUtility.IncidentCountThisInterval(target, parms.randSeed, (float)startTick / 60000f, parms.onDays, parms.offDays, parms.minSpacingDays, parms.numIncidentsRange.min * num, parms.numIncidentsRange.max * num);
 			for (int i = 0; i < incCount; i++)
 			{
 				FiringIncident firingIncident = MakeThreat(parms, target);
@@ -26,7 +37,7 @@ namespace RimWorld
 			IncidentParms incParms = GetIncidentParms(parms, target);
 			if (!(from x in GetPossibleIncidents(parms.allowedThreats)
 				where x.Worker.CanFireNow(incParms)
-				select x).TryRandomElementByWeight((IncidentDef x) => x.Worker.BaseChanceThisGame, out IncidentDef result))
+				select x).TryRandomElementByWeight((IncidentDef x) => x.Worker.BaseChanceThisGame, out var result))
 			{
 				return null;
 			}
@@ -47,7 +58,7 @@ namespace RimWorld
 		{
 			IncidentParms incidentParms = new IncidentParms();
 			incidentParms.target = target;
-			incidentParms.points = (parms.threatPoints ?? (StorytellerUtility.DefaultThreatPointsNow(target) * parms.currentThreatPointsFactor));
+			incidentParms.points = parms.threatPoints ?? (StorytellerUtility.DefaultThreatPointsNow(target) * parms.currentThreatPointsFactor);
 			if (parms.minThreatPoints.HasValue)
 			{
 				incidentParms.points = Mathf.Max(incidentParms.points, parms.minThreatPoints.Value);

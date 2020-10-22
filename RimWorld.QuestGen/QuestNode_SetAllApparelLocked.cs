@@ -21,7 +21,7 @@ namespace RimWorld.QuestGen
 			if (pawns.GetValue(slate) != null)
 			{
 				QuestPart_SetAllApparelLocked questPart_SetAllApparelLocked = new QuestPart_SetAllApparelLocked();
-				questPart_SetAllApparelLocked.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? slate.Get<string>("inSignal"));
+				questPart_SetAllApparelLocked.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? slate.Get<string>("inSignal");
 				questPart_SetAllApparelLocked.pawns.AddRange(pawns.GetValue(slate));
 				QuestGen.quest.AddPart(questPart_SetAllApparelLocked);
 			}

@@ -57,7 +57,7 @@ namespace RimWorld
 				float num = c.DistanceTo(parent.Position);
 				return num >= (float)Props.pawnSpawnRadius.min && num <= (float)Props.pawnSpawnRadius.max;
 			};
-			if (CellFinder.TryFindRandomCellNear(parent.Position, parent.MapHeld, Props.pawnSpawnRadius.max, validator, out IntVec3 result))
+			if (CellFinder.TryFindRandomCellNear(parent.Position, parent.MapHeld, Props.pawnSpawnRadius.max, validator, out var result))
 			{
 				return result;
 			}

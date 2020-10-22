@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 
 namespace Verse.AI
 {
@@ -24,8 +24,8 @@ namespace Verse.AI
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
 			yield return Toils_Misc.ThrowColonistAttackingMote(TargetIndex.A);
-			Toil toil = new Toil();
-			toil.initAction = delegate
+			Toil init = new Toil();
+			init.initAction = delegate
 			{
 				Pawn pawn2 = base.TargetThingA as Pawn;
 				if (pawn2 != null)
@@ -34,7 +34,7 @@ namespace Verse.AI
 				}
 				pawn.pather.StopDead();
 			};
-			toil.tickAction = delegate
+			init.tickAction = delegate
 			{
 				if (!base.TargetA.IsValid)
 				{
@@ -84,8 +84,9 @@ namespace Verse.AI
 					}
 				}
 			};
-			toil.defaultCompleteMode = ToilCompleteMode.Never;
-			yield return toil;
+			init.defaultCompleteMode = ToilCompleteMode.Never;
+			init.activeSkill = () => Toils_Combat.GetActiveSkillForToil(init);
+			yield return init;
 		}
 	}
 }

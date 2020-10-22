@@ -1,5 +1,5 @@
-using RimWorld;
 using System;
+using RimWorld;
 
 namespace Verse
 {
@@ -22,21 +22,15 @@ namespace Verse
 
 		public static Graphic_Linked WrapLinked(Graphic subGraphic, LinkDrawerType linkDrawerType)
 		{
-			switch (linkDrawerType)
+			return linkDrawerType switch
 			{
-			case LinkDrawerType.None:
-				return null;
-			case LinkDrawerType.Basic:
-				return new Graphic_Linked(subGraphic);
-			case LinkDrawerType.CornerFiller:
-				return new Graphic_LinkedCornerFiller(subGraphic);
-			case LinkDrawerType.Transmitter:
-				return new Graphic_LinkedTransmitter(subGraphic);
-			case LinkDrawerType.TransmitterOverlay:
-				return new Graphic_LinkedTransmitterOverlay(subGraphic);
-			default:
-				throw new ArgumentException();
-			}
+				LinkDrawerType.None => null, 
+				LinkDrawerType.Basic => new Graphic_Linked(subGraphic), 
+				LinkDrawerType.CornerFiller => new Graphic_LinkedCornerFiller(subGraphic), 
+				LinkDrawerType.Transmitter => new Graphic_LinkedTransmitter(subGraphic), 
+				LinkDrawerType.TransmitterOverlay => new Graphic_LinkedTransmitterOverlay(subGraphic), 
+				_ => throw new ArgumentException(), 
+			};
 		}
 	}
 }

@@ -57,14 +57,13 @@ namespace RimWorld
 
 		public static void SetFallShaderGlobals(Map map)
 		{
-			if (FallIntensityOverride)
+			if (!FallIntensityOverride)
 			{
-				Shader.SetGlobalFloat(ShaderPropertyIDs.FallIntensity, FallIntensity);
+				Shader.SetGlobalFloat(value: GetFallColorFactor(Find.WorldGrid.LongLatOf(map.Tile).y, GenLocalDate.DayOfYear(map)), nameID: ShaderPropertyIDs.FallIntensity);
 			}
 			else
 			{
-				Vector2 vector = Find.WorldGrid.LongLatOf(map.Tile);
-				Shader.SetGlobalFloat(ShaderPropertyIDs.FallIntensity, GetFallColorFactor(vector.y, GenLocalDate.DayOfYear(map)));
+				Shader.SetGlobalFloat(ShaderPropertyIDs.FallIntensity, FallIntensity);
 			}
 			Shader.SetGlobalInt("_FallGlobalControls", FallGlobalControls ? 1 : 0);
 			if (FallGlobalControls)

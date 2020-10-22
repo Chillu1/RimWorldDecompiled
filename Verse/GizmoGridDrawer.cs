@@ -19,6 +19,8 @@ namespace Verse
 
 		private static List<Gizmo> firstGizmos = new List<Gizmo>();
 
+		private static List<Command> shrinkableCommands = new List<Command>();
+
 		private static List<Gizmo> tmpAllGizmos = new List<Gizmo>();
 
 		private static readonly Func<Gizmo, Gizmo, int> SortByOrder = (Gizmo lhs, Gizmo rhs) => lhs.order.CompareTo(rhs.order);
@@ -37,6 +39,11 @@ namespace Verse
 
 		public static void DrawGizmoGrid(IEnumerable<Gizmo> gizmos, float startX, out Gizmo mouseoverGizmo)
 		{
+			if (Event.current.type == EventType.Layout)
+			{
+				mouseoverGizmo = null;
+				return;
+			}
 			tmpAllGizmos.Clear();
 			tmpAllGizmos.AddRange(gizmos);
 			tmpAllGizmos.SortStable(SortByOrder);
@@ -63,6 +70,11 @@ namespace Verse
 				}
 			}
 			firstGizmos.Clear();
+			shrinkableCommands.Clear();
+			float num = UI.screenWidth - 147;
+			Vector2 vector = new Vector2(startX, (float)(UI.screenHeight - 35) - GizmoSpacing.y - 75f);
+			float maxWidth = num - startX;
+			int num2 = 0;
 			for (int k = 0; k < gizmoGroups.Count; k++)
 			{
 				List<Gizmo> list2 = gizmoGroups[k];
@@ -112,85 +124,119 @@ namespace Verse
 				}
 				if (gizmo2 != null)
 				{
+					Command command;
+					if ((command = gizmo2 as Command) != null && command.shrinkable && command.Visible)
+					{
+						shrinkableCommands.Add(command);
+					}
+					if (vector.x + gizmo2.GetWidth(maxWidth) > num)
+					{
+						vector.x = startX;
+						vector.y -= 75f + GizmoSpacing.x;
+						num2++;
+					}
+					vector.x += gizmo2.GetWidth(maxWidth) + GizmoSpacing.x;
 					firstGizmos.Add(gizmo2);
 				}
 			}
-			drawnHotKeys.Clear();
-			float num = UI.screenWidth - 147;
-			float maxWidth = num - startX;
-			Text.Font = GameFont.Tiny;
-			Vector2 topLeft = new Vector2(startX, (float)(UI.screenHeight - 35) - GizmoSpacing.y - 75f);
-			mouseoverGizmo = null;
-			Gizmo gizmo3 = null;
-			Event ev = null;
-			Gizmo gizmo4 = null;
-			for (int num2 = 0; num2 < firstGizmos.Count; num2++)
+			if (num2 > 1 && shrinkableCommands.Count > 1)
 			{
-				Gizmo gizmo5 = firstGizmos[num2];
-				if (gizmo5.Visible)
+				for (int num3 = 0; num3 < shrinkableCommands.Count; num3++)
 				{
-					if (topLeft.x + gizmo5.GetWidth(maxWidth) > num)
+					firstGizmos.Remove(shrinkableCommands[num3]);
+				}
+			}
+			else
+			{
+				shrinkableCommands.Clear();
+			}
+			drawnHotKeys.Clear();
+			Text.Font = GameFont.Tiny;
+			Vector2 vector2 = new Vector2(startX, (float)(UI.screenHeight - 35) - GizmoSpacing.y - 75f);
+			mouseoverGizmo = null;
+			Gizmo interactedGiz = null;
+			Event interactedEvent = null;
+			Gizmo floatMenuGiz = null;
+			for (int num4 = 0; num4 < firstGizmos.Count; num4++)
+			{
+				Gizmo gizmo3 = firstGizmos[num4];
+				if (gizmo3.Visible)
+				{
+					if (vector2.x + gizmo3.GetWidth(maxWidth) > num)
 					{
-						topLeft.x = startX;
-						topLeft.y -= 75f + GizmoSpacing.x;
+						vector2.x = startX;
+						vector2.y -= 75f + GizmoSpacing.x;
 					}
 					heightDrawnFrame = Time.frameCount;
-					heightDrawn = (float)UI.screenHeight - topLeft.y;
-					GizmoResult gizmoResult = gizmo5.GizmoOnGUI(topLeft, maxWidth);
-					if (gizmoResult.State == GizmoState.Interacted || (gizmoResult.State == GizmoState.OpenedFloatMenu && gizmo5.RightClickFloatMenuOptions.FirstOrDefault() == null))
-					{
-						ev = gizmoResult.InteractEvent;
-						gizmo3 = gizmo5;
-					}
-					else if (gizmoResult.State == GizmoState.OpenedFloatMenu)
-					{
-						gizmo4 = gizmo5;
-					}
-					if ((int)gizmoResult.State >= 1)
-					{
-						mouseoverGizmo = gizmo5;
-					}
-					GenUI.AbsorbClicksInRect(new Rect(topLeft.x, topLeft.y, gizmo5.GetWidth(maxWidth), 75f + GizmoSpacing.y).ContractedBy(-12f));
-					topLeft.x += gizmo5.GetWidth(maxWidth) + GizmoSpacing.x;
+					heightDrawn = (float)UI.screenHeight - vector2.y;
+					GizmoResult result2 = gizmo3.GizmoOnGUI(vector2, maxWidth);
+					ProcessGizmoState(gizmo3, result2, ref mouseoverGizmo);
+					GenUI.AbsorbClicksInRect(new Rect(vector2.x, vector2.y, gizmo3.GetWidth(maxWidth), 75f + GizmoSpacing.y).ContractedBy(-12f));
+					vector2.x += gizmo3.GetWidth(maxWidth) + GizmoSpacing.x;
 				}
 			}
-			if (gizmo3 != null)
+			float x = vector2.x;
+			int num5 = 0;
+			for (int num6 = 0; num6 < shrinkableCommands.Count; num6++)
 			{
-				List<Gizmo> list3 = FindMatchingGroup(gizmo3);
-				for (int num3 = 0; num3 < list3.Count; num3++)
+				Command command2 = shrinkableCommands[num6];
+				float getShrunkSize = command2.GetShrunkSize;
+				if (vector2.x + getShrunkSize > num)
 				{
-					Gizmo gizmo6 = list3[num3];
-					if (gizmo6 != gizmo3 && !gizmo6.disabled && gizmo3.InheritInteractionsFrom(gizmo6))
+					num5++;
+					if (num5 > 1)
 					{
-						gizmo6.ProcessInput(ev);
+						x = startX;
+					}
+					vector2.x = x;
+					vector2.y -= getShrunkSize + 3f;
+				}
+				Vector2 topLeft = vector2;
+				topLeft.y += getShrunkSize + 3f;
+				heightDrawnFrame = Time.frameCount;
+				heightDrawn = Mathf.Min(heightDrawn, (float)UI.screenHeight - topLeft.y);
+				GizmoResult result3 = command2.GizmoOnGUIShrunk(topLeft, getShrunkSize);
+				ProcessGizmoState(command2, result3, ref mouseoverGizmo);
+				GenUI.AbsorbClicksInRect(new Rect(topLeft.x, topLeft.y, getShrunkSize, getShrunkSize + 3f).ExpandedBy(3f));
+				vector2.x += getShrunkSize + 3f;
+			}
+			if (interactedGiz != null)
+			{
+				List<Gizmo> list3 = FindMatchingGroup(interactedGiz);
+				for (int num7 = 0; num7 < list3.Count; num7++)
+				{
+					Gizmo gizmo4 = list3[num7];
+					if (gizmo4 != interactedGiz && !gizmo4.disabled && interactedGiz.InheritInteractionsFrom(gizmo4))
+					{
+						gizmo4.ProcessInput(interactedEvent);
 					}
 				}
-				gizmo3.ProcessInput(ev);
+				interactedGiz.ProcessInput(interactedEvent);
 				Event.current.Use();
 			}
-			else if (gizmo4 != null)
+			else if (floatMenuGiz != null)
 			{
 				List<FloatMenuOption> list4 = new List<FloatMenuOption>();
-				foreach (FloatMenuOption rightClickFloatMenuOption in gizmo4.RightClickFloatMenuOptions)
+				foreach (FloatMenuOption rightClickFloatMenuOption in floatMenuGiz.RightClickFloatMenuOptions)
 				{
 					list4.Add(rightClickFloatMenuOption);
 				}
-				List<Gizmo> list5 = FindMatchingGroup(gizmo4);
-				for (int num4 = 0; num4 < list5.Count; num4++)
+				List<Gizmo> list5 = FindMatchingGroup(floatMenuGiz);
+				for (int num8 = 0; num8 < list5.Count; num8++)
 				{
-					Gizmo gizmo7 = list5[num4];
-					if (gizmo7 == gizmo4 || gizmo7.disabled || !gizmo4.InheritFloatMenuInteractionsFrom(gizmo7))
+					Gizmo gizmo5 = list5[num8];
+					if (gizmo5 == floatMenuGiz || gizmo5.disabled || !floatMenuGiz.InheritFloatMenuInteractionsFrom(gizmo5))
 					{
 						continue;
 					}
-					foreach (FloatMenuOption rightClickFloatMenuOption2 in gizmo7.RightClickFloatMenuOptions)
+					foreach (FloatMenuOption rightClickFloatMenuOption2 in gizmo5.RightClickFloatMenuOptions)
 					{
 						FloatMenuOption floatMenuOption = null;
-						for (int num5 = 0; num5 < list4.Count; num5++)
+						for (int num9 = 0; num9 < list4.Count; num9++)
 						{
-							if (list4[num5].Label == rightClickFloatMenuOption2.Label)
+							if (list4[num9].Label == rightClickFloatMenuOption2.Label)
 							{
-								floatMenuOption = list4[num5];
+								floatMenuOption = list4[num9];
 								break;
 							}
 						}
@@ -227,24 +273,40 @@ namespace Verse
 					Find.WindowStack.Add(new FloatMenu(list4));
 				}
 			}
-			for (int num6 = 0; num6 < gizmoGroups.Count; num6++)
+			for (int num10 = 0; num10 < gizmoGroups.Count; num10++)
 			{
-				gizmoGroups[num6].Clear();
-				SimplePool<List<Gizmo>>.Return(gizmoGroups[num6]);
+				gizmoGroups[num10].Clear();
+				SimplePool<List<Gizmo>>.Return(gizmoGroups[num10]);
 			}
 			gizmoGroups.Clear();
 			firstGizmos.Clear();
 			tmpAllGizmos.Clear();
 			static List<Gizmo> FindMatchingGroup(Gizmo toMatch)
 			{
-				for (int num7 = 0; num7 < gizmoGroups.Count; num7++)
+				for (int num11 = 0; num11 < gizmoGroups.Count; num11++)
 				{
-					if (gizmoGroups[num7].Contains(toMatch))
+					if (gizmoGroups[num11].Contains(toMatch))
 					{
-						return gizmoGroups[num7];
+						return gizmoGroups[num11];
 					}
 				}
 				return null;
+			}
+			void ProcessGizmoState(Gizmo giz, GizmoResult result, ref Gizmo mouseoverGiz)
+			{
+				if (result.State == GizmoState.Interacted || (result.State == GizmoState.OpenedFloatMenu && giz.RightClickFloatMenuOptions.FirstOrDefault() == null))
+				{
+					interactedEvent = result.InteractEvent;
+					interactedGiz = giz;
+				}
+				else if (result.State == GizmoState.OpenedFloatMenu)
+				{
+					floatMenuGiz = giz;
+				}
+				if ((int)result.State >= 1)
+				{
+					mouseoverGiz = giz;
+				}
 			}
 		}
 	}

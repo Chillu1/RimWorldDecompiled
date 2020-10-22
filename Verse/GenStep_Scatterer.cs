@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -46,7 +46,7 @@ namespace Verse
 			int num = CalculateFinalCount(map);
 			for (int i = 0; i < num; i++)
 			{
-				if (!TryFindScatterCell(map, out IntVec3 result))
+				if (!TryFindScatterCell(map, out var result))
 				{
 					return;
 				}

@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 using Verse.AI.Group;
 
@@ -22,17 +22,9 @@ namespace RimWorld
 
 		private bool caravanSent;
 
-		private LordToil gatherAnimals;
-
-		private LordToil gatherAnimals_pause;
-
 		private LordToil gatherItems;
 
 		private LordToil gatherItems_pause;
-
-		private LordToil gatherSlaves;
-
-		private LordToil gatherSlaves_pause;
 
 		private LordToil gatherDownedPawns;
 
@@ -57,14 +49,6 @@ namespace RimWorld
 			get
 			{
 				LordToil curLordToil = lord.CurLordToil;
-				if (curLordToil == gatherAnimals)
-				{
-					return "FormingCaravanStatus_GatheringAnimals".Translate();
-				}
-				if (curLordToil == gatherAnimals_pause)
-				{
-					return "FormingCaravanStatus_GatheringAnimals_Pause".Translate();
-				}
 				if (curLordToil == gatherItems)
 				{
 					return "FormingCaravanStatus_GatheringItems".Translate();
@@ -72,14 +56,6 @@ namespace RimWorld
 				if (curLordToil == gatherItems_pause)
 				{
 					return "FormingCaravanStatus_GatheringItems_Pause".Translate();
-				}
-				if (curLordToil == gatherSlaves)
-				{
-					return "FormingCaravanStatus_GatheringSlaves".Translate();
-				}
-				if (curLordToil == gatherSlaves_pause)
-				{
-					return "FormingCaravanStatus_GatheringSlaves_Pause".Translate();
 				}
 				if (curLordToil == gatherDownedPawns)
 				{
@@ -118,18 +94,10 @@ namespace RimWorld
 		public override StateGraph CreateGraph()
 		{
 			StateGraph stateGraph = new StateGraph();
-			gatherAnimals = new LordToil_PrepareCaravan_GatherAnimals(meetingPoint);
-			stateGraph.AddToil(gatherAnimals);
-			gatherAnimals_pause = new LordToil_PrepareCaravan_Pause();
-			stateGraph.AddToil(gatherAnimals_pause);
 			gatherItems = new LordToil_PrepareCaravan_GatherItems(meetingPoint);
 			stateGraph.AddToil(gatherItems);
 			gatherItems_pause = new LordToil_PrepareCaravan_Pause();
 			stateGraph.AddToil(gatherItems_pause);
-			gatherSlaves = new LordToil_PrepareCaravan_GatherSlaves(meetingPoint);
-			stateGraph.AddToil(gatherSlaves);
-			gatherSlaves_pause = new LordToil_PrepareCaravan_Pause();
-			stateGraph.AddToil(gatherSlaves_pause);
 			gatherDownedPawns = new LordToil_PrepareCaravan_GatherDownedPawns(meetingPoint, exitSpot);
 			stateGraph.AddToil(gatherDownedPawns);
 			gatherDownedPawns_pause = new LordToil_PrepareCaravan_Pause();
@@ -144,53 +112,38 @@ namespace RimWorld
 			stateGraph.AddToil(leave_pause);
 			LordToil_End lordToil_End = new LordToil_End();
 			stateGraph.AddToil(lordToil_End);
-			Transition transition = new Transition(gatherAnimals, gatherItems);
-			transition.AddTrigger(new Trigger_Memo("AllAnimalsGathered"));
+			Transition transition = new Transition(gatherItems, gatherDownedPawns);
+			transition.AddTrigger(new Trigger_Memo("AllItemsGathered"));
+			transition.AddPostAction(new TransitionAction_EndAllJobs());
 			stateGraph.AddTransition(transition);
-			Transition transition2 = new Transition(gatherItems, gatherSlaves);
-			transition2.AddTrigger(new Trigger_Memo("AllItemsGathered"));
+			Transition transition2 = new Transition(gatherDownedPawns, lordToil_PrepareCaravan_Wait);
+			transition2.AddTrigger(new Trigger_Memo("AllDownedPawnsGathered"));
 			transition2.AddPostAction(new TransitionAction_EndAllJobs());
 			stateGraph.AddTransition(transition2);
-			Transition transition3 = new Transition(gatherSlaves, gatherDownedPawns);
-			transition3.AddTrigger(new Trigger_Memo("AllSlavesGathered"));
-			transition3.AddPostAction(new TransitionAction_EndAllJobs());
+			Transition transition3 = new Transition(lordToil_PrepareCaravan_Wait, leave);
+			transition3.AddTrigger(new Trigger_NoPawnsVeryTiredAndSleeping());
+			transition3.AddPostAction(new TransitionAction_WakeAll());
 			stateGraph.AddTransition(transition3);
-			Transition transition4 = new Transition(gatherDownedPawns, lordToil_PrepareCaravan_Wait);
-			transition4.AddTrigger(new Trigger_Memo("AllDownedPawnsGathered"));
-			transition4.AddPostAction(new TransitionAction_EndAllJobs());
+			Transition transition4 = new Transition(leave, lordToil_End);
+			transition4.AddTrigger(new Trigger_Memo("ReadyToExitMap"));
+			transition4.AddPreAction(new TransitionAction_Custom(SendCaravan));
 			stateGraph.AddTransition(transition4);
-			Transition transition5 = new Transition(lordToil_PrepareCaravan_Wait, leave);
-			transition5.AddTrigger(new Trigger_NoPawnsVeryTiredAndSleeping());
-			transition5.AddPostAction(new TransitionAction_WakeAll());
+			Transition transition5 = PauseTransition(gatherItems, gatherItems_pause);
 			stateGraph.AddTransition(transition5);
-			Transition transition6 = new Transition(leave, lordToil_End);
-			transition6.AddTrigger(new Trigger_Memo("ReadyToExitMap"));
-			transition6.AddPreAction(new TransitionAction_Custom(SendCaravan));
+			Transition transition6 = UnpauseTransition(gatherItems_pause, gatherItems);
 			stateGraph.AddTransition(transition6);
-			Transition transition7 = PauseTransition(gatherAnimals, gatherAnimals_pause);
+			Transition transition7 = PauseTransition(gatherDownedPawns, gatherDownedPawns_pause);
 			stateGraph.AddTransition(transition7);
-			Transition transition8 = UnpauseTransition(gatherAnimals_pause, gatherAnimals);
+			Transition transition8 = UnpauseTransition(gatherDownedPawns_pause, gatherDownedPawns);
 			stateGraph.AddTransition(transition8);
-			Transition transition9 = PauseTransition(gatherItems, gatherItems_pause);
+			Transition transition9 = PauseTransition(leave, leave_pause);
 			stateGraph.AddTransition(transition9);
-			Transition transition10 = UnpauseTransition(gatherItems_pause, gatherItems);
+			Transition transition10 = UnpauseTransition(leave_pause, leave);
 			stateGraph.AddTransition(transition10);
-			Transition transition11 = PauseTransition(gatherSlaves, gatherSlaves_pause);
+			Transition transition11 = PauseTransition(lordToil_PrepareCaravan_Wait, lordToil_PrepareCaravan_Pause);
 			stateGraph.AddTransition(transition11);
-			Transition transition12 = UnpauseTransition(gatherSlaves_pause, gatherSlaves);
+			Transition transition12 = UnpauseTransition(lordToil_PrepareCaravan_Pause, lordToil_PrepareCaravan_Wait);
 			stateGraph.AddTransition(transition12);
-			Transition transition13 = PauseTransition(gatherDownedPawns, gatherDownedPawns_pause);
-			stateGraph.AddTransition(transition13);
-			Transition transition14 = UnpauseTransition(gatherDownedPawns_pause, gatherDownedPawns);
-			stateGraph.AddTransition(transition14);
-			Transition transition15 = PauseTransition(leave, leave_pause);
-			stateGraph.AddTransition(transition15);
-			Transition transition16 = UnpauseTransition(leave_pause, leave);
-			stateGraph.AddTransition(transition16);
-			Transition transition17 = PauseTransition(lordToil_PrepareCaravan_Wait, lordToil_PrepareCaravan_Pause);
-			stateGraph.AddTransition(transition17);
-			Transition transition18 = UnpauseTransition(lordToil_PrepareCaravan_Pause, lordToil_PrepareCaravan_Wait);
-			stateGraph.AddTransition(transition18);
 			return stateGraph;
 		}
 

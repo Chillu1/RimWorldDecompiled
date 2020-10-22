@@ -10,6 +10,8 @@ namespace RimWorld
 	{
 		public const int MinAnimalCount = 2;
 
+		public const int MaxAnimalCount = 100;
+
 		public const float MinPoints = 70f;
 
 		public static float ManhunterAnimalWeight(PawnKindDef animal, float points)
@@ -19,21 +21,24 @@ namespace RimWorld
 			{
 				return 0f;
 			}
-			int num = Mathf.RoundToInt(points / animal.combatPower);
+			int num = Mathf.Min(Mathf.RoundToInt(points / animal.combatPower), 100);
 			return Mathf.Clamp01(Mathf.InverseLerp(100f, 10f, num));
 		}
 
 		public static bool TryFindManhunterAnimalKind(float points, int tile, out PawnKindDef animalKind)
 		{
 			IEnumerable<PawnKindDef> source = DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef k) => k.RaceProps.Animal && k.canArriveManhunter && (tile == -1 || Find.World.tileTemperatures.SeasonAndOutdoorTemperatureAcceptableFor(tile, k.race)));
-			if (source.TryRandomElementByWeight((PawnKindDef a) => ManhunterAnimalWeight(a, points), out animalKind))
+			if (source.Any())
 			{
-				return true;
-			}
-			if (points > source.Min((PawnKindDef a) => a.combatPower) * 2f)
-			{
-				animalKind = source.MaxBy((PawnKindDef a) => a.combatPower);
-				return true;
+				if (source.TryRandomElementByWeight((PawnKindDef a) => ManhunterAnimalWeight(a, points), out animalKind))
+				{
+					return true;
+				}
+				if (points > source.Min((PawnKindDef a) => a.combatPower) * 2f)
+				{
+					animalKind = source.MaxBy((PawnKindDef a) => a.combatPower);
+					return true;
+				}
 			}
 			animalKind = null;
 			return false;
@@ -41,7 +46,7 @@ namespace RimWorld
 
 		public static int GetAnimalsCount(PawnKindDef animalKind, float points)
 		{
-			return Mathf.Max(Mathf.RoundToInt(points / animalKind.combatPower), 2);
+			return Mathf.Clamp(Mathf.RoundToInt(points / animalKind.combatPower), 2, 100);
 		}
 
 		[Obsolete("Obsolete, only used to avoid error when patching")]
@@ -53,7 +58,7 @@ namespace RimWorld
 		public static List<Pawn> GenerateAnimals_NewTmp(PawnKindDef animalKind, int tile, float points, int animalCount = 0)
 		{
 			List<Pawn> list = new List<Pawn>();
-			int num = (animalCount > 0) ? animalCount : GetAnimalsCount(animalKind, points);
+			int num = ((animalCount > 0) ? animalCount : GetAnimalsCount(animalKind, points));
 			for (int i = 0; i < num; i++)
 			{
 				Pawn item = PawnGenerator.GeneratePawn(new PawnGenerationRequest(animalKind, null, PawnGenerationContext.NonPlayer, tile));

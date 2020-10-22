@@ -21,7 +21,7 @@ namespace RimWorld
 
 		protected override Job TryGivePlayJob(Pawn pawn, Thing t)
 		{
-			if (!WatchBuildingUtility.TryFindBestWatchCell(t, pawn, def.desireSit, out IntVec3 result, out Building chair))
+			if (!WatchBuildingUtility.TryFindBestWatchCell(t, pawn, def.desireSit, out var result, out var chair))
 			{
 				return null;
 			}

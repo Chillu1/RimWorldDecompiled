@@ -20,16 +20,16 @@ namespace Verse.Sound
 
 		public override float ValueFor(Sample samp)
 		{
-			float num = (syncType != 0) ? ((float)(samp.GetHashCode() % 100)) : (samp.ParentHashCode % 100f);
+			float num = ((syncType != 0) ? ((float)(samp.GetHashCode() % 100)) : (samp.ParentHashCode % 100f));
 			if (timeType == TimeType.Ticks && Current.ProgramState == ProgramState.Playing)
 			{
-				float num2 = (syncType != 0) ? ((float)(Find.TickManager.TicksGame - samp.startTick)) : ((float)Find.TickManager.TicksGame - samp.ParentStartTick);
+				float num2 = ((syncType != 0) ? ((float)(Find.TickManager.TicksGame - samp.startTick)) : ((float)Find.TickManager.TicksGame - samp.ParentStartTick));
 				num2 /= 60f;
 				num += num2;
 			}
 			else
 			{
-				float num3 = (syncType != 0) ? (Time.realtimeSinceStartup - samp.startRealTime) : (Time.realtimeSinceStartup - samp.ParentStartRealTime);
+				float num3 = ((syncType != 0) ? (Time.realtimeSinceStartup - samp.startRealTime) : (Time.realtimeSinceStartup - samp.ParentStartRealTime));
 				num += num3;
 			}
 			num *= perlinFrequency;

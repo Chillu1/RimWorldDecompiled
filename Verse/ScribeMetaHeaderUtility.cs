@@ -1,9 +1,9 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml;
+using RimWorld;
 
 namespace Verse
 {
@@ -91,11 +91,11 @@ namespace Verse
 			if (!BackCompatibility.IsSaveCompatibleWith(loadedGameVersion) && !VersionsMatch())
 			{
 				text2 = "VersionMismatch".Translate();
-				string value = loadedGameVersion.NullOrEmpty() ? ("(" + "UnknownLower".TranslateSimple() + ")") : loadedGameVersion;
+				string value = (loadedGameVersion.NullOrEmpty() ? ("(" + "UnknownLower".TranslateSimple() + ")") : loadedGameVersion);
 				text = ((lastMode == ScribeHeaderMode.Map) ? ((string)"SaveGameIncompatibleWarningText".Translate(value, VersionControl.CurrentVersionString)) : ((lastMode != ScribeHeaderMode.World) ? ((string)"FileIncompatibleWarning".Translate(value, VersionControl.CurrentVersionString)) : ((string)"WorldFileVersionMismatch".Translate(value, VersionControl.CurrentVersionString))));
 			}
 			bool flag = false;
-			if (!LoadedModsMatchesActiveMods(out string loadedModsSummary, out string runningModsSummary))
+			if (!LoadedModsMatchesActiveMods(out var loadedModsSummary, out var runningModsSummary))
 			{
 				flag = true;
 				string text3 = "ModsMismatchWarningText".Translate(loadedModsSummary, runningModsSummary);
@@ -186,15 +186,11 @@ namespace Verse
 			}
 			try
 			{
-				using (StreamReader input = new StreamReader(file.FullName))
+				using StreamReader input = new StreamReader(file.FullName);
+				using XmlTextReader xmlTextReader = new XmlTextReader(input);
+				if (ReadToMetaElement(xmlTextReader) && xmlTextReader.ReadToDescendant("gameVersion"))
 				{
-					using (XmlTextReader xmlTextReader = new XmlTextReader(input))
-					{
-						if (ReadToMetaElement(xmlTextReader) && xmlTextReader.ReadToDescendant("gameVersion"))
-						{
-							return VersionControl.VersionStringWithoutRev(xmlTextReader.ReadString());
-						}
-					}
+					return VersionControl.VersionStringWithoutRev(xmlTextReader.ReadString());
 				}
 			}
 			catch (Exception ex)

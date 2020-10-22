@@ -7,7 +7,7 @@ namespace RimWorld
 	{
 		public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
-			if (!ShouldTakeCareOfPrisoner(pawn, t))
+			if (!ShouldTakeCareOfPrisoner_NewTemp(pawn, t, forced))
 			{
 				return null;
 			}

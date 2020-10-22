@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 using Verse.Grammar;
 
@@ -82,7 +82,7 @@ namespace Verse
 			this.toolLabel = toolLabel;
 			if (recipient is Pawn)
 			{
-				recipientPawn = (recipient as Pawn);
+				recipientPawn = recipient as Pawn;
 			}
 			else if (recipient != null)
 			{

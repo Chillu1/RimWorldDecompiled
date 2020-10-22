@@ -45,12 +45,12 @@ namespace Verse
 			{
 				GameInitData gameInitData = Find.GameInitData;
 				ConfiguredTicksAbsAtGameStartCache ticksAbsCache = Find.World.ticksAbsCache;
-				if (ticksAbsCache.TryGetCachedValue(gameInitData, out int ticksAbs))
+				if (ticksAbsCache.TryGetCachedValue(gameInitData, out var ticksAbs))
 				{
 					return ticksAbs;
 				}
-				Vector2 vector = (gameInitData.startingTile < 0) ? Vector2.zero : Find.WorldGrid.LongLatOf(gameInitData.startingTile);
-				Twelfth twelfth = (gameInitData.startingSeason != 0) ? gameInitData.startingSeason.GetFirstTwelfth(vector.y) : ((gameInitData.startingTile < 0) ? Season.Summer.GetFirstTwelfth(0f) : TwelfthUtility.FindStartingWarmTwelfth(gameInitData.startingTile));
+				Vector2 vector = ((gameInitData.startingTile < 0) ? Vector2.zero : Find.WorldGrid.LongLatOf(gameInitData.startingTile));
+				Twelfth twelfth = ((gameInitData.startingSeason != 0) ? gameInitData.startingSeason.GetFirstTwelfth(vector.y) : ((gameInitData.startingTile < 0) ? Season.Summer.GetFirstTwelfth(0f) : TwelfthUtility.FindStartingWarmTwelfth(gameInitData.startingTile)));
 				int num = (24 - GenDate.TimeZoneAt(vector.x)) % 24;
 				int num2 = 300000 * (int)twelfth + 2500 * (6 + num);
 				ticksAbsCache.Cache(num2, gameInitData);

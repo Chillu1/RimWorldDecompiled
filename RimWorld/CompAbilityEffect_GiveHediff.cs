@@ -9,8 +9,11 @@ namespace RimWorld
 		public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
 		{
 			base.Apply(target, dest);
-			ApplyInner(target.Pawn, parent.pawn);
-			if (Props.applyToSelf)
+			if (!Props.onlyApplyToSelf)
+			{
+				ApplyInner(target.Pawn, parent.pawn);
+			}
+			if (Props.applyToSelf || Props.onlyApplyToSelf)
 			{
 				ApplyInner(parent.pawn, target.Pawn);
 			}
@@ -40,7 +43,7 @@ namespace RimWorld
 			if (hediffComp_Link != null)
 			{
 				hediffComp_Link.other = other;
-				hediffComp_Link.drawConnection = (target == parent.pawn);
+				hediffComp_Link.drawConnection = target == parent.pawn;
 			}
 			target.health.AddHediff(hediff);
 		}

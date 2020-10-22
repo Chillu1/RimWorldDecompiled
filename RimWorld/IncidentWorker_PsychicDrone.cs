@@ -25,7 +25,7 @@ namespace RimWorld
 			{
 				points = StorytellerUtility.DefaultThreatPointsNow(map);
 			}
-			PsychicDroneLevel level = (points < 800f) ? PsychicDroneLevel.BadLow : ((!(points < 2000f)) ? PsychicDroneLevel.BadHigh : PsychicDroneLevel.BadMedium);
+			PsychicDroneLevel level = ((points < 800f) ? PsychicDroneLevel.BadLow : ((!(points < 2000f)) ? PsychicDroneLevel.BadHigh : PsychicDroneLevel.BadMedium));
 			GameCondition_PsychicEmanation gameCondition_PsychicEmanation = (GameCondition_PsychicEmanation)GameConditionMaker.MakeCondition(GameConditionDefOf.PsychicDrone, duration);
 			gameCondition_PsychicEmanation.gender = gender;
 			gameCondition_PsychicEmanation.level = level;

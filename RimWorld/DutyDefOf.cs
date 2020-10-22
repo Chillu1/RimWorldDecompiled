@@ -27,9 +27,16 @@ namespace RimWorld
 
 		public static DutyDef LoadAndEnterTransporters;
 
+		public static DutyDef EnterTransporter;
+
 		public static DutyDef ManClosestTurret;
 
 		public static DutyDef SleepForever;
+
+		public static DutyDef Idle;
+
+		[MayRequireRoyalty]
+		public static DutyDef WanderClose;
 
 		public static DutyDef AssaultColony;
 
@@ -44,6 +51,9 @@ namespace RimWorld
 		public static DutyDef HuntEnemiesIndividual;
 
 		public static DutyDef DefendBase;
+
+		[MayRequireRoyalty]
+		public static DutyDef AssaultThing;
 
 		public static DutyDef ExitMapRandom;
 
@@ -60,6 +70,8 @@ namespace RimWorld
 		public static DutyDef Spectate;
 
 		public static DutyDef Party;
+
+		public static DutyDef BestowingCeremony_MoveInPlace;
 
 		public static DutyDef PrepareCaravan_GatherItems;
 

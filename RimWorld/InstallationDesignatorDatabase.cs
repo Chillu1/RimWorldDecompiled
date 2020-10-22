@@ -9,7 +9,7 @@ namespace RimWorld
 
 		public static Designator_Install DesignatorFor(ThingDef artDef)
 		{
-			if (designators.TryGetValue(artDef, out Designator_Install value))
+			if (designators.TryGetValue(artDef, out var value))
 			{
 				return value;
 			}

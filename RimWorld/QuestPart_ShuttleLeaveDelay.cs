@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -14,7 +14,7 @@ namespace RimWorld
 		{
 			get
 			{
-				if (shuttle == null)
+				if (shuttle == null || !shuttle.Spawned)
 				{
 					return false;
 				}
@@ -26,7 +26,17 @@ namespace RimWorld
 
 		public override string AlertLabel => "QuestPartShuttleLeaveDelay".Translate(base.TicksLeft.ToStringTicksToPeriod());
 
-		public override string AlertExplanation => "QuestPartShuttleLeaveDelayDesc".Translate(quest.name, base.TicksLeft.ToStringTicksToPeriod().Colorize(ColoredText.DateTimeColor), shuttle.TryGetComp<CompShuttle>().RequiredThingsLabel);
+		public override string AlertExplanation
+		{
+			get
+			{
+				if (quest.hidden)
+				{
+					return "QuestPartShuttleLeaveDelayDescHidden".Translate(base.TicksLeft.ToStringTicksToPeriod().Colorize(ColoredText.DateTimeColor));
+				}
+				return "QuestPartShuttleLeaveDelayDesc".Translate(quest.name, base.TicksLeft.ToStringTicksToPeriod().Colorize(ColoredText.DateTimeColor), shuttle.TryGetComp<CompShuttle>().RequiredThingsLabel);
+			}
+		}
 
 		public override IEnumerable<GlobalTargetInfo> QuestLookTargets
 		{
@@ -46,7 +56,7 @@ namespace RimWorld
 		public override void Notify_QuestSignalReceived(Signal signal)
 		{
 			base.Notify_QuestSignalReceived(signal);
-			if (inSignalsDisable.Contains(signal.tag))
+			if (base.State == QuestPartState.Enabled && inSignalsDisable.Contains(signal.tag))
 			{
 				Disable();
 			}

@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 using Verse.AI;
 using Verse.AI.Group;
@@ -11,7 +11,7 @@ namespace RimWorld
 	{
 		public static IEnumerable<Pawn> CarrierCandidatesFor(Pawn pawn)
 		{
-			IEnumerable<Pawn> source = pawn.IsFormingCaravan() ? pawn.GetLord().ownedPawns : pawn.Map.mapPawns.SpawnedPawnsInFaction(pawn.Faction);
+			IEnumerable<Pawn> source = (pawn.IsFormingCaravan() ? pawn.GetLord().ownedPawns : pawn.Map.mapPawns.SpawnedPawnsInFaction(pawn.Faction));
 			source = source.Where((Pawn x) => x.RaceProps.packAnimal && !x.inventory.UnloadEverything);
 			if (pawn.Map.IsPlayerHome)
 			{

@@ -29,7 +29,7 @@ namespace RimWorld
 			return ExplanationKey.Translate() + ": " + (curve[0].y.ToStringWithSign("0%") + " " + "RangeTo".Translate() + " " + curve[curve.PointsCount - 1].y.ToStringWithSign("0%"));
 		}
 
-		public override float MaxOffset(bool forAbstract = false)
+		public override float MaxOffset(Thing parent = null)
 		{
 			float num = 0f;
 			for (int i = 0; i < curve.PointsCount; i++)

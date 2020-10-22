@@ -101,7 +101,7 @@ namespace RimWorld
 			}
 			for (int i = 0; i < tmpThings.Count; i++)
 			{
-				string text = (tmpThings[i] is Pawn) ? tmpThings[i].LabelShort : tmpThings[i].LabelNoCount;
+				string text = ((tmpThings[i] is Pawn) ? tmpThings[i].LabelShort : tmpThings[i].LabelNoCount);
 				bool flag = false;
 				if (aggregate)
 				{

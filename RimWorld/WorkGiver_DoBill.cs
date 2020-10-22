@@ -134,7 +134,7 @@ namespace RimWorld
 			for (int i = 0; i < list.Count; i++)
 			{
 				IBillGiver billGiver;
-				if ((billGiver = (list[i] as IBillGiver)) != null && ThingIsUsableBillGiver(list[i]) && billGiver.BillStack.AnyShouldDoNow)
+				if ((billGiver = list[i] as IBillGiver) != null && ThingIsUsableBillGiver(list[i]) && billGiver.BillStack.AnyShouldDoNow)
 				{
 					return false;
 				}
@@ -212,6 +212,11 @@ namespace RimWorld
 				if (skillRequirement != null)
 				{
 					JobFailReason.Is("UnderRequiredSkill".Translate(skillRequirement.minLevel), bill.Label);
+					continue;
+				}
+				if (bill is Bill_Medical && ((Bill_Medical)bill).IsSurgeryViolationOnExtraFactionMember(pawn))
+				{
+					JobFailReason.Is("SurgeryViolationFellowFactionMember".Translate());
 					continue;
 				}
 				Bill_ProductionWithUft bill_ProductionWithUft = bill as Bill_ProductionWithUft;
@@ -372,7 +377,7 @@ namespace RimWorld
 			}
 			else
 			{
-				entryCondition = ((Region from, Region r) => r.Allows(traverseParams, isDestination: false));
+				entryCondition = (Region from, Region r) => r.Allows(traverseParams, isDestination: false);
 			}
 			int adjacentRegionsAvailable = rootReg.Neighbors.Count((Region region) => entryCondition(rootReg, region));
 			int regionsProcessed = 0;

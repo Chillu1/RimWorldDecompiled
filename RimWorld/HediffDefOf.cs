@@ -66,6 +66,12 @@ namespace RimWorld
 		[MayRequireRoyalty]
 		public static HediffDef PsychicSuppression;
 
+		[MayRequireRoyalty]
+		public static HediffDef Abasia;
+
+		[MayRequireRoyalty]
+		public static HediffDef PsychicLove;
+
 		public static HediffDef Flu;
 
 		public static HediffDef Plague;
@@ -115,6 +121,8 @@ namespace RimWorld
 		public static HediffDef BionicLeg;
 
 		public static HediffDef PowerClaw;
+
+		public static HediffDef ArchotechEye;
 
 		[MayRequireRoyalty]
 		public static HediffDef LoveEnhancer;

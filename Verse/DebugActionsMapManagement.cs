@@ -1,7 +1,7 @@
-using RimWorld;
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse
@@ -91,7 +91,7 @@ namespace Verse
 				{
 					for (int j = 0; j < toTransfer.Count; j++)
 					{
-						if (CellFinder.TryFindRandomCellNear(map.Center, map, Mathf.Max(map.Size.x, map.Size.z), (IntVec3 x) => !x.Fogged(map) && x.Standable(map), out IntVec3 result))
+						if (CellFinder.TryFindRandomCellNear(map.Center, map, Mathf.Max(map.Size.x, map.Size.z), (IntVec3 x) => !x.Fogged(map) && x.Standable(map), out var result))
 						{
 							toTransfer[j].DeSpawn();
 							GenPlace.TryPlaceThing(toTransfer[j], result, map, ThingPlaceMode.Near);
@@ -180,10 +180,34 @@ namespace Verse
 		[DebugAction("Map management", null, allowedGameStates = AllowedGameStates.Playing)]
 		private static void ForceReformInCurrentMap()
 		{
-			if (Find.CurrentMap != null)
+			if (Find.CurrentMap == null)
 			{
-				TimedForcedExit.ForceReform(Find.CurrentMap.Parent);
+				return;
 			}
+			MapParent mapParent = Find.CurrentMap.Parent;
+			List<Pawn> list = new List<Pawn>();
+			if (Dialog_FormCaravan.AllSendablePawns(mapParent.Map, reform: true).Any((Pawn x) => x.IsColonist))
+			{
+				Messages.Message("MessageYouHaveToReformCaravanNow".Translate(), new GlobalTargetInfo(mapParent.Tile), MessageTypeDefOf.NeutralEvent);
+				Current.Game.CurrentMap = mapParent.Map;
+				Dialog_FormCaravan window = new Dialog_FormCaravan(mapParent.Map, reform: true, delegate
+				{
+					if (mapParent.HasMap)
+					{
+						mapParent.Destroy();
+					}
+				}, mapAboutToBeRemoved: true);
+				Find.WindowStack.Add(window);
+				return;
+			}
+			list.Clear();
+			list.AddRange(mapParent.Map.mapPawns.AllPawns.Where((Pawn x) => x.Faction == Faction.OfPlayer || x.HostFaction == Faction.OfPlayer));
+			if (list.Any((Pawn x) => CaravanUtility.IsOwner(x, Faction.OfPlayer)))
+			{
+				CaravanExitMapUtility.ExitMapAndCreateCaravan(list, Faction.OfPlayer, mapParent.Tile, mapParent.Tile, -1);
+			}
+			list.Clear();
+			mapParent.Destroy();
 		}
 
 		public static List<DebugMenuOption> Options_Add_GameCondition()

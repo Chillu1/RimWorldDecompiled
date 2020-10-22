@@ -119,7 +119,7 @@ namespace RimWorld.BaseGen
 				int num = -1;
 				for (int i = 0; i < MaxTriesToAvoidOtherEdgeThings; i++)
 				{
-					if (!TryFindSpawnCell(rect, thingDef, rot, mustReachMapEdge, out IntVec3 spawnCell2))
+					if (!TryFindSpawnCell(rect, thingDef, rot, mustReachMapEdge, out var spawnCell2))
 					{
 						continue;
 					}

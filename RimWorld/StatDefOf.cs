@@ -9,6 +9,8 @@ namespace RimWorld
 
 		public static StatDef MarketValue;
 
+		public static StatDef MarketValueIgnoreHp;
+
 		public static StatDef RoyalFavorValue;
 
 		public static StatDef SellPriceFactor;
@@ -206,6 +208,9 @@ namespace RimWorld
 		public static StatDef EnergyShieldEnergyMax;
 
 		public static StatDef SmokepopBeltRadius;
+
+		[MayRequireRoyalty]
+		public static StatDef JumpRange;
 
 		public static StatDef EquipDelay;
 

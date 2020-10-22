@@ -46,10 +46,10 @@ namespace RimWorld
 				float value = initiator.relations.OpinionOf(pawn);
 				num3 = Mathf.InverseLerp(50f, -50f, value);
 			}
-			float num4 = initiator.story.traits.HasTrait(TraitDefOf.Gay) ? 1f : ((initiator.gender == Gender.Female) ? 0.15f : 1f);
+			float num4 = (initiator.story.traits.HasTrait(TraitDefOf.Gay) ? 1f : ((initiator.gender == Gender.Female) ? 0.15f : 1f));
 			float num5 = Mathf.InverseLerp(0.15f, 1f, num);
 			float num6 = Mathf.InverseLerp(5f, 100f, num2);
-			float num7 = (initiator.gender == recipient.gender) ? ((!initiator.story.traits.HasTrait(TraitDefOf.Gay) || !recipient.story.traits.HasTrait(TraitDefOf.Gay)) ? 0.15f : 1f) : ((initiator.story.traits.HasTrait(TraitDefOf.Gay) || recipient.story.traits.HasTrait(TraitDefOf.Gay)) ? 0.15f : 1f);
+			float num7 = ((initiator.gender == recipient.gender) ? ((!initiator.story.traits.HasTrait(TraitDefOf.Gay) || !recipient.story.traits.HasTrait(TraitDefOf.Gay)) ? 0.15f : 1f) : ((initiator.story.traits.HasTrait(TraitDefOf.Gay) || recipient.story.traits.HasTrait(TraitDefOf.Gay)) ? 0.15f : 1f));
 			return 1.15f * num4 * num5 * num6 * num3 * num7;
 		}
 
@@ -85,8 +85,8 @@ namespace RimWorld
 		{
 			if (Rand.Value < SuccessChance(initiator, recipient))
 			{
-				BreakLoverAndFianceRelations(initiator, out List<Pawn> oldLoversAndFiances);
-				BreakLoverAndFianceRelations(recipient, out List<Pawn> oldLoversAndFiances2);
+				BreakLoverAndFianceRelations(initiator, out var oldLoversAndFiances);
+				BreakLoverAndFianceRelations(recipient, out var oldLoversAndFiances2);
 				for (int i = 0; i < oldLoversAndFiances.Count; i++)
 				{
 					TryAddCheaterThought(oldLoversAndFiances[i], initiator);

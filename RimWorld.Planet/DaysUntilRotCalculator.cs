@@ -32,7 +32,7 @@ namespace RimWorld.Planet
 				if (thingCount.Count > 0 && thingCount.Thing.def.IsNutritionGivingIngestible)
 				{
 					CompRottable compRottable = thingCount.Thing.TryGetComp<CompRottable>();
-					float first = (compRottable == null || !compRottable.Active) ? 600f : ((float)ApproxTicksUntilRot_AssumeTimePassesBy(compRottable, tile, tmpTicksToArrive) / 60000f);
+					float first = ((compRottable == null || !compRottable.Active) ? 600f : ((float)ApproxTicksUntilRot_AssumeTimePassesBy(compRottable, tile, tmpTicksToArrive) / 60000f));
 					float second = thingCount.Thing.GetStatValue(StatDefOf.Nutrition) * (float)thingCount.Count;
 					tmpNutritions.Add(new Pair<float, float>(first, second));
 				}
@@ -46,13 +46,13 @@ namespace RimWorld.Planet
 			int num2 = Find.TickManager.TicksAbs;
 			while (num < 1f && (float)num2 < (float)Find.TickManager.TicksAbs + 3.606E+07f)
 			{
-				int tile2 = ticksToArrive.NullOrEmpty() ? tile : CaravanArrivalTimeEstimator.TileIllBeInAt(num2, ticksToArrive, Find.TickManager.TicksAbs);
+				int tile2 = (ticksToArrive.NullOrEmpty() ? tile : CaravanArrivalTimeEstimator.TileIllBeInAt(num2, ticksToArrive, Find.TickManager.TicksAbs));
 				int num3 = Mathf.FloorToInt((float)rot.ApproxTicksUntilRotWhenAtTempOfTile(tile2, num2) * (1f - num));
 				if (num3 <= 0)
 				{
 					break;
 				}
-				int b = (num3 < 10800000) ? ((num3 < 3600000) ? ((num3 < 600000) ? 27000 : 66000) : 125999) : 306000;
+				int b = ((num3 < 10800000) ? ((num3 < 3600000) ? ((num3 < 600000) ? 27000 : 66000) : 125999) : 306000);
 				int num4 = Mathf.Min(num3, b);
 				num += (float)num4 / (float)num3;
 				num2 += num4;

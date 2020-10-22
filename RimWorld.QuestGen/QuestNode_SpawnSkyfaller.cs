@@ -41,7 +41,7 @@ namespace RimWorld.QuestGen
 			{
 				questPart_SpawnThing.cell = cell.GetValue(slate).Value;
 			}
-			questPart_SpawnThing.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart_SpawnThing.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			questPart_SpawnThing.lookForSafeSpot = lookForSafeSpot.GetValue(slate);
 			questPart_SpawnThing.tryLandInShipLandingZone = tryLandInShipLandingZone.GetValue(slate);
 			QuestGen.quest.AddPart(questPart_SpawnThing);

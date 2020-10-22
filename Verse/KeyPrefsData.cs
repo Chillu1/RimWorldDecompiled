@@ -27,7 +27,7 @@ namespace Verse
 
 		public bool SetBinding(KeyBindingDef keyDef, KeyPrefs.BindingSlot slot, KeyCode keyCode)
 		{
-			if (keyPrefs.TryGetValue(keyDef, out KeyBindingData value))
+			if (keyPrefs.TryGetValue(keyDef, out var value))
 			{
 				switch (slot)
 				{
@@ -49,27 +49,24 @@ namespace Verse
 
 		public KeyCode GetBoundKeyCode(KeyBindingDef keyDef, KeyPrefs.BindingSlot slot)
 		{
-			if (!keyPrefs.TryGetValue(keyDef, out KeyBindingData value))
+			if (!keyPrefs.TryGetValue(keyDef, out var value))
 			{
 				Log.Error("Key not found in keyprefs: \"" + keyDef.LabelCap + "\"");
 				return KeyCode.None;
 			}
-			switch (slot)
+			return slot switch
 			{
-			case KeyPrefs.BindingSlot.A:
-				return value.keyBindingA;
-			case KeyPrefs.BindingSlot.B:
-				return value.keyBindingB;
-			default:
-				throw new InvalidOperationException();
-			}
+				KeyPrefs.BindingSlot.A => value.keyBindingA, 
+				KeyPrefs.BindingSlot.B => value.keyBindingB, 
+				_ => throw new InvalidOperationException(), 
+			};
 		}
 
 		private IEnumerable<KeyBindingDef> ConflictingBindings(KeyBindingDef keyDef, KeyCode code)
 		{
 			foreach (KeyBindingDef def in DefDatabase<KeyBindingDef>.AllDefs)
 			{
-				if (def != keyDef && ((def.category == keyDef.category && def.category.selfConflicting) || keyDef.category.checkForConflicts.Contains(def.category) || (keyDef.extraConflictTags != null && def.extraConflictTags != null && keyDef.extraConflictTags.Any((string tag) => def.extraConflictTags.Contains(tag)))) && keyPrefs.TryGetValue(def, out KeyBindingData value) && (value.keyBindingA == code || value.keyBindingB == code))
+				if (def != keyDef && ((def.category == keyDef.category && def.category.selfConflicting) || keyDef.category.checkForConflicts.Contains(def.category) || (keyDef.extraConflictTags != null && def.extraConflictTags != null && keyDef.extraConflictTags.Any((string tag) => def.extraConflictTags.Contains(tag)))) && keyPrefs.TryGetValue(def, out var value) && (value.keyBindingA == code || value.keyBindingB == code))
 				{
 					yield return def;
 				}

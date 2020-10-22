@@ -109,7 +109,7 @@ namespace Verse
 			}
 			if (target.HasThing)
 			{
-				Thing thing = target.Thing.Spawned ? target.Thing : ThingOwnerUtility.GetFirstSpawnedParentThing(target.Thing);
+				Thing thing = (target.Thing.Spawned ? target.Thing : ThingOwnerUtility.GetFirstSpawnedParentThing(target.Thing));
 				if (thing == null || !thing.Spawned)
 				{
 					return;

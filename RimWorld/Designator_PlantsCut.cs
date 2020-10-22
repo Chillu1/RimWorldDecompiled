@@ -36,7 +36,7 @@ namespace RimWorld
 		private bool AffectsThing(Thing t)
 		{
 			Plant plant;
-			if ((plant = (t as Plant)) == null)
+			if ((plant = t as Plant) == null)
 			{
 				return false;
 			}

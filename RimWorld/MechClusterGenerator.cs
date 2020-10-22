@@ -1,7 +1,7 @@
-using RimWorld.SketchGen;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.SketchGen;
 using UnityEngine;
 using Verse;
 
@@ -12,6 +12,8 @@ namespace RimWorld
 		public const string MechClusterMemberTag = "MechClusterMember";
 
 		public const string MechClusterMemberGoodTag = "MechClusterMemberGood";
+
+		public const string MechClusterMemberLampTag = "MechClusterMemberLamp";
 
 		public const string MechClusterActivatorTag = "MechClusterActivator";
 
@@ -84,6 +86,19 @@ namespace RimWorld
 			new CurvePoint(5000f, 7f)
 		};
 
+		private static readonly SimpleCurve LampBuildingMinCountCurve = new SimpleCurve
+		{
+			new CurvePoint(400f, 1f),
+			new CurvePoint(1000f, 2f)
+		};
+
+		private static readonly SimpleCurve LampBuildingMaxCountCurve = new SimpleCurve
+		{
+			new CurvePoint(400f, 1f),
+			new CurvePoint(1000f, 4f),
+			new CurvePoint(2000f, 6f)
+		};
+
 		private static readonly SimpleCurve BulletShieldChanceCurve = new SimpleCurve
 		{
 			new CurvePoint(400f, 0.1f),
@@ -116,7 +131,13 @@ namespace RimWorld
 			return GenerateClusterSketch(points, null, startDormant);
 		}
 
+		[Obsolete]
 		public static MechClusterSketch GenerateClusterSketch(float points, Map map, bool startDormant = true)
+		{
+			return GenerateClusterSketch_NewTemp(points, map, startDormant);
+		}
+
+		public static MechClusterSketch GenerateClusterSketch_NewTemp(float points, Map map, bool startDormant = true, bool forceNoConditionCauser = false)
 		{
 			if (!ModLister.RoyaltyInstalled)
 			{
@@ -147,7 +168,8 @@ namespace RimWorld
 				totalPoints = points,
 				mechClusterDormant = startDormant,
 				sketch = new Sketch(),
-				mechClusterForMap = map
+				mechClusterForMap = map,
+				forceNoConditionCauser = forceNoConditionCauser
 			});
 			if (list != null)
 			{
@@ -155,7 +177,7 @@ namespace RimWorld
 				for (int i = 0; i < list.Count; i++)
 				{
 					MechClusterSketch.Mech pawn = list[i];
-					if (!buildingsSketch.OccupiedRect.Where((IntVec3 c) => !buildingsSketch.ThingsAt(c).Any() && !pawnUsedSpots.Contains(c)).TryRandomElement(out IntVec3 result2))
+					if (!buildingsSketch.OccupiedRect.Where((IntVec3 c) => !buildingsSketch.ThingsAt(c).Any() && !pawnUsedSpots.Contains(c)).TryRandomElement(out var result2))
 					{
 						CellRect cellRect = buildingsSketch.OccupiedRect;
 						do
@@ -190,7 +212,7 @@ namespace RimWorld
 				num = 2000f;
 				Log.Error("No points given for mech cluster generation. Default to " + num);
 			}
-			float value = parms.totalPoints.HasValue ? parms.totalPoints.Value : num;
+			float value = (parms.totalPoints.HasValue ? parms.totalPoints.Value : num);
 			IntVec2 intVec;
 			if (parms.mechClusterSize.HasValue)
 			{
@@ -216,7 +238,7 @@ namespace RimWorld
 				parms2.mechClusterSize = intVec;
 				SketchResolverDefOf.MechClusterWalls.Resolve(parms2);
 			}
-			List<ThingDef> buildingDefsForCluster_NewTemp = GetBuildingDefsForCluster_NewTemp(num, intVec, canBeDormant, value);
+			List<ThingDef> buildingDefsForCluster_NewTemp = GetBuildingDefsForCluster_NewTemp(num, intVec, canBeDormant, value, parms.forceNoConditionCauser.HasValue && parms.forceNoConditionCauser.Value);
 			AddBuildingsToSketch(sketch, intVec, buildingDefsForCluster_NewTemp);
 			parms.sketch.MergeAt(sketch, default(IntVec3), Sketch.SpawnPosType.OccupiedCenter);
 		}
@@ -227,18 +249,27 @@ namespace RimWorld
 			return GetBuildingDefsForCluster_NewTemp(points, size, canBeDormant, 0f);
 		}
 
+		[Obsolete("Only need this overload to not break mod compatibility.")]
 		private static List<ThingDef> GetBuildingDefsForCluster_NewTemp(float points, IntVec2 size, bool canBeDormant, float? totalPoints)
+		{
+			return GetBuildingDefsForCluster_NewTemp(points, size, canBeDormant, totalPoints, forceNoConditionCauser: false);
+		}
+
+		private static List<ThingDef> GetBuildingDefsForCluster_NewTemp(float points, IntVec2 size, bool canBeDormant, float? totalPoints, bool forceNoConditionCauser)
 		{
 			List<ThingDef> list = new List<ThingDef>();
 			List<ThingDef> source = DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef def) => def.building != null && def.building.buildingTags != null && def.building.buildingTags.Contains("MechClusterMember") && (!totalPoints.HasValue || (float)def.building.minMechClusterPoints <= totalPoints)).ToList();
-			int num = GenMath.RoundRandom(ProblemCauserCountCurve.Evaluate(points));
-			for (int i = 0; i < num; i++)
+			if (!forceNoConditionCauser)
 			{
-				if (!source.Where((ThingDef x) => x.building.buildingTags.Contains("MechClusterProblemCauser")).TryRandomElementByWeight((ThingDef t) => t.generateCommonality, out ThingDef result))
+				int num = GenMath.RoundRandom(ProblemCauserCountCurve.Evaluate(points));
+				for (int i = 0; i < num; i++)
 				{
-					break;
+					if (!source.Where((ThingDef x) => x.building.buildingTags.Contains("MechClusterProblemCauser")).TryRandomElementByWeight((ThingDef t) => t.generateCommonality, out var result))
+					{
+						break;
+					}
+					list.Add(result);
 				}
-				list.Add(result);
 			}
 			if (canBeDormant)
 			{
@@ -260,18 +291,27 @@ namespace RimWorld
 				int num3 = Rand.RangeInclusive(0, GenMath.RoundRandom(GoodBuildingMaxCountCurve.Evaluate(points)));
 				for (int k = 0; k < num3; k++)
 				{
-					if (!source.Where((ThingDef x) => x.building.buildingTags.Contains("MechClusterMemberGood")).TryRandomElement(out ThingDef result2))
+					if (!source.Where((ThingDef x) => x.building.buildingTags.Contains("MechClusterMemberGood")).TryRandomElement(out var result2))
 					{
 						break;
 					}
 					list.Add(result2);
 				}
 			}
+			int num4 = Rand.RangeInclusive(Mathf.FloorToInt(LampBuildingMinCountCurve.Evaluate(points)), Mathf.CeilToInt(LampBuildingMaxCountCurve.Evaluate(points)));
+			for (int l = 0; l < num4; l++)
+			{
+				if (!source.Where((ThingDef x) => x.building.buildingTags.Contains("MechClusterMemberLamp")).TryRandomElement(out var result3))
+				{
+					break;
+				}
+				list.Add(result3);
+			}
 			if (Rand.Chance(BulletShieldChanceCurve.Evaluate(points)))
 			{
 				points *= 0.85f;
-				int num4 = Rand.RangeInclusive(0, GenMath.RoundRandom(BulletShieldMaxCountCurve.Evaluate(points)));
-				for (int l = 0; l < num4; l++)
+				int num5 = Rand.RangeInclusive(0, GenMath.RoundRandom(BulletShieldMaxCountCurve.Evaluate(points)));
+				for (int m = 0; m < num5; m++)
 				{
 					list.Add(ThingDefOf.ShieldGeneratorBullets);
 				}
@@ -283,10 +323,10 @@ namespace RimWorld
 			}
 			float pointsLeft = points;
 			ThingDef thingDef = source.Where((ThingDef x) => x.building.buildingTags.Contains("MechClusterCombatThreat")).MinBy((ThingDef x) => x.building.combatPower);
-			ThingDef result3;
-			for (pointsLeft = Mathf.Max(pointsLeft, thingDef.building.combatPower); pointsLeft > 0f && source.Where((ThingDef x) => x.building.combatPower <= pointsLeft && x.building.buildingTags.Contains("MechClusterCombatThreat")).TryRandomElement(out result3); pointsLeft -= result3.building.combatPower)
+			ThingDef result4;
+			for (pointsLeft = Mathf.Max(pointsLeft, thingDef.building.combatPower); pointsLeft > 0f && source.Where((ThingDef x) => x.building.combatPower <= pointsLeft && x.building.buildingTags.Contains("MechClusterCombatThreat")).TryRandomElement(out result4); pointsLeft -= result4.building.combatPower)
 			{
-				list.Add(result3);
+				list.Add(result4);
 			}
 			return list;
 		}
@@ -308,7 +348,7 @@ namespace RimWorld
 			foreach (ThingDef item in buildings.OrderBy((ThingDef x) => x.building.IsTurret && !x.building.IsMortar))
 			{
 				bool flag = item.building.IsTurret && !item.building.IsMortar;
-				if (!TryFindRandomPlaceFor(item, sketch, size, out IntVec3 pos, lowerLeftQuarterOnly: false, flag, flag, !flag, edgeWallRects) && !TryFindRandomPlaceFor(item, sketch, size + new IntVec2(6, 6), out pos, lowerLeftQuarterOnly: false, flag, flag, !flag, edgeWallRects))
+				if (!TryFindRandomPlaceFor(item, sketch, size, out var pos, lowerLeftQuarterOnly: false, flag, flag, !flag, edgeWallRects) && !TryFindRandomPlaceFor(item, sketch, size + new IntVec2(6, 6), out pos, lowerLeftQuarterOnly: false, flag, flag, !flag, edgeWallRects))
 				{
 					continue;
 				}

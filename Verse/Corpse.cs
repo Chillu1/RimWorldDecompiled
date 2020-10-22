@@ -1,7 +1,7 @@
-using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -349,7 +349,7 @@ namespace Verse
 			}
 			if (this.StoringThing() == null)
 			{
-				Thought_MemoryObservation thought_MemoryObservation = (!this.IsNotFresh()) ? ((Thought_MemoryObservation)ThoughtMaker.MakeThought(ThoughtDefOf.ObservedLayingCorpse)) : ((Thought_MemoryObservation)ThoughtMaker.MakeThought(ThoughtDefOf.ObservedLayingRottingCorpse));
+				Thought_MemoryObservation thought_MemoryObservation = ((!this.IsNotFresh()) ? ((Thought_MemoryObservation)ThoughtMaker.MakeThought(ThoughtDefOf.ObservedLayingCorpse)) : ((Thought_MemoryObservation)ThoughtMaker.MakeThought(ThoughtDefOf.ObservedLayingRottingCorpse)));
 				thought_MemoryObservation.Target = this;
 				return thought_MemoryObservation;
 			}

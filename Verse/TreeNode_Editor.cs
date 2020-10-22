@@ -214,10 +214,10 @@ namespace Verse
 			Type type = obj.GetType();
 			if (!type.GetGenericArguments()[0].IsValueEditable())
 			{
-				object obj2 = treeNode_Editor.obj = type.GetProperty("Item").GetValue(obj, new object[1]
+				object obj2 = (treeNode_Editor.obj = type.GetProperty("Item").GetValue(obj, new object[1]
 				{
 					listIndex
-				});
+				}));
 				treeNode_Editor.RebuildChildNodes();
 			}
 			treeNode_Editor.InitiallyCacheData();

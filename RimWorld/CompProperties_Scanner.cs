@@ -11,6 +11,8 @@ namespace RimWorld
 
 		public StatDef scanSpeedStat;
 
+		public SoundDef soundWorking;
+
 		public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
 		{
 			if (scanFindMtbDays <= 0f)

@@ -13,7 +13,7 @@ namespace RimWorld
 				where GenHostility.IsActiveThreatToPlayer(x)
 				select x into p
 				select ((Thing)p).Faction).Distinct();
-			if (base.FactionCanBeGroupSource(f, map, desperate) && !f.def.hidden && f.PlayerRelationKind == FactionRelationKind.Ally)
+			if (base.FactionCanBeGroupSource(f, map, desperate) && !f.Hidden && f.PlayerRelationKind == FactionRelationKind.Ally)
 			{
 				if (source.Any())
 				{

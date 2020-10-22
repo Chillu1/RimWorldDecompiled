@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using Verse.AI;
 
 namespace Verse
@@ -8,6 +8,8 @@ namespace Verse
 	public sealed class ListerBuildings
 	{
 		public List<Building> allBuildingsColonist = new List<Building>();
+
+		public List<Building> allBuildingsNonColonist = new List<Building>();
 
 		public HashSet<Building> allBuildingsColonistCombatTargets = new HashSet<Building>();
 
@@ -27,6 +29,10 @@ namespace Verse
 					allBuildingsColonistCombatTargets.Add(b);
 				}
 			}
+			else
+			{
+				allBuildingsNonColonist.Add(b);
+			}
 			CompProperties_Power compProperties = b.def.GetCompProperties<CompProperties_Power>();
 			if (compProperties != null && compProperties.shortCircuitInRain)
 			{
@@ -37,6 +43,7 @@ namespace Verse
 		public void Remove(Building b)
 		{
 			allBuildingsColonist.Remove(b);
+			allBuildingsNonColonist.Remove(b);
 			if (b is IAttackTarget)
 			{
 				allBuildingsColonistCombatTargets.Remove(b);

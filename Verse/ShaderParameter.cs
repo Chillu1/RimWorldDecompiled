@@ -26,8 +26,6 @@ namespace Verse
 		{
 			switch (type)
 			{
-			case Type.Matrix:
-				break;
 			case Type.Float:
 				mat.SetFloat(name, value.x);
 				break;
@@ -40,6 +38,8 @@ namespace Verse
 					Log.ErrorOnce($"Texture for {name} is not yet loaded; file may be invalid, or main thread may not have loaded it yet", 27929440);
 				}
 				mat.SetTexture(name, valueTex);
+				break;
+			case Type.Matrix:
 				break;
 			}
 		}

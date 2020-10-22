@@ -22,7 +22,7 @@ namespace RimWorld.QuestGen
 			{
 				QuestPart_RemoveEquipmentFromPawns questPart_RemoveEquipmentFromPawns = new QuestPart_RemoveEquipmentFromPawns();
 				questPart_RemoveEquipmentFromPawns.pawns.AddRange(pawns.GetValue(slate));
-				questPart_RemoveEquipmentFromPawns.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+				questPart_RemoveEquipmentFromPawns.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 				QuestGen.quest.AddPart(questPart_RemoveEquipmentFromPawns);
 			}
 		}

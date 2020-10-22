@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -60,7 +61,7 @@ namespace RimWorld
 			return text + "Weather".Translate() + ": " + weather.LabelCap;
 		}
 
-		public override void RandomizeSettings()
+		public override void RandomizeSettings_NewTemp_NewTemp(Site site)
 		{
 			weather = DefDatabase<WeatherDef>.AllDefsListForReading.Where((WeatherDef x) => x.isBad).RandomElement();
 		}

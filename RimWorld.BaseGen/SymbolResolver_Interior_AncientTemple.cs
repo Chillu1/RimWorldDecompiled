@@ -22,18 +22,18 @@ namespace RimWorld.BaseGen
 				resolveParams.singleThingToSpawn = list[i];
 				BaseGen.symbolStack.Push("thing", resolveParams);
 			}
-			if (!Find.Storyteller.difficulty.peacefulTemples)
+			if (!Find.Storyteller.difficultyValues.peacefulTemples)
 			{
 				if (Rand.Chance(0.65f))
 				{
 					ResolveParams resolveParams2 = rp;
-					resolveParams2.mechanoidsCount = (rp.mechanoidsCount ?? MechanoidCountRange.RandomInRange);
+					resolveParams2.mechanoidsCount = rp.mechanoidsCount ?? MechanoidCountRange.RandomInRange;
 					BaseGen.symbolStack.Push("randomMechanoidGroup", resolveParams2);
 				}
 				else
 				{
 					ResolveParams resolveParams3 = rp;
-					resolveParams3.hivesCount = (rp.hivesCount ?? HivesCountRange.RandomInRange);
+					resolveParams3.hivesCount = rp.hivesCount ?? HivesCountRange.RandomInRange;
 					BaseGen.symbolStack.Push("hives", resolveParams3);
 				}
 			}

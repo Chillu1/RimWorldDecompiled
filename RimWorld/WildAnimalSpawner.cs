@@ -77,7 +77,7 @@ namespace RimWorld
 			if (Find.TickManager.TicksGame % 1213 == 0 && !AnimalEcosystemFull && Rand.Chance(0.0269555561f * DesiredAnimalDensity))
 			{
 				TraverseParms traverseParms = TraverseParms.For(TraverseMode.NoPassClosedDoors);
-				if (RCellFinder.TryFindRandomPawnEntryCell(out IntVec3 result, map, CellFinder.EdgeRoadChance_Animal, allowFogged: true, (IntVec3 cell) => map.reachability.CanReachMapEdge(cell, traverseParms)))
+				if (RCellFinder.TryFindRandomPawnEntryCell(out var result, map, CellFinder.EdgeRoadChance_Animal, allowFogged: true, (IntVec3 cell) => map.reachability.CanReachMapEdge(cell, traverseParms)))
 				{
 					SpawnRandomWildAnimalAt(result);
 				}

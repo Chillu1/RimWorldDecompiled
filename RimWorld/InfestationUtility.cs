@@ -6,7 +6,7 @@ namespace RimWorld
 	{
 		public static Thing SpawnTunnels(int hiveCount, Map map, bool spawnAnywhereIfNoGoodCell = false, bool ignoreRoofedRequirement = false, string questTag = null)
 		{
-			if (!InfestationCellFinder.TryFindCell(out IntVec3 cell, map))
+			if (!InfestationCellFinder.TryFindCell(out var cell, map))
 			{
 				if (!spawnAnywhereIfNoGoodCell)
 				{

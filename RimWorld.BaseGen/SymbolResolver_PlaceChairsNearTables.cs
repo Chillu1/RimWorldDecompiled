@@ -30,11 +30,11 @@ namespace RimWorld.BaseGen
 				{
 					if (!cellRect.IsCorner(item2) && rp.rect.Contains(item2) && item2.Standable(map) && item2.GetEdifice(map) == null && (!flag || !Rand.Bool))
 					{
-						Rot4 value = (item2.x == cellRect.minX) ? Rot4.East : ((item2.x == cellRect.maxX) ? Rot4.West : ((item2.z != cellRect.minZ) ? Rot4.South : Rot4.North));
+						Rot4 value = ((item2.x == cellRect.minX) ? Rot4.East : ((item2.x == cellRect.maxX) ? Rot4.West : ((item2.z != cellRect.minZ) ? Rot4.South : Rot4.North)));
 						ResolveParams resolveParams = rp;
 						resolveParams.rect = CellRect.SingleCell(item2);
 						resolveParams.singleThingDef = ThingDefOf.DiningChair;
-						resolveParams.singleThingStuff = (rp.singleThingStuff ?? ThingDefOf.WoodLog);
+						resolveParams.singleThingStuff = rp.singleThingStuff ?? ThingDefOf.WoodLog;
 						resolveParams.thingRot = value;
 						BaseGen.symbolStack.Push("thing", resolveParams);
 						flag = true;

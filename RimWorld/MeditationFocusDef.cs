@@ -33,7 +33,7 @@ namespace RimWorld
 					for (int i = 0; i < incompatibleBackstoriesAny.Count; i++)
 					{
 						BackstoryCategoryAndSlot backstoryCategoryAndSlot = incompatibleBackstoriesAny[i];
-						Backstory backstory2 = (backstoryCategoryAndSlot.slot == BackstorySlot.Adulthood) ? adulthood : childhood;
+						Backstory backstory2 = ((backstoryCategoryAndSlot.slot == BackstorySlot.Adulthood) ? adulthood : childhood);
 						if (!backstory2.spawnCategories.Contains(backstoryCategoryAndSlot.categoryName))
 						{
 							AddBackstoryReason(backstoryCategoryAndSlot.slot, backstory2);
@@ -45,14 +45,14 @@ namespace RimWorld
 						List<MeditationFocusDef> disallowedMeditationFocusTypes = traitDef.degreeDatas[0].disallowedMeditationFocusTypes;
 						if (disallowedMeditationFocusTypes != null && disallowedMeditationFocusTypes.Contains(this))
 						{
-							reasons.Add("MeditationFocusDisabledByTrait".Translate() + ": " + traitDef.degreeDatas[0].LabelCap + ".");
+							reasons.Add("MeditationFocusDisabledByTrait".Translate() + ": " + traitDef.degreeDatas[0].GetLabelCapFor(pawn) + ".");
 						}
 					}
 				}
 				for (int k = 0; k < requiredBackstoriesAny.Count; k++)
 				{
 					BackstoryCategoryAndSlot backstoryCategoryAndSlot2 = requiredBackstoriesAny[k];
-					Backstory backstory3 = (backstoryCategoryAndSlot2.slot == BackstorySlot.Adulthood) ? adulthood : childhood;
+					Backstory backstory3 = ((backstoryCategoryAndSlot2.slot == BackstorySlot.Adulthood) ? adulthood : childhood);
 					if (backstory3.spawnCategories.Contains(backstoryCategoryAndSlot2.categoryName))
 					{
 						AddBackstoryReason(backstoryCategoryAndSlot2.slot, backstory3);

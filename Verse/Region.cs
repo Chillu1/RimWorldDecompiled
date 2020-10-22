@@ -1,8 +1,8 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -383,7 +383,7 @@ namespace Verse
 			{
 				value = p.SafeTemperatureRange();
 			}
-			Danger danger = value.Includes(temperature) ? Danger.None : ((!value.ExpandedBy(80f).Includes(temperature)) ? Danger.Deadly : Danger.Some);
+			Danger danger = (value.Includes(temperature) ? Danger.None : ((!value.ExpandedBy(80f).Includes(temperature)) ? Danger.Deadly : Danger.Some));
 			if (Current.ProgramState == ProgramState.Playing)
 			{
 				cachedDangers.Add(new KeyValuePair<Pawn, Danger>(p, danger));
@@ -422,7 +422,7 @@ namespace Verse
 			{
 				cachedAreaOverlaps = new Dictionary<Area, AreaOverlap>();
 			}
-			if (!cachedAreaOverlaps.TryGetValue(a, out AreaOverlap value))
+			if (!cachedAreaOverlaps.TryGetValue(a, out var value))
 			{
 				int num = 0;
 				int num2 = 0;
@@ -473,7 +473,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			string str = (door == null) ? "null" : door.ToString();
+			string str = ((door == null) ? "null" : door.ToString());
 			return string.Concat("Region(id=", id, ", mapIndex=", mapIndex, ", center=", extentsClose.CenterCell, ", links=", links.Count, ", cells=", CellCount, (door != null) ? (", portal=" + str) : null, ")");
 		}
 

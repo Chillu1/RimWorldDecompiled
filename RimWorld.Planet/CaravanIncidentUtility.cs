@@ -42,7 +42,7 @@ namespace RimWorld.Planet
 		{
 			int num = CalculateIncidentMapSize(caravan.PawnsListForReading, enemies);
 			Map map = GetOrGenerateMapForIncident(caravan, new IntVec3(num, 1, num), WorldObjectDefOf.Ambush);
-			MultipleCaravansCellFinder.FindStartingCellsFor2Groups(map, out IntVec3 playerStartingSpot, out IntVec3 second);
+			MultipleCaravansCellFinder.FindStartingCellsFor2Groups(map, out var playerStartingSpot, out var second);
 			CaravanEnterMapUtility.Enter(caravan, map, (Pawn x) => CellFinder.RandomSpawnCellForPawnNear(playerStartingSpot, map), CaravanDropInventoryMode.DoNotDrop, draftColonists: true);
 			for (int i = 0; i < enemies.Count; i++)
 			{

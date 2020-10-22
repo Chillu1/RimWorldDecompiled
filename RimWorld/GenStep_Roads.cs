@@ -1,7 +1,7 @@
-using RimWorld.BaseGen;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.BaseGen;
 using UnityEngine;
 using Verse;
 using Verse.AI;
@@ -273,7 +273,7 @@ namespace RimWorld
 						IntVec3 c = intVec + GenAdj.CardinalDirections[l];
 						if (c.InBounds(map))
 						{
-							flag |= (pathing == RoadPathingDefOf.Avoid && c.Impassable(map));
+							flag |= pathing == RoadPathingDefOf.Avoid && c.Impassable(map);
 							if (c.GetTerrain(map).IsWater)
 							{
 								num3++;

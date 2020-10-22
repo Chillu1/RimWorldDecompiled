@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 using Verse.AI;
 
@@ -64,7 +64,7 @@ namespace Verse
 		{
 			if (p.Faction != null)
 			{
-				if (p.Drafted && p.Faction == Faction.OfPlayer && IsReserved(loc, out Pawn claimant) && claimant != p && !claimant.HostileTo(p) && claimant.Faction != p.Faction && (claimant.mindState == null || claimant.mindState.mentalStateHandler == null || !claimant.mindState.mentalStateHandler.InMentalState || (claimant.mindState.mentalStateHandler.CurStateDef.category != MentalStateCategory.Aggro && claimant.mindState.mentalStateHandler.CurStateDef.category != MentalStateCategory.Malicious)))
+				if (p.Drafted && p.Faction == Faction.OfPlayer && IsReserved(loc, out var claimant) && claimant != p && !claimant.HostileTo(p) && claimant.Faction != p.Faction && (claimant.mindState == null || claimant.mindState.mentalStateHandler == null || !claimant.mindState.mentalStateHandler.InMentalState || (claimant.mindState.mentalStateHandler.CurStateDef.category != MentalStateCategory.Aggro && claimant.mindState.mentalStateHandler.CurStateDef.category != MentalStateCategory.Malicious)))
 				{
 					claimant.jobs.EndCurrentJob(JobCondition.InterruptForced);
 				}
@@ -270,6 +270,14 @@ namespace Verse
 						i--;
 					}
 				}
+			}
+		}
+
+		public void Notify_FactionRemoved(Faction faction)
+		{
+			if (reservedDestinations.ContainsKey(faction))
+			{
+				reservedDestinations.Remove(faction);
 			}
 		}
 

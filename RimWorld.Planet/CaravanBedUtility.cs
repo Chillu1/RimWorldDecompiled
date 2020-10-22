@@ -25,7 +25,7 @@ namespace RimWorld.Planet
 
 		public static string AppendUsingBedsLabel(string str, int bedCount)
 		{
-			string str2 = (bedCount == 1) ? ((string)"UsingBedroll".Translate()) : ((string)"UsingBedrolls".Translate(bedCount));
+			string str2 = ((bedCount == 1) ? ((string)"UsingBedroll".Translate()) : ((string)"UsingBedrolls".Translate(bedCount)));
 			return str + " (" + str2 + ")";
 		}
 	}

@@ -1,6 +1,6 @@
-using RimWorld;
 using System.Collections.Generic;
 using System.Text;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse

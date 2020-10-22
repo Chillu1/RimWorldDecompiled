@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -67,7 +67,7 @@ namespace RimWorld.QuestGen
 				Log.Warning("QuestNode_GetPawn has incompatible flags set, when canGeneratePawn is true these flags cannot be set: mustBeFactionLeader, mustBeWorldPawn, mustBePlayerPrisoner, mustBeFreeColonist");
 				return false;
 			}
-			if (slate.TryGet(storeAs.GetValue(slate), out Pawn var) && IsGoodPawn(var, slate))
+			if (slate.TryGet<Pawn>(storeAs.GetValue(slate), out var var) && IsGoodPawn(var, slate))
 			{
 				return true;
 			}
@@ -79,7 +79,7 @@ namespace RimWorld.QuestGen
 			}
 			if (canGeneratePawn.GetValue(slate))
 			{
-				if (!mustHaveNoFaction.GetValue(slate) && !TryFindFactionForPawnGeneration(slate, out Faction _))
+				if (!mustHaveNoFaction.GetValue(slate) && !TryFindFactionForPawnGeneration(slate, out var _))
 				{
 					return false;
 				}
@@ -95,7 +95,7 @@ namespace RimWorld.QuestGen
 
 		private bool TryFindFactionForPawnGeneration(Slate slate, out Faction faction)
 		{
-			return Find.FactionManager.GetFactions(allowHidden: false, allowDefeated: false, allowNonHumanlike: false).Where(delegate(Faction x)
+			return Find.FactionManager.GetFactions_NewTemp(allowHidden: false, allowDefeated: false, allowNonHumanlike: false).Where(delegate(Faction x)
 			{
 				if (excludeFactionDefs.GetValue(slate) != null && excludeFactionDefs.GetValue(slate).Contains(x.def))
 				{
@@ -120,12 +120,12 @@ namespace RimWorld.QuestGen
 		protected override void RunInt()
 		{
 			Slate slate = QuestGen.slate;
-			if (!QuestGen.slate.TryGet(storeAs.GetValue(slate), out Pawn var) || !IsGoodPawn(var, slate))
+			if (!QuestGen.slate.TryGet<Pawn>(storeAs.GetValue(slate), out var var) || !IsGoodPawn(var, slate))
 			{
 				IEnumerable<Pawn> source = ExistingUsablePawns(slate);
 				int num = source.Count();
-				var = ((!Rand.Chance(canGeneratePawn.GetValue(slate) ? Mathf.Clamp01(1f - (float)num / (float)maxUsablePawnsToGenerate.GetValue(slate)) : 0f) || (!mustHaveNoFaction.GetValue(slate) && !TryFindFactionForPawnGeneration(slate, out Faction _))) ? source.RandomElementByWeight((Pawn x) => (x.Faction != null && x.Faction.HostileTo(Faction.OfPlayer)) ? (hostileWeight.GetValue(slate) ?? 1f) : (nonHostileWeight.GetValue(slate) ?? 1f)) : GeneratePawn(slate));
-				if (var.Faction != null && !var.Faction.def.hidden)
+				var = ((!Rand.Chance(canGeneratePawn.GetValue(slate) ? Mathf.Clamp01(1f - (float)num / (float)maxUsablePawnsToGenerate.GetValue(slate)) : 0f) || (!mustHaveNoFaction.GetValue(slate) && !TryFindFactionForPawnGeneration(slate, out var _))) ? source.RandomElementByWeight((Pawn x) => (x.Faction != null && x.Faction.HostileTo(Faction.OfPlayer)) ? (hostileWeight.GetValue(slate) ?? 1f) : (nonHostileWeight.GetValue(slate) ?? 1f)) : GeneratePawn(slate));
+				if (var.Faction != null && !var.Faction.Hidden)
 				{
 					QuestPart_InvolvedFactions questPart_InvolvedFactions = new QuestPart_InvolvedFactions();
 					questPart_InvolvedFactions.factions.Add(var.Faction);
@@ -152,7 +152,7 @@ namespace RimWorld.QuestGen
 			RoyalTitleDef fixedTitle;
 			if (mustHaveRoyalTitleInCurrentFaction.GetValue(slate))
 			{
-				if (!seniorityRange.TryGetValue(slate, out FloatRange senRange))
+				if (!seniorityRange.TryGetValue(slate, out var senRange))
 				{
 					senRange = FloatRange.Zero;
 				}
@@ -191,7 +191,7 @@ namespace RimWorld.QuestGen
 			if (mustBeFactionLeader.GetValue(slate))
 			{
 				Faction faction = pawn.Faction;
-				if (faction == null || faction.leader != pawn || !faction.def.humanlikeFaction || faction.defeated || faction.def.hidden || faction.IsPlayer || pawn.IsPrisoner)
+				if (faction == null || faction.leader != pawn || !faction.def.humanlikeFaction || faction.defeated || faction.Hidden || faction.IsPlayer || pawn.IsPrisoner)
 				{
 					return false;
 				}

@@ -6,7 +6,7 @@ namespace Verse.AI
 	{
 		protected override bool TryFindGoodExitDest(Pawn pawn, bool canDig, out IntVec3 spot)
 		{
-			TraverseMode mode = canDig ? TraverseMode.PassAllDestroyableThings : TraverseMode.ByPawn;
+			TraverseMode mode = (canDig ? TraverseMode.PassAllDestroyableThings : TraverseMode.ByPawn);
 			IntVec3 near = pawn.DutyLocation();
 			float num = pawn.mindState.duty.radius;
 			if (num <= 0f)

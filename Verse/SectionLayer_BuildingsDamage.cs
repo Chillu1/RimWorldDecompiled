@@ -10,7 +10,7 @@ namespace Verse
 		public SectionLayer_BuildingsDamage(Section section)
 			: base(section)
 		{
-			relevantChangeTypes = (MapMeshFlag.Buildings | MapMeshFlag.BuildingsDamage);
+			relevantChangeTypes = MapMeshFlag.Buildings | MapMeshFlag.BuildingsDamage;
 		}
 
 		public override void Regenerate()
@@ -208,7 +208,7 @@ namespace Verse
 			Rect damageRect = BuildingsDamageSectionLayerUtility.GetDamageRect(b);
 			float damageTexturesAltitude = GetDamageTexturesAltitude(b);
 			float num = Mathf.Min(Mathf.Min(damageRect.width, damageRect.height), 1.5f);
-			BuildingsDamageSectionLayerUtility.GetCornerMats(out Material topLeft, out Material topRight, out Material botRight, out Material botLeft, b);
+			BuildingsDamageSectionLayerUtility.GetCornerMats(out var topLeft, out var topRight, out var botRight, out var botLeft, b);
 			float num2 = num * Rand.Range(0.9f, 1f);
 			float num3 = num * Rand.Range(0.9f, 1f);
 			float num4 = num * Rand.Range(0.9f, 1f);
@@ -248,7 +248,7 @@ namespace Verse
 
 		private float GetDamageTexturesAltitude(Building b)
 		{
-			return b.def.Altitude + 0.0454545468f;
+			return b.def.Altitude + 3f / 70f;
 		}
 	}
 }

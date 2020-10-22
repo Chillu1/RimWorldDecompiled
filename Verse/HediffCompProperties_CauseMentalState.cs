@@ -12,6 +12,8 @@ namespace Verse
 
 		public float mtbDaysToCauseMentalState;
 
+		public bool endMentalStateOnCure = true;
+
 		public HediffCompProperties_CauseMentalState()
 		{
 			compClass = typeof(HediffComp_CauseMentalState);

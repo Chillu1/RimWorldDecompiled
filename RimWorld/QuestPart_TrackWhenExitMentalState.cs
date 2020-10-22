@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -28,7 +28,7 @@ namespace RimWorld
 			{
 				if (cachedPawns == null)
 				{
-					cachedPawns = mapParent.Map.mapPawns.AllPawnsSpawned.Where((Pawn p) => p.InMentalState && p.MentalStateDef == mentalStateDef && p.questTags.Contains(tag)).ToList();
+					cachedPawns = mapParent.Map.mapPawns.AllPawnsSpawned.Where((Pawn p) => p.InMentalState && p.MentalStateDef == mentalStateDef && !p.questTags.NullOrEmpty() && p.questTags.Contains(tag)).ToList();
 				}
 				return cachedPawns;
 			}

@@ -38,6 +38,11 @@ namespace RimWorld
 			{
 				num *= 0.2f;
 			}
+			HediffWithTarget hediffWithTarget = (HediffWithTarget)initiator.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.PsychicLove);
+			if (hediffWithTarget != null && hediffWithTarget.target == recipient)
+			{
+				num *= 10f;
+			}
 			return num;
 		}
 
@@ -93,7 +98,7 @@ namespace RimWorld
 					stringBuilder.AppendLine("LetterAcceptedProposal".Translate(initiator.Named("INITIATOR"), recipient.Named("RECIPIENT")));
 					if (initiator.relations.nextMarriageNameChange != 0)
 					{
-						SpouseRelationUtility.DetermineManAndWomanSpouses(initiator, recipient, out Pawn man, out Pawn woman);
+						SpouseRelationUtility.DetermineManAndWomanSpouses(initiator, recipient, out var man, out var woman);
 						stringBuilder.AppendLine();
 						if (initiator.relations.nextMarriageNameChange == MarriageNameChange.MansName)
 						{

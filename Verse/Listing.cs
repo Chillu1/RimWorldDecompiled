@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace Verse
@@ -16,13 +17,19 @@ namespace Verse
 
 		private bool hasCustomColumnWidth;
 
+		private float maxHeightColumnSeen;
+
 		public bool maxOneColumn;
 
 		public const float ColumnSpacing = 17f;
 
 		public const float DefaultGap = 12f;
 
+		public const float DefaultIndent = 12f;
+
 		public float CurHeight => curY;
+
+		public float MaxColumnHeightSeen => Math.Max(CurHeight, maxHeightColumnSeen);
 
 		public float ColumnWidth
 		{
@@ -39,6 +46,7 @@ namespace Verse
 
 		public void NewColumn()
 		{
+			maxHeightColumnSeen = Math.Max(curY, maxHeightColumnSeen);
 			curY = 0f;
 			curX += ColumnWidth + 17f;
 		}
@@ -74,6 +82,16 @@ namespace Verse
 			curY += gapHeight;
 		}
 
+		public void Indent(float gapWidth = 12f)
+		{
+			curX += gapWidth;
+		}
+
+		public void Outdent(float gapWidth = 12f)
+		{
+			curX -= gapWidth;
+		}
+
 		public virtual void Begin(Rect rect)
 		{
 			listingRect = rect;
@@ -91,6 +109,7 @@ namespace Verse
 			}
 			curX = 0f;
 			curY = 0f;
+			maxHeightColumnSeen = 0f;
 			GUI.BeginGroup(rect);
 		}
 

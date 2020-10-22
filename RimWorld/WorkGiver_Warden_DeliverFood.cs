@@ -8,7 +8,7 @@ namespace RimWorld
 	{
 		public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
-			if (!ShouldTakeCareOfPrisoner(pawn, t))
+			if (!ShouldTakeCareOfPrisoner_NewTemp(pawn, t, forced))
 			{
 				return null;
 			}
@@ -29,7 +29,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			if (!FoodUtility.TryFindBestFoodSourceFor(pawn, pawn2, pawn2.needs.food.CurCategory == HungerCategory.Starving, out Thing foodSource, out ThingDef foodDef, canRefillDispenser: false, canUseInventory: true, allowForbidden: false, allowCorpse: false))
+			if (!FoodUtility.TryFindBestFoodSourceFor(pawn, pawn2, pawn2.needs.food.CurCategory == HungerCategory.Starving, out var foodSource, out var foodDef, canRefillDispenser: false, canUseInventory: true, allowForbidden: false, allowCorpse: false))
 			{
 				return null;
 			}

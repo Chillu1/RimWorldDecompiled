@@ -1,3 +1,4 @@
+using System;
 using RimWorld;
 
 namespace Verse.AI
@@ -24,11 +25,14 @@ namespace Verse.AI
 
 		public bool canDig;
 
+		[Obsolete]
 		public PawnsToGather pawnsToGather;
 
 		public int transportersGroup = -1;
 
 		public bool attackDownedIfStarving;
+
+		public float? wanderRadius;
 
 		public PawnDuty()
 		{
@@ -63,16 +67,16 @@ namespace Verse.AI
 			Scribe_Values.Look(ref spectateRect, "spectateRect");
 			Scribe_Values.Look(ref spectateRectAllowedSides, "spectateRectAllowedSides", SpectateRectSide.All);
 			Scribe_Values.Look(ref canDig, "canDig", defaultValue: false);
-			Scribe_Values.Look(ref pawnsToGather, "pawnsToGather", PawnsToGather.None);
 			Scribe_Values.Look(ref transportersGroup, "transportersGroup", -1);
 			Scribe_Values.Look(ref attackDownedIfStarving, "attackDownedIfStarving", defaultValue: false);
+			Scribe_Values.Look(ref wanderRadius, "wanderRadius");
 		}
 
 		public override string ToString()
 		{
-			string text = focus.IsValid ? focus.ToString() : "";
-			string text2 = focusSecond.IsValid ? (", second=" + focusSecond.ToString()) : "";
-			string text3 = (radius > 0f) ? (", rad=" + radius.ToString("F2")) : "";
+			string text = (focus.IsValid ? focus.ToString() : "");
+			string text2 = (focusSecond.IsValid ? (", second=" + focusSecond.ToString()) : "");
+			string text3 = ((radius > 0f) ? (", rad=" + radius.ToString("F2")) : "");
 			return string.Concat("(", def, " ", text, text2, text3, ")");
 		}
 

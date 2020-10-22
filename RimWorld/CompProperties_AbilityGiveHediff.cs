@@ -10,6 +10,8 @@ namespace RimWorld
 
 		public bool applyToSelf;
 
+		public bool onlyApplyToSelf;
+
 		public bool replaceExisting;
 	}
 }

@@ -77,13 +77,13 @@ namespace RimWorld
 				}
 				map.powerNetManager.UpdatePowerNetsAndConnections_First();
 				Building newPowerGenerator2;
-				if (TryFindClosestReachableNet(compPowerBattery.parent.Position, (PowerNet x) => HasAnyPowerGenerator(x), map, out PowerNet foundNet, out IntVec3 closestTransmitter))
+				if (TryFindClosestReachableNet(compPowerBattery.parent.Position, (PowerNet x) => HasAnyPowerGenerator(x), map, out var foundNet, out var closestTransmitter))
 				{
 					map.floodFiller.ReconstructLastFloodFillPath(closestTransmitter, tmpCells);
 					if (canSpawnPowerGenerators)
 					{
 						int count = tmpCells.Count;
-						if (Rand.Chance(Mathf.InverseLerp(MaxDistanceBetweenBatteryAndTransmitter.min, MaxDistanceBetweenBatteryAndTransmitter.max, count)) && TrySpawnPowerGeneratorNear(compPowerBattery.parent.Position, map, compPowerBattery.parent.Faction, out Building newPowerGenerator))
+						if (Rand.Chance(Mathf.InverseLerp(MaxDistanceBetweenBatteryAndTransmitter.min, MaxDistanceBetweenBatteryAndTransmitter.max, count)) && TrySpawnPowerGeneratorNear(compPowerBattery.parent.Position, map, compPowerBattery.parent.Faction, out var newPowerGenerator))
 						{
 							SpawnTransmitters(compPowerBattery.parent.Position, newPowerGenerator.Position, map, compPowerBattery.parent.Faction);
 							foundNet = null;
@@ -121,7 +121,7 @@ namespace RimWorld
 				}
 				map.powerNetManager.UpdatePowerNetsAndConnections_First();
 				Building newBattery;
-				if (TryFindClosestReachableNet(powerComp.parent.Position, (PowerNet x) => x.CurrentEnergyGainRate() - powerComp.Props.basePowerConsumption * CompPower.WattsToWattDaysPerTick > 1E-07f, map, out PowerNet foundNet, out IntVec3 closestTransmitter))
+				if (TryFindClosestReachableNet(powerComp.parent.Position, (PowerNet x) => x.CurrentEnergyGainRate() - powerComp.Props.basePowerConsumption * CompPower.WattsToWattDaysPerTick > 1E-07f, map, out var foundNet, out var closestTransmitter))
 				{
 					map.floodFiller.ReconstructLastFloodFillPath(closestTransmitter, tmpCells);
 					bool flag = false;
@@ -169,7 +169,7 @@ namespace RimWorld
 				if (powerNet == null || !HasAnyPowerUser(powerNet))
 				{
 					map.powerNetManager.UpdatePowerNetsAndConnections_First();
-					if (TryFindClosestReachableNet(tmpThings[i].Position, (PowerNet x) => HasAnyPowerUser(x), map, out PowerNet _, out IntVec3 closestTransmitter))
+					if (TryFindClosestReachableNet(tmpThings[i].Position, (PowerNet x) => HasAnyPowerUser(x), map, out var _, out var closestTransmitter))
 					{
 						map.floodFiller.ReconstructLastFloodFillPath(closestTransmitter, tmpCells);
 						SpawnTransmitters(tmpCells, map, tmpThings[i].Faction);
@@ -256,7 +256,7 @@ namespace RimWorld
 				{
 					return false;
 				}
-				if (!tmpPowerNetPredicateResults.TryGetValue(powerNet, out bool value))
+				if (!tmpPowerNetPredicateResults.TryGetValue(powerNet, out var value))
 				{
 					value = predicate(powerNet);
 					tmpPowerNetPredicateResults.Add(powerNet, value);
@@ -332,7 +332,7 @@ namespace RimWorld
 					}
 				}
 				return (extraValidator == null || extraValidator(x)) ? true : false;
-			}, map, out IntVec3 result, 8))
+			}, map, out var result, 8))
 			{
 				newBuilding = (Building)GenSpawn.Spawn(ThingMaker.MakeThing(def), result, map, Rot4.North);
 				newBuilding.SetFaction(faction);
@@ -397,12 +397,12 @@ namespace RimWorld
 				return false;
 			}
 			IntVec3 position = forThing.Position;
-			if (canSpawnBatteries && Rand.Chance(hasAtleast1TurretInt ? 1f : 0.1f) && TrySpawnBatteryNear(forThing.Position, map, forThing.Faction, out Building newBattery))
+			if (canSpawnBatteries && Rand.Chance(hasAtleast1TurretInt ? 1f : 0.1f) && TrySpawnBatteryNear(forThing.Position, map, forThing.Faction, out var newBattery))
 			{
 				SpawnTransmitters(forThing.Position, newBattery.Position, map, forThing.Faction);
 				position = newBattery.Position;
 			}
-			if (TrySpawnPowerGeneratorNear(position, map, forThing.Faction, out Building newPowerGenerator))
+			if (TrySpawnPowerGeneratorNear(position, map, forThing.Faction, out var newPowerGenerator))
 			{
 				SpawnTransmitters(position, newPowerGenerator.Position, map, forThing.Faction);
 				return true;

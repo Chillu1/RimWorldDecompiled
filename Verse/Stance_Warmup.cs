@@ -7,7 +7,11 @@ namespace Verse
 	{
 		private Sustainer sustainer;
 
+		private Effecter effecter;
+
 		private bool targetStartedDowned;
+
+		private bool drawAimPie = true;
 
 		public Stance_Warmup()
 		{
@@ -28,26 +32,36 @@ namespace Verse
 					}
 				}
 			}
-			if (verb != null && verb.verbProps.soundAiming != null)
+			if (verb != null)
 			{
-				SoundInfo info = SoundInfo.InMap(verb.caster, MaintenanceType.PerTick);
-				if (verb.CasterIsPawn)
+				if (verb.verbProps.soundAiming != null)
 				{
-					info.pitchFactor = 1f / verb.CasterPawn.GetStatValue(StatDefOf.AimingDelayFactor);
+					SoundInfo info = SoundInfo.InMap(verb.caster, MaintenanceType.PerTick);
+					if (verb.CasterIsPawn)
+					{
+						info.pitchFactor = 1f / verb.CasterPawn.GetStatValue(StatDefOf.AimingDelayFactor);
+					}
+					sustainer = verb.verbProps.soundAiming.TrySpawnSustainer(info);
 				}
-				sustainer = verb.verbProps.soundAiming.TrySpawnSustainer(info);
+				if (verb.verbProps.warmupEffecter != null && verb.Caster != null)
+				{
+					effecter = verb.verbProps.warmupEffecter.Spawn(verb.Caster, verb.Caster.Map);
+					effecter.Trigger(verb.Caster, focusTarg.ToTargetInfo(verb.Caster.Map));
+				}
 			}
+			drawAimPie = verb?.verbProps.drawAimPie ?? false;
 		}
 
 		public override void ExposeData()
 		{
 			base.ExposeData();
 			Scribe_Values.Look(ref targetStartedDowned, "targetStartDowned", defaultValue: false);
+			Scribe_Values.Look(ref drawAimPie, "drawAimPie", defaultValue: false);
 		}
 
 		public override void StanceDraw()
 		{
-			if (Find.Selector.IsSelected(stanceTracker.pawn))
+			if (drawAimPie && Find.Selector.IsSelected(stanceTracker.pawn))
 			{
 				GenDraw.DrawAimPie(stanceTracker.pawn, focusTarg, (int)((float)ticksLeft * pieSizeFactor), 0.2f);
 			}
@@ -59,6 +73,7 @@ namespace Verse
 			{
 				sustainer.Maintain();
 			}
+			effecter?.EffectTick(verb.Caster, focusTarg.ToTargetInfo(verb.Caster.Map));
 			if (!targetStartedDowned && focusTarg.HasThing && focusTarg.Thing is Pawn && ((Pawn)focusTarg.Thing).Downed)
 			{
 				stanceTracker.SetStance(new Stance_Mobile());
@@ -79,11 +94,13 @@ namespace Verse
 		public void Interrupt()
 		{
 			base.Expire();
+			effecter?.Cleanup();
 		}
 
 		protected override void Expire()
 		{
-			verb.WarmupComplete();
+			verb?.WarmupComplete();
+			effecter?.Cleanup();
 			base.Expire();
 		}
 	}

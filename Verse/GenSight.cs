@@ -12,14 +12,14 @@ namespace Verse
 			{
 				return false;
 			}
-			bool flag = (start.x != end.x) ? (start.x < end.x) : (start.z < end.z);
+			bool flag = ((start.x != end.x) ? (start.x < end.x) : (start.z < end.z));
 			int num = Mathf.Abs(end.x - start.x);
 			int num2 = Mathf.Abs(end.z - start.z);
 			int num3 = start.x;
 			int num4 = start.z;
 			int num5 = 1 + num + num2;
-			int num6 = (end.x > start.x) ? 1 : (-1);
-			int num7 = (end.z > start.z) ? 1 : (-1);
+			int num6 = ((end.x > start.x) ? 1 : (-1));
+			int num7 = ((end.z > start.z) ? 1 : (-1));
 			num *= 4;
 			num2 *= 4;
 			num += halfXOffset * 2;
@@ -62,14 +62,14 @@ namespace Verse
 			{
 				return false;
 			}
-			bool flag = (start.x != end.x) ? (start.x < end.x) : (start.z < end.z);
+			bool flag = ((start.x != end.x) ? (start.x < end.x) : (start.z < end.z));
 			int num = Mathf.Abs(end.x - start.x);
 			int num2 = Mathf.Abs(end.z - start.z);
 			int num3 = start.x;
 			int num4 = start.z;
 			int num5 = 1 + num + num2;
-			int num6 = (end.x > start.x) ? 1 : (-1);
-			int num7 = (end.z > start.z) ? 1 : (-1);
+			int num6 = ((end.x > start.x) ? 1 : (-1));
+			int num7 = ((end.z > start.z) ? 1 : (-1));
 			int num8 = num - num2;
 			num *= 2;
 			num2 *= 2;
@@ -110,14 +110,14 @@ namespace Verse
 
 		public static IEnumerable<IntVec3> PointsOnLineOfSight(IntVec3 start, IntVec3 end)
 		{
-			bool sideOnEqual = (start.x != end.x) ? (start.x < end.x) : (start.z < end.z);
+			bool sideOnEqual = ((start.x != end.x) ? (start.x < end.x) : (start.z < end.z));
 			int dx2 = Mathf.Abs(end.x - start.x);
 			int dz2 = Mathf.Abs(end.z - start.z);
 			int x = start.x;
 			int z = start.z;
 			int i = 1 + dx2 + dz2;
-			int x_inc = (end.x > start.x) ? 1 : (-1);
-			int z_inc = (end.z > start.z) ? 1 : (-1);
+			int x_inc = ((end.x > start.x) ? 1 : (-1));
+			int z_inc = ((end.z > start.z) ? 1 : (-1));
 			int error = dx2 - dz2;
 			dx2 *= 2;
 			dz2 *= 2;

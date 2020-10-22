@@ -12,7 +12,7 @@ namespace RimWorld
 
 		public override string PostProcessDescription(Pawn p, string description)
 		{
-			return description.Formatted(UnmetRequirements(p).ToLineList("- "), p.royalty.HighestTitleWithThroneRoomRequirements().def.GetLabelCapFor(p).Named("TITLE"));
+			return description.Formatted(UnmetRequirements(p).ToLineList("- "), p.royalty.HighestTitleWithThroneRoomRequirements().Named("TITLE"));
 		}
 	}
 }

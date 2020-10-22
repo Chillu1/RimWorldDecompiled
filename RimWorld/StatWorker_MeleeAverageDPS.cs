@@ -18,7 +18,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			GetVerbsAndTools(thingDef, out List<VerbProperties> verbs, out List<Tool> tools);
+			GetVerbsAndTools(thingDef, out var verbs, out var tools);
 			if (!tools.NullOrEmpty())
 			{
 				return true;
@@ -43,7 +43,7 @@ namespace RimWorld
 			{
 				return 0f;
 			}
-			GetVerbsAndTools(thingDef, out List<VerbProperties> verbs, out List<Tool> tools);
+			GetVerbsAndTools(thingDef, out var verbs, out var tools);
 			if (req.Thing != null)
 			{
 				Pawn attacker = GetCurrentWeaponUser(req.Thing);
@@ -79,7 +79,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			GetVerbsAndTools(thingDef, out List<VerbProperties> verbs, out List<Tool> tools);
+			GetVerbsAndTools(thingDef, out var verbs, out var tools);
 			Pawn currentWeaponUser = GetCurrentWeaponUser(req.Thing);
 			IEnumerable<VerbUtility.VerbPropertiesWithSource> enumerable = from x in VerbUtility.GetAllVerbProperties(verbs, tools)
 				where x.verbProps.IsMeleeAttack

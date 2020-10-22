@@ -41,7 +41,7 @@ namespace RimWorld.QuestGen
 			}
 			QuestPart_PassActivable questPart_PassActivable = new QuestPart_PassActivable();
 			QuestGen.quest.AddPart(questPart_PassActivable);
-			questPart_PassActivable.inSignalEnable = (QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? slate.Get<string>("inSignal"));
+			questPart_PassActivable.inSignalEnable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? slate.Get<string>("inSignal");
 			questPart_PassActivable.inSignalDisable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalDisable.GetValue(slate));
 			questPart_PassActivable.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate));
 			if (node != null)
@@ -56,7 +56,7 @@ namespace RimWorld.QuestGen
 					questPart_PassActivable.outSignalsCompleted.Add(QuestGenUtility.HardcodedSignalWithQuestID(item));
 				}
 			}
-			questPart_PassActivable.signalListenMode = (signalListenMode.GetValue(slate) ?? QuestPart.SignalListenMode.OngoingOnly);
+			questPart_PassActivable.signalListenMode = signalListenMode.GetValue(slate) ?? QuestPart.SignalListenMode.OngoingOnly;
 		}
 	}
 }

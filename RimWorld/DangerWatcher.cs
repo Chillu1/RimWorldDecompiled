@@ -35,12 +35,12 @@ namespace RimWorld
 			float num = map.attackTargetsCache.TargetsHostileToColony.Where((IAttackTarget x) => AffectsStoryDanger(x)).Sum(delegate(IAttackTarget t)
 			{
 				Pawn pawn;
-				if ((pawn = (t as Pawn)) != null)
+				if ((pawn = t as Pawn) != null)
 				{
 					return pawn.kindDef.combatPower;
 				}
 				Building_TurretGun building_TurretGun;
-				return ((building_TurretGun = (t as Building_TurretGun)) != null && building_TurretGun.def.building.IsMortar && !building_TurretGun.IsMannable) ? building_TurretGun.def.building.combatPower : 0f;
+				return ((building_TurretGun = t as Building_TurretGun) != null && building_TurretGun.def.building.IsMortar && !building_TurretGun.IsMannable) ? building_TurretGun.def.building.combatPower : 0f;
 			});
 			if (num == 0f)
 			{

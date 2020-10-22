@@ -35,14 +35,14 @@ namespace RimWorld
 
 		public override void Generate(Map map, GenStepParams parms)
 		{
-			if (!SiteGenStepUtility.TryFindRootToSpawnAroundRectOfInterest(out CellRect rectToDefend, out IntVec3 singleCellToSpawnNear, map))
+			if (!SiteGenStepUtility.TryFindRootToSpawnAroundRectOfInterest(out var rectToDefend, out var singleCellToSpawnNear, map))
 			{
 				return;
 			}
 			List<Pawn> list = new List<Pawn>();
 			foreach (Pawn item in GeneratePawns(parms, map))
 			{
-				if (!SiteGenStepUtility.TryFindSpawnCellAroundOrNear(rectToDefend, singleCellToSpawnNear, map, out IntVec3 spawnCell))
+				if (!SiteGenStepUtility.TryFindSpawnCellAroundOrNear(rectToDefend, singleCellToSpawnNear, map, out var spawnCell))
 				{
 					Find.WorldPawns.PassToWorld(item);
 					break;
@@ -69,7 +69,7 @@ namespace RimWorld
 
 		private IEnumerable<Pawn> GeneratePawns(GenStepParams parms, Map map)
 		{
-			float points = (parms.sitePart != null) ? parms.sitePart.parms.threatPoints : defaultPointsRange.RandomInRange;
+			float points = ((parms.sitePart != null) ? parms.sitePart.parms.threatPoints : defaultPointsRange.RandomInRange);
 			PawnGroupMakerParms pawnGroupMakerParms = new PawnGroupMakerParms();
 			pawnGroupMakerParms.groupKind = PawnGroupKindDefOf.Combat;
 			pawnGroupMakerParms.tile = map.Tile;

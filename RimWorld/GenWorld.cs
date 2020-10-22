@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -59,7 +59,7 @@ namespace RimWorld
 			}
 			Ray ray = worldCamera.ScreenPointToRay(clickPos * Prefs.UIScale);
 			int worldLayerMask = WorldCameraManager.WorldLayerMask;
-			if (Physics.Raycast(ray, out RaycastHit hitInfo, 1500f, worldLayerMask))
+			if (Physics.Raycast(ray, out var hitInfo, 1500f, worldLayerMask))
 			{
 				return Find.World.renderer.GetTileIDFromRayHit(hitInfo);
 			}

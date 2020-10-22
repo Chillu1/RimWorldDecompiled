@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -201,6 +201,7 @@ namespace Verse
 					effecter2.Trigger(new TargetInfo(c, map), new TargetInfo(c, map));
 					effecter2.Cleanup();
 				}
+				ThingUtility.CheckAutoRebuildTerrainOnDestroyed(terrainDef, c, map);
 			}
 		}
 
@@ -298,7 +299,7 @@ namespace Verse
 
 		private Color CellBoolDrawerGetExtraColorInt(int index)
 		{
-			TryGetAffordanceDefToDraw(TerrainAt(index), out TerrainAffordanceDef affordance);
+			TryGetAffordanceDefToDraw(TerrainAt(index), out var affordance);
 			return affordance?.affordanceOverlayColor ?? NoAffordanceColor;
 		}
 	}

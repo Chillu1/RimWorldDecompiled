@@ -28,7 +28,7 @@ namespace RimWorld.BaseGen
 			List<RuleDef> allDefsListForReading = DefDatabase<RuleDef>.AllDefsListForReading;
 			for (int i = 0; i < allDefsListForReading.Count; i++)
 			{
-				if (!rulesBySymbol.TryGetValue(allDefsListForReading[i].symbol, out List<RuleDef> value))
+				if (!rulesBySymbol.TryGetValue(allDefsListForReading[i].symbol, out var value))
 				{
 					value = new List<RuleDef>();
 					rulesBySymbol.Add(allDefsListForReading[i].symbol, value);
@@ -46,6 +46,7 @@ namespace RimWorld.BaseGen
 			}
 			working = true;
 			currentSymbolPath = "";
+			globalSettings.ClearResult();
 			try
 			{
 				if (symbolStack.Empty)
@@ -60,35 +61,30 @@ namespace RimWorld.BaseGen
 				}
 				int num = symbolStack.Count - 1;
 				int num2 = 0;
-				while (true)
+				while (!symbolStack.Empty)
 				{
-					if (!symbolStack.Empty)
+					num2++;
+					if (num2 > 100000)
 					{
-						num2++;
-						if (num2 > 100000)
-						{
-							break;
-						}
-						SymbolStack.Element toResolve = symbolStack.Pop();
-						currentSymbolPath = toResolve.symbolPath;
-						if (symbolStack.Count == num)
-						{
-							globalSettings.mainRect = toResolve.resolveParams.rect;
-							num--;
-						}
-						try
-						{
-							Resolve(toResolve);
-						}
-						catch (Exception ex)
-						{
-							Log.Error(string.Concat("Error while resolving symbol \"", toResolve.symbol, "\" with params=", toResolve.resolveParams, "\n\nException: ", ex));
-						}
-						continue;
+						Log.Error("Error in BaseGen: Too many iterations. Infinite loop?");
+						break;
 					}
-					return;
+					SymbolStack.Element toResolve = symbolStack.Pop();
+					currentSymbolPath = toResolve.symbolPath;
+					if (symbolStack.Count == num)
+					{
+						globalSettings.mainRect = toResolve.resolveParams.rect;
+						num--;
+					}
+					try
+					{
+						Resolve(toResolve);
+					}
+					catch (Exception ex)
+					{
+						Log.Error(string.Concat("Error while resolving symbol \"", toResolve.symbol, "\" with params=", toResolve.resolveParams, "\n\nException: ", ex));
+					}
 				}
-				Log.Error("Error in BaseGen: Too many iterations. Infinite loop?");
 			}
 			catch (Exception arg)
 			{
@@ -96,6 +92,7 @@ namespace RimWorld.BaseGen
 			}
 			finally
 			{
+				globalSettings.landingPadsGenerated = globalSettings.basePart_landingPadsResolved;
 				working = false;
 				symbolStack.Clear();
 				globalSettings.Clear();
@@ -107,7 +104,7 @@ namespace RimWorld.BaseGen
 			string symbol = toResolve.symbol;
 			ResolveParams resolveParams = toResolve.resolveParams;
 			tmpResolvers.Clear();
-			if (rulesBySymbol.TryGetValue(symbol, out List<RuleDef> value))
+			if (rulesBySymbol.TryGetValue(symbol, out var value))
 			{
 				for (int i = 0; i < value.Count; i++)
 				{

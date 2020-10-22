@@ -31,7 +31,13 @@ namespace RimWorld
 
 		public static JobDef UseVerbOnThing;
 
+		public static JobDef UseVerbOnThingStatic;
+
+		public static JobDef CastJump;
+
 		public static JobDef CastAbilityOnThing;
+
+		public static JobDef CastAbilityOnWorldTile;
 
 		public static JobDef TakeInventory;
 
@@ -147,6 +153,8 @@ namespace RimWorld
 
 		public static JobDef Steal;
 
+		public static JobDef Reload;
+
 		public static JobDef Refuel;
 
 		public static JobDef RefuelAtomic;
@@ -254,6 +262,9 @@ namespace RimWorld
 
 		[MayRequireRoyalty]
 		public static JobDef LinkPsylinkable;
+
+		[MayRequireRoyalty]
+		public static JobDef BestowingCeremony;
 
 		static JobDefOf()
 		{

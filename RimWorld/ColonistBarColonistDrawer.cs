@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
@@ -61,7 +61,7 @@ namespace RimWorld
 			{
 				alpha *= 0.5f;
 			}
-			Color color2 = GUI.color = new Color(1f, 1f, 1f, alpha);
+			Color color2 = (GUI.color = new Color(1f, 1f, 1f, alpha));
 			GUI.DrawTexture(rect, ColonistBar.BGTex);
 			if (colonist.needs != null && colonist.needs.mood != null)
 			{
@@ -73,7 +73,7 @@ namespace RimWorld
 			}
 			if (highlight)
 			{
-				int thickness = (rect.width <= 22f) ? 2 : 3;
+				int thickness = ((rect.width <= 22f) ? 2 : 3);
 				GUI.color = Color.white;
 				Widgets.DrawBox(rect, thickness);
 				GUI.color = color2;
@@ -125,7 +125,7 @@ namespace RimWorld
 		{
 			Rect position = GroupFrameRect(group);
 			Map map = ColonistBar.Entries.Find((ColonistBar.Entry x) => x.group == group).map;
-			float num = (map == null) ? ((!WorldRendererUtility.WorldRenderedNow) ? 0.75f : 1f) : ((map == Find.CurrentMap && !WorldRendererUtility.WorldRenderedNow) ? 1f : 0.75f);
+			float num = ((map == null) ? ((!WorldRendererUtility.WorldRenderedNow) ? 0.75f : 1f) : ((map == Find.CurrentMap && !WorldRendererUtility.WorldRenderedNow) ? 1f : 0.75f));
 			Widgets.DrawRectFast(position, new Color(0.5f, 0.5f, 0.5f, 0.4f * num));
 		}
 
@@ -294,14 +294,14 @@ namespace RimWorld
 				obj = colonist.Corpse;
 			}
 			float num = 0.4f * ColonistBar.Scale;
-			SelectionDrawerUtility.CalculateSelectionBracketPositionsUI<object>(textureSize: new Vector2((float)SelectionDrawerUtility.SelectedTexGUI.width * num, (float)SelectionDrawerUtility.SelectedTexGUI.height * num), bracketLocs: bracketLocs, obj: (object)obj, rect: rect, selectTimes: SelectionDrawer.SelectTimes, jumpDistanceFactor: 20f * ColonistBar.Scale);
+			SelectionDrawerUtility.CalculateSelectionBracketPositionsUI(textureSize: new Vector2((float)SelectionDrawerUtility.SelectedTexGUI.width * num, (float)SelectionDrawerUtility.SelectedTexGUI.height * num), bracketLocs: bracketLocs, obj: obj, rect: rect, selectTimes: SelectionDrawer.SelectTimes, jumpDistanceFactor: 20f * ColonistBar.Scale);
 			DrawSelectionOverlayOnGUI(bracketLocs, num);
 		}
 
 		private void DrawCaravanSelectionOverlayOnGUI(Caravan caravan, Rect rect)
 		{
 			float num = 0.4f * ColonistBar.Scale;
-			SelectionDrawerUtility.CalculateSelectionBracketPositionsUI<WorldObject>(textureSize: new Vector2((float)SelectionDrawerUtility.SelectedTexGUI.width * num, (float)SelectionDrawerUtility.SelectedTexGUI.height * num), bracketLocs: bracketLocs, obj: (WorldObject)caravan, rect: rect, selectTimes: WorldSelectionDrawer.SelectTimes, jumpDistanceFactor: 20f * ColonistBar.Scale);
+			SelectionDrawerUtility.CalculateSelectionBracketPositionsUI(textureSize: new Vector2((float)SelectionDrawerUtility.SelectedTexGUI.width * num, (float)SelectionDrawerUtility.SelectedTexGUI.height * num), bracketLocs: bracketLocs, obj: caravan, rect: rect, selectTimes: WorldSelectionDrawer.SelectTimes, jumpDistanceFactor: 20f * ColonistBar.Scale);
 			DrawSelectionOverlayOnGUI(bracketLocs, num);
 		}
 

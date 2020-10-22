@@ -121,7 +121,7 @@ namespace RimWorld
 			int num2 = 0;
 			for (int i = 0; i < def.columns.Count; i++)
 			{
-				int num3 = (i != def.columns.Count - 1) ? ((int)cachedColumnWidths[i]) : ((int)(num - (float)num2));
+				int num3 = ((i != def.columns.Count - 1) ? ((int)cachedColumnWidths[i]) : ((int)(num - (float)num2)));
 				Rect rect = new Rect((int)position.x + num2, (int)position.y, num3, (int)cachedHeaderHeight);
 				def.columns[i].Worker.DoHeader(rect, this);
 				num2 += num3;
@@ -150,7 +150,7 @@ namespace RimWorld
 					}
 					for (int k = 0; k < def.columns.Count; k++)
 					{
-						int num5 = (k != def.columns.Count - 1) ? ((int)cachedColumnWidths[k]) : ((int)(num - (float)num2));
+						int num5 = ((k != def.columns.Count - 1) ? ((int)cachedColumnWidths[k]) : ((int)(num - (float)num2)));
 						Rect rect3 = new Rect(num2, num4, num5, (int)cachedRowHeights[j]);
 						def.columns[k].Worker.DoCell(rect3, cachedPawns[j], this);
 						num2 += num5;
@@ -259,7 +259,7 @@ namespace RimWorld
 				SubtractProportionally(minWidthsSum - num, minWidthsSum);
 				return;
 			}
-			RecacheColumnWidths_DistributeUntilOptimal(num, ref minWidthsSum, out bool noMoreFreeSpace);
+			RecacheColumnWidths_DistributeUntilOptimal(num, ref minWidthsSum, out var noMoreFreeSpace);
 			if (!noMoreFreeSpace)
 			{
 				RecacheColumnWidths_DistributeAboveOptimal(num, ref minWidthsSum);
@@ -362,14 +362,13 @@ namespace RimWorld
 				columnAtMaxWidth.Add(cachedColumnWidths[i] >= GetMaxWidth(def.columns[i]));
 			}
 			int num = 0;
-			bool flag;
-			do
+			while (true)
 			{
 				num++;
 				if (num >= 10000)
 				{
 					Log.Error("Too many iterations.");
-					return;
+					break;
 				}
 				float num2 = 0f;
 				for (int j = 0; j < def.columns.Count; j++)
@@ -380,7 +379,7 @@ namespace RimWorld
 					}
 				}
 				float num3 = totalAvailableSpaceForColumns - usedWidth;
-				flag = false;
+				bool flag = false;
 				for (int k = 0; k < def.columns.Count; k++)
 				{
 					if (!columnAtMaxWidth[k])
@@ -403,13 +402,17 @@ namespace RimWorld
 						}
 					}
 				}
-				if (usedWidth >= totalAvailableSpaceForColumns - 0.1f)
+				if (!(usedWidth >= totalAvailableSpaceForColumns - 0.1f))
 				{
-					return;
+					if (!flag)
+					{
+						DistributeRemainingWidthProportionallyAboveMax(totalAvailableSpaceForColumns - usedWidth);
+						break;
+					}
+					continue;
 				}
+				break;
 			}
-			while (flag);
-			DistributeRemainingWidthProportionallyAboveMax(totalAvailableSpaceForColumns - usedWidth);
 		}
 
 		private void RecacheRowHeights()

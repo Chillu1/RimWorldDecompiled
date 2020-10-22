@@ -1,7 +1,7 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 using UnityEngine;
 using Verse.AI;
 using Verse.Sound;
@@ -38,6 +38,8 @@ namespace Verse
 
 		public Action castCompleteCallback;
 
+		private Texture2D commandIconCached;
+
 		private static List<IntVec3> tempLeanShootSources = new List<IntVec3>();
 
 		private static List<IntVec3> tempDestList = new List<IntVec3>();
@@ -48,15 +50,21 @@ namespace Verse
 
 		public CompEquippable EquipmentCompSource => DirectOwner as CompEquippable;
 
+		public CompReloadable ReloadableCompSource => DirectOwner as CompReloadable;
+
 		public ThingWithComps EquipmentSource
 		{
 			get
 			{
-				if (EquipmentCompSource == null)
+				if (EquipmentCompSource != null)
 				{
-					return null;
+					return EquipmentCompSource.parent;
 				}
-				return EquipmentCompSource.parent;
+				if (ReloadableCompSource != null)
+				{
+					return ReloadableCompSource.parent;
+				}
+				return null;
 			}
 		}
 
@@ -102,6 +110,8 @@ namespace Verse
 
 		public LocalTargetInfo CurrentTarget => currentTarget;
 
+		public LocalTargetInfo CurrentDestination => currentDestination;
+
 		public virtual TargetingParameters targetParams => verbProps.targetParams;
 
 		public virtual ITargetingSource DestinationSelector => null;
@@ -112,6 +122,14 @@ namespace Verse
 		{
 			get
 			{
+				if (verbProps.commandIcon != null)
+				{
+					if (commandIconCached == null)
+					{
+						commandIconCached = ContentFinder<Texture2D>.Get(verbProps.commandIcon);
+					}
+					return commandIconCached;
+				}
 				if (EquipmentSource != null)
 				{
 					return EquipmentSource.def.uiIcon;
@@ -137,7 +155,7 @@ namespace Verse
 					return null;
 				}
 				Stance_Warmup stance_Warmup;
-				if ((stance_Warmup = (CasterPawn.stances.curStance as Stance_Warmup)) == null || stance_Warmup.verb != this)
+				if ((stance_Warmup = CasterPawn.stances.curStance as Stance_Warmup) == null || stance_Warmup.verb != this)
 				{
 					return null;
 				}
@@ -145,7 +163,23 @@ namespace Verse
 			}
 		}
 
+		public int WarmupTicksLeft
+		{
+			get
+			{
+				if (WarmupStance == null)
+				{
+					return 0;
+				}
+				return WarmupStance.ticksLeft;
+			}
+		}
+
+		public float WarmupProgress => 1f - WarmupTicksLeft.TicksToSeconds() / verbProps.warmupTime;
+
 		public virtual string ReportLabel => verbProps.label;
+
+		protected virtual float EffectiveRange => verbProps.range;
 
 		public bool IsStillUsableBy(Pawn pawn)
 		{
@@ -201,7 +235,7 @@ namespace Verse
 			return TryStartCastOn(castTarg, LocalTargetInfo.Invalid, surpriseAttack, canHitNonTargetPawns);
 		}
 
-		public bool TryStartCastOn(LocalTargetInfo castTarg, LocalTargetInfo destTarg, bool surpriseAttack = false, bool canHitNonTargetPawns = true)
+		public virtual bool TryStartCastOn(LocalTargetInfo castTarg, LocalTargetInfo destTarg, bool surpriseAttack = false, bool canHitNonTargetPawns = true)
 		{
 			if (caster == null)
 			{
@@ -226,7 +260,7 @@ namespace Verse
 			currentDestination = destTarg;
 			if (CasterIsPawn && verbProps.warmupTime > 0f)
 			{
-				if (!TryFindShootLineFromTo(caster.Position, castTarg, out ShootLine resultingLine))
+				if (!TryFindShootLineFromTo(caster.Position, castTarg, out var resultingLine))
 				{
 					return false;
 				}
@@ -285,6 +319,11 @@ namespace Verse
 					return false;
 				}
 			}
+			CompReloadable compReloadable = EquipmentSource?.GetComp<CompReloadable>();
+			if (compReloadable != null && !compReloadable.CanBeUsed)
+			{
+				return false;
+			}
 			return true;
 		}
 
@@ -333,6 +372,7 @@ namespace Verse
 					}
 					if (!CasterPawn.Spawned)
 					{
+						Reset();
 						return;
 					}
 				}
@@ -349,14 +389,14 @@ namespace Verse
 			if (burstShotsLeft > 0)
 			{
 				ticksToNextBurstShot = verbProps.ticksBetweenBurstShots;
-				if (CasterIsPawn)
+				if (CasterIsPawn && !verbProps.nonInterruptingSelfCast)
 				{
 					CasterPawn.stances.SetStance(new Stance_Cooldown(verbProps.ticksBetweenBurstShots + 1, currentTarget, this));
 				}
 				return;
 			}
 			state = VerbState.Idle;
-			if (CasterIsPawn)
+			if (CasterIsPawn && !verbProps.nonInterruptingSelfCast)
 			{
 				CasterPawn.stances.SetStance(new Stance_Cooldown(verbProps.AdjustedCooldownTicks(this, CasterPawn), currentTarget, this));
 			}
@@ -480,20 +520,29 @@ namespace Verse
 
 		public virtual bool ValidateTarget(LocalTargetInfo target)
 		{
+			Pawn p;
+			if (CasterIsPawn && (p = target.Thing as Pawn) != null && (p.InSameExtraFaction(caster as Pawn, ExtraFactionType.HomeFaction) || p.InSameExtraFaction(caster as Pawn, ExtraFactionType.MiniFaction)))
+			{
+				return false;
+			}
 			return true;
 		}
 
 		public virtual void DrawHighlight(LocalTargetInfo target)
 		{
 			verbProps.DrawRadiusRing(caster.Position);
-			if (!target.IsValid)
+			if (target.IsValid)
 			{
-				return;
+				GenDraw.DrawTargetHighlight(target);
+				DrawHighlightFieldRadiusAroundTarget(target);
 			}
-			GenDraw.DrawTargetHighlight(target);
+		}
+
+		protected void DrawHighlightFieldRadiusAroundTarget(LocalTargetInfo target)
+		{
 			bool needLOSToCenter;
 			float num = HighlightFieldRadiusAroundTarget(out needLOSToCenter);
-			if (!(num > 0.2f) || !TryFindShootLineFromTo(caster.Position, target, out ShootLine resultingLine))
+			if (!(num > 0.2f) || !TryFindShootLineFromTo(caster.Position, target, out var resultingLine))
 			{
 				return;
 			}
@@ -509,7 +558,7 @@ namespace Verse
 
 		public virtual void OnGUI(LocalTargetInfo target)
 		{
-			Texture2D icon = (!target.IsValid) ? TexCommand.CannotShoot : ((!(UIIcon != BaseContent.BadTex)) ? TexCommand.Attack : UIIcon);
+			Texture2D icon = ((!target.IsValid) ? TexCommand.CannotShoot : ((!(UIIcon != BaseContent.BadTex)) ? TexCommand.Attack : UIIcon));
 			GenUI.DrawMouseAttachment(icon);
 		}
 
@@ -550,15 +599,15 @@ namespace Verse
 				resultingLine = default(ShootLine);
 				return false;
 			}
-			if (verbProps.IsMeleeAttack || verbProps.range <= 1.42f)
+			if (verbProps.IsMeleeAttack || EffectiveRange <= 1.42f)
 			{
 				resultingLine = new ShootLine(root, targ.Cell);
 				return ReachabilityImmediate.CanReachImmediate(root, targ, caster.Map, PathEndMode.Touch, null);
 			}
-			CellRect cellRect = targ.HasThing ? targ.Thing.OccupiedRect() : CellRect.SingleCell(targ.Cell);
+			CellRect cellRect = (targ.HasThing ? targ.Thing.OccupiedRect() : CellRect.SingleCell(targ.Cell));
 			float num = verbProps.EffectiveMinRange(targ, caster);
 			float num2 = cellRect.ClosestDistSquaredTo(root);
-			if (num2 > verbProps.range * verbProps.range || num2 < num * num)
+			if (num2 > EffectiveRange * EffectiveRange || num2 < num * num)
 			{
 				resultingLine = new ShootLine(root, targ.Cell);
 				return false;
@@ -655,7 +704,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			string text = (verbProps == null) ? "null" : ((!verbProps.label.NullOrEmpty()) ? verbProps.label : ((HediffCompSource != null) ? HediffCompSource.Def.label : ((EquipmentSource != null) ? EquipmentSource.def.label : ((verbProps.AdjustedLinkedBodyPartsGroup(tool) == null) ? "unknown" : verbProps.AdjustedLinkedBodyPartsGroup(tool).defName))));
+			string text = ((verbProps == null) ? "null" : ((!verbProps.label.NullOrEmpty()) ? verbProps.label : ((HediffCompSource != null) ? HediffCompSource.Def.label : ((EquipmentSource != null) ? EquipmentSource.def.label : ((verbProps.AdjustedLinkedBodyPartsGroup(tool) == null) ? "unknown" : verbProps.AdjustedLinkedBodyPartsGroup(tool).defName)))));
 			if (tool != null)
 			{
 				text = text + "/" + loadID;

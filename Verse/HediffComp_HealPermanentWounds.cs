@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Linq;
+using RimWorld;
 
 namespace Verse
 {
@@ -32,7 +32,7 @@ namespace Verse
 
 		private void TryHealRandomPermanentWound()
 		{
-			if (base.Pawn.health.hediffSet.hediffs.Where((Hediff hd) => hd.IsPermanent() || hd.def.chronic).TryRandomElement(out Hediff result))
+			if (base.Pawn.health.hediffSet.hediffs.Where((Hediff hd) => hd.IsPermanent() || hd.def.chronic).TryRandomElement(out var result))
 			{
 				HealthUtility.CureHediff(result);
 				if (PawnUtility.ShouldSendNotificationAbout(base.Pawn))

@@ -7,8 +7,6 @@ namespace RimWorld
 	{
 		private Map map;
 
-		private List<Thing> artificialBuildings = new List<Thing>();
-
 		private Dictionary<CellWithRadius, List<Thing>> artificialBuildingsPerCell = new Dictionary<CellWithRadius, List<Thing>>();
 
 		public ListerArtificialBuildingsForMeditation(Map map)
@@ -20,7 +18,6 @@ namespace RimWorld
 		{
 			if (MeditationUtility.CountsAsArtificialBuilding(b))
 			{
-				artificialBuildings.Add(b);
 				artificialBuildingsPerCell.Clear();
 			}
 		}
@@ -29,7 +26,6 @@ namespace RimWorld
 		{
 			if (MeditationUtility.CountsAsArtificialBuilding(b))
 			{
-				artificialBuildings.Remove(b);
 				artificialBuildingsPerCell.Clear();
 			}
 		}
@@ -37,7 +33,7 @@ namespace RimWorld
 		public List<Thing> GetForCell(IntVec3 cell, float radius)
 		{
 			CellWithRadius key = new CellWithRadius(cell, radius);
-			if (!artificialBuildingsPerCell.TryGetValue(key, out List<Thing> value))
+			if (!artificialBuildingsPerCell.TryGetValue(key, out var value))
 			{
 				value = new List<Thing>();
 				foreach (Thing item in GenRadial.RadialDistinctThingsAround(cell, map, radius, useCenter: false))

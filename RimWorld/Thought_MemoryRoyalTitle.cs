@@ -6,7 +6,7 @@ namespace RimWorld
 	{
 		public RoyalTitleDef titleDef;
 
-		public override string LabelCap => base.CurStage.label.Formatted(titleDef.GetLabelCapFor(pawn).Named("TITLE"));
+		public override string LabelCap => base.CurStage.label.Formatted(titleDef.GetLabelCapFor(pawn).Named("TITLE"), pawn.Named("PAWN"));
 
 		public override string Description => base.CurStage.description.Formatted(titleDef.GetLabelCapFor(pawn).Named("TITLE"), pawn.Named("PAWN"));
 

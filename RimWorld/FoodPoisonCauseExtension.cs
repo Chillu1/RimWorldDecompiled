@@ -6,21 +6,15 @@ namespace RimWorld
 	{
 		public static string ToStringHuman(this FoodPoisonCause cause)
 		{
-			switch (cause)
+			return cause switch
 			{
-			case FoodPoisonCause.Unknown:
-				return "UnknownLower".Translate().CapitalizeFirst();
-			case FoodPoisonCause.IncompetentCook:
-				return "FoodPoisonCause_IncompetentCook".Translate();
-			case FoodPoisonCause.FilthyKitchen:
-				return "FoodPoisonCause_FilthyKitchen".Translate();
-			case FoodPoisonCause.Rotten:
-				return "FoodPoisonCause_Rotten".Translate();
-			case FoodPoisonCause.DangerousFoodType:
-				return "FoodPoisonCause_DangerousFoodType".Translate();
-			default:
-				return cause.ToString();
-			}
+				FoodPoisonCause.Unknown => "UnknownLower".Translate().CapitalizeFirst(), 
+				FoodPoisonCause.IncompetentCook => "FoodPoisonCause_IncompetentCook".Translate(), 
+				FoodPoisonCause.FilthyKitchen => "FoodPoisonCause_FilthyKitchen".Translate(), 
+				FoodPoisonCause.Rotten => "FoodPoisonCause_Rotten".Translate(), 
+				FoodPoisonCause.DangerousFoodType => "FoodPoisonCause_DangerousFoodType".Translate(), 
+				_ => cause.ToString(), 
+			};
 		}
 	}
 }

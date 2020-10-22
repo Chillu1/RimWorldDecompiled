@@ -13,14 +13,14 @@ namespace RimWorld
 			get
 			{
 				needingColonistsResult.Clear();
-				foreach (Pawn item in PawnsFinder.AllMaps_FreeColonistsSpawned)
+				foreach (Pawn allMaps_FreeColonist in PawnsFinder.AllMaps_FreeColonists)
 				{
-					if (item.health.HasHediffsNeedingTendByPlayer(forAlert: true))
+					if ((allMaps_FreeColonist.Spawned || allMaps_FreeColonist.BrieflyDespawned()) && allMaps_FreeColonist.health.HasHediffsNeedingTendByPlayer(forAlert: true))
 					{
-						Building_Bed building_Bed = item.CurrentBed();
-						if ((building_Bed == null || !building_Bed.Medical) && !Alert_ColonistNeedsRescuing.NeedsRescue(item))
+						Building_Bed building_Bed = allMaps_FreeColonist.CurrentBed();
+						if ((building_Bed == null || !building_Bed.Medical) && !Alert_ColonistNeedsRescuing.NeedsRescue(allMaps_FreeColonist))
 						{
-							needingColonistsResult.Add(item);
+							needingColonistsResult.Add(allMaps_FreeColonist);
 						}
 					}
 				}

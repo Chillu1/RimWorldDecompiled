@@ -27,7 +27,7 @@ namespace RimWorld
 			else
 			{
 				CalculateColonistsInGroup();
-				scale = FindBestScale(out bool onlyOneRow, out int maxPerGlobalRow);
+				scale = FindBestScale(out var onlyOneRow, out var maxPerGlobalRow);
 				CalculateDrawLocs(outDrawLocs, scale, onlyOneRow, maxPerGlobalRow);
 			}
 		}

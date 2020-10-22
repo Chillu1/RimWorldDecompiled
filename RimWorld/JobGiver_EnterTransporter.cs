@@ -11,26 +11,37 @@ namespace RimWorld
 		protected override Job TryGiveJob(Pawn pawn)
 		{
 			int transportersGroup = pawn.mindState.duty.transportersGroup;
-			List<Pawn> allPawnsSpawned = pawn.Map.mapPawns.AllPawnsSpawned;
-			for (int i = 0; i < allPawnsSpawned.Count; i++)
+			if (transportersGroup != -1)
 			{
-				if (allPawnsSpawned[i] != pawn && allPawnsSpawned[i].CurJobDef == JobDefOf.HaulToTransporter)
+				List<Pawn> allPawnsSpawned = pawn.Map.mapPawns.AllPawnsSpawned;
+				for (int i = 0; i < allPawnsSpawned.Count; i++)
 				{
-					CompTransporter transporter = ((JobDriver_HaulToTransporter)allPawnsSpawned[i].jobs.curDriver).Transporter;
-					if (transporter != null && transporter.groupID == transportersGroup)
+					if (allPawnsSpawned[i] != pawn && allPawnsSpawned[i].CurJobDef == JobDefOf.HaulToTransporter)
 					{
-						return null;
+						CompTransporter transporter = ((JobDriver_HaulToTransporter)allPawnsSpawned[i].jobs.curDriver).Transporter;
+						if (transporter != null && transporter.groupID == transportersGroup)
+						{
+							return null;
+						}
 					}
 				}
+				TransporterUtility.GetTransportersInGroup(transportersGroup, pawn.Map, tmpTransporters);
+				CompTransporter compTransporter = FindMyTransporter(tmpTransporters, pawn);
+				tmpTransporters.Clear();
+				if (compTransporter == null || !pawn.CanReach(compTransporter.parent, PathEndMode.Touch, Danger.Deadly))
+				{
+					return null;
+				}
+				return JobMaker.MakeJob(JobDefOf.EnterTransporter, compTransporter.parent);
 			}
-			TransporterUtility.GetTransportersInGroup(transportersGroup, pawn.Map, tmpTransporters);
-			CompTransporter compTransporter = FindMyTransporter(tmpTransporters, pawn);
-			tmpTransporters.Clear();
-			if (compTransporter == null || !pawn.CanReach(compTransporter.parent, PathEndMode.Touch, Danger.Deadly))
+			Thing thing = pawn.mindState.duty.focus.Thing;
+			if (thing == null || !pawn.CanReach(thing, PathEndMode.Touch, Danger.Deadly))
 			{
 				return null;
 			}
-			return JobMaker.MakeJob(JobDefOf.EnterTransporter, compTransporter.parent);
+			Job job = JobMaker.MakeJob(JobDefOf.EnterTransporter, pawn.mindState.duty.focus.Thing);
+			job.locomotionUrgency = PawnUtility.ResolveLocomotion(pawn, LocomotionUrgency.Walk);
+			return job;
 		}
 
 		public static CompTransporter FindMyTransporter(List<CompTransporter> transporters, Pawn me)

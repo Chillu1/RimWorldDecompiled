@@ -137,7 +137,7 @@ namespace RimWorld.Planet
 			{
 				flag3 = false;
 				int num5 = ticksAbs + (int)(num3 * 60000f);
-				int num6 = (path != null) ? CaravanArrivalTimeEstimator.TileIllBeInAt(num5, tmpTicksToArrive, ticksAbs) : tile;
+				int num6 = ((path != null) ? CaravanArrivalTimeEstimator.TileIllBeInAt(num5, tmpTicksToArrive, ticksAbs) : tile);
 				bool flag4 = CaravanNightRestUtility.WouldBeRestingAt(num6, num5);
 				float progressPerTick = ForagedFoodPerDayCalculator.GetProgressPerTick(assumeCaravanMoving && !flag4, flag4);
 				float num7 = 1f / progressPerTick;
@@ -381,7 +381,7 @@ namespace RimWorld.Planet
 			return result;
 		}
 
-		private static bool AnyFoodEatingPawn(List<Pawn> pawns)
+		public static bool AnyFoodEatingPawn(List<Pawn> pawns)
 		{
 			int i = 0;
 			for (int count = pawns.Count; i < count; i++)

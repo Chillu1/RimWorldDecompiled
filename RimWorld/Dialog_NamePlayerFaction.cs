@@ -4,7 +4,7 @@ namespace RimWorld
 	{
 		public Dialog_NamePlayerFaction()
 		{
-			nameGenerator = (() => NameGenerator.GenerateName(Faction.OfPlayer.def.factionNameMaker, IsValidName));
+			nameGenerator = () => NameGenerator.GenerateName(Faction.OfPlayer.def.factionNameMaker, IsValidName);
 			curName = nameGenerator();
 			nameMessageKey = "NamePlayerFactionMessage";
 			gainedNameMessageKey = "PlayerFactionGainsName";

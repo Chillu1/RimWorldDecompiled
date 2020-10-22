@@ -105,7 +105,7 @@ namespace Ionic.Crc
 				throw new ArgumentNullException("stream");
 			}
 			_innerStream = stream;
-			_crc32 = (crc32 ?? new CRC32());
+			_crc32 = crc32 ?? new CRC32();
 			_lengthLimit = length;
 			_leaveOpen = leaveOpen;
 		}

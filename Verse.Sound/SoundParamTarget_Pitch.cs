@@ -11,7 +11,7 @@ namespace Verse.Sound
 
 		public override void SetOn(Sample sample, float value)
 		{
-			float num = (pitchType != 0) ? ((float)Math.Pow(1.05946, value)) : value;
+			float num = ((pitchType != 0) ? ((float)Math.Pow(1.05946, value)) : value);
 			sample.source.pitch = AudioSourceUtility.GetSanitizedPitch(sample.SanitizedPitch * num, "SoundParamTarget_Pitch");
 		}
 	}

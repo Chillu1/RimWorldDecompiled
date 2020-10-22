@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using Verse;
+using Verse.Sound;
 
 namespace RimWorld
 {
@@ -22,6 +23,8 @@ namespace RimWorld
 		private List<IntVec3> windPathBlockedCells = new List<IntVec3>();
 
 		private float spinPosition;
+
+		private Sustainer sustainer;
 
 		private const float MaxUsableWindIntensity = 1.5f;
 
@@ -61,6 +64,15 @@ namespace RimWorld
 			BarSize = new Vector2((float)parent.def.size.z - 0.95f, 0.14f);
 			RecalculateBlockages();
 			spinPosition = Rand.Range(0f, 15f);
+		}
+
+		public override void PostDeSpawn(Map map)
+		{
+			base.PostDeSpawn(map);
+			if (sustainer != null && !sustainer.Ended)
+			{
+				sustainer.End();
+			}
 		}
 
 		public override void PostExposeData()
@@ -103,6 +115,12 @@ namespace RimWorld
 			{
 				spinPosition += PowerPercent * SpinRateFactor;
 			}
+			if (sustainer == null || sustainer.Ended)
+			{
+				sustainer = SoundDefOf.WindTurbine_Ambience.TrySpawnSustainer(SoundInfo.InMap(parent));
+			}
+			sustainer.Maintain();
+			sustainer.externalParams["PowerOutput"] = PowerPercent;
 		}
 
 		public override void PostDraw()
@@ -123,7 +141,7 @@ namespace RimWorld
 			Vector3 pos = parent.TrueCenter();
 			pos += parent.Rotation.FacingCell.ToVector3() * VerticalBladeOffset;
 			pos += parent.Rotation.RighthandCell.ToVector3() * HorizontalBladeOffset;
-			pos.y += 0.0454545468f;
+			pos.y += 3f / 70f;
 			float num = BladeWidth * Mathf.Sin(spinPosition);
 			if (num < 0f)
 			{
@@ -135,7 +153,7 @@ namespace RimWorld
 			Matrix4x4 matrix = default(Matrix4x4);
 			matrix.SetTRS(pos, parent.Rotation.AsQuat, s);
 			Graphics.DrawMesh(num2 ? MeshPool.plane10 : MeshPool.plane10Flip, matrix, WindTurbineBladesMat, 0);
-			pos.y -= 0.09090909f;
+			pos.y -= 3f / 35f;
 			matrix.SetTRS(pos, parent.Rotation.AsQuat, s);
 			Graphics.DrawMesh(num2 ? MeshPool.plane10Flip : MeshPool.plane10, matrix, WindTurbineBladesMat, 0);
 		}

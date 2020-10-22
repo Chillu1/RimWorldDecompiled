@@ -100,36 +100,18 @@ namespace RimWorld
 
 		public static void KnowledgeDemonstrated(ConceptDef conc, KnowledgeAmount know)
 		{
-			float num;
-			switch (know)
+			float num = know switch
 			{
-			case KnowledgeAmount.FrameDisplayed:
-				num = ((Event.current.type == EventType.Repaint) ? 0.004f : 0f);
-				break;
-			case KnowledgeAmount.FrameInteraction:
-				num = 0.008f;
-				break;
-			case KnowledgeAmount.TinyInteraction:
-				num = 0.03f;
-				break;
-			case KnowledgeAmount.SmallInteraction:
-				num = 0.1f;
-				break;
-			case KnowledgeAmount.SpecificInteraction:
-				num = 0.4f;
-				break;
-			case KnowledgeAmount.Total:
-				num = 1f;
-				break;
-			case KnowledgeAmount.NoteClosed:
-				num = 0.5f;
-				break;
-			case KnowledgeAmount.NoteTaught:
-				num = 1f;
-				break;
-			default:
-				throw new NotImplementedException();
-			}
+				KnowledgeAmount.FrameDisplayed => (Event.current.type == EventType.Repaint) ? 0.004f : 0f, 
+				KnowledgeAmount.FrameInteraction => 0.008f, 
+				KnowledgeAmount.TinyInteraction => 0.03f, 
+				KnowledgeAmount.SmallInteraction => 0.1f, 
+				KnowledgeAmount.SpecificInteraction => 0.4f, 
+				KnowledgeAmount.Total => 1f, 
+				KnowledgeAmount.NoteClosed => 0.5f, 
+				KnowledgeAmount.NoteTaught => 1f, 
+				_ => throw new NotImplementedException(), 
+			};
 			if (!(num <= 0f))
 			{
 				SetKnowledge(conc, GetKnowledge(conc) + num);

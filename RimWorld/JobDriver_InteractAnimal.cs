@@ -109,6 +109,7 @@ namespace RimWorld
 			toil.FailOn(() => !CanInteractNow);
 			toil.defaultCompleteMode = ToilCompleteMode.Delay;
 			toil.defaultDuration = 270;
+			toil.activeSkill = () => SkillDefOf.Animals;
 			return toil;
 		}
 
@@ -150,6 +151,7 @@ namespace RimWorld
 				}
 			};
 			toil.defaultCompleteMode = ToilCompleteMode.Delay;
+			toil.activeSkill = () => SkillDefOf.Animals;
 			return toil;
 		}
 	}

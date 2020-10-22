@@ -83,7 +83,7 @@ namespace RimWorld
 		public static List<ThingDefCountClass> CostListAdjusted(this BuildableDef entDef, ThingDef stuff, bool errorOnNullStuff = true)
 		{
 			CostListPair key = new CostListPair(entDef, stuff);
-			if (!cachedCosts.TryGetValue(key, out List<ThingDefCountClass> value))
+			if (!cachedCosts.TryGetValue(key, out var value))
 			{
 				value = new List<ThingDefCountClass>();
 				int num = 0;

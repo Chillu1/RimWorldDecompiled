@@ -15,8 +15,8 @@ namespace RimWorld.SketchGen
 			CellRect outerRect = parms.rect ?? parms.sketch.OccupiedRect;
 			bool allowWood = parms.allowWood ?? true;
 			ThingDef stuff = GenStuff.RandomStuffInexpensiveFor(parms.wallEdgeThing, null, (ThingDef x) => SketchGenUtility.IsStuffAllowed(x, allowWood, parms.useOnlyStonesAvailableOnMap, allowFlammableWalls: true, parms.wallEdgeThing));
-			Rot4 rot = (parms.wallEdgeThing.size.z > parms.wallEdgeThing.size.x) ? Rot4.North : Rot4.East;
-			Rot4 rot2 = (parms.wallEdgeThing.size.z > parms.wallEdgeThing.size.x) ? Rot4.East : Rot4.North;
+			Rot4 rot = ((parms.wallEdgeThing.size.z > parms.wallEdgeThing.size.x) ? Rot4.North : Rot4.East);
+			Rot4 rot2 = ((parms.wallEdgeThing.size.z > parms.wallEdgeThing.size.x) ? Rot4.East : Rot4.North);
 			CellRect cellRect = GenAdj.OccupiedRect(default(IntVec3), rot, parms.wallEdgeThing.size);
 			CellRect cellRect2 = GenAdj.OccupiedRect(default(IntVec3), rot2, parms.wallEdgeThing.size);
 			bool requireFloor = parms.requireFloor ?? false;

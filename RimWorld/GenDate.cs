@@ -273,7 +273,7 @@ namespace RimWorld
 				{
 					return Mathf.RoundToInt((float)numTicks / 60000f) + (string)"LetterDay".Translate();
 				}
-				string text2 = (!canUseDecimals) ? Mathf.RoundToInt((float)numTicks / 60000f).ToString() : ((float)numTicks / 60000f).ToStringDecimalIfSmall();
+				string text2 = ((!canUseDecimals) ? Mathf.RoundToInt((float)numTicks / 60000f).ToString() : ((float)numTicks / 60000f).ToStringDecimalIfSmall());
 				if (text2 == "1")
 				{
 					return "Period1Day".Translate();
@@ -284,7 +284,7 @@ namespace RimWorld
 			{
 				return Mathf.RoundToInt((float)numTicks / 3600000f) + (string)"LetterYear".Translate();
 			}
-			string text3 = (!canUseDecimals) ? Mathf.RoundToInt((float)numTicks / 3600000f).ToString() : ((float)numTicks / 3600000f).ToStringDecimalIfSmall();
+			string text3 = ((!canUseDecimals) ? Mathf.RoundToInt((float)numTicks / 3600000f).ToString() : ((float)numTicks / 3600000f).ToStringDecimalIfSmall());
 			if (text3 == "1")
 			{
 				return "Period1Year".Translate();
@@ -298,7 +298,7 @@ namespace RimWorld
 			{
 				return "0";
 			}
-			numTicks.TicksToPeriod(out int years, out int quadrums, out int days, out float hoursFloat);
+			numTicks.TicksToPeriod(out var years, out var quadrums, out var days, out var hoursFloat);
 			if (!allowQuadrums)
 			{
 				days += 15 * quadrums;
@@ -306,7 +306,7 @@ namespace RimWorld
 			}
 			if (years > 0)
 			{
-				string text = (years != 1) ? ((string)"PeriodYears".Translate(years)) : ((string)"Period1Year".Translate());
+				string text = ((years != 1) ? ((string)"PeriodYears".Translate(years)) : ((string)"Period1Year".Translate()));
 				if (quadrums > 0)
 				{
 					text += ", ";
@@ -316,7 +316,7 @@ namespace RimWorld
 			}
 			if (quadrums > 0)
 			{
-				string text2 = (quadrums != 1) ? ((string)"PeriodQuadrums".Translate(quadrums)) : ((string)"Period1Quadrum".Translate());
+				string text2 = ((quadrums != 1) ? ((string)"PeriodQuadrums".Translate(quadrums)) : ((string)"Period1Quadrum".Translate()));
 				if (days > 0)
 				{
 					text2 += ", ";
@@ -326,7 +326,7 @@ namespace RimWorld
 			}
 			if (days > 0)
 			{
-				string text3 = (days != 1) ? ((string)"PeriodDays".Translate(days)) : ((string)"Period1Day".Translate());
+				string text3 = ((days != 1) ? ((string)"PeriodDays".Translate(days)) : ((string)"Period1Day".Translate()));
 				int num = (int)hoursFloat;
 				if (allowHours && num > 0)
 				{
@@ -395,7 +395,7 @@ namespace RimWorld
 			{
 				return ((int)yearsFloat).ToStringCached();
 			}
-			Mathf.Min((int)(yearsFloat * 3600000f), 3599999).TicksToPeriod(out int years, out int quadrums, out int days, out float hoursFloat);
+			Mathf.Min((int)(yearsFloat * 3600000f), 3599999).TicksToPeriod(out var years, out var quadrums, out var days, out var hoursFloat);
 			if (years > 0)
 			{
 				if (years == 1)

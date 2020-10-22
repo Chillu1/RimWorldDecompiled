@@ -10,7 +10,7 @@ namespace RimWorld
 		protected override void WaitTickAction()
 		{
 			float num = ArtThing.GetStatValue(StatDefOf.Beauty) / ArtThing.def.GetStatValueAbstract(StatDefOf.Beauty);
-			float extraJoyGainFactor = (num > 0f) ? num : 0f;
+			float extraJoyGainFactor = ((num > 0f) ? num : 0f);
 			pawn.GainComfortFromCellIfPossible();
 			JoyUtility.JoyTickCheckEnd(pawn, JoyTickFullJoyAction.EndJob, extraJoyGainFactor, (Building)ArtThing);
 		}

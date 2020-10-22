@@ -108,7 +108,7 @@ namespace RimWorld
 
 		private static void CheckSeed()
 		{
-			int seed = Rand.Seed = 10;
+			int seed = (Rand.Seed = 10);
 			int @int = Rand.Int;
 			int int2 = Rand.Int;
 			Rand.Seed = seed;

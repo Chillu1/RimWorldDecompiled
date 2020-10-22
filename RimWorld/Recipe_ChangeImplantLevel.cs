@@ -46,7 +46,7 @@ namespace RimWorld
 			{
 				if (IsViolationOnPawn(pawn, part, Faction.OfPlayer))
 				{
-					ReportViolation(pawn, billDoer, pawn.FactionOrExtraHomeFaction, -70, "GoodwillChangedReason_DowngradedImplant".Translate(hediff_ImplantWithLevel.Label));
+					ReportViolation(pawn, billDoer, pawn.FactionOrExtraMiniOrHomeFaction, -70, "GoodwillChangedReason_DowngradedImplant".Translate(hediff_ImplantWithLevel.Label));
 				}
 				hediff_ImplantWithLevel.ChangeLevel(recipe.hediffLevelOffset);
 			}

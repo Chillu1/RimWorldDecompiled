@@ -1,7 +1,8 @@
-using RimWorld.Planet;
-using RimWorld.QuestGen;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
+using RimWorld.QuestGen;
 using UnityEngine;
 using Verse;
 using Verse.Grammar;
@@ -19,7 +20,7 @@ namespace RimWorld
 		public override string GetArrivedLetterPart(Map map, out LetterDef preferredLetterDef, out LookTargets lookTargets)
 		{
 			string arrivedLetterPart = base.GetArrivedLetterPart(map, out preferredLetterDef, out lookTargets);
-			lookTargets = (map.listerThings.AllThings.FirstOrDefault((Thing x) => x is Building_TurretGun && x.HostileTo(Faction.OfPlayer)) ?? map.listerThings.AllThings.FirstOrDefault((Thing x) => x is Building_TurretGun));
+			lookTargets = map.listerThings.AllThings.FirstOrDefault((Thing x) => x is Building_TurretGun && x.HostileTo(Faction.OfPlayer)) ?? map.listerThings.AllThings.FirstOrDefault((Thing x) => x is Building_TurretGun);
 			return arrivedLetterPart;
 		}
 
@@ -34,16 +35,22 @@ namespace RimWorld
 		public override void Notify_GeneratedByQuestGen(SitePart part, Slate slate, List<Rule> outExtraDescriptionRules, Dictionary<string, string> outExtraDescriptionConstants)
 		{
 			base.Notify_GeneratedByQuestGen(part, slate, outExtraDescriptionRules, outExtraDescriptionConstants);
-			string threatsInfo = GetThreatsInfo(part.parms);
-			outExtraDescriptionRules.Add(new Rule_String("threatsInfo", threatsInfo));
+			string threatsInfo_NewTmp = GetThreatsInfo_NewTmp(part.parms, part.site.Faction);
+			outExtraDescriptionRules.Add(new Rule_String("threatsInfo", threatsInfo_NewTmp));
 		}
 
 		public override string GetPostProcessedThreatLabel(Site site, SitePart sitePart)
 		{
-			return base.GetPostProcessedThreatLabel(site, sitePart) + ": " + GetThreatsInfo(sitePart.parms);
+			return base.GetPostProcessedThreatLabel(site, sitePart) + ": " + GetThreatsInfo_NewTmp(sitePart.parms, site.Faction);
 		}
 
+		[Obsolete]
 		private string GetThreatsInfo(SitePartParams parms)
+		{
+			return GetThreatsInfo_NewTmp(parms, null);
+		}
+
+		private string GetThreatsInfo_NewTmp(SitePartParams parms, Faction faction)
 		{
 			threatsTmp.Clear();
 			int num = parms.mortarsCount + 1;
@@ -60,7 +67,7 @@ namespace RimWorld
 			}
 			if (num != 0)
 			{
-				text = ((num != 1) ? ((string)"Enemies".Translate()) : ((string)"Enemy".Translate()));
+				text = ((faction != null) ? ((num == 1) ? faction.def.pawnSingular : faction.def.pawnsPlural) : ((string)((num == 1) ? "Enemy".Translate() : "Enemies".Translate())));
 				threatsTmp.Add("KnownSiteThreatEnemyCountAppend".Translate(num.ToString(), text));
 			}
 			return threatsTmp.ToCommaList(useAnd: true);

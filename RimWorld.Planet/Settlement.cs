@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Verse;
 
@@ -230,6 +232,15 @@ namespace RimWorld.Planet
 			}
 		}
 
+		public override void PostMapGenerate()
+		{
+			base.PostMapGenerate();
+			if (!base.Map.IsPlayerHome)
+			{
+				GetComponent<TimedDetectionRaids>().StartDetectionCountdown(240000);
+			}
+		}
+
 		public override void Tick()
 		{
 			base.Tick();
@@ -282,7 +293,7 @@ namespace RimWorld.Planet
 					text += "\n";
 				}
 				text += base.Faction.PlayerRelationKind.GetLabel();
-				if (!base.Faction.def.hidden)
+				if (!base.Faction.Hidden)
 				{
 					text = text + " (" + base.Faction.PlayerGoodwill.ToStringWithSign() + ")";
 				}
@@ -335,17 +346,15 @@ namespace RimWorld.Planet
 
 		public override IEnumerable<Gizmo> GetCaravanGizmos(Caravan caravan)
 		{
-			Caravan caravan2 = caravan;
-			Settlement settlement = this;
-			if (CanTradeNow && CaravanVisitUtility.SettlementVisitedNow(caravan2) == this)
+			if (CanTradeNow && CaravanVisitUtility.SettlementVisitedNow(caravan) == this)
 			{
-				yield return CaravanVisitUtility.TradeCommand(caravan2, base.Faction, TraderKind);
+				yield return CaravanVisitUtility.TradeCommand(caravan, base.Faction, TraderKind);
 			}
-			if ((bool)CaravanArrivalAction_OfferGifts.CanOfferGiftsTo(caravan2, this))
+			if ((bool)CaravanArrivalAction_OfferGifts.CanOfferGiftsTo(caravan, this))
 			{
-				yield return FactionGiftUtility.OfferGiftsCommand(caravan2, this);
+				yield return FactionGiftUtility.OfferGiftsCommand(caravan, this);
 			}
-			foreach (Gizmo caravanGizmo in base.GetCaravanGizmos(caravan2))
+			foreach (Gizmo caravanGizmo in base.GetCaravanGizmos(caravan))
 			{
 				yield return caravanGizmo;
 			}
@@ -357,7 +366,7 @@ namespace RimWorld.Planet
 				command_Action.defaultDesc = "CommandAttackSettlementDesc".Translate();
 				command_Action.action = delegate
 				{
-					SettlementUtility.Attack(caravan2, settlement);
+					SettlementUtility.Attack(caravan, this);
 				};
 				yield return command_Action;
 			}
@@ -404,9 +413,47 @@ namespace RimWorld.Planet
 			{
 				yield return floatMenuOption2;
 			}
+			if (base.HasMap)
+			{
+				yield break;
+			}
 			foreach (FloatMenuOption floatMenuOption3 in TransportPodsArrivalAction_AttackSettlement.GetFloatMenuOptions(representative, pods, this))
 			{
 				yield return floatMenuOption3;
+			}
+		}
+
+		public override IEnumerable<FloatMenuOption> GetShuttleFloatMenuOptions(IEnumerable<IThingHolder> pods, Action<int, TransportPodsArrivalAction> launchAction)
+		{
+			foreach (FloatMenuOption shuttleFloatMenuOption in base.GetShuttleFloatMenuOptions(pods, launchAction))
+			{
+				yield return shuttleFloatMenuOption;
+			}
+			if ((bool)TransportPodsArrivalAction_GiveGift.CanGiveGiftTo(pods, this))
+			{
+				yield return new FloatMenuOption("GiveGiftViaTransportPods".Translate(base.Faction.Name, FactionGiftUtility.GetGoodwillChange(pods, this).ToStringWithSign()), delegate
+				{
+					TradeRequestComp tradeReqComp = GetComponent<TradeRequestComp>();
+					if (tradeReqComp.ActiveRequest && pods.Any((IThingHolder p) => p.GetDirectlyHeldThings().Contains(tradeReqComp.requestThingDef)))
+					{
+						Find.WindowStack.Add(new Dialog_MessageBox("GiveGiftViaTransportPodsTradeRequestWarning".Translate(), "Yes".Translate(), delegate
+						{
+							launchAction(base.Tile, new TransportPodsArrivalAction_GiveGift(this));
+						}, "No".Translate()));
+					}
+					else
+					{
+						launchAction(base.Tile, new TransportPodsArrivalAction_GiveGift(this));
+					}
+				});
+			}
+			if (base.HasMap)
+			{
+				yield break;
+			}
+			foreach (FloatMenuOption floatMenuOption in TransportPodsArrivalActionUtility.GetFloatMenuOptions(() => TransportPodsArrivalAction_AttackSettlement.CanAttack(pods, this), () => new TransportPodsArrivalAction_Shuttle(this), "AttackShuttle".Translate(Label), launchAction, base.Tile))
+			{
+				yield return floatMenuOption;
 			}
 		}
 

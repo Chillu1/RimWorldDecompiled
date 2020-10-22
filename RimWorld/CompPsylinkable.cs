@@ -161,31 +161,29 @@ namespace RimWorld
 
 		public override IEnumerable<FloatMenuOption> CompFloatMenuOptions(Pawn pawn)
 		{
-			Pawn pawn2 = pawn;
-			CompPsylinkable compPsylinkable = this;
-			if (pawn2.Dead || pawn2.Drafted)
+			if (pawn.Dead || pawn.Drafted)
 			{
 				yield break;
 			}
 			string text = "BeginLinkingRitualFloatMenu".Translate();
-			AcceptanceReport acceptanceReport = CanPsylink(pawn2);
+			AcceptanceReport acceptanceReport = CanPsylink(pawn);
 			if (!acceptanceReport.Accepted && !string.IsNullOrWhiteSpace(acceptanceReport.Reason))
 			{
 				text = text + ": " + acceptanceReport.Reason;
 			}
 			FloatMenuOption floatMenuOption = new FloatMenuOption(text, delegate
 			{
-				TaggedString psylinkAffectedByTraitsNegativelyWarning = RoyalTitleUtility.GetPsylinkAffectedByTraitsNegativelyWarning(pawn2);
+				TaggedString psylinkAffectedByTraitsNegativelyWarning = RoyalTitleUtility.GetPsylinkAffectedByTraitsNegativelyWarning(pawn);
 				if ((string)psylinkAffectedByTraitsNegativelyWarning != null)
 				{
 					Find.WindowStack.Add(new Dialog_MessageBox(psylinkAffectedByTraitsNegativelyWarning, "Confirm".Translate(), delegate
 					{
-						compPsylinkable.BeginLinkingRitual(pawn2);
+						BeginLinkingRitual(pawn);
 					}, "GoBack".Translate()));
 				}
 				else
 				{
-					compPsylinkable.BeginLinkingRitual(pawn2);
+					BeginLinkingRitual(pawn);
 				}
 			});
 			floatMenuOption.Disabled = !acceptanceReport.Accepted;
@@ -194,7 +192,7 @@ namespace RimWorld
 
 		private void BeginLinkingRitual(Pawn pawn)
 		{
-			if (TryFindLinkSpot(pawn, out LocalTargetInfo spot) && CanPsylink(pawn, spot).Accepted)
+			if (TryFindLinkSpot(pawn, out var spot) && CanPsylink(pawn, spot).Accepted)
 			{
 				Job job = JobMaker.MakeJob(JobDefOf.LinkPsylinkable, parent, spot);
 				pawn.jobs.TryTakeOrderedJob(job);

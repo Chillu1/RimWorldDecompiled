@@ -97,7 +97,7 @@ namespace RimWorld
 				size *= Prefs.UIScale;
 			}
 			Dictionary<Pawn, CachedPortrait> dictionary = GetOrCreateCachedPortraitsWithParams(size, cameraOffset, cameraZoom).CachedPortraits;
-			if (dictionary.TryGetValue(pawn, out CachedPortrait value))
+			if (dictionary.TryGetValue(pawn, out var value))
 			{
 				if (!value.RenderTexture.IsCreated())
 				{
@@ -123,7 +123,7 @@ namespace RimWorld
 			for (int i = 0; i < cachedPortraits.Count; i++)
 			{
 				Dictionary<Pawn, CachedPortrait> dictionary = cachedPortraits[i].CachedPortraits;
-				if (dictionary.TryGetValue(pawn, out CachedPortrait value) && !value.Dirty)
+				if (dictionary.TryGetValue(pawn, out var value) && !value.Dirty)
 				{
 					dictionary.Remove(pawn);
 					dictionary.Add(pawn, new CachedPortrait(value.RenderTexture, dirty: true, value.LastUseTime));

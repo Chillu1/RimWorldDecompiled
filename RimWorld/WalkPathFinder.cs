@@ -89,7 +89,7 @@ namespace RimWorld
 		public static void DebugFlashWalkPath(IntVec3 root, int numEntries = 8)
 		{
 			Map currentMap = Find.CurrentMap;
-			if (!TryFindWalkPath(currentMap.mapPawns.FreeColonistsSpawned.First(), root, out List<IntVec3> result))
+			if (!TryFindWalkPath(currentMap.mapPawns.FreeColonistsSpawned.First(), root, out var result))
 			{
 				currentMap.debugDrawer.FlashCell(root, 0.2f, "NOPATH");
 				return;

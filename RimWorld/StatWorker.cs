@@ -33,11 +33,11 @@ namespace RimWorld
 				MinifiedThing minifiedThing = req.Thing as MinifiedThing;
 				if (minifiedThing != null)
 				{
-					if (minifiedThing.InnerThing == null)
+					if (minifiedThing.InnerThing != null)
 					{
-						Log.Error("MinifiedThing's inner thing is null.");
+						return minifiedThing.InnerThing.GetStatValue(stat, applyPostProcess);
 					}
-					return minifiedThing.InnerThing.GetStatValue(stat, applyPostProcess);
+					Log.Error("MinifiedThing's inner thing is null.");
 				}
 			}
 			float val = GetValueUnfinalized(req, applyPostProcess);
@@ -209,7 +209,7 @@ namespace RimWorld
 		{
 			StringBuilder stringBuilder = new StringBuilder();
 			float baseValueFor = GetBaseValueFor(req);
-			if (baseValueFor != 0f)
+			if (baseValueFor != 0f || stat.showZeroBaseValue)
 			{
 				stringBuilder.AppendLine("StatsReport_BaseValue".Translate() + ": " + stat.ValueToString(baseValueFor, numberSense));
 			}
@@ -289,7 +289,7 @@ namespace RimWorld
 								}
 							}
 						}
-						if (pawn.equipment != null && pawn.equipment.Primary != null && GearAffectsStat(pawn.equipment.Primary.def, stat))
+						if (pawn.equipment != null && pawn.equipment.Primary != null && (GearAffectsStat(pawn.equipment.Primary.def, stat) || GearHasCompsThatAffectStat(pawn.equipment.Primary, stat)))
 						{
 							stringBuilder.AppendLine(InfoTextLineFromGear(pawn.equipment.Primary, stat));
 						}
@@ -547,7 +547,7 @@ namespace RimWorld
 				return false;
 			}
 			Pawn pawn;
-			if ((pawn = (req.Thing as Pawn)) != null && pawn.health != null && !stat.showIfHediffsPresent.NullOrEmpty())
+			if ((pawn = req.Thing as Pawn) != null && pawn.health != null && !stat.showIfHediffsPresent.NullOrEmpty())
 			{
 				for (int i = 0; i < stat.showIfHediffsPresent.Count; i++)
 				{
@@ -717,12 +717,30 @@ namespace RimWorld
 		private static string InfoTextLineFromGear(Thing gear, StatDef stat)
 		{
 			float f = StatOffsetFromGear(gear, stat);
-			return "    " + gear.LabelCap + ": " + f.ToStringByStyle(stat.toStringStyle, ToStringNumberSense.Offset);
+			return "    " + gear.LabelCap + ": " + f.ToStringByStyle(stat.finalizeEquippedStatOffset ? stat.toStringStyle : stat.ToStringStyleUnfinalized, ToStringNumberSense.Offset);
 		}
 
-		private static float StatOffsetFromGear(Thing gear, StatDef stat)
+		public static float StatOffsetFromGear(Thing gear, StatDef stat)
 		{
-			return gear.def.equippedStatOffsets.GetStatOffsetFromList(stat);
+			float val = gear.def.equippedStatOffsets.GetStatOffsetFromList(stat);
+			CompBladelinkWeapon compBladelinkWeapon = gear.TryGetComp<CompBladelinkWeapon>();
+			if (compBladelinkWeapon != null)
+			{
+				List<WeaponTraitDef> traitsListForReading = compBladelinkWeapon.TraitsListForReading;
+				for (int i = 0; i < traitsListForReading.Count; i++)
+				{
+					val += traitsListForReading[i].equippedStatOffsets.GetStatOffsetFromList(stat);
+				}
+			}
+			if (Math.Abs(val) > float.Epsilon && !stat.parts.NullOrEmpty())
+			{
+				foreach (StatPart part in stat.parts)
+				{
+					part.TransformValue(StatRequest.For(gear), ref val);
+				}
+				return val;
+			}
+			return val;
 		}
 
 		private static IEnumerable<Thing> RelevantGear(Pawn pawn, StatDef stat)
@@ -743,7 +761,7 @@ namespace RimWorld
 			}
 			foreach (ThingWithComps item2 in pawn.equipment.AllEquipmentListForReading)
 			{
-				if (GearAffectsStat(item2.def, stat))
+				if (GearAffectsStat(item2.def, stat) || GearHasCompsThatAffectStat(item2, stat))
 				{
 					yield return item2;
 				}
@@ -757,6 +775,32 @@ namespace RimWorld
 				for (int i = 0; i < gearDef.equippedStatOffsets.Count; i++)
 				{
 					if (gearDef.equippedStatOffsets[i].stat == stat && gearDef.equippedStatOffsets[i].value != 0f)
+					{
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+		private static bool GearHasCompsThatAffectStat(Thing gear, StatDef stat)
+		{
+			CompBladelinkWeapon compBladelinkWeapon = gear.TryGetComp<CompBladelinkWeapon>();
+			if (compBladelinkWeapon == null)
+			{
+				return false;
+			}
+			List<WeaponTraitDef> traitsListForReading = compBladelinkWeapon.TraitsListForReading;
+			for (int i = 0; i < traitsListForReading.Count; i++)
+			{
+				if (traitsListForReading[i].equippedStatOffsets.NullOrEmpty())
+				{
+					continue;
+				}
+				for (int j = 0; j < traitsListForReading[i].equippedStatOffsets.Count; j++)
+				{
+					StatModifier statModifier = traitsListForReading[i].equippedStatOffsets[j];
+					if (statModifier.stat == stat && statModifier.value != 0f)
 					{
 						return true;
 					}
@@ -855,7 +899,7 @@ namespace RimWorld
 		private static bool DisplayTradeStats(StatRequest req)
 		{
 			ThingDef thingDef;
-			if ((thingDef = (req.Def as ThingDef)) == null)
+			if ((thingDef = req.Def as ThingDef) == null)
 			{
 				return false;
 			}

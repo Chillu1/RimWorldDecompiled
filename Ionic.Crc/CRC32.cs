@@ -75,12 +75,12 @@ namespace Ionic.Crc
 				if (reverseBits)
 				{
 					uint num2 = (_register >> 24) ^ b;
-					_register = ((_register << 8) ^ crc32Table[num2]);
+					_register = (_register << 8) ^ crc32Table[num2];
 				}
 				else
 				{
-					uint num3 = (_register & 0xFF) ^ b;
-					_register = ((_register >> 8) ^ crc32Table[num3]);
+					uint num3 = (_register & 0xFFu) ^ b;
+					_register = (_register >> 8) ^ crc32Table[num3];
 				}
 			}
 			_TotalBytesRead += count;
@@ -91,12 +91,12 @@ namespace Ionic.Crc
 			if (reverseBits)
 			{
 				uint num = (_register >> 24) ^ b;
-				_register = ((_register << 8) ^ crc32Table[num]);
+				_register = (_register << 8) ^ crc32Table[num];
 			}
 			else
 			{
-				uint num2 = (_register & 0xFF) ^ b;
-				_register = ((_register >> 8) ^ crc32Table[num2]);
+				uint num2 = (_register & 0xFFu) ^ b;
+				_register = (_register >> 8) ^ crc32Table[num2];
 			}
 		}
 
@@ -107,12 +107,12 @@ namespace Ionic.Crc
 				if (reverseBits)
 				{
 					uint num = (_register >> 24) ^ b;
-					_register = ((_register << 8) ^ crc32Table[(num >= 0) ? num : (num + 256)]);
+					_register = (_register << 8) ^ crc32Table[(num >= 0) ? num : (num + 256)];
 				}
 				else
 				{
-					uint num2 = (_register & 0xFF) ^ b;
-					_register = ((_register >> 8) ^ crc32Table[(num2 >= 0) ? num2 : (num2 + 256)]);
+					uint num2 = (_register & 0xFFu) ^ b;
+					_register = (_register >> 8) ^ crc32Table[(num2 >= 0) ? num2 : (num2 + 256)];
 				}
 			}
 		}
@@ -120,18 +120,18 @@ namespace Ionic.Crc
 		private static uint ReverseBits(uint data)
 		{
 			uint num = data;
-			num = (((num & 0x55555555) << 1) | ((num >> 1) & 0x55555555));
-			num = (((num & 0x33333333) << 2) | ((num >> 2) & 0x33333333));
-			num = (((num & 0xF0F0F0F) << 4) | ((num >> 4) & 0xF0F0F0F));
-			return (num << 24) | ((num & 0xFF00) << 8) | ((num >> 8) & 0xFF00) | (num >> 24);
+			num = ((num & 0x55555555) << 1) | ((num >> 1) & 0x55555555u);
+			num = ((num & 0x33333333) << 2) | ((num >> 2) & 0x33333333u);
+			num = ((num & 0xF0F0F0F) << 4) | ((num >> 4) & 0xF0F0F0Fu);
+			return (num << 24) | ((num & 0xFF00) << 8) | ((num >> 8) & 0xFF00u) | (num >> 24);
 		}
 
 		private static byte ReverseBits(byte data)
 		{
 			int num = data * 131586;
 			uint num2 = 17055760u;
-			uint num3 = (uint)(num & (int)num2);
-			uint num4 = (uint)((num << 2) & (int)(num2 << 1));
+			uint num3 = (uint)num & num2;
+			uint num4 = (uint)(num << 2) & (num2 << 1);
 			return (byte)(16781313 * (num3 + num4) >> 24);
 		}
 
@@ -222,7 +222,7 @@ namespace Ionic.Crc
 				num3 >>= 1;
 			}
 			while (num3 != 0);
-			num = (uint)((int)num ^ crc);
+			num ^= (uint)crc;
 			_register = ~num;
 		}
 

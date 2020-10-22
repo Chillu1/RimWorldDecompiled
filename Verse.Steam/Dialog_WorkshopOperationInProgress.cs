@@ -18,7 +18,7 @@ namespace Verse.Steam
 
 		public override void DoWindowContents(Rect inRect)
 		{
-			Workshop.GetUpdateStatus(out EItemUpdateStatus updateStatus, out float progPercent);
+			Workshop.GetUpdateStatus(out var updateStatus, out var progPercent);
 			WorkshopInteractStage curStage = Workshop.CurStage;
 			if (curStage == WorkshopInteractStage.None && updateStatus == EItemUpdateStatus.k_EItemUpdateStatusInvalid)
 			{

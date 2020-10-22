@@ -11,6 +11,11 @@ namespace RimWorld
 
 		public override bool IsApplicableTo(LocalTargetInfo target, bool showMessages = false)
 		{
+			if (!ModLister.RoyaltyInstalled)
+			{
+				Log.ErrorOnce("Psycasts are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 324345647);
+				return false;
+			}
 			if (!base.IsApplicableTo(target, showMessages))
 			{
 				return false;
@@ -19,7 +24,7 @@ namespace RimWorld
 			{
 				if (showMessages)
 				{
-					Messages.Message(ability.def.LabelCap + ": " + "AbilityTargetPsychicallyDeaf".Translate(), MessageTypeDefOf.RejectInput);
+					Messages.Message(ability.def.LabelCap + ": " + "AbilityTargetPsychicallyDeaf".Translate(), target.ToTargetInfo(ability.pawn.Map), MessageTypeDefOf.RejectInput, historical: false);
 				}
 				return false;
 			}
@@ -40,14 +45,22 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (CasterPawn.GetStatValue(StatDefOf.PsychicSensitivity) < float.Epsilon)
+			if (CasterPawn.psychicEntropy.PsychicSensitivity < float.Epsilon)
 			{
-				Messages.Message("CommandPsycastZeroPsychicSensitivity".Translate(), caster, MessageTypeDefOf.RejectInput);
+				Messages.Message("CommandPsycastZeroPsychicSensitivity".Translate(), caster, MessageTypeDefOf.RejectInput, historical: false);
 				return false;
 			}
 			if (Psycast.def.EntropyGain > float.Epsilon && CasterPawn.psychicEntropy.WouldOverflowEntropy(Psycast.def.EntropyGain + PsycastUtility.TotalEntropyFromQueuedPsycasts(CasterPawn)))
 			{
-				Messages.Message("CommandPsycastWouldExceedEntropy".Translate(), caster, MessageTypeDefOf.RejectInput);
+				Messages.Message("CommandPsycastWouldExceedEntropy".Translate(), caster, MessageTypeDefOf.RejectInput, historical: false);
+				return false;
+			}
+			float num = Psycast.FinalPsyfocusCost(target);
+			float num2 = PsycastUtility.TotalPsyfocusCostOfQueuedPsycasts(CasterPawn);
+			float num3 = num + num2;
+			if (num > float.Epsilon && num3 > CasterPawn.psychicEntropy.CurrentPsyfocus + 0.0005f)
+			{
+				Messages.Message("CommandPsycastNotEnoughPsyfocus".Translate(num3.ToStringPercent("0.#"), (CasterPawn.psychicEntropy.CurrentPsyfocus - num2).ToStringPercent("0.#"), Psycast.def.label.Named("PSYCASTNAME"), caster.Named("CASTERNAME")), caster, MessageTypeDefOf.RejectInput, historical: false);
 				return false;
 			}
 			return true;
@@ -97,6 +110,7 @@ namespace RimWorld
 			{
 				GenUI.DrawMouseAttachment(texture2D);
 			}
+			DrawAttachmentExtraLabel(target);
 		}
 
 		private void DrawIneffectiveWarning(LocalTargetInfo target)

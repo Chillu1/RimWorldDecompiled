@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Text;
+using RimWorld;
 
 namespace Verse
 {
@@ -36,7 +36,7 @@ namespace Verse
 					Pawn pawn2 = target as Pawn;
 					if (pawn2 != null && pawn2.Faction == null && !pawn2.InAggroMentalState && pawn2.AnimalOrWildMan())
 					{
-						float num = (!verb.IsMeleeAttack) ? PawnUtility.GetManhunterOnDamageChance(pawn2, singleSelectedThing) : PawnUtility.GetManhunterOnDamageChance(pawn2, 0f, singleSelectedThing);
+						float num = ((!verb.IsMeleeAttack) ? PawnUtility.GetManhunterOnDamageChance(pawn2, singleSelectedThing) : PawnUtility.GetManhunterOnDamageChance(pawn2, 0f, singleSelectedThing));
 						if (num > 0f)
 						{
 							stringBuilder.AppendLine();

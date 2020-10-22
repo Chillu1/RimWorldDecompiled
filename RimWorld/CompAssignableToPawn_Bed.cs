@@ -4,6 +4,11 @@ namespace RimWorld
 {
 	public class CompAssignableToPawn_Bed : CompAssignableToPawn
 	{
+		protected override string GetAssignmentGizmoDesc()
+		{
+			return "CommandBedSetOwnerDesc".Translate();
+		}
+
 		public override bool AssignedAnything(Pawn pawn)
 		{
 			return pawn.ownership.OwnedBed != null;

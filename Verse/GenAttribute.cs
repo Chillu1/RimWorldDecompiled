@@ -8,7 +8,7 @@ namespace Verse
 		public static bool HasAttribute<T>(this MemberInfo memberInfo) where T : Attribute
 		{
 			T customAttribute;
-			return memberInfo.TryGetAttribute(out customAttribute);
+			return memberInfo.TryGetAttribute<T>(out customAttribute);
 		}
 
 		public static bool TryGetAttribute<T>(this MemberInfo memberInfo, out T customAttribute) where T : Attribute
@@ -34,7 +34,7 @@ namespace Verse
 		public static T TryGetAttribute<T>(this MemberInfo memberInfo) where T : Attribute
 		{
 			T customAttribute = null;
-			memberInfo.TryGetAttribute(out customAttribute);
+			memberInfo.TryGetAttribute<T>(out customAttribute);
 			return customAttribute;
 		}
 	}

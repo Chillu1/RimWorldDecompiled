@@ -23,21 +23,14 @@ namespace Verse
 				Log.Message($"Mismatch:\n{stackTrace.ToString()}\n\n{stackTrace2.ToString()}");
 				return;
 			}
-			int num = 0;
-			while (true)
+			for (int i = 0; i < stackTrace2.FrameCount; i++)
 			{
-				if (num < stackTrace2.FrameCount)
+				if (stackTrace2.GetFrame(i).GetMethod() != stackTrace.GetFrame(i).GetMethod() && (!(stackTrace.GetFrame(i).GetMethod().DeclaringType == typeof(ProfilerThreadCheck)) || !(stackTrace2.GetFrame(i).GetMethod().DeclaringType == typeof(ProfilerThreadCheck))) && (!(stackTrace.GetFrame(i).GetMethod() == typeof(PathFinder).GetMethod("PfProfilerBeginSample", BindingFlags.Instance | BindingFlags.NonPublic)) || !(stackTrace2.GetFrame(i).GetMethod() == typeof(PathFinder).GetMethod("PfProfilerEndSample", BindingFlags.Instance | BindingFlags.NonPublic))))
 				{
-					if (stackTrace2.GetFrame(num).GetMethod() != stackTrace.GetFrame(num).GetMethod() && (!(stackTrace.GetFrame(num).GetMethod().DeclaringType == typeof(ProfilerThreadCheck)) || !(stackTrace2.GetFrame(num).GetMethod().DeclaringType == typeof(ProfilerThreadCheck))) && (!(stackTrace.GetFrame(num).GetMethod() == typeof(PathFinder).GetMethod("PfProfilerBeginSample", BindingFlags.Instance | BindingFlags.NonPublic)) || !(stackTrace2.GetFrame(num).GetMethod() == typeof(PathFinder).GetMethod("PfProfilerEndSample", BindingFlags.Instance | BindingFlags.NonPublic))))
-					{
-						break;
-					}
-					num++;
-					continue;
+					Log.Message($"Mismatch:\n{stackTrace.ToString()}\n\n{stackTrace2.ToString()}");
+					break;
 				}
-				return;
 			}
-			Log.Message($"Mismatch:\n{stackTrace.ToString()}\n\n{stackTrace2.ToString()}");
 		}
 	}
 }

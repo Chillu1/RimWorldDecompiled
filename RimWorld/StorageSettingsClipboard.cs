@@ -26,7 +26,6 @@ namespace RimWorld
 
 		public static IEnumerable<Gizmo> CopyPasteGizmosFor(StorageSettings s)
 		{
-			StorageSettings s2 = s;
 			Command_Action command_Action = new Command_Action();
 			command_Action.icon = ContentFinder<Texture2D>.Get("UI/Commands/CopySettings");
 			command_Action.defaultLabel = "CommandCopyZoneSettingsLabel".Translate();
@@ -34,7 +33,7 @@ namespace RimWorld
 			command_Action.action = delegate
 			{
 				SoundDefOf.Tick_High.PlayOneShotOnCamera();
-				Copy(s2);
+				Copy(s);
 			};
 			command_Action.hotKey = KeyBindingDefOf.Misc4;
 			yield return command_Action;
@@ -45,7 +44,7 @@ namespace RimWorld
 			command_Action2.action = delegate
 			{
 				SoundDefOf.Tick_High.PlayOneShotOnCamera();
-				PasteInto(s2);
+				PasteInto(s);
 			};
 			command_Action2.hotKey = KeyBindingDefOf.Misc5;
 			if (!HasCopiedSettings)

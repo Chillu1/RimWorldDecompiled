@@ -166,7 +166,7 @@ namespace RimWorld.Planet
 			bool flag = LanguageDatabase.activeLanguage == LanguageDatabase.defaultLanguage;
 			for (int j = 0; j < features.Count; j++)
 			{
-				WorldFeatureTextMesh worldFeatureTextMesh = (!ForceLegacyText && (flag || !HasCharactersUnsupportedByTextMeshPro(features[j].name))) ? ((WorldFeatureTextMesh)new WorldFeatureTextMesh_TextMeshPro()) : ((WorldFeatureTextMesh)new WorldFeatureTextMesh_Legacy());
+				WorldFeatureTextMesh worldFeatureTextMesh = ((!ForceLegacyText && (flag || !HasCharactersUnsupportedByTextMeshPro(features[j].name))) ? ((WorldFeatureTextMesh)new WorldFeatureTextMesh_TextMeshPro()) : ((WorldFeatureTextMesh)new WorldFeatureTextMesh_Legacy()));
 				worldFeatureTextMesh.Init();
 				texts.Add(worldFeatureTextMesh);
 			}

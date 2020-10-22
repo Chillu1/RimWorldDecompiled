@@ -115,7 +115,7 @@ namespace RimWorld
 			}
 			else
 			{
-				float num = flag2 ? 0.6f : 0.3f;
+				float num = (flag2 ? 0.6f : 0.3f);
 				float value = Rand.Value;
 				if (value < 0.3f && !flag5 && !flag4)
 				{
@@ -234,8 +234,8 @@ namespace RimWorld
 				valueActuallyUsed = valueActuallyUsedLocal;
 				return result;
 			}
-			float weightA = allowGoodwill ? 1f : 0f;
-			float weightB = allowRoyalFavor ? 9f : 0f;
+			float weightA = (allowGoodwill ? 1f : 0f);
+			float weightB = (allowRoyalFavor ? 9f : 0f);
 			Reward result2 = Rand.ElementByWeight(func, weightA, b, weightB)();
 			valueActuallyUsed = valueActuallyUsedLocal;
 			return result2;

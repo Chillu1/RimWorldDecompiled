@@ -1,8 +1,9 @@
 using Verse;
+using Verse.AI;
 
 namespace RimWorld
 {
-	public class Verb_PowerBeam : Verb
+	public class Verb_PowerBeam : Verb_CastBase
 	{
 		private const int DurationTicks = 600;
 
@@ -17,10 +18,7 @@ namespace RimWorld
 			obj.instigator = caster;
 			obj.weaponDef = ((base.EquipmentSource != null) ? base.EquipmentSource.def : null);
 			obj.StartStrike();
-			if (base.EquipmentSource != null && !base.EquipmentSource.Destroyed)
-			{
-				base.EquipmentSource.Destroy();
-			}
+			base.ReloadableCompSource?.UsedOnce();
 			return true;
 		}
 

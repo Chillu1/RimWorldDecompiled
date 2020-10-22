@@ -36,7 +36,7 @@ namespace Verse
 		{
 			if (req.singleDef != null)
 			{
-				if (!listsByDef.TryGetValue(req.singleDef, out List<Thing> value))
+				if (!listsByDef.TryGetValue(req.singleDef, out var value))
 				{
 					return EmptyList;
 				}
@@ -65,7 +65,7 @@ namespace Verse
 			{
 				return;
 			}
-			if (!listsByDef.TryGetValue(t.def, out List<Thing> value))
+			if (!listsByDef.TryGetValue(t.def, out var value))
 			{
 				value = new List<Thing>();
 				listsByDef.Add(t.def, value);
@@ -112,10 +112,6 @@ namespace Verse
 				return false;
 			}
 			if (def.category == ThingCategory.Projectile && use == ListerThingsUse.Region)
-			{
-				return false;
-			}
-			if (def.category == ThingCategory.Gas)
 			{
 				return false;
 			}

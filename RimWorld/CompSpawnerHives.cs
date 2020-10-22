@@ -19,9 +19,9 @@ namespace RimWorld
 		{
 			get
 			{
-				if (canSpawnHives)
+				if (canSpawnHives && HiveUtility.TotalSpawnedHivesCount(parent.Map) < 30)
 				{
-					return HiveUtility.TotalSpawnedHivesCount(parent.Map) < 30;
+					return Find.Storyteller.difficultyValues.enemyReproductionRateFactor > 0f;
 				}
 				return false;
 			}
@@ -46,7 +46,7 @@ namespace RimWorld
 			}
 			if ((comp == null || comp.Awake) && Find.TickManager.TicksGame >= nextHiveSpawnTick)
 			{
-				if (TrySpawnChildHive(ignoreRoofedRequirement: false, out Hive newHive))
+				if (TrySpawnChildHive(ignoreRoofedRequirement: false, out var newHive))
 				{
 					Messages.Message("MessageHiveReproduced".Translate(), newHive, MessageTypeDefOf.NegativeEvent);
 				}
@@ -59,7 +59,7 @@ namespace RimWorld
 
 		public override string CompInspectStringExtra()
 		{
-			if (!canSpawnHives)
+			if (!canSpawnHives || Find.Storyteller.difficultyValues.enemyReproductionRateFactor <= 0f)
 			{
 				return "DormantHiveNotReproducing".Translate();
 			}
@@ -84,7 +84,14 @@ namespace RimWorld
 				}
 			}
 			float num3 = Props.ReproduceRateFactorFromNearbyHiveCountCurve.Evaluate(num);
-			nextHiveSpawnTick = Find.TickManager.TicksGame + (int)(Props.HiveSpawnIntervalDays.RandomInRange * 60000f / (num3 * Find.Storyteller.difficulty.enemyReproductionRateFactor));
+			if (Find.Storyteller.difficultyValues.enemyReproductionRateFactor > 0f)
+			{
+				nextHiveSpawnTick = Find.TickManager.TicksGame + (int)(Props.HiveSpawnIntervalDays.RandomInRange * 60000f / (num3 * Find.Storyteller.difficultyValues.enemyReproductionRateFactor));
+			}
+			else
+			{
+				nextHiveSpawnTick = Find.TickManager.TicksGame + (int)Props.HiveSpawnIntervalDays.RandomInRange * 60000;
+			}
 		}
 
 		public bool TrySpawnChildHive(bool ignoreRoofedRequirement, out Hive newHive)
@@ -128,7 +135,7 @@ namespace RimWorld
 				bool flag;
 				if (i >= 2)
 				{
-					flag = (allowUnreachable && CellFinder.TryFindRandomCellNear(pos, map, (int)props.HiveSpawnRadius, (IntVec3 c) => CanSpawnHiveAt(c, map, pos, parentDef, minDist, ignoreRoofedRequirement), out result));
+					flag = allowUnreachable && CellFinder.TryFindRandomCellNear(pos, map, (int)props.HiveSpawnRadius, (IntVec3 c) => CanSpawnHiveAt(c, map, pos, parentDef, minDist, ignoreRoofedRequirement), out result);
 				}
 				else
 				{
@@ -190,7 +197,7 @@ namespace RimWorld
 				command_Action.icon = TexCommand.GatherSpotActive;
 				command_Action.action = delegate
 				{
-					TrySpawnChildHive(ignoreRoofedRequirement: false, out Hive _);
+					TrySpawnChildHive(ignoreRoofedRequirement: false, out var _);
 				};
 				yield return command_Action;
 			}

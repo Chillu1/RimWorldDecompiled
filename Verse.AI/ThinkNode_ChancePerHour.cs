@@ -30,7 +30,7 @@ namespace Verse.AI
 
 		private int GetLastTryTick(Pawn pawn)
 		{
-			if (pawn.mindState.thinkData.TryGetValue(base.UniqueSaveKey, out int value))
+			if (pawn.mindState.thinkData.TryGetValue(base.UniqueSaveKey, out var value))
 			{
 				return value;
 			}

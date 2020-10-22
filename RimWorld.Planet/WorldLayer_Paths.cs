@@ -125,7 +125,7 @@ namespace RimWorld.Planet
 			int index2 = (index + 1) % verts.Count;
 			Find.WorldGrid.GetTileNeighbors(tileID, lhsID);
 			Find.WorldGrid.GetTileNeighbors(data.neighbor, rhsID);
-			float num = lhsID.Intersect(rhsID).Any((int id) => Find.WorldGrid[id].WaterCovered) ? 0.5f : 1f;
+			float num = (lhsID.Intersect(rhsID).Any((int id) => Find.WorldGrid[id].WaterCovered) ? 0.5f : 1f);
 			Vector3 a = FinalizePoint(verts[index], data.distortionFrequency, data.distortionIntensity * num);
 			Vector3 b = FinalizePoint(verts[index2], data.distortionFrequency, data.distortionIntensity * num);
 			subMesh.verts.Add(Vector3.LerpUnclamped(a, b, 0.5f - data.width));

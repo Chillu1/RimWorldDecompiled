@@ -10,7 +10,7 @@ namespace RimWorld
 		{
 			IEnumerable<string> enumerable = HairTagsFromBackstory(pawn);
 			IEnumerable<string> enumerable2 = HairTagsFromPawnKind(pawn);
-			IEnumerable<string> chosen = (enumerable2.Count() > 0) ? enumerable2 : enumerable;
+			IEnumerable<string> chosen = ((enumerable2.Count() > 0) ? enumerable2 : enumerable);
 			if (chosen.Count() == 0)
 			{
 				chosen = factionType.hairTags;

@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -29,6 +29,8 @@ namespace Verse
 
 		public bool isPrimary = true;
 
+		public bool violent = true;
+
 		public float minRange;
 
 		public float range = 1.42f;
@@ -42,6 +44,8 @@ namespace Verse
 		public bool hasStandardCommand;
 
 		public bool targetable = true;
+
+		public bool nonInterruptingSelfCast;
 
 		public TargetingParameters targetParams = new TargetingParameters();
 
@@ -67,6 +71,8 @@ namespace Verse
 
 		public float defaultCooldownTime;
 
+		public string commandIcon;
+
 		public SoundDef soundCast;
 
 		public SoundDef soundCastTail;
@@ -76,6 +82,12 @@ namespace Verse
 		public float muzzleFlashScale;
 
 		public ThingDef impactMote;
+
+		public bool drawAimPie = true;
+
+		public EffecterDef warmupEffecter;
+
+		public bool drawHighlightWithLineOfSight;
 
 		public BodyPartGroupDef linkedBodyPartsGroup;
 
@@ -368,19 +380,14 @@ namespace Verse
 		{
 			if (equipment == null)
 			{
-				switch (cat)
+				return cat switch
 				{
-				case RangeCategory.Touch:
-					return accuracyTouch;
-				case RangeCategory.Short:
-					return accuracyShort;
-				case RangeCategory.Medium:
-					return accuracyMedium;
-				case RangeCategory.Long:
-					return accuracyLong;
-				default:
-					throw new InvalidOperationException();
-				}
+					RangeCategory.Touch => accuracyTouch, 
+					RangeCategory.Short => accuracyShort, 
+					RangeCategory.Medium => accuracyMedium, 
+					RangeCategory.Long => accuracyLong, 
+					_ => throw new InvalidOperationException(), 
+				};
 			}
 			StatDef stat = null;
 			switch (cat)
@@ -473,29 +480,36 @@ namespace Verse
 
 		public float GetHitChanceFactor(Thing equipment, float dist)
 		{
-			float value = (dist <= 3f) ? AdjustedAccuracy(RangeCategory.Touch, equipment) : ((dist <= 12f) ? Mathf.Lerp(AdjustedAccuracy(RangeCategory.Touch, equipment), AdjustedAccuracy(RangeCategory.Short, equipment), (dist - 3f) / 9f) : ((dist <= 25f) ? Mathf.Lerp(AdjustedAccuracy(RangeCategory.Short, equipment), AdjustedAccuracy(RangeCategory.Medium, equipment), (dist - 12f) / 13f) : ((!(dist <= 40f)) ? AdjustedAccuracy(RangeCategory.Long, equipment) : Mathf.Lerp(AdjustedAccuracy(RangeCategory.Medium, equipment), AdjustedAccuracy(RangeCategory.Long, equipment), (dist - 25f) / 15f))));
+			float value = ((dist <= 3f) ? AdjustedAccuracy(RangeCategory.Touch, equipment) : ((dist <= 12f) ? Mathf.Lerp(AdjustedAccuracy(RangeCategory.Touch, equipment), AdjustedAccuracy(RangeCategory.Short, equipment), (dist - 3f) / 9f) : ((dist <= 25f) ? Mathf.Lerp(AdjustedAccuracy(RangeCategory.Short, equipment), AdjustedAccuracy(RangeCategory.Medium, equipment), (dist - 12f) / 13f) : ((!(dist <= 40f)) ? AdjustedAccuracy(RangeCategory.Long, equipment) : Mathf.Lerp(AdjustedAccuracy(RangeCategory.Medium, equipment), AdjustedAccuracy(RangeCategory.Long, equipment), (dist - 25f) / 15f)))));
 			return Mathf.Clamp(value, 0.01f, 1f);
 		}
 
 		public void DrawRadiusRing(IntVec3 center)
 		{
-			if (Find.CurrentMap != null && !IsMeleeAttack)
+			if (Find.CurrentMap == null || IsMeleeAttack || !targetable)
 			{
-				float num = EffectiveMinRange(allowAdjacentShot: true);
-				if (num > 0f && num < GenRadial.MaxRadialPatternRadius)
-				{
-					GenDraw.DrawRadiusRing(center, num);
-				}
-				if (range < (float)(Find.CurrentMap.Size.x + Find.CurrentMap.Size.z) && range < GenRadial.MaxRadialPatternRadius)
-				{
-					GenDraw.DrawRadiusRing(center, range);
-				}
+				return;
 			}
+			float num = EffectiveMinRange(allowAdjacentShot: true);
+			if (num > 0f && num < GenRadial.MaxRadialPatternRadius)
+			{
+				GenDraw.DrawRadiusRing(center, num);
+			}
+			if (!(range < (float)(Find.CurrentMap.Size.x + Find.CurrentMap.Size.z)) || !(range < GenRadial.MaxRadialPatternRadius))
+			{
+				return;
+			}
+			Func<IntVec3, bool> predicate = null;
+			if (drawHighlightWithLineOfSight)
+			{
+				predicate = (IntVec3 c) => GenSight.LineOfSight(center, c, Find.CurrentMap);
+			}
+			GenDraw.DrawRadiusRing(center, range, Color.white, predicate);
 		}
 
 		public override string ToString()
 		{
-			string str = label.NullOrEmpty() ? ("range=" + range + ", defaultProjectile=" + defaultProjectile.ToStringSafe()) : label;
+			string str = (label.NullOrEmpty() ? ("range=" + range + ", defaultProjectile=" + defaultProjectile.ToStringSafe()) : label);
 			return "VerbProperties(" + str + ")";
 		}
 

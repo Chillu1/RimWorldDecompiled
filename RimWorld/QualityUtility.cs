@@ -23,7 +23,7 @@ namespace RimWorld
 		public static bool TryGetQuality(this Thing t, out QualityCategory qc)
 		{
 			MinifiedThing minifiedThing = t as MinifiedThing;
-			CompQuality compQuality = (minifiedThing != null) ? minifiedThing.InnerThing.TryGetComp<CompQuality>() : t.TryGetComp<CompQuality>();
+			CompQuality compQuality = ((minifiedThing != null) ? minifiedThing.InnerThing.TryGetComp<CompQuality>() : t.TryGetComp<CompQuality>());
 			if (compQuality == null)
 			{
 				qc = QualityCategory.Normal;
@@ -35,48 +35,32 @@ namespace RimWorld
 
 		public static string GetLabel(this QualityCategory cat)
 		{
-			switch (cat)
+			return cat switch
 			{
-			case QualityCategory.Awful:
-				return "QualityCategory_Awful".Translate();
-			case QualityCategory.Poor:
-				return "QualityCategory_Poor".Translate();
-			case QualityCategory.Normal:
-				return "QualityCategory_Normal".Translate();
-			case QualityCategory.Good:
-				return "QualityCategory_Good".Translate();
-			case QualityCategory.Excellent:
-				return "QualityCategory_Excellent".Translate();
-			case QualityCategory.Masterwork:
-				return "QualityCategory_Masterwork".Translate();
-			case QualityCategory.Legendary:
-				return "QualityCategory_Legendary".Translate();
-			default:
-				throw new ArgumentException();
-			}
+				QualityCategory.Awful => "QualityCategory_Awful".Translate(), 
+				QualityCategory.Poor => "QualityCategory_Poor".Translate(), 
+				QualityCategory.Normal => "QualityCategory_Normal".Translate(), 
+				QualityCategory.Good => "QualityCategory_Good".Translate(), 
+				QualityCategory.Excellent => "QualityCategory_Excellent".Translate(), 
+				QualityCategory.Masterwork => "QualityCategory_Masterwork".Translate(), 
+				QualityCategory.Legendary => "QualityCategory_Legendary".Translate(), 
+				_ => throw new ArgumentException(), 
+			};
 		}
 
 		public static string GetLabelShort(this QualityCategory cat)
 		{
-			switch (cat)
+			return cat switch
 			{
-			case QualityCategory.Awful:
-				return "QualityCategoryShort_Awful".Translate();
-			case QualityCategory.Poor:
-				return "QualityCategoryShort_Poor".Translate();
-			case QualityCategory.Normal:
-				return "QualityCategoryShort_Normal".Translate();
-			case QualityCategory.Good:
-				return "QualityCategoryShort_Good".Translate();
-			case QualityCategory.Excellent:
-				return "QualityCategoryShort_Excellent".Translate();
-			case QualityCategory.Masterwork:
-				return "QualityCategoryShort_Masterwork".Translate();
-			case QualityCategory.Legendary:
-				return "QualityCategoryShort_Legendary".Translate();
-			default:
-				throw new ArgumentException();
-			}
+				QualityCategory.Awful => "QualityCategoryShort_Awful".Translate(), 
+				QualityCategory.Poor => "QualityCategoryShort_Poor".Translate(), 
+				QualityCategory.Normal => "QualityCategoryShort_Normal".Translate(), 
+				QualityCategory.Good => "QualityCategoryShort_Good".Translate(), 
+				QualityCategory.Excellent => "QualityCategoryShort_Excellent".Translate(), 
+				QualityCategory.Masterwork => "QualityCategoryShort_Masterwork".Translate(), 
+				QualityCategory.Legendary => "QualityCategoryShort_Legendary".Translate(), 
+				_ => throw new ArgumentException(), 
+			};
 		}
 
 		public static bool FollowQualityThingFilter(this ThingDef def)
@@ -94,21 +78,15 @@ namespace RimWorld
 
 		public static QualityCategory GenerateQuality(QualityGenerator qualityGenerator)
 		{
-			switch (qualityGenerator)
+			return qualityGenerator switch
 			{
-			case QualityGenerator.BaseGen:
-				return GenerateQualityBaseGen();
-			case QualityGenerator.Reward:
-				return GenerateQualityReward();
-			case QualityGenerator.Gift:
-				return GenerateQualityGift();
-			case QualityGenerator.Super:
-				return GenerateQualitySuper();
-			case QualityGenerator.Trader:
-				return GenerateQualityTraderItem();
-			default:
-				throw new NotImplementedException(qualityGenerator.ToString());
-			}
+				QualityGenerator.BaseGen => GenerateQualityBaseGen(), 
+				QualityGenerator.Reward => GenerateQualityReward(), 
+				QualityGenerator.Gift => GenerateQualityGift(), 
+				QualityGenerator.Super => GenerateQualitySuper(), 
+				QualityGenerator.Trader => GenerateQualityTraderItem(), 
+				_ => throw new NotImplementedException(qualityGenerator.ToString()), 
+			};
 		}
 
 		public static QualityCategory GenerateQualityRandomEqualChance()
@@ -153,7 +131,7 @@ namespace RimWorld
 			}
 			int itemQuality = (int)pawnKind.itemQuality;
 			float value = Rand.Value;
-			int value2 = (value < 0.1f) ? (itemQuality - 1) : ((!(value < 0.2f)) ? itemQuality : (itemQuality + 1));
+			int value2 = ((value < 0.1f) ? (itemQuality - 1) : ((!(value < 0.2f)) ? itemQuality : (itemQuality + 1)));
 			value2 = Mathf.Clamp(value2, 0, 4);
 			return (QualityCategory)value2;
 		}
@@ -285,7 +263,7 @@ namespace RimWorld
 				return;
 			}
 			CompArt compArt = thing.TryGetComp<CompArt>();
-			if (compArt == null)
+			if (compArt == null || compArt.Props.mustBeFullGrave)
 			{
 				if (compQuality.Quality == QualityCategory.Masterwork)
 				{

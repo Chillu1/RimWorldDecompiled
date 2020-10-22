@@ -159,7 +159,7 @@ namespace RimWorld
 		public override string GetInspectString()
 		{
 			string text = base.GetInspectString();
-			string str = contentsKnown ? innerContainer.ContentsString : ((string)"UnknownLower".Translate());
+			string str = (contentsKnown ? innerContainer.ContentsString : ((string)"UnknownLower".Translate()));
 			if (!text.NullOrEmpty())
 			{
 				text += "\n";

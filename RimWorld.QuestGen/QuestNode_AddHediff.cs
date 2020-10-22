@@ -29,7 +29,7 @@ namespace RimWorld.QuestGen
 			if (pawns.GetValue(slate) != null && hediffDef.GetValue(slate) != null)
 			{
 				QuestPart_AddHediff questPart_AddHediff = new QuestPart_AddHediff();
-				questPart_AddHediff.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+				questPart_AddHediff.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 				questPart_AddHediff.hediffDef = hediffDef.GetValue(slate);
 				questPart_AddHediff.pawns.AddRange(pawns.GetValue(slate));
 				questPart_AddHediff.checkDiseaseContractChance = checkDiseaseContractChance.GetValue(slate);

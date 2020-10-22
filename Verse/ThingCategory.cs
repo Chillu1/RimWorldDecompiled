@@ -12,6 +12,7 @@ namespace Verse
 		Gas,
 		Attachment,
 		Mote,
-		Ethereal
+		Ethereal,
+		PsychicEmitter
 	}
 }

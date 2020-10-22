@@ -45,7 +45,7 @@ namespace RimWorld
 
 		private void Drop(Pawn pawn, Thing thing)
 		{
-			pawn.inventory.innerContainer.TryDrop(thing, pawn.Position, pawn.Map, ThingPlaceMode.Near, out Thing _);
+			pawn.inventory.innerContainer.TryDrop(thing, pawn.Position, pawn.Map, ThingPlaceMode.Near, out var _);
 		}
 	}
 }

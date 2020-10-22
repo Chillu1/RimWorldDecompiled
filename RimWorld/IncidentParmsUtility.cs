@@ -51,7 +51,7 @@ namespace RimWorld
 
 		private static int GetGroup(Pawn pawn, Dictionary<Pawn, int> groups)
 		{
-			if (groups == null || !groups.TryGetValue(pawn, out int value))
+			if (groups == null || !groups.TryGetValue(pawn, out var value))
 			{
 				return -1;
 			}

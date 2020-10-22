@@ -90,7 +90,7 @@ namespace RimWorld
 					}
 					else
 					{
-						ThingDef thingDef = (fuelFilter.AnyAllowedDef == null) ? ThingDefOf.Chemfuel : fuelFilter.AnyAllowedDef;
+						ThingDef thingDef = ((fuelFilter.AnyAllowedDef == null) ? ThingDefOf.Chemfuel : fuelFilter.AnyAllowedDef);
 						fuelIcon = thingDef.uiIcon;
 					}
 				}
@@ -104,7 +104,7 @@ namespace RimWorld
 			{
 				if (factorByDifficulty)
 				{
-					return fuelMultiplier / Find.Storyteller.difficulty.maintenanceCostFactor;
+					return fuelMultiplier / Find.Storyteller.difficultyValues.maintenanceCostFactor;
 				}
 				return fuelMultiplier;
 			}

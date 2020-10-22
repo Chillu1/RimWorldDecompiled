@@ -39,7 +39,7 @@ namespace RimWorld.Planet
 			Map map = mapParent.Map;
 			if (map != null)
 			{
-				CaravanDropInventoryMode dropInventoryMode = map.IsPlayerHome ? CaravanDropInventoryMode.UnloadIndividually : CaravanDropInventoryMode.DoNotDrop;
+				CaravanDropInventoryMode dropInventoryMode = (map.IsPlayerHome ? CaravanDropInventoryMode.UnloadIndividually : CaravanDropInventoryMode.DoNotDrop);
 				bool draftColonists = mapParent.Faction != null && mapParent.Faction.HostileTo(Faction.OfPlayer);
 				if (caravan.IsPlayerControlled || mapParent.Faction == Faction.OfPlayer)
 				{
@@ -63,7 +63,7 @@ namespace RimWorld.Planet
 			}
 			if (mapParent.EnterCooldownBlocksEntering())
 			{
-				return FloatMenuAcceptanceReport.WithFailMessage("MessageEnterCooldownBlocksEntering".Translate(mapParent.EnterCooldownDaysLeft().ToString("0.#")));
+				return FloatMenuAcceptanceReport.WithFailMessage("MessageEnterCooldownBlocksEntering".Translate(mapParent.EnterCooldownTicksLeft().ToStringTicksToPeriod()));
 			}
 			return true;
 		}

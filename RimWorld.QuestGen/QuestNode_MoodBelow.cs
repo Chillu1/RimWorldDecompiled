@@ -37,7 +37,7 @@ namespace RimWorld.QuestGen
 				questPart_MoodBelow.pawns.AddRange(pawns.GetValue(slate));
 				questPart_MoodBelow.threshold = threshold.GetValue(slate);
 				questPart_MoodBelow.minTicksBelowThreshold = 40000;
-				questPart_MoodBelow.inSignalEnable = (QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+				questPart_MoodBelow.inSignalEnable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 				if (node != null)
 				{
 					QuestGenUtility.RunInnerNode(node, questPart_MoodBelow);

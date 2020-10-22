@@ -11,7 +11,8 @@ namespace RimWorld.Planet
 		private enum Tab
 		{
 			Pawns,
-			Items
+			Items,
+			FoodAndMedicine
 		}
 
 		private Caravan caravan;
@@ -21,6 +22,8 @@ namespace RimWorld.Planet
 		private TransferableOneWayWidget pawnsTransfer;
 
 		private TransferableOneWayWidget itemsTransfer;
+
+		private TransferableOneWayWidget foodAndMedicineTransfer;
 
 		private Tab tab;
 
@@ -353,6 +356,10 @@ namespace RimWorld.Planet
 			{
 				tab = Tab.Items;
 			}, tab == Tab.Items));
+			tabsList.Add(new TabRecord("FoodAndMedicineTab".Translate(), delegate
+			{
+				tab = Tab.FoodAndMedicine;
+			}, tab == Tab.FoodAndMedicine));
 			inRect.yMin += 119f;
 			Widgets.DrawMenuSection(inRect);
 			TabDrawer.DrawTabs(inRect, tabsList);
@@ -370,6 +377,9 @@ namespace RimWorld.Planet
 				break;
 			case Tab.Items:
 				itemsTransfer.OnGUI(inRect2, out anythingChanged);
+				break;
+			case Tab.FoodAndMedicine:
+				foodAndMedicineTransfer.OnGUI(inRect2, out anythingChanged);
 				break;
 			}
 			if (anythingChanged)
@@ -426,7 +436,7 @@ namespace RimWorld.Planet
 			transferables = new List<TransferableOneWay>();
 			AddPawnsToTransferables();
 			AddItemsToTransferables();
-			CaravanUIUtility.CreateCaravanTransferableWidgets(transferables, out pawnsTransfer, out itemsTransfer, "SplitCaravanThingCountTip".Translate(), IgnorePawnsInventoryMode.Ignore, () => DestMassCapacity - DestMassUsage, ignoreSpawnedCorpsesGearAndInventoryMass: false, caravan.Tile);
+			CaravanUIUtility.CreateCaravanTransferableWidgets_NewTmp(transferables, out pawnsTransfer, out itemsTransfer, out foodAndMedicineTransfer, "SplitCaravanThingCountTip".Translate(), IgnorePawnsInventoryMode.Ignore, () => DestMassCapacity - DestMassUsage, ignoreSpawnedCorpsesGearAndInventoryMass: false, caravan.Tile);
 			CountToTransferChanged();
 		}
 

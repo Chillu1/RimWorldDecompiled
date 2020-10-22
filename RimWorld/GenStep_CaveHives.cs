@@ -22,7 +22,7 @@ namespace RimWorld
 
 		public override void Generate(Map map, GenStepParams parms)
 		{
-			if (!Find.Storyteller.difficulty.allowCaveHives)
+			if (!Find.Storyteller.difficultyValues.allowCaveHives)
 			{
 				return;
 			}
@@ -65,7 +65,7 @@ namespace RimWorld
 
 		private void TrySpawnHive(Map map)
 		{
-			if (TryFindHiveSpawnCell(map, out IntVec3 spawnCell))
+			if (TryFindHiveSpawnCell(map, out var spawnCell))
 			{
 				possibleSpawnCells.Remove(spawnCell);
 				Hive hive = (Hive)GenSpawn.Spawn(ThingMaker.MakeThing(ThingDefOf.Hive), spawnCell, map);
@@ -87,7 +87,7 @@ namespace RimWorld
 			IntVec3 intVec = IntVec3.Invalid;
 			for (int i = 0; i < 3; i++)
 			{
-				if (!possibleSpawnCells.Where((IntVec3 x) => x.Standable(map) && x.GetFirstItem(map) == null && x.GetFirstBuilding(map) == null && x.GetFirstPawn(map) == null).TryRandomElement(out IntVec3 result))
+				if (!possibleSpawnCells.Where((IntVec3 x) => x.Standable(map) && x.GetFirstItem(map) == null && x.GetFirstBuilding(map) == null && x.GetFirstPawn(map) == null).TryRandomElement(out var result))
 				{
 					break;
 				}

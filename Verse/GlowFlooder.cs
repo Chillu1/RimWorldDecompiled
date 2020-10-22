@@ -108,7 +108,6 @@ namespace Verse
 			IntVec3 position = theGlower.parent.Position;
 			int num = Mathf.RoundToInt(glower.Props.glowRadius * 100f);
 			int curIndex = cellIndices.CellToIndex(position);
-			int num2 = 0;
 			InitStatusesAndPushStartNode(ref curIndex, position);
 			while (openSet.Count != 0)
 			{
@@ -118,20 +117,20 @@ namespace Verse
 				SetGlowGridFromDist(curIndex);
 				for (int i = 0; i < 8; i++)
 				{
-					uint num3 = (uint)(intVec.x + Directions[i, 0]);
-					uint num4 = (uint)(intVec.z + Directions[i, 1]);
-					if (num3 >= mapSizeX || num4 >= mapSizeZ)
+					uint num2 = (uint)(intVec.x + Directions[i, 0]);
+					uint num3 = (uint)(intVec.z + Directions[i, 1]);
+					if (num2 >= mapSizeX || num3 >= mapSizeZ)
 					{
 						continue;
 					}
-					int x = (int)num3;
-					int z = (int)num4;
-					int num5 = cellIndices.CellToIndex(x, z);
-					if (calcGrid[num5].status == statusFinalizedValue)
+					int x = (int)num2;
+					int z = (int)num3;
+					int num4 = cellIndices.CellToIndex(x, z);
+					if (calcGrid[num4].status == statusFinalizedValue)
 					{
 						continue;
 					}
-					blockers[i] = innerArray[num5];
+					blockers[i] = innerArray[num4];
 					if (blockers[i] != null)
 					{
 						if (blockers[i].def.blockLight)
@@ -140,9 +139,9 @@ namespace Verse
 						}
 						blockers[i] = null;
 					}
-					int num6 = (i >= 4) ? 141 : 100;
-					int num7 = calcGrid[curIndex].intDist + num6;
-					if (num7 > num)
+					int num5 = ((i >= 4) ? 141 : 100);
+					int num6 = calcGrid[curIndex].intDist + num5;
+					if (num6 > num)
 					{
 						continue;
 					}
@@ -173,16 +172,16 @@ namespace Verse
 						}
 						break;
 					}
-					if (calcGrid[num5].status <= statusUnseenValue)
+					if (calcGrid[num4].status <= statusUnseenValue)
 					{
-						calcGrid[num5].intDist = 999999;
-						calcGrid[num5].status = statusOpenValue;
+						calcGrid[num4].intDist = 999999;
+						calcGrid[num4].status = statusOpenValue;
 					}
-					if (num7 < calcGrid[num5].intDist)
+					if (num6 < calcGrid[num4].intDist)
 					{
-						calcGrid[num5].intDist = num7;
-						calcGrid[num5].status = statusOpenValue;
-						openSet.Push(num5);
+						calcGrid[num4].intDist = num6;
+						calcGrid[num4].status = statusOpenValue;
+						openSet.Push(num4);
 					}
 				}
 			}
@@ -209,6 +208,7 @@ namespace Verse
 				float b = 1f / (num * num);
 				float b2 = Mathf.Lerp(1f + attenLinearSlope * num, b, 0.4f);
 				colorInt = glower.Props.glowColor * b2;
+				colorInt.a = 0;
 			}
 			if (colorInt.r > 0 || colorInt.g > 0 || colorInt.b > 0)
 			{

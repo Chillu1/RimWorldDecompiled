@@ -50,7 +50,7 @@ namespace RimWorld
 					pawn = boredPawn;
 				}
 			}
-			string value = (pawn != null) ? JoyUtility.JoyKindsOnMapString(pawn.Map) : "";
+			string value = ((pawn != null) ? JoyUtility.JoyKindsOnMapString(pawn.Map) : "");
 			return "BoredomDesc".Translate(stringBuilder.ToString().TrimEndNewlines(), pawn.LabelShort, value, pawn.Named("PAWN"));
 		}
 	}

@@ -51,7 +51,14 @@ namespace RimWorld.Planet
 					}
 					if (pawn.RaceProps.Humanlike)
 					{
-						GenGuest.AddPrisonerSoldThoughts(pawn);
+						if (pawn.FactionOrExtraMiniOrHomeFaction == settlement.Faction)
+						{
+							GenGuest.AddHealthyPrisonerReleasedThoughts(pawn);
+						}
+						else
+						{
+							GenGuest.AddPrisonerSoldThoughts(pawn);
+						}
 					}
 					else if (pawn.RaceProps.Animal && pawn.relations != null)
 					{
@@ -75,7 +82,7 @@ namespace RimWorld.Planet
 				for (int i = 0; i < directlyHeldThings.Count; i++)
 				{
 					Pawn p;
-					if ((p = (directlyHeldThings[i] as Pawn)) != null && p.IsQuestLodger())
+					if ((p = directlyHeldThings[i] as Pawn) != null && p.IsQuestLodger())
 					{
 						return false;
 					}

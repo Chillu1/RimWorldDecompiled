@@ -37,6 +37,10 @@ namespace Verse
 						parentNode.InsertBefore(parentNode.OwnerDocument.ImportNode(node.ChildNodes[num], deep: true), xmlNode);
 					}
 				}
+				if (xmlNode.NodeType == XmlNodeType.Text)
+				{
+					parentNode.Normalize();
+				}
 			}
 			return result;
 		}

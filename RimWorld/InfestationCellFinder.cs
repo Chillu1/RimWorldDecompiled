@@ -55,7 +55,7 @@ namespace RimWorld
 		public static bool TryFindCell(out IntVec3 cell, Map map)
 		{
 			CalculateLocationCandidates(map);
-			if (!locationCandidates.TryRandomElementByWeight((LocationCandidate x) => x.score, out LocationCandidate result))
+			if (!locationCandidates.TryRandomElementByWeight((LocationCandidate x) => x.score, out var result))
 			{
 				cell = IntVec3.Invalid;
 				return false;
@@ -106,7 +106,7 @@ namespace RimWorld
 				return 0f;
 			}
 			int num = StraightLineDistToUnroofed(cell, map);
-			float value = regionsDistanceToUnroofed.TryGetValue(region, out value) ? Mathf.Min(value, (float)num * 4f) : ((float)num * 1.15f);
+			float value = (regionsDistanceToUnroofed.TryGetValue(region, out value) ? Mathf.Min(value, (float)num * 4f) : ((float)num * 1.15f));
 			value = Mathf.Pow(value, 1.55f);
 			float num2 = Mathf.InverseLerp(0f, 12f, num);
 			float num3 = Mathf.Lerp(1f, 0.18f, map.glowGrid.GameGlowAt(cell));

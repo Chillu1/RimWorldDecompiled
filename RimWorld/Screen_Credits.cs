@@ -107,7 +107,7 @@ namespace RimWorld
 					text = string.Empty;
 					continue;
 				}
-				creditRecord_Role.displayKey = (text.NullOrEmpty() || creditRecord_Role.roleKey != text);
+				creditRecord_Role.displayKey = text.NullOrEmpty() || creditRecord_Role.roleKey != text;
 				text = creditRecord_Role.roleKey;
 			}
 		}

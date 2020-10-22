@@ -66,7 +66,12 @@ namespace RimWorld.Planet
 		private static void GiveGiftInternal(Thing thing, int count, Faction giveTo)
 		{
 			Thing thing2 = thing.SplitOff(count);
-			(thing2 as Pawn)?.SetFaction(giveTo);
+			Pawn pawn;
+			if ((pawn = thing2 as Pawn) != null)
+			{
+				pawn.SetFaction(giveTo);
+				pawn.guest.SetGuestStatus(null);
+			}
 			thing2.DestroyOrPassToWorld();
 		}
 
@@ -141,7 +146,7 @@ namespace RimWorld.Planet
 					}
 					else
 					{
-						float priceFactorSell_TraderPriceType = (giveTo.TraderKind != null) ? giveTo.TraderKind.PriceTypeFor(directlyHeldThings[i].def, TradeAction.PlayerSells).PriceMultiplier() : 1f;
+						float priceFactorSell_TraderPriceType = ((giveTo.TraderKind != null) ? giveTo.TraderKind.PriceTypeFor(directlyHeldThings[i].def, TradeAction.PlayerSells).PriceMultiplier() : 1f);
 						float tradePriceImprovementOffsetForPlayer = giveTo.TradePriceImprovementOffsetForPlayer;
 						singlePrice = TradeUtility.GetPricePlayerSell(directlyHeldThings[i], priceFactorSell_TraderPriceType, 1f, tradePriceImprovementOffsetForPlayer);
 					}

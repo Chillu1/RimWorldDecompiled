@@ -7,13 +7,13 @@ namespace RimWorld
 {
 	public abstract class CompAbilityEffect_WithDest : CompAbilityEffect, ITargetingSource
 	{
-		protected LocalTargetInfo selectedTarget;
+		protected LocalTargetInfo selectedTarget = LocalTargetInfo.Invalid;
 
 		private List<IntVec3> cells = new List<IntVec3>();
 
 		public new CompProperties_EffectWithDest Props => (CompProperties_EffectWithDest)props;
 
-		public TargetingParameters targetParams => new TargetingParameters
+		public virtual TargetingParameters targetParams => new TargetingParameters
 		{
 			canTargetLocations = true
 		};
@@ -73,7 +73,7 @@ namespace RimWorld
 			}
 		}
 
-		protected bool CanPlaceSelectedTargetAt(LocalTargetInfo target)
+		public bool CanPlaceSelectedTargetAt(LocalTargetInfo target)
 		{
 			if (selectedTarget.Pawn != null)
 			{
@@ -83,13 +83,18 @@ namespace RimWorld
 				}
 				return false;
 			}
-			Building edifice = target.Cell.GetEdifice(parent.pawn.Map);
+			return CanTeleportThingTo(target, parent.pawn.Map);
+		}
+
+		public static bool CanTeleportThingTo(LocalTargetInfo target, Map map)
+		{
+			Building edifice = target.Cell.GetEdifice(map);
 			Building_Door building_Door;
-			if (edifice != null && edifice.def.surfaceType != SurfaceType.Item && edifice.def.surfaceType != SurfaceType.Eat && ((building_Door = (edifice as Building_Door)) == null || !building_Door.Open))
+			if (edifice != null && edifice.def.surfaceType != SurfaceType.Item && edifice.def.surfaceType != SurfaceType.Eat && ((building_Door = edifice as Building_Door) == null || !building_Door.Open))
 			{
 				return false;
 			}
-			List<Thing> thingList = target.Cell.GetThingList(parent.pawn.Map);
+			List<Thing> thingList = target.Cell.GetThingList(map);
 			for (int i = 0; i < thingList.Count; i++)
 			{
 				if (thingList[i].def.category == ThingCategory.Item)
@@ -106,11 +111,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (target.Cell.DistanceTo(target.Cell) > Props.range)
-			{
-				return false;
-			}
-			if (!CanPlaceSelectedTargetAt(target))
+			if (Props.range > 0f && target.Cell.DistanceTo(selectedTarget.Cell) > Props.range)
 			{
 				return false;
 			}
@@ -121,20 +122,23 @@ namespace RimWorld
 			return true;
 		}
 
-		public bool ValidateTarget(LocalTargetInfo target)
+		public virtual bool ValidateTarget(LocalTargetInfo target)
 		{
 			return CanHitTarget(target);
 		}
 
 		public void DrawHighlight(LocalTargetInfo target)
 		{
-			if (Props.requiresLineOfSight)
+			if (Props.range > 0f)
 			{
-				GenDraw.DrawRadiusRing(selectedTarget.Cell, Props.range, Color.white, (IntVec3 c) => GenSight.LineOfSight(selectedTarget.Cell, c, parent.pawn.Map) && CanPlaceSelectedTargetAt(c));
-			}
-			else
-			{
-				GenDraw.DrawRadiusRing(selectedTarget.Cell, Props.range);
+				if (Props.requiresLineOfSight)
+				{
+					GenDraw.DrawRadiusRing(selectedTarget.Cell, Props.range, Color.white, (IntVec3 c) => GenSight.LineOfSight(selectedTarget.Cell, c, parent.pawn.Map) && CanPlaceSelectedTargetAt(c));
+				}
+				else
+				{
+					GenDraw.DrawRadiusRing(selectedTarget.Cell, Props.range);
+				}
 			}
 			if (target.IsValid)
 			{
@@ -144,13 +148,19 @@ namespace RimWorld
 
 		public void OnGUI(LocalTargetInfo target)
 		{
-			Texture2D icon = (!target.IsValid) ? TexCommand.CannotShoot : parent.def.uiIcon;
+			Texture2D icon = ((!target.IsValid) ? TexCommand.CannotShoot : parent.def.uiIcon);
 			GenUI.DrawMouseAttachment(icon);
+			string text = ExtraLabel(target);
+			if (!text.NullOrEmpty())
+			{
+				Widgets.MouseAttachedLabel(text);
+			}
 		}
 
 		public void OrderForceTarget(LocalTargetInfo target)
 		{
 			parent.QueueCastingJob(selectedTarget, target);
+			selectedTarget = LocalTargetInfo.Invalid;
 		}
 
 		public void SetTarget(LocalTargetInfo target)

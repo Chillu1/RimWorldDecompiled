@@ -9,7 +9,7 @@ namespace RimWorld
 
 		public static ThingDef GetNextResource(IntVec3 p, Map map)
 		{
-			GetNextResource(p, map, out ThingDef resDef, out int _, out IntVec3 _);
+			GetNextResource(p, map, out var resDef, out var _, out var _);
 			return resDef;
 		}
 

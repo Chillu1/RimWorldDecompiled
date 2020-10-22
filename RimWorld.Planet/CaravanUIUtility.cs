@@ -8,6 +8,13 @@ namespace RimWorld.Planet
 {
 	public static class CaravanUIUtility
 	{
+		private enum TransferableCategory
+		{
+			Pawn,
+			Item,
+			FoodAndMedicine
+		}
+
 		public struct CaravanInfo
 		{
 			public float massUsage;
@@ -93,11 +100,31 @@ namespace RimWorld.Planet
 
 		private static List<TransferableUIUtility.ExtraInfo> tmpInfo = new List<TransferableUIUtility.ExtraInfo>();
 
+		[Obsolete]
 		public static void CreateCaravanTransferableWidgets(List<TransferableOneWay> transferables, out TransferableOneWayWidget pawnsTransfer, out TransferableOneWayWidget itemsTransfer, string thingCountTip, IgnorePawnsInventoryMode ignorePawnInventoryMass, Func<float> availableMassGetter, bool ignoreSpawnedCorpsesGearAndInventoryMass, int tile, bool playerPawnsReadOnly = false)
+		{
+			CreateCaravanTransferableWidgets_NewTmp(transferables, out pawnsTransfer, out itemsTransfer, out var _, thingCountTip, ignorePawnInventoryMass, availableMassGetter, ignoreSpawnedCorpsesGearAndInventoryMass, tile, playerPawnsReadOnly);
+		}
+
+		public static void CreateCaravanTransferableWidgets_NewTmp(List<TransferableOneWay> transferables, out TransferableOneWayWidget pawnsTransfer, out TransferableOneWayWidget itemsTransfer, out TransferableOneWayWidget foodAndMedicineTransfer, string thingCountTip, IgnorePawnsInventoryMode ignorePawnInventoryMass, Func<float> availableMassGetter, bool ignoreSpawnedCorpsesGearAndInventoryMass, int tile, bool playerPawnsReadOnly = false)
 		{
 			pawnsTransfer = new TransferableOneWayWidget(null, null, null, thingCountTip, drawMass: true, ignorePawnInventoryMass, includePawnsMassInMassUsage: false, availableMassGetter, 0f, ignoreSpawnedCorpsesGearAndInventoryMass, tile, drawMarketValue: true, drawEquippedWeapon: true, drawNutritionEatenPerDay: true, drawItemNutrition: false, drawForagedFoodPerDay: true, drawDaysUntilRot: false, playerPawnsReadOnly);
 			AddPawnsSections(pawnsTransfer, transferables);
-			itemsTransfer = new TransferableOneWayWidget(transferables.Where((TransferableOneWay x) => x.ThingDef.category != ThingCategory.Pawn), null, null, thingCountTip, drawMass: true, ignorePawnInventoryMass, includePawnsMassInMassUsage: false, availableMassGetter, 0f, ignoreSpawnedCorpsesGearAndInventoryMass, tile, drawMarketValue: true, drawEquippedWeapon: false, drawNutritionEatenPerDay: false, drawItemNutrition: true, drawForagedFoodPerDay: false, drawDaysUntilRot: true);
+			itemsTransfer = new TransferableOneWayWidget(transferables.Where((TransferableOneWay x) => GetTransferableCategory(x) == TransferableCategory.Item), null, null, thingCountTip, drawMass: true, ignorePawnInventoryMass, includePawnsMassInMassUsage: false, availableMassGetter, 0f, ignoreSpawnedCorpsesGearAndInventoryMass, tile, drawMarketValue: true, drawEquippedWeapon: false, drawNutritionEatenPerDay: false, drawItemNutrition: true, drawForagedFoodPerDay: false, drawDaysUntilRot: true);
+			foodAndMedicineTransfer = new TransferableOneWayWidget(transferables.Where((TransferableOneWay x) => GetTransferableCategory(x) == TransferableCategory.FoodAndMedicine), null, null, thingCountTip, drawMass: true, ignorePawnInventoryMass, includePawnsMassInMassUsage: false, availableMassGetter, 0f, ignoreSpawnedCorpsesGearAndInventoryMass, tile, drawMarketValue: true, drawEquippedWeapon: false, drawNutritionEatenPerDay: false, drawItemNutrition: true, drawForagedFoodPerDay: false, drawDaysUntilRot: true);
+		}
+
+		private static TransferableCategory GetTransferableCategory(Transferable t)
+		{
+			if (t.ThingDef.category == ThingCategory.Pawn)
+			{
+				return TransferableCategory.Pawn;
+			}
+			if ((!t.ThingDef.thingCategories.NullOrEmpty() && t.ThingDef.thingCategories.Contains(ThingCategoryDefOf.Medicine)) || (t.ThingDef.IsIngestible && !t.ThingDef.IsDrug && !t.ThingDef.IsCorpse) || (t.AnyThing.GetInnerIfMinified().def.IsBed && t.AnyThing.GetInnerIfMinified().def.building.bed_caravansCanUse))
+			{
+				return TransferableCategory.FoodAndMedicine;
+			}
+			return TransferableCategory.Item;
 		}
 
 		public static void AddPawnsSections(TransferableOneWayWidget widget, List<TransferableOneWay> transferables)
@@ -116,7 +143,7 @@ namespace RimWorld.Planet
 				return "InfiniteDaysWorthOfFoodInfo".Translate();
 			}
 			string text = daysWorthOfFood.First.ToString("0.#");
-			string str = multiline ? "\n" : " ";
+			string str = (multiline ? "\n" : " ");
 			if (daysWorthOfFood.Second < 600f && daysWorthOfFood.Second < daysWorthOfFood.First)
 			{
 				text += str + "(" + "DaysWorthOfFoodInfoRot".Translate(daysWorthOfFood.Second.ToString("0.#") + ")");
@@ -142,12 +169,12 @@ namespace RimWorld.Planet
 		{
 			tmpInfo.Clear();
 			TaggedString taggedString = info.massUsage.ToStringEnsureThreshold(info.massCapacity, 0) + " / " + info.massCapacity.ToString("F0") + " " + "kg".Translate();
-			TaggedString taggedString2 = info2.HasValue ? (info2.Value.massUsage.ToStringEnsureThreshold(info2.Value.massCapacity, 0) + " / " + info2.Value.massCapacity.ToString("F0") + " " + "kg".Translate()) : ((TaggedString)null);
+			TaggedString taggedString2 = (info2.HasValue ? (info2.Value.massUsage.ToStringEnsureThreshold(info2.Value.massCapacity, 0) + " / " + info2.Value.massCapacity.ToString("F0") + " " + "kg".Translate()) : ((TaggedString)null));
 			tmpInfo.Add(new TransferableUIUtility.ExtraInfo("Mass".Translate(), taggedString, GetMassColor(info.massUsage, info.massCapacity, lerpMassColor), GetMassTip(info.massUsage, info.massCapacity, info.massCapacityExplanation, info2.HasValue ? new float?(info2.Value.massUsage) : null, info2.HasValue ? new float?(info2.Value.massCapacity) : null, info2.HasValue ? info2.Value.massCapacityExplanation : null), taggedString2, info2.HasValue ? GetMassColor(info2.Value.massUsage, info2.Value.massCapacity, lerpMassColor) : Color.white, lastMassFlashTime));
 			if (info.extraMassUsage != -1f)
 			{
 				TaggedString taggedString3 = info.extraMassUsage.ToStringEnsureThreshold(info.extraMassCapacity, 0) + " / " + info.extraMassCapacity.ToString("F0") + " " + "kg".Translate();
-				TaggedString taggedString4 = info2.HasValue ? (info2.Value.extraMassUsage.ToStringEnsureThreshold(info2.Value.extraMassCapacity, 0) + " / " + info2.Value.extraMassCapacity.ToString("F0") + " " + "kg".Translate()) : ((TaggedString)null);
+				TaggedString taggedString4 = (info2.HasValue ? (info2.Value.extraMassUsage.ToStringEnsureThreshold(info2.Value.extraMassCapacity, 0) + " / " + info2.Value.extraMassCapacity.ToString("F0") + " " + "kg".Translate()) : ((TaggedString)null));
 				tmpInfo.Add(new TransferableUIUtility.ExtraInfo("CaravanMass".Translate(), taggedString3, GetMassColor(info.extraMassUsage, info.extraMassCapacity, lerpMassColor: true), GetMassTip(info.extraMassUsage, info.extraMassCapacity, info.extraMassCapacityExplanation, info2.HasValue ? new float?(info2.Value.extraMassUsage) : null, info2.HasValue ? new float?(info2.Value.extraMassCapacity) : null, info2.HasValue ? info2.Value.extraMassCapacityExplanation : null), taggedString4, info2.HasValue ? GetMassColor(info2.Value.extraMassUsage, info2.Value.extraMassCapacity, lerpMassColor: true) : Color.white));
 			}
 			string text = "CaravanMovementSpeedTip".Translate();
@@ -162,7 +189,7 @@ namespace RimWorld.Planet
 			tmpInfo.Add(new TransferableUIUtility.ExtraInfo("CaravanMovementSpeed".Translate(), info.tilesPerDay.ToString("0.#") + " " + "TilesPerDay".Translate(), GenUI.LerpColor(TilesPerDayColor, info.tilesPerDay), text, info2.HasValue ? (info2.Value.tilesPerDay.ToString("0.#") + " " + "TilesPerDay".Translate()) : ((TaggedString)null), info2.HasValue ? GenUI.LerpColor(TilesPerDayColor, info2.Value.tilesPerDay) : Color.white));
 			tmpInfo.Add(new TransferableUIUtility.ExtraInfo("DaysWorthOfFood".Translate(), GetDaysWorthOfFoodLabel(info.daysWorthOfFood, multiline), GetDaysWorthOfFoodColor(info.daysWorthOfFood, ticksToArrive), "DaysWorthOfFoodTooltip".Translate() + extraDaysWorthOfFoodTipInfo + "\n\n" + VirtualPlantsUtility.GetVirtualPlantsStatusExplanationAt(currentTile, Find.TickManager.TicksAbs), info2.HasValue ? GetDaysWorthOfFoodLabel(info2.Value.daysWorthOfFood, multiline) : null, info2.HasValue ? GetDaysWorthOfFoodColor(info2.Value.daysWorthOfFood, ticksToArrive) : Color.white));
 			string text2 = info.foragedFoodPerDay.Second.ToString("0.#");
-			string text3 = info2.HasValue ? info2.Value.foragedFoodPerDay.Second.ToString("0.#") : null;
+			string text3 = (info2.HasValue ? info2.Value.foragedFoodPerDay.Second.ToString("0.#") : null);
 			TaggedString taggedString5 = "ForagedFoodPerDayTip".Translate();
 			taggedString5 += "\n\n" + info.foragedFoodPerDayExplanation;
 			if (info2.HasValue)
@@ -171,7 +198,7 @@ namespace RimWorld.Planet
 			}
 			if (info.foragedFoodPerDay.Second > 0f || (info2.HasValue && info2.Value.foragedFoodPerDay.Second > 0f))
 			{
-				string text4 = multiline ? "\n" : " ";
+				string text4 = (multiline ? "\n" : " ");
 				if (!info2.HasValue)
 				{
 					text2 = text2 + text4 + "(" + info.foragedFoodPerDay.First.label + ")";

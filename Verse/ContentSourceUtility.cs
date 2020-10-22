@@ -16,19 +16,14 @@ namespace Verse
 
 		public static Texture2D GetIcon(this ContentSource s)
 		{
-			switch (s)
+			return s switch
 			{
-			case ContentSource.Undefined:
-				return BaseContent.BadTex;
-			case ContentSource.OfficialModsFolder:
-				return ContentSourceIcon_OfficialModsFolder;
-			case ContentSource.ModsFolder:
-				return ContentSourceIcon_ModsFolder;
-			case ContentSource.SteamWorkshop:
-				return ContentSourceIcon_SteamWorkshop;
-			default:
-				throw new NotImplementedException();
-			}
+				ContentSource.Undefined => BaseContent.BadTex, 
+				ContentSource.OfficialModsFolder => ContentSourceIcon_OfficialModsFolder, 
+				ContentSource.ModsFolder => ContentSourceIcon_ModsFolder, 
+				ContentSource.SteamWorkshop => ContentSourceIcon_SteamWorkshop, 
+				_ => throw new NotImplementedException(), 
+			};
 		}
 
 		public static void DrawContentSource(Rect r, ContentSource source, Action clickAction = null)

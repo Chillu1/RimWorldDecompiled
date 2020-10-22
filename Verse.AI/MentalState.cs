@@ -87,6 +87,10 @@ namespace Verse.AI
 						allTrait.Notify_MentalStateEndedOn(pawn, causedByMood);
 					}
 				}
+				if (def.IsAggro)
+				{
+					pawn.mindState.enemyTarget = null;
+				}
 			}
 			if (pawn.Spawned)
 			{
@@ -121,7 +125,8 @@ namespace Verse.AI
 			{
 				return null;
 			}
-			return def.beginLetter.Formatted(pawn.LabelShort, pawn.Named("PAWN")).AdjustedFor(pawn).CapitalizeFirst();
+			return def.beginLetter.Formatted(pawn.NameShortColored, pawn.Named("PAWN")).AdjustedFor(pawn).Resolve()
+				.CapitalizeFirst();
 		}
 
 		public virtual void Notify_AttackedTarget(LocalTargetInfo hitTarget)

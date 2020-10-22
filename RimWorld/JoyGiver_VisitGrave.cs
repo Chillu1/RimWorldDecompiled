@@ -18,7 +18,7 @@ namespace RimWorld
 			{
 				float lengthHorizontal = (x.Position - pawn.Position).LengthHorizontal;
 				return Mathf.Max(150f - lengthHorizontal, 5f);
-			}, out Thing result))
+			}, out var result))
 			{
 				return null;
 			}

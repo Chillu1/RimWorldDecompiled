@@ -21,6 +21,11 @@ namespace RimWorld
 				reason = "AbilitySpeechDisabledAlreadyGivingSpeech".Translate();
 				return true;
 			}
+			if (GatheringsUtility.AnyLordJobPreventsNewGatherings(parent.pawn.Map))
+			{
+				reason = "AbilitySpeechDisabledAnotherGatheringInProgress".Translate();
+				return true;
+			}
 			Building_Throne assignedThrone = parent.pawn.ownership.AssignedThrone;
 			if (assignedThrone == null)
 			{

@@ -30,7 +30,7 @@ namespace RimWorld
 							ThingDef thingDef2 = item.def;
 							if (item.def.entityDefToBuild != null)
 							{
-								thingDef2 = (item.def.entityDefToBuild as ThingDef);
+								thingDef2 = item.def.entityDefToBuild as ThingDef;
 							}
 							if (thingDef2 != null && thingDef2.hasInteractionCell && ThingUtility.InteractionCellWhenAt(thingDef2, item.Position, item.Rotation, item.Map) == intVec)
 							{

@@ -9,7 +9,7 @@ namespace RimWorld
 
 		static LogEntryDefOf()
 		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(LogEntryDef));
+			DefOfHelper.EnsureInitializedInCtor(typeof(LogEntryDefOf));
 		}
 	}
 }

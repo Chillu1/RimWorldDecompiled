@@ -1,7 +1,7 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -22,6 +22,16 @@ namespace RimWorld
 			new CurvePoint(400000f, 2400f),
 			new CurvePoint(700000f, 3600f),
 			new CurvePoint(1000000f, 4200f)
+		};
+
+		public const float FixedWeathModeMaxThreatLevelInYears = 12f;
+
+		public static readonly SimpleCurve FixedWealthModeMapWealthFromTimeCurve = new SimpleCurve
+		{
+			new CurvePoint(0f, 10000f),
+			new CurvePoint(180f, 180000f),
+			new CurvePoint(720f, 1000000f),
+			new CurvePoint(1800f, 2500000f)
 		};
 
 		private const float PointsPerTameNonDownedCombatTrainableAnimalCombatPower = 0.08f;
@@ -120,8 +130,8 @@ namespace RimWorld
 			}
 			float num4 = (num + num2) * target.IncidentPointsRandomFactorRange.RandomInRange;
 			float totalThreatPointsFactor = Find.StoryWatcher.watcherAdaptation.TotalThreatPointsFactor;
-			float num5 = Mathf.Lerp(1f, totalThreatPointsFactor, Find.Storyteller.difficulty.adaptationEffectFactor);
-			return Mathf.Clamp(num4 * num5 * Find.Storyteller.difficulty.threatScale * Find.Storyteller.def.pointsFactorFromDaysPassed.Evaluate(GenDate.DaysPassed), 35f, 10000f);
+			float num5 = Mathf.Lerp(1f, totalThreatPointsFactor, Find.Storyteller.difficultyValues.adaptationEffectFactor);
+			return Mathf.Clamp(num4 * num5 * Find.Storyteller.difficultyValues.threatScale * Find.Storyteller.def.pointsFactorFromDaysPassed.Evaluate(GenDate.DaysPassed), 35f, 10000f);
 		}
 
 		public static float DefaultSiteThreatPointsNow()
@@ -136,7 +146,7 @@ namespace RimWorld
 			int num2 = 0;
 			for (int i = 0; i < allFactionsListForReading.Count; i++)
 			{
-				if (!allFactionsListForReading[i].def.hidden && !allFactionsListForReading[i].IsPlayer)
+				if (!allFactionsListForReading[i].Hidden && !allFactionsListForReading[i].IsPlayer && !allFactionsListForReading[i].temporary)
 				{
 					if (allFactionsListForReading[i].def.CanEverBeNonHostile)
 					{
@@ -167,10 +177,14 @@ namespace RimWorld
 			for (int i = 0; i < storytellerComps.Count; i++)
 			{
 				StorytellerComp comp = storytellerComps[i];
-				list.Add(new FloatMenuOption(comp.ToString(), delegate
+				string text = comp.ToString();
+				if (!text.NullOrEmpty())
 				{
-					DebugLogTestFutureIncidents(currentMapOnly, comp, null, 300);
-				}));
+					list.Add(new FloatMenuOption(text, delegate
+					{
+						DebugLogTestFutureIncidents(currentMapOnly, comp, null, 300);
+					}));
+				}
 			}
 			Find.WindowStack.Add(new FloatMenu(list));
 		}
@@ -178,7 +192,7 @@ namespace RimWorld
 		public static void DebugLogTestFutureIncidents(bool currentMapOnly, StorytellerComp onlyThisComp = null, QuestPart onlyThisQuestPart = null, int numTestDays = 100)
 		{
 			StringBuilder stringBuilder = new StringBuilder();
-			DebugGetFutureIncidents(numTestDays, currentMapOnly, out Dictionary<IIncidentTarget, int> incCountsForTarget, out int[] incCountsForComp, out List<Pair<IncidentDef, IncidentParms>> allIncidents, out int threatBigCount, stringBuilder, onlyThisComp, null, onlyThisQuestPart);
+			DebugGetFutureIncidents(numTestDays, currentMapOnly, out var incCountsForTarget, out var incCountsForComp, out var allIncidents, out var threatBigCount, stringBuilder, onlyThisComp, null, onlyThisQuestPart);
 			new StringBuilder();
 			string text = "Test future incidents for " + Find.Storyteller.def;
 			if (onlyThisComp != null)
@@ -192,7 +206,7 @@ namespace RimWorld
 		public static void DebugLogTestFutureIncidents(ThreatsGeneratorParams parms)
 		{
 			StringBuilder stringBuilder = new StringBuilder();
-			DebugGetFutureIncidents(20, currentMapOnly: true, out Dictionary<IIncidentTarget, int> incCountsForTarget, out int[] incCountsForComp, out List<Pair<IncidentDef, IncidentParms>> allIncidents, out int threatBigCount, stringBuilder, null, parms);
+			DebugGetFutureIncidents(20, currentMapOnly: true, out var incCountsForTarget, out var incCountsForComp, out var allIncidents, out var threatBigCount, stringBuilder, null, parms);
 			new StringBuilder();
 			string header = string.Concat("Test future incidents for ThreatsGenerator ", parms, " (", 20, " days, difficulty ", Find.Storyteller.difficulty, ")");
 			DebugLogIncidentsInternal(allIncidents, threatBigCount, incCountsForTarget, incCountsForComp, 20, stringBuilder.ToString(), header);
@@ -255,9 +269,9 @@ namespace RimWorld
 			threatBigCount = 0;
 			for (int j = 0; j < num; j++)
 			{
-				IEnumerable<FiringIncident> enumerable = (onlyThisThreatsGenerator != null) ? ThreatsGenerator.MakeIntervalIncidents(onlyThisThreatsGenerator, Find.CurrentMap, ticksGame) : ((onlyThisComp != null) ? Find.Storyteller.MakeIncidentsForInterval(onlyThisComp, Find.Storyteller.AllIncidentTargets) : ((onlyThisQuestPart == null) ? Find.Storyteller.MakeIncidentsForInterval() : (from x in Find.Storyteller.MakeIncidentsForInterval()
+				IEnumerable<FiringIncident> enumerable = ((onlyThisThreatsGenerator != null) ? ThreatsGenerator.MakeIntervalIncidents(onlyThisThreatsGenerator, Find.CurrentMap, ticksGame) : ((onlyThisComp != null) ? Find.Storyteller.MakeIncidentsForInterval(onlyThisComp, Find.Storyteller.AllIncidentTargets) : ((onlyThisQuestPart == null) ? Find.Storyteller.MakeIncidentsForInterval() : (from x in Find.Storyteller.MakeIncidentsForInterval()
 					where x.sourceQuestPart == onlyThisQuestPart
-					select x)));
+					select x))));
 				foreach (FiringIncident item in enumerable)
 				{
 					if (item == null)

@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -15,11 +15,15 @@ namespace RimWorld
 
 		public MapParent useColonistsOnMap;
 
+		public string getColonistsFromSignal;
+
 		public bool useColonistsFromCaravanArg;
 
 		public string chosenPawnSignal;
 
 		public bool filterDeadPawnsFromLookTargets;
+
+		private List<Pawn> colonistsFromSignal = new List<Pawn>();
 
 		public override IEnumerable<GlobalTargetInfo> QuestLookTargets
 		{
@@ -55,6 +59,17 @@ namespace RimWorld
 		public override void Notify_QuestSignalReceived(Signal signal)
 		{
 			base.Notify_QuestSignalReceived(signal);
+			if (!string.IsNullOrEmpty(getColonistsFromSignal) && signal.tag == getColonistsFromSignal)
+			{
+				if (signal.args.TryGetArg("SUBJECT", out var arg))
+				{
+					ReadPawns(arg.arg);
+				}
+				if (signal.args.TryGetArg("SENT", out var arg2))
+				{
+					ReadPawns(arg2.arg);
+				}
+			}
 			if (!(signal.tag == inSignal))
 			{
 				return;
@@ -75,14 +90,21 @@ namespace RimWorld
 					choiceLetter_ChoosePawn.pawns.AddRange(useColonistsOnMap.Map.mapPawns.FreeColonists);
 					choiceLetter_ChoosePawn.chosenPawnSignal = chosenPawnSignal;
 				}
-				if (useColonistsFromCaravanArg && signal.args.TryGetArg("CARAVAN", out Caravan arg) && arg != null)
+				if (useColonistsFromCaravanArg && signal.args.TryGetArg("CARAVAN", out Caravan arg3) && arg3 != null)
 				{
 					choiceLetter_ChoosePawn.pawns.Clear();
-					choiceLetter_ChoosePawn.pawns.AddRange(arg.PawnsListForReading.Where((Pawn x) => x.IsFreeColonist));
+					choiceLetter_ChoosePawn.pawns.AddRange(arg3.PawnsListForReading.Where((Pawn x) => x.IsFreeColonist));
+					choiceLetter_ChoosePawn.chosenPawnSignal = chosenPawnSignal;
+				}
+				if (!string.IsNullOrEmpty(getColonistsFromSignal))
+				{
+					colonistsFromSignal.RemoveAll((Pawn x) => x.Dead);
+					choiceLetter_ChoosePawn.pawns.Clear();
+					choiceLetter_ChoosePawn.pawns.AddRange(colonistsFromSignal);
 					choiceLetter_ChoosePawn.chosenPawnSignal = chosenPawnSignal;
 				}
 			}
-			if (getLookTargetsFromSignal && !letter.lookTargets.IsValid() && SignalArgsUtility.TryGetLookTargets(signal.args, "SUBJECT", out LookTargets lookTargets))
+			if (getLookTargetsFromSignal && !letter.lookTargets.IsValid() && SignalArgsUtility.TryGetLookTargets(signal.args, "SUBJECT", out var lookTargets))
 			{
 				letter.lookTargets = lookTargets;
 			}
@@ -114,6 +136,26 @@ namespace RimWorld
 			{
 				Find.LetterStack.ReceiveLetter(letter);
 			}
+			void ReadPawns(object obj)
+			{
+				Pawn item;
+				if ((item = obj as Pawn) != null && !colonistsFromSignal.Contains(item))
+				{
+					colonistsFromSignal.Add(item);
+				}
+				List<Pawn> source;
+				if ((source = obj as List<Pawn>) != null)
+				{
+					colonistsFromSignal.AddRange(source.Where((Pawn p) => !colonistsFromSignal.Contains(p)));
+				}
+				List<Thing> source2;
+				if ((source2 = obj as List<Thing>) != null)
+				{
+					colonistsFromSignal.AddRange(from Pawn p in source2.Where((Thing t) => t is Pawn)
+						where !colonistsFromSignal.Contains(p)
+						select p);
+				}
+			}
 		}
 
 		public override void ExposeData()
@@ -126,6 +168,12 @@ namespace RimWorld
 			Scribe_Values.Look(ref useColonistsFromCaravanArg, "useColonistsFromCaravanArg", defaultValue: false);
 			Scribe_Values.Look(ref chosenPawnSignal, "chosenPawnSignal");
 			Scribe_Values.Look(ref filterDeadPawnsFromLookTargets, "filterDeadPawnsFromLookTargets", defaultValue: false);
+			Scribe_Values.Look(ref getColonistsFromSignal, "getColonistsFromSignal");
+			Scribe_Collections.Look(ref colonistsFromSignal, "colonistsFromSignal", LookMode.Reference);
+			if (Scribe.mode == LoadSaveMode.ResolvingCrossRefs)
+			{
+				colonistsFromSignal.RemoveAll((Pawn x) => x == null);
+			}
 		}
 
 		public override void AssignDebugData()

@@ -43,7 +43,7 @@ namespace RimWorld
 		private Pawn FindPawnTarget(Pawn pawn)
 		{
 			Pawn pawn2;
-			return (Pawn)AttackTargetFinder.BestAttackTarget(pawn, TargetScanFlags.NeedReachable, (Thing x) => (pawn2 = (x as Pawn)) != null && pawn2.Spawned && !pawn2.Downed && !pawn2.IsInvisible(), 0f, 40f, default(IntVec3), float.MaxValue, canBash: true);
+			return (Pawn)AttackTargetFinder.BestAttackTarget(pawn, TargetScanFlags.NeedReachable, (Thing x) => (pawn2 = x as Pawn) != null && pawn2.Spawned && !pawn2.Downed && !pawn2.IsInvisible(), 0f, 40f, default(IntVec3), float.MaxValue, canBash: true);
 		}
 	}
 }

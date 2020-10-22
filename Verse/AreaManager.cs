@@ -1,6 +1,6 @@
-using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 
 namespace Verse
 {
@@ -33,7 +33,7 @@ namespace Verse
 			areas.Add(new Area_BuildRoof(this));
 			areas.Add(new Area_NoRoof(this));
 			areas.Add(new Area_SnowClear(this));
-			TryMakeNewAllowed(out Area_Allowed _);
+			TryMakeNewAllowed(out var _);
 		}
 
 		public void ExposeData()

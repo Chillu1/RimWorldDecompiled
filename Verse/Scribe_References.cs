@@ -44,7 +44,7 @@ namespace Verse
 		{
 			if (Scribe.mode == LoadSaveMode.Saving)
 			{
-				T refee2 = (refee != null) ? refee.Target : null;
+				T refee2 = ((refee != null) ? refee.Target : null);
 				Look(ref refee2, label, saveDestroyedThings);
 			}
 			else if (Scribe.mode == LoadSaveMode.LoadingVars)

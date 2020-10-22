@@ -62,7 +62,7 @@ namespace RimWorld
 			ThingDef obj = DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.comps != null && d.comps.Any((CompProperties cp) => cp.compClass == typeof(CompArt))).RandomElement();
 			ThingDef thingDef = GenStuff.RandomStuffFor(obj);
 			Thing thing = ThingMaker.MakeThing(obj, thingDef);
-			ArtGenerationContext source = (Rand.Value < 0.5f) ? ArtGenerationContext.Colony : ArtGenerationContext.Outsider;
+			ArtGenerationContext source = ((Rand.Value < 0.5f) ? ArtGenerationContext.Colony : ArtGenerationContext.Outsider);
 			CompQuality compQuality = thing.TryGetComp<CompQuality>();
 			if (compQuality != null && (int)compQuality.Quality < (int)thing.TryGetComp<CompArt>().Props.minQualityForArtistic)
 			{

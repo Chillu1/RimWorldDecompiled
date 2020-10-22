@@ -7,7 +7,7 @@ namespace Verse
 	{
 		public static void PlayNearestLifestageSound(Pawn pawn, Func<LifeStageAge, SoundDef> getter, float volumeFactor = 1f)
 		{
-			GetNearestLifestageSound(pawn, getter, out SoundDef def, out float pitch, out float volume);
+			GetNearestLifestageSound(pawn, getter, out var def, out var pitch, out var volume);
 			if (def != null && pawn.SpawnedOrAnyParentSpawned)
 			{
 				SoundInfo info = SoundInfo.InMap(new TargetInfo(pawn.PositionHeld, pawn.MapHeld));

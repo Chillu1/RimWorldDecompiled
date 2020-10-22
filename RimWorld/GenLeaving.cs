@@ -104,29 +104,24 @@ namespace RimWorld
 			}
 			List<IntVec3> list2 = leavingsRect.Cells.InRandomOrder().ToList();
 			int num4 = 0;
-			while (true)
+			while (thingOwner.Count > 0)
 			{
-				if (thingOwner.Count > 0)
+				if (mode == DestroyMode.KillFinalize && !map.areaManager.Home[list2[num4]])
 				{
-					if (mode == DestroyMode.KillFinalize && !map.areaManager.Home[list2[num4]])
-					{
-						thingOwner[0].SetForbidden(value: true, warnOnFail: false);
-					}
-					if (!thingOwner.TryDrop(thingOwner[0], list2[num4], map, ThingPlaceMode.Near, out Thing lastResultingThing, null, nearPlaceValidator))
-					{
-						break;
-					}
-					listOfLeavingsOut?.Add(lastResultingThing);
-					num4++;
-					if (num4 >= list2.Count)
-					{
-						num4 = 0;
-					}
-					continue;
+					thingOwner[0].SetForbidden(value: true, warnOnFail: false);
 				}
-				return;
+				if (!thingOwner.TryDrop(thingOwner[0], list2[num4], map, ThingPlaceMode.Near, out var lastResultingThing, null, nearPlaceValidator))
+				{
+					Log.Warning(string.Concat("Failed to place all leavings for destroyed thing ", diedThing, " at ", leavingsRect.CenterCell));
+					break;
+				}
+				listOfLeavingsOut?.Add(lastResultingThing);
+				num4++;
+				if (num4 >= list2.Count)
+				{
+					num4 = 0;
+				}
 			}
-			Log.Warning(string.Concat("Failed to place all leavings for destroyed thing ", diedThing, " at ", leavingsRect.CenterCell));
 		}
 
 		public static void DoLeavingsFor(TerrainDef terrain, IntVec3 cell, Map map)
@@ -148,16 +143,14 @@ namespace RimWorld
 					thingOwner.TryAdd(thing);
 				}
 			}
-			Thing lastResultingThing;
-			do
+			while (thingOwner.Count > 0)
 			{
-				if (thingOwner.Count <= 0)
+				if (!thingOwner.TryDrop(thingOwner[0], cell, map, ThingPlaceMode.Near, out var _))
 				{
-					return;
+					Log.Warning(string.Concat("Failed to place all leavings for removed terrain ", terrain, " at ", cell));
+					break;
 				}
 			}
-			while (thingOwner.TryDrop(thingOwner[0], cell, map, ThingPlaceMode.Near, out lastResultingThing));
-			Log.Warning(string.Concat("Failed to place all leavings for removed terrain ", terrain, " at ", cell));
 		}
 
 		public static bool CanBuildingLeaveResources(Thing destroyedThing, DestroyMode mode)
@@ -170,27 +163,18 @@ namespace RimWorld
 			{
 				mode = DestroyMode.Cancel;
 			}
-			switch (mode)
+			return mode switch
 			{
-			case DestroyMode.Vanish:
-				return false;
-			case DestroyMode.WillReplace:
-				return false;
-			case DestroyMode.KillFinalize:
-				return destroyedThing.def.leaveResourcesWhenKilled;
-			case DestroyMode.Deconstruct:
-				return destroyedThing.def.resourcesFractionWhenDeconstructed != 0f;
-			case DestroyMode.Cancel:
-				return true;
-			case DestroyMode.FailConstruction:
-				return true;
-			case DestroyMode.Refund:
-				return true;
-			case DestroyMode.QuestLogic:
-				return false;
-			default:
-				throw new ArgumentException("Unknown destroy mode " + mode);
-			}
+				DestroyMode.Vanish => false, 
+				DestroyMode.WillReplace => false, 
+				DestroyMode.KillFinalize => destroyedThing.def.leaveResourcesWhenKilled, 
+				DestroyMode.Deconstruct => destroyedThing.def.resourcesFractionWhenDeconstructed != 0f, 
+				DestroyMode.Cancel => true, 
+				DestroyMode.FailConstruction => true, 
+				DestroyMode.Refund => true, 
+				DestroyMode.QuestLogic => false, 
+				_ => throw new ArgumentException("Unknown destroy mode " + mode), 
+			};
 		}
 
 		private static Func<int, int> GetBuildingResourcesLeaveCalculator(Thing destroyedThing, DestroyMode mode)
@@ -203,27 +187,18 @@ namespace RimWorld
 			{
 				mode = DestroyMode.Cancel;
 			}
-			switch (mode)
+			return mode switch
 			{
-			case DestroyMode.Vanish:
-				return (int count) => 0;
-			case DestroyMode.WillReplace:
-				return (int count) => 0;
-			case DestroyMode.KillFinalize:
-				return (int count) => GenMath.RoundRandom((float)count * 0.5f);
-			case DestroyMode.Deconstruct:
-				return (int count) => GenMath.RoundRandom(Mathf.Min((float)count * destroyedThing.def.resourcesFractionWhenDeconstructed, count - 1));
-			case DestroyMode.Cancel:
-				return (int count) => GenMath.RoundRandom((float)count * 1f);
-			case DestroyMode.FailConstruction:
-				return (int count) => GenMath.RoundRandom((float)count * 0.5f);
-			case DestroyMode.Refund:
-				return (int count) => count;
-			case DestroyMode.QuestLogic:
-				return (int count) => 0;
-			default:
-				throw new ArgumentException("Unknown destroy mode " + mode);
-			}
+				DestroyMode.Vanish => (int count) => 0, 
+				DestroyMode.WillReplace => (int count) => 0, 
+				DestroyMode.KillFinalize => (int count) => GenMath.RoundRandom((float)count * 0.5f), 
+				DestroyMode.Deconstruct => (int count) => Mathf.Min(GenMath.RoundRandom((float)count * destroyedThing.def.resourcesFractionWhenDeconstructed), count), 
+				DestroyMode.Cancel => (int count) => GenMath.RoundRandom((float)count * 1f), 
+				DestroyMode.FailConstruction => (int count) => GenMath.RoundRandom((float)count * 0.5f), 
+				DestroyMode.Refund => (int count) => count, 
+				DestroyMode.QuestLogic => (int count) => 0, 
+				_ => throw new ArgumentException("Unknown destroy mode " + mode), 
+			};
 		}
 
 		public static void DropFilthDueToDamage(Thing t, float damageDealt)

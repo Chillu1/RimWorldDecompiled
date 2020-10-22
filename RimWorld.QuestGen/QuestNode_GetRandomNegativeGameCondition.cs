@@ -67,7 +67,15 @@ namespace RimWorld.QuestGen
 
 		private bool DoWork(Slate slate)
 		{
-			if (!options.Where((Option x) => (!QuestGen.Working || x.challengeRating == QuestGen.quest.challengeRating) && PossibleNow(x.gameCondition, slate)).TryRandomElement(out Option result))
+			Option result;
+			if (QuestGen.Working)
+			{
+				if (!options.Where((Option x) => x.challengeRating == QuestGen.quest.challengeRating && PossibleNow(x.gameCondition, slate)).TryRandomElement(out result) && !options.Where((Option x) => x.challengeRating < QuestGen.quest.challengeRating && PossibleNow(x.gameCondition, slate)).TryRandomElement(out result) && !options.Where((Option x) => PossibleNow(x.gameCondition, slate)).TryRandomElement(out result))
+				{
+					return false;
+				}
+			}
+			else if (!options.Where((Option x) => PossibleNow(x.gameCondition, slate)).TryRandomElement(out result))
 			{
 				return false;
 			}
@@ -101,7 +109,7 @@ namespace RimWorld.QuestGen
 			}
 			if (incidentDef != null)
 			{
-				if (Find.Storyteller.difficulty.difficulty < incidentDef.minDifficulty)
+				if (!Find.Storyteller.difficultyValues.AllowedBy(incidentDef.disabledWhen))
 				{
 					return false;
 				}

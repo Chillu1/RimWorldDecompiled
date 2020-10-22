@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Verse;
 
@@ -48,7 +49,7 @@ namespace RimWorld.Planet
 			Map orGenerateMap = GetOrGenerateMapUtility.GetOrGenerateMap(settlement.Tile, null);
 			TaggedString letterLabel = "LetterLabelCaravanEnteredEnemyBase".Translate();
 			TaggedString letterText = "LetterCaravanEnteredEnemyBase".Translate(caravan.Label, settlement.Label.ApplyTag(TagType.Settlement, settlement.Faction.GetUniqueLoadID())).CapitalizeFirst();
-			AffectRelationsOnAttacked(settlement, ref letterText);
+			AffectRelationsOnAttacked_NewTmp(settlement, ref letterText);
 			if (num)
 			{
 				Find.TickManager.Notify_GeneratedPotentiallyHostileMap();
@@ -58,26 +59,32 @@ namespace RimWorld.Planet
 			CaravanEnterMapUtility.Enter(caravan, orGenerateMap, CaravanEnterMode.Edge, CaravanDropInventoryMode.DoNotDrop, draftColonists: true);
 		}
 
+		[Obsolete("Only used for mod compatibility. Will be removed in a future version.")]
 		public static void AffectRelationsOnAttacked(Settlement settlement, ref TaggedString letterText)
 		{
-			if (settlement.Faction == null || settlement.Faction == Faction.OfPlayer)
+			AffectRelationsOnAttacked_NewTmp(settlement, ref letterText);
+		}
+
+		public static void AffectRelationsOnAttacked_NewTmp(MapParent mapParent, ref TaggedString letterText)
+		{
+			if (mapParent.Faction == null || mapParent.Faction == Faction.OfPlayer)
 			{
 				return;
 			}
-			FactionRelationKind playerRelationKind = settlement.Faction.PlayerRelationKind;
-			if (!settlement.Faction.HostileTo(Faction.OfPlayer))
+			FactionRelationKind playerRelationKind = mapParent.Faction.PlayerRelationKind;
+			if (!mapParent.Faction.HostileTo(Faction.OfPlayer))
 			{
-				settlement.Faction.TrySetRelationKind(Faction.OfPlayer, FactionRelationKind.Hostile, canSendLetter: false);
+				mapParent.Faction.TrySetRelationKind(Faction.OfPlayer, FactionRelationKind.Hostile, canSendLetter: false);
 			}
-			else if (settlement.Faction.TryAffectGoodwillWith(Faction.OfPlayer, -50, canSendMessage: false, canSendHostilityLetter: false))
+			else if (mapParent.Faction.TryAffectGoodwillWith(Faction.OfPlayer, -50, canSendMessage: false, canSendHostilityLetter: false))
 			{
 				if (!letterText.NullOrEmpty())
 				{
 					letterText += "\n\n";
 				}
-				letterText += "RelationsWith".Translate(settlement.Faction.Name.ApplyTag(settlement.Faction)) + ": " + (-50).ToStringWithSign();
+				letterText += "RelationsWith".Translate(mapParent.Faction.Name.ApplyTag(mapParent.Faction)) + ": " + (-50).ToStringWithSign();
 			}
-			settlement.Faction.TryAppendRelationKindChangedInfo(ref letterText, playerRelationKind, settlement.Faction.PlayerRelationKind);
+			mapParent.Faction.TryAppendRelationKindChangedInfo(ref letterText, playerRelationKind, mapParent.Faction.PlayerRelationKind);
 		}
 	}
 }

@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using Verse.Grammar;
 
 namespace Verse
@@ -56,7 +56,7 @@ namespace Verse
 		{
 			if (initiator is Pawn)
 			{
-				initiatorPawn = (initiator as Pawn);
+				initiatorPawn = initiator as Pawn;
 			}
 			else if (initiator != null)
 			{
@@ -64,7 +64,7 @@ namespace Verse
 			}
 			if (target is Pawn)
 			{
-				recipientPawn = (target as Pawn);
+				recipientPawn = target as Pawn;
 			}
 			else if (target != null)
 			{

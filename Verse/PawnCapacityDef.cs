@@ -72,5 +72,18 @@ namespace Verse
 			}
 			return label;
 		}
+
+		public bool CanShowOnPawn(Pawn p)
+		{
+			if (p.def.race.Humanlike)
+			{
+				return showOnHumanlikes;
+			}
+			if (p.def.race.Animal)
+			{
+				return showOnAnimals;
+			}
+			return showOnMechanoids;
+		}
 	}
 }

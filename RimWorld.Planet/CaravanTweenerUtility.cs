@@ -19,8 +19,8 @@ namespace RimWorld.Planet
 			}
 			if (caravan.pather.Moving)
 			{
-				float num = caravan.pather.IsNextTilePassable() ? (1f - caravan.pather.nextTileCostLeft / caravan.pather.nextTileCostTotal) : 0f;
-				int tileID = (caravan.pather.nextTile != caravan.Tile || caravan.pather.previousTileForDrawingIfInDoubt == -1) ? caravan.Tile : caravan.pather.previousTileForDrawingIfInDoubt;
+				float num = (caravan.pather.IsNextTilePassable() ? (1f - caravan.pather.nextTileCostLeft / caravan.pather.nextTileCostTotal) : 0f);
+				int tileID = ((caravan.pather.nextTile != caravan.Tile || caravan.pather.previousTileForDrawingIfInDoubt == -1) ? caravan.Tile : caravan.pather.previousTileForDrawingIfInDoubt);
 				return worldGrid.GetTileCenter(caravan.pather.nextTile) * num + worldGrid.GetTileCenter(tileID) * (1f - num);
 			}
 			return worldGrid.GetTileCenter(caravan.Tile);
@@ -36,7 +36,7 @@ namespace RimWorld.Planet
 			float d = 0.15f * Find.WorldGrid.averageTileSize;
 			if (!flag || caravan.pather.nextTile == caravan.pather.Destination)
 			{
-				int num = (!flag) ? caravan.Tile : caravan.pather.nextTile;
+				int num = ((!flag) ? caravan.Tile : caravan.pather.nextTile);
 				int caravansCount = 0;
 				int caravansWithLowerIdCount = 0;
 				GetCaravansStandingAtOrAboutToStandAt(num, out caravansCount, out caravansWithLowerIdCount, caravan);

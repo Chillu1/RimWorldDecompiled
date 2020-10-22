@@ -16,7 +16,7 @@ namespace RimWorld.QuestGen
 			Slate slate = QuestGen.slate;
 			QuestPart_ReplaceLostLeaderReferences questPart_ReplaceLostLeaderReferences = new QuestPart_ReplaceLostLeaderReferences();
 			questPart_ReplaceLostLeaderReferences.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate));
-			questPart_ReplaceLostLeaderReferences.signalListenMode = (signalListenMode.GetValue(slate) ?? QuestPart.SignalListenMode.OngoingOnly);
+			questPart_ReplaceLostLeaderReferences.signalListenMode = signalListenMode.GetValue(slate) ?? QuestPart.SignalListenMode.OngoingOnly;
 			QuestGen.quest.AddPart(questPart_ReplaceLostLeaderReferences);
 		}
 	}

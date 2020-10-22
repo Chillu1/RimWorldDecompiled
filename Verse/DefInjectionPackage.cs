@@ -1,10 +1,10 @@
-using RimWorld;
-using RimWorld.IO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Xml.Linq;
+using RimWorld;
+using RimWorld.IO;
 
 namespace Verse
 {
@@ -194,7 +194,7 @@ namespace Verse
 				defInjection.injection = translation;
 				defInjection.fileSource = file.Name;
 				defInjection.nonBackCompatiblePath = text;
-				injections.Add(key, defInjection);
+				injections.SetOrAdd(key, defInjection);
 			}
 		}
 
@@ -240,11 +240,10 @@ namespace Verse
 				loadErrors.Add("Error loading DefInjection from file " + file.Name + ": Key lacks a dot: " + key + ((key == nonBackCompatibleKey) ? "" : (" (auto-renamed from " + nonBackCompatibleKey + ")")) + " (" + file.Name + ")");
 				return true;
 			}
-			if (injections.TryGetValue(key, out DefInjection value))
+			if (injections.TryGetValue(key, out var value))
 			{
-				string text = (key != nonBackCompatibleKey) ? (" (auto-renamed from " + nonBackCompatibleKey + ")") : ((!(value.path != value.nonBackCompatiblePath)) ? "" : (" (" + value.nonBackCompatiblePath + " was auto-renamed to " + value.path + ")"));
+				string text = ((key != nonBackCompatibleKey) ? (" (auto-renamed from " + nonBackCompatibleKey + ")") : ((!(value.path != value.nonBackCompatiblePath)) ? "" : (" (" + value.nonBackCompatiblePath + " was auto-renamed to " + value.path + ")")));
 				loadErrors.Add("Duplicate def-injected translation key: " + key + text + " (" + file.Name + ")");
-				return true;
 			}
 			bool flag = false;
 			if (replacingFullList)
@@ -522,7 +521,7 @@ namespace Verse
 							}
 							else
 							{
-								replacedStringsList = (fieldNamed.GetValue(obj) as IEnumerable<string>);
+								replacedStringsList = fieldNamed.GetValue(obj) as IEnumerable<string>;
 							}
 							fieldNamed.SetValue(obj, value);
 							result2 = true;
@@ -614,7 +613,7 @@ namespace Verse
 				if (path != suggestedPath)
 				{
 					IList<string> list3 = value as IList<string>;
-					string text4 = (list3 == null) ? value.ToString() : list3.ToStringSafeEnumerable();
+					string text4 = ((list3 == null) ? value.ToString() : list3.ToStringSafeEnumerable());
 					loadSyntaxSuggestions.Add("Consider using " + suggestedPath + " instead of " + text + " for translation '" + text4 + "' (" + fileSource + ")");
 				}
 				return result2;
@@ -674,7 +673,7 @@ namespace Verse
 				{
 					bool flag = false;
 					string text = null;
-					if (injectionsByNormalizedPath.TryGetValue(normalizedPath, out DefInjection value) && !value.IsFullListInjection)
+					if (injectionsByNormalizedPath.TryGetValue(normalizedPath, out var value) && !value.IsFullListInjection)
 					{
 						if (!translationAllowed)
 						{
@@ -715,7 +714,7 @@ namespace Verse
 						string text2 = suggestedPath + "." + num;
 						bool flag2 = false;
 						string text3 = null;
-						if (injectionsByNormalizedPath.TryGetValue(key, out DefInjection value3) && !value3.IsFullListInjection)
+						if (injectionsByNormalizedPath.TryGetValue(key, out var value3) && !value3.IsFullListInjection)
 						{
 							if (!translationAllowed)
 							{
@@ -733,7 +732,7 @@ namespace Verse
 						}
 						if (flag2 && translationAllowed && DefInjectionUtility.ShouldCheckMissingInjection(item, fieldInfo, def))
 						{
-							if (text3.NullOrEmpty() && injectionsByNormalizedPath.TryGetValue(normalizedPath, out DefInjection value4) && value4.isPlaceholder)
+							if (text3.NullOrEmpty() && injectionsByNormalizedPath.TryGetValue(normalizedPath, out var value4) && value4.isPlaceholder)
 							{
 								text3 = value4.fileSource;
 							}

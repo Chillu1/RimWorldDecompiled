@@ -32,36 +32,36 @@ namespace RimWorld
 			}
 			int num = Mathf.FloorToInt((rect.width - 4f) * 0.714285731f);
 			int num2 = Mathf.FloorToInt((rect.width - 4f) * 0.2857143f);
-			float num3 = rect.x;
+			float x = rect.x;
 			bool somethingIsForced = pawn.outfits.forcedHandler.SomethingIsForced;
-			Rect rect2 = new Rect(num3, rect.y + 2f, num, rect.height - 4f);
+			Rect rect2 = new Rect(x, rect.y + 2f, num, rect.height - 4f);
 			if (somethingIsForced)
 			{
 				rect2.width -= 4f + (float)num2;
 			}
 			if (pawn.IsQuestLodger())
 			{
-				Rect rect3 = new Rect(rect2.x + 10f, rect2.y, rect2.width - 5f, rect2.height);
-				Widgets.Label(rect3, "Unchangeable".Translate());
-				TooltipHandler.TipRegionByKey(rect3, "QuestRelated_Outfit");
-				num3 -= 10f;
+				Text.Anchor = TextAnchor.MiddleCenter;
+				Widgets.Label(rect2, "Unchangeable".Translate().Truncate(rect2.width));
+				TooltipHandler.TipRegionByKey(rect2, "QuestRelated_Outfit");
+				Text.Anchor = TextAnchor.UpperLeft;
 			}
 			else
 			{
 				Widgets.Dropdown(rect2, pawn, (Pawn p) => p.outfits.CurrentOutfit, Button_GenerateMenu, pawn.outfits.CurrentOutfit.label.Truncate(rect2.width), null, pawn.outfits.CurrentOutfit.label, null, null, paintable: true);
 			}
-			num3 += rect2.width;
-			num3 += 4f;
-			Rect rect4 = new Rect(num3, rect.y + 2f, num2, rect.height - 4f);
+			x += rect2.width;
+			x += 4f;
+			Rect rect3 = new Rect(x, rect.y + 2f, num2, rect.height - 4f);
 			if (somethingIsForced)
 			{
-				if (Widgets.ButtonText(rect4, "ClearForcedApparel".Translate()))
+				if (Widgets.ButtonText(rect3, "ClearForcedApparel".Translate()))
 				{
 					pawn.outfits.forcedHandler.Reset();
 				}
-				if (Mouse.IsOver(rect4))
+				if (Mouse.IsOver(rect3))
 				{
-					TooltipHandler.TipRegion(rect4, new TipSignal(delegate
+					TooltipHandler.TipRegion(rect3, new TipSignal(delegate
 					{
 						string text = "ForcedApparel".Translate() + ":\n";
 						foreach (Apparel item in pawn.outfits.forcedHandler.ForcedApparel)
@@ -71,36 +71,29 @@ namespace RimWorld
 						return text;
 					}, pawn.GetHashCode() * 612));
 				}
-				num3 += (float)num2;
-				num3 += 4f;
+				x += (float)num2;
+				x += 4f;
 			}
-			Rect rect5 = new Rect(num3, rect.y + 2f, num2, rect.height - 4f);
-			if (!pawn.HasExtraHomeFaction() && Widgets.ButtonText(rect5, "AssignTabEdit".Translate()))
+			Rect rect4 = new Rect(x, rect.y + 2f, num2, rect.height - 4f);
+			if (!pawn.HasExtraHomeFaction() && Widgets.ButtonText(rect4, "AssignTabEdit".Translate()))
 			{
 				Find.WindowStack.Add(new Dialog_ManageOutfits(pawn.outfits.CurrentOutfit));
 			}
-			num3 += (float)num2;
+			x += (float)num2;
 		}
 
 		private IEnumerable<Widgets.DropdownMenuElement<Outfit>> Button_GenerateMenu(Pawn pawn)
 		{
-			_003C_003Ec__DisplayClass4_0 _003C_003Ec__DisplayClass4_ = new _003C_003Ec__DisplayClass4_0();
-			_003C_003Ec__DisplayClass4_.pawn = pawn;
-			using (List<Outfit>.Enumerator enumerator = Current.Game.outfitDatabase.AllOutfits.GetEnumerator())
+			foreach (Outfit outfit in Current.Game.outfitDatabase.AllOutfits)
 			{
-				while (enumerator.MoveNext())
+				yield return new Widgets.DropdownMenuElement<Outfit>
 				{
-					_003C_003Ec__DisplayClass4_0 _003C_003Ec__DisplayClass4_2 = _003C_003Ec__DisplayClass4_;
-					Outfit outfit = enumerator.Current;
-					yield return new Widgets.DropdownMenuElement<Outfit>
+					option = new FloatMenuOption(outfit.label, delegate
 					{
-						option = new FloatMenuOption(outfit.label, delegate
-						{
-							_003C_003Ec__DisplayClass4_2.pawn.outfits.CurrentOutfit = outfit;
-						}),
-						payload = outfit
-					};
-				}
+						pawn.outfits.CurrentOutfit = outfit;
+					}),
+					payload = outfit
+				};
 			}
 		}
 

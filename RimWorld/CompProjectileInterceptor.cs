@@ -18,6 +18,8 @@ namespace RimWorld
 
 		private StunHandler stunner;
 
+		private Sustainer sustainer;
+
 		private float lastInterceptAngle;
 
 		private bool debugInterceptNonHostileProjectiles;
@@ -108,6 +110,14 @@ namespace RimWorld
 			stunner = new StunHandler(parent);
 		}
 
+		public override void PostDeSpawn(Map map)
+		{
+			if (sustainer != null)
+			{
+				sustainer.End();
+			}
+		}
+
 		public bool CheckIntercept(Projectile projectile, Vector3 lastExactPos, Vector3 newExactPos)
 		{
 			if (!ModLister.RoyaltyInstalled)
@@ -125,7 +135,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!(Props.interceptGroundProjectiles ? (!projectile.def.projectile.flyOverhead) : (Props.interceptAirProjectiles && projectile.def.projectile.flyOverhead)))
+			if (!InterceptsProjectile(Props, projectile))
 			{
 				return false;
 			}
@@ -143,7 +153,7 @@ namespace RimWorld
 			}
 			lastInterceptAngle = lastExactPos.AngleToFlat(parent.TrueCenter());
 			lastInterceptTicks = Find.TickManager.TicksGame;
-			if (projectile.def.projectile.damageDef == DamageDefOf.EMP)
+			if (projectile.def.projectile.damageDef == DamageDefOf.EMP && Props.disarmedByEmpForTicks > 0)
 			{
 				BreakShield(new DamageInfo(projectile.def.projectile.damageDef, projectile.def.projectile.damageDef.defaultDamage));
 			}
@@ -151,6 +161,19 @@ namespace RimWorld
 			effecter.Trigger(new TargetInfo(newExactPos.ToIntVec3(), parent.Map), TargetInfo.Invalid);
 			effecter.Cleanup();
 			return true;
+		}
+
+		public static bool InterceptsProjectile(CompProperties_ProjectileInterceptor props, Projectile projectile)
+		{
+			if (props.interceptGroundProjectiles)
+			{
+				return !projectile.def.projectile.flyOverhead;
+			}
+			if (props.interceptAirProjectiles)
+			{
+				return projectile.def.projectile.flyOverhead;
+			}
+			return false;
 		}
 
 		public override void CompTick()
@@ -166,6 +189,22 @@ namespace RimWorld
 				nextChargeTick += Props.chargeIntervalTicks;
 			}
 			stunner.StunHandlerTick();
+			if (Props.activeSound.NullOrUndefined())
+			{
+				return;
+			}
+			if (Active)
+			{
+				if (sustainer == null || sustainer.Ended)
+				{
+					sustainer = Props.activeSound.TrySpawnSustainer(SoundInfo.InMap(parent));
+				}
+				sustainer.Maintain();
+			}
+			else if (sustainer != null && !sustainer.Ended)
+			{
+				sustainer.End();
+			}
 		}
 
 		public override void Notify_LordDestroyed()
@@ -182,7 +221,7 @@ namespace RimWorld
 			float currentAlpha = GetCurrentAlpha();
 			if (currentAlpha > 0f)
 			{
-				Color value = (!Active && Find.Selector.IsSelected(parent)) ? InactiveColor : Props.color;
+				Color value = ((!Active && Find.Selector.IsSelected(parent)) ? InactiveColor : Props.color);
 				value.a *= currentAlpha;
 				MatPropertyBlock.SetColor(ShaderPropertyIDs.Color, value);
 				Matrix4x4 matrix = default(Matrix4x4);
@@ -208,6 +247,8 @@ namespace RimWorld
 
 		private float GetCurrentAlpha_Idle()
 		{
+			float idlePulseSpeed = Props.idlePulseSpeed;
+			float minIdleAlpha = Props.minIdleAlpha;
 			if (!Active)
 			{
 				return 0f;
@@ -220,11 +261,12 @@ namespace RimWorld
 			{
 				return 0f;
 			}
-			return Mathf.Lerp(-1.7f, 0.11f, (Mathf.Sin((float)(Gen.HashCombineInt(parent.thingIDNumber, 96804938) % 100) + Time.realtimeSinceStartup * 0.7f) + 1f) / 2f);
+			return Mathf.Lerp(minIdleAlpha, 0.11f, (Mathf.Sin((float)(Gen.HashCombineInt(parent.thingIDNumber, 96804938) % 100) + Time.realtimeSinceStartup * idlePulseSpeed) + 1f) / 2f);
 		}
 
 		private float GetCurrentAlpha_Selected()
 		{
+			float num = Mathf.Max(2f, Props.idlePulseSpeed);
 			if (!Find.Selector.IsSelected(parent) || stunner.Stunned || shutDown)
 			{
 				return 0f;
@@ -233,7 +275,7 @@ namespace RimWorld
 			{
 				return 0.41f;
 			}
-			return Mathf.Lerp(0.2f, 0.62f, (Mathf.Sin((float)(Gen.HashCombineInt(parent.thingIDNumber, 35990913) % 100) + Time.realtimeSinceStartup * 2f) + 1f) / 2f);
+			return Mathf.Lerp(0.2f, 0.62f, (Mathf.Sin((float)(Gen.HashCombineInt(parent.thingIDNumber, 35990913) % 100) + Time.realtimeSinceStartup * num) + 1f) / 2f);
 		}
 
 		private float GetCurrentAlpha_RecentlyIntercepted()
@@ -276,7 +318,7 @@ namespace RimWorld
 			}
 			Command_Toggle command_Toggle = new Command_Toggle();
 			command_Toggle.defaultLabel = "Dev: Intercept non-hostile";
-			command_Toggle.isActive = (() => debugInterceptNonHostileProjectiles);
+			command_Toggle.isActive = () => debugInterceptNonHostileProjectiles;
 			command_Toggle.toggleAction = delegate
 			{
 				debugInterceptNonHostileProjectiles = !debugInterceptNonHostileProjectiles;
@@ -289,7 +331,7 @@ namespace RimWorld
 			StringBuilder stringBuilder = new StringBuilder();
 			if (Props.interceptGroundProjectiles || Props.interceptAirProjectiles)
 			{
-				string value = (!Props.interceptGroundProjectiles) ? ((string)"InterceptsProjectiles_AerialProjectiles".Translate()) : ((string)"InterceptsProjectiles_GroundProjectiles".Translate());
+				string value = ((!Props.interceptGroundProjectiles) ? ((string)"InterceptsProjectiles_AerialProjectiles".Translate()) : ((string)"InterceptsProjectiles_GroundProjectiles".Translate()));
 				if (Props.cooldownTicks > 0)
 				{
 					stringBuilder.Append("InterceptsProjectilesEvery".Translate(value, Props.cooldownTicks.ToStringTicksToPeriod()));
@@ -344,7 +386,7 @@ namespace RimWorld
 		public override void PostPreApplyDamage(DamageInfo dinfo, out bool absorbed)
 		{
 			base.PostPreApplyDamage(dinfo, out absorbed);
-			if (dinfo.Def == DamageDefOf.EMP)
+			if (dinfo.Def == DamageDefOf.EMP && Props.disarmedByEmpForTicks > 0)
 			{
 				BreakShield(dinfo);
 			}
@@ -353,11 +395,13 @@ namespace RimWorld
 		private void BreakShield(DamageInfo dinfo)
 		{
 			float fTheta;
+			Vector3 center;
 			if (Active)
 			{
 				SoundDefOf.EnergyShield_Broken.PlayOneShot(new TargetInfo(parent));
 				int num = Mathf.CeilToInt(Props.radius * 2f);
 				fTheta = (float)Math.PI * 2f / (float)num;
+				center = parent.TrueCenter();
 				for (int i = 0; i < num; i++)
 				{
 					MoteMaker.MakeConnectingLine(PosAtIndex(i), PosAtIndex((i + 1) % num), ThingDefOf.Mote_LineEMP, parent.Map, 1.5f);
@@ -367,7 +411,7 @@ namespace RimWorld
 			stunner.Notify_DamageApplied(dinfo, affectedByEMP: true);
 			Vector3 PosAtIndex(int index)
 			{
-				return new Vector3(Props.radius * Mathf.Cos(fTheta * (float)index) + (float)parent.Position.x, 0f, Props.radius * Mathf.Sin(fTheta * (float)index) + (float)parent.Position.z);
+				return new Vector3(Props.radius * Mathf.Cos(fTheta * (float)index) + center.x, 0f, Props.radius * Mathf.Sin(fTheta * (float)index) + center.z);
 			}
 		}
 

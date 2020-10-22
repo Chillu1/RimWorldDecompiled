@@ -139,7 +139,7 @@ namespace RimWorld
 				}
 			}
 			float priceFor = trad.GetPriceFor(action);
-			string label = (TradeSession.TradeCurrency == TradeCurrency.Silver) ? priceFor.ToStringMoney() : priceFor.ToString();
+			string label = ((TradeSession.TradeCurrency == TradeCurrency.Silver) ? priceFor.ToStringMoney() : priceFor.ToString());
 			Rect rect2 = new Rect(rect);
 			rect2.xMax -= 5f;
 			rect2.xMin += 5f;

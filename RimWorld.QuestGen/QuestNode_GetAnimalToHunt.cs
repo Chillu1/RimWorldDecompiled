@@ -37,7 +37,7 @@ namespace RimWorld.QuestGen
 			}
 			float x2 = slate.Get("points", 0f);
 			float animalDifficultyFromPoints = pointsToAnimalDifficultyCurve.GetValue(slate).Evaluate(x2);
-			if (!map.Biome.AllWildAnimals.Where((PawnKindDef x) => map.mapTemperature.SeasonAndOutdoorTemperatureAcceptableFor(x.race) && map.listerThings.ThingsOfDef(x.race).Any((Thing p) => p.Faction == null)).TryRandomElementByWeight((PawnKindDef x) => AnimalCommonalityByDifficulty(x, animalDifficultyFromPoints), out PawnKindDef result))
+			if (!map.Biome.AllWildAnimals.Where((PawnKindDef x) => map.mapTemperature.SeasonAndOutdoorTemperatureAcceptableFor(x.race) && map.listerThings.ThingsOfDef(x.race).Any((Thing p) => p.Faction == null)).TryRandomElementByWeight((PawnKindDef x) => AnimalCommonalityByDifficulty(x, animalDifficultyFromPoints), out var result))
 			{
 				return false;
 			}

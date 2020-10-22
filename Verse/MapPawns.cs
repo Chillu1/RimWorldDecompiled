@@ -1,7 +1,7 @@
-using RimWorld;
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Text;
+using RimWorld;
+using RimWorld.Planet;
 using Verse.AI;
 
 namespace Verse
@@ -176,7 +176,7 @@ namespace Verse
 				List<Thing> list = map.listerThings.ThingsInGroup(ThingRequestGroup.ThingHolder);
 				for (int j = 0; j < list.Count; j++)
 				{
-					if (!(list[j] is IActiveDropPod) && list[j].TryGetComp<CompTransporter>() == null)
+					if (!(list[j] is IActiveDropPod) && !(list[j] is PawnFlyer) && list[j].TryGetComp<CompTransporter>() == null)
 					{
 						continue;
 					}
@@ -348,7 +348,7 @@ namespace Verse
 				for (int j = 0; j < list.Count; j++)
 				{
 					Building_CryptosleepCasket building_CryptosleepCasket = list[j] as Building_CryptosleepCasket;
-					if ((building_CryptosleepCasket == null || !building_CryptosleepCasket.def.building.isPlayerEjectable) && !(list[j] is IActiveDropPod) && list[j].TryGetComp<CompTransporter>() == null)
+					if ((building_CryptosleepCasket == null || !building_CryptosleepCasket.def.building.isPlayerEjectable) && !(list[j] is IActiveDropPod) && !(list[j] is PawnFlyer) && list[j].TryGetComp<CompTransporter>() == null)
 					{
 						continue;
 					}
@@ -426,7 +426,7 @@ namespace Verse
 				Log.Error("Called PawnsInFaction with null faction.");
 				return new List<Pawn>();
 			}
-			if (!pawnsInFactionResult.TryGetValue(faction, out List<Pawn> value))
+			if (!pawnsInFactionResult.TryGetValue(faction, out var value))
 			{
 				value = new List<Pawn>();
 				pawnsInFactionResult.Add(faction, value);
@@ -456,7 +456,7 @@ namespace Verse
 
 		public List<Pawn> FreeHumanlikesOfFaction(Faction faction)
 		{
-			if (!freeHumanlikesOfFactionResult.TryGetValue(faction, out List<Pawn> value))
+			if (!freeHumanlikesOfFactionResult.TryGetValue(faction, out var value))
 			{
 				value = new List<Pawn>();
 				freeHumanlikesOfFactionResult.Add(faction, value);
@@ -475,7 +475,7 @@ namespace Verse
 
 		public List<Pawn> FreeHumanlikesSpawnedOfFaction(Faction faction)
 		{
-			if (!freeHumanlikesSpawnedOfFactionResult.TryGetValue(faction, out List<Pawn> value))
+			if (!freeHumanlikesSpawnedOfFactionResult.TryGetValue(faction, out var value))
 			{
 				value = new List<Pawn>();
 				freeHumanlikesSpawnedOfFactionResult.Add(faction, value);
@@ -524,8 +524,8 @@ namespace Verse
 					{
 						pawnsInFactionSpawned[Faction.OfPlayer].InsertionSort(delegate(Pawn a, Pawn b)
 						{
-							int num = (a.playerSettings != null) ? a.playerSettings.joinTick : 0;
-							int value = (b.playerSettings != null) ? b.playerSettings.joinTick : 0;
+							int num = ((a.playerSettings != null) ? a.playerSettings.joinTick : 0);
+							int value = ((b.playerSettings != null) ? b.playerSettings.joinTick : 0);
 							return num.CompareTo(value);
 						});
 					}

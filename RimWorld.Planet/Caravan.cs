@@ -93,7 +93,7 @@ namespace RimWorld.Planet
 				{
 					return cachedImmobilized;
 				}
-				cachedImmobilized = (MassUsage > MassCapacity);
+				cachedImmobilized = MassUsage > MassCapacity;
 				cachedImmobilizedForTicks = Find.TickManager.TicksGame;
 				return cachedImmobilized;
 			}
@@ -619,7 +619,7 @@ namespace RimWorld.Planet
 				stringBuilder.AppendLine();
 				stringBuilder.Append("CaravanImmobilizedByMass".Translate());
 			}
-			if (needs.AnyPawnOutOfFood(out string malnutritionHediff))
+			if (needs.AnyPawnOutOfFood(out var malnutritionHediff))
 			{
 				stringBuilder.AppendLine();
 				stringBuilder.Append("CaravanOutOfFood".Translate());
@@ -669,6 +669,25 @@ namespace RimWorld.Planet
 				if (Find.WorldSelector.SingleSelectedObject == this)
 				{
 					yield return SettleInEmptyTileUtility.SettleCommand(this);
+					foreach (Pawn p in pawns)
+					{
+						if (p.royalty == null)
+						{
+							continue;
+						}
+						foreach (FactionPermit allFactionPermit in p.royalty.AllFactionPermits)
+						{
+							IEnumerable<Gizmo> caravanGizmos = allFactionPermit.Permit.Worker.GetCaravanGizmos(p, allFactionPermit.Faction);
+							if (caravanGizmos == null)
+							{
+								continue;
+							}
+							foreach (Gizmo item in caravanGizmos)
+							{
+								yield return item;
+							}
+						}
+					}
 				}
 				if (Find.WorldSelector.SingleSelectedObject == this && PawnsListForReading.Count((Pawn x) => x.IsColonist) >= 2)
 				{
@@ -687,7 +706,7 @@ namespace RimWorld.Planet
 				{
 					Command_Toggle command_Toggle = new Command_Toggle();
 					command_Toggle.hotKey = KeyBindingDefOf.Misc1;
-					command_Toggle.isActive = (() => pather.Paused);
+					command_Toggle.isActive = () => pather.Paused;
 					command_Toggle.toggleAction = delegate
 					{
 						if (pather.Moving)
@@ -708,11 +727,29 @@ namespace RimWorld.Planet
 				{
 					yield return gizmo2;
 				}
-				foreach (WorldObject item in Find.WorldObjects.ObjectsAt(base.Tile))
+				foreach (WorldObject item2 in Find.WorldObjects.ObjectsAt(base.Tile))
 				{
-					foreach (Gizmo caravanGizmo in item.GetCaravanGizmos(this))
+					foreach (Gizmo caravanGizmo in item2.GetCaravanGizmos(this))
 					{
 						yield return caravanGizmo;
+					}
+				}
+				foreach (Pawn pawn in pawns)
+				{
+					if (pawn.abilities == null || pawn.Downed || pawn.IsPrisoner)
+					{
+						continue;
+					}
+					foreach (Ability ability in pawn.abilities.abilities)
+					{
+						if (!ability.def.showGizmoOnWorldView)
+						{
+							continue;
+						}
+						foreach (Command gizmo3 in ability.GetGizmos())
+						{
+							yield return gizmo3;
+						}
 					}
 				}
 			}
@@ -724,7 +761,7 @@ namespace RimWorld.Planet
 			command_Action2.defaultLabel = "Dev: Mental break";
 			command_Action2.action = delegate
 			{
-				if (PawnsListForReading.Where((Pawn x) => x.RaceProps.Humanlike && !x.InMentalState).TryRandomElement(out Pawn result6))
+				if (PawnsListForReading.Where((Pawn x) => x.RaceProps.Humanlike && !x.InMentalState).TryRandomElement(out var result6))
 				{
 					result6.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.Wander_Sad);
 				}
@@ -734,7 +771,7 @@ namespace RimWorld.Planet
 			command_Action3.defaultLabel = "Dev: Make random pawn hungry";
 			command_Action3.action = delegate
 			{
-				if (PawnsListForReading.Where((Pawn x) => x.needs.food != null).TryRandomElement(out Pawn result5))
+				if (PawnsListForReading.Where((Pawn x) => x.needs.food != null).TryRandomElement(out var result5))
 				{
 					result5.needs.food.CurLevelPercentage = 0f;
 				}
@@ -744,7 +781,7 @@ namespace RimWorld.Planet
 			command_Action4.defaultLabel = "Dev: Kill random pawn";
 			command_Action4.action = delegate
 			{
-				if (PawnsListForReading.TryRandomElement(out Pawn result4))
+				if (PawnsListForReading.TryRandomElement(out var result4))
 				{
 					result4.Kill(null, null);
 					Messages.Message("Dev: Killed " + result4.LabelShort, this, MessageTypeDefOf.TaskCompletion, historical: false);
@@ -755,7 +792,7 @@ namespace RimWorld.Planet
 			command_Action5.defaultLabel = "Dev: Harm random pawn";
 			command_Action5.action = delegate
 			{
-				if (PawnsListForReading.TryRandomElement(out Pawn result3))
+				if (PawnsListForReading.TryRandomElement(out var result3))
 				{
 					DamageInfo dinfo = new DamageInfo(DamageDefOf.Scratch, 10f, 999f);
 					result3.TakeDamage(dinfo);
@@ -766,7 +803,7 @@ namespace RimWorld.Planet
 			command_Action6.defaultLabel = "Dev: Down random pawn";
 			command_Action6.action = delegate
 			{
-				if (PawnsListForReading.Where((Pawn x) => !x.Downed).TryRandomElement(out Pawn result2))
+				if (PawnsListForReading.Where((Pawn x) => !x.Downed).TryRandomElement(out var result2))
 				{
 					HealthUtility.DamageUntilDowned(result2);
 					Messages.Message("Dev: Downed " + result2.LabelShort, this, MessageTypeDefOf.TaskCompletion, historical: false);
@@ -777,7 +814,7 @@ namespace RimWorld.Planet
 			command_Action7.defaultLabel = "Dev: Plague on random pawn";
 			command_Action7.action = delegate
 			{
-				if (PawnsListForReading.Where((Pawn x) => !x.Downed).TryRandomElement(out Pawn result))
+				if (PawnsListForReading.Where((Pawn x) => !x.Downed).TryRandomElement(out var result))
 				{
 					Hediff hediff = HediffMaker.MakeHediff(HediffDefOf.Plague, result);
 					hediff.Severity = HediffDefOf.Plague.stages[1].minSeverity - 0.001f;
@@ -794,6 +831,16 @@ namespace RimWorld.Planet
 				pather.StopDead();
 			};
 			yield return command_Action8;
+			Command_Action command_Action9 = new Command_Action();
+			command_Action9.defaultLabel = "Dev: +20% psyfocus";
+			command_Action9.action = delegate
+			{
+				for (int i = 0; i < PawnsListForReading.Count; i++)
+				{
+					PawnsListForReading[i].psychicEntropy?.OffsetPsyfocusDirectly(0.2f);
+				}
+			};
+			yield return command_Action9;
 		}
 
 		public override IEnumerable<FloatMenuOption> GetTransportPodsFloatMenuOptions(IEnumerable<IThingHolder> pods, CompLaunchable representative)

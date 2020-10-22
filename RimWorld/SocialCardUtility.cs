@@ -1,7 +1,7 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
@@ -94,7 +94,7 @@ namespace RimWorld
 		{
 			GUI.BeginGroup(rect);
 			Text.Font = GameFont.Small;
-			float num = Prefs.DevMode ? 20f : 15f;
+			float num = (Prefs.DevMode ? 20f : 15f);
 			Rect rect2 = new Rect(0f, num, rect.width, rect.height - num).ContractedBy(10f);
 			Rect rect3 = rect2;
 			Rect rect4 = rect2;
@@ -294,7 +294,7 @@ namespace RimWorld
 					}
 				}
 			}
-			CalculateColumnsWidths(width, out float relationsWidth, out float pawnLabelWidth, out float myOpinionWidth, out float hisOpinionWidth, out float pawnSituationLabelWidth);
+			CalculateColumnsWidths(width, out var relationsWidth, out var pawnLabelWidth, out var myOpinionWidth, out var hisOpinionWidth, out var pawnSituationLabelWidth);
 			Rect rect2 = new Rect(5f, y + 3f, relationsWidth, rowHeight - 3f);
 			DrawRelationLabel(entry, rect2, selPawnForSocialInfo);
 			Rect rect3 = new Rect(rect2.xMax, y + 3f, pawnLabelWidth, rowHeight - 3f);
@@ -308,7 +308,7 @@ namespace RimWorld
 
 		private static float GetRowHeight(CachedSocialTabEntry entry, float rowWidth, Pawn selPawnForSocialInfo)
 		{
-			CalculateColumnsWidths(rowWidth, out float relationsWidth, out float pawnLabelWidth, out float _, out float _, out float _);
+			CalculateColumnsWidths(rowWidth, out var relationsWidth, out var pawnLabelWidth, out var _, out var _, out var _);
 			return Mathf.Max(Mathf.Max(0f, Text.CalcHeight(GetRelationsString(entry, selPawnForSocialInfo), relationsWidth)), Text.CalcHeight(GetPawnLabel(entry.otherPawn), pawnLabelWidth)) + 3f;
 		}
 
@@ -432,17 +432,13 @@ namespace RimWorld
 				{
 					return "Neutral".Translate();
 				}
-				switch (faction.RelationKindWith(fromPOV.Faction))
+				return faction.RelationKindWith(fromPOV.Faction) switch
 				{
-				case FactionRelationKind.Hostile:
-					return "Hostile".Translate() + ", " + faction.Name;
-				case FactionRelationKind.Neutral:
-					return "Neutral".Translate() + ", " + faction.Name;
-				case FactionRelationKind.Ally:
-					return "Ally".Translate() + ", " + faction.Name;
-				default:
-					return "";
-				}
+					FactionRelationKind.Hostile => "Hostile".Translate() + ", " + faction.Name, 
+					FactionRelationKind.Neutral => "Neutral".Translate() + ", " + faction.Name, 
+					FactionRelationKind.Ally => "Ally".Translate() + ", " + faction.Name, 
+					_ => "", 
+				};
 			}
 			return "";
 		}

@@ -158,7 +158,7 @@ namespace RimWorld
 					return true;
 				}
 			}
-			if (thing2 == null && getter == eater && (getter.RaceProps.predator || (getter.IsWildMan() && !getter.IsPrisoner)))
+			if (thing2 == null && getter == eater && (getter.RaceProps.predator || (getter.IsWildMan() && !getter.IsPrisoner && !getter.WorkTypeIsDisabled(WorkTypeDefOf.Hunting))))
 			{
 				Pawn pawn = BestPawnToHuntForPredator(getter, forceScanWholeMap);
 				if (pawn != null)
@@ -298,7 +298,7 @@ namespace RimWorld
 				}
 				return true;
 			};
-			ThingRequest thingRequest = (!((eater.RaceProps.foodType & (FoodTypeFlags.Plant | FoodTypeFlags.Tree)) != 0 && allowPlant)) ? ThingRequest.ForGroup(ThingRequestGroup.FoodSourceNotPlantOrTree) : ThingRequest.ForGroup(ThingRequestGroup.FoodSource);
+			ThingRequest thingRequest = ((!((eater.RaceProps.foodType & (FoodTypeFlags.Plant | FoodTypeFlags.Tree)) != 0 && allowPlant)) ? ThingRequest.ForGroup(ThingRequestGroup.FoodSourceNotPlantOrTree) : ThingRequest.ForGroup(ThingRequestGroup.FoodSource));
 			Thing bestThing;
 			if (getter.RaceProps.Humanlike)
 			{
@@ -599,7 +599,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!Find.Storyteller.difficulty.predatorsHuntHumanlikes && prey.RaceProps.Humanlike)
+			if (!Find.Storyteller.difficultyValues.predatorsHuntHumanlikes && prey.RaceProps.Humanlike)
 			{
 				return false;
 			}
@@ -660,7 +660,7 @@ namespace RimWorld
 		public static void DebugDrawPredatorFoodSource()
 		{
 			Pawn pawn = Find.Selector.SingleSelectedThing as Pawn;
-			if (pawn == null || !TryFindBestFoodSourceFor(pawn, pawn, desperate: true, out Thing foodSource, out ThingDef _, canRefillDispenser: false, canUseInventory: false))
+			if (pawn == null || !TryFindBestFoodSourceFor(pawn, pawn, desperate: true, out var foodSource, out var _, canRefillDispenser: false, canUseInventory: false))
 			{
 				return;
 			}
@@ -827,7 +827,7 @@ namespace RimWorld
 
 		public static float GetFoodPoisonChanceFactor(Pawn ingester)
 		{
-			float num = Find.Storyteller.difficulty.foodPoisonChanceFactor;
+			float num = Find.Storyteller.difficultyValues.foodPoisonChanceFactor;
 			if (ingester.health != null && ingester.health.hediffSet != null)
 			{
 				foreach (Hediff hediff in ingester.health.hediffSet.hediffs)
@@ -863,6 +863,22 @@ namespace RimWorld
 				return foodSource.GetStatValue(StatDefOf.Nutrition);
 			}
 			return foodDef.GetStatValueAbstract(StatDefOf.Nutrition);
+		}
+
+		public static bool WillIngestFromInventoryNow(Pawn pawn, Thing inv)
+		{
+			if ((inv.def.IsNutritionGivingIngestible || inv.def.IsNonMedicalDrug) && inv.IngestibleNow)
+			{
+				return pawn.WillEat(inv);
+			}
+			return false;
+		}
+
+		public static void IngestFromInventoryNow(Pawn pawn, Thing inv)
+		{
+			Job job = JobMaker.MakeJob(JobDefOf.Ingest, inv);
+			job.count = Mathf.Min(inv.stackCount, WillIngestStackCountOf(pawn, inv.def, inv.GetStatValue(StatDefOf.Nutrition)));
+			pawn.jobs.TryTakeOrderedJob(job);
 		}
 	}
 }

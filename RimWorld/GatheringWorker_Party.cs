@@ -12,7 +12,7 @@ namespace RimWorld
 
 		protected override bool TryFindGatherSpot(Pawn organizer, out IntVec3 spot)
 		{
-			return RCellFinder.TryFindGatheringSpot(organizer, def, out spot);
+			return RCellFinder.TryFindGatheringSpot_NewTemp(organizer, def, ignoreRequiredColonistCount: false, out spot);
 		}
 	}
 }

@@ -1,5 +1,5 @@
-using RimWorld.QuestGen;
 using System.Collections.Generic;
+using RimWorld.QuestGen;
 using Verse;
 using Verse.Grammar;
 
@@ -13,8 +13,8 @@ namespace RimWorld.Planet
 			Pawn pawn = PrisonerWillingToJoinQuestUtility.GeneratePrisoner(part.site.Tile, part.site.Faction);
 			part.things = new ThingOwner<Pawn>(part, oneStackOnly: true);
 			part.things.TryAdd(pawn);
-			PawnRelationUtility.Notify_PawnsSeenByPlayer(Gen.YieldSingle(pawn), out string pawnRelationsInfo, informEvenIfSeenBefore: true, writeSeenPawnsNames: false);
-			string output = pawnRelationsInfo.NullOrEmpty() ? "" : ((string)("\n\n" + "PawnHasTheseRelationshipsWithColonists".Translate(pawn.LabelShort, pawn) + "\n\n" + pawnRelationsInfo));
+			PawnRelationUtility.Notify_PawnsSeenByPlayer(Gen.YieldSingle(pawn), out var pawnRelationsInfo, informEvenIfSeenBefore: true, writeSeenPawnsNames: false);
+			string output = (pawnRelationsInfo.NullOrEmpty() ? "" : ((string)("\n\n" + "PawnHasTheseRelationshipsWithColonists".Translate(pawn.LabelShort, pawn) + "\n\n" + pawnRelationsInfo)));
 			slate.Set("prisoner", pawn);
 			outExtraDescriptionRules.Add(new Rule_String("prisonerFullRelationInfo", output));
 		}

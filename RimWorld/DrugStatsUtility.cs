@@ -35,7 +35,7 @@ namespace RimWorld
 			foreach (IngestionOutcomeDoer outcomeDoer in d.ingestible.outcomeDoers)
 			{
 				IngestionOutcomeDoer_GiveHediff ingestionOutcomeDoer_GiveHediff;
-				if ((ingestionOutcomeDoer_GiveHediff = (outcomeDoer as IngestionOutcomeDoer_GiveHediff)) != null && typeof(Hediff_High).IsAssignableFrom(ingestionOutcomeDoer_GiveHediff.hediffDef.hediffClass))
+				if ((ingestionOutcomeDoer_GiveHediff = outcomeDoer as IngestionOutcomeDoer_GiveHediff) != null && typeof(Hediff_High).IsAssignableFrom(ingestionOutcomeDoer_GiveHediff.hediffDef.hediffClass))
 				{
 					return ingestionOutcomeDoer_GiveHediff;
 				}
@@ -52,7 +52,7 @@ namespace RimWorld
 			foreach (IngestionOutcomeDoer outcomeDoer in d.ingestible.outcomeDoers)
 			{
 				IngestionOutcomeDoer_GiveHediff ingestionOutcomeDoer_GiveHediff;
-				if ((ingestionOutcomeDoer_GiveHediff = (outcomeDoer as IngestionOutcomeDoer_GiveHediff)) != null && ingestionOutcomeDoer_GiveHediff.hediffDef == GetTolerance(d))
+				if ((ingestionOutcomeDoer_GiveHediff = outcomeDoer as IngestionOutcomeDoer_GiveHediff) != null && ingestionOutcomeDoer_GiveHediff.hediffDef == GetTolerance(d))
 				{
 					return ingestionOutcomeDoer_GiveHediff;
 				}
@@ -82,7 +82,7 @@ namespace RimWorld
 				foreach (IngestionOutcomeDoer outcomeDoer in d.ingestible.outcomeDoers)
 				{
 					IngestionOutcomeDoer_GiveHediff ingestionOutcomeDoer_GiveHediff;
-					if ((ingestionOutcomeDoer_GiveHediff = (outcomeDoer as IngestionOutcomeDoer_GiveHediff)) != null && ingestionOutcomeDoer_GiveHediff.hediffDef == tolerance)
+					if ((ingestionOutcomeDoer_GiveHediff = outcomeDoer as IngestionOutcomeDoer_GiveHediff) != null && ingestionOutcomeDoer_GiveHediff.hediffDef == tolerance)
 					{
 						return ingestionOutcomeDoer_GiveHediff.severity;
 					}
@@ -140,7 +140,7 @@ namespace RimWorld
 		{
 			IngestionOutcomeDoer_GiveHediff toleranceGiver = GetToleranceGiver(d);
 			float safeDoseInterval = GetSafeDoseInterval(d);
-			float num = (toleranceGiver != null) ? (GetDrugComp(d).minToleranceToAddict / toleranceGiver.severity) : 0f;
+			float num = ((toleranceGiver != null) ? (GetDrugComp(d).minToleranceToAddict / toleranceGiver.severity) : 0f);
 			if (safeDoseInterval == 0f)
 			{
 				return "AlwaysSafe".Translate();

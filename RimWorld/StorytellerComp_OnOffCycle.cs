@@ -35,6 +35,10 @@ namespace RimWorld
 
 		private FiringIncident GenerateIncident(IIncidentTarget target)
 		{
+			if (Props.IncidentCategory == null)
+			{
+				return null;
+			}
 			IncidentParms parms = GenerateParms(Props.IncidentCategory, target);
 			IncidentDef result;
 			if ((float)GenDate.DaysPassed < Props.forceRaidEnemyBeforeDaysPassed)
@@ -65,6 +69,10 @@ namespace RimWorld
 
 		public override string ToString()
 		{
+			if (Props.incident == null && Props.IncidentCategory == null)
+			{
+				return "";
+			}
 			return base.ToString() + " (" + ((Props.incident != null) ? Props.incident.defName : Props.IncidentCategory.defName) + ")";
 		}
 	}

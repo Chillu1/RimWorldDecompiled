@@ -12,7 +12,7 @@ namespace Verse.AI
 
 		protected override IntVec3 GetWanderRoot(Pawn pawn)
 		{
-			if (RCellFinder.TryFindBestExitSpot(pawn, out IntVec3 spot))
+			if (RCellFinder.TryFindBestExitSpot(pawn, out var spot))
 			{
 				return spot;
 			}

@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -39,7 +39,7 @@ namespace RimWorld
 			{
 				foreach (Pawn allMapsCaravansAndTravelingTransportPods_Alive_Colonist in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_Colonists)
 				{
-					if (allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty != null && allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty.HighestTitleWithBedroomRequirements() != null && (!allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty.HasPersonalBedroom() || allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty.GetUnmetBedroomRequirements().Any()))
+					if (allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty != null && allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty.HighestTitleWithBedroomRequirements() != null && !allMapsCaravansAndTravelingTransportPods_Alive_Colonist.Suspended && (!allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty.HasPersonalBedroom() || allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty.GetUnmetBedroomRequirements().Any()))
 					{
 						culpritsResult.Add(allMapsCaravansAndTravelingTransportPods_Alive_Colonist);
 					}

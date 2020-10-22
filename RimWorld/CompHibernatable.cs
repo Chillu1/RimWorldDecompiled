@@ -1,6 +1,7 @@
 using RimWorld.Planet;
 using UnityEngine;
 using Verse;
+using Verse.Sound;
 
 namespace RimWorld
 {
@@ -9,6 +10,8 @@ namespace RimWorld
 		private HibernatableStateDef state = HibernatableStateDefOf.Hibernating;
 
 		private int endStartupTick;
+
+		private Sustainer sustainer;
 
 		public CompProperties_Hibernatable Props => (CompProperties_Hibernatable)props;
 
@@ -43,6 +46,10 @@ namespace RimWorld
 		{
 			base.PostDeSpawn(map);
 			map.info.parent.Notify_HibernatableChanged();
+			if (sustainer != null && !sustainer.Ended)
+			{
+				sustainer.End();
+			}
 		}
 
 		public void Startup()
@@ -75,8 +82,20 @@ namespace RimWorld
 			{
 				State = HibernatableStateDefOf.Running;
 				endStartupTick = 0;
-				string str = (parent.Map.Parent.GetComponent<EscapeShipComp>() == null) ? ((string)"LetterHibernateCompleteStandalone".Translate()) : ((string)"LetterHibernateComplete".Translate());
+				string str = ((parent.Map.Parent.GetComponent<EscapeShipComp>() == null) ? ((string)"LetterHibernateCompleteStandalone".Translate()) : ((string)"LetterHibernateComplete".Translate()));
 				Find.LetterStack.ReceiveLetter("LetterLabelHibernateComplete".Translate(), str, LetterDefOf.PositiveEvent, new GlobalTargetInfo(parent));
+			}
+			if (State != HibernatableStateDefOf.Hibernating)
+			{
+				if (sustainer == null || sustainer.Ended)
+				{
+					sustainer = Props.sustainerActive.TrySpawnSustainer(SoundInfo.InMap(parent));
+				}
+				sustainer.Maintain();
+			}
+			else if (sustainer != null && !sustainer.Ended)
+			{
+				sustainer.End();
 			}
 		}
 

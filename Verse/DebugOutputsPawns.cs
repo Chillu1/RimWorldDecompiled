@@ -1,9 +1,9 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse
@@ -618,7 +618,7 @@ namespace Verse
 			Dictionary<string, int> countChildhoods = new Dictionary<string, int>();
 			foreach (Backstory item in enumerable)
 			{
-				Dictionary<string, int> dictionary = (item.slot == BackstorySlot.Adulthood) ? countAdulthoods : countChildhoods;
+				Dictionary<string, int> dictionary = ((item.slot == BackstorySlot.Adulthood) ? countAdulthoods : countChildhoods);
 				foreach (string spawnCategory in item.spawnCategories)
 				{
 					if (!dictionary.ContainsKey(spawnCategory))

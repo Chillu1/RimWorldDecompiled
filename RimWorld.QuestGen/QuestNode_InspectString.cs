@@ -25,7 +25,7 @@ namespace RimWorld.QuestGen
 				QuestPart_InspectString questPart_InspectString = new QuestPart_InspectString();
 				questPart_InspectString.targets.AddRange(targets.GetValue(slate));
 				questPart_InspectString.inspectString = inspectString.GetValue(slate);
-				questPart_InspectString.inSignalEnable = (QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+				questPart_InspectString.inSignalEnable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 				QuestGen.quest.AddPart(questPart_InspectString);
 			}
 		}

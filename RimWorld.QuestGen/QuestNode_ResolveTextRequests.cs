@@ -19,6 +19,7 @@ namespace RimWorld.QuestGen
 			if (rules.GetValue(QuestGen.slate) != null)
 			{
 				QuestGen.AddQuestDescriptionRules(rules.GetValue(QuestGen.slate));
+				QuestGen.AddQuestContentRules(rules.GetValue(QuestGen.slate));
 			}
 			Resolve();
 		}
@@ -32,6 +33,7 @@ namespace RimWorld.QuestGen
 				{
 					List<Rule> list = new List<Rule>();
 					list.AddRange(QuestGen.QuestDescriptionRulesReadOnly);
+					list.AddRange(QuestGen.QuestContentRulesReadOnly);
 					if (textRequestsReadOnly[i].extraRules != null)
 					{
 						list.AddRange(textRequestsReadOnly[i].extraRules);

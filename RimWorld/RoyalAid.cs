@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Verse;
 
 namespace RimWorld
@@ -15,5 +16,19 @@ namespace RimWorld
 		public float targetingRange;
 
 		public bool targetingRequireLOS = true;
+
+		public float aidDurationDays;
+
+		public float radius;
+
+		public int intervalTicks;
+
+		public int explosionCount;
+
+		public int warmupTicks;
+
+		public FloatRange explosionRadiusRange;
+
+		public List<ThingDefCountClass> itemsToDrop;
 	}
 }

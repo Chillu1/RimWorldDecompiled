@@ -36,7 +36,7 @@ namespace Verse
 		{
 			if (subject is Pawn)
 			{
-				subjectPawn = (subject as Pawn);
+				subjectPawn = subject as Pawn;
 			}
 			else if (subject != null)
 			{
@@ -44,7 +44,7 @@ namespace Verse
 			}
 			if (initiator is Pawn)
 			{
-				initiatorPawn = (initiator as Pawn);
+				initiatorPawn = initiator as Pawn;
 			}
 			else if (initiator != null)
 			{

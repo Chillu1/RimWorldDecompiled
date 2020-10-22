@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.AI.Group;
@@ -208,7 +208,7 @@ namespace RimWorld
 			float requestedCaravanValue = Mathf.Clamp(DemandAsPercentageOfCaravan.RandomInRange * num, 300f, 3500f);
 			while (requestedCaravanValue > 50f)
 			{
-				if (!list2.Where((Thing x) => x.MarketValue * (float)x.stackCount <= requestedCaravanValue * 2f).TryRandomElementByWeight((Thing x) => Mathf.Pow(x.MarketValue / x.GetStatValue(StatDefOf.Mass), 2f), out Thing result))
+				if (!list2.Where((Thing x) => x.MarketValue * (float)x.stackCount <= requestedCaravanValue * 2f).TryRandomElementByWeight((Thing x) => Mathf.Pow(x.MarketValue / x.GetStatValue(StatDefOf.Mass), 2f), out var result))
 				{
 					return null;
 				}

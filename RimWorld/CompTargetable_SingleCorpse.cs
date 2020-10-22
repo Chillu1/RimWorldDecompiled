@@ -15,7 +15,7 @@ namespace RimWorld
 				canTargetBuildings = false,
 				canTargetItems = true,
 				mapObjectTargetsMustBeAutoAttackable = false,
-				validator = ((TargetInfo x) => x.Thing is Corpse && BaseTargetValidator(x.Thing))
+				validator = (TargetInfo x) => x.Thing is Corpse && BaseTargetValidator(x.Thing)
 			};
 		}
 

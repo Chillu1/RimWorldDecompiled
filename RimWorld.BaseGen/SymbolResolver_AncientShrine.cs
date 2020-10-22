@@ -61,7 +61,7 @@ namespace RimWorld.BaseGen
 			resolveParams5.floorDef = TerrainDefOf.Concrete;
 			BaseGen.symbolStack.Push("floor", resolveParams5);
 			ResolveParams resolveParams6 = rp;
-			resolveParams6.floorDef = (rp.floorDef ?? TerrainDefOf.MetalTile);
+			resolveParams6.floorDef = rp.floorDef ?? TerrainDefOf.MetalTile;
 			BaseGen.symbolStack.Push("floor", resolveParams6);
 		}
 	}

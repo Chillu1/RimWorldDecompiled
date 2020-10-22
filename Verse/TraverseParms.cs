@@ -92,14 +92,14 @@ namespace Verse
 
 		public override int GetHashCode()
 		{
-			int seed = canBash ? 1 : 0;
+			int seed = (canBash ? 1 : 0);
 			seed = ((pawn == null) ? Gen.HashCombineStruct(seed, mode) : Gen.HashCombine(seed, pawn));
 			return Gen.HashCombineStruct(seed, maxDanger);
 		}
 
 		public override string ToString()
 		{
-			string text = canBash ? " canBash" : "";
+			string text = (canBash ? " canBash" : "");
 			if (mode == TraverseMode.ByPawn)
 			{
 				return string.Concat("(", mode, " ", maxDanger, " ", pawn, text, ")");

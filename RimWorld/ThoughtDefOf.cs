@@ -128,6 +128,12 @@ namespace RimWorld
 		[MayRequireRoyalty]
 		public static ThoughtDef DecreeMet;
 
+		[MayRequireRoyalty]
+		public static ThoughtDef KillThirst;
+
+		[MayRequireRoyalty]
+		public static ThoughtDef JealousRage;
+
 		public static ThoughtDef ColonistLost;
 
 		public static ThoughtDef PawnWithGoodOpinionLost;
@@ -137,6 +143,8 @@ namespace RimWorld
 		public static ThoughtDef ApparelDamaged;
 
 		public static ThoughtDef Naked;
+
+		public static ThoughtDef ClothedNudist;
 
 		public static ThoughtDef DeadMansApparel;
 
@@ -224,6 +232,18 @@ namespace RimWorld
 		public static ThoughtDef ForcedMeToTakeDrugs;
 
 		public static ThoughtDef ForcedMeToTakeLuciferium;
+
+		[MayRequireRoyalty]
+		public static ThoughtDef OtherTravelerDied;
+
+		[MayRequireRoyalty]
+		public static ThoughtDef OtherTravelerArrested;
+
+		[MayRequireRoyalty]
+		public static ThoughtDef OtherTravelerSurgicallyViolated;
+
+		[MayRequireRoyalty]
+		public static ThoughtDef NeuroquakeEcho;
 
 		static ThoughtDefOf()
 		{

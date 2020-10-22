@@ -79,49 +79,42 @@ namespace RimWorld
 
 		private static IEnumerable<Widgets.DropdownMenuElement<Pawn>> MasterSelectButton_GenerateMenu(Pawn p)
 		{
-			_003C_003Ec__DisplayClass10_0 CS_0024_003C_003E8__locals0 = new _003C_003Ec__DisplayClass10_0();
-			CS_0024_003C_003E8__locals0.p = p;
 			Widgets.DropdownMenuElement<Pawn> dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
 			{
 				option = new FloatMenuOption("(" + "NoneLower".Translate() + ")", delegate
 				{
-					CS_0024_003C_003E8__locals0.p.playerSettings.Master = null;
+					p.playerSettings.Master = null;
 				}),
 				payload = null
 			};
 			yield return dropdownMenuElement;
-			using (List<Pawn>.Enumerator enumerator = PawnsFinder.AllMaps_FreeColonistsSpawned.GetEnumerator())
+			foreach (Pawn col in PawnsFinder.AllMaps_FreeColonistsSpawned)
 			{
-				while (enumerator.MoveNext())
+				string text = RelationsUtility.LabelWithBondInfo(col, p);
+				Action action = null;
+				if (CanBeMaster(col, p))
 				{
-					_003C_003Ec__DisplayClass10_0 _003C_003Ec__DisplayClass10_ = CS_0024_003C_003E8__locals0;
-					Pawn col = enumerator.Current;
-					string text = RelationsUtility.LabelWithBondInfo(col, _003C_003Ec__DisplayClass10_.p);
-					Action action = null;
-					if (CanBeMaster(col, _003C_003Ec__DisplayClass10_.p))
+					action = delegate
 					{
-						action = delegate
-						{
-							_003C_003Ec__DisplayClass10_.p.playerSettings.Master = col;
-						};
-					}
-					else
-					{
-						int level = col.skills.GetSkill(SkillDefOf.Animals).Level;
-						int num = MinimumHandlingSkill(_003C_003Ec__DisplayClass10_.p);
-						if (level < num)
-						{
-							action = null;
-							text += " (" + "SkillTooLow".Translate(SkillDefOf.Animals.LabelCap, level, num) + ")";
-						}
-					}
-					dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
-					{
-						option = new FloatMenuOption(text, action),
-						payload = col
+						p.playerSettings.Master = col;
 					};
-					yield return dropdownMenuElement;
 				}
+				else
+				{
+					int level = col.skills.GetSkill(SkillDefOf.Animals).Level;
+					int num = MinimumHandlingSkill(p);
+					if (level < num)
+					{
+						action = null;
+						text += " (" + "SkillTooLow".Translate(SkillDefOf.Animals.LabelCap, level, num) + ")";
+					}
+				}
+				dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
+				{
+					option = new FloatMenuOption(text, action),
+					payload = col
+				};
+				yield return dropdownMenuElement;
 			}
 		}
 

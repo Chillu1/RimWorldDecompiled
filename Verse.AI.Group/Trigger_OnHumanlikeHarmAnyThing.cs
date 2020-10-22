@@ -14,7 +14,7 @@ namespace Verse.AI.Group
 		public override bool ActivateOn(Lord lord, TriggerSignal signal)
 		{
 			Pawn pawn;
-			if (signal.dinfo.Def != null && signal.dinfo.Def.ExternalViolenceFor(signal.thing) && signal.dinfo.Instigator != null && (pawn = (signal.dinfo.Instigator as Pawn)) != null && pawn.RaceProps.Humanlike && things.Contains(signal.thing))
+			if (signal.dinfo.Def != null && signal.dinfo.Def.ExternalViolenceFor(signal.thing) && signal.dinfo.Instigator != null && (pawn = signal.dinfo.Instigator as Pawn) != null && pawn.RaceProps.Humanlike && things.Contains(signal.thing))
 			{
 				return true;
 			}

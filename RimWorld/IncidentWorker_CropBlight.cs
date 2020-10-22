@@ -31,7 +31,7 @@ namespace RimWorld
 		{
 			Map map = (Map)parms.target;
 			float num = RadiusFactorPerPointsCurve.Evaluate(parms.points);
-			if (!TryFindRandomBlightablePlant(map, out Plant plant))
+			if (!TryFindRandomBlightablePlant(map, out var plant))
 			{
 				return false;
 			}

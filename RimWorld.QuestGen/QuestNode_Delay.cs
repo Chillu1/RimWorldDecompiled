@@ -55,7 +55,7 @@ namespace RimWorld.QuestGen
 				questPart_Delay = MakeDelayQuestPart();
 				questPart_Delay.delayTicks = delayTicks.GetValue(slate);
 			}
-			questPart_Delay.inSignalEnable = (QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart_Delay.inSignalEnable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			questPart_Delay.inSignalDisable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalDisable.GetValue(slate));
 			questPart_Delay.reactivatable = reactivatable.GetValue(slate);
 			if (!inspectStringTargets.GetValue(slate).EnumerableNullOrEmpty())

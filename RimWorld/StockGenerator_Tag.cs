@@ -15,12 +15,11 @@ namespace RimWorld
 
 		public override IEnumerable<Thing> GenerateThings(int forTile, Faction faction = null)
 		{
-			StockGenerator_Tag stockGenerator_Tag = this;
 			List<ThingDef> generatedDefs = new List<ThingDef>();
 			int numThingDefsToUse = thingDefCountRange.RandomInRange;
 			for (int i = 0; i < numThingDefsToUse; i++)
 			{
-				if (!DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => stockGenerator_Tag.HandlesThingDef(d) && d.tradeability.TraderCanSell() && (stockGenerator_Tag.excludedThingDefs == null || !stockGenerator_Tag.excludedThingDefs.Contains(d)) && !generatedDefs.Contains(d)).TryRandomElement(out ThingDef chosenThingDef))
+				if (!DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => HandlesThingDef(d) && d.tradeability.TraderCanSell() && (excludedThingDefs == null || !excludedThingDefs.Contains(d)) && !generatedDefs.Contains(d)).TryRandomElement(out var chosenThingDef))
 				{
 					break;
 				}

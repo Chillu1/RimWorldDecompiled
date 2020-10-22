@@ -49,7 +49,7 @@ namespace RimWorld
 						return false;
 					}
 				}
-				if (!parent.TryGetQuality(out QualityCategory qc))
+				if (!parent.TryGetQuality(out var qc))
 				{
 					return true;
 				}

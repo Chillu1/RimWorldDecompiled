@@ -33,6 +33,7 @@ namespace RimWorld
 				List<string> list2 = new List<string>();
 				if (compStatOffsetBase != null && compStatOffsetBase.Props.statDef == stat)
 				{
+					stringBuilder.AppendLine();
 					for (int i = 0; i < compStatOffsetBase.Props.offsets.Count; i++)
 					{
 						FocusStrengthOffset focusStrengthOffset = compStatOffsetBase.Props.offsets[i];
@@ -60,10 +61,10 @@ namespace RimWorld
 					}
 				}
 			}
-			else if ((thingDef = (req.Def as ThingDef)) != null)
+			else if ((thingDef = req.Def as ThingDef) != null)
 			{
 				CompProperties_MeditationFocus compProperties = thingDef.GetCompProperties<CompProperties_MeditationFocus>();
-				if (compProperties != null && compProperties.statDef == stat)
+				if (compProperties != null && compProperties.offsets.Count > 0 && compProperties.statDef == stat)
 				{
 					stringBuilder.AppendLine();
 					stringBuilder.AppendLine("StatReport_PossibleOffsets".Translate() + ":");
@@ -77,35 +78,92 @@ namespace RimWorld
 		{
 			float num = 0f;
 			float num2 = 0f;
-			ThingDef thingDef;
-			if (optionalReq.Thing != null)
+			bool flag = false;
+			if (optionalReq.Thing != null && optionalReq.Thing.Spawned)
 			{
-				num2 = optionalReq.Thing.def.GetStatValueAbstract(stat);
-				CompStatOffsetBase compStatOffsetBase = optionalReq.Thing.TryGetComp<CompStatOffsetBase>();
+				num = (num2 = optionalReq.Thing.def.GetStatValueAbstract(stat));
+				Thing thing = optionalReq.Thing;
+				CompStatOffsetBase compStatOffsetBase = thing.TryGetComp<CompStatOffsetBase>();
 				if (compStatOffsetBase != null && compStatOffsetBase.Props.statDef == stat)
 				{
-					num = compStatOffsetBase.Props.GetMaxOffset();
+					for (int i = 0; i < compStatOffsetBase.Props.offsets.Count; i++)
+					{
+						FocusStrengthOffset focusStrengthOffset = compStatOffsetBase.Props.offsets[i];
+						if (!focusStrengthOffset.DependsOnPawn)
+						{
+							if (focusStrengthOffset.CanApply(thing))
+							{
+								float offset = focusStrengthOffset.GetOffset(thing);
+								num += offset;
+								num2 += offset;
+							}
+						}
+						else
+						{
+							flag = true;
+						}
+					}
 				}
 			}
-			else if ((thingDef = (optionalReq.Def as ThingDef)) != null)
+			else if (optionalReq.Def is ThingDef)
 			{
-				num2 = thingDef.GetStatValueAbstract(stat);
-				CompProperties_MeditationFocus compProperties = thingDef.GetCompProperties<CompProperties_MeditationFocus>();
-				if (compProperties != null && compProperties.statDef == stat)
+				(num2, num) = AbstractValueRange(optionalReq, numberSense);
+			}
+			string str = (flag ? " (+)" : "");
+			return RangeToString(num2, num, numberSense, finalized) + str;
+		}
+
+		private (float, float) AbstractValueRange(StatRequest req, ToStringNumberSense numberSense)
+		{
+			ThingDef obj = (ThingDef)req.Def;
+			float num;
+			float num2 = (num = obj.GetStatValueAbstract(stat));
+			CompProperties_MeditationFocus compProperties = obj.GetCompProperties<CompProperties_MeditationFocus>();
+			if (compProperties != null && compProperties.statDef == stat)
+			{
+				for (int i = 0; i < compProperties.offsets.Count; i++)
 				{
-					num = compProperties.GetMaxOffset(forAbstract: true);
+					FocusStrengthOffset focusStrengthOffset = compProperties.offsets[i];
+					if (!focusStrengthOffset.NeedsToBeSpawned && req.Thing != null)
+					{
+						num += focusStrengthOffset.GetOffset(req.Thing);
+						continue;
+					}
+					float num3 = focusStrengthOffset.MinOffset();
+					float num4 = focusStrengthOffset.MaxOffset();
+					if (num4 > 0f)
+					{
+						num2 += num4;
+					}
+					if (num4 < 0f)
+					{
+						num += num4;
+					}
+					num += num3;
 				}
 			}
-			if (num != 0f)
+			return (num, num2);
+		}
+
+		private string RangeToString(float min, float max, ToStringNumberSense numberSense, bool finalized)
+		{
+			if (max - min >= float.Epsilon)
 			{
-				float num3 = num2 + num;
-				float f = (num > 0f) ? num2 : num3;
-				float val = (num > 0f) ? num3 : num2;
-				string str = f.ToStringByStyle(stat.toStringStyle, numberSense);
-				string str2 = stat.ValueToString(val, numberSense, finalized);
+				string str = min.ToStringByStyle(stat.toStringStyle, numberSense);
+				string str2 = stat.ValueToString(max, numberSense, finalized);
 				return str + " - " + str2;
 			}
-			return stat.ValueToString(value, numberSense, finalized);
+			return stat.ValueToString(max, numberSense, finalized);
+		}
+
+		public override string GetExplanationFinalizePart(StatRequest req, ToStringNumberSense numberSense, float finalVal)
+		{
+			if (!req.HasThing || !req.Thing.Spawned)
+			{
+				var (min, max) = AbstractValueRange(req, numberSense);
+				return "StatsReport_FinalValue".Translate() + ": " + RangeToString(min, max, numberSense, finalized: true);
+			}
+			return base.GetExplanationFinalizePart(req, numberSense, finalVal);
 		}
 	}
 }

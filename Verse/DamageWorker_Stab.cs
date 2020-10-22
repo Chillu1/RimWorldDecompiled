@@ -37,7 +37,7 @@ namespace Verse
 			for (int i = 0; i < list.Count; i++)
 			{
 				BodyPartRecord bodyPartRecord2 = list[i];
-				float totalDamage2 = (list.Count != 1) ? ((bodyPartRecord2.depth == BodyPartDepth.Outside) ? (totalDamage * 0.75f) : (totalDamage * 0.4f)) : totalDamage;
+				float totalDamage2 = ((list.Count != 1) ? ((bodyPartRecord2.depth == BodyPartDepth.Outside) ? (totalDamage * 0.75f) : (totalDamage * 0.4f)) : totalDamage);
 				DamageInfo dinfo2 = dinfo;
 				dinfo2.SetHitPart(bodyPartRecord2);
 				FinalizeAndAddInjury(pawn, totalDamage2, dinfo2, result);

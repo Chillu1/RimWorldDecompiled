@@ -1,7 +1,7 @@
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -16,7 +16,11 @@ namespace RimWorld
 			public IntVec3 bestNode;
 		}
 
-		private static bool debug_WarnedMissingTerrain;
+		private static bool debug_WarnedMissingTerrain = false;
+
+		private static HashSet<IntVec3> tmpVisited = new HashSet<IntVec3>();
+
+		private static List<IntVec3> tmpIsland = new List<IntVec3>();
 
 		public override int SeedPart => 262606459;
 
@@ -42,6 +46,7 @@ namespace RimWorld
 				terrainGrid.SetTerrain(allCell, terrainDef);
 			}
 			riverMaker?.ValidatePassage(map);
+			RemoveIslands(map);
 			RoofCollapseCellsFinder.RemoveBulkCollapsingRoofs(list, map);
 			BeachMaker.Cleanup();
 			foreach (TerrainPatchMaker terrainPatchMaker in map.Biome.terrainPatchMakers)
@@ -105,6 +110,78 @@ namespace RimWorld
 				debug_WarnedMissingTerrain = true;
 			}
 			return TerrainDefOf.Sand;
+		}
+
+		private void RemoveIslands(Map map)
+		{
+			CellRect mapRect = CellRect.WholeMap(map);
+			int num = 0;
+			tmpVisited.Clear();
+			foreach (IntVec3 allCell in map.AllCells)
+			{
+				if (tmpVisited.Contains(allCell) || Impassable(allCell))
+				{
+					continue;
+				}
+				int area = 0;
+				bool touchesMapEdge2 = false;
+				map.floodFiller.FloodFill(allCell, (IntVec3 x) => !Impassable(x), delegate(IntVec3 x)
+				{
+					tmpVisited.Add(x);
+					area++;
+					if (mapRect.IsOnEdge(x))
+					{
+						touchesMapEdge2 = true;
+					}
+				});
+				if (touchesMapEdge2)
+				{
+					num = Mathf.Max(num, area);
+				}
+			}
+			if (num < 30)
+			{
+				return;
+			}
+			tmpVisited.Clear();
+			foreach (IntVec3 allCell2 in map.AllCells)
+			{
+				if (tmpVisited.Contains(allCell2) || Impassable(allCell2))
+				{
+					continue;
+				}
+				tmpIsland.Clear();
+				TerrainDef adjacentImpassableTerrain = null;
+				bool touchesMapEdge = false;
+				map.floodFiller.FloodFill(allCell2, delegate(IntVec3 x)
+				{
+					if (Impassable(x))
+					{
+						adjacentImpassableTerrain = x.GetTerrain(map);
+						return false;
+					}
+					return true;
+				}, delegate(IntVec3 x)
+				{
+					tmpVisited.Add(x);
+					tmpIsland.Add(x);
+					if (mapRect.IsOnEdge(x))
+					{
+						touchesMapEdge = true;
+					}
+				});
+				if ((tmpIsland.Count <= num / 20 || (!touchesMapEdge && tmpIsland.Count < num / 2)) && adjacentImpassableTerrain != null)
+				{
+					for (int i = 0; i < tmpIsland.Count; i++)
+					{
+						map.terrainGrid.SetTerrain(tmpIsland[i], adjacentImpassableTerrain);
+					}
+				}
+			}
+			bool Impassable(IntVec3 x)
+			{
+				return x.GetTerrain(base.map).passability == Traversability.Impassable;
+			}
 		}
 
 		private RiverMaker GenerateRiver(Map map)

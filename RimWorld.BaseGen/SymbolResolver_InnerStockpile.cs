@@ -20,7 +20,7 @@ namespace RimWorld.BaseGen
 			else if (rp.stockpileConcreteContents != null)
 			{
 				int num = Mathf.CeilToInt(Mathf.Sqrt(rp.stockpileConcreteContents.Count));
-				if (!TryFindRandomInnerRect(rp.rect, num, out rect, num * num, out int _))
+				if (!TryFindRandomInnerRect(rp.rect, num, out rect, num * num, out var _))
 				{
 					rect = rp.rect;
 				}
@@ -36,13 +36,13 @@ namespace RimWorld.BaseGen
 
 		private bool TryFindPerfectPlaceThenBest(CellRect outerRect, int size, out CellRect rect)
 		{
-			if (!TryFindRandomInnerRect(outerRect, size, out rect, size * size, out int maxValidCellsFound))
+			if (!TryFindRandomInnerRect(outerRect, size, out rect, size * size, out var maxValidCellsFound))
 			{
 				if (maxValidCellsFound == 0)
 				{
 					return false;
 				}
-				if (!TryFindRandomInnerRect(outerRect, size, out rect, maxValidCellsFound, out int _))
+				if (!TryFindRandomInnerRect(outerRect, size, out rect, maxValidCellsFound, out var _))
 				{
 					return false;
 				}

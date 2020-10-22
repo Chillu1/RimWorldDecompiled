@@ -9,7 +9,7 @@ namespace RimWorld
 
 		static ToolCapacityDefOf()
 		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(ToolCapacityDef));
+			DefOfHelper.EnsureInitializedInCtor(typeof(ToolCapacityDefOf));
 		}
 	}
 }

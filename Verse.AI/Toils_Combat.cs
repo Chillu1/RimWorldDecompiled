@@ -1,5 +1,5 @@
-using RimWorld;
 using System;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse.AI
@@ -36,20 +36,33 @@ namespace Verse.AI
 				Job curJob = actor.jobs.curJob;
 				Thing thing = curJob.GetTarget(targetInd).Thing;
 				Pawn pawn = thing as Pawn;
-				CastPositionRequest newReq = default(CastPositionRequest);
-				newReq.caster = toil.actor;
-				newReq.target = thing;
-				newReq.verb = curJob.verbToUse;
-				newReq.maxRangeFromTarget = ((!closeIfDowned || pawn == null || !pawn.Downed) ? Mathf.Max(curJob.verbToUse.verbProps.range * maxRangeFactor, 1.42f) : Mathf.Min(curJob.verbToUse.verbProps.range, pawn.RaceProps.executionRange));
-				newReq.wantCoverFromTarget = false;
-				if (!CastPositionFinder.TryFindCastPosition(newReq, out IntVec3 dest))
+				if (actor == thing)
 				{
-					toil.actor.jobs.EndCurrentJob(JobCondition.Incompletable);
+					actor.pather.StopDead();
+					actor.jobs.curDriver.ReadyForNextToil();
+				}
+				else if (thing == null)
+				{
+					actor.pather.StopDead();
+					actor.jobs.curDriver.ReadyForNextToil();
 				}
 				else
 				{
-					toil.actor.pather.StartPath(dest, PathEndMode.OnCell);
-					actor.Map.pawnDestinationReservationManager.Reserve(actor, curJob, dest);
+					CastPositionRequest newReq = default(CastPositionRequest);
+					newReq.caster = toil.actor;
+					newReq.target = thing;
+					newReq.verb = curJob.verbToUse;
+					newReq.maxRangeFromTarget = ((!closeIfDowned || pawn == null || !pawn.Downed) ? Mathf.Max(curJob.verbToUse.verbProps.range * maxRangeFactor, 1.42f) : Mathf.Min(curJob.verbToUse.verbProps.range, pawn.RaceProps.executionRange));
+					newReq.wantCoverFromTarget = false;
+					if (!CastPositionFinder.TryFindCastPosition(newReq, out var dest))
+					{
+						toil.actor.jobs.EndCurrentJob(JobCondition.Incompletable);
+					}
+					else
+					{
+						toil.actor.pather.StartPath(dest, PathEndMode.OnCell);
+						actor.Map.pawnDestinationReservationManager.Reserve(actor, curJob, dest);
+					}
 				}
 			};
 			toil.FailOnDespawnedOrNull(targetInd);
@@ -68,11 +81,29 @@ namespace Verse.AI
 			toil.initAction = delegate
 			{
 				LocalTargetInfo target = toil.actor.jobs.curJob.GetTarget(targetInd);
-				LocalTargetInfo destTarg = (destInd != 0) ? toil.actor.jobs.curJob.GetTarget(destInd) : LocalTargetInfo.Invalid;
+				LocalTargetInfo destTarg = ((destInd != 0) ? toil.actor.jobs.curJob.GetTarget(destInd) : LocalTargetInfo.Invalid);
 				toil.actor.jobs.curJob.verbToUse.TryStartCastOn(target, destTarg, surpriseAttack: false, canHitNonTargetPawns);
 			};
 			toil.defaultCompleteMode = ToilCompleteMode.FinishedBusy;
+			toil.activeSkill = () => GetActiveSkillForToil(toil);
 			return toil;
+		}
+
+		public static SkillDef GetActiveSkillForToil(Toil toil)
+		{
+			Verb verbToUse = toil.actor.jobs.curJob.verbToUse;
+			if (verbToUse != null && verbToUse.EquipmentSource != null)
+			{
+				if (verbToUse.EquipmentSource.def.IsMeleeWeapon)
+				{
+					return SkillDefOf.Melee;
+				}
+				if (verbToUse.EquipmentSource.def.IsRangedWeapon)
+				{
+					return SkillDefOf.Shooting;
+				}
+			}
+			return null;
 		}
 
 		public static Toil FollowAndMeleeAttack(TargetIndex targetInd, Action hitAction)
@@ -105,6 +136,7 @@ namespace Verse.AI
 					}
 				}
 			};
+			followAndAttack.activeSkill = () => SkillDefOf.Melee;
 			followAndAttack.defaultCompleteMode = ToilCompleteMode.Never;
 			return followAndAttack;
 		}

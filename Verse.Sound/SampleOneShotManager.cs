@@ -88,7 +88,7 @@ namespace Verse.Sound
 			for (int j = 0; j < samples.Count; j++)
 			{
 				SampleOneShot sampleOneShot = samples[j];
-				if (sampleOneShot.source == null || !sampleOneShot.source.isPlaying || !SoundDefHelper.CorrectContextNow(sampleOneShot.subDef.parentDef, sampleOneShot.Map))
+				if (sampleOneShot.source == null || (!sampleOneShot.source.isPlaying && (!sampleOneShot.subDef.tempoAffectedByGameSpeed || !Find.TickManager.Paused)) || !SoundDefHelper.CorrectContextNow(sampleOneShot.subDef.parentDef, sampleOneShot.Map))
 				{
 					if (sampleOneShot.source != null && sampleOneShot.source.isPlaying)
 					{

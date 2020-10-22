@@ -45,7 +45,7 @@ namespace RimWorld
 				for (int j = 0; j < type.incompatibleBackstoriesAny.Count; j++)
 				{
 					BackstoryCategoryAndSlot backstoryCategoryAndSlot = type.incompatibleBackstoriesAny[j];
-					List<string> list3 = (backstoryCategoryAndSlot.slot == BackstorySlot.Adulthood) ? list : list2;
+					List<string> list3 = ((backstoryCategoryAndSlot.slot == BackstorySlot.Adulthood) ? list : list2);
 					if (list3 != null && list3.Contains(backstoryCategoryAndSlot.categoryName))
 					{
 						return false;
@@ -75,7 +75,7 @@ namespace RimWorld
 				for (int l = 0; l < type.requiredBackstoriesAny.Count; l++)
 				{
 					BackstoryCategoryAndSlot backstoryCategoryAndSlot2 = type.requiredBackstoriesAny[l];
-					List<string> list6 = (backstoryCategoryAndSlot2.slot == BackstorySlot.Adulthood) ? list4 : list5;
+					List<string> list6 = ((backstoryCategoryAndSlot2.slot == BackstorySlot.Adulthood) ? list4 : list5);
 					if (list6 != null && list6.Contains(backstoryCategoryAndSlot2.categoryName))
 					{
 						return true;

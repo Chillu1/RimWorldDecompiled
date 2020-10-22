@@ -22,9 +22,18 @@ namespace RimWorld
 		{
 			get
 			{
+				if (!reason.NullOrEmpty())
+				{
+					TaggedString taggedString = base.CurStage.label.Formatted(reason.Named("REASON"), pawn.Named("PAWN"), otherPawn.Named("OTHERPAWN")).CapitalizeFirst();
+					if (def.Worker != null)
+					{
+						taggedString = def.Worker.PostProcessLabel(pawn, taggedString);
+					}
+					return taggedString;
+				}
 				if (def.Worker == null)
 				{
-					return base.CurStage.LabelCap.Formatted(pawn.Named("PAWN"), otherPawn.Named("OTHERPAWN"));
+					return base.CurStage.LabelCap.Formatted(pawn.Named("PAWN"), otherPawn.Named("OTHERPAWN")).CapitalizeFirst();
 				}
 				return base.LabelCap;
 			}
@@ -36,7 +45,7 @@ namespace RimWorld
 			{
 				if (base.CurStage.labelSocial != null)
 				{
-					return base.CurStage.LabelSocialCap.Formatted(pawn.Named("PAWN"), otherPawn.Named("OTHERPAWN"));
+					return base.CurStage.LabelSocialCap.Formatted(pawn.Named("PAWN"), otherPawn.Named("OTHERPAWN"), reason.Named("REASON"));
 				}
 				return base.LabelCapSocial;
 			}

@@ -16,8 +16,8 @@ namespace RimWorld
 		{
 			if (ModsConfig.RoyaltyActive)
 			{
-				string str = (offset >= 0f) ? "+" : string.Empty;
-				yield return new StatDrawEntry(StatCategoryDefOf.Drug, "Psyfocus".Translate(), str + offset.ToStringPercent(), "PsyfocusDesc".Translate(), 1000);
+				string str = ((offset >= 0f) ? "+" : string.Empty);
+				yield return new StatDrawEntry(StatCategoryDefOf.Drug, "Psyfocus".Translate(), str + offset.ToStringPercent(), "PsyfocusDesc".Translate() + ".", 1000);
 			}
 		}
 	}

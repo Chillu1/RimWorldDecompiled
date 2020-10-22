@@ -1,4 +1,3 @@
-using RimWorld;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using RimWorld;
 using UnityEngine;
 using Verse.Grammar;
 
@@ -214,17 +214,13 @@ namespace Verse
 
 		public static string MarchingEllipsis(float offset = 0f)
 		{
-			switch (Mathf.FloorToInt(Time.realtimeSinceStartup + offset) % 3)
+			return (Mathf.FloorToInt(Time.realtimeSinceStartup + offset) % 3) switch
 			{
-			case 0:
-				return ".";
-			case 1:
-				return "..";
-			case 2:
-				return "...";
-			default:
-				throw new Exception();
-			}
+				0 => ".", 
+				1 => "..", 
+				2 => "...", 
+				_ => throw new Exception(), 
+			};
 		}
 
 		public static void SetTextSizeToFit(string text, Rect r)
@@ -484,7 +480,23 @@ namespace Verse
 
 		public static string ToTitleCaseSmart(string str)
 		{
-			return Find.ActiveLanguageWorker.ToTitleCase(str);
+			if (str.NullOrEmpty())
+			{
+				return str;
+			}
+			string[] array = str.MergeMultipleSpaces(leaveMultipleSpacesAtLineBeginning: false).Trim().Split(' ');
+			for (int i = 0; i < array.Length; i++)
+			{
+				string text = array[i];
+				if ((i == 0 || i == array.Length - 1 || TitleCaseHelper.IsUppercaseTitleWord(text)) && !text.NullOrEmpty())
+				{
+					int num = text.FirstLetterBetweenTags();
+					string str2 = ((num == 0) ? text[num].ToString().ToUpper() : (text.Substring(0, num) + char.ToUpper(text[num])));
+					string str3 = text.Substring(num + 1);
+					array[i] = str2 + str3;
+				}
+			}
+			return string.Join(" ", array);
 		}
 
 		public static string CapitalizeSentences(string input, bool capitalizeFirstSentence = true)
@@ -504,10 +516,11 @@ namespace Verse
 			bool flag = capitalizeFirstSentence;
 			bool flag2 = false;
 			bool flag3 = false;
+			bool flag4 = false;
 			tmpSbForCapitalizedSentences.Length = 0;
 			for (int i = 0; i < input.Length; i++)
 			{
-				if (flag && char.IsLetterOrDigit(input[i]) && !flag2 && !flag3)
+				if (flag && char.IsLetterOrDigit(input[i]) && !flag2 && !flag3 && !flag4)
 				{
 					tmpSbForCapitalizedSentences.Append(char.ToUpper(input[i]));
 					flag = false;
@@ -527,6 +540,14 @@ namespace Verse
 				else if (flag2 && input[i] == '>')
 				{
 					flag2 = false;
+				}
+				else if (input[i] == '(' && i < input.Length - 1 && input[i + 1] == '*')
+				{
+					flag4 = true;
+				}
+				else if (flag4 && input[i] == ')')
+				{
+					flag4 = false;
 				}
 				else if (input[i] == '{')
 				{
@@ -620,29 +641,19 @@ namespace Verse
 
 		public static TaggedString ToClauseSequence(this List<string> entries)
 		{
-			switch (entries.Count)
+			return entries.Count switch
 			{
-			case 0:
-				return "None".Translate() + ".";
-			case 1:
-				return entries[0] + ".";
-			case 2:
-				return "ClauseSequence2".Translate(entries[0], entries[1]);
-			case 3:
-				return "ClauseSequence3".Translate(entries[0], entries[1], entries[2]);
-			case 4:
-				return "ClauseSequence4".Translate(entries[0], entries[1], entries[2], entries[3]);
-			case 5:
-				return "ClauseSequence5".Translate(entries[0], entries[1], entries[2], entries[3], entries[4]);
-			case 6:
-				return "ClauseSequence6".Translate(entries[0], entries[1], entries[2], entries[3], entries[4], entries[5]);
-			case 7:
-				return "ClauseSequence7".Translate(entries[0], entries[1], entries[2], entries[3], entries[4], entries[5], entries[6]);
-			case 8:
-				return "ClauseSequence8".Translate(entries[0], entries[1], entries[2], entries[3], entries[4], entries[5], entries[6], entries[7]);
-			default:
-				return entries.ToCommaList(useAnd: true);
-			}
+				0 => "None".Translate() + ".", 
+				1 => entries[0] + ".", 
+				2 => "ClauseSequence2".Translate(entries[0], entries[1]), 
+				3 => "ClauseSequence3".Translate(entries[0], entries[1], entries[2]), 
+				4 => "ClauseSequence4".Translate(entries[0], entries[1], entries[2], entries[3]), 
+				5 => "ClauseSequence5".Translate(entries[0], entries[1], entries[2], entries[3], entries[4]), 
+				6 => "ClauseSequence6".Translate(entries[0], entries[1], entries[2], entries[3], entries[4], entries[5]), 
+				7 => "ClauseSequence7".Translate(entries[0], entries[1], entries[2], entries[3], entries[4], entries[5], entries[6]), 
+				8 => "ClauseSequence8".Translate(entries[0], entries[1], entries[2], entries[3], entries[4], entries[5], entries[6], entries[7]), 
+				_ => entries.ToCommaList(useAnd: true), 
+			};
 		}
 
 		public static string ToLineList(this IList<string> entries, string prefix = null)
@@ -659,6 +670,24 @@ namespace Verse
 					stringBuilder.Append(prefix);
 				}
 				stringBuilder.Append(entries[i]);
+			}
+			return stringBuilder.ToString();
+		}
+
+		public static string ToLineList(this IList<string> entries, Color color, string prefix = null)
+		{
+			StringBuilder stringBuilder = new StringBuilder();
+			for (int i = 0; i < entries.Count; i++)
+			{
+				if (i != 0)
+				{
+					stringBuilder.Append("\n");
+				}
+				if (prefix != null)
+				{
+					stringBuilder.Append(prefix);
+				}
+				stringBuilder.Append(entries[i].Colorize(color));
 			}
 			return stringBuilder.ToString();
 		}
@@ -712,7 +741,7 @@ namespace Verse
 
 		public static string Truncate(this string str, float width, Dictionary<string, string> cache = null)
 		{
-			if (cache != null && cache.TryGetValue(str, out string value))
+			if (cache != null && cache.TryGetValue(str, out var value))
 			{
 				return value;
 			}
@@ -734,7 +763,7 @@ namespace Verse
 
 		public static TaggedString Truncate(this TaggedString str, float width, Dictionary<string, TaggedString> cache = null)
 		{
-			if (cache != null && cache.TryGetValue(str.RawText, out TaggedString value))
+			if (cache != null && cache.TryGetValue(str.RawText, out var value))
 			{
 				return value;
 			}
@@ -756,7 +785,7 @@ namespace Verse
 
 		public static string TruncateHeight(this string str, float width, float height, Dictionary<string, string> cache = null)
 		{
-			if (cache != null && cache.TryGetValue(str, out string value))
+			if (cache != null && cache.TryGetValue(str, out var value))
 			{
 				return value;
 			}
@@ -966,10 +995,14 @@ namespace Verse
 
 		public static string ToStringMoneyOffset(this float f, string format = null)
 		{
-			string text = f.ToStringMoney(format);
+			string text = Mathf.Abs(f).ToStringMoney(format);
 			if (f > 0f && text != "$0")
 			{
 				return "+" + text;
+			}
+			if (f < 0f)
+			{
+				return "-" + text;
 			}
 			return text;
 		}
@@ -1091,17 +1124,13 @@ namespace Verse
 
 		public static string ToStringTemperatureRaw(this float temp, string format = "F1")
 		{
-			switch (Prefs.TemperatureMode)
+			return Prefs.TemperatureMode switch
 			{
-			case TemperatureDisplayMode.Celsius:
-				return temp.ToString(format) + "C";
-			case TemperatureDisplayMode.Fahrenheit:
-				return temp.ToString(format) + "F";
-			case TemperatureDisplayMode.Kelvin:
-				return temp.ToString(format) + "K";
-			default:
-				throw new InvalidOperationException();
-			}
+				TemperatureDisplayMode.Celsius => temp.ToString(format) + "C", 
+				TemperatureDisplayMode.Fahrenheit => temp.ToString(format) + "F", 
+				TemperatureDisplayMode.Kelvin => temp.ToString(format) + "K", 
+				_ => throw new InvalidOperationException(), 
+			};
 		}
 
 		public static string ToStringTwoDigits(this Vector2 v)
@@ -1136,183 +1165,96 @@ namespace Verse
 
 		public static string ToStringReadable(this KeyCode k)
 		{
-			switch (k)
+			return k switch
 			{
-			case KeyCode.Keypad0:
-				return "Kp0";
-			case KeyCode.Keypad1:
-				return "Kp1";
-			case KeyCode.Keypad2:
-				return "Kp2";
-			case KeyCode.Keypad3:
-				return "Kp3";
-			case KeyCode.Keypad4:
-				return "Kp4";
-			case KeyCode.Keypad5:
-				return "Kp5";
-			case KeyCode.Keypad6:
-				return "Kp6";
-			case KeyCode.Keypad7:
-				return "Kp7";
-			case KeyCode.Keypad8:
-				return "Kp8";
-			case KeyCode.Keypad9:
-				return "Kp9";
-			case KeyCode.KeypadDivide:
-				return "Kp/";
-			case KeyCode.KeypadEnter:
-				return "KpEnt";
-			case KeyCode.KeypadEquals:
-				return "Kp=";
-			case KeyCode.KeypadMinus:
-				return "Kp-";
-			case KeyCode.KeypadMultiply:
-				return "Kp*";
-			case KeyCode.KeypadPeriod:
-				return "Kp.";
-			case KeyCode.KeypadPlus:
-				return "Kp+";
-			case KeyCode.Alpha0:
-				return "0";
-			case KeyCode.Alpha1:
-				return "1";
-			case KeyCode.Alpha2:
-				return "2";
-			case KeyCode.Alpha3:
-				return "3";
-			case KeyCode.Alpha4:
-				return "4";
-			case KeyCode.Alpha5:
-				return "5";
-			case KeyCode.Alpha6:
-				return "6";
-			case KeyCode.Alpha7:
-				return "7";
-			case KeyCode.Alpha8:
-				return "8";
-			case KeyCode.Alpha9:
-				return "9";
-			case KeyCode.Clear:
-				return "Clr";
-			case KeyCode.Backspace:
-				return "Bksp";
-			case KeyCode.Return:
-				return "Ent";
-			case KeyCode.Escape:
-				return "Esc";
-			case KeyCode.DoubleQuote:
-				return "\"";
-			case KeyCode.Exclaim:
-				return "!";
-			case KeyCode.Hash:
-				return "#";
-			case KeyCode.Dollar:
-				return "$";
-			case KeyCode.Ampersand:
-				return "&";
-			case KeyCode.Quote:
-				return "'";
-			case KeyCode.LeftParen:
-				return "(";
-			case KeyCode.RightParen:
-				return ")";
-			case KeyCode.Asterisk:
-				return "*";
-			case KeyCode.Plus:
-				return "+";
-			case KeyCode.Minus:
-				return "-";
-			case KeyCode.Comma:
-				return ",";
-			case KeyCode.Period:
-				return ".";
-			case KeyCode.Slash:
-				return "/";
-			case KeyCode.Colon:
-				return ":";
-			case KeyCode.Semicolon:
-				return ";";
-			case KeyCode.Less:
-				return "<";
-			case KeyCode.Greater:
-				return ">";
-			case KeyCode.Question:
-				return "?";
-			case KeyCode.At:
-				return "@";
-			case KeyCode.LeftBracket:
-				return "[";
-			case KeyCode.RightBracket:
-				return "]";
-			case KeyCode.Backslash:
-				return "\\";
-			case KeyCode.Caret:
-				return "^";
-			case KeyCode.Underscore:
-				return "_";
-			case KeyCode.BackQuote:
-				return "`";
-			case KeyCode.Delete:
-				return "Del";
-			case KeyCode.UpArrow:
-				return "Up";
-			case KeyCode.DownArrow:
-				return "Down";
-			case KeyCode.LeftArrow:
-				return "Left";
-			case KeyCode.RightArrow:
-				return "Right";
-			case KeyCode.Insert:
-				return "Ins";
-			case KeyCode.Home:
-				return "Home";
-			case KeyCode.End:
-				return "End";
-			case KeyCode.PageDown:
-				return "PgDn";
-			case KeyCode.PageUp:
-				return "PgUp";
-			case KeyCode.Numlock:
-				return "NumL";
-			case KeyCode.CapsLock:
-				return "CapL";
-			case KeyCode.ScrollLock:
-				return "ScrL";
-			case KeyCode.RightShift:
-				return "RShf";
-			case KeyCode.LeftShift:
-				return "LShf";
-			case KeyCode.RightControl:
-				return "RCtrl";
-			case KeyCode.LeftControl:
-				return "LCtrl";
-			case KeyCode.RightAlt:
-				return "RAlt";
-			case KeyCode.LeftAlt:
-				return "LAlt";
-			case KeyCode.RightCommand:
-				return "Appl";
-			case KeyCode.LeftCommand:
-				return "Cmd";
-			case KeyCode.LeftWindows:
-				return "Win";
-			case KeyCode.RightWindows:
-				return "Win";
-			case KeyCode.AltGr:
-				return "AltGr";
-			case KeyCode.Help:
-				return "Help";
-			case KeyCode.Print:
-				return "Prnt";
-			case KeyCode.SysReq:
-				return "SysReq";
-			case KeyCode.Break:
-				return "Brk";
-			case KeyCode.Menu:
-				return "Menu";
-			default:
-				return k.ToString();
-			}
+				KeyCode.Keypad0 => "Kp0", 
+				KeyCode.Keypad1 => "Kp1", 
+				KeyCode.Keypad2 => "Kp2", 
+				KeyCode.Keypad3 => "Kp3", 
+				KeyCode.Keypad4 => "Kp4", 
+				KeyCode.Keypad5 => "Kp5", 
+				KeyCode.Keypad6 => "Kp6", 
+				KeyCode.Keypad7 => "Kp7", 
+				KeyCode.Keypad8 => "Kp8", 
+				KeyCode.Keypad9 => "Kp9", 
+				KeyCode.KeypadDivide => "Kp/", 
+				KeyCode.KeypadEnter => "KpEnt", 
+				KeyCode.KeypadEquals => "Kp=", 
+				KeyCode.KeypadMinus => "Kp-", 
+				KeyCode.KeypadMultiply => "Kp*", 
+				KeyCode.KeypadPeriod => "Kp.", 
+				KeyCode.KeypadPlus => "Kp+", 
+				KeyCode.Alpha0 => "0", 
+				KeyCode.Alpha1 => "1", 
+				KeyCode.Alpha2 => "2", 
+				KeyCode.Alpha3 => "3", 
+				KeyCode.Alpha4 => "4", 
+				KeyCode.Alpha5 => "5", 
+				KeyCode.Alpha6 => "6", 
+				KeyCode.Alpha7 => "7", 
+				KeyCode.Alpha8 => "8", 
+				KeyCode.Alpha9 => "9", 
+				KeyCode.Clear => "Clr", 
+				KeyCode.Backspace => "Bksp", 
+				KeyCode.Return => "Ent", 
+				KeyCode.Escape => "Esc", 
+				KeyCode.DoubleQuote => "\"", 
+				KeyCode.Exclaim => "!", 
+				KeyCode.Hash => "#", 
+				KeyCode.Dollar => "$", 
+				KeyCode.Ampersand => "&", 
+				KeyCode.Quote => "'", 
+				KeyCode.LeftParen => "(", 
+				KeyCode.RightParen => ")", 
+				KeyCode.Asterisk => "*", 
+				KeyCode.Plus => "+", 
+				KeyCode.Minus => "-", 
+				KeyCode.Comma => ",", 
+				KeyCode.Period => ".", 
+				KeyCode.Slash => "/", 
+				KeyCode.Colon => ":", 
+				KeyCode.Semicolon => ";", 
+				KeyCode.Less => "<", 
+				KeyCode.Greater => ">", 
+				KeyCode.Question => "?", 
+				KeyCode.At => "@", 
+				KeyCode.LeftBracket => "[", 
+				KeyCode.RightBracket => "]", 
+				KeyCode.Backslash => "\\", 
+				KeyCode.Caret => "^", 
+				KeyCode.Underscore => "_", 
+				KeyCode.BackQuote => "`", 
+				KeyCode.Delete => "Del", 
+				KeyCode.UpArrow => "Up", 
+				KeyCode.DownArrow => "Down", 
+				KeyCode.LeftArrow => "Left", 
+				KeyCode.RightArrow => "Right", 
+				KeyCode.Insert => "Ins", 
+				KeyCode.Home => "Home", 
+				KeyCode.End => "End", 
+				KeyCode.PageDown => "PgDn", 
+				KeyCode.PageUp => "PgUp", 
+				KeyCode.Numlock => "NumL", 
+				KeyCode.CapsLock => "CapL", 
+				KeyCode.ScrollLock => "ScrL", 
+				KeyCode.RightShift => "RShf", 
+				KeyCode.LeftShift => "LShf", 
+				KeyCode.RightControl => "RCtrl", 
+				KeyCode.LeftControl => "LCtrl", 
+				KeyCode.RightAlt => "RAlt", 
+				KeyCode.LeftAlt => "LAlt", 
+				KeyCode.RightCommand => "Appl", 
+				KeyCode.LeftCommand => "Cmd", 
+				KeyCode.LeftWindows => "Win", 
+				KeyCode.RightWindows => "Win", 
+				KeyCode.AltGr => "AltGr", 
+				KeyCode.Help => "Help", 
+				KeyCode.Print => "Prnt", 
+				KeyCode.SysReq => "SysReq", 
+				KeyCode.Break => "Brk", 
+				KeyCode.Menu => "Menu", 
+				_ => k.ToString(), 
+			};
 		}
 
 		public static void AppendWithComma(this StringBuilder sb, string text)

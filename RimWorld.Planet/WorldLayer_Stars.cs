@@ -60,7 +60,7 @@ namespace RimWorld.Planet
 				Vector3 pos = unitVector * 10f;
 				LayerSubMesh subMesh = GetSubMesh(WorldMaterials.Stars);
 				float num = StarsDrawSize.RandomInRange;
-				Vector3 rhs = UseStaticRotation ? GenCelestial.CurSunPositionInWorldSpace().normalized : Vector3.forward;
+				Vector3 rhs = (UseStaticRotation ? GenCelestial.CurSunPositionInWorldSpace().normalized : Vector3.forward);
 				float num2 = Vector3.Dot(unitVector, rhs);
 				if (num2 > 0.8f)
 				{

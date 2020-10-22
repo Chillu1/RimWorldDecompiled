@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -7,6 +8,10 @@ namespace RimWorld
 	public class CompCauseGameCondition_TemperatureOffset : CompCauseGameCondition
 	{
 		public float temperatureOffset;
+
+		private const float MaxTempForMinOffset = -5f;
+
+		private const float MinTempForMaxOffset = 20f;
 
 		public new CompProperties_CausesGameCondition_ClimateAdjuster Props => (CompProperties_CausesGameCondition_ClimateAdjuster)props;
 
@@ -92,9 +97,75 @@ namespace RimWorld
 			((GameCondition_TemperatureOffset)condition).tempOffset = temperatureOffset;
 		}
 
-		public override void RandomizeSettings()
+		public override void RandomizeSettings_NewTemp_NewTemp(Site site)
 		{
-			temperatureOffset = (Rand.Bool ? Props.temperatureOffsetRange.min : Props.temperatureOffsetRange.max);
+			bool flag = false;
+			bool flag2 = false;
+			foreach (WorldObject allWorldObject in Find.WorldObjects.AllWorldObjects)
+			{
+				Settlement settlement;
+				if ((settlement = allWorldObject as Settlement) == null || settlement.Faction != Faction.OfPlayer)
+				{
+					continue;
+				}
+				if (settlement.Map != null)
+				{
+					bool flag3 = false;
+					foreach (GameCondition activeCondition in settlement.Map.GameConditionManager.ActiveConditions)
+					{
+						if (activeCondition is GameCondition_TemperatureOffset)
+						{
+							float num = activeCondition.TemperatureOffset();
+							if (num > 0f)
+							{
+								flag3 = true;
+								flag = true;
+								flag2 = false;
+							}
+							else if (num < 0f)
+							{
+								flag3 = true;
+								flag2 = true;
+								flag = false;
+							}
+							if (flag3)
+							{
+								break;
+							}
+						}
+					}
+					if (flag3)
+					{
+						break;
+					}
+				}
+				int tile = allWorldObject.Tile;
+				if ((float)Find.WorldGrid.TraversalDistanceBetween(site.Tile, tile, passImpassable: true, Props.worldRange + 1) <= (float)Props.worldRange)
+				{
+					float num2 = GenTemperature.MinTemperatureAtTile(tile);
+					float num3 = GenTemperature.MaxTemperatureAtTile(tile);
+					if (num2 < -5f)
+					{
+						flag2 = true;
+					}
+					if (num3 > 20f)
+					{
+						flag = true;
+					}
+				}
+			}
+			if (flag2 == flag)
+			{
+				temperatureOffset = (Rand.Bool ? Props.temperatureOffsetRange.min : Props.temperatureOffsetRange.max);
+			}
+			else if (flag2)
+			{
+				temperatureOffset = Props.temperatureOffsetRange.min;
+			}
+			else if (flag)
+			{
+				temperatureOffset = Props.temperatureOffsetRange.max;
+			}
 		}
 	}
 }

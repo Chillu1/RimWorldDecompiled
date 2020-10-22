@@ -247,7 +247,7 @@ namespace RimWorld
 							{
 								flammabilityMax = statValue;
 							}
-							if (parent == null && fireSize > 0.4f && list[i].def.category == ThingCategory.Pawn)
+							if (parent == null && fireSize > 0.4f && list[i].def.category == ThingCategory.Pawn && Rand.Chance(FireUtility.ChanceToAttachFireCumulative(list[i], 150f)))
 							{
 								list[i].TryAttachFire(fireSize * 0.2f);
 							}
@@ -265,7 +265,7 @@ namespace RimWorld
 				Destroy();
 				return;
 			}
-			Thing thing2 = (parent != null) ? parent : ((flammableList.Count <= 0) ? null : flammableList.RandomElement());
+			Thing thing2 = ((parent != null) ? parent : ((flammableList.Count <= 0) ? null : flammableList.RandomElement()));
 			if (thing2 != null && (!(fireSize < 0.4f) || thing2 == parent || thing2.def.category != ThingCategory.Pawn))
 			{
 				DoFireDamage(thing2);
@@ -336,7 +336,7 @@ namespace RimWorld
 				DamageInfo dinfo = new DamageInfo(DamageDefOf.Flame, num, 0f, -1f, this);
 				dinfo.SetBodyRegion(BodyPartHeight.Undefined, BodyPartDepth.Outside);
 				targ.TakeDamage(dinfo).AssociateWithLog(battleLogEntry_DamageTaken);
-				if (pawn.apparel != null && pawn.apparel.WornApparel.TryRandomElement(out Apparel result))
+				if (pawn.apparel != null && pawn.apparel.WornApparel.TryRandomElement(out var result))
 				{
 					result.TakeDamage(new DamageInfo(DamageDefOf.Flame, num, 0f, -1f, this));
 				}

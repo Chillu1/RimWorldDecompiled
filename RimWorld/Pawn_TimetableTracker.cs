@@ -27,7 +27,7 @@ namespace RimWorld
 			times = new List<TimeAssignmentDef>(24);
 			for (int i = 0; i < 24; i++)
 			{
-				TimeAssignmentDef item = (i > 5 && i <= 21) ? TimeAssignmentDefOf.Anything : TimeAssignmentDefOf.Sleep;
+				TimeAssignmentDef item = ((i > 5 && i <= 21) ? TimeAssignmentDefOf.Anything : TimeAssignmentDefOf.Sleep);
 				times.Add(item);
 			}
 		}

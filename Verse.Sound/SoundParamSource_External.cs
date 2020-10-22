@@ -22,7 +22,7 @@ namespace Verse.Sound
 
 		public override float ValueFor(Sample samp)
 		{
-			if (samp.ExternalParams.TryGetValue(inParamName, out float val))
+			if (samp.ExternalParams.TryGetValue(inParamName, out var val))
 			{
 				return val;
 			}

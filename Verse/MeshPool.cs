@@ -79,7 +79,7 @@ namespace Verse
 
 		public static Mesh GridPlane(Vector2 size)
 		{
-			if (!planes.TryGetValue(size, out Mesh value))
+			if (!planes.TryGetValue(size, out var value))
 			{
 				value = MeshMakerPlanes.NewPlaneMesh(size, flipped: false, backLift: false, twist: false);
 				planes.Add(size, value);
@@ -89,7 +89,7 @@ namespace Verse
 
 		public static Mesh GridPlaneFlip(Vector2 size)
 		{
-			if (!planesFlip.TryGetValue(size, out Mesh value))
+			if (!planesFlip.TryGetValue(size, out var value))
 			{
 				value = MeshMakerPlanes.NewPlaneMesh(size, flipped: true, backLift: false, twist: false);
 				planesFlip.Add(size, value);

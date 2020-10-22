@@ -35,7 +35,7 @@ namespace RimWorld
 
 		public static bool TryGetCustom<T>(Dictionary<string, object> custom, string name, out T obj)
 		{
-			if (custom == null || !custom.TryGetValue(name, out object value))
+			if (custom == null || !custom.TryGetValue(name, out var value))
 			{
 				obj = default(T);
 				return false;
@@ -46,7 +46,7 @@ namespace RimWorld
 
 		public static T GetCustom<T>(Dictionary<string, object> custom, string name)
 		{
-			if (custom == null || !custom.TryGetValue(name, out object value))
+			if (custom == null || !custom.TryGetValue(name, out var value))
 			{
 				return default(T);
 			}

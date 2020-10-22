@@ -70,23 +70,7 @@ namespace Verse
 
 		public override string ToTitleCase(string str)
 		{
-			if (str.NullOrEmpty())
-			{
-				return str;
-			}
-			string[] array = str.MergeMultipleSpaces(leaveMultipleSpacesAtLineBeginning: false).Trim().Split(' ');
-			for (int i = 0; i < array.Length; i++)
-			{
-				string text = array[i];
-				if ((i == 0 || i == array.Length - 1 || TitleCaseHelper.IsUppercaseTitleWord(text)) && !text.NullOrEmpty())
-				{
-					int num = text.FirstLetterBetweenTags();
-					string str2 = (num == 0) ? text[num].ToString().ToUpper() : (text.Substring(0, num) + char.ToUpper(text[num]));
-					string str3 = text.Substring(num + 1);
-					array[i] = str2 + str3;
-				}
-			}
-			return string.Join(" ", array);
+			return GenText.ToTitleCaseSmart(str);
 		}
 
 		public override string OrdinalNumber(int number, Gender gender = Gender.None)
@@ -114,7 +98,7 @@ namespace Verse
 				return str;
 			}
 			char num = str[str.Length - 1];
-			char c = (str.Length != 1) ? str[str.Length - 2] : '\0';
+			char c = ((str.Length != 1) ? str[str.Length - 2] : '\0');
 			bool flag = char.IsLetter(c) && "oaieuyOAIEUY".IndexOf(c) >= 0;
 			bool flag2 = char.IsLetter(c) && !flag;
 			if (num == 'y' && flag2)

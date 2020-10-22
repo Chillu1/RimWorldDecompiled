@@ -25,7 +25,7 @@ namespace Verse.Sound
 		{
 			if (!(slot == ""))
 			{
-				if (allowedPlayTimes.TryGetValue(slot, out float value))
+				if (allowedPlayTimes.TryGetValue(slot, out var value))
 				{
 					allowedPlayTimes[slot] = Mathf.Max(value, Time.realtimeSinceStartup + duration);
 				}

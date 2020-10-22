@@ -71,7 +71,7 @@ namespace RimWorld
 				Thing foundRes = GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(need.thingDef), PathEndMode.ClosestTouch, TraverseParms.For(pawn), 9999f, (Thing r) => ResourceValidator(pawn, need, r));
 				if (foundRes != null)
 				{
-					FindAvailableNearbyResources(foundRes, pawn, out int resTotalAvailable);
+					FindAvailableNearbyResources(foundRes, pawn, out var resTotalAvailable);
 					int neededTotal;
 					Job jobToMakeNeederAvailable;
 					HashSet<Thing> hashSet = FindNearbyNeeders(pawn, need, c, resTotalAvailable, canRemoveExistingFloorUnderNearbyNeeders, out neededTotal, out jobToMakeNeederAvailable);

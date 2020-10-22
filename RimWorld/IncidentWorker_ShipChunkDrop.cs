@@ -37,7 +37,7 @@ namespace RimWorld
 		protected override bool TryExecuteWorker(IncidentParms parms)
 		{
 			Map map = (Map)parms.target;
-			if (!TryFindShipChunkDropCell(map.Center, map, 999999, out IntVec3 pos))
+			if (!TryFindShipChunkDropCell(map.Center, map, 999999, out var pos))
 			{
 				return false;
 			}
@@ -51,7 +51,7 @@ namespace RimWorld
 			SpawnChunk(firstChunkPos, map);
 			for (int i = 0; i < count - 1; i++)
 			{
-				if (TryFindShipChunkDropCell(firstChunkPos, map, 5, out IntVec3 pos))
+				if (TryFindShipChunkDropCell(firstChunkPos, map, 5, out var pos))
 				{
 					SpawnChunk(pos, map);
 				}

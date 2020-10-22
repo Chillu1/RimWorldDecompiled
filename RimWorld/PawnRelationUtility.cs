@@ -106,7 +106,7 @@ namespace RimWorld
 
 		public static void Notify_PawnsSeenByPlayer_Letter(IEnumerable<Pawn> seenPawns, ref TaggedString letterLabel, ref TaggedString letterText, string relationsInfoHeader, bool informEvenIfSeenBefore = false, bool writeSeenPawnsNames = true)
 		{
-			Notify_PawnsSeenByPlayer(seenPawns, out string pawnRelationsInfo, informEvenIfSeenBefore, writeSeenPawnsNames);
+			Notify_PawnsSeenByPlayer(seenPawns, out var pawnRelationsInfo, informEvenIfSeenBefore, writeSeenPawnsNames);
 			if (!pawnRelationsInfo.NullOrEmpty())
 			{
 				if (letterLabel.NullOrEmpty())

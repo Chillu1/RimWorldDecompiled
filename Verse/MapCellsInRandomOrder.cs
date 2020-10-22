@@ -37,7 +37,7 @@ namespace Verse
 				randomizedCells.Add(allCell);
 			}
 			Rand.PushState();
-			Rand.Seed = (Find.World.info.Seed ^ map.Tile);
+			Rand.Seed = Find.World.info.Seed ^ map.Tile;
 			randomizedCells.Shuffle();
 			Rand.PopState();
 		}

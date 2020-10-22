@@ -74,7 +74,7 @@ namespace RimWorld
 				}
 				if (pawn.guilt == null)
 				{
-					pawn.guilt = new Pawn_GuiltTracker();
+					pawn.guilt = new Pawn_GuiltTracker(pawn);
 				}
 				if (pawn.workSettings == null)
 				{

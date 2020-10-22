@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 using Verse.AI;
 
@@ -10,7 +10,7 @@ namespace Verse
 	{
 		public static IntVec3 RandomCellWith(Predicate<IntVec3> validator, Map map, int maxTries = 1000)
 		{
-			TryGetRandomCellWith(validator, map, maxTries, out IntVec3 result);
+			TryGetRandomCellWith(validator, map, maxTries, out var result);
 			return result;
 		}
 
@@ -192,7 +192,7 @@ namespace Verse
 			for (int num = tightness; num >= 1; num--)
 			{
 				int num2 = map.Size.x / num;
-				if (TryFindRandomNotEdgeCellWith((map.Size.x - num2) / 2, validator, map, out IntVec3 result))
+				if (TryFindRandomNotEdgeCellWith((map.Size.x - num2) / 2, validator, map, out var result))
 				{
 					return result;
 				}
@@ -227,6 +227,13 @@ namespace Verse
 					if (item.GetFirstSkyfaller(map) != null)
 					{
 						return false;
+					}
+					foreach (Thing thing in item.GetThingList(map))
+					{
+						if (thing.def.preventSkyfallersLandingOn)
+						{
+							return false;
+						}
 					}
 				}
 				if (avoidColonists && SkyfallerUtility.CanPossiblyFallOnColonist(skyfaller, x, map))

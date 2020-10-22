@@ -32,7 +32,7 @@ namespace RimWorld.BaseGen
 				pawnGroupMakerParms.faction = Find.FactionManager.RandomEnemyFaction();
 				pawnGroupMakerParms.points = 250f;
 			}
-			pawnGroupMakerParms.groupKind = (rp.pawnGroupKindDef ?? PawnGroupKindDefOf.Combat);
+			pawnGroupMakerParms.groupKind = rp.pawnGroupKindDef ?? PawnGroupKindDefOf.Combat;
 			List<PawnKindDef> list = new List<PawnKindDef>();
 			foreach (Pawn item in PawnGroupMakerUtility.GeneratePawns(pawnGroupMakerParms))
 			{

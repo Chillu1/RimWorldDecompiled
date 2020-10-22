@@ -25,7 +25,7 @@ namespace RimWorld
 			{
 				if (!allDef.IsFinished && allDef.PrerequisitesCompleted)
 				{
-					if (!allDef.TechprintRequirementMet && !PlayerItemAccessibilityUtility.PlayerOrQuestRewardHas(allDef.Techprint, allDef.techprintCount - allDef.TechprintsApplied))
+					if (!allDef.TechprintRequirementMet && !PlayerItemAccessibilityUtility.PlayerOrQuestRewardHas(allDef.Techprint, allDef.TechprintCount - allDef.TechprintsApplied))
 					{
 						flag = true;
 					}
@@ -61,7 +61,7 @@ namespace RimWorld
 				int num = Mathf.Max(parms.countRange.Value.RandomInRange, 1);
 				for (int i = 0; i < num; i++)
 				{
-					if (!TechprintUtility.TryGetTechprintDefToGenerate(parms.makingFaction, out ThingDef result, tmpGenerated))
+					if (!TechprintUtility.TryGetTechprintDefToGenerate(parms.makingFaction, out var result, tmpGenerated))
 					{
 						break;
 					}

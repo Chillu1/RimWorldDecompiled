@@ -5,9 +5,20 @@ namespace RimWorld.Planet
 {
 	public class TransportPodsArrivalAction_FormCaravan : TransportPodsArrivalAction
 	{
+		private string arrivalMessageKey = "MessageTransportPodsArrived";
+
 		private static List<Pawn> tmpPawns = new List<Pawn>();
 
 		private static List<Thing> tmpContainedThings = new List<Thing>();
+
+		public TransportPodsArrivalAction_FormCaravan()
+		{
+		}
+
+		public TransportPodsArrivalAction_FormCaravan(string arrivalMessageKey)
+		{
+			this.arrivalMessageKey = arrivalMessageKey;
+		}
 
 		public override FloatMenuAcceptanceReport StillValid(IEnumerable<IThingHolder> pods, int destinationTile)
 		{
@@ -35,7 +46,7 @@ namespace RimWorld.Planet
 					}
 				}
 			}
-			if (!GenWorldClosest.TryFindClosestPassableTile(tile, out int foundTile))
+			if (!GenWorldClosest.TryFindClosestPassableTile(tile, out var foundTile))
 			{
 				foundTile = tile;
 			}
@@ -52,7 +63,7 @@ namespace RimWorld.Planet
 			}
 			tmpPawns.Clear();
 			tmpContainedThings.Clear();
-			Messages.Message("MessageTransportPodsArrived".Translate(), caravan, MessageTypeDefOf.TaskCompletion);
+			Messages.Message(arrivalMessageKey.Translate(), caravan, MessageTypeDefOf.TaskCompletion);
 		}
 
 		public static bool CanFormCaravanAt(IEnumerable<IThingHolder> pods, int tile)
@@ -62,6 +73,12 @@ namespace RimWorld.Planet
 				return !Find.World.Impassable(tile);
 			}
 			return false;
+		}
+
+		public override void ExposeData()
+		{
+			base.ExposeData();
+			Scribe_Values.Look(ref arrivalMessageKey, "arrivalMessageKey", "MessageTransportPodsArrived");
 		}
 	}
 }

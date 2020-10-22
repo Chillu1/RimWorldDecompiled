@@ -8,7 +8,7 @@ namespace RimWorld
 
 		public override void Generate(Map map, GenStepParams parms)
 		{
-			if (SiteGenStepUtility.TryFindRootToSpawnAroundRectOfInterest(out CellRect rectToDefend, out IntVec3 singleCellToSpawnNear, map))
+			if (SiteGenStepUtility.TryFindRootToSpawnAroundRectOfInterest(out var rectToDefend, out var singleCellToSpawnNear, map))
 			{
 				SpawnTrigger(rectToDefend, singleCellToSpawnNear, map, parms);
 			}
@@ -18,7 +18,7 @@ namespace RimWorld
 		{
 			int nextSignalTagID = Find.UniqueIDsManager.GetNextSignalTagID();
 			string signalTag = "ambushActivated-" + nextSignalTagID;
-			CellRect rect = (!root.IsValid) ? rectToDefend.ExpandedBy(12) : CellRect.CenteredOn(root, 17);
+			CellRect rect = ((!root.IsValid) ? rectToDefend.ExpandedBy(12) : CellRect.CenteredOn(root, 17));
 			SignalAction_Ambush signalAction_Ambush = MakeAmbushSignalAction(rectToDefend, root, parms);
 			signalAction_Ambush.signalTag = signalTag;
 			GenSpawn.Spawn(signalAction_Ambush, rect.CenterCell, map);

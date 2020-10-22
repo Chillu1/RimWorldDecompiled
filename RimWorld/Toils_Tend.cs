@@ -63,7 +63,7 @@ namespace RimWorld
 			{
 				Pawn actor = toil.actor;
 				Medicine medicine = (Medicine)actor.CurJob.targetB.Thing;
-				float num = patient.RaceProps.Animal ? 175f : 500f;
+				float num = (patient.RaceProps.Animal ? 175f : 500f);
 				float num2 = medicine?.def.MedicineTendXpGainFactor ?? 0.5f;
 				actor.skills.Learn(SkillDefOf.Medicine, num * num2);
 				TendUtility.DoTend(actor, patient, medicine);

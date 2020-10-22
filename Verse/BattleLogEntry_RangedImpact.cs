@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 using Verse.Grammar;
 
@@ -71,7 +71,7 @@ namespace Verse
 		{
 			if (initiator is Pawn)
 			{
-				initiatorPawn = (initiator as Pawn);
+				initiatorPawn = initiator as Pawn;
 			}
 			else if (initiator != null)
 			{
@@ -79,7 +79,7 @@ namespace Verse
 			}
 			if (recipient is Pawn)
 			{
-				recipientPawn = (recipient as Pawn);
+				recipientPawn = recipient as Pawn;
 			}
 			else if (recipient != null)
 			{
@@ -87,8 +87,8 @@ namespace Verse
 			}
 			if (originalTarget is Pawn)
 			{
-				originalTargetPawn = (originalTarget as Pawn);
-				originalTargetMobile = (!originalTargetPawn.Downed && !originalTargetPawn.Dead && originalTargetPawn.Awake());
+				originalTargetPawn = originalTarget as Pawn;
+				originalTargetMobile = !originalTargetPawn.Downed && !originalTargetPawn.Dead && originalTargetPawn.Awake();
 			}
 			else if (originalTarget != null)
 			{

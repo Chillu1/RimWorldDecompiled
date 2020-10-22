@@ -1,7 +1,7 @@
-using RimWorld.Planet;
-using RimWorld.QuestGen;
 using System;
 using System.Collections.Generic;
+using RimWorld.Planet;
+using RimWorld.QuestGen;
 using Verse;
 using Verse.Grammar;
 
@@ -90,15 +90,12 @@ namespace RimWorld
 			{
 				return "Reward_Pawn_Caravan".Translate(pawn);
 			}
-			switch (arrivalMode)
+			return arrivalMode switch
 			{
-			case ArrivalMode.WalkIn:
-				return "Reward_Pawn_WalkIn".Translate(pawn);
-			case ArrivalMode.DropPod:
-				return "Reward_Pawn_DropPod".Translate(pawn);
-			default:
-				throw new Exception("Unknown arrival mode: " + arrivalMode);
-			}
+				ArrivalMode.WalkIn => "Reward_Pawn_WalkIn".Translate(pawn), 
+				ArrivalMode.DropPod => "Reward_Pawn_DropPod".Translate(pawn), 
+				_ => throw new Exception("Unknown arrival mode: " + arrivalMode), 
+			};
 		}
 
 		public override string ToString()

@@ -28,7 +28,7 @@ namespace RimWorld
 
 		public static Season GetReportedSeason(float yearPct, float latitude)
 		{
-			GetSeason(yearPct, latitude, out float spring, out float summer, out float fall, out float winter, out float permanentSummer, out float permanentWinter);
+			GetSeason(yearPct, latitude, out var spring, out var summer, out var fall, out var winter, out var permanentSummer, out var permanentWinter);
 			if (permanentSummer == 1f)
 			{
 				return Season.PermanentSummer;
@@ -42,16 +42,16 @@ namespace RimWorld
 
 		public static Season GetDominantSeason(float yearPct, float latitude)
 		{
-			GetSeason(yearPct, latitude, out float spring, out float summer, out float fall, out float winter, out float permanentSummer, out float permanentWinter);
+			GetSeason(yearPct, latitude, out var spring, out var summer, out var fall, out var winter, out var permanentSummer, out var permanentWinter);
 			return GenMath.MaxBy(Season.Spring, spring, Season.Summer, summer, Season.Fall, fall, Season.Winter, winter, Season.PermanentSummer, permanentSummer, Season.PermanentWinter, permanentWinter);
 		}
 
 		public static void GetSeason(float yearPct, float latitude, out float spring, out float summer, out float fall, out float winter, out float permanentSummer, out float permanentWinter)
 		{
 			yearPct = Mathf.Clamp01(yearPct);
-			LatitudeSectionUtility.GetLatitudeSection(latitude, out float equatorial, out float seasonal, out float polar);
-			GetSeasonalAreaSeason(yearPct, out float spring2, out float summer2, out float fall2, out float winter2, northernHemisphere: true);
-			GetSeasonalAreaSeason(yearPct, out float spring3, out float summer3, out float fall3, out float winter3, northernHemisphere: false);
+			LatitudeSectionUtility.GetLatitudeSection(latitude, out var equatorial, out var seasonal, out var polar);
+			GetSeasonalAreaSeason(yearPct, out var spring2, out var summer2, out var fall2, out var winter2, northernHemisphere: true);
+			GetSeasonalAreaSeason(yearPct, out var spring3, out var summer3, out var fall3, out var winter3, northernHemisphere: false);
 			float num = Mathf.InverseLerp(-2.5f, 2.5f, latitude);
 			float num2 = num * spring2 + (1f - num) * spring3;
 			float num3 = num * summer2 + (1f - num) * summer3;
@@ -68,7 +68,7 @@ namespace RimWorld
 		private static void GetSeasonalAreaSeason(float yearPct, out float spring, out float summer, out float fall, out float winter, bool northernHemisphere)
 		{
 			yearPct = Mathf.Clamp01(yearPct);
-			float x = northernHemisphere ? yearPct : ((yearPct + 0.5f) % 1f);
+			float x = (northernHemisphere ? yearPct : ((yearPct + 0.5f) % 1f));
 			float num = SeasonalAreaSeasons.Evaluate(x);
 			if (num <= 1f)
 			{
@@ -191,25 +191,17 @@ namespace RimWorld
 
 		public static Season GetPreviousSeason(this Season season)
 		{
-			switch (season)
+			return season switch
 			{
-			case Season.Undefined:
-				return Season.Undefined;
-			case Season.Spring:
-				return Season.Winter;
-			case Season.Summer:
-				return Season.Spring;
-			case Season.Fall:
-				return Season.Summer;
-			case Season.Winter:
-				return Season.Fall;
-			case Season.PermanentSummer:
-				return Season.PermanentSummer;
-			case Season.PermanentWinter:
-				return Season.PermanentWinter;
-			default:
-				return Season.Undefined;
-			}
+				Season.Undefined => Season.Undefined, 
+				Season.Spring => Season.Winter, 
+				Season.Summer => Season.Spring, 
+				Season.Fall => Season.Summer, 
+				Season.Winter => Season.Fall, 
+				Season.PermanentSummer => Season.PermanentSummer, 
+				Season.PermanentWinter => Season.PermanentWinter, 
+				_ => Season.Undefined, 
+			};
 		}
 
 		public static float GetMiddleYearPct(this Season season, float latitude)
@@ -223,23 +215,16 @@ namespace RimWorld
 
 		public static string Label(this Season season)
 		{
-			switch (season)
+			return season switch
 			{
-			case Season.Spring:
-				return "SeasonSpring".Translate();
-			case Season.Summer:
-				return "SeasonSummer".Translate();
-			case Season.Fall:
-				return "SeasonFall".Translate();
-			case Season.Winter:
-				return "SeasonWinter".Translate();
-			case Season.PermanentSummer:
-				return "SeasonPermanentSummer".Translate();
-			case Season.PermanentWinter:
-				return "SeasonPermanentWinter".Translate();
-			default:
-				return "Unknown season";
-			}
+				Season.Spring => "SeasonSpring".Translate(), 
+				Season.Summer => "SeasonSummer".Translate(), 
+				Season.Fall => "SeasonFall".Translate(), 
+				Season.Winter => "SeasonWinter".Translate(), 
+				Season.PermanentSummer => "SeasonPermanentSummer".Translate(), 
+				Season.PermanentWinter => "SeasonPermanentWinter".Translate(), 
+				_ => "Unknown season", 
+			};
 		}
 
 		public static string LabelCap(this Season season)

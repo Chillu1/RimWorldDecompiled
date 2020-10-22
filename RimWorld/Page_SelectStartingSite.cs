@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Text;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
@@ -200,8 +200,8 @@ namespace RimWorld
 
 		private void DoCustomBottomButtons()
 		{
-			int num = TutorSystem.TutorialMode ? 4 : 5;
-			int num2 = (num < 4 || !((float)UI.screenWidth < 1340f)) ? 1 : 2;
+			int num = (TutorSystem.TutorialMode ? 4 : 5);
+			int num2 = ((num < 4 || !((float)UI.screenWidth < 1340f)) ? 1 : 2);
 			int num3 = Mathf.CeilToInt((float)num / (float)num2);
 			float num4 = Page.BottomButSize.x * (float)num3 + 10f * (float)(num3 + 1);
 			float num5 = (float)num2 * Page.BottomButSize.y + 10f * (float)(num2 + 1);

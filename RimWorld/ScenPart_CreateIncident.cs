@@ -53,7 +53,7 @@ namespace RimWorld
 			{
 				intervalDays = 0f;
 			}
-			repeat = (Rand.Range(0, 100) < 50);
+			repeat = Rand.Range(0, 100) < 50;
 		}
 
 		protected override IEnumerable<IncidentDef> RandomizableIncidents()

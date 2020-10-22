@@ -17,31 +17,31 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			JobDriver_BuildSnowman jobDriver_BuildSnowman = this;
 			yield return Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.Touch);
 			Toil doWork = new Toil();
 			doWork.initAction = delegate
 			{
-				jobDriver_BuildSnowman.workLeft = 2300f;
+				workLeft = 2300f;
 			};
 			doWork.tickAction = delegate
 			{
-				jobDriver_BuildSnowman.workLeft -= doWork.actor.GetStatValue(StatDefOf.ConstructionSpeed) * 1.7f;
-				if (jobDriver_BuildSnowman.workLeft <= 0f)
+				workLeft -= doWork.actor.GetStatValue(StatDefOf.ConstructionSpeed) * 1.7f;
+				if (workLeft <= 0f)
 				{
 					Thing thing = ThingMaker.MakeThing(ThingDefOf.Snowman);
-					thing.SetFaction(jobDriver_BuildSnowman.pawn.Faction);
-					GenSpawn.Spawn(thing, jobDriver_BuildSnowman.TargetLocA, jobDriver_BuildSnowman.Map);
-					jobDriver_BuildSnowman.ReadyForNextToil();
+					thing.SetFaction(pawn.Faction);
+					GenSpawn.Spawn(thing, base.TargetLocA, base.Map);
+					ReadyForNextToil();
 				}
 				else
 				{
-					JoyUtility.JoyTickCheckEnd(jobDriver_BuildSnowman.pawn);
+					JoyUtility.JoyTickCheckEnd(pawn);
 				}
 			};
 			doWork.defaultCompleteMode = ToilCompleteMode.Never;
-			doWork.FailOn(() => !JoyUtility.EnjoyableOutsideNow(jobDriver_BuildSnowman.pawn));
+			doWork.FailOn(() => !JoyUtility.EnjoyableOutsideNow(pawn));
 			doWork.FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
+			doWork.activeSkill = () => SkillDefOf.Construction;
 			yield return doWork;
 		}
 

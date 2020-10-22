@@ -20,17 +20,13 @@ namespace RimWorld
 			{
 				return false;
 			}
-			switch (faction.RelationKindWith(Faction.OfPlayer))
+			return faction.RelationKindWith(Faction.OfPlayer) switch
 			{
-			case FactionRelationKind.Hostile:
-				return allowHostile;
-			case FactionRelationKind.Neutral:
-				return allowNeutral;
-			case FactionRelationKind.Ally:
-				return allowAlly;
-			default:
-				throw new NotImplementedException();
-			}
+				FactionRelationKind.Hostile => allowHostile, 
+				FactionRelationKind.Neutral => allowNeutral, 
+				FactionRelationKind.Ally => allowAlly, 
+				_ => throw new NotImplementedException(), 
+			};
 		}
 	}
 }

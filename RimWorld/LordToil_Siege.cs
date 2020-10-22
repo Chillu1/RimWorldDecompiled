@@ -178,7 +178,7 @@ namespace RimWorld
 			int num4 = num - num3;
 			for (int k = 0; k < num4; k++)
 			{
-				if (lord.ownedPawns.Where((Pawn pa) => !rememberedDuties.ContainsKey(pa) && CanBeBuilder(pa)).TryRandomElement(out Pawn result))
+				if (lord.ownedPawns.Where((Pawn pa) => !rememberedDuties.ContainsKey(pa) && CanBeBuilder(pa)).TryRandomElement(out var result))
 				{
 					rememberedDuties.Add(result, DutyDefOf.Build);
 					SetAsBuilder(result);
@@ -332,6 +332,10 @@ namespace RimWorld
 			foreach (Frame item in Frames.ToList())
 			{
 				item.Destroy(DestroyMode.Cancel);
+			}
+			foreach (Building ownedBuilding in lord.ownedBuildings)
+			{
+				ownedBuilding.SetFaction(null);
 			}
 		}
 	}

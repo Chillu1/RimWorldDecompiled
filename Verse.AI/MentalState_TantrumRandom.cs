@@ -59,7 +59,7 @@ namespace Verse.AI
 			}
 			else
 			{
-				Thing thing = (target == null || Find.TickManager.TicksGame - targetFoundTicks <= 1250 || !candidates.Any((Thing x) => x != target)) ? candidates.RandomElementByWeight((Thing x) => GetCandidateWeight(x)) : candidates.Where((Thing x) => x != target).RandomElementByWeight((Thing x) => GetCandidateWeight(x));
+				Thing thing = ((target == null || Find.TickManager.TicksGame - targetFoundTicks <= 1250 || !candidates.Any((Thing x) => x != target)) ? candidates.RandomElementByWeight((Thing x) => GetCandidateWeight(x)) : candidates.Where((Thing x) => x != target).RandomElementByWeight((Thing x) => GetCandidateWeight(x)));
 				if (thing != target)
 				{
 					target = thing;

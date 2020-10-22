@@ -25,40 +25,28 @@ namespace Verse
 
 		public static string GetDescription(SnowCategory category)
 		{
-			switch (category)
+			return category switch
 			{
-			case SnowCategory.None:
-				return "SnowNone".Translate();
-			case SnowCategory.Dusting:
-				return "SnowDusting".Translate();
-			case SnowCategory.Thin:
-				return "SnowThin".Translate();
-			case SnowCategory.Medium:
-				return "SnowMedium".Translate();
-			case SnowCategory.Thick:
-				return "SnowThick".Translate();
-			default:
-				return "Unknown snow";
-			}
+				SnowCategory.None => "SnowNone".Translate(), 
+				SnowCategory.Dusting => "SnowDusting".Translate(), 
+				SnowCategory.Thin => "SnowThin".Translate(), 
+				SnowCategory.Medium => "SnowMedium".Translate(), 
+				SnowCategory.Thick => "SnowThick".Translate(), 
+				_ => "Unknown snow", 
+			};
 		}
 
 		public static int MovementTicksAddOn(SnowCategory category)
 		{
-			switch (category)
+			return category switch
 			{
-			case SnowCategory.None:
-				return 0;
-			case SnowCategory.Dusting:
-				return 0;
-			case SnowCategory.Thin:
-				return 4;
-			case SnowCategory.Medium:
-				return 8;
-			case SnowCategory.Thick:
-				return 12;
-			default:
-				return 0;
-			}
+				SnowCategory.None => 0, 
+				SnowCategory.Dusting => 0, 
+				SnowCategory.Thin => 4, 
+				SnowCategory.Medium => 8, 
+				SnowCategory.Thick => 12, 
+				_ => 0, 
+			};
 		}
 
 		public static void AddSnowRadial(IntVec3 center, Map map, float radius, float depth)

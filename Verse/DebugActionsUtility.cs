@@ -54,5 +54,17 @@ namespace Verse
 			yield return 9000f;
 			yield return 10000f;
 		}
+
+		public static IEnumerable<int> PopulationOptions()
+		{
+			for (int j = 1; j <= 20; j++)
+			{
+				yield return j;
+			}
+			for (int j = 30; j <= 50; j += 10)
+			{
+				yield return j;
+			}
+		}
 	}
 }

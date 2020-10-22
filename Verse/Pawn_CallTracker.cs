@@ -1,5 +1,5 @@
-using RimWorld;
 using System;
+using RimWorld;
 
 namespace Verse
 {
@@ -37,27 +37,15 @@ namespace Verse
 			}
 		}
 
-		private float IdleCallVolumeFactor
+		private float IdleCallVolumeFactor => Find.TickManager.CurTimeSpeed switch
 		{
-			get
-			{
-				switch (Find.TickManager.CurTimeSpeed)
-				{
-				case TimeSpeed.Paused:
-					return 1f;
-				case TimeSpeed.Normal:
-					return 1f;
-				case TimeSpeed.Fast:
-					return 1f;
-				case TimeSpeed.Superfast:
-					return 0.25f;
-				case TimeSpeed.Ultrafast:
-					return 0.25f;
-				default:
-					throw new NotImplementedException();
-				}
-			}
-		}
+			TimeSpeed.Paused => 1f, 
+			TimeSpeed.Normal => 1f, 
+			TimeSpeed.Fast => 1f, 
+			TimeSpeed.Superfast => 0.25f, 
+			TimeSpeed.Ultrafast => 0.25f, 
+			_ => throw new NotImplementedException(), 
+		};
 
 		public Pawn_CallTracker(Pawn pawn)
 		{

@@ -26,7 +26,7 @@ namespace Verse
 		public static void ErrorWhileLoadingGame(Exception e)
 		{
 			string text = "ErrorWhileLoadingMap".Translate();
-			if (!ScribeMetaHeaderUtility.LoadedModsMatchesActiveMods(out string loadedModsSummary, out string runningModsSummary))
+			if (!ScribeMetaHeaderUtility.LoadedModsMatchesActiveMods(out var loadedModsSummary, out var runningModsSummary))
 			{
 				text += "\n\n" + "ModsMismatchWarningText".Translate(loadedModsSummary, runningModsSummary);
 			}

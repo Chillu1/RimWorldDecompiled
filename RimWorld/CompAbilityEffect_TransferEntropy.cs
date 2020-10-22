@@ -39,12 +39,8 @@ namespace RimWorld
 		public override bool Valid(LocalTargetInfo target, bool throwMessages = false)
 		{
 			Pawn pawn = target.Pawn;
-			if (pawn != null && pawn.InMentalState)
+			if (pawn != null && !AbilityUtility.ValidateNoMentalState(pawn, throwMessages))
 			{
-				if (throwMessages)
-				{
-					Messages.Message("AbilityCantApplyToMentallyBroken".Translate(pawn.LabelShort), target.ToTargetInfo(parent.pawn.Map), MessageTypeDefOf.RejectInput, historical: false);
-				}
 				return false;
 			}
 			return true;

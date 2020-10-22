@@ -10,7 +10,7 @@ namespace RimWorld.BaseGen
 		public override void Resolve(ResolveParams rp)
 		{
 			bool flag = rp.streetHorizontal ?? (rp.rect.Width >= rp.rect.Height);
-			int width = flag ? rp.rect.Height : rp.rect.Width;
+			int width = (flag ? rp.rect.Height : rp.rect.Width);
 			TerrainDef floorDef = rp.floorDef ?? BaseGenUtility.RandomBasicFloorDef(rp.faction);
 			CalculateStreet(rp.rect, flag, floorDef);
 			FillStreetGaps(flag, width);
@@ -21,7 +21,7 @@ namespace RimWorld.BaseGen
 		private void CalculateStreet(CellRect rect, bool horizontal, TerrainDef floorDef)
 		{
 			street.Clear();
-			int num = horizontal ? rect.Width : rect.Height;
+			int num = (horizontal ? rect.Width : rect.Height);
 			for (int i = 0; i < num; i++)
 			{
 				if (horizontal)

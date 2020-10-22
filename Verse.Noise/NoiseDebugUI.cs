@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse.Noise
@@ -185,7 +185,7 @@ namespace Verse.Noise
 			{
 				if (planetNoiseMesh == null)
 				{
-					SphereGenerator.Generate(6, 100.3f, Vector3.forward, 360f, out planetNoiseMeshVerts, out List<int> outIndices);
+					SphereGenerator.Generate(6, 100.3f, Vector3.forward, 360f, out planetNoiseMeshVerts, out var outIndices);
 					planetNoiseMesh = new Mesh();
 					planetNoiseMesh.name = "NoiseDebugUI";
 					planetNoiseMesh.SetVertices(planetNoiseMeshVerts);

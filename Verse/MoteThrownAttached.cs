@@ -21,7 +21,8 @@ namespace Verse
 			Vector3 result = base.NextExactPosition(deltaTime);
 			if (link1.Linked)
 			{
-				if (!link1.Target.ThingDestroyed)
+				bool flag = detachAfterTicks == -1 || Find.TickManager.TicksGame - spawnTick < detachAfterTicks;
+				if (!link1.Target.ThingDestroyed && flag)
 				{
 					link1.UpdateDrawPos();
 				}

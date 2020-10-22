@@ -1,9 +1,9 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
+using RimWorld.Planet;
 
 namespace Verse
 {
@@ -26,51 +26,35 @@ namespace Verse
 		[DebugAction("Autotests", "Test force downed x100", allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void TestForceDownedx100()
 		{
-			int num = 0;
-			Pawn pawn;
-			while (true)
+			for (int i = 0; i < 100; i++)
 			{
-				if (num < 100)
+				PawnKindDef random = DefDatabase<PawnKindDef>.GetRandom();
+				Pawn pawn = PawnGenerator.GeneratePawn(random, FactionUtility.DefaultFactionFrom(random.defaultFactionType));
+				GenSpawn.Spawn(pawn, CellFinderLoose.RandomCellWith((IntVec3 c) => c.Standable(Find.CurrentMap), Find.CurrentMap), Find.CurrentMap);
+				HealthUtility.DamageUntilDowned(pawn);
+				if (pawn.Dead)
 				{
-					PawnKindDef random = DefDatabase<PawnKindDef>.GetRandom();
-					pawn = PawnGenerator.GeneratePawn(random, FactionUtility.DefaultFactionFrom(random.defaultFactionType));
-					GenSpawn.Spawn(pawn, CellFinderLoose.RandomCellWith((IntVec3 c) => c.Standable(Find.CurrentMap), Find.CurrentMap), Find.CurrentMap);
-					HealthUtility.DamageUntilDowned(pawn);
-					if (pawn.Dead)
-					{
-						break;
-					}
-					num++;
-					continue;
+					Log.Error(string.Concat("Pawn died while force downing: ", pawn, " at ", pawn.Position));
+					break;
 				}
-				return;
 			}
-			Log.Error(string.Concat("Pawn died while force downing: ", pawn, " at ", pawn.Position));
 		}
 
 		[DebugAction("Autotests", "Test force kill x100", allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void TestForceKillx100()
 		{
-			int num = 0;
-			Pawn pawn;
-			while (true)
+			for (int i = 0; i < 100; i++)
 			{
-				if (num < 100)
+				PawnKindDef random = DefDatabase<PawnKindDef>.GetRandom();
+				Pawn pawn = PawnGenerator.GeneratePawn(random, FactionUtility.DefaultFactionFrom(random.defaultFactionType));
+				GenSpawn.Spawn(pawn, CellFinderLoose.RandomCellWith((IntVec3 c) => c.Standable(Find.CurrentMap), Find.CurrentMap), Find.CurrentMap);
+				HealthUtility.DamageUntilDead(pawn);
+				if (!pawn.Dead)
 				{
-					PawnKindDef random = DefDatabase<PawnKindDef>.GetRandom();
-					pawn = PawnGenerator.GeneratePawn(random, FactionUtility.DefaultFactionFrom(random.defaultFactionType));
-					GenSpawn.Spawn(pawn, CellFinderLoose.RandomCellWith((IntVec3 c) => c.Standable(Find.CurrentMap), Find.CurrentMap), Find.CurrentMap);
-					HealthUtility.DamageUntilDead(pawn);
-					if (!pawn.Dead)
-					{
-						break;
-					}
-					num++;
-					continue;
+					Log.Error(string.Concat("Pawn died not die: ", pawn, " at ", pawn.Position));
+					break;
 				}
-				return;
 			}
-			Log.Error(string.Concat("Pawn died not die: ", pawn, " at ", pawn.Position));
 		}
 
 		[DebugAction("Autotests", "Test Surgery fail catastrophic x100", allowedGameStates = AllowedGameStates.PlayingOnMap)]
@@ -147,6 +131,39 @@ namespace Verse
 				stringBuilder.AppendLine($"<{array[j]}ms: {array2[j]}");
 			}
 			Log.Message(stringBuilder.ToString());
+		}
+
+		[DebugAction("Autotests", null, actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void GeneratePawnsOfAllShapes()
+		{
+			Rot4[] array = new Rot4[4]
+			{
+				Rot4.North,
+				Rot4.East,
+				Rot4.South,
+				Rot4.West
+			};
+			IntVec3 intVec = UI.MouseCell();
+			foreach (BodyTypeDef allDef in DefDatabase<BodyTypeDef>.AllDefs)
+			{
+				IntVec3 intVec2 = intVec;
+				Rot4[] array2 = array;
+				for (int i = 0; i < array2.Length; i++)
+				{
+					Rot4 rot = array2[i];
+					PawnGenerationRequest request = new PawnGenerationRequest(Faction.OfPlayer.def.basicMemberKind, Faction.OfPlayer);
+					request.ForceBodyType = allDef;
+					Pawn pawn = PawnGenerator.GeneratePawn(request);
+					string text = allDef.defName + "-" + rot.ToStringWord();
+					pawn.Name = new NameTriple(text, text, text);
+					GenSpawn.Spawn(pawn, intVec2, Find.CurrentMap);
+					pawn.apparel.DestroyAll();
+					pawn.drafter.Drafted = true;
+					pawn.stances.SetStance(new Stance_Warmup(100000, intVec2 + rot.FacingCell, null));
+					intVec2 += IntVec3.South * 2;
+				}
+				intVec += IntVec3.East * 2;
+			}
 		}
 
 		[DebugAction("Autotests", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]

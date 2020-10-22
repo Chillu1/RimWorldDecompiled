@@ -49,7 +49,7 @@ namespace RimWorld.Planet
 		private static int GetMiddlePoint(int p1, int p2, List<Vector3> verts, float radius)
 		{
 			long key = ((long)Mathf.Min(p1, p2) << 32) + Mathf.Max(p1, p2);
-			if (middlePointsCache.TryGetValue(key, out int value))
+			if (middlePointsCache.TryGetValue(key, out var value))
 			{
 				return value;
 			}

@@ -154,7 +154,7 @@ namespace RimWorld
 			{
 				if (landingArea.Active)
 				{
-					Color color = landingArea.Clear ? fieldColor : Color.red;
+					Color color = (landingArea.Clear ? fieldColor : Color.red);
 					color.a = Pulser.PulseBrightness(1f, 0.6f);
 					GenDraw.DrawFieldEdges(landingArea.MyRect.ToList(), color);
 				}

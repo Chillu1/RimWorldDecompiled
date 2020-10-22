@@ -31,16 +31,24 @@ namespace RimWorld
 
 		private int NeededWarmClothesCount(Map map)
 		{
-			return map.mapPawns.FreeColonistsSpawnedCount;
+			int num = 0;
+			foreach (Pawn freeColonist in map.mapPawns.FreeColonists)
+			{
+				if (freeColonist.Spawned || freeColonist.BrieflyDespawned())
+				{
+					num++;
+				}
+			}
+			return num;
 		}
 
 		private int ColonistsWithWarmClothesCount(Map map)
 		{
 			float num = LowestTemperatureComing(map);
 			int num2 = 0;
-			foreach (Pawn item in map.mapPawns.FreeColonistsSpawned)
+			foreach (Pawn freeColonist in map.mapPawns.FreeColonists)
 			{
-				if (item.GetStatValue(StatDefOf.ComfyTemperatureMin) <= num)
+				if ((freeColonist.Spawned || freeColonist.BrieflyDespawned()) && freeColonist.GetStatValue(StatDefOf.ComfyTemperatureMin) <= num)
 				{
 					num2++;
 				}
@@ -52,11 +60,11 @@ namespace RimWorld
 		{
 			outResult.Clear();
 			float num = LowestTemperatureComing(map);
-			foreach (Pawn item in map.mapPawns.FreeColonistsSpawned)
+			foreach (Pawn freeColonist in map.mapPawns.FreeColonists)
 			{
-				if (item.GetStatValue(StatDefOf.ComfyTemperatureMin) > num)
+				if ((freeColonist.Spawned || freeColonist.BrieflyDespawned()) && freeColonist.GetStatValue(StatDefOf.ComfyTemperatureMin) > num)
 				{
-					outResult.Add(item);
+					outResult.Add(freeColonist);
 				}
 			}
 		}

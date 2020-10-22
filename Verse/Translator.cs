@@ -13,7 +13,7 @@ namespace Verse
 
 		public static TaggedString TranslateWithBackup(this string key, TaggedString backupKey)
 		{
-			if (key.TryTranslate(out TaggedString result))
+			if (key.TryTranslate(out var result))
 			{
 				return result;
 			}
@@ -52,7 +52,7 @@ namespace Verse
 
 		public static TaggedString Translate(this string key)
 		{
-			if (key.TryTranslate(out TaggedString result))
+			if (key.TryTranslate(out var result))
 			{
 				return result;
 			}
@@ -76,7 +76,7 @@ namespace Verse
 				Log.Error("No active language! Cannot translate from key " + key + ".");
 				return key;
 			}
-			if (!LanguageDatabase.activeLanguage.TryGetTextFromKey(key, out TaggedString translated))
+			if (!LanguageDatabase.activeLanguage.TryGetTextFromKey(key, out var translated))
 			{
 				LanguageDatabase.defaultLanguage.TryGetTextFromKey(key, out translated);
 				if (Prefs.DevMode)
@@ -136,91 +136,36 @@ namespace Verse
 				if (!flag)
 				{
 					string text = null;
-					switch (c)
+					stringBuilder.Append(c switch
 					{
-					case 'a':
-						text = "à";
-						break;
-					case 'b':
-						text = "þ";
-						break;
-					case 'c':
-						text = "ç";
-						break;
-					case 'd':
-						text = "ð";
-						break;
-					case 'e':
-						text = "è";
-						break;
-					case 'f':
-						text = "Ƒ";
-						break;
-					case 'g':
-						text = "ğ";
-						break;
-					case 'h':
-						text = "ĥ";
-						break;
-					case 'i':
-						text = "ì";
-						break;
-					case 'j':
-						text = "ĵ";
-						break;
-					case 'k':
-						text = "к";
-						break;
-					case 'l':
-						text = "ſ";
-						break;
-					case 'm':
-						text = "ṁ";
-						break;
-					case 'n':
-						text = "ƞ";
-						break;
-					case 'o':
-						text = "ò";
-						break;
-					case 'p':
-						text = "ṗ";
-						break;
-					case 'q':
-						text = "q";
-						break;
-					case 'r':
-						text = "ṟ";
-						break;
-					case 's':
-						text = "ș";
-						break;
-					case 't':
-						text = "ṭ";
-						break;
-					case 'u':
-						text = "ù";
-						break;
-					case 'v':
-						text = "ṽ";
-						break;
-					case 'w':
-						text = "ẅ";
-						break;
-					case 'x':
-						text = "ẋ";
-						break;
-					case 'y':
-						text = "ý";
-						break;
-					case 'z':
-						text = "ž";
-						break;
-					default:
-						text = (c.ToString() ?? "");
-						break;
-					}
-					stringBuilder.Append(text);
+						'a' => "à", 
+						'b' => "þ", 
+						'c' => "ç", 
+						'd' => "ð", 
+						'e' => "è", 
+						'f' => "Ƒ", 
+						'g' => "ğ", 
+						'h' => "ĥ", 
+						'i' => "ì", 
+						'j' => "ĵ", 
+						'k' => "к", 
+						'l' => "ſ", 
+						'm' => "ṁ", 
+						'n' => "ƞ", 
+						'o' => "ò", 
+						'p' => "ṗ", 
+						'q' => "q", 
+						'r' => "ṟ", 
+						's' => "ș", 
+						't' => "ṭ", 
+						'u' => "ù", 
+						'v' => "ṽ", 
+						'w' => "ẅ", 
+						'x' => "ẋ", 
+						'y' => "ý", 
+						'z' => "ž", 
+						_ => c.ToString() ?? "", 
+					});
 				}
 				else
 				{

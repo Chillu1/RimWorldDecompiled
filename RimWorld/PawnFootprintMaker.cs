@@ -45,7 +45,7 @@ namespace RimWorld
 			Vector3 drawPos = pawn.Drawer.DrawPos;
 			Vector3 normalized = (drawPos - lastFootprintPlacePos).normalized;
 			float rot = normalized.AngleFlat();
-			float angle = lastFootprintRight ? 90 : (-90);
+			float angle = (lastFootprintRight ? 90 : (-90));
 			Vector3 b = normalized.RotatedBy(angle) * 0.17f * Mathf.Sqrt(pawn.BodySize);
 			Vector3 vector = drawPos + FootprintOffset + b;
 			IntVec3 c = vector.ToIntVec3();

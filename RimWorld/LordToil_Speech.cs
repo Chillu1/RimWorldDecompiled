@@ -22,7 +22,7 @@ namespace RimWorld
 			Data.spectateRect = CellRect.CenteredOn(spot, 0);
 			Rot4 rotation = spot.GetFirstThing<Building_Throne>(organizer.MapHeld).Rotation;
 			SpectateRectSide asSpectateSide = rotation.Opposite.AsSpectateSide;
-			Data.spectateRectAllowedSides = (SpectateRectSide.All & ~asSpectateSide);
+			Data.spectateRectAllowedSides = SpectateRectSide.All & ~asSpectateSide;
 			Data.spectateRectPreferredSide = rotation.AsSpectateSide;
 		}
 

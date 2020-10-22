@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -110,7 +110,7 @@ namespace RimWorld
 				Plant plant = thing as Plant;
 				if (plant != null && (plant.HarvestableNow || plant.HarvestableSoon))
 				{
-					int num2 = Mathf.RoundToInt(plant.def.plant.harvestYield * Find.Storyteller.difficulty.cropYieldFactor);
+					int num2 = Mathf.RoundToInt(plant.def.plant.harvestYield * Find.Storyteller.difficultyValues.cropYieldFactor);
 					if (num2 > 0)
 					{
 						cachedPossiblyAccessibleThings.Add(new ThingDefCount(plant.def.plant.harvestedThingDef, num2));
@@ -207,7 +207,7 @@ namespace RimWorld
 						{
 							continue;
 						}
-						ThingDef stuffDef = allRecipes[num10].products[0].thingDef.MadeFromStuff ? GenStuff.DefaultStuffFor(allRecipes[num10].products[0].thingDef) : null;
+						ThingDef stuffDef = (allRecipes[num10].products[0].thingDef.MadeFromStuff ? GenStuff.DefaultStuffFor(allRecipes[num10].products[0].thingDef) : null);
 						float num11 = allRecipes[num10].WorkAmountTotal(stuffDef);
 						if (num11 <= 0f)
 						{

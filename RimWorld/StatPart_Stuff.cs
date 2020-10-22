@@ -15,8 +15,8 @@ namespace RimWorld
 			StringBuilder stringBuilder = new StringBuilder();
 			if (req.BuildableDef.MadeFromStuff)
 			{
-				string t = (req.StuffDef != null) ? req.StuffDef.label : "None".TranslateSimple();
-				string t2 = (req.StuffDef != null) ? req.StuffDef.GetStatValueAbstract(stuffPowerStat).ToStringByStyle(parentStat.ToStringStyleUnfinalized) : "0";
+				string t = ((req.StuffDef != null) ? req.StuffDef.label : "None".TranslateSimple());
+				string t2 = ((req.StuffDef != null) ? req.StuffDef.GetStatValueAbstract(stuffPowerStat).ToStringByStyle(parentStat.ToStringStyleUnfinalized) : "0");
 				stringBuilder.AppendLine("StatsReport_Material".Translate() + " (" + t + "): " + t2);
 				stringBuilder.AppendLine();
 				stringBuilder.AppendLine("StatsReport_StuffEffectMultiplier".Translate() + ": " + GetMultiplier(req).ToStringPercent("F0"));
@@ -27,7 +27,7 @@ namespace RimWorld
 
 		public override void TransformValue(StatRequest req, ref float value)
 		{
-			float num = (req.StuffDef != null) ? req.StuffDef.GetStatValueAbstract(stuffPowerStat) : 0f;
+			float num = ((req.StuffDef != null) ? req.StuffDef.GetStatValueAbstract(stuffPowerStat) : 0f);
 			value += GetMultiplier(req) * num;
 		}
 

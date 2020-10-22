@@ -63,7 +63,7 @@ namespace Verse
 			request.path = matPath;
 			request.renderQueue = renderQueue;
 			Request key = request;
-			if (!dict.TryGetValue(key, out Material value))
+			if (!dict.TryGetValue(key, out var value))
 			{
 				value = MaterialAllocator.Create(material);
 				if (renderQueue != -1)

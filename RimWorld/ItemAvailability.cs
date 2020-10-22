@@ -22,7 +22,7 @@ namespace RimWorld
 		public bool ThingsAvailableAnywhere(ThingDefCountClass need, Pawn pawn)
 		{
 			int key = Gen.HashCombine(need.GetHashCode(), pawn.Faction);
-			if (!cachedResults.TryGetValue(key, out bool value))
+			if (!cachedResults.TryGetValue(key, out var value))
 			{
 				List<Thing> list = map.listerThings.ThingsOfDef(need.thingDef);
 				int num = 0;
@@ -37,7 +37,7 @@ namespace RimWorld
 						}
 					}
 				}
-				value = (num >= need.count);
+				value = num >= need.count;
 				cachedResults.Add(key, value);
 			}
 			return value;

@@ -132,7 +132,7 @@ namespace Verse
 			{
 				return 1f;
 			}
-			if (hitChanceFactors.TryGetValue(damage, out float value))
+			if (hitChanceFactors.TryGetValue(damage, out var value))
 			{
 				return value;
 			}

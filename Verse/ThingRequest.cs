@@ -73,7 +73,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			string str = (singleDef == null) ? ("group " + group) : ("singleDef " + singleDef.defName);
+			string str = ((singleDef == null) ? ("group " + group) : ("singleDef " + singleDef.defName));
 			return "ThingRequest(" + str + ")";
 		}
 	}

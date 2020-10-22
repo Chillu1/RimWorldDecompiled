@@ -9,7 +9,7 @@ namespace RimWorld
 		public override float GetPriority(Pawn pawn)
 		{
 			Pawn_PsychicEntropyTracker psychicEntropy = pawn.psychicEntropy;
-			bool flag = pawn.HasPsylink && psychicEntropy != null && psychicEntropy.CurrentPsyfocus < Mathf.Min(psychicEntropy.TargetPsyfocus, 0.95f);
+			bool flag = pawn.HasPsylink && psychicEntropy != null && psychicEntropy.CurrentPsyfocus < Mathf.Min(psychicEntropy.TargetPsyfocus, 0.95f) && psychicEntropy.PsychicSensitivity > float.Epsilon;
 			if (!ValidatePawnState(pawn))
 			{
 				return 0f;
@@ -34,9 +34,9 @@ namespace RimWorld
 
 		protected virtual bool ValidatePawnState(Pawn pawn)
 		{
-			if (pawn.CurrentBed() == null && !pawn.health.HasHediffsNeedingTendByPlayer(forAlert: true))
+			if (pawn.CurrentBed() == null)
 			{
-				return !pawn.Downed;
+				return !MeditationUtility.CanOnlyMeditateInBed(pawn);
 			}
 			return false;
 		}

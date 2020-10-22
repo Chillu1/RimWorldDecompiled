@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 using Verse.Sound;
 
@@ -132,7 +132,7 @@ namespace Verse
 				{
 					Widgets.DrawHighlight(rect);
 				}
-				TipSignal tip = tooltipDelay.HasValue ? new TipSignal(tooltip, tooltipDelay.Value) : new TipSignal(tooltip);
+				TipSignal tip = (tooltipDelay.HasValue ? new TipSignal(tooltip, tooltipDelay.Value) : new TipSignal(tooltip));
 				TooltipHandler.TipRegion(rect, tip);
 			}
 			bool result = Widgets.RadioButtonLabeled(rect, label, active);
@@ -205,7 +205,7 @@ namespace Verse
 		public string TextEntry(string text, int lineCount = 1)
 		{
 			Rect rect = GetRect(Text.LineHeight * (float)lineCount);
-			string result = (lineCount != 1) ? Widgets.TextArea(rect, text) : Widgets.TextField(rect, text);
+			string result = ((lineCount != 1) ? Widgets.TextArea(rect, text) : Widgets.TextField(rect, text));
 			Gap(verticalSpacing);
 			return result;
 		}
@@ -288,12 +288,19 @@ namespace Verse
 			Gap(verticalSpacing);
 		}
 
+		[Obsolete]
 		public Listing_Standard BeginSection(float height)
 		{
-			Rect rect = GetRect(height + 8f);
+			return BeginSection_NewTemp(height);
+		}
+
+		public Listing_Standard BeginSection_NewTemp(float height, float sectionBorder = 4f, float bottomBorder = 4f)
+		{
+			Rect rect = GetRect(height + sectionBorder + bottomBorder);
 			Widgets.DrawMenuSection(rect);
 			Listing_Standard listing_Standard = new Listing_Standard();
-			listing_Standard.Begin(rect.ContractedBy(4f));
+			Rect rect2 = new Rect(rect.x + sectionBorder, rect.y + sectionBorder, rect.width - sectionBorder * 2f, rect.height - (sectionBorder + bottomBorder));
+			listing_Standard.Begin(rect2);
 			return listing_Standard;
 		}
 
@@ -365,22 +372,48 @@ namespace Verse
 			return Widgets.ButtonInvisible(rect);
 		}
 
+		[Obsolete("Only used for mod compatibility")]
 		public void LabelCheckboxDebug(string label, ref bool checkOn)
+		{
+			LabelCheckboxDebug_NewTmp(label, ref checkOn, highlight: false);
+		}
+
+		public void LabelCheckboxDebug_NewTmp(string label, ref bool checkOn, bool highlight)
 		{
 			Text.Font = GameFont.Tiny;
 			NewColumnIfNeeded(22f);
-			Widgets.CheckboxLabeled(new Rect(curX, curY, base.ColumnWidth, 22f), label, ref checkOn);
+			Rect rect = new Rect(curX, curY, base.ColumnWidth, 22f);
+			Widgets.CheckboxLabeled(rect, label, ref checkOn);
+			if (highlight)
+			{
+				GUI.color = Color.yellow;
+				Widgets.DrawBox(rect, 2);
+				GUI.color = Color.white;
+			}
 			Gap(22f + verticalSpacing);
 		}
 
+		[Obsolete("Only used for mod compatibility")]
 		public bool ButtonDebug(string label)
+		{
+			return ButtonDebug_NewTmp(label, highlight: false);
+		}
+
+		public bool ButtonDebug_NewTmp(string label, bool highlight)
 		{
 			Text.Font = GameFont.Tiny;
 			NewColumnIfNeeded(22f);
 			bool wordWrap = Text.WordWrap;
 			Text.WordWrap = false;
-			bool result = Widgets.ButtonText(new Rect(curX, curY, base.ColumnWidth, 22f), label);
+			Rect rect = new Rect(curX, curY, base.ColumnWidth, 22f);
+			bool result = Widgets.ButtonText(rect, label);
 			Text.WordWrap = wordWrap;
+			if (highlight)
+			{
+				GUI.color = Color.yellow;
+				Widgets.DrawBox(rect, 2);
+				GUI.color = Color.white;
+			}
 			Gap(22f + verticalSpacing);
 			return result;
 		}

@@ -1050,11 +1050,11 @@ namespace Verse.Noise
 
 		internal static double GradientCoherentNoise3D(double x, double y, double z, long seed, QualityMode quality)
 		{
-			int num = (x > 0.0) ? ((int)x) : ((int)x - 1);
+			int num = ((x > 0.0) ? ((int)x) : ((int)x - 1));
 			int ix = num + 1;
-			int num2 = (y > 0.0) ? ((int)y) : ((int)y - 1);
+			int num2 = ((y > 0.0) ? ((int)y) : ((int)y - 1));
 			int iy = num2 + 1;
-			int num3 = (z > 0.0) ? ((int)z) : ((int)z - 1);
+			int num3 = ((z > 0.0) ? ((int)z) : ((int)z - 1));
 			int iz = num3 + 1;
 			double position = 0.0;
 			double position2 = 0.0;
@@ -1096,7 +1096,7 @@ namespace Verse.Noise
 
 		internal static double GradientNoise3D(double fx, double fy, double fz, int ix, int iy, int iz, long seed)
 		{
-			long num = (1619 * ix + 31337 * iy + 6971 * iz + 1013 * seed) & uint.MaxValue;
+			long num = (1619 * ix + 31337 * iy + 6971 * iz + 1013 * seed) & 0xFFFFFFFFu;
 			num ^= num >> 8;
 			num &= 0xFF;
 			double num2 = _randoms[num << 2];
@@ -1154,9 +1154,9 @@ namespace Verse.Noise
 
 		internal static long ValueNoise3DInt(int x, int y, int z, int seed)
 		{
-			long num = (1619 * x + 31337 * y + 6971 * z + 1013 * seed) & int.MaxValue;
-			num = ((num >> 13) ^ num);
-			return (num * (num * num * 60493 + 19990303) + 1376312589) & int.MaxValue;
+			long num = (1619 * x + 31337 * y + 6971 * z + 1013 * seed) & 0x7FFFFFFF;
+			num = (num >> 13) ^ num;
+			return (num * (num * num * 60493 + 19990303) + 1376312589) & 0x7FFFFFFF;
 		}
 	}
 }

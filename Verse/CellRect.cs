@@ -1,9 +1,9 @@
-using RimWorld.Planet;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse
@@ -687,7 +687,7 @@ namespace Verse
 				}
 				CellRect obj = new CellRect(x.x, x.z, size.x, size.z);
 				return predicate(obj);
-			}).TryRandomElement(out IntVec3 result))
+			}).TryRandomElement(out var result))
 			{
 				rect = new CellRect(result.x, result.z, size.x, size.z);
 				return true;
@@ -719,7 +719,7 @@ namespace Verse
 				}
 				CellRect obj = new CellRect(x.x, x.z, size.x, size.z);
 				return predicate(obj);
-			}).TryRandomElement(out IntVec3 result))
+			}).TryRandomElement(out var result))
 			{
 				rect = new CellRect(result.x, result.z, size.x, size.z);
 				return true;

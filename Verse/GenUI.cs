@@ -1,7 +1,7 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -156,7 +156,7 @@ namespace Verse
 				return 0f;
 			}
 			float num = GenCelestial.CurCelestialSunGlow(Find.CurrentMap);
-			float num2 = (Find.CurrentMap.Biome == BiomeDefOf.IceSheet) ? 1f : Mathf.Clamp01(Find.CurrentMap.snowGrid.TotalDepth / 1000f);
+			float num2 = ((Find.CurrentMap.Biome == BiomeDefOf.IceSheet) ? 1f : Mathf.Clamp01(Find.CurrentMap.snowGrid.TotalDepth / 1000f));
 			return num * num2 * 0.41f;
 		}
 
@@ -199,7 +199,7 @@ namespace Verse
 			float num = tDef.uiIconScale;
 			if (tDef.uiIconPath.NullOrEmpty() && tDef.graphicData != null)
 			{
-				IntVec2 intVec = (!tDef.defaultPlacingRot.IsHorizontal) ? tDef.Size : tDef.Size.Rotated();
+				IntVec2 intVec = ((!tDef.defaultPlacingRot.IsHorizontal) ? tDef.Size : tDef.Size.Rotated());
 				num *= Mathf.Min(tDef.graphicData.drawSize.x / (float)intVec.x, tDef.graphicData.drawSize.y / (float)intVec.z);
 			}
 			return num;
@@ -230,7 +230,7 @@ namespace Verse
 				labelWidthCache.Clear();
 			}
 			s = s.StripTags();
-			if (labelWidthCache.TryGetValue(s, out float value))
+			if (labelWidthCache.TryGetValue(s, out var value))
 			{
 				return value;
 			}
@@ -283,7 +283,7 @@ namespace Verse
 				else
 				{
 					Vector2 vector = Text.CalcSize(text);
-					float num2 = (iconTex != null) ? 42f : 0f;
+					float num2 = ((iconTex != null) ? 42f : 0f);
 					rect = new Rect(mousePosition.x + 12f - 4f, num + num2, Text.CalcSize(text).x + 8f, vector.y);
 				}
 				Widgets.DrawBoxSolid(rect, textBgColor);
@@ -378,7 +378,7 @@ namespace Verse
 			for (int i = 0; i < clickableList.Count; i++)
 			{
 				Pawn pawn = clickableList[i] as Pawn;
-				if (pawn == null || !pawn.IsInvisible() || (caster != null && caster.Faction == pawn.Faction))
+				if (pawn == null || !pawn.IsInvisible() || caster == null || caster.Faction == pawn.Faction)
 				{
 					yield return clickableList[i];
 				}

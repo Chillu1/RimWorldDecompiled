@@ -1,6 +1,8 @@
-using RimWorld;
+using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
+using Verse.AI.Group;
 
 namespace Verse
 {
@@ -22,31 +24,35 @@ namespace Verse
 
 		private const float CarriedThingDrawAngle = 16f;
 
-		private const float SubInterval = 0.003787879f;
+		private const float SubInterval = 3f / 980f;
 
 		private const float YOffset_PrimaryEquipmentUnder = 0f;
 
-		private const float YOffset_Behind = 0.003787879f;
+		private const float YOffset_Behind = 3f / 980f;
 
-		private const float YOffset_Body = 0.007575758f;
+		private const float YOffset_Utility_South = 3f / 490f;
 
-		private const float YOffsetInterval_Clothes = 0.003787879f;
+		private const float YOffset_Body = 9f / 980f;
 
-		private const float YOffset_Wounds = 5f / 264f;
+		private const float YOffsetInterval_Clothes = 3f / 980f;
 
-		private const float YOffset_Shell = 0.0227272734f;
+		private const float YOffset_Wounds = 9f / 490f;
 
-		private const float YOffset_Head = 7f / 264f;
+		private const float YOffset_Shell = 3f / 140f;
 
-		private const float YOffset_OnHead = 0.0303030312f;
+		private const float YOffset_Head = 6f / 245f;
 
-		private const float YOffset_PostHead = 3f / 88f;
+		private const float YOffset_Utility = 27f / 980f;
 
-		private const float YOffset_CarriedThing = 5f / 132f;
+		private const float YOffset_OnHead = 3f / 98f;
 
-		private const float YOffset_PrimaryEquipmentOver = 5f / 132f;
+		private const float YOffset_PostHead = 33f / 980f;
 
-		private const float YOffset_Status = 0.0416666679f;
+		private const float YOffset_CarriedThing = 9f / 245f;
+
+		private const float YOffset_PrimaryEquipmentOver = 9f / 245f;
+
+		private const float YOffset_Status = 39f / 980f;
 
 		private RotDrawMode CurRotDrawMode
 		{
@@ -105,11 +111,11 @@ namespace Verse
 						}
 						if (behind)
 						{
-							drawPos.y -= 5f / 132f;
+							drawPos.y -= 9f / 245f;
 						}
 						else
 						{
-							drawPos.y += 5f / 132f;
+							drawPos.y += 9f / 245f;
 						}
 						carriedThing.DrawAt(drawPos, flip);
 					}
@@ -140,16 +146,16 @@ namespace Verse
 				if (building_Bed != null && pawn.RaceProps.Humanlike)
 				{
 					renderBody = building_Bed.def.building.bed_showSleeperBody;
-					AltitudeLayer altLayer = (AltitudeLayer)Mathf.Max((int)building_Bed.def.altitudeLayer, 16);
+					AltitudeLayer altLayer = (AltitudeLayer)Mathf.Max((int)building_Bed.def.altitudeLayer, 17);
 					Vector3 vector;
-					Vector3 a = vector = pawn.Position.ToVector3ShiftedWithAltitude(altLayer);
-					vector.y += 7f / 264f;
+					Vector3 a = (vector = pawn.Position.ToVector3ShiftedWithAltitude(altLayer));
+					vector.y += 6f / 245f;
 					Rot4 rotation = building_Bed.Rotation;
 					rotation.AsInt += 2;
 					float d = 0f - BaseHeadOffsetAt(Rot4.South).z;
 					Vector3 a2 = rotation.FacingCell.ToVector3();
 					rootLoc = a + a2 * d;
-					rootLoc.y += 0.007575758f;
+					rootLoc.y += 9f / 980f;
 				}
 				else
 				{
@@ -157,7 +163,7 @@ namespace Verse
 					rootLoc = drawLoc;
 					if (!pawn.Dead && pawn.CarriedBy == null)
 					{
-						rootLoc.y = AltitudeLayer.LayingPawn.AltitudeFor() + 0.007575758f;
+						rootLoc.y = AltitudeLayer.LayingPawn.AltitudeFor() + 9f / 980f;
 					}
 				}
 				RenderPawnInternal(rootLoc, angle, renderBody, rot, rot, bodyDrawType, portrait: false, headStump, invisible);
@@ -203,7 +209,7 @@ namespace Verse
 			if (renderBody)
 			{
 				Vector3 loc = rootLoc;
-				loc.y += 0.007575758f;
+				loc.y += 9f / 980f;
 				if (bodyDrawType == RotDrawMode.Dessicated && !pawn.RaceProps.Humanlike && graphics.dessicatedGraphic != null && !portrait)
 				{
 					graphics.dessicatedGraphic.Draw(loc, bodyFacing, pawn, angle);
@@ -214,14 +220,14 @@ namespace Verse
 					List<Material> list = graphics.MatsBodyBaseAt(bodyFacing, bodyDrawType);
 					for (int i = 0; i < list.Count; i++)
 					{
-						Material mat = OverrideMaterialIfNeeded(list[i], pawn);
+						Material mat = OverrideMaterialIfNeeded_NewTemp(list[i], pawn, portrait);
 						GenDraw.DrawMeshNowOrLater(mesh, loc, quaternion, mat, portrait);
-						loc.y += 0.003787879f;
+						loc.y += 3f / 980f;
 					}
 					if (bodyDrawType == RotDrawMode.Fresh)
 					{
 						Vector3 drawLoc = rootLoc;
-						drawLoc.y += 5f / 264f;
+						drawLoc.y += 9f / 490f;
 						woundOverlays.RenderOverBody(drawLoc, mesh, quaternion, portrait);
 					}
 				}
@@ -230,29 +236,31 @@ namespace Verse
 			Vector3 a = rootLoc;
 			if (bodyFacing != Rot4.North)
 			{
-				a.y += 7f / 264f;
-				vector.y += 0.0227272734f;
+				a.y += 6f / 245f;
+				vector.y += 3f / 140f;
 			}
 			else
 			{
-				a.y += 0.0227272734f;
-				vector.y += 7f / 264f;
+				a.y += 3f / 140f;
+				vector.y += 6f / 245f;
 			}
+			Vector3 vector2 = rootLoc;
+			vector2.y += ((bodyFacing == Rot4.South) ? (3f / 490f) : (27f / 980f));
+			List<ApparelGraphicRecord> apparelGraphics = graphics.apparelGraphics;
 			if (graphics.headGraphic != null)
 			{
 				Vector3 b = quaternion * BaseHeadOffsetAt(headFacing);
-				Material material = graphics.HeadMatAt(headFacing, bodyDrawType, headStump);
+				Material material = graphics.HeadMatAt_NewTemp(headFacing, bodyDrawType, headStump, portrait);
 				if (material != null)
 				{
 					GenDraw.DrawMeshNowOrLater(MeshPool.humanlikeHeadSet.MeshAt(headFacing), a + b, quaternion, material, portrait);
 				}
 				Vector3 loc2 = rootLoc + b;
-				loc2.y += 0.0303030312f;
+				loc2.y += 3f / 98f;
 				bool flag = false;
 				if (!portrait || !Prefs.HatsOnlyOnMap)
 				{
 					Mesh mesh2 = graphics.HairMeshSet.MeshAt(headFacing);
-					List<ApparelGraphicRecord> apparelGraphics = graphics.apparelGraphics;
 					for (int j = 0; j < apparelGraphics.Count; j++)
 					{
 						if (apparelGraphics[j].sourceApparel.def.apparel.LastLayer == ApparelLayerDefOf.Overhead)
@@ -261,15 +269,15 @@ namespace Verse
 							{
 								flag = true;
 								Material original = apparelGraphics[j].graphic.MatAt(bodyFacing);
-								original = OverrideMaterialIfNeeded(original, pawn);
+								original = OverrideMaterialIfNeeded_NewTemp(original, pawn, portrait);
 								GenDraw.DrawMeshNowOrLater(mesh2, loc2, quaternion, original, portrait);
 							}
 							else
 							{
 								Material original2 = apparelGraphics[j].graphic.MatAt(bodyFacing);
-								original2 = OverrideMaterialIfNeeded(original2, pawn);
+								original2 = OverrideMaterialIfNeeded_NewTemp(original2, pawn, portrait);
 								Vector3 loc3 = rootLoc + b;
-								loc3.y += ((bodyFacing == Rot4.North) ? 0.003787879f : (3f / 88f));
+								loc3.y += ((bodyFacing == Rot4.North) ? (3f / 980f) : (33f / 980f));
 								GenDraw.DrawMeshNowOrLater(mesh2, loc3, quaternion, original2, portrait);
 							}
 						}
@@ -277,19 +285,35 @@ namespace Verse
 				}
 				if (!flag && bodyDrawType != RotDrawMode.Dessicated && !headStump)
 				{
-					GenDraw.DrawMeshNowOrLater(graphics.HairMeshSet.MeshAt(headFacing), mat: graphics.HairMatAt(headFacing), loc: loc2, quat: quaternion, drawNow: portrait);
+					GenDraw.DrawMeshNowOrLater(graphics.HairMeshSet.MeshAt(headFacing), mat: graphics.HairMatAt_NewTemp(headFacing, portrait), loc: loc2, quat: quaternion, drawNow: portrait);
 				}
 			}
 			if (renderBody)
 			{
-				for (int k = 0; k < graphics.apparelGraphics.Count; k++)
+				for (int k = 0; k < apparelGraphics.Count; k++)
 				{
-					ApparelGraphicRecord apparelGraphicRecord = graphics.apparelGraphics[k];
-					if (apparelGraphicRecord.sourceApparel.def.apparel.LastLayer == ApparelLayerDefOf.Shell)
+					ApparelGraphicRecord apparelGraphicRecord = apparelGraphics[k];
+					if (apparelGraphicRecord.sourceApparel.def.apparel.LastLayer == ApparelLayerDefOf.Shell && !apparelGraphicRecord.sourceApparel.def.apparel.shellRenderedBehindHead)
 					{
 						Material original3 = apparelGraphicRecord.graphic.MatAt(bodyFacing);
-						original3 = OverrideMaterialIfNeeded(original3, pawn);
+						original3 = OverrideMaterialIfNeeded_NewTemp(original3, pawn, portrait);
 						GenDraw.DrawMeshNowOrLater(mesh, vector, quaternion, original3, portrait);
+					}
+					if (RenderAsPack(apparelGraphicRecord.sourceApparel))
+					{
+						Material original4 = apparelGraphicRecord.graphic.MatAt(bodyFacing);
+						original4 = OverrideMaterialIfNeeded_NewTemp(original4, pawn, portrait);
+						if (apparelGraphicRecord.sourceApparel.def.apparel.wornGraphicData != null)
+						{
+							Vector2 vector3 = apparelGraphicRecord.sourceApparel.def.apparel.wornGraphicData.BeltOffsetAt(bodyFacing, pawn.story.bodyType);
+							Vector2 vector4 = apparelGraphicRecord.sourceApparel.def.apparel.wornGraphicData.BeltScaleAt(pawn.story.bodyType);
+							Matrix4x4 matrix = Matrix4x4.Translate(vector2) * Matrix4x4.Rotate(quaternion) * Matrix4x4.Translate(new Vector3(vector3.x, 0f, vector3.y)) * Matrix4x4.Scale(new Vector3(vector4.x, 1f, vector4.y));
+							GenDraw.DrawMeshNowOrLater_NewTemp(mesh, matrix, original4, portrait);
+						}
+						else
+						{
+							GenDraw.DrawMeshNowOrLater(mesh, vector, quaternion, original4, portrait);
+						}
 					}
 				}
 			}
@@ -311,7 +335,7 @@ namespace Verse
 				}
 			}
 			Vector3 bodyLoc = rootLoc;
-			bodyLoc.y += 0.0416666679f;
+			bodyLoc.y += 39f / 980f;
 			statusOverlays.RenderStatusOverlays(bodyLoc, quaternion, MeshPool.humanlikeHeadSet.MeshAt(headFacing));
 		}
 
@@ -324,14 +348,14 @@ namespace Verse
 			Stance_Busy stance_Busy = pawn.stances.curStance as Stance_Busy;
 			if (stance_Busy != null && !stance_Busy.neverAimWeapon && stance_Busy.focusTarg.IsValid)
 			{
-				Vector3 a = (!stance_Busy.focusTarg.HasThing) ? stance_Busy.focusTarg.Cell.ToVector3Shifted() : stance_Busy.focusTarg.Thing.DrawPos;
+				Vector3 a = ((!stance_Busy.focusTarg.HasThing) ? stance_Busy.focusTarg.Cell.ToVector3Shifted() : stance_Busy.focusTarg.Thing.DrawPos);
 				float num = 0f;
 				if ((a - pawn.DrawPos).MagnitudeHorizontalSquared() > 0.001f)
 				{
 					num = (a - pawn.DrawPos).AngleFlat();
 				}
 				Vector3 drawLoc = rootLoc + new Vector3(0f, 0f, 0.4f).RotatedBy(num);
-				drawLoc.y += 5f / 132f;
+				drawLoc.y += 9f / 245f;
 				DrawEquipmentAiming(pawn.equipment.Primary, drawLoc, num);
 			}
 			else if (CarryWeaponOpenly())
@@ -339,7 +363,7 @@ namespace Verse
 				if (pawn.Rotation == Rot4.South)
 				{
 					Vector3 drawLoc2 = rootLoc + new Vector3(0f, 0f, -0.22f);
-					drawLoc2.y += 5f / 132f;
+					drawLoc2.y += 9f / 245f;
 					DrawEquipmentAiming(pawn.equipment.Primary, drawLoc2, 143f);
 				}
 				else if (pawn.Rotation == Rot4.North)
@@ -351,13 +375,13 @@ namespace Verse
 				else if (pawn.Rotation == Rot4.East)
 				{
 					Vector3 drawLoc4 = rootLoc + new Vector3(0.2f, 0f, -0.22f);
-					drawLoc4.y += 5f / 132f;
+					drawLoc4.y += 9f / 245f;
 					DrawEquipmentAiming(pawn.equipment.Primary, drawLoc4, 143f);
 				}
 				else if (pawn.Rotation == Rot4.West)
 				{
 					Vector3 drawLoc5 = rootLoc + new Vector3(-0.2f, 0f, -0.22f);
-					drawLoc5.y += 5f / 132f;
+					drawLoc5.y += 9f / 245f;
 					DrawEquipmentAiming(pawn.equipment.Primary, drawLoc5, 217f);
 				}
 			}
@@ -389,10 +413,16 @@ namespace Verse
 			Graphics.DrawMesh(material: (graphic_StackCount == null) ? eq.Graphic.MatSingle : graphic_StackCount.SubGraphicForStackCount(1, eq.def).MatSingle, mesh: mesh, position: drawLoc, rotation: Quaternion.AngleAxis(num, Vector3.up), layer: 0);
 		}
 
+		private Material OverrideMaterialIfNeeded_NewTemp(Material original, Pawn pawn, bool portrait = false)
+		{
+			Material baseMat = ((!portrait && pawn.IsInvisible()) ? InvisibilityMatPool.GetInvisibleMat(original) : original);
+			return graphics.flasher.GetDamagedMat(baseMat);
+		}
+
+		[Obsolete("Only need this overload to not break mod compatibility.")]
 		private Material OverrideMaterialIfNeeded(Material original, Pawn pawn)
 		{
-			Material baseMat = pawn.IsInvisible() ? InvisibilityMatPool.GetInvisibleMat(original) : original;
-			return graphics.flasher.GetDamagedMat(baseMat);
+			return OverrideMaterialIfNeeded_NewTemp(original, pawn);
 		}
 
 		private bool CarryWeaponOpenly()
@@ -410,6 +440,11 @@ namespace Verse
 				return true;
 			}
 			if (pawn.mindState.duty != null && pawn.mindState.duty.def.alwaysShowWeapon)
+			{
+				return true;
+			}
+			Lord lord = pawn.GetLord();
+			if (lord != null && lord.LordJob != null && lord.LordJob.AlwaysShowWeapon)
 			{
 				return true;
 			}
@@ -516,6 +551,19 @@ namespace Verse
 		{
 			wiggler.WigglerTick();
 			effecters.EffectersTick();
+		}
+
+		public static bool RenderAsPack(Apparel apparel)
+		{
+			if (apparel.def.apparel.LastLayer.IsUtilityLayer)
+			{
+				if (apparel.def.apparel.wornGraphicData != null)
+				{
+					return apparel.def.apparel.wornGraphicData.renderUtilityAsPack;
+				}
+				return true;
+			}
+			return false;
 		}
 
 		private void DrawDebug()

@@ -1,5 +1,6 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
+using UnityEngine;
 using Verse.AI.Group;
 using Verse.Sound;
 
@@ -10,6 +11,15 @@ namespace Verse
 		private Sustainer sustainerAmbient;
 
 		public bool canChangeTerrainOnDestroyed = true;
+
+		private static readonly SimpleCurve ShakeAmountPerAreaCurve = new SimpleCurve
+		{
+			new CurvePoint(1f, 0.07f),
+			new CurvePoint(2f, 0.07f),
+			new CurvePoint(4f, 0.1f),
+			new CurvePoint(9f, 0.2f),
+			new CurvePoint(16f, 0.5f)
+		};
 
 		public CompPower PowerComp => GetComp<CompPower>();
 
@@ -80,6 +90,7 @@ namespace Verse
 			}
 			base.Map.listerBuildingsRepairable.Notify_BuildingSpawned(this);
 			base.Map.listerArtificialBuildingsForMeditation.Notify_BuildingSpawned(this);
+			base.Map.listerBuldingOfDefInProximity.Notify_BuildingSpawned(this);
 			if (!this.CanBeSeenOver())
 			{
 				base.Map.exitMapGrid.Notify_LOSBlockerSpawned();
@@ -108,7 +119,10 @@ namespace Verse
 			{
 				if (def.MakeFog)
 				{
-					map.fogGrid.Notify_FogBlockerRemoved(base.Position);
+					foreach (IntVec3 item in this.OccupiedRect())
+					{
+						map.fogGrid.Notify_FogBlockerRemoved(item);
+					}
 				}
 				if (def.holdsRoof)
 				{
@@ -146,11 +160,12 @@ namespace Verse
 			map.listerBuildings.Remove(this);
 			map.listerBuildingsRepairable.Notify_BuildingDeSpawned(this);
 			map.listerArtificialBuildingsForMeditation.Notify_BuildingDeSpawned(this);
+			map.listerBuldingOfDefInProximity.Notify_BuildingDeSpawned(this);
 			if (def.building.leaveTerrain != null && Current.ProgramState == ProgramState.Playing && canChangeTerrainOnDestroyed)
 			{
-				foreach (IntVec3 item in this.OccupiedRect())
+				foreach (IntVec3 item2 in this.OccupiedRect())
 				{
-					map.terrainGrid.SetTerrain(item, def.building.leaveTerrain);
+					map.terrainGrid.SetTerrain(item2, def.building.leaveTerrain);
 				}
 			}
 			map.designationManager.Notify_BuildingDespawned(this);
@@ -173,9 +188,17 @@ namespace Verse
 			this.GetLord()?.Notify_BuildingLost(this);
 			base.Destroy(mode);
 			InstallBlueprintUtility.CancelBlueprintsFor(this);
-			if (mode == DestroyMode.Deconstruct && spawned)
+			if (spawned)
 			{
-				SoundDefOf.Building_Deconstructed.PlayOneShot(new TargetInfo(base.Position, map));
+				switch (mode)
+				{
+				case DestroyMode.Deconstruct:
+					SoundDefOf.Building_Deconstructed.PlayOneShot(new TargetInfo(base.Position, map));
+					break;
+				case DestroyMode.KillFinalize:
+					DoDestroyEffects(map);
+					break;
+				}
 			}
 			if (spawned)
 			{
@@ -206,6 +229,7 @@ namespace Verse
 			if (base.Spawned)
 			{
 				base.Map.listerBuildingsRepairable.Notify_BuildingSpawned(this);
+				base.Map.listerArtificialBuildingsForMeditation.Notify_BuildingSpawned(this);
 				base.Map.listerBuildings.Add(this);
 				base.Map.mapDrawer.MapMeshDirty(base.Position, MapMeshFlag.PowerGrid, regenAdjacentCells: true, regenAdjacentSections: false);
 				if (newFaction == Faction.OfPlayer)
@@ -357,6 +381,101 @@ namespace Verse
 		public virtual bool IsDangerousFor(Pawn p)
 		{
 			return false;
+		}
+
+		private void DoDestroyEffects(Map map)
+		{
+			if (def.building.destroyEffecter != null)
+			{
+				Effecter effecter = def.building.destroyEffecter.Spawn(base.Position, map);
+				effecter.Trigger(new TargetInfo(base.Position, map), TargetInfo.Invalid);
+				effecter.Cleanup();
+			}
+			else
+			{
+				if (!def.IsEdifice())
+				{
+					return;
+				}
+				GetDestroySound()?.PlayOneShot(new TargetInfo(base.Position, map));
+				foreach (IntVec3 item in this.OccupiedRect())
+				{
+					int num = (def.building.isNaturalRock ? 1 : Rand.RangeInclusive(3, 5));
+					for (int i = 0; i < num; i++)
+					{
+						MoteMaker.ThrowDustPuffThick(item.ToVector3Shifted(), map, Rand.Range(1.5f, 2f), Color.white);
+					}
+				}
+				if (Find.CurrentMap == map)
+				{
+					float num2 = def.building.destroyShakeAmount;
+					if (num2 < 0f)
+					{
+						num2 = ShakeAmountPerAreaCurve.Evaluate(def.Size.Area);
+					}
+					Find.CameraDriver.shaker.DoShake(num2);
+				}
+			}
+		}
+
+		private SoundDef GetDestroySound()
+		{
+			if (!def.building.destroySound.NullOrUndefined())
+			{
+				return def.building.destroySound;
+			}
+			StuffCategoryDef stuffCategoryDef;
+			if (def.MadeFromStuff && base.Stuff != null && !base.Stuff.stuffProps.categories.NullOrEmpty())
+			{
+				stuffCategoryDef = base.Stuff.stuffProps.categories[0];
+			}
+			else
+			{
+				if (def.costList.NullOrEmpty() || !def.costList[0].thingDef.IsStuff || def.costList[0].thingDef.stuffProps.categories.NullOrEmpty())
+				{
+					return null;
+				}
+				stuffCategoryDef = def.costList[0].thingDef.stuffProps.categories[0];
+			}
+			switch (def.building.buildingSizeCategory)
+			{
+			case BuildingSizeCategory.Small:
+				if (!stuffCategoryDef.destroySoundSmall.NullOrUndefined())
+				{
+					return stuffCategoryDef.destroySoundSmall;
+				}
+				break;
+			case BuildingSizeCategory.Medium:
+				if (!stuffCategoryDef.destroySoundMedium.NullOrUndefined())
+				{
+					return stuffCategoryDef.destroySoundMedium;
+				}
+				break;
+			case BuildingSizeCategory.Large:
+				if (!stuffCategoryDef.destroySoundLarge.NullOrUndefined())
+				{
+					return stuffCategoryDef.destroySoundLarge;
+				}
+				break;
+			case BuildingSizeCategory.None:
+			{
+				int area = def.Size.Area;
+				if (area <= 1 && !stuffCategoryDef.destroySoundSmall.NullOrUndefined())
+				{
+					return stuffCategoryDef.destroySoundSmall;
+				}
+				if (area <= 4 && !stuffCategoryDef.destroySoundMedium.NullOrUndefined())
+				{
+					return stuffCategoryDef.destroySoundMedium;
+				}
+				if (!stuffCategoryDef.destroySoundLarge.NullOrUndefined())
+				{
+					return stuffCategoryDef.destroySoundLarge;
+				}
+				break;
+			}
+			}
+			return null;
 		}
 	}
 }

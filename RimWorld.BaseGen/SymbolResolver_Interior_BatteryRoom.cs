@@ -11,7 +11,7 @@ namespace RimWorld.BaseGen
 			ResolveParams resolveParams = rp;
 			resolveParams.singleThingDef = ThingDefOf.Battery;
 			resolveParams.thingRot = (Rand.Bool ? Rot4.North : Rot4.East);
-			resolveParams.fillWithThingsPadding = (rp.fillWithThingsPadding ?? 1);
+			resolveParams.fillWithThingsPadding = rp.fillWithThingsPadding ?? 1;
 			BaseGen.symbolStack.Push("fillWithThings", resolveParams);
 		}
 	}

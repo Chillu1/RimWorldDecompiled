@@ -1,8 +1,8 @@
 #define PFPROFILE
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse.AI
@@ -213,7 +213,7 @@ namespace Verse.AI
 			bool flag7 = !flag || !flag3;
 			bool flag8 = false;
 			bool flag9 = pawn?.Drafted ?? false;
-			int num4 = (pawn?.IsColonist ?? false) ? 100000 : 2000;
+			int num4 = ((pawn?.IsColonist ?? false) ? 100000 : 2000);
 			int num5 = 0;
 			int num6 = 0;
 			float num7 = DetermineHeuristicStrength(pawn, start, dest);
@@ -236,8 +236,8 @@ namespace Verse.AI
 				PfProfilerBeginSample("Open cell");
 				if (openList.Count <= 0)
 				{
-					string text = (pawn != null && pawn.CurJob != null) ? pawn.CurJob.ToString() : "null";
-					string text2 = (pawn != null && pawn.Faction != null) ? pawn.Faction.ToString() : "null";
+					string text = ((pawn != null && pawn.CurJob != null) ? pawn.CurJob.ToString() : "null");
+					string text2 = ((pawn != null && pawn.Faction != null) ? pawn.Faction.ToString() : "null");
 					Log.Warning(string.Concat(pawn, " pathing from ", start, " to ", dest, " ran out of cells to process.\nJob:", text, "\nFaction: ", text2));
 					DebugDrawRichData();
 					PfProfilerEndSample();
@@ -395,7 +395,7 @@ namespace Verse.AI
 						}
 						break;
 					}
-					int num16 = (i > 3) ? num9 : num8;
+					int num16 = ((i > 3) ? num9 : num8);
 					num16 += num15;
 					if (!flag10)
 					{
@@ -697,7 +697,7 @@ namespace Verse.AI
 
 		private CellRect CalculateDestinationRect(LocalTargetInfo dest, PathEndMode peMode)
 		{
-			CellRect result = (dest.HasThing && peMode != PathEndMode.OnCell) ? dest.Thing.OccupiedRect() : CellRect.SingleCell(dest.Cell);
+			CellRect result = ((dest.HasThing && peMode != PathEndMode.OnCell) ? dest.Thing.OccupiedRect() : CellRect.SingleCell(dest.Cell));
 			if (peMode == PathEndMode.Touch)
 			{
 				result = result.ExpandedBy(1);

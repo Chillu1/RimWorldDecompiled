@@ -26,11 +26,10 @@ namespace RimWorld
 					FilthMaker.TryMakeFilth(item, map, ThingDefOf.Filth_Water);
 				}
 				Mote mote = MoteMaker.MakeStaticMote(item.ToVector3Shifted(), map, ThingDefOf.Mote_WaterskipSplashParticles);
-				mote.rotationRate = Rand.Range(-30f, 30f);
-				mote.exactRotation = 90 * Rand.RangeInclusive(0, 3);
-				if (item != target.Cell)
+				if (mote != null)
 				{
-					MoteMaker.MakeStaticMote(item, parent.pawn.Map, ThingDefOf.Mote_PsycastSkipEffect);
+					mote.rotationRate = Rand.Range(-30f, 30f);
+					mote.exactRotation = 90 * Rand.RangeInclusive(0, 3);
 				}
 			}
 		}

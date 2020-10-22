@@ -86,7 +86,7 @@ namespace Verse
 		{
 			Text.Font = GameFont.Small;
 			Rect rect;
-			Rect outRect = rect = inRect.ContractedBy(4f);
+			Rect outRect = (rect = inRect.ContractedBy(4f));
 			rect.xMax -= 33f;
 			Rect rect2 = new Rect(0f, 0f, CategoryWidth, Text.CalcHeight("test", 1000f));
 			Rect rect3 = new Rect(rect2.xMax, 0f, TitleWidth, rect2.height);
@@ -104,7 +104,7 @@ namespace Verse
 					float asFloat = GetAsFloat(tweakValueField.field);
 					num = Widgets.HorizontalSlider(rect5, GetAsFloat(tweakValueField.field), tweakValueField.tweakValue.min, tweakValueField.tweakValue.max);
 					SetFromFloat(tweakValueField.field, num);
-					flag = (asFloat != num);
+					flag = asFloat != num;
 				}
 				else if (tweakValueField.field.FieldType == typeof(bool))
 				{
@@ -113,7 +113,7 @@ namespace Verse
 					Widgets.Checkbox(rect5.xMin, rect5.yMin, ref checkOn);
 					tweakValueField.field.SetValue(null, checkOn);
 					num = (checkOn ? 1 : 0);
-					flag = (num2 != checkOn);
+					flag = num2 != checkOn;
 				}
 				else
 				{

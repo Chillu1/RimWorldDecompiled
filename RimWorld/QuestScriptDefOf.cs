@@ -15,5 +15,17 @@ namespace RimWorld
 
 		[MayRequireRoyalty]
 		public static QuestScriptDef ChangeRoyalHeir;
+
+		[MayRequireRoyalty]
+		public static QuestScriptDef Permit_CallLaborers;
+
+		[MayRequireRoyalty]
+		public static QuestScriptDef Permit_CallShuttle;
+
+		[MayRequireRoyalty]
+		public static QuestScriptDef RefugeeDelayedReward;
+
+		[MayRequireRoyalty]
+		public static QuestScriptDef BestowingCeremony;
 	}
 }

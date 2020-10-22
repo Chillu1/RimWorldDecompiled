@@ -56,7 +56,7 @@ namespace RimWorld
 			Thing chair2;
 			if (result.parent.def.surfaceType == SurfaceType.Eat)
 			{
-				if (!TryFindChairBesideTable(result.parent, pawn, out Thing chair))
+				if (!TryFindChairBesideTable(result.parent, pawn, out var chair))
 				{
 					return null;
 				}
@@ -68,13 +68,13 @@ namespace RimWorld
 			}
 			else
 			{
-				if (!TryFindSitSpotOnGroundNear(result.parent.Position, pawn, out IntVec3 result2))
+				if (!TryFindSitSpotOnGroundNear(result.parent.Position, pawn, out var result2))
 				{
 					return null;
 				}
 				job = JobMaker.MakeJob(def.jobDef, result.parent, result2);
 			}
-			if (pawn.health.capacities.CapableOf(PawnCapacityDefOf.Manipulation) && TryFindIngestibleToNurse(result.parent.Position, pawn, out Thing ingestible))
+			if (pawn.health.capacities.CapableOf(PawnCapacityDefOf.Manipulation) && TryFindIngestibleToNurse(result.parent.Position, pawn, out var ingestible))
 			{
 				job.targetC = ingestible;
 				job.count = Mathf.Min(ingestible.stackCount, ingestible.def.ingestible.maxNumToIngestAtOnce);

@@ -45,11 +45,11 @@ namespace RimWorld
 			float num = GenLocalDate.DayPercent(parent);
 			if (Props.startTime <= Props.endTime)
 			{
-				Allowed = (num > Props.startTime && num < Props.endTime);
+				Allowed = num > Props.startTime && num < Props.endTime;
 			}
 			else
 			{
-				Allowed = (num < Props.endTime || num > Props.startTime);
+				Allowed = num < Props.endTime || num > Props.startTime;
 			}
 		}
 

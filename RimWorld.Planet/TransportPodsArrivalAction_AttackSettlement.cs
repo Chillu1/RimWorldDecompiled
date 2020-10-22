@@ -52,7 +52,7 @@ namespace RimWorld.Planet
 			Map orGenerateMap = GetOrGenerateMapUtility.GetOrGenerateMap(settlement.Tile, null);
 			TaggedString letterLabel = "LetterLabelCaravanEnteredEnemyBase".Translate();
 			TaggedString letterText = "LetterTransportPodsLandedInEnemyBase".Translate(settlement.Label).CapitalizeFirst();
-			SettlementUtility.AffectRelationsOnAttacked(settlement, ref letterText);
+			SettlementUtility.AffectRelationsOnAttacked_NewTmp(settlement, ref letterText);
 			if (num)
 			{
 				Find.TickManager.Notify_GeneratedPotentiallyHostileMap();
@@ -74,22 +74,28 @@ namespace RimWorld.Planet
 			}
 			if (settlement.EnterCooldownBlocksEntering())
 			{
-				return FloatMenuAcceptanceReport.WithFailMessage("MessageEnterCooldownBlocksEntering".Translate(settlement.EnterCooldownDaysLeft().ToString("0.#")));
+				return FloatMenuAcceptanceReport.WithFailReasonAndMessage("EnterCooldownBlocksEntering".Translate(), "MessageEnterCooldownBlocksEntering".Translate(settlement.EnterCooldownTicksLeft().ToStringTicksToPeriod()));
 			}
 			return true;
 		}
 
 		public static IEnumerable<FloatMenuOption> GetFloatMenuOptions(CompLaunchable representative, IEnumerable<IThingHolder> pods, Settlement settlement)
 		{
-			IEnumerable<IThingHolder> pods2 = pods;
-			Settlement settlement2 = settlement;
-			foreach (FloatMenuOption floatMenuOption in TransportPodsArrivalActionUtility.GetFloatMenuOptions(() => CanAttack(pods2, settlement2), () => new TransportPodsArrivalAction_AttackSettlement(settlement2, PawnsArrivalModeDefOf.EdgeDrop), "AttackAndDropAtEdge".Translate(settlement2.Label), representative, settlement2.Tile))
+			if (representative.parent.TryGetComp<CompShuttle>() != null)
 			{
-				yield return floatMenuOption;
+				foreach (FloatMenuOption floatMenuOption in TransportPodsArrivalActionUtility.GetFloatMenuOptions(() => CanAttack(pods, settlement), () => new TransportPodsArrivalAction_AttackSettlement(settlement, PawnsArrivalModeDefOf.Shuttle), "AttackShuttle".Translate(settlement.Label), representative, settlement.Tile))
+				{
+					yield return floatMenuOption;
+				}
+				yield break;
 			}
-			foreach (FloatMenuOption floatMenuOption2 in TransportPodsArrivalActionUtility.GetFloatMenuOptions(() => CanAttack(pods2, settlement2), () => new TransportPodsArrivalAction_AttackSettlement(settlement2, PawnsArrivalModeDefOf.CenterDrop), "AttackAndDropInCenter".Translate(settlement2.Label), representative, settlement2.Tile))
+			foreach (FloatMenuOption floatMenuOption2 in TransportPodsArrivalActionUtility.GetFloatMenuOptions(() => CanAttack(pods, settlement), () => new TransportPodsArrivalAction_AttackSettlement(settlement, PawnsArrivalModeDefOf.EdgeDrop), "AttackAndDropAtEdge".Translate(settlement.Label), representative, settlement.Tile))
 			{
 				yield return floatMenuOption2;
+			}
+			foreach (FloatMenuOption floatMenuOption3 in TransportPodsArrivalActionUtility.GetFloatMenuOptions(() => CanAttack(pods, settlement), () => new TransportPodsArrivalAction_AttackSettlement(settlement, PawnsArrivalModeDefOf.CenterDrop), "AttackAndDropInCenter".Translate(settlement.Label), representative, settlement.Tile))
+			{
+				yield return floatMenuOption3;
 			}
 		}
 	}

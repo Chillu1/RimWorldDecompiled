@@ -23,7 +23,7 @@ namespace RimWorld.QuestGen
 			if (contents.GetValue(slate) != null)
 			{
 				QuestPart_AddContentsToShuttle questPart_AddContentsToShuttle = new QuestPart_AddContentsToShuttle();
-				questPart_AddContentsToShuttle.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? slate.Get<string>("inSignal"));
+				questPart_AddContentsToShuttle.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? slate.Get<string>("inSignal");
 				questPart_AddContentsToShuttle.shuttle = shuttle.GetValue(slate);
 				questPart_AddContentsToShuttle.Things = contents.GetValue(slate);
 				QuestGen.quest.AddPart(questPart_AddContentsToShuttle);

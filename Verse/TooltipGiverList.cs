@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 using Verse.AI;
 
@@ -48,7 +48,7 @@ namespace Verse
 				rect.y = vector2.y - vector.y / 2f;
 				if (rect.Contains(Event.current.mousePosition))
 				{
-					string text = ShouldShowShotReport(thing) ? TooltipUtility.ShotCalculationTipString(thing) : null;
+					string text = (ShouldShowShotReport(thing) ? TooltipUtility.ShotCalculationTipString(thing) : null);
 					if (thing.def.hasTooltip || !text.NullOrEmpty())
 					{
 						TipSignal tooltip = thing.GetTooltip();

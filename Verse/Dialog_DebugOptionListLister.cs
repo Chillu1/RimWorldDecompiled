@@ -1,12 +1,37 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Verse
 {
 	public class Dialog_DebugOptionListLister : Dialog_DebugOptionLister
 	{
 		protected List<DebugMenuOption> options;
+
+		protected override int HighlightedIndex
+		{
+			get
+			{
+				if (FilterAllows(options[prioritizedHighlightedIndex].label))
+				{
+					return prioritizedHighlightedIndex;
+				}
+				if (filter.NullOrEmpty())
+				{
+					return 0;
+				}
+				for (int i = 0; i < options.Count; i++)
+				{
+					if (FilterAllows(options[i].label))
+					{
+						currentHighlightIndex = i;
+						break;
+					}
+				}
+				return currentHighlightIndex;
+			}
+		}
 
 		public Dialog_DebugOptionListLister(IEnumerable<DebugMenuOption> options)
 		{
@@ -15,15 +40,33 @@ namespace Verse
 
 		protected override void DoListingItems()
 		{
-			foreach (DebugMenuOption option in options)
+			base.DoListingItems();
+			int highlightedIndex = HighlightedIndex;
+			for (int i = 0; i < options.Count; i++)
 			{
-				if (option.mode == DebugMenuOptionMode.Action)
+				DebugMenuOption debugMenuOption = options[i];
+				bool highlight = highlightedIndex == i;
+				if (debugMenuOption.mode == DebugMenuOptionMode.Action)
 				{
-					DebugAction(option.label, option.method);
+					DebugAction_NewTmp(debugMenuOption.label, debugMenuOption.method, highlight);
 				}
-				if (option.mode == DebugMenuOptionMode.Tool)
+				if (debugMenuOption.mode == DebugMenuOptionMode.Tool)
 				{
-					DebugToolMap(option.label, option.method);
+					DebugToolMap_NewTmp(debugMenuOption.label, debugMenuOption.method, highlight);
+				}
+			}
+		}
+
+		protected override void ChangeHighlightedOption()
+		{
+			int highlightedIndex = HighlightedIndex;
+			for (int i = 0; i < options.Count; i++)
+			{
+				int num = (highlightedIndex + i + 1) % options.Count;
+				if (FilterAllows(options[num].label))
+				{
+					prioritizedHighlightedIndex = num;
+					break;
 				}
 			}
 		}
@@ -39,6 +82,28 @@ namespace Verse
 				}));
 			}
 			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+		}
+
+		public override void OnAcceptKeyPressed()
+		{
+			if (!(GUI.GetNameOfFocusedControl() == "DebugFilter"))
+			{
+				return;
+			}
+			int highlightedIndex = HighlightedIndex;
+			if (highlightedIndex >= 0)
+			{
+				Close();
+				if (options[highlightedIndex].mode == DebugMenuOptionMode.Action)
+				{
+					options[highlightedIndex].method();
+				}
+				else
+				{
+					DebugTools.curTool = new DebugTool(options[highlightedIndex].label, options[highlightedIndex].method);
+				}
+			}
+			Event.current.Use();
 		}
 	}
 }

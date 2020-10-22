@@ -27,7 +27,7 @@ namespace RimWorld
 
 		public override IEnumerable<StatDrawEntry> SpecialDisplayStats(ThingDef parentDef)
 		{
-			string str = (offset >= 0f) ? "+" : string.Empty;
+			string str = ((offset >= 0f) ? "+" : string.Empty);
 			yield return new StatDrawEntry(StatCategoryDefOf.Drug, need.LabelCap, str + offset.ToStringPercent(), need.description, need.listPriority);
 		}
 	}

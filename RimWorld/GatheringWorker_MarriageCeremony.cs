@@ -13,19 +13,19 @@ namespace RimWorld
 
 		protected override LordJob CreateLordJob(IntVec3 spot, Pawn organizer)
 		{
-			FindFiancees(organizer, out Pawn firstFiance, out Pawn secondFiance);
+			FindFiancees(organizer, out var firstFiance, out var secondFiance);
 			return new LordJob_Joinable_MarriageCeremony(firstFiance, secondFiance, spot);
 		}
 
 		protected override bool TryFindGatherSpot(Pawn organizer, out IntVec3 spot)
 		{
-			FindFiancees(organizer, out Pawn firstFiance, out Pawn secondFiance);
+			FindFiancees(organizer, out var firstFiance, out var secondFiance);
 			return RCellFinder.TryFindMarriageSite(firstFiance, secondFiance, out spot);
 		}
 
 		protected override void SendLetter(IntVec3 spot, Pawn organizer)
 		{
-			FindFiancees(organizer, out Pawn firstFiance, out Pawn secondFiance);
+			FindFiancees(organizer, out var firstFiance, out var secondFiance);
 			Messages.Message("MessageNewMarriageCeremony".Translate(firstFiance.LabelShort, secondFiance.LabelShort, firstFiance.Named("PAWN1"), secondFiance.Named("PAWN2")), new TargetInfo(spot, firstFiance.Map), MessageTypeDefOf.PositiveEvent);
 		}
 
@@ -33,7 +33,7 @@ namespace RimWorld
 		{
 			if (organizer != null)
 			{
-				FindFiancees(organizer, out Pawn firstFiance, out Pawn secondFiance);
+				FindFiancees(organizer, out var firstFiance, out var secondFiance);
 				if (!GatheringsUtility.PawnCanStartOrContinueGathering(firstFiance) || !GatheringsUtility.PawnCanStartOrContinueGathering(secondFiance))
 				{
 					return false;

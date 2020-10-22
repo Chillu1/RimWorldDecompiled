@@ -30,6 +30,8 @@ namespace RimWorld
 
 		public List<PawnsArrivalModeDef> arriveModes;
 
+		public float raidLootValueFactor = 1f;
+
 		private RaidStrategyWorker workerInt;
 
 		public RaidStrategyWorker Worker

@@ -217,27 +217,20 @@ namespace RimWorld
 				Pawn actor = toil.actor;
 				IntVec3 position = actor.Position;
 				Map map = actor.Map;
-				int num = 0;
-				IntVec3 intVec;
-				while (true)
+				for (int i = 0; i < 4; i++)
 				{
-					if (num >= 4)
-					{
-						return;
-					}
-					intVec = position + new Rot4(num).FacingCell;
+					IntVec3 intVec = position + new Rot4(i).FacingCell;
 					if (intVec.HasEatSurface(map))
 					{
+						toil.actor.CurJob.SetTarget(eatSurfaceInd, intVec);
+						toil.actor.jobs.curDriver.rotateToFace = eatSurfaceInd;
+						Thing thing = toil.actor.CurJob.GetTarget(foodInd).Thing;
+						if (thing.def.rotatable)
+						{
+							thing.Rotation = Rot4.FromIntVec3(intVec - toil.actor.Position);
+						}
 						break;
 					}
-					num++;
-				}
-				toil.actor.CurJob.SetTarget(eatSurfaceInd, intVec);
-				toil.actor.jobs.curDriver.rotateToFace = eatSurfaceInd;
-				Thing thing = toil.actor.CurJob.GetTarget(foodInd).Thing;
-				if (thing.def.rotatable)
-				{
-					thing.Rotation = Rot4.FromIntVec3(intVec - toil.actor.Position);
 				}
 			};
 			toil.defaultCompleteMode = ToilCompleteMode.Instant;

@@ -102,5 +102,12 @@ namespace Verse.AI
 		{
 			return jobs.GetEnumerator();
 		}
+
+		public JobQueue Capture()
+		{
+			JobQueue jobQueue = new JobQueue();
+			jobQueue.jobs.AddRange(jobs);
+			return jobQueue;
+		}
 	}
 }

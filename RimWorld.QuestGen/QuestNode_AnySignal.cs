@@ -50,7 +50,7 @@ namespace RimWorld.QuestGen
 				{
 					questPart_PassAny.outSignal = QuestGenUtility.HardcodedSignalWithQuestID(outSignals.GetValue(slate).First());
 				}
-				questPart_PassAny.signalListenMode = (signalListenMode.GetValue(slate) ?? QuestPart.SignalListenMode.OngoingOnly);
+				questPart_PassAny.signalListenMode = signalListenMode.GetValue(slate) ?? QuestPart.SignalListenMode.OngoingOnly;
 				QuestGen.quest.AddPart(questPart_PassAny);
 				return;
 			}
@@ -70,7 +70,7 @@ namespace RimWorld.QuestGen
 			{
 				questPart_PassAnyOutMany.outSignals.Add(QuestGenUtility.HardcodedSignalWithQuestID(item3));
 			}
-			questPart_PassAnyOutMany.signalListenMode = (signalListenMode.GetValue(slate) ?? QuestPart.SignalListenMode.OngoingOnly);
+			questPart_PassAnyOutMany.signalListenMode = signalListenMode.GetValue(slate) ?? QuestPart.SignalListenMode.OngoingOnly;
 			QuestGen.quest.AddPart(questPart_PassAnyOutMany);
 		}
 	}

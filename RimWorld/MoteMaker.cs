@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
@@ -89,7 +90,7 @@ namespace RimWorld
 
 		public static void ThrowMetaPuffs(TargetInfo targ)
 		{
-			Vector3 a = targ.HasThing ? targ.Thing.TrueCenter() : targ.Cell.ToVector3Shifted();
+			Vector3 a = (targ.HasThing ? targ.Thing.TrueCenter() : targ.Cell.ToVector3Shifted());
 			int num = Rand.RangeInclusive(4, 6);
 			for (int i = 0; i < num; i++)
 			{
@@ -494,11 +495,17 @@ namespace RimWorld
 			}
 		}
 
+		[Obsolete]
 		public static void MakeBombardmentMote(IntVec3 cell, Map map)
+		{
+			MakeBombardmentMote_NewTmp(cell, map, 1f);
+		}
+
+		public static void MakeBombardmentMote_NewTmp(IntVec3 cell, Map map, float scale)
 		{
 			Mote obj = (Mote)ThingMaker.MakeThing(ThingDefOf.Mote_Bombardment);
 			obj.exactPosition = cell.ToVector3Shifted();
-			obj.Scale = (float)Mathf.Max(23, 25) * 6f;
+			obj.Scale = 150f * scale;
 			obj.rotationRate = 1.2f;
 			GenSpawn.Spawn(obj, cell, map);
 		}

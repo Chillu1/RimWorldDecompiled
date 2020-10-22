@@ -18,6 +18,8 @@ namespace Verse.AI
 
 		public const float AnythingJoy = 6f;
 
+		public const float Reload = 5.9f;
+
 		public const float AnythingWork = 5.5f;
 
 		public const float AvoidIdle_SleepAssignmentWork = 3f;

@@ -64,7 +64,7 @@ namespace RimWorld
 			tmpToSteal.Clear();
 			for (int i = 0; i < pawns.Count; i++)
 			{
-				if (pawns[i].Spawned && TryFindBestItemToSteal(pawns[i].Position, pawns[i].Map, 7f, out Thing item, pawns[i], tmpToSteal))
+				if (pawns[i].Spawned && TryFindBestItemToSteal(pawns[i].Position, pawns[i].Map, 7f, out var item, pawns[i], tmpToSteal))
 				{
 					num += GetValue(item);
 					tmpToSteal.Add(item);

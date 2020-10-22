@@ -50,7 +50,7 @@ namespace RimWorld
 
 		public static float RandomMelanin(Faction fac)
 		{
-			float num = (fac != null) ? Rand.Range(Mathf.Clamp01(fac.centralMelanin - fac.def.geneticVariance), Mathf.Clamp01(fac.centralMelanin + fac.def.geneticVariance)) : Rand.Value;
+			float num = ((fac != null) ? Rand.Range(Mathf.Clamp01(fac.centralMelanin - fac.def.geneticVariance), Mathf.Clamp01(fac.centralMelanin + fac.def.geneticVariance)) : Rand.Value);
 			int num2 = 0;
 			for (int i = 0; i < SkinColors.Length && num >= SkinColors[i].selector; i++)
 			{

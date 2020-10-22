@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Linq;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -14,7 +14,7 @@ namespace Verse
 			FloatRange floatRange = pawn.ComfortableTemperatureRange();
 			FloatRange floatRange2 = pawn.SafeTemperatureRange();
 			HediffSet hediffSet = pawn.health.hediffSet;
-			HediffDef hediffDef = (pawn.RaceProps.FleshType == FleshTypeDefOf.Insectoid) ? hediffInsectoid : hediff;
+			HediffDef hediffDef = ((pawn.RaceProps.FleshType == FleshTypeDefOf.Insectoid) ? hediffInsectoid : hediff);
 			Hediff firstHediffOfDef = hediffSet.GetFirstHediffOfDef(hediffDef);
 			if (ambientTemperature < floatRange2.min)
 			{
@@ -39,7 +39,7 @@ namespace Verse
 			else if (pawn.RaceProps.FleshType != FleshTypeDefOf.Insectoid && ambientTemperature < 0f && firstHediffOfDef.Severity > 0.37f)
 			{
 				float num = 0.025f * firstHediffOfDef.Severity;
-				if (Rand.Value < num && pawn.RaceProps.body.AllPartsVulnerableToFrostbite.Where((BodyPartRecord x) => !hediffSet.PartIsMissing(x)).TryRandomElementByWeight((BodyPartRecord x) => x.def.frostbiteVulnerability, out BodyPartRecord result))
+				if (Rand.Value < num && pawn.RaceProps.body.AllPartsVulnerableToFrostbite.Where((BodyPartRecord x) => !hediffSet.PartIsMissing(x)).TryRandomElementByWeight((BodyPartRecord x) => x.def.frostbiteVulnerability, out var result))
 				{
 					int num2 = Mathf.CeilToInt((float)result.def.hitPoints * 0.5f);
 					DamageInfo dinfo = new DamageInfo(DamageDefOf.Frostbite, num2, 0f, -1f, null, result);

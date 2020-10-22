@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -12,13 +12,13 @@ namespace RimWorld
 
 		public override IEnumerable<FiringIncident> MakeIntervalIncidents(IIncidentTarget target)
 		{
-			if (!DebugSettings.enableRandomDiseases || target is World)
+			if (!DebugSettings.enableRandomDiseases || target is World || Find.Storyteller.difficultyValues.diseaseIntervalFactor >= 100f)
 			{
 				yield break;
 			}
 			BiomeDef biome = Find.WorldGrid[target.Tile].biome;
 			float diseaseMtbDays = biome.diseaseMtbDays;
-			diseaseMtbDays *= Find.Storyteller.difficulty.diseaseIntervalFactor;
+			diseaseMtbDays *= Find.Storyteller.difficultyValues.diseaseIntervalFactor;
 			if (target is Caravan)
 			{
 				diseaseMtbDays *= CaravanDiseaseMTBFactor;
@@ -26,7 +26,7 @@ namespace RimWorld
 			if (Rand.MTBEventOccurs(diseaseMtbDays, 60000f, 1000f))
 			{
 				IncidentParms parms = GenerateParms(Props.category, target);
-				if (UsableIncidentsInCategory(Props.category, parms).TryRandomElementByWeight((IncidentDef d) => biome.CommonalityOfDisease(d), out IncidentDef result))
+				if (UsableIncidentsInCategory(Props.category, parms).TryRandomElementByWeight((IncidentDef d) => biome.CommonalityOfDisease(d), out var result))
 				{
 					yield return new FiringIncident(result, this, parms);
 				}

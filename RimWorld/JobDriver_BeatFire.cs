@@ -15,27 +15,26 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			JobDriver_BeatFire jobDriver_BeatFire = this;
 			this.FailOnDespawnedOrNull(TargetIndex.A);
 			Toil beat = new Toil();
 			Toil approach = new Toil();
 			approach.initAction = delegate
 			{
-				if (jobDriver_BeatFire.Map.reservationManager.CanReserve(jobDriver_BeatFire.pawn, jobDriver_BeatFire.TargetFire))
+				if (base.Map.reservationManager.CanReserve(pawn, TargetFire))
 				{
-					jobDriver_BeatFire.pawn.Reserve(jobDriver_BeatFire.TargetFire, jobDriver_BeatFire.job);
+					pawn.Reserve(TargetFire, job);
 				}
-				jobDriver_BeatFire.pawn.pather.StartPath(jobDriver_BeatFire.TargetFire, PathEndMode.Touch);
+				pawn.pather.StartPath(TargetFire, PathEndMode.Touch);
 			};
 			approach.tickAction = delegate
 			{
-				if (jobDriver_BeatFire.pawn.pather.Moving && jobDriver_BeatFire.pawn.pather.nextCell != jobDriver_BeatFire.TargetFire.Position)
+				if (pawn.pather.Moving && pawn.pather.nextCell != TargetFire.Position)
 				{
-					jobDriver_BeatFire.StartBeatingFireIfAnyAt(jobDriver_BeatFire.pawn.pather.nextCell, beat);
+					StartBeatingFireIfAnyAt(pawn.pather.nextCell, beat);
 				}
-				if (jobDriver_BeatFire.pawn.Position != jobDriver_BeatFire.TargetFire.Position)
+				if (pawn.Position != TargetFire.Position)
 				{
-					jobDriver_BeatFire.StartBeatingFireIfAnyAt(jobDriver_BeatFire.pawn.Position, beat);
+					StartBeatingFireIfAnyAt(pawn.Position, beat);
 				}
 			};
 			approach.FailOnDespawnedOrNull(TargetIndex.A);
@@ -44,17 +43,17 @@ namespace RimWorld
 			yield return approach;
 			beat.tickAction = delegate
 			{
-				if (!jobDriver_BeatFire.pawn.CanReachImmediate(jobDriver_BeatFire.TargetFire, PathEndMode.Touch))
+				if (!pawn.CanReachImmediate(TargetFire, PathEndMode.Touch))
 				{
-					jobDriver_BeatFire.JumpToToil(approach);
+					JumpToToil(approach);
 				}
-				else if (!(jobDriver_BeatFire.pawn.Position != jobDriver_BeatFire.TargetFire.Position) || !jobDriver_BeatFire.StartBeatingFireIfAnyAt(jobDriver_BeatFire.pawn.Position, beat))
+				else if (!(pawn.Position != TargetFire.Position) || !StartBeatingFireIfAnyAt(pawn.Position, beat))
 				{
-					jobDriver_BeatFire.pawn.natives.TryBeatFire(jobDriver_BeatFire.TargetFire);
-					if (jobDriver_BeatFire.TargetFire.Destroyed)
+					pawn.natives.TryBeatFire(TargetFire);
+					if (TargetFire.Destroyed)
 					{
-						jobDriver_BeatFire.pawn.records.Increment(RecordDefOf.FiresExtinguished);
-						jobDriver_BeatFire.pawn.jobs.EndCurrentJob(JobCondition.Succeeded);
+						pawn.records.Increment(RecordDefOf.FiresExtinguished);
+						pawn.jobs.EndCurrentJob(JobCondition.Succeeded);
 					}
 				}
 			};

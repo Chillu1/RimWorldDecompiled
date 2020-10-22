@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -38,7 +38,7 @@ namespace Verse
 			Designator designator = StandaloneDesignators.TryGetValue(typeof(T));
 			if (designator == null)
 			{
-				designator = (Activator.CreateInstance(typeof(T)) as Designator);
+				designator = Activator.CreateInstance(typeof(T)) as Designator;
 				StandaloneDesignators[typeof(T)] = designator;
 			}
 			return designator;

@@ -29,7 +29,7 @@ namespace RimWorld.QuestGen
 			Slate slate = QuestGen.slate;
 			QuestPart_NoWorldObject questPart_NoWorldObject = new QuestPart_NoWorldObject();
 			questPart_NoWorldObject.worldObject = worldObject.GetValue(slate);
-			questPart_NoWorldObject.inSignalEnable = (QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart_NoWorldObject.inSignalEnable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			if (node != null)
 			{
 				QuestGenUtility.RunInnerNode(node, questPart_NoWorldObject);

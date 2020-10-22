@@ -137,9 +137,9 @@ namespace Verse.AI.Group
 
 		public override string ToString()
 		{
-			string text = sources.NullOrEmpty() ? "null" : sources[0].ToString();
-			int num = (sources != null) ? sources.Count : 0;
-			string text2 = (target == null) ? "null" : target.ToString();
+			string text = (sources.NullOrEmpty() ? "null" : sources[0].ToString());
+			int num = ((sources != null) ? sources.Count : 0);
+			string text2 = ((target == null) ? "null" : target.ToString());
 			return text + "(" + num + ")->" + text2;
 		}
 	}

@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -15,7 +15,7 @@ namespace RimWorld
 
 		public override void TravelingTransportPodsArrived(List<ActiveDropPodInfo> dropPods, Map map)
 		{
-			if (!DropCellFinder.TryFindRaidDropCenterClose(out IntVec3 spot, map))
+			if (!DropCellFinder.TryFindRaidDropCenterClose(out var spot, map))
 			{
 				spot = DropCellFinder.FindRaidDropCenterDistant_NewTemp(map);
 			}

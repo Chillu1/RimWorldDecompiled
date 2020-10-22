@@ -1,8 +1,8 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
 
 namespace Verse
 {
@@ -63,7 +63,7 @@ namespace Verse
 							string toolLabel;
 							if (!(from ttp in DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef td) => td.IsMeleeWeapon && !td.tools.NullOrEmpty()).SelectMany((ThingDef td) => td.tools.Select((Tool tool) => new Pair<ThingDef, Tool>(td, tool)))
 								where ttp.Second.capacities.Contains(maneuver.requiredCapacity)
-								select ttp).TryRandomElement(out Pair<ThingDef, Tool> result))
+								select ttp).TryRandomElement(out var result))
 							{
 								Log.Warning(string.Concat("Melee weapon with tool with capacity ", maneuver.requiredCapacity, " not found."));
 								implementOwnerTypeDef = ImplementOwnerTypeDefOf.Bodypart;
@@ -280,7 +280,7 @@ namespace Verse
 					stringBuilder.AppendLine("Testing RulePack " + localNamer.defName + " as a name generator:");
 					for (int i = 0; i < 200; i++)
 					{
-						string testPawnNameSymbol = (i % 2 == 0) ? "Smithee" : null;
+						string testPawnNameSymbol = ((i % 2 == 0) ? "Smithee" : null);
 						stringBuilder.AppendLine(NameGenerator.GenerateName(localNamer, null, appendNumberIfNameUsed: false, localNamer.FirstRuleKeyword, testPawnNameSymbol));
 					}
 					Log.Message(stringBuilder.ToString());

@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld.QuestGen
@@ -43,7 +43,7 @@ namespace RimWorld.QuestGen
 							for (int j = 0; j < partsListForReading.Count; j++)
 							{
 								QuestPart_InitiateTradeRequest questPart_InitiateTradeRequest;
-								if ((questPart_InitiateTradeRequest = (partsListForReading[j] as QuestPart_InitiateTradeRequest)) != null && questPart_InitiateTradeRequest.settlement == settlement)
+								if ((questPart_InitiateTradeRequest = partsListForReading[j] as QuestPart_InitiateTradeRequest) != null && questPart_InitiateTradeRequest.settlement == settlement)
 								{
 									return false;
 								}

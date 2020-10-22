@@ -19,17 +19,13 @@ namespace RimWorld
 			{
 				return null;
 			}
-			switch (pawn.playerSettings.hostilityResponse)
+			return pawn.playerSettings.hostilityResponse switch
 			{
-			case HostilityResponseMode.Ignore:
-				return null;
-			case HostilityResponseMode.Attack:
-				return TryGetAttackNearbyEnemyJob(pawn);
-			case HostilityResponseMode.Flee:
-				return TryGetFleeJob(pawn);
-			default:
-				return null;
-			}
+				HostilityResponseMode.Ignore => null, 
+				HostilityResponseMode.Attack => TryGetAttackNearbyEnemyJob(pawn), 
+				HostilityResponseMode.Flee => TryGetFleeJob(pawn), 
+				_ => null, 
+			};
 		}
 
 		private Job TryGetAttackNearbyEnemyJob(Pawn pawn)
@@ -44,7 +40,7 @@ namespace RimWorld
 			{
 				maxDist = Mathf.Clamp(pawn.CurrentEffectiveVerb.verbProps.range * 0.66f, 2f, 20f);
 			}
-			Thing thing = (Thing)AttackTargetFinder.BestAttackTarget(pawn, TargetScanFlags.NeedLOSToPawns | TargetScanFlags.NeedLOSToNonPawns | TargetScanFlags.NeedReachableIfCantHitFromMyPos | TargetScanFlags.NeedThreat | TargetScanFlags.NeedAutoTargetable, null, 0f, maxDist);
+			Thing thing = (Thing)AttackTargetFinder.BestAttackTarget(pawn, TargetScanFlags.NeedLOSToAll | TargetScanFlags.NeedReachableIfCantHitFromMyPos | TargetScanFlags.NeedThreat | TargetScanFlags.NeedAutoTargetable, null, 0f, maxDist);
 			if (thing == null)
 			{
 				return null;

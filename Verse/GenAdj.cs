@@ -580,8 +580,6 @@ namespace Verse
 			}
 			switch (rot.AsInt)
 			{
-			case 0:
-				break;
 			case 1:
 				if (size.z % 2 == 0)
 				{
@@ -603,6 +601,8 @@ namespace Verse
 				{
 					center.x--;
 				}
+				break;
+			case 0:
 				break;
 			}
 		}

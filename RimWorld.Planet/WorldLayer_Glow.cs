@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
@@ -17,7 +16,7 @@ namespace RimWorld.Planet
 			{
 				yield return item;
 			}
-			SphereGenerator.Generate(4, 108.1f, Vector3.forward, 360f, out List<Vector3> outVerts, out List<int> outIndices);
+			SphereGenerator.Generate(4, 108.1f, Vector3.forward, 360f, out var outVerts, out var outIndices);
 			LayerSubMesh subMesh = GetSubMesh(WorldMaterials.PlanetGlow);
 			subMesh.verts.AddRange(outVerts);
 			subMesh.tris.AddRange(outIndices);

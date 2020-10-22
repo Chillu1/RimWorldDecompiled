@@ -6,7 +6,7 @@ namespace Verse.AI
 		{
 			wanderRadius = 3f;
 			ticksBetweenWandersRange = new IntRange(125, 200);
-			wanderDestValidator = ((Pawn p, IntVec3 c, IntVec3 root) => (!MustUseRootRoom(p) || root.GetRoom(p.Map) == null || WanderRoomUtility.IsValidWanderDest(p, c, root)) ? true : false);
+			wanderDestValidator = (Pawn p, IntVec3 c, IntVec3 root) => (!MustUseRootRoom(p) || root.GetRoom(p.Map) == null || WanderRoomUtility.IsValidWanderDest(p, c, root)) ? true : false;
 		}
 
 		protected override IntVec3 GetWanderRoot(Pawn pawn)

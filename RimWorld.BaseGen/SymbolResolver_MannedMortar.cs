@@ -38,7 +38,7 @@ namespace RimWorld.BaseGen
 			Faction faction = rp.faction ?? Find.FactionManager.RandomEnemyFaction(allowHidden: false, allowDefeated: false, allowNonHumanlike: true, TechLevel.Industrial) ?? Find.FactionManager.RandomEnemyFaction();
 			Rot4 rot = rp.thingRot ?? Rot4.Random;
 			ThingDef thingDef = rp.mortarDef ?? DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef x) => x.category == ThingCategory.Building && x.building.IsMortar && x.building.buildingTags.Contains("Artillery_MannedMortar")).RandomElement();
-			if (TryFindMortarSpawnCell(rp.rect, rot, thingDef, out IntVec3 cell))
+			if (TryFindMortarSpawnCell(rp.rect, rot, thingDef, out var cell))
 			{
 				if (thingDef.HasComp(typeof(CompMannable)))
 				{
@@ -76,19 +76,19 @@ namespace RimWorld.BaseGen
 			Predicate<CellRect> edgeTouchCheck;
 			if (rot == Rot4.North)
 			{
-				edgeTouchCheck = ((CellRect x) => x.Cells.Any((IntVec3 y) => y.z == rect.maxZ));
+				edgeTouchCheck = (CellRect x) => x.Cells.Any((IntVec3 y) => y.z == rect.maxZ);
 			}
 			else if (rot == Rot4.South)
 			{
-				edgeTouchCheck = ((CellRect x) => x.Cells.Any((IntVec3 y) => y.z == rect.minZ));
+				edgeTouchCheck = (CellRect x) => x.Cells.Any((IntVec3 y) => y.z == rect.minZ);
 			}
 			else if (rot == Rot4.West)
 			{
-				edgeTouchCheck = ((CellRect x) => x.Cells.Any((IntVec3 y) => y.x == rect.minX));
+				edgeTouchCheck = (CellRect x) => x.Cells.Any((IntVec3 y) => y.x == rect.minX);
 			}
 			else
 			{
-				edgeTouchCheck = ((CellRect x) => x.Cells.Any((IntVec3 y) => y.x == rect.maxX));
+				edgeTouchCheck = (CellRect x) => x.Cells.Any((IntVec3 y) => y.x == rect.maxX);
 			}
 			return CellFinder.TryFindRandomCellInsideWith(rect, delegate(IntVec3 x)
 			{

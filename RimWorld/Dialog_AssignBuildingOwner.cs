@@ -69,7 +69,7 @@ namespace RimWorld
 					string text = assigningCandidate.LabelCap + (accepted ? "" : (" (" + acceptanceReport.Reason.StripTags() + ")"));
 					float width = viewRect.width * 0.7f;
 					float num2 = Text.CalcHeight(text, width);
-					float num3 = (35f > num2) ? 35f : num2;
+					float num3 = ((35f > num2) ? 35f : num2);
 					Rect rect2 = new Rect(0f, num, width, num3);
 					if (!accepted)
 					{
@@ -79,7 +79,7 @@ namespace RimWorld
 					rect2.x = rect2.xMax;
 					rect2.width = viewRect.width * 0.3f;
 					rect2.height = 35f;
-					TaggedString taggedString = assignable.AssignedAnything(assigningCandidate) ? "BuildingReassign".Translate() : "BuildingAssign".Translate();
+					TaggedString taggedString = (assignable.AssignedAnything(assigningCandidate) ? "BuildingReassign".Translate() : "BuildingAssign".Translate());
 					if (Widgets.ButtonText(rect2, taggedString, drawBackground: true, doMouseoverSound: true, accepted))
 					{
 						assignable.TryAssignPawn(assigningCandidate);

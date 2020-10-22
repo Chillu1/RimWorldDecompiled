@@ -21,6 +21,11 @@ namespace RimWorld
 			}
 		}
 
+		protected override string GetAssignmentGizmoDesc()
+		{
+			return "CommandThroneSetOwnerDesc".Translate();
+		}
+
 		public override string CompInspectStringExtra()
 		{
 			if (base.AssignedPawnsForReading.Count == 0)

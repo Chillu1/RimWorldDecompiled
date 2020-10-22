@@ -1,7 +1,7 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -280,6 +280,18 @@ namespace Verse
 			}
 		}
 
+		public override void TickLong()
+		{
+			if (comps != null)
+			{
+				int i = 0;
+				for (int count = comps.Count; i < count; i++)
+				{
+					comps[i].CompTickLong();
+				}
+			}
+		}
+
 		public override void PreApplyDamage(ref DamageInfo dinfo, out bool absorbed)
 		{
 			base.PreApplyDamage(ref dinfo, out absorbed);
@@ -499,6 +511,25 @@ namespace Verse
 			}
 		}
 
+		public override IEnumerable<FloatMenuOption> GetMultiSelectFloatMenuOptions(List<Pawn> selPawns)
+		{
+			foreach (FloatMenuOption multiSelectFloatMenuOption in base.GetMultiSelectFloatMenuOptions(selPawns))
+			{
+				yield return multiSelectFloatMenuOption;
+			}
+			if (comps == null)
+			{
+				yield break;
+			}
+			for (int i = 0; i < comps.Count; i++)
+			{
+				foreach (FloatMenuOption item in comps[i].CompMultiSelectFloatMenuOptions(selPawns))
+				{
+					yield return item;
+				}
+			}
+		}
+
 		public override void PreTraded(TradeAction action, Pawn playerNegotiator, ITrader trader)
 		{
 			if (comps != null)
@@ -591,6 +622,17 @@ namespace Verse
 				for (int i = 0; i < comps.Count; i++)
 				{
 					comps[i].Notify_UsedWeapon(pawn);
+				}
+			}
+		}
+
+		public void Notify_KilledPawn(Pawn pawn)
+		{
+			if (comps != null)
+			{
+				for (int i = 0; i < comps.Count; i++)
+				{
+					comps[i].Notify_KilledPawn(pawn);
 				}
 			}
 		}

@@ -28,6 +28,8 @@ namespace RimWorld.QuestGen
 
 		public const string TitlePreviousHeir = "titlePreviousHeir";
 
+		public const string BestowingFaction = "bestowingFaction";
+
 		public const string AskerType = "askerType";
 
 		public const string ItemStashSingleThing = "itemStashSingleThing";
@@ -46,6 +48,8 @@ namespace RimWorld.QuestGen
 
 		public const string TargetMineable = "targetMineable";
 
+		public const string TargetMineableThing = "targetMineableThing";
+
 		public const string Worker = "worker";
 
 		public const string SameQuestsCount = "sameQuestsCount";
@@ -61,5 +65,19 @@ namespace RimWorld.QuestGen
 		public const string GeneratedItemStashThings = "generatedItemStashThings";
 
 		public const string DebugDontGenerateRewardThings = "debugDontGenerateRewardThings";
+
+		public const string PermitFaction = "permitFaction";
+
+		public const string LandingCell = "landingCell";
+
+		public const string LaborersCount = "laborersCount";
+
+		public const string LaborersPawnKind = "laborersPawnKind";
+
+		public const string LaborersDurationDays = "laborersDurationDays";
+
+		public const string ConditionCauser = "conditionCauser";
+
+		public const string Population = "population";
 	}
 }

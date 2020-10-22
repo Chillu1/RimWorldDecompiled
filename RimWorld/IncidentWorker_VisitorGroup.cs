@@ -30,7 +30,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			RCellFinder.TryFindRandomSpotJustOutsideColony(list[0], out IntVec3 result);
+			RCellFinder.TryFindRandomSpotJustOutsideColony(list[0], out var result);
 			LordJob_VisitColony lordJob = new LordJob_VisitColony(parms.faction, result);
 			LordMaker.MakeNewLord(parms.faction, lordJob, map, list);
 			bool flag = false;
@@ -43,15 +43,15 @@ namespace RimWorld
 			TaggedString letterText;
 			if (list.Count == 1)
 			{
-				TaggedString value = flag ? ("\n\n" + "SingleVisitorArrivesTraderInfo".Translate(list[0].Named("PAWN")).AdjustedFor(list[0])) : ((TaggedString)"");
-				TaggedString value2 = (pawn != null) ? ("\n\n" + "SingleVisitorArrivesLeaderInfo".Translate(list[0].Named("PAWN")).AdjustedFor(list[0])) : ((TaggedString)"");
+				TaggedString value = (flag ? ("\n\n" + "SingleVisitorArrivesTraderInfo".Translate(list[0].Named("PAWN")).AdjustedFor(list[0])) : ((TaggedString)""));
+				TaggedString value2 = ((pawn != null) ? ("\n\n" + "SingleVisitorArrivesLeaderInfo".Translate(list[0].Named("PAWN")).AdjustedFor(list[0])) : ((TaggedString)""));
 				letterLabel = "LetterLabelSingleVisitorArrives".Translate();
 				letterText = "SingleVisitorArrives".Translate(list[0].story.Title, parms.faction.NameColored, list[0].Name.ToStringFull, value, value2, list[0].Named("PAWN")).AdjustedFor(list[0]);
 			}
 			else
 			{
-				TaggedString value3 = flag ? ("\n\n" + "GroupVisitorsArriveTraderInfo".Translate()) : TaggedString.Empty;
-				TaggedString value4 = (pawn != null) ? ("\n\n" + "GroupVisitorsArriveLeaderInfo".Translate(pawn.LabelShort, pawn)) : TaggedString.Empty;
+				TaggedString value3 = (flag ? ("\n\n" + "GroupVisitorsArriveTraderInfo".Translate()) : TaggedString.Empty);
+				TaggedString value4 = ((pawn != null) ? ("\n\n" + "GroupVisitorsArriveLeaderInfo".Translate(pawn.LabelShort, pawn)) : TaggedString.Empty);
 				letterLabel = "LetterLabelGroupVisitorsArrive".Translate();
 				letterText = "GroupVisitorsArrive".Translate(parms.faction.NameColored, value3, value4);
 			}

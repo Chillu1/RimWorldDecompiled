@@ -1,7 +1,7 @@
-using RimWorld;
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Reflection;
+using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse.Profile

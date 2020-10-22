@@ -25,7 +25,7 @@ namespace RimWorld.SketchGen
 			int num2 = parms.sketch.Buildables.Count();
 			foreach (SketchBuildable item in parms.sketch.Buildables.InRandomOrder().ToList())
 			{
-				Damage(item, occupiedRect, random, parms.sketch, out bool destroyed);
+				Damage(item, occupiedRect, random, parms.sketch, out var destroyed);
 				if (destroyed)
 				{
 					num++;
@@ -39,7 +39,7 @@ namespace RimWorld.SketchGen
 
 		private void Damage(SketchBuildable buildable, CellRect rect, Rot4 dir, Sketch sketch, out bool destroyed)
 		{
-			float num = (!dir.IsHorizontal) ? ((float)(buildable.pos.z - rect.minZ) / (float)rect.Height) : ((float)(buildable.pos.x - rect.minX) / (float)rect.Width);
+			float num = ((!dir.IsHorizontal) ? ((float)(buildable.pos.z - rect.minZ) / (float)rect.Height) : ((float)(buildable.pos.x - rect.minX) / (float)rect.Width));
 			if (dir == Rot4.East || dir == Rot4.South)
 			{
 				num = 1f - num;

@@ -37,7 +37,7 @@ namespace Verse
 
 		private const float TitleHeight = 42f;
 
-		private const float ButtonHeight = 35f;
+		protected const float ButtonHeight = 35f;
 
 		public override Vector2 InitialSize => new Vector2(640f, 460f);
 
@@ -72,7 +72,7 @@ namespace Verse
 			creationRealTime = RealTime.LastRealTime;
 			onlyOneOfTypeAllowed = false;
 			bool flag = buttonAAction == null && buttonBAction == null && buttonCAction == null;
-			forceCatchAcceptAndCancelEventEvenIfUnfocused = (acceptAction != null || cancelAction != null || flag);
+			forceCatchAcceptAndCancelEventEvenIfUnfocused = acceptAction != null || cancelAction != null || flag;
 			closeOnAccept = flag;
 			closeOnCancel = flag;
 		}
@@ -93,14 +93,14 @@ namespace Verse
 			Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
 			Widgets.Label(new Rect(0f, 0f, viewRect.width, viewRect.height), text);
 			Widgets.EndScrollView();
-			int num2 = buttonCText.NullOrEmpty() ? 2 : 3;
+			int num2 = (buttonCText.NullOrEmpty() ? 2 : 3);
 			float num3 = inRect.width / (float)num2;
 			float width2 = num3 - 10f;
 			if (buttonADestructive)
 			{
 				GUI.color = new Color(1f, 0.3f, 0.35f);
 			}
-			string label = InteractionDelayExpired ? buttonAText : (buttonAText + "(" + Mathf.Ceil(TimeUntilInteractive).ToString("F0") + ")");
+			string label = (InteractionDelayExpired ? buttonAText : (buttonAText + "(" + Mathf.Ceil(TimeUntilInteractive).ToString("F0") + ")"));
 			if (Widgets.ButtonText(new Rect(num3 * (float)(num2 - 1) + 10f, inRect.height - 35f, width2, 35f), label) && InteractionDelayExpired)
 			{
 				if (buttonAAction != null)

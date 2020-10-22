@@ -24,7 +24,7 @@ namespace Verse
 
 		public static CellLine Between(IntVec3 a, IntVec3 b)
 		{
-			float num = (a.x != b.x) ? ((float)(b.z - a.z) / (float)(b.x - a.x)) : 1E+08f;
+			float num = ((a.x != b.x) ? ((float)(b.z - a.z) / (float)(b.x - a.x)) : 1E+08f);
 			return new CellLine((float)a.z - (float)a.x * num, num);
 		}
 

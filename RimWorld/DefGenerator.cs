@@ -5,6 +5,8 @@ namespace RimWorld
 {
 	public static class DefGenerator
 	{
+		public static int StandardItemPathCost = 14;
+
 		public static void GenerateImpliedDefs_PreResolve()
 		{
 			foreach (ThingDef item in ThingDefGenerator_Buildings.ImpliedBlueprintAndFrameDefs().Concat(ThingDefGenerator_Meat.ImpliedMeatDefs()).Concat(ThingDefGenerator_Techprints.ImpliedTechprintDefs())

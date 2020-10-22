@@ -1,8 +1,9 @@
-using RimWorld.Planet;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld.Planet;
 using Verse;
 using Verse.Grammar;
 
@@ -79,6 +80,32 @@ namespace RimWorld.QuestGen
 			return QuestGen.GenerateNewTargetQuestTag(questTag, ensureUnique: false);
 		}
 
+		public static string QuestTagSignal(string questTag, string signal)
+		{
+			return questTag + "." + signal;
+		}
+
+		public static void RunInner(Action inner, QuestPartActivable outerQuestPart)
+		{
+			string text = QuestGen.GenerateNewSignal("OuterNodeCompleted");
+			outerQuestPart.outSignalsCompleted.Add(text);
+			RunInner(inner, text);
+		}
+
+		public static void RunInner(Action inner, string innerNodeInSignal)
+		{
+			Slate.VarRestoreInfo restoreInfo = QuestGen.slate.GetRestoreInfo("inSignal");
+			QuestGen.slate.Set("inSignal", innerNodeInSignal);
+			try
+			{
+				inner();
+			}
+			finally
+			{
+				QuestGen.slate.Restore(restoreInfo);
+			}
+		}
+
 		public static void RunInnerNode(QuestNode node, QuestPartActivable outerQuestPart)
 		{
 			string text = QuestGen.GenerateNewSignal("OuterNodeCompleted");
@@ -153,21 +180,17 @@ namespace RimWorld.QuestGen
 			}
 			tmpVarAbsoluteName.Clear();
 			tmpVarAbsoluteName.Append(absoluteName);
-			string text;
-			object var;
-			while (true)
+			while (tmpVarAbsoluteName.Length > 0)
 			{
-				if (tmpVarAbsoluteName.Length <= 0)
-				{
-					return;
-				}
-				text = tmpVarAbsoluteName.ToString();
+				string text = tmpVarAbsoluteName.ToString();
 				if (added.Contains(text))
 				{
-					return;
+					break;
 				}
-				if (QuestGen.slate.TryGet(text, out var, isAbsoluteName: true))
+				if (QuestGen.slate.TryGet<object>(text, out var var, isAbsoluteName: true))
 				{
+					AddSlateVar(ref req, text, var);
+					added.Add(text);
 					break;
 				}
 				if (char.IsNumber(tmpVarAbsoluteName[tmpVarAbsoluteName.Length - 1]))
@@ -187,12 +210,10 @@ namespace RimWorld.QuestGen
 						tmpVarAbsoluteName.Length = num;
 						continue;
 					}
-					return;
+					break;
 				}
-				return;
+				break;
 			}
-			AddSlateVar(ref req, text, var);
-			added.Add(text);
 		}
 
 		private static void AddSlateVar(ref GrammarRequest req, string absoluteName, object obj)
@@ -343,7 +364,7 @@ namespace RimWorld.QuestGen
 				text = QuestGen.slate.CurrentPrefix + "/" + text;
 			}
 			text = NormalizeVarPath(text);
-			return ResolveAbsoluteText(list, QuestGen.QuestDescriptionConstantsReadOnly, text);
+			return ResolveAbsoluteText(list, QuestGen.QuestDescriptionConstantsReadOnly, text, capitalizeFirstSentence: false);
 		}
 
 		public static string ResolveLocalText(RulePack localRules, string localRootKeyword = "root")
@@ -429,20 +450,29 @@ namespace RimWorld.QuestGen
 			{
 				return LookTargets.Invalid;
 			}
-			LookTargets lookTargets = new LookTargets();
-			foreach (object item in objects.GetValue(slate))
+			return ToLookTargets(objects.GetValue(slate));
+		}
+
+		public static LookTargets ToLookTargets(IEnumerable<object> objects)
+		{
+			if (objects == null || !objects.Any())
 			{
-				if (item is Thing)
+				return LookTargets.Invalid;
+			}
+			LookTargets lookTargets = new LookTargets();
+			foreach (object @object in objects)
+			{
+				if (@object is Thing)
 				{
-					lookTargets.targets.Add((Thing)item);
+					lookTargets.targets.Add((Thing)@object);
 				}
-				else if (item is WorldObject)
+				else if (@object is WorldObject)
 				{
-					lookTargets.targets.Add((WorldObject)item);
+					lookTargets.targets.Add((WorldObject)@object);
 				}
-				else if (item is Map)
+				else if (@object is Map)
 				{
-					lookTargets.targets.Add(((Map)item).Parent);
+					lookTargets.targets.Add(((Map)@object).Parent);
 				}
 			}
 			return lookTargets;
@@ -492,7 +522,7 @@ namespace RimWorld.QuestGen
 
 		public static void AddToOrMakeList(Slate slate, string name, object obj)
 		{
-			if (!slate.TryGet(name, out List<object> var))
+			if (!slate.TryGet<List<object>>(name, out var var))
 			{
 				var = new List<object>();
 			}
@@ -504,7 +534,7 @@ namespace RimWorld.QuestGen
 		{
 			if (!objs.NullOrEmpty())
 			{
-				if (!slate.TryGet(name, out List<object> var))
+				if (!slate.TryGet<List<object>>(name, out var var))
 				{
 					var = new List<object>();
 				}
@@ -515,7 +545,7 @@ namespace RimWorld.QuestGen
 
 		public static bool IsInList(Slate slate, string name, object obj)
 		{
-			if (!slate.TryGet(name, out List<object> var) || var == null)
+			if (!slate.TryGet<List<object>>(name, out var var) || var == null)
 			{
 				return false;
 			}
@@ -537,7 +567,7 @@ namespace RimWorld.QuestGen
 				}
 				for (int j = 0; j < capturedVars.Count; j++)
 				{
-					if (capturedVars[j].value.TryGetValue(slate, out object value))
+					if (capturedVars[j].value.TryGetValue(slate, out var value))
 					{
 						if (capturedVars[j].name == "inSignal" && value is string)
 						{
@@ -550,7 +580,7 @@ namespace RimWorld.QuestGen
 			}
 			for (int k = 0; k < capturedVars.Count; k++)
 			{
-				if (capturedVars[k].value.TryGetValue(slate, out object value2))
+				if (capturedVars[k].value.TryGetValue(slate, out var value2))
 				{
 					if (capturedVars[k].name == "inSignal" && value2 is string)
 					{
@@ -583,7 +613,7 @@ namespace RimWorld.QuestGen
 			for (int i = 0; i < varNames.Count; i++)
 			{
 				string name = prefix + "/" + varNames[i].GetValue(slate);
-				if (slate.TryGet(name, out object var))
+				if (slate.TryGet<object>(name, out var var))
 				{
 					slate.Set(varNames[i].GetValue(slate), var);
 				}

@@ -18,21 +18,14 @@ namespace Verse
 
 		public void Add(float val)
 		{
-			int num = 0;
-			while (true)
+			for (int i = 0; i < buckets.Length; i++)
 			{
-				if (num < buckets.Length)
+				if (buckets[i] > val)
 				{
-					if (buckets[num] > val)
-					{
-						break;
-					}
-					num++;
-					continue;
+					counts[i]++;
+					break;
 				}
-				return;
 			}
-			counts[num]++;
 		}
 
 		public void Display()

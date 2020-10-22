@@ -105,7 +105,7 @@ namespace RimWorld
 				return null;
 			}
 			Lord lord = pawn.GetLord();
-			Building_Bed building_Bed = ((lord == null || lord.CurLordToil == null || lord.CurLordToil.AllowRestingInBed) && !pawn.IsWildMan()) ? RestUtility.FindBedFor(pawn) : null;
+			Building_Bed building_Bed = (((lord == null || lord.CurLordToil == null || lord.CurLordToil.AllowRestingInBed) && !pawn.IsWildMan()) ? RestUtility.FindBedFor(pawn) : null);
 			if (building_Bed != null)
 			{
 				return JobMaker.MakeJob(JobDefOf.LayDown, building_Bed);
@@ -118,8 +118,8 @@ namespace RimWorld
 			Map map = pawn.Map;
 			for (int i = 0; i < 2; i++)
 			{
-				int radius = (i == 0) ? 4 : 12;
-				if (CellFinder.TryRandomClosewalkCellNear(pawn.Position, map, radius, out IntVec3 result, (IntVec3 x) => !x.IsForbidden(pawn) && !x.GetTerrain(map).avoidWander))
+				int radius = ((i == 0) ? 4 : 12);
+				if (CellFinder.TryRandomClosewalkCellNear(pawn.Position, map, radius, out var result, (IntVec3 x) => !x.IsForbidden(pawn) && !x.GetTerrain(map).avoidWander))
 				{
 					return result;
 				}

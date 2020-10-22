@@ -1,9 +1,9 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
+using RimWorld.Planet;
 using Verse.AI.Group;
 
 namespace Verse
@@ -117,6 +117,23 @@ namespace Verse
 			Find.WindowStack.Add(new Dialog_DebugOptionListLister(DebugThingPlaceHelper.TryPlaceOptionsForStackCount(25, direct: true)));
 		}
 
+		[DebugAction("Spawning", "Try add to inventory...", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void TryAddToInventory(Pawn p)
+		{
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			foreach (ThingDef def in DefDatabase<ThingDef>.AllDefs)
+			{
+				if (def.category == ThingCategory.Item)
+				{
+					list.Add(new DebugMenuOption(def.label, DebugMenuOptionMode.Action, delegate
+					{
+						p.inventory.TryAddItemNotForSale(ThingMaker.MakeThing(def));
+					}));
+				}
+			}
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+		}
+
 		[DebugAction("Spawning", "Spawn thing with wipe mode...", allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void SpawnThingWithWipeMode()
 		{
@@ -165,22 +182,22 @@ namespace Verse
 					{
 						new DebugMenuOption("In pods, click place", DebugMenuOptionMode.Tool, delegate
 						{
-							MechClusterSketch sketch4 = MechClusterGenerator.GenerateClusterSketch(localPoints, Find.CurrentMap);
+							MechClusterSketch sketch4 = MechClusterGenerator.GenerateClusterSketch_NewTemp(localPoints, Find.CurrentMap);
 							MechClusterUtility.SpawnCluster(UI.MouseCell(), Find.CurrentMap, sketch4);
 						}),
 						new DebugMenuOption("In pods, autoplace", DebugMenuOptionMode.Action, delegate
 						{
-							MechClusterSketch sketch3 = MechClusterGenerator.GenerateClusterSketch(localPoints, Find.CurrentMap);
+							MechClusterSketch sketch3 = MechClusterGenerator.GenerateClusterSketch_NewTemp(localPoints, Find.CurrentMap);
 							MechClusterUtility.SpawnCluster(MechClusterUtility.FindClusterPosition(Find.CurrentMap, sketch3), Find.CurrentMap, sketch3);
 						}),
 						new DebugMenuOption("Direct spawn, click place", DebugMenuOptionMode.Tool, delegate
 						{
-							MechClusterSketch sketch2 = MechClusterGenerator.GenerateClusterSketch(localPoints, Find.CurrentMap);
+							MechClusterSketch sketch2 = MechClusterGenerator.GenerateClusterSketch_NewTemp(localPoints, Find.CurrentMap);
 							MechClusterUtility.SpawnCluster(UI.MouseCell(), Find.CurrentMap, sketch2, dropInPods: false);
 						}),
 						new DebugMenuOption("Direct spawn, autoplace", DebugMenuOptionMode.Action, delegate
 						{
-							MechClusterSketch sketch = MechClusterGenerator.GenerateClusterSketch(localPoints, Find.CurrentMap);
+							MechClusterSketch sketch = MechClusterGenerator.GenerateClusterSketch_NewTemp(localPoints, Find.CurrentMap);
 							MechClusterUtility.SpawnCluster(MechClusterUtility.FindClusterPosition(Find.CurrentMap, sketch), Find.CurrentMap, sketch, dropInPods: false);
 						})
 					};
@@ -326,6 +343,10 @@ namespace Verse
 				{
 					GenPlace.TryPlaceThing(SkyfallerMaker.MakeSkyfaller(ThingDefOf.ShuttleIncoming, ThingMaker.MakeThing(ThingDefOf.Shuttle)), UI.MouseCell(), Find.CurrentMap, ThingPlaceMode.Near);
 				}),
+				new DebugMenuOption("Crashing", DebugMenuOptionMode.Tool, delegate
+				{
+					GenPlace.TryPlaceThing(SkyfallerMaker.MakeSkyfaller(ThingDefOf.ShuttleCrashing, ThingMaker.MakeThing(ThingDefOf.ShuttleCrashed)), UI.MouseCell(), Find.CurrentMap, ThingPlaceMode.Near);
+				}),
 				new DebugMenuOption("Stationary", DebugMenuOptionMode.Tool, delegate
 				{
 					GenPlace.TryPlaceThing(ThingMaker.MakeThing(ThingDefOf.Shuttle), UI.MouseCell(), Find.CurrentMap, ThingPlaceMode.Near);
@@ -377,7 +398,7 @@ namespace Verse
 		[DebugAction("Spawning", null, actionType = DebugActionType.ToolWorld, allowedGameStates = AllowedGameStates.PlayingOnWorld)]
 		private static void SpawnRandomFactionBase()
 		{
-			if (Find.FactionManager.AllFactions.Where((Faction x) => !x.IsPlayer && !x.def.hidden).TryRandomElement(out Faction result))
+			if (Find.FactionManager.AllFactions.Where((Faction x) => !x.IsPlayer && !x.Hidden).TryRandomElement(out var result))
 			{
 				int num = GenWorld.MouseTile();
 				if (!Find.WorldGrid[num].biome.impassable)

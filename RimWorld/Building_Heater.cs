@@ -12,7 +12,7 @@ namespace RimWorld
 			if (compPowerTrader.PowerOn)
 			{
 				float ambientTemperature = base.AmbientTemperature;
-				float num = (ambientTemperature < 20f) ? 1f : ((!(ambientTemperature > 120f)) ? Mathf.InverseLerp(120f, 20f, ambientTemperature) : 0f);
+				float num = ((ambientTemperature < 20f) ? 1f : ((!(ambientTemperature > 120f)) ? Mathf.InverseLerp(120f, 20f, ambientTemperature) : 0f));
 				float energyLimit = compTempControl.Props.energyPerSecond * num * 4.16666651f;
 				float num2 = GenTemperature.ControlTemperatureTempChange(base.Position, base.Map, energyLimit, compTempControl.targetTemperature);
 				bool flag = !Mathf.Approximately(num2, 0f);

@@ -1,165 +1,88 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
+using System.Linq;
 using Verse;
 
 namespace RimWorld
 {
-	[StaticConstructorOnStartup]
-	public class RoyalTitlePermitWorker_CallAid : RoyalTitlePermitWorker, ITargetingSource
+	public class RoyalTitlePermitWorker_CallAid : RoyalTitlePermitWorker_Targeted
 	{
-		private Pawn caller;
-
-		private Map map;
-
-		private bool free;
-
 		private Faction calledFaction;
-
-		private TargetingParameters targetingParameters;
 
 		private float biocodeChance;
 
-		public static readonly Texture2D CommandTex = ContentFinder<Texture2D>.Get("UI/Commands/AttackSettlement");
-
-		public bool CasterIsPawn => true;
-
-		public bool IsMeleeAttack => false;
-
-		public bool Targetable => true;
-
-		public bool MultiSelect => false;
-
-		public Thing Caster => caller;
-
-		public Pawn CasterPawn => caller;
-
-		public Verb GetVerb => null;
-
-		public Texture2D UIIcon => CommandTex;
-
-		public TargetingParameters targetParams => targetingParameters;
-
-		public ITargetingSource DestinationSelector => null;
-
-		public bool CanHitTarget(LocalTargetInfo target)
-		{
-			if (def.royalAid.targetingRequireLOS && !GenSight.LineOfSight(caller.Position, target.Cell, map, skipFirstCell: true))
-			{
-				return false;
-			}
-			return true;
-		}
-
-		public bool ValidateTarget(LocalTargetInfo target)
-		{
-			if (!CanHitTarget(target))
-			{
-				if (target.IsValid)
-				{
-					Messages.Message(def.LabelCap + ": " + "AbilityCannotHitTarget".Translate(), MessageTypeDefOf.RejectInput);
-				}
-				return false;
-			}
-			return true;
-		}
-
-		public void DrawHighlight(LocalTargetInfo target)
-		{
-			GenDraw.DrawRadiusRing(caller.Position, def.royalAid.targetingRange, Color.white);
-			if (target.IsValid)
-			{
-				GenDraw.DrawTargetHighlight(target);
-			}
-		}
-
-		public void OrderForceTarget(LocalTargetInfo target)
-		{
-			CallAid_NewTemp(caller, map, target.Cell, calledFaction, free, biocodeChance);
-		}
-
-		public void OnGUI(LocalTargetInfo target)
-		{
-			Texture2D icon = (!target.IsValid) ? TexCommand.CannotShoot : ((!(UIIcon != BaseContent.BadTex)) ? TexCommand.Attack : UIIcon);
-			GenUI.DrawMouseAttachment(icon);
-		}
-
 		public override IEnumerable<FloatMenuOption> GetRoyalAidOptions(Map map, Pawn pawn, Faction faction)
 		{
-			RoyalTitlePermitWorker_CallAid royalTitlePermitWorker_CallAid = this;
-			Pawn pawn2 = pawn;
-			Map map2 = map;
-			Faction faction2 = faction;
-			if (faction2.HostileTo(Faction.OfPlayer))
+			if (AidDisabled(map, pawn, faction, out var reason))
 			{
-				yield return new FloatMenuOption(def.LabelCap + ": " + "CommandCallRoyalAidFactionHostile".Translate(faction2.Named("FACTION")), null);
+				yield return new FloatMenuOption(def.LabelCap + ": " + reason, null);
 				yield break;
 			}
-			if (!faction2.def.allowedArrivalTemperatureRange.ExpandedBy(-4f).Includes(pawn2.MapHeld.mapTemperature.SeasonalTemp))
-			{
-				yield return new FloatMenuOption(def.LabelCap + ": " + "BadTemperature".Translate(), null);
-				yield break;
-			}
-			if (NeutralGroupIncidentUtility.AnyBlockingHostileLord(pawn2.MapHeld, faction2))
+			if (NeutralGroupIncidentUtility.AnyBlockingHostileLord(pawn.MapHeld, faction))
 			{
 				yield return new FloatMenuOption(def.LabelCap + ": " + "HostileVisitorsPresent".Translate(), null);
 				yield break;
 			}
-			int permitLastUsedTick = pawn2.royalty.GetPermitLastUsedTick(def);
-			int num = Math.Max(GenTicks.TicksGame - permitLastUsedTick, 0);
 			Action action = null;
-			bool num2 = permitLastUsedTick < 0 || num >= def.CooldownTicks;
-			int numTicks = (permitLastUsedTick > 0) ? Math.Max(def.CooldownTicks - num, 0) : 0;
-			string t = def.LabelCap + ": ";
-			if (num2)
+			string description = def.LabelCap + ": ";
+			if (FillAidOption(pawn, faction, ref description, out var free))
 			{
-				t += "CommandCallRoyalAidFreeOption".Translate();
 				action = delegate
 				{
-					royalTitlePermitWorker_CallAid.BeginCallAid(pawn2, map2, faction2, free: true);
+					BeginCallAid(pawn, map, faction, free);
 				};
 			}
-			else
-			{
-				if (pawn2.royalty.GetFavor(faction2) >= def.royalAid.favorCost)
-				{
-					action = delegate
-					{
-						royalTitlePermitWorker_CallAid.BeginCallAid(pawn2, map2, faction2, free: false);
-					};
-				}
-				t += "CommandCallRoyalAidFavorOption".Translate(numTicks.TicksToDays().ToString("0.0"), def.royalAid.favorCost, faction2.Named("FACTION"));
-			}
-			yield return new FloatMenuOption(t, action, faction2.def.FactionIcon, faction2.Color);
+			yield return new FloatMenuOption(description, action, faction.def.FactionIcon, faction.Color);
 		}
 
 		private void BeginCallAid(Pawn caller, Map map, Faction faction, bool free, float biocodeChance = 1f)
 		{
-			targetingParameters = new TargetingParameters();
-			targetingParameters.canTargetLocations = true;
-			targetingParameters.canTargetSelf = false;
-			targetingParameters.canTargetPawns = false;
-			targetingParameters.canTargetFires = false;
-			targetingParameters.canTargetBuildings = false;
-			targetingParameters.canTargetItems = false;
-			targetingParameters.validator = delegate(TargetInfo target)
+			IEnumerable<Faction> source = from f in (from p in map.mapPawns.AllPawnsSpawned
+					where p.Faction != null && !p.Faction.IsPlayer && p.Faction != faction
+					select p.Faction).Distinct()
+				where f.HostileTo(Faction.OfPlayer) && !faction.HostileTo(f)
+				select f;
+			if (source.Any())
 			{
-				if (def.royalAid.targetingRange > 0f && target.Cell.DistanceTo(caller.Position) > def.royalAid.targetingRange)
+				Find.WindowStack.Add(new Dialog_MessageBox("CommandCallRoyalAidWarningNonHostileFactions".Translate(faction, source.Select((Faction f) => f.NameColored.Resolve()).ToCommaList()), "Confirm".Translate(), Call, "GoBack".Translate()));
+			}
+			else
+			{
+				Call();
+			}
+			void Call()
+			{
+				targetingParameters = new TargetingParameters();
+				targetingParameters.canTargetLocations = true;
+				targetingParameters.canTargetSelf = false;
+				targetingParameters.canTargetPawns = false;
+				targetingParameters.canTargetFires = false;
+				targetingParameters.canTargetBuildings = false;
+				targetingParameters.canTargetItems = false;
+				targetingParameters.validator = delegate(TargetInfo target)
 				{
-					return false;
-				}
-				if (target.Cell.Fogged(map) || !DropCellFinder.CanPhysicallyDropInto(target.Cell, map, canRoofPunch: true))
-				{
-					return false;
-				}
-				return target.Cell.GetEdifice(map) == null && !target.Cell.Impassable(map);
-			};
-			this.caller = caller;
-			this.map = map;
-			calledFaction = faction;
-			this.free = free;
-			this.biocodeChance = biocodeChance;
-			Find.Targeter.BeginTargeting(this);
+					if (def.royalAid.targetingRange > 0f && target.Cell.DistanceTo(caller.Position) > def.royalAid.targetingRange)
+					{
+						return false;
+					}
+					if (target.Cell.Fogged(map) || !DropCellFinder.CanPhysicallyDropInto(target.Cell, map, canRoofPunch: true))
+					{
+						return false;
+					}
+					return target.Cell.GetEdifice(map) == null && !target.Cell.Impassable(map);
+				};
+				base.caller = caller;
+				base.map = map;
+				calledFaction = faction;
+				base.free = free;
+				this.biocodeChance = biocodeChance;
+				Find.Targeter.BeginTargeting(this);
+			}
+		}
+
+		public override void OrderForceTarget(LocalTargetInfo target)
+		{
+			CallAid_NewTemp(caller, map, target.Cell, calledFaction, free, biocodeChance);
 		}
 
 		[Obsolete]
@@ -193,7 +116,7 @@ namespace RimWorld
 				{
 					caller.royalty.TryRemoveFavor(faction, def.royalAid.favorCost);
 				}
-				caller.royalty.Notify_PermitUsed(def);
+				caller.royalty.GetPermit(def, faction).Notify_Used();
 			}
 			else
 			{

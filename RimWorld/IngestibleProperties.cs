@@ -62,6 +62,8 @@ namespace RimWorld
 
 		public DrugCategory drugCategory;
 
+		public bool canAutoSelectAsFoodForCaravan = true;
+
 		[Unsaved(false)]
 		private float cachedNutrition = -1f;
 
@@ -143,7 +145,7 @@ namespace RimWorld
 		{
 			if (joy > 0f)
 			{
-				StatCategoryDef category = (drugCategory != 0) ? StatCategoryDefOf.Drug : StatCategoryDefOf.Basics;
+				StatCategoryDef category = ((drugCategory != 0) ? StatCategoryDefOf.Drug : StatCategoryDefOf.Basics);
 				yield return new StatDrawEntry(category, "Joy".Translate(), joy.ToStringPercent("F0") + " (" + JoyKind.label + ")", "Stat_Thing_Ingestible_Joy_Desc".Translate(), 4751);
 			}
 			if (HumanEdible)

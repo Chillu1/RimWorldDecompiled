@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
@@ -19,17 +18,13 @@ namespace RimWorld
 
 		public static Texture2D GetIcon(this HostilityResponseMode response)
 		{
-			switch (response)
+			return response switch
 			{
-			case HostilityResponseMode.Ignore:
-				return IgnoreIcon;
-			case HostilityResponseMode.Attack:
-				return AttackIcon;
-			case HostilityResponseMode.Flee:
-				return FleeIcon;
-			default:
-				return BaseContent.BadTex;
-			}
+				HostilityResponseMode.Ignore => IgnoreIcon, 
+				HostilityResponseMode.Attack => AttackIcon, 
+				HostilityResponseMode.Flee => FleeIcon, 
+				_ => BaseContent.BadTex, 
+			};
 		}
 
 		public static HostilityResponseMode GetNextResponse(Pawn pawn)
@@ -76,34 +71,18 @@ namespace RimWorld
 
 		private static IEnumerable<Widgets.DropdownMenuElement<HostilityResponseMode>> DrawResponseButton_GenerateMenu(Pawn p)
 		{
-			_003C_003Ec__DisplayClass9_0 _003C_003Ec__DisplayClass9_ = new _003C_003Ec__DisplayClass9_0();
-			_003C_003Ec__DisplayClass9_.p = p;
-			IEnumerator enumerator = Enum.GetValues(typeof(HostilityResponseMode)).GetEnumerator();
-			try
+			foreach (HostilityResponseMode response in Enum.GetValues(typeof(HostilityResponseMode)))
 			{
-				while (enumerator.MoveNext())
+				if (response != HostilityResponseMode.Attack || !p.WorkTagIsDisabled(WorkTags.Violent))
 				{
-					_003C_003Ec__DisplayClass9_0 _003C_003Ec__DisplayClass9_2 = _003C_003Ec__DisplayClass9_;
-					HostilityResponseMode response = (HostilityResponseMode)enumerator.Current;
-					if (response != HostilityResponseMode.Attack || !_003C_003Ec__DisplayClass9_2.p.WorkTagIsDisabled(WorkTags.Violent))
+					yield return new Widgets.DropdownMenuElement<HostilityResponseMode>
 					{
-						yield return new Widgets.DropdownMenuElement<HostilityResponseMode>
+						option = new FloatMenuOption(response.GetLabel(), delegate
 						{
-							option = new FloatMenuOption(response.GetLabel(), delegate
-							{
-								_003C_003Ec__DisplayClass9_2.p.playerSettings.hostilityResponse = response;
-							}, response.GetIcon(), Color.white),
-							payload = response
-						};
-					}
-				}
-			}
-			finally
-			{
-				IDisposable disposable = enumerator as IDisposable;
-				if (disposable != null)
-				{
-					disposable.Dispose();
+							p.playerSettings.hostilityResponse = response;
+						}, response.GetIcon(), Color.white),
+						payload = response
+					};
 				}
 			}
 		}

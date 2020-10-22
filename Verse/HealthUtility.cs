@@ -1,8 +1,8 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -185,13 +185,13 @@ namespace Verse
 
 		private static void GiveRandomSurgeryInjuries(Pawn p, int totalDamage, BodyPartRecord operatedPart)
 		{
-			IEnumerable<BodyPartRecord> source = (operatedPart != null) ? (from x in p.health.hediffSet.GetNotMissingParts()
+			IEnumerable<BodyPartRecord> source = ((operatedPart != null) ? (from x in p.health.hediffSet.GetNotMissingParts()
 				where !x.def.conceptual
 				select x into pa
 				where pa == operatedPart || pa.parent == operatedPart || (operatedPart != null && operatedPart.parent == pa)
 				select pa) : (from x in p.health.hediffSet.GetNotMissingParts()
 				where !x.def.conceptual
-				select x);
+				select x));
 			source = source.Where((BodyPartRecord x) => GetMinHealthOfPartsWeWantToAvoidDestroying(x, p) >= 2f);
 			BodyPartRecord brain = p.health.hediffSet.GetBrain();
 			if (brain != null)
@@ -279,7 +279,7 @@ namespace Verse
 				int num2 = Mathf.RoundToInt(hediffSet.GetPartHealth(bodyPartRecord)) - 3;
 				if (num2 >= 8)
 				{
-					DamageDef damageDef = (bodyPartRecord.depth != BodyPartDepth.Outside) ? DamageDefOf.Blunt : ((allowBleedingWounds || !(bodyPartRecord.def.bleedRate > 0f)) ? RandomViolenceDamageType() : DamageDefOf.Blunt);
+					DamageDef damageDef = ((bodyPartRecord.depth != BodyPartDepth.Outside) ? DamageDefOf.Blunt : ((allowBleedingWounds || !(bodyPartRecord.def.bleedRate > 0f)) ? RandomViolenceDamageType() : DamageDefOf.Blunt));
 					int num3 = Rand.RangeInclusive(Mathf.RoundToInt((float)num2 * 0.65f), num2);
 					HediffDef hediffDefFromDamage = GetHediffDefFromDamage(damageDef, p, bodyPartRecord);
 					if (!p.health.WouldDieAfterAddingHediff(hediffDefFromDamage, bodyPartRecord, num3))
@@ -312,8 +312,9 @@ namespace Verse
 				num++;
 				BodyPartRecord bodyPartRecord = HittablePartsViolence(hediffSet).RandomElementByWeight((BodyPartRecord x) => x.coverageAbs);
 				int num2 = Rand.RangeInclusive(8, 25);
-				DamageDef def = (bodyPartRecord.depth != BodyPartDepth.Outside) ? DamageDefOf.Blunt : RandomViolenceDamageType();
+				DamageDef def = ((bodyPartRecord.depth != BodyPartDepth.Outside) ? DamageDefOf.Blunt : RandomViolenceDamageType());
 				DamageInfo dinfo = new DamageInfo(def, num2, 999f, -1f, null, bodyPartRecord);
+				dinfo.SetIgnoreInstantKillProtection(ignore: true);
 				p.TakeDamage(dinfo);
 			}
 			if (!p.Dead)
@@ -342,7 +343,7 @@ namespace Verse
 				int min = Mathf.Clamp(Mathf.RoundToInt(maxHealth * 0.12f), 1, (int)partHealth - 1);
 				int max = Mathf.Clamp(Mathf.RoundToInt(maxHealth * 0.27f), 1, (int)partHealth - 1);
 				int num2 = Rand.RangeInclusive(min, max);
-				DamageDef damageDef = (allowBleedingWounds || !(bodyPartRecord.def.bleedRate > 0f)) ? RandomViolenceDamageType() : DamageDefOf.Blunt;
+				DamageDef damageDef = ((allowBleedingWounds || !(bodyPartRecord.def.bleedRate > 0f)) ? RandomViolenceDamageType() : DamageDefOf.Blunt);
 				HediffDef hediffDefFromDamage = GetHediffDefFromDamage(damageDef, p, bodyPartRecord);
 				if (p.health.WouldDieAfterAddingHediff(hediffDefFromDamage, bodyPartRecord, num2))
 				{
@@ -357,21 +358,15 @@ namespace Verse
 
 		public static DamageDef RandomViolenceDamageType()
 		{
-			switch (Rand.RangeInclusive(0, 4))
+			return Rand.RangeInclusive(0, 4) switch
 			{
-			case 0:
-				return DamageDefOf.Bullet;
-			case 1:
-				return DamageDefOf.Blunt;
-			case 2:
-				return DamageDefOf.Stab;
-			case 3:
-				return DamageDefOf.Scratch;
-			case 4:
-				return DamageDefOf.Cut;
-			default:
-				return null;
-			}
+				0 => DamageDefOf.Bullet, 
+				1 => DamageDefOf.Blunt, 
+				2 => DamageDefOf.Stab, 
+				3 => DamageDefOf.Scratch, 
+				4 => DamageDefOf.Cut, 
+				_ => null, 
+			};
 		}
 
 		public static HediffDef GetHediffDefFromDamage(DamageDef dam, Pawn pawn, BodyPartRecord part)
@@ -452,6 +447,7 @@ namespace Verse
 				num++;
 				if (num > 10000)
 				{
+					Log.Error("Too many iterations.");
 					break;
 				}
 				Hediff firstHediffOfDef = pawn.health.hediffSet.GetFirstHediffOfDef(hediff.def);
@@ -460,9 +456,8 @@ namespace Verse
 					pawn.health.RemoveHediff(firstHediffOfDef);
 					continue;
 				}
-				return;
+				break;
 			}
-			Log.Error("Too many iterations.");
 		}
 	}
 }

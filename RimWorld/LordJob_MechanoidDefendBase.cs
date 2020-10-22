@@ -23,6 +23,8 @@ namespace RimWorld
 
 		protected bool mechClusterDefeated;
 
+		public override bool KeepExistingWhileHasAnyBuilding => true;
+
 		public override void LordJobTick()
 		{
 			base.LordJobTick();
@@ -52,7 +54,7 @@ namespace RimWorld
 					compSendSignalOnCountdown.ticksLeft = 0;
 				}
 				ThingWithComps thingWithComps;
-				if ((thingWithComps = (thing as ThingWithComps)) != null)
+				if ((thingWithComps = thing as ThingWithComps) != null)
 				{
 					thingWithComps.BroadcastCompSignal("MechClusterDefeated");
 				}

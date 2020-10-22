@@ -209,6 +209,11 @@ namespace RimWorld
 				}
 				thing.HitPoints = Mathf.CeilToInt((float)HitPoints / (float)base.MaxHitPoints * (float)thing.MaxHitPoints);
 				GenSpawn.Spawn(thing, base.Position, map, base.Rotation, WipeMode.FullRefund);
+				Building b;
+				if ((b = thing as Building) != null)
+				{
+					worker.GetLord()?.AddBuilding(b);
+				}
 			}
 			else
 			{

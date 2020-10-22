@@ -18,7 +18,7 @@ namespace RimWorld
 			{
 				if (!reason.NullOrEmpty())
 				{
-					string text = base.CurStage.label.Formatted(reason).CapitalizeFirst();
+					string text = base.CurStage.label.Formatted(reason.Named("REASON"), pawn.Named("PAWN")).CapitalizeFirst();
 					if (def.Worker != null)
 					{
 						text = def.Worker.PostProcessLabel(pawn, text);

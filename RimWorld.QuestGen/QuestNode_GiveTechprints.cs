@@ -43,7 +43,7 @@ namespace RimWorld.QuestGen
 			QuestPart_GiveTechprints questPart_GiveTechprints = new QuestPart_GiveTechprints();
 			questPart_GiveTechprints.amount = 1;
 			questPart_GiveTechprints.project = researchProjectDef;
-			questPart_GiveTechprints.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart_GiveTechprints.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			questPart_GiveTechprints.outSignalWasGiven = QuestGenUtility.HardcodedSignalWithQuestID("AddedTechprints");
 			QuestGen.quest.AddPart(questPart_GiveTechprints);
 			if (storeProjectAs.GetValue(slate) != null)

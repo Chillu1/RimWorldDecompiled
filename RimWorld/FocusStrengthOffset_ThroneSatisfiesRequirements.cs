@@ -5,6 +5,8 @@ namespace RimWorld
 {
 	public class FocusStrengthOffset_ThroneSatisfiesRequirements : FocusStrengthOffset
 	{
+		public override bool DependsOnPawn => true;
+
 		public override string GetExplanation(Thing parent)
 		{
 			return GetExplanationAbstract();
@@ -17,10 +19,6 @@ namespace RimWorld
 
 		public override float GetOffset(Thing parent, Pawn user = null)
 		{
-			if (!CanApply(parent, user))
-			{
-				return 0f;
-			}
 			return offset;
 		}
 

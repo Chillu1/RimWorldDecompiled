@@ -163,8 +163,8 @@ namespace Verse
 				{
 					XmlNode xmlNode = wantedDictRef["key"];
 					XmlNode xmlNode2 = wantedDictRef["value"];
-					object first = (!flag) ? xmlNode : ((object)TryResolveDef<K>(xmlNode.InnerText, failReportMode, debugWanterInfo));
-					object second = (!flag2) ? xmlNode2 : ((object)TryResolveDef<V>(xmlNode2.InnerText, failReportMode, debugWanterInfo));
+					object first = ((!flag) ? xmlNode : ((object)TryResolveDef<K>(xmlNode.InnerText, failReportMode, debugWanterInfo)));
+					object second = ((!flag2) ? xmlNode2 : ((object)TryResolveDef<V>(xmlNode2.InnerText, failReportMode, debugWanterInfo)));
 					makingData.Add(new Pair<object, object>(first, second));
 				}
 				return true;
@@ -253,7 +253,7 @@ namespace Verse
 			try
 			{
 				WantedRefForList<T> wantedRefForList = null;
-				if (!wantedListDictRefs.TryGetValue(wanterList, out WantedRef value))
+				if (!wantedListDictRefs.TryGetValue(wanterList, out var value))
 				{
 					wantedRefForList = new WantedRefForList<T>(wanterList, debugWanterInfo);
 					wantedListDictRefs.Add(wanterList, wantedRefForList);
@@ -277,7 +277,7 @@ namespace Verse
 			try
 			{
 				WantedRefForDictionary<K, V> wantedRefForDictionary = null;
-				if (!wantedListDictRefs.TryGetValue(wanterDict, out WantedRef value))
+				if (!wantedListDictRefs.TryGetValue(wanterDict, out var value))
 				{
 					wantedRefForDictionary = new WantedRefForDictionary<K, V>(wanterDict, debugWanterInfo);
 					wantedRefs.Add(wantedRefForDictionary);

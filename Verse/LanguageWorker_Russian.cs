@@ -115,6 +115,11 @@ namespace Verse
 			return _languageWorkerResolverRegex.Replace(translation, EvaluateResolver);
 		}
 
+		public override string ToTitleCase(string str)
+		{
+			return GenText.ToTitleCaseSmart(str);
+		}
+
 		private static string EvaluateResolver(Match match)
 		{
 			string value = match.Groups["resolverName"].Value;
@@ -158,7 +163,7 @@ namespace Verse
 				return str;
 			}
 			char c = str[str.Length - 1];
-			char c2 = (str.Length >= 2) ? str[str.Length - 2] : '\0';
+			char c2 = ((str.Length >= 2) ? str[str.Length - 2] : '\0');
 			switch (gender)
 			{
 			case Gender.None:

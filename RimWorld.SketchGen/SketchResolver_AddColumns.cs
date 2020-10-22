@@ -39,7 +39,7 @@ namespace RimWorld.SketchGen
 				if (Rand.Bool)
 				{
 					int newZ = Rand.RangeInclusive(cellRect.minZ, cellRect.CenterCell.z);
-					int num = (cellRect.Width >= 4) ? Rand.Element(2, 3) : 2;
+					int num = ((cellRect.Width >= 4) ? Rand.Element(2, 3) : 2);
 					for (int j = cellRect.minX; j <= cellRect.maxX; j += num)
 					{
 						if (!flag || parms.sketch.AnyTerrainAt(new IntVec3(j, 0, newZ)))
@@ -50,13 +50,13 @@ namespace RimWorld.SketchGen
 					ResolveParams parms2 = parms;
 					parms2.sketch = sketch;
 					parms2.symmetryOrigin = rects[i].minZ + rects[i].Height / 2;
-					parms2.symmetryOriginIncluded = (rects[i].Height % 2 == 1);
+					parms2.symmetryOriginIncluded = rects[i].Height % 2 == 1;
 					SketchResolverDefOf.Symmetry.Resolve(parms2);
 				}
 				else
 				{
 					int newX = Rand.RangeInclusive(cellRect.minX, cellRect.CenterCell.x);
-					int num2 = (cellRect.Height >= 4) ? Rand.Element(2, 3) : 2;
+					int num2 = ((cellRect.Height >= 4) ? Rand.Element(2, 3) : 2);
 					for (int k = cellRect.minZ; k <= cellRect.maxZ; k += num2)
 					{
 						if (!flag || parms.sketch.AnyTerrainAt(new IntVec3(newX, 0, k)))
@@ -67,7 +67,7 @@ namespace RimWorld.SketchGen
 					ResolveParams parms3 = parms;
 					parms3.sketch = sketch;
 					parms3.symmetryOrigin = rects[i].minX + rects[i].Width / 2;
-					parms3.symmetryOriginIncluded = (rects[i].Width % 2 == 1);
+					parms3.symmetryOriginIncluded = rects[i].Width % 2 == 1;
 					SketchResolverDefOf.Symmetry.Resolve(parms3);
 				}
 				parms.sketch.Merge(sketch, wipeIfCollides: false);

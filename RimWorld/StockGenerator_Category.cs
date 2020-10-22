@@ -16,12 +16,11 @@ namespace RimWorld
 
 		public override IEnumerable<Thing> GenerateThings(int forTile, Faction faction = null)
 		{
-			StockGenerator_Category stockGenerator_Category = this;
 			List<ThingDef> generatedDefs = new List<ThingDef>();
 			int numThingDefsToUse = thingDefCountRange.RandomInRange;
 			for (int i = 0; i < numThingDefsToUse; i++)
 			{
-				if (!categoryDef.DescendantThingDefs.Where((ThingDef t) => t.tradeability.TraderCanSell() && (int)t.techLevel <= (int)stockGenerator_Category.maxTechLevelGenerate && !generatedDefs.Contains(t) && (stockGenerator_Category.excludedThingDefs == null || !stockGenerator_Category.excludedThingDefs.Contains(t)) && (stockGenerator_Category.excludedCategories == null || !stockGenerator_Category.excludedCategories.Any((ThingCategoryDef c) => c.DescendantThingDefs.Contains(t)))).TryRandomElement(out ThingDef chosenThingDef))
+				if (!categoryDef.DescendantThingDefs.Where((ThingDef t) => t.tradeability.TraderCanSell() && (int)t.techLevel <= (int)maxTechLevelGenerate && !generatedDefs.Contains(t) && (excludedThingDefs == null || !excludedThingDefs.Contains(t)) && (excludedCategories == null || !excludedCategories.Any((ThingCategoryDef c) => c.DescendantThingDefs.Contains(t)))).TryRandomElement(out var chosenThingDef))
 				{
 					break;
 				}

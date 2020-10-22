@@ -28,7 +28,7 @@ namespace RimWorld
 				List<FloatMenuOption> list = new List<FloatMenuOption>();
 				foreach (StatDef allDef in DefDatabase<StatDef>.AllDefs)
 				{
-					if (!allDef.forInformationOnly)
+					if (!allDef.forInformationOnly && allDef.CanShowWithLoadedMods())
 					{
 						StatDef localSd = allDef;
 						list.Add(new FloatMenuOption(localSd.LabelForFullStatListCap, delegate

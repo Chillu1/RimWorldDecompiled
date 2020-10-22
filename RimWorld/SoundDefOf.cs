@@ -265,17 +265,30 @@ namespace RimWorld
 
 		public static SoundDef MechSerumUsed;
 
-		[MayRequireRoyalty]
-		public static SoundDef PsycastPsychicEffect;
+		public static SoundDef WaterMill_Ambience;
+
+		public static SoundDef ShipReactor_Startup;
+
+		public static SoundDef Standard_Reload;
+
+		public static SoundDef WindTurbine_Ambience;
+
+		public static SoundDef Bombardment_PreImpact;
 
 		[MayRequireRoyalty]
-		public static SoundDef PsycastSkipEffect;
+		public static SoundDef PsycastPsychicEffect;
 
 		[MayRequireRoyalty]
 		public static SoundDef PsycastPsychicPulse;
 
 		[MayRequireRoyalty]
-		public static SoundDef PsycastSkipPulse;
+		public static SoundDef Psycast_Skip_Pulse;
+
+		[MayRequireRoyalty]
+		public static SoundDef Psycast_Skip_Exit;
+
+		[MayRequireRoyalty]
+		public static SoundDef Psycast_Skip_Entry;
 
 		[MayRequireRoyalty]
 		public static SoundDef PsycastCastLoop;
@@ -300,6 +313,21 @@ namespace RimWorld
 
 		[MayRequireRoyalty]
 		public static SoundDef TechprintApplied;
+
+		[MayRequireRoyalty]
+		public static SoundDef Bestowing_Start;
+
+		[MayRequireRoyalty]
+		public static SoundDef Bestowing_Warmup;
+
+		[MayRequireRoyalty]
+		public static SoundDef Bestowing_Finished;
+
+		[MayRequireRoyalty]
+		public static SoundDef OrbitalStrike_Ordered;
+
+		[MayRequireRoyalty]
+		public static SoundDef Broadshield_Startup;
 
 		public static SoundDef GameStartSting;
 

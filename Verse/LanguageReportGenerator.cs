@@ -1,9 +1,9 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using RimWorld;
 
 namespace Verse
 {
@@ -385,7 +385,7 @@ namespace Verse
 			int num = 0;
 			foreach (KeyValuePair<string, LoadedLanguage.KeyedReplacement> keyedReplacement in activeLanguage.keyedReplacements)
 			{
-				if (!keyedReplacement.Value.isPlaceholder && defaultLanguage.TryGetTextFromKey(keyedReplacement.Key, out TaggedString translated) && keyedReplacement.Value.value == (string)translated)
+				if (!keyedReplacement.Value.isPlaceholder && defaultLanguage.TryGetTextFromKey(keyedReplacement.Key, out var translated) && keyedReplacement.Value.value == (string)translated)
 				{
 					num++;
 					stringBuilder.AppendLine(keyedReplacement.Key + " '" + keyedReplacement.Value.value.Replace("\n", "\\n") + "' (" + activeLanguage.GetKeySourceFileAndLine(keyedReplacement.Key) + ")");

@@ -17,7 +17,7 @@ namespace RimWorld
 				rec = new ApparelGraphicRecord(null, null);
 				return false;
 			}
-			string path = (apparel.def.apparel.LastLayer != ApparelLayerDefOf.Overhead && !(apparel.def.apparel.wornGraphicPath == BaseContent.PlaceholderImagePath)) ? (apparel.def.apparel.wornGraphicPath + "_" + bodyType.defName) : apparel.def.apparel.wornGraphicPath;
+			string path = ((apparel.def.apparel.LastLayer != ApparelLayerDefOf.Overhead && !PawnRenderer.RenderAsPack(apparel) && !(apparel.def.apparel.wornGraphicPath == BaseContent.PlaceholderImagePath)) ? (apparel.def.apparel.wornGraphicPath + "_" + bodyType.defName) : apparel.def.apparel.wornGraphicPath);
 			Shader shader = ShaderDatabase.Cutout;
 			if (apparel.def.apparel.useWornGraphicMask)
 			{

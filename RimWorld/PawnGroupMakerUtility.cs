@@ -33,7 +33,7 @@ namespace RimWorld
 				Log.Error(string.Concat("Faction ", parms.faction, " of def ", parms.faction.def, " has no any PawnGroupMakers."));
 				yield break;
 			}
-			if (!TryGetRandomPawnGroupMaker(parms, out PawnGroupMaker pawnGroupMaker))
+			if (!TryGetRandomPawnGroupMaker(parms, out var pawnGroupMaker))
 			{
 				Log.Error(string.Concat("Faction ", parms.faction, " of def ", parms.faction.def, " has no usable PawnGroupMakers for parms ", parms));
 				yield break;
@@ -61,7 +61,7 @@ namespace RimWorld
 				Log.Error(string.Concat("Faction ", parms.faction, " of def ", parms.faction.def, " has no any PawnGroupMakers."));
 				yield break;
 			}
-			if (!TryGetRandomPawnGroupMaker(parms, out PawnGroupMaker pawnGroupMaker))
+			if (!TryGetRandomPawnGroupMaker(parms, out var pawnGroupMaker))
 			{
 				Log.Error(string.Concat("Faction ", parms.faction, " of def ", parms.faction.def, " has no usable PawnGroupMakers for parms ", parms));
 				yield break;
@@ -196,9 +196,9 @@ namespace RimWorld
 							orderby pa.kindDef.combatPower
 							select pa)
 						{
-							string text = (item.equipment.Primary == null) ? "no-equipment" : item.equipment.Primary.Label;
+							string text = ((item.equipment.Primary == null) ? "no-equipment" : item.equipment.Primary.Label);
 							Apparel apparel = item.apparel.FirstApparelOnBodyPartGroup(BodyPartGroupDefOf.Torso);
-							string text2 = (apparel == null) ? "shirtless" : apparel.LabelCap;
+							string text2 = ((apparel == null) ? "shirtless" : apparel.LabelCap);
 							sb.AppendLine("  " + item.kindDef.combatPower.ToString("F0").PadRight(6) + item.kindDef.defName + ", " + text + ", " + text2);
 							num += item.kindDef.combatPower;
 						}
@@ -216,7 +216,7 @@ namespace RimWorld
 
 		public static bool TryGetRandomFactionForCombatPawnGroup(float points, out Faction faction, Predicate<Faction> validator = null, bool allowNonHostileToPlayer = false, bool allowHidden = false, bool allowDefeated = false, bool allowNonHumanlike = true)
 		{
-			return Find.FactionManager.AllFactions.Where((Faction f) => (allowHidden || !f.def.hidden) && (allowDefeated || !f.defeated) && (allowNonHumanlike || f.def.humanlikeFaction) && (allowNonHostileToPlayer || f.HostileTo(Faction.OfPlayer)) && f.def.pawnGroupMakers != null && f.def.pawnGroupMakers.Any((PawnGroupMaker x) => x.kindDef == PawnGroupKindDefOf.Combat) && (validator == null || validator(f)) && points >= f.def.MinPointsToGeneratePawnGroup(PawnGroupKindDefOf.Combat)).ToList().TryRandomElementByWeight((Faction f) => f.def.RaidCommonalityFromPoints(points), out faction);
+			return Find.FactionManager.AllFactions.Where((Faction f) => (allowHidden || !f.Hidden) && !f.temporary && (allowDefeated || !f.defeated) && (allowNonHumanlike || f.def.humanlikeFaction) && (allowNonHostileToPlayer || f.HostileTo(Faction.OfPlayer)) && f.def.pawnGroupMakers != null && f.def.pawnGroupMakers.Any((PawnGroupMaker x) => x.kindDef == PawnGroupKindDefOf.Combat) && (validator == null || validator(f)) && points >= f.def.MinPointsToGeneratePawnGroup(PawnGroupKindDefOf.Combat)).ToList().TryRandomElementByWeight((Faction f) => f.def.RaidCommonalityFromPoints(points), out faction);
 		}
 	}
 }

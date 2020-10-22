@@ -9,7 +9,7 @@ namespace RimWorld.BaseGen
 			ThingDef singleThingDef = rp.singleThingDef ?? Rand.Element(ThingDefOf.Bed, ThingDefOf.Bedroll, ThingDefOf.SleepingSpot);
 			ResolveParams resolveParams = rp;
 			resolveParams.singleThingDef = singleThingDef;
-			resolveParams.skipSingleThingIfHasToWipeBuildingOrDoesntFit = (rp.skipSingleThingIfHasToWipeBuildingOrDoesntFit ?? true);
+			resolveParams.skipSingleThingIfHasToWipeBuildingOrDoesntFit = rp.skipSingleThingIfHasToWipeBuildingOrDoesntFit ?? true;
 			BaseGen.symbolStack.Push("thing", resolveParams);
 		}
 	}

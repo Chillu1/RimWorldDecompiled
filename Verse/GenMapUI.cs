@@ -134,7 +134,7 @@ namespace Verse
 			GameFont font2 = Text.Font;
 			Text.Font = font;
 			string pawnLabel = GetPawnLabel(pawn, truncateToWidth, truncatedLabelsCache, font);
-			float num = (font != 0) ? Text.CalcSize(pawnLabel).x : pawnLabel.GetWidthCached();
+			float num = ((font != 0) ? Text.CalcSize(pawnLabel).x : pawnLabel.GetWidthCached());
 			if (Math.Abs(Math.Round(Prefs.UIScale) - (double)Prefs.UIScale) > 1.4012984643248171E-45)
 			{
 				num += 0.5f;

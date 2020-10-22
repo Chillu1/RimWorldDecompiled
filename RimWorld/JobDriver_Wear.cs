@@ -71,28 +71,21 @@ namespace RimWorld
 		{
 			Apparel apparel = Apparel;
 			List<Apparel> wornApparel = pawn.apparel.WornApparel;
-			int num = wornApparel.Count - 1;
-			while (true)
+			for (int num = wornApparel.Count - 1; num >= 0; num--)
 			{
-				if (num >= 0)
+				if (!ApparelUtility.CanWearTogether(apparel.def, wornApparel[num].def, pawn.RaceProps.body))
 				{
-					if (!ApparelUtility.CanWearTogether(apparel.def, wornApparel[num].def, pawn.RaceProps.body))
+					int num2 = (int)(wornApparel[num].GetStatValue(StatDefOf.EquipDelay) * 60f);
+					if (unequipBuffer >= num2)
 					{
-						break;
+						bool forbid = pawn.Faction != null && pawn.Faction.HostileTo(Faction.OfPlayer);
+						if (!pawn.apparel.TryDrop(wornApparel[num], out var _, pawn.PositionHeld, forbid))
+						{
+							Log.Error(string.Concat(pawn, " could not drop ", wornApparel[num].ToStringSafe()));
+							EndJobWith(JobCondition.Errored);
+						}
 					}
-					num--;
-					continue;
-				}
-				return;
-			}
-			int num2 = (int)(wornApparel[num].GetStatValue(StatDefOf.EquipDelay) * 60f);
-			if (unequipBuffer >= num2)
-			{
-				bool forbid = pawn.Faction != null && pawn.Faction.HostileTo(Faction.OfPlayer);
-				if (!pawn.apparel.TryDrop(wornApparel[num], out Apparel _, pawn.PositionHeld, forbid))
-				{
-					Log.Error(string.Concat(pawn, " could not drop ", wornApparel[num].ToStringSafe()));
-					EndJobWith(JobCondition.Errored);
+					break;
 				}
 			}
 		}

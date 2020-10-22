@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 using Verse.Sound;
 
@@ -113,7 +113,7 @@ namespace Verse
 				if (dragBegun && draggingReorderable >= 0)
 				{
 					int indexWithinGroup = GetIndexWithinGroup(draggingReorderable);
-					int num = (lastInsertNear == draggingReorderable) ? indexWithinGroup : ((!lastInsertNearLeft) ? (GetIndexWithinGroup(lastInsertNear) + 1) : GetIndexWithinGroup(lastInsertNear));
+					int num = ((lastInsertNear == draggingReorderable) ? indexWithinGroup : ((!lastInsertNearLeft) ? (GetIndexWithinGroup(lastInsertNear) + 1) : GetIndexWithinGroup(lastInsertNear)));
 					if (num >= 0 && num != indexWithinGroup && num != indexWithinGroup + 1)
 					{
 						SoundDefOf.Tick_High.PlayOneShotOnCamera();
@@ -258,11 +258,11 @@ namespace Verse
 				ReorderableInstance reorderableInstance2 = reorderables[num];
 				if (groups[reorderableInstance2.groupID].direction == ReorderableDirection.Horizontal)
 				{
-					toTheLeft = (Event.current.mousePosition.x < reorderableInstance2.absRect.center.x);
+					toTheLeft = Event.current.mousePosition.x < reorderableInstance2.absRect.center.x;
 				}
 				else
 				{
-					toTheLeft = (Event.current.mousePosition.y < reorderableInstance2.absRect.center.y);
+					toTheLeft = Event.current.mousePosition.y < reorderableInstance2.absRect.center.y;
 				}
 			}
 			return num;

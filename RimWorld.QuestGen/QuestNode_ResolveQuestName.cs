@@ -29,7 +29,7 @@ namespace RimWorld.QuestGen
 
 		public static void Resolve()
 		{
-			if (!QuestGen.slate.TryGet("resolvedQuestName", out string var))
+			if (!QuestGen.slate.TryGet<string>("resolvedQuestName", out var var))
 			{
 				var = GenerateName().StripTags();
 				QuestGen.slate.Set("resolvedQuestName", var);
@@ -56,7 +56,7 @@ namespace RimWorld.QuestGen
 			for (i = 0; i < 20; i++)
 			{
 				text = NameGenerator.GenerateName(req, null, appendNumberIfNameUsed: false, "questName");
-				if (predicate(text))
+				if (predicate(text) || QuestGen.Root.defaultHidden)
 				{
 					break;
 				}

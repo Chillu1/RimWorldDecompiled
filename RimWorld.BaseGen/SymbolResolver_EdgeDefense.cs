@@ -38,29 +38,29 @@ namespace RimWorld.BaseGen
 			switch (width)
 			{
 			case 1:
-				num2 = (rp.edgeDefenseTurretsCount ?? 0);
+				num2 = rp.edgeDefenseTurretsCount ?? 0;
 				num3 = 0;
 				flag = false;
 				flag2 = true;
 				flag3 = true;
 				break;
 			case 2:
-				num2 = (rp.edgeDefenseTurretsCount ?? (rp.rect.EdgeCellsCount / 30));
+				num2 = rp.edgeDefenseTurretsCount ?? (rp.rect.EdgeCellsCount / 30);
 				num3 = 0;
 				flag = false;
 				flag2 = false;
 				flag3 = true;
 				break;
 			case 3:
-				num2 = (rp.edgeDefenseTurretsCount ?? (rp.rect.EdgeCellsCount / 30));
-				num3 = (rp.edgeDefenseMortarsCount ?? (rp.rect.EdgeCellsCount / 75));
-				flag = (num3 == 0);
+				num2 = rp.edgeDefenseTurretsCount ?? (rp.rect.EdgeCellsCount / 30);
+				num3 = rp.edgeDefenseMortarsCount ?? (rp.rect.EdgeCellsCount / 75);
+				flag = num3 == 0;
 				flag2 = false;
 				flag3 = true;
 				break;
 			default:
-				num2 = (rp.edgeDefenseTurretsCount ?? (rp.rect.EdgeCellsCount / 30));
-				num3 = (rp.edgeDefenseMortarsCount ?? (rp.rect.EdgeCellsCount / 75));
+				num2 = rp.edgeDefenseTurretsCount ?? (rp.rect.EdgeCellsCount / 30);
+				num3 = rp.edgeDefenseMortarsCount ?? (rp.rect.EdgeCellsCount / 75);
 				flag = true;
 				flag2 = false;
 				flag3 = false;
@@ -81,7 +81,7 @@ namespace RimWorld.BaseGen
 					resolveParams.faction = faction;
 					resolveParams.singlePawnLord = singlePawnLord;
 					resolveParams.singlePawnGenerationRequest = value;
-					resolveParams.singlePawnSpawnCellExtraPredicate = (resolveParams.singlePawnSpawnCellExtraPredicate ?? ((Predicate<IntVec3>)delegate(IntVec3 x)
+					resolveParams.singlePawnSpawnCellExtraPredicate = resolveParams.singlePawnSpawnCellExtraPredicate ?? ((Predicate<IntVec3>)delegate(IntVec3 x)
 					{
 						CellRect cellRect = rp.rect;
 						for (int m = 0; m < width; m++)
@@ -93,7 +93,7 @@ namespace RimWorld.BaseGen
 							cellRect = cellRect.ContractedBy(1);
 						}
 						return true;
-					}));
+					});
 					BaseGen.symbolStack.Push("pawn", resolveParams);
 				}
 			}
@@ -113,7 +113,7 @@ namespace RimWorld.BaseGen
 				}
 				rect = rect.ContractedBy(1);
 			}
-			CellRect rect2 = flag3 ? rp.rect : rp.rect.ContractedBy(1);
+			CellRect rect2 = (flag3 ? rp.rect : rp.rect.ContractedBy(1));
 			for (int k = 0; k < num3; k++)
 			{
 				ResolveParams resolveParams3 = rp;
@@ -121,14 +121,14 @@ namespace RimWorld.BaseGen
 				resolveParams3.rect = rect2;
 				BaseGen.symbolStack.Push("edgeMannedMortar", resolveParams3);
 			}
-			CellRect rect3 = flag2 ? rp.rect : rp.rect.ContractedBy(1);
+			CellRect rect3 = (flag2 ? rp.rect : rp.rect.ContractedBy(1));
 			for (int l = 0; l < num2; l++)
 			{
 				ResolveParams resolveParams4 = rp;
 				resolveParams4.faction = faction;
 				resolveParams4.singleThingDef = ThingDefOf.Turret_MiniTurret;
 				resolveParams4.rect = rect3;
-				resolveParams4.edgeThingAvoidOtherEdgeThings = (rp.edgeThingAvoidOtherEdgeThings ?? true);
+				resolveParams4.edgeThingAvoidOtherEdgeThings = rp.edgeThingAvoidOtherEdgeThings ?? true;
 				BaseGen.symbolStack.Push("edgeThing", resolveParams4);
 			}
 		}

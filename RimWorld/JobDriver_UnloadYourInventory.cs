@@ -38,9 +38,9 @@ namespace RimWorld
 				else
 				{
 					ThingCount firstUnloadableThing = pawn.inventory.FirstUnloadableThing;
-					if (!StoreUtility.TryFindStoreCellNearColonyDesperate(firstUnloadableThing.Thing, pawn, out IntVec3 storeCell))
+					if (!StoreUtility.TryFindStoreCellNearColonyDesperate(firstUnloadableThing.Thing, pawn, out var storeCell))
 					{
-						pawn.inventory.innerContainer.TryDrop(firstUnloadableThing.Thing, ThingPlaceMode.Near, firstUnloadableThing.Count, out Thing _);
+						pawn.inventory.innerContainer.TryDrop(firstUnloadableThing.Thing, ThingPlaceMode.Near, firstUnloadableThing.Count, out var _);
 						EndJobWith(JobCondition.Succeeded);
 					}
 					else

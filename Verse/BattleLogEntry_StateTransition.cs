@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 using Verse.Grammar;
 
@@ -42,7 +42,7 @@ namespace Verse
 		{
 			if (subject is Pawn)
 			{
-				subjectPawn = (subject as Pawn);
+				subjectPawn = subject as Pawn;
 			}
 			else if (subject != null)
 			{

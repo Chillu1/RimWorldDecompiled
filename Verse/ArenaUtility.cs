@@ -1,8 +1,8 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse.AI.Group;
 
@@ -48,7 +48,7 @@ namespace Verse
 			mapParent.SetFaction(Faction.OfPlayer);
 			Find.WorldObjects.Add(mapParent);
 			Map orGenerateMap = GetOrGenerateMapUtility.GetOrGenerateMap(mapParent.Tile, new IntVec3(50, 1, 50), null);
-			MultipleCaravansCellFinder.FindStartingCellsFor2Groups(orGenerateMap, out IntVec3 first, out IntVec3 second);
+			MultipleCaravansCellFinder.FindStartingCellsFor2Groups(orGenerateMap, out var first, out var second);
 			List<Pawn> lhs2 = SpawnPawnSet(orGenerateMap, lhs, first, Faction.OfAncients);
 			List<Pawn> rhs2 = SpawnPawnSet(orGenerateMap, rhs, second, Faction.OfAncientsHostile);
 			DebugArena component = mapParent.GetComponent<DebugArena>();

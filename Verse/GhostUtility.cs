@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -18,7 +18,7 @@ namespace Verse
 			seed = Gen.HashCombine(seed, baseGraphic);
 			seed = Gen.HashCombine(seed, thingDef);
 			seed = Gen.HashCombineStruct(seed, ghostCol);
-			if (!ghostGraphics.TryGetValue(seed, out Graphic value))
+			if (!ghostGraphics.TryGetValue(seed, out var value))
 			{
 				if (thingDef.graphicData.Linked || thingDef.IsDoor)
 				{

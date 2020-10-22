@@ -17,7 +17,7 @@ namespace RimWorld
 			if (Rand.MTBEventOccurs(num, 60000f, 1000f))
 			{
 				IncidentParms parms = GenerateParms(Props.category, target);
-				if (UsableIncidentsInCategory(Props.category, parms).TryRandomElementByWeight((IncidentDef incDef) => IncidentChanceFinal(incDef), out IncidentDef result))
+				if (UsableIncidentsInCategory(Props.category, parms).TryRandomElementByWeight((IncidentDef incDef) => IncidentChanceFinal(incDef), out var result))
 				{
 					yield return new FiringIncident(result, this, parms);
 				}

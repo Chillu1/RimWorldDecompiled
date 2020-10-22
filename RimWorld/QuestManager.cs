@@ -78,6 +78,18 @@ namespace RimWorld
 			return false;
 		}
 
+		public bool IsReservedByAnyQuest(Faction f)
+		{
+			for (int i = 0; i < quests.Count; i++)
+			{
+				if (quests[i].QuestReserves(f))
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
 		private void AddToCache(Quest quest)
 		{
 			questsInDisplayOrder.Add(quest);
@@ -170,6 +182,14 @@ namespace RimWorld
 				{
 					quests[i].Notify_PawnKilled(pawn, dinfo);
 				}
+			}
+		}
+
+		public void Notify_FactionRemoved(Faction faction)
+		{
+			for (int i = 0; i < quests.Count; i++)
+			{
+				quests[i].Notify_FactionRemoved(faction);
 			}
 		}
 	}

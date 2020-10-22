@@ -201,7 +201,7 @@ namespace RimWorld.Planet
 				Log.Error("Called FindPawnToMoveInventoryTo but the item is a pawn.");
 				return null;
 			}
-			if (candidates.Where((Pawn x) => CanMoveInventoryTo(x) && (ignoreCandidates == null || !ignoreCandidates.Contains(x)) && x != currentItemOwner && !MassUtility.IsOverEncumbered(x)).TryRandomElement(out Pawn result))
+			if (candidates.Where((Pawn x) => CanMoveInventoryTo(x) && (ignoreCandidates == null || !ignoreCandidates.Contains(x)) && x != currentItemOwner && !MassUtility.IsOverEncumbered(x)).TryRandomElement(out var result))
 			{
 				return result;
 			}

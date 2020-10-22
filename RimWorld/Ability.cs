@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
+using UnityEngine;
 using Verse;
 using Verse.AI;
+using Verse.Sound;
 
 namespace RimWorld
 {
-	public class Ability : IVerbOwner, IExposable
+	public class Ability : IVerbOwner, IExposable, ILoadReferenceable
 	{
 		public Pawn pawn;
 
@@ -23,6 +26,14 @@ namespace RimWorld
 		private int cooldownTicksDuration;
 
 		private Mote warmupMote;
+
+		private Sustainer soundCast;
+
+		private bool wasCastingOnPrevTick;
+
+		private List<PreCastAction> preCastActions = new List<PreCastAction>();
+
+		private List<Pair<Effecter, TargetInfo>> maintainedEffecters = new List<Pair<Effecter, TargetInfo>>();
 
 		private List<CompAbilityEffect> effectComps;
 
@@ -62,6 +73,22 @@ namespace RimWorld
 		public bool HasCooldown => def.cooldownTicksRange != default(IntRange);
 
 		public virtual bool CanCast => cooldownTicks <= 0;
+
+		public bool Casting
+		{
+			get
+			{
+				if (!verb.WarmingUp)
+				{
+					if (pawn.jobs?.curDriver is JobDriver_CastAbilityWorld)
+					{
+						return pawn.CurJob.ability == this;
+					}
+					return false;
+				}
+				return true;
+			}
+		}
 
 		public virtual bool CanQueueCast
 		{
@@ -115,14 +142,64 @@ namespace RimWorld
 
 		public virtual bool CanApplyOn(LocalTargetInfo target)
 		{
-			foreach (CompAbilityEffect effectComp in effectComps)
+			if (effectComps != null)
 			{
-				if (!effectComp.CanApplyOn(target, null))
+				foreach (CompAbilityEffect effectComp in effectComps)
 				{
-					return false;
+					if (!effectComp.CanApplyOn(target, null))
+					{
+						return false;
+					}
 				}
 			}
 			return true;
+		}
+
+		public virtual bool CanApplyOn(GlobalTargetInfo target)
+		{
+			if (effectComps != null)
+			{
+				foreach (CompAbilityEffect effectComp in effectComps)
+				{
+					if (!effectComp.CanApplyOn(target))
+					{
+						return false;
+					}
+				}
+			}
+			return true;
+		}
+
+		public string ConfirmationDialogText(LocalTargetInfo target)
+		{
+			if (effectComps != null)
+			{
+				foreach (CompAbilityEffect effectComp in effectComps)
+				{
+					string text = effectComp.ConfirmationDialogText(target);
+					if (!text.NullOrEmpty())
+					{
+						return text;
+					}
+				}
+			}
+			return def.confirmationDialogText;
+		}
+
+		public string ConfirmationDialogText(GlobalTargetInfo target)
+		{
+			if (effectComps != null)
+			{
+				foreach (CompAbilityEffect effectComp in effectComps)
+				{
+					string text = effectComp.ConfirmationDialogText(target);
+					if (!text.NullOrEmpty())
+					{
+						return text;
+					}
+				}
+			}
+			return def.confirmationDialogText;
 		}
 
 		public virtual bool Activate(LocalTargetInfo target, LocalTargetInfo dest)
@@ -132,7 +209,26 @@ namespace RimWorld
 				return false;
 			}
 			ApplyEffects(EffectComps, GetAffectedTargets(target), dest);
-			Find.BattleLog.Add(new BattleLogEntry_AbilityUsed(pawn, target.Thing, def, RulePackDefOf.Event_AbilityUsed));
+			if (def.writeCombatLog)
+			{
+				Find.BattleLog.Add(new BattleLogEntry_AbilityUsed(pawn, target.Thing, def, RulePackDefOf.Event_AbilityUsed));
+			}
+			preCastActions.Clear();
+			return true;
+		}
+
+		public virtual bool Activate(GlobalTargetInfo target)
+		{
+			if (!EffectComps.Any())
+			{
+				return false;
+			}
+			ApplyEffects(EffectComps, target);
+			if (def.writeCombatLog)
+			{
+				Find.BattleLog.Add(new BattleLogEntry_AbilityUsed(pawn, null, def, RulePackDefOf.Event_AbilityUsed));
+			}
+			preCastActions.Clear();
 			return true;
 		}
 
@@ -141,7 +237,7 @@ namespace RimWorld
 			if (def.HasAreaOfEffect && def.canUseAoeToGetTargets)
 			{
 				foreach (LocalTargetInfo item in from t in GenRadial.RadialDistinctThingsAround(target.Cell, pawn.Map, def.EffectRadius, useCenter: true)
-					where verb.targetParams.CanTarget(t)
+					where verb.targetParams.CanTarget(t) && !t.Fogged()
 					select new LocalTargetInfo(t))
 				{
 					yield return item;
@@ -157,12 +253,75 @@ namespace RimWorld
 		{
 			if (CanQueueCast && CanApplyOn(target))
 			{
-				Job job = JobMaker.MakeJob(def.jobDef ?? JobDefOf.CastAbilityOnThing);
-				job.verbToUse = verb;
-				job.targetA = target;
-				job.targetB = destination;
-				pawn.jobs.TryTakeOrderedJob(job);
+				ShowCastingConfirmationIfNeeded(target, delegate
+				{
+					Job job = JobMaker.MakeJob(def.jobDef ?? JobDefOf.CastAbilityOnThing);
+					job.verbToUse = verb;
+					job.targetA = target;
+					job.targetB = destination;
+					job.ability = this;
+					pawn.jobs.TryTakeOrderedJob(job);
+				});
 			}
+		}
+
+		public virtual void QueueCastingJob(GlobalTargetInfo target)
+		{
+			if (!CanQueueCast || !CanApplyOn(target))
+			{
+				return;
+			}
+			ShowCastingConfirmationIfNeeded(target, delegate
+			{
+				if (!pawn.IsCaravanMember())
+				{
+					Job job = JobMaker.MakeJob(def.jobDef ?? JobDefOf.CastAbilityOnWorldTile);
+					job.verbToUse = verb;
+					job.globalTarget = target;
+					job.ability = this;
+					pawn.jobs.TryTakeOrderedJob(job);
+				}
+				else
+				{
+					Activate(target);
+				}
+			});
+		}
+
+		private void ShowCastingConfirmationIfNeeded(LocalTargetInfo target, Action cast)
+		{
+			string str = ConfirmationDialogText(target);
+			if (str.NullOrEmpty())
+			{
+				cast();
+				return;
+			}
+			Dialog_MessageBox window = Dialog_MessageBox.CreateConfirmation(str.Formatted(pawn.Named("PAWN")), cast);
+			Find.WindowStack.Add(window);
+		}
+
+		private void ShowCastingConfirmationIfNeeded(GlobalTargetInfo target, Action cast)
+		{
+			string str = ConfirmationDialogText(target);
+			if (str.NullOrEmpty())
+			{
+				cast();
+				return;
+			}
+			Dialog_MessageBox window = Dialog_MessageBox.CreateConfirmation(str.Formatted(pawn.Named("PAWN")), cast);
+			Find.WindowStack.Add(window);
+		}
+
+		public bool ValidateGlobalTarget(GlobalTargetInfo target)
+		{
+			for (int i = 0; i < EffectComps.Count; i++)
+			{
+				if (!EffectComps[i].Valid(target, throwMessages: true))
+				{
+					return false;
+				}
+			}
+			return true;
 		}
 
 		public virtual bool GizmoDisabled(out string reason)
@@ -177,7 +336,7 @@ namespace RimWorld
 				reason = "AbilityAlreadyQueued".Translate();
 				return true;
 			}
-			if (!pawn.Drafted && def.disableGizmoWhileUndrafted)
+			if (!pawn.Drafted && def.disableGizmoWhileUndrafted && pawn.GetCaravan() == null)
 			{
 				reason = "AbilityDisabledUndrafted".Translate();
 				return true;
@@ -187,11 +346,14 @@ namespace RimWorld
 				reason = "CommandDisabledUnconscious".TranslateWithBackup("CommandCallRoyalAidUnconscious").Formatted(pawn);
 				return true;
 			}
-			for (int i = 0; i < comps.Count; i++)
+			if (!comps.NullOrEmpty())
 			{
-				if (comps[i].GizmoDisabled(out reason))
+				for (int i = 0; i < comps.Count; i++)
 				{
-					return true;
+					if (comps[i].GizmoDisabled(out reason))
+					{
+						return true;
+					}
 				}
 			}
 			reason = null;
@@ -201,21 +363,65 @@ namespace RimWorld
 		public virtual void AbilityTick()
 		{
 			VerbTracker.VerbsTick();
-			if (def.warmupMote != null && verb.WarmingUp)
+			if (def.warmupMote != null && Casting)
 			{
+				Vector3 vector = pawn.DrawPos + def.moteDrawOffset;
+				vector += (verb.CurrentTarget.CenterVector3 - vector) * def.moteOffsetAmountTowardsTarget;
 				if (warmupMote == null || warmupMote.Destroyed)
 				{
-					warmupMote = MoteMaker.MakeStaticMote(pawn.DrawPos + def.moteDrawOffset, pawn.Map, def.warmupMote);
+					warmupMote = MoteMaker.MakeStaticMote(vector, pawn.Map, def.warmupMote);
 				}
 				else
 				{
+					warmupMote.exactPosition = vector;
 					warmupMote.Maintain();
 				}
 			}
-			if (verb.WarmingUp && !CanApplyOn(verb.CurrentTarget))
+			if (verb.WarmingUp)
 			{
-				verb.WarmupStance?.Interrupt();
-				verb.Reset();
+				if (!(def.targetWorldCell ? CanApplyOn(pawn.CurJob.globalTarget) : CanApplyOn(verb.CurrentTarget)))
+				{
+					if (def.targetWorldCell)
+					{
+						pawn.jobs.EndCurrentJob(JobCondition.Incompletable);
+					}
+					verb.WarmupStance?.Interrupt();
+					verb.Reset();
+					preCastActions.Clear();
+				}
+				else
+				{
+					for (int num = preCastActions.Count - 1; num >= 0; num--)
+					{
+						if (preCastActions[num].ticksAwayFromCast >= verb.WarmupTicksLeft)
+						{
+							preCastActions[num].action(verb.CurrentTarget, verb.CurrentDestination);
+							preCastActions.RemoveAt(num);
+						}
+					}
+				}
+			}
+			if (pawn.Spawned && Casting)
+			{
+				if (def.warmupSound != null)
+				{
+					if (soundCast == null || soundCast.Ended)
+					{
+						soundCast = def.warmupSound.TrySpawnSustainer(SoundInfo.InMap(new TargetInfo(pawn.Position, pawn.Map), MaintenanceType.PerTick));
+					}
+					else
+					{
+						soundCast.Maintain();
+					}
+				}
+				if (!wasCastingOnPrevTick && def.warmupStartSound != null)
+				{
+					def.warmupStartSound.PlayOneShot(new TargetInfo(pawn.Position, pawn.Map));
+				}
+				if (def.warmupPreEndSound != null && verb.WarmupTicksLeft == def.warmupPreEndSoundSeconds.SecondsToTicks())
+				{
+					def.warmupPreEndSound.PlayOneShot(new TargetInfo(pawn.Position, pawn.Map));
+				}
 			}
 			if (cooldownTicks > 0)
 			{
@@ -224,6 +430,30 @@ namespace RimWorld
 				{
 					Find.LetterStack.ReceiveLetter("AbilityReadyLabel".Translate(def.LabelCap), "AbilityReadyText".Translate(pawn, def.label), LetterDefOf.NeutralEvent, new LookTargets(pawn));
 				}
+			}
+			for (int num2 = maintainedEffecters.Count - 1; num2 >= 0; num2--)
+			{
+				Effecter first = maintainedEffecters[num2].First;
+				if (first.ticksLeft > 0)
+				{
+					TargetInfo second = maintainedEffecters[num2].Second;
+					first.EffectTick(second, second);
+					first.ticksLeft--;
+				}
+				else
+				{
+					first.Cleanup();
+					maintainedEffecters.RemoveAt(num2);
+				}
+			}
+			wasCastingOnPrevTick = Casting;
+		}
+
+		public void Notify_StartedCasting()
+		{
+			for (int i = 0; i < EffectComps.Count; i++)
+			{
+				preCastActions.AddRange(EffectComps[i].GetPreCastActions());
 			}
 		}
 
@@ -280,6 +510,14 @@ namespace RimWorld
 			}
 		}
 
+		protected virtual void ApplyEffects(IEnumerable<CompAbilityEffect> effects, GlobalTargetInfo target)
+		{
+			foreach (CompAbilityEffect effect in effects)
+			{
+				effect.Apply(target);
+			}
+		}
+
 		public IEnumerable<T> CompsOfType<T>() where T : AbilityComp
 		{
 			if (comps == null)
@@ -327,6 +565,40 @@ namespace RimWorld
 			}
 		}
 
+		public float FinalPsyfocusCost(LocalTargetInfo target)
+		{
+			if (def.AnyCompOverridesPsyfocusCost)
+			{
+				foreach (AbilityComp comp in comps)
+				{
+					if (comp.props.OverridesPsyfocusCost)
+					{
+						return comp.PsyfocusCostForTarget(target);
+					}
+				}
+			}
+			return def.PsyfocusCost;
+		}
+
+		public string WorldMapExtraLabel(GlobalTargetInfo t)
+		{
+			foreach (CompAbilityEffect effectComp in EffectComps)
+			{
+				string text = effectComp.WorldMapExtraLabel(t);
+				if (text != null)
+				{
+					return text;
+				}
+			}
+			return null;
+		}
+
+		public void AddEffecterToMaintain(Effecter eff, IntVec3 pos, int ticks)
+		{
+			eff.ticksLeft = ticks;
+			maintainedEffecters.Add(new Pair<Effecter, TargetInfo>(eff, new TargetInfo(pos, pawn.Map)));
+		}
+
 		public virtual void ExposeData()
 		{
 			Scribe_Defs.Look(ref def, "def");
@@ -340,6 +612,11 @@ namespace RimWorld
 					Initialize();
 				}
 			}
+		}
+
+		public string GetUniqueLoadID()
+		{
+			return pawn.ThingID + "_Ability_" + def.defName;
 		}
 	}
 }

@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
+using RimWorld.Planet;
 
 namespace Verse
 {
@@ -106,7 +106,7 @@ namespace Verse
 				{
 					break;
 				}
-				int num6 = (num4 + 1 < tileIDToNeighbors_offsets.Count) ? tileIDToNeighbors_offsets[num4 + 1] : tileIDToNeighbors_values.Count;
+				int num6 = ((num4 + 1 < tileIDToNeighbors_offsets.Count) ? tileIDToNeighbors_offsets[num4 + 1] : tileIDToNeighbors_values.Count);
 				for (int k = tileIDToNeighbors_offsets[num4]; k < num6; k++)
 				{
 					int num7 = tileIDToNeighbors_values[k];

@@ -27,7 +27,7 @@ namespace RimWorld
 			{
 				GUI.DrawTexture(rect2, TexUI.HighlightTex);
 			}
-			string str = (pawn.RaceProps.Humanlike || pawn.Name == null || pawn.Name.Numerical) ? pawn.LabelCap : (pawn.Name.ToStringShort.CapitalizeFirst() + ", " + pawn.KindLabel);
+			string str = ((pawn.RaceProps.Humanlike || pawn.Name == null || pawn.Name.Numerical) ? pawn.LabelCap : (pawn.Name.ToStringShort.CapitalizeFirst() + ", " + pawn.KindLabel));
 			Rect rect4 = rect2;
 			rect4.xMin += 3f;
 			if (rect4.width != labelCacheForWidth)

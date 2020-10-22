@@ -1,20 +1,21 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse
 {
 	public class Dialog_InfoCard : Window
 	{
-		private enum InfoCardTab : byte
+		public enum InfoCardTab : byte
 		{
 			Stats,
 			Character,
 			Health,
-			Records
+			Records,
+			Permits
 		}
 
 		public struct Hyperlink
@@ -282,6 +283,11 @@ namespace Verse
 			PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.InfoCard, KnowledgeAmount.Total);
 		}
 
+		public void SetTab(InfoCardTab infoCardTab)
+		{
+			tab = infoCardTab;
+		}
+
 		private static bool ShowMaterialsButton(Rect containerRect, bool withBackButtonOffset = false)
 		{
 			float num = containerRect.x + containerRect.width - 14f - 200f - 16f;
@@ -334,11 +340,19 @@ namespace Verse
 					tab = InfoCardTab.Health;
 				}, tab == InfoCardTab.Health);
 				list.Add(item3);
-				TabRecord item4 = new TabRecord("TabRecords".Translate(), delegate
+				if (ModsConfig.RoyaltyActive && ThingPawn.RaceProps.Humanlike && ThingPawn.Faction == Faction.OfPlayer && !ThingPawn.IsQuestLodger() && ThingPawn.royalty != null && PermitsCardUtility.selectedFaction != null)
+				{
+					TabRecord item4 = new TabRecord("TabPermits".Translate(), delegate
+					{
+						tab = InfoCardTab.Permits;
+					}, tab == InfoCardTab.Permits);
+					list.Add(item4);
+				}
+				TabRecord item5 = new TabRecord("TabRecords".Translate(), delegate
 				{
 					tab = InfoCardTab.Records;
 				}, tab == InfoCardTab.Records);
-				list.Add(item4);
+				list.Add(item5);
 			}
 			if (list.Count > 1)
 			{
@@ -352,14 +366,14 @@ namespace Verse
 				if (enumerable.Count() > 0 && ShowMaterialsButton(inRect, history.Count > 0))
 				{
 					List<FloatMenuOption> list2 = new List<FloatMenuOption>();
-					foreach (ThingDef item5 in enumerable)
+					foreach (ThingDef item6 in enumerable)
 					{
-						ThingDef localStuff = item5;
-						list2.Add(new FloatMenuOption(item5.label, delegate
+						ThingDef localStuff = item6;
+						list2.Add(new FloatMenuOption(item6.LabelCap, delegate
 						{
 							stuff = localStuff;
 							Setup();
-						}, item5));
+						}, item6));
 					}
 					Find.WindowStack.Add(new FloatMenu(list2));
 				}
@@ -420,6 +434,10 @@ namespace Verse
 			else if (tab == InfoCardTab.Records)
 			{
 				RecordsCardUtility.DrawRecordsCard(cardRect, (Pawn)thing);
+			}
+			else if (tab == InfoCardTab.Permits)
+			{
+				PermitsCardUtility.DrawRecordsCard(cardRect, (Pawn)thing);
 			}
 			if (executeAfterFillCardOnce != null)
 			{

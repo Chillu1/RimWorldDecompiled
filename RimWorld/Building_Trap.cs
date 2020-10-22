@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -47,7 +47,7 @@ namespace RimWorld
 			base.SpawnSetup(map, respawningAfterLoad);
 			if (!respawningAfterLoad)
 			{
-				autoRearm = (CanSetAutoRearm && map.areaManager.Home[base.Position]);
+				autoRearm = CanSetAutoRearm && map.areaManager.Home[base.Position];
 			}
 		}
 
@@ -221,7 +221,7 @@ namespace RimWorld
 				command_Toggle.defaultDesc = "CommandAutoRearmDesc".Translate();
 				command_Toggle.hotKey = KeyBindingDefOf.Misc3;
 				command_Toggle.icon = TexCommand.RearmTrap;
-				command_Toggle.isActive = (() => autoRearm);
+				command_Toggle.isActive = () => autoRearm;
 				command_Toggle.toggleAction = delegate
 				{
 					autoRearm = !autoRearm;

@@ -39,7 +39,7 @@ namespace RimWorld
 					TooltipHandler.TipRegion(rect, new TipSignal(node.catDef.LabelCap, node.catDef.GetHashCode()));
 				}
 				Rect position2 = new Rect(rect);
-				float num3 = position2.width = (position2.height = 28f);
+				float num3 = (position2.width = (position2.height = 28f));
 				position2.y = rect.y + rect.height / 2f - position2.height / 2f;
 				GUI.DrawTexture(position2, node.catDef.icon);
 				Rect rect2 = new Rect(rect);
@@ -89,7 +89,7 @@ namespace RimWorld
 				TooltipHandler.TipRegion(rect, new TipSignal(() => thingDef.LabelCap + ": " + thingDef.description.CapitalizeFirst(), thingDef.shortHash));
 			}
 			Rect rect2 = new Rect(rect);
-			float num3 = rect2.width = (rect2.height = 28f);
+			float num3 = (rect2.width = (rect2.height = 28f));
 			rect2.y = rect.y + rect.height / 2f - rect2.height / 2f;
 			Widgets.ThingIcon(rect2, thingDef);
 			Rect rect3 = new Rect(rect);

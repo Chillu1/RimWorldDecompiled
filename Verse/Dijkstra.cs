@@ -115,7 +115,7 @@ namespace Verse
 		{
 			float num = nodeDist + Mathf.Max(distanceGetter(node.Key, n), 0f);
 			bool flag = false;
-			if (distances.TryGetValue(n, out float value))
+			if (distances.TryGetValue(n, out var value))
 			{
 				if (num < value)
 				{

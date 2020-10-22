@@ -55,11 +55,11 @@ namespace RimWorld
 				return;
 			}
 			pawn.equipment.DestroyAllEquipment();
-			if (workingWeapons.TryRandomElementByWeight((ThingStuffPair w) => w.Commonality * w.Price, out ThingStuffPair result))
+			if (workingWeapons.TryRandomElementByWeight((ThingStuffPair w) => w.Commonality * w.Price, out var result))
 			{
 				ThingWithComps thingWithComps = (ThingWithComps)ThingMaker.MakeThing(result.thing, result.stuff);
 				PawnGenerator.PostProcessGeneratedGear(thingWithComps, pawn);
-				float num = (request.BiocodeWeaponChance > 0f) ? request.BiocodeWeaponChance : pawn.kindDef.biocodeWeaponChance;
+				float num = ((request.BiocodeWeaponChance > 0f) ? request.BiocodeWeaponChance : pawn.kindDef.biocodeWeaponChance);
 				if (Rand.Value < num)
 				{
 					thingWithComps.TryGetComp<CompBiocodableWeapon>()?.CodeFor(pawn);

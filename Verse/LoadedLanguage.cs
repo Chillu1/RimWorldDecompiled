@@ -1,9 +1,9 @@
-using RimWorld.IO;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using RimWorld.IO;
 using UnityEngine;
 
 namespace Verse
@@ -358,7 +358,7 @@ namespace Verse
 			{
 				list.Add(item);
 			}
-			if (stringFiles.TryGetValue(text2, out List<string> value))
+			if (stringFiles.TryGetValue(text2, out var value))
 			{
 				foreach (string item2 in list)
 				{
@@ -379,7 +379,7 @@ namespace Verse
 			{
 				foreach (DirectXmlLoaderSimple.XmlKeyValuePair item in DirectXmlLoaderSimple.ValuesFromXmlFile(file))
 				{
-					if (keyedReplacements.ContainsKey(item.key) || dictionary.ContainsKey(item.key))
+					if (dictionary.ContainsKey(item.key))
 					{
 						loadErrors.Add("Duplicate keyed translation key: " + item.key + " in language " + folderName);
 						continue;
@@ -410,7 +410,7 @@ namespace Verse
 				keyedReplacement.fileSource = file.Name;
 				keyedReplacement.fileSourceLine = dictionary2[item2.Key];
 				keyedReplacement.fileSourceFullPath = file.FullPath;
-				keyedReplacements.Add(item2.Key, keyedReplacement);
+				keyedReplacements.SetOrAdd(item2.Key, keyedReplacement);
 			}
 		}
 
@@ -422,7 +422,7 @@ namespace Verse
 				defInjectionPackage = new DefInjectionPackage(defType);
 				defInjections.Add(defInjectionPackage);
 			}
-			defInjectionPackage.AddDataFromFile(file, out bool xmlParseError);
+			defInjectionPackage.AddDataFromFile(file, out var xmlParseError);
 			if (xmlParseError)
 			{
 				anyDefInjectionsXmlParseError = true;
@@ -451,7 +451,7 @@ namespace Verse
 			{
 				return false;
 			}
-			if (!keyedReplacements.TryGetValue(key, out KeyedReplacement value))
+			if (!keyedReplacements.TryGetValue(key, out var value))
 			{
 				return false;
 			}
@@ -473,7 +473,7 @@ namespace Verse
 				translated = key;
 				return false;
 			}
-			if (!keyedReplacements.TryGetValue(key, out KeyedReplacement value) || value.isPlaceholder)
+			if (!keyedReplacements.TryGetValue(key, out var value) || value.isPlaceholder)
 			{
 				translated = key;
 				return false;
@@ -498,7 +498,7 @@ namespace Verse
 
 		public string GetKeySourceFileAndLine(string key)
 		{
-			if (!keyedReplacements.TryGetValue(key, out KeyedReplacement value))
+			if (!keyedReplacements.TryGetValue(key, out var value))
 			{
 				return "unknown";
 			}

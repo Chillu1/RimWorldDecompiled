@@ -61,10 +61,10 @@ namespace RimWorld
 			else
 			{
 				Hediff firstHediffOfDef = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.Malnutrition);
-				allowCorpse = (firstHediffOfDef != null && firstHediffOfDef.Severity > 0.4f);
+				allowCorpse = firstHediffOfDef != null && firstHediffOfDef.Severity > 0.4f;
 			}
 			bool desperate = pawn.needs.food.CurCategory == HungerCategory.Starving;
-			if (!FoodUtility.TryFindBestFoodSourceFor(pawn, pawn, desperate, out Thing foodSource, out ThingDef foodDef, canRefillDispenser: true, canUseInventory: true, allowForbidden: false, allowCorpse, allowSociallyImproper: false, pawn.IsWildMan(), forceScanWholeMap))
+			if (!FoodUtility.TryFindBestFoodSourceFor(pawn, pawn, desperate, out var foodSource, out var foodDef, canRefillDispenser: true, canUseInventory: true, allowForbidden: false, allowCorpse, allowSociallyImproper: false, pawn.IsWildMan(), forceScanWholeMap))
 			{
 				return null;
 			}

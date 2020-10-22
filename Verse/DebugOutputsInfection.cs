@@ -1,8 +1,8 @@
-using RimWorld;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -70,7 +70,7 @@ namespace Verse
 			Func<HediffDef, float, float> tendedSeverityIncrease = (HediffDef d, float tend) => baseSeverityIncrease(d) + d.CompProps<HediffCompProperties_TendDuration>().severityPerDayTended * tend;
 			Func<HediffDef, InfectionLuck, bool, float> immunityIncrease = delegate(HediffDef d, InfectionLuck il, bool bedridden)
 			{
-				float b = isAnimal(d) ? 1f : ThingDefOf.Bed.GetStatValueAbstract(StatDefOf.ImmunityGainSpeedFactor);
+				float b = (isAnimal(d) ? 1f : ThingDefOf.Bed.GetStatValueAbstract(StatDefOf.ImmunityGainSpeedFactor));
 				float num3 = Mathf.Lerp(1f, b, bedridden ? 1f : 0.3f) * StatDefOf.ImmunityGainSpeed.GetStatPart<StatPart_Resting>().factor;
 				return baseImmunityIncrease(d, il) * num3;
 			};
@@ -98,9 +98,9 @@ namespace Verse
 				Pawn arg12 = source.FirstOrFallback((Pawn doc) => TendUtility.CalculateBaseTendQuality(doc, null, ThingDefOf.MedicineUltratech) >= Mathf.Clamp01(tendquality + 0.25f));
 				Func<Pawn, Pawn, Pawn, string> obj = delegate(Pawn low, Pawn exp, Pawn high)
 				{
-					string arg13 = (low != null) ? low.skills.GetSkill(SkillDefOf.Medicine).Level.ToString() : "X";
-					string arg14 = (exp != null) ? exp.skills.GetSkill(SkillDefOf.Medicine).Level.ToString() : "X";
-					string arg15 = (high != null) ? high.skills.GetSkill(SkillDefOf.Medicine).Level.ToString() : "X";
+					string arg13 = ((low != null) ? low.skills.GetSkill(SkillDefOf.Medicine).Level.ToString() : "X");
+					string arg14 = ((exp != null) ? exp.skills.GetSkill(SkillDefOf.Medicine).Level.ToString() : "X");
+					string arg15 = ((high != null) ? high.skills.GetSkill(SkillDefOf.Medicine).Level.ToString() : "X");
 					return $"{arg13}-{arg14}-{arg15}";
 				};
 				string text = obj(arg, arg5, arg9);
@@ -174,14 +174,15 @@ namespace Verse
 							Hediff activeHediff = patient.health.hediffSet.GetFirstHediffOfDef(result.illness);
 							while (!patient.Dead && patient.health.hediffSet.HasHediff(result.illness))
 							{
+								float maxQuality = meds?.GetStatValueAbstract(StatDefOf.MedicalQualityMax) ?? 0.7f;
 								if (activeHediff.TendableNow())
 								{
-									activeHediff.Tended(TendUtility.CalculateBaseTendQuality(doctor, patient, meds));
+									activeHediff.Tended_NewTemp(TendUtility.CalculateBaseTendQuality(doctor, patient, meds), maxQuality);
 									result.medicineUsed += 1f;
 								}
 								foreach (Hediff item2 in patient.health.hediffSet.GetHediffsTendable())
 								{
-									item2.Tended(TendUtility.CalculateBaseTendQuality(doctor, patient, meds));
+									item2.Tended_NewTemp(TendUtility.CalculateBaseTendQuality(doctor, patient, meds), maxQuality);
 								}
 								Find.TickManager.DebugSetTicksGame(Find.TickManager.TicksGame + 1);
 								patient.health.HealthTick();

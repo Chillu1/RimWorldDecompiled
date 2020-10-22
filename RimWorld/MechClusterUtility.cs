@@ -32,7 +32,7 @@ namespace RimWorld
 			{
 				for (int i = 0; i < 20; i++)
 				{
-					if (!DropCellFinder.TryFindRaidDropCenterClose(out IntVec3 spot, map, canRoofPunch: true, allowIndoors: true, closeWalk: false, 40))
+					if (!DropCellFinder.TryFindRaidDropCenterClose(out var spot, map, canRoofPunch: true, allowIndoors: true, closeWalk: false, 40))
 					{
 						break;
 					}
@@ -107,7 +107,10 @@ namespace RimWorld
 				{
 					num++;
 				}
-				CheckCell(entities[j].pos + center);
+				if (!CheckCell(entities[j].pos + center))
+				{
+					return -100f;
+				}
 			}
 			if (sketch.pawns != null)
 			{
@@ -117,7 +120,10 @@ namespace RimWorld
 					{
 						num++;
 					}
-					CheckCell(sketch.pawns[k].position + center);
+					if (!CheckCell(sketch.pawns[k].position + center))
+					{
+						return -100f;
+					}
 				}
 			}
 			int num2 = sketch.buildingsSketch.Entities.Count + ((sketch.pawns != null) ? sketch.pawns.Count : 0);
@@ -126,7 +132,7 @@ namespace RimWorld
 			float a = (float)roofed / (float)num2;
 			float b = (float)indoors / (float)num2;
 			return 100f * (1f - num3) * (1f - Mathf.Max(a, b)) * (1f - num4) * (tooCloseToColony ? 0.5f : 1f);
-			void CheckCell(IntVec3 x)
+			bool CheckCell(IntVec3 x)
 			{
 				if (x.Fogged(map))
 				{
@@ -140,6 +146,13 @@ namespace RimWorld
 				{
 					indoors++;
 				}
+				foreach (Thing thing in x.GetThingList(map))
+				{
+					if (thing.def.preventSkyfallersLandingOn)
+					{
+						return false;
+					}
+				}
 				if (!tooCloseToColony)
 				{
 					for (int l = 0; l < colonyBuildings.Count; l++)
@@ -152,22 +165,17 @@ namespace RimWorld
 					}
 					if (!tooCloseToColony)
 					{
-						int num5 = 0;
-						while (true)
+						for (int m = 0; m < colonists.Count; m++)
 						{
-							if (num5 >= colonists.Count)
+							if (x.InHorDistOf(colonists[m].Position, 5f))
 							{
-								return;
-							}
-							if (x.InHorDistOf(colonists[num5].Position, 5f))
-							{
+								tooCloseToColony = true;
 								break;
 							}
-							num5++;
 						}
-						tooCloseToColony = true;
 					}
 				}
+				return true;
 			}
 		}
 
@@ -198,14 +206,33 @@ namespace RimWorld
 
 		public static List<Thing> SpawnCluster(IntVec3 center, Map map, MechClusterSketch sketch, bool dropInPods = true, bool canAssaultColony = false, string questTag = null)
 		{
+			foreach (IntVec3 item in sketch.buildingsSketch.OccupiedRect)
+			{
+				IntVec3 c = item + center;
+				if (!c.InBounds(map))
+				{
+					continue;
+				}
+				List<Thing> thingList = c.GetThingList(map);
+				Thing thing = null;
+				foreach (Thing item2 in thingList)
+				{
+					if (item2.def.IsBlueprint)
+					{
+						thing = item2;
+						break;
+					}
+				}
+				thing?.Destroy();
+			}
 			List<Thing> spawnedThings = new List<Thing>();
-			Sketch.SpawnMode spawnMode = (!dropInPods) ? Sketch.SpawnMode.Normal : Sketch.SpawnMode.TransportPod;
-			sketch.buildingsSketch.Spawn(map, center, Faction.OfMechanoids, Sketch.SpawnPosType.Unchanged, spawnMode, wipeIfCollides: false, clearEdificeWhereFloor: false, spawnedThings, sketch.startDormant, buildRoofsInstantly: false, null, delegate(IntVec3 spot, SketchEntity entity)
+			Sketch.SpawnMode spawnMode = ((!dropInPods) ? Sketch.SpawnMode.Normal : Sketch.SpawnMode.TransportPod);
+			sketch.buildingsSketch.Spawn(map, center, Faction.OfMechanoids, Sketch.SpawnPosType.Unchanged, spawnMode, wipeIfCollides: false, clearEdificeWhereFloor: false, spawnedThings, sketch.startDormant, buildRoofsInstantly: false, CanSpawnThing, delegate(IntVec3 spot, SketchEntity entity)
 			{
 				SketchThing sketchThing;
-				if ((sketchThing = (entity as SketchThing)) != null && sketchThing.def != ThingDefOf.Wall && sketchThing.def != ThingDefOf.Barricade)
+				if ((sketchThing = entity as SketchThing) != null && sketchThing.def != ThingDefOf.Wall && sketchThing.def != ThingDefOf.Barricade)
 				{
-					entity.SpawnNear(spot, map, 12f, Faction.OfMechanoids, spawnMode, wipeIfCollides: false, spawnedThings, sketch.startDormant);
+					entity.SpawnNear_NewTmp(spot, map, 12f, Faction.OfMechanoids, spawnMode, wipeIfCollides: false, spawnedThings, sketch.startDormant, CanSpawnThing);
 				}
 			});
 			float defendRadius = Mathf.Sqrt(sketch.buildingsSketch.OccupiedSize.x * sketch.buildingsSketch.OccupiedSize.x + sketch.buildingsSketch.OccupiedSize.z * sketch.buildingsSketch.OccupiedSize.z) / 2f + 6f;
@@ -218,26 +245,26 @@ namespace RimWorld
 			int num = (int)(MechAssemblerInitialDelayDays.RandomInRange * 60000f);
 			for (int i = 0; i < spawnedThings.Count; i++)
 			{
-				Thing thing = spawnedThings[i];
-				thing.TryGetComp<CompSpawnerPawn>()?.CalculateNextPawnSpawnTick(num);
-				if (thing.TryGetComp<CompProjectileInterceptor>() != null)
+				Thing thing2 = spawnedThings[i];
+				thing2.TryGetComp<CompSpawnerPawn>()?.CalculateNextPawnSpawnTick(num);
+				if (thing2.TryGetComp<CompProjectileInterceptor>() != null)
 				{
-					lordJob_MechanoidDefendBase.AddThingToNotifyOnDefeat(thing);
+					lordJob_MechanoidDefendBase.AddThingToNotifyOnDefeat(thing2);
 				}
 				if (flag)
 				{
-					CompInitiatable compInitiatable = thing.TryGetComp<CompInitiatable>();
+					CompInitiatable compInitiatable = thing2.TryGetComp<CompInitiatable>();
 					if (compInitiatable != null)
 					{
 						compInitiatable.initiationDelayTicksOverride = (int)(60000f * randomInRange);
 					}
 				}
 				Building b;
-				if ((b = (thing as Building)) != null && IsBuildingThreat(b))
+				if ((b = thing2 as Building) != null && IsBuildingThreat(b))
 				{
 					lord.AddBuilding(b);
 				}
-				thing.SetFaction(Faction.OfMechanoids);
+				thing2.SetFaction(Faction.OfMechanoids);
 			}
 			if (!sketch.pawns.NullOrEmpty())
 			{
@@ -279,14 +306,31 @@ namespace RimWorld
 					}
 				}
 			}
-			foreach (Thing item in spawnedThings)
+			foreach (Thing item3 in spawnedThings)
 			{
 				if (!sketch.startDormant)
 				{
-					item.TryGetComp<CompWakeUpDormant>()?.Activate(sendSignal: true, silent: true);
+					item3.TryGetComp<CompWakeUpDormant>()?.Activate(sendSignal: true, silent: true);
 				}
 			}
 			return spawnedThings;
+			bool CanSpawnThing(SketchEntity ent, IntVec3 cell)
+			{
+				foreach (IntVec3 item4 in ent.OccupiedRect.MovedBy(cell))
+				{
+					if (item4.InBounds(map))
+					{
+						foreach (Thing thing3 in item4.GetThingList(map))
+						{
+							if (thing3.def.preventSkyfallersLandingOn)
+							{
+								return false;
+							}
+						}
+					}
+				}
+				return true;
+			}
 		}
 
 		private static bool IsBuildingThreat(Thing b)

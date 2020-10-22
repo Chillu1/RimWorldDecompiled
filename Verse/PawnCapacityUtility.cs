@@ -1,6 +1,6 @@
-using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -255,7 +255,7 @@ namespace Verse
 			{
 				return 1f;
 			}
-			float num5 = (!(bestPartEfficiencySpecialWeight >= 0f) || num2 < 2) ? (num / (float)num2) : (num3 * bestPartEfficiencySpecialWeight + (num - num3) / (float)(num2 - 1) * (1f - bestPartEfficiencySpecialWeight));
+			float num5 = ((!(bestPartEfficiencySpecialWeight >= 0f) || num2 < 2) ? (num / (float)num2) : (num3 * bestPartEfficiencySpecialWeight + (num - num3) / (float)(num2 - 1) * (1f - bestPartEfficiencySpecialWeight)));
 			float num6 = num5;
 			if (lerp != default(FloatRange))
 			{

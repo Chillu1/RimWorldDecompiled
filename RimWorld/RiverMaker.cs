@@ -86,14 +86,11 @@ namespace RimWorld
 				Log.Error("Failed to find river edges in order to verify passability");
 				return;
 			}
-			while (true)
+			while (!map.reachability.CanReach(intVec, intVec2, PathEndMode.OnCell, TraverseMode.PassAllDestroyableThings))
 			{
-				if (map.reachability.CanReach(intVec, intVec2, PathEndMode.OnCell, TraverseMode.PassAllDestroyableThings))
-				{
-					return;
-				}
 				if (shallowFactor > 1f)
 				{
+					Log.Error("Failed to make river shallow enough for passability");
 					break;
 				}
 				shallowFactor += 0.1f;
@@ -105,7 +102,6 @@ namespace RimWorld
 					}
 				}
 			}
-			Log.Error("Failed to make river shallow enough for passability");
 		}
 	}
 }

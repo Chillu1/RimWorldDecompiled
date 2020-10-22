@@ -24,7 +24,7 @@ namespace RimWorld.QuestGen
 
 		public static void Resolve()
 		{
-			if (!QuestGen.slate.TryGet("resolvedQuestDescription", out string var))
+			if (!QuestGen.slate.TryGet<string>("resolvedQuestDescription", out var var))
 			{
 				var = QuestGenUtility.ResolveAbsoluteText(QuestGen.QuestDescriptionRulesReadOnly, QuestGen.QuestDescriptionConstantsReadOnly, "questDescription");
 				QuestGen.slate.Set("resolvedQuestDescription", var);

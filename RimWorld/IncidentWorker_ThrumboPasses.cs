@@ -23,7 +23,7 @@ namespace RimWorld
 		protected override bool TryExecuteWorker(IncidentParms parms)
 		{
 			Map map = (Map)parms.target;
-			if (!TryFindEntryCell(map, out IntVec3 cell))
+			if (!TryFindEntryCell(map, out var cell))
 			{
 				return false;
 			}

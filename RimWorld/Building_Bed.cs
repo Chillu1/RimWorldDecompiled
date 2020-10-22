@@ -236,7 +236,7 @@ namespace RimWorld
 				command_Toggle.defaultLabel = "CommandBedSetForPrisonersLabel".Translate();
 				command_Toggle.defaultDesc = "CommandBedSetForPrisonersDesc".Translate();
 				command_Toggle.icon = ContentFinder<Texture2D>.Get("UI/Commands/ForPrisoners");
-				command_Toggle.isActive = (() => ForPrisoners);
+				command_Toggle.isActive = () => ForPrisoners;
 				command_Toggle.toggleAction = delegate
 				{
 					ToggleForPrisonersByInterface();
@@ -253,7 +253,7 @@ namespace RimWorld
 				command_Toggle2.defaultLabel = "CommandBedSetAsMedicalLabel".Translate();
 				command_Toggle2.defaultDesc = "CommandBedSetAsMedicalDesc".Translate();
 				command_Toggle2.icon = ContentFinder<Texture2D>.Get("UI/Commands/AsMedical");
-				command_Toggle2.isActive = (() => Medical);
+				command_Toggle2.isActive = () => Medical;
 				command_Toggle2.toggleAction = delegate
 				{
 					Medical = !Medical;
@@ -302,7 +302,7 @@ namespace RimWorld
 				foreach (Building_Bed item2 in bedsToAffect)
 				{
 					Room room2 = item2.GetRoom();
-					item2.ForPrisoners = (newForPrisoners && !room2.TouchesMapEdge);
+					item2.ForPrisoners = newForPrisoners && !room2.TouchesMapEdge;
 					for (int j = 0; j < SleepingSlotsCount; j++)
 					{
 						GetCurOccupant(j)?.jobs.EndCurrentJob(JobCondition.InterruptForced);
@@ -402,35 +402,33 @@ namespace RimWorld
 
 		public override IEnumerable<FloatMenuOption> GetFloatMenuOptions(Pawn myPawn)
 		{
-			Building_Bed building_Bed = this;
-			Pawn myPawn2 = myPawn;
-			if (!myPawn2.RaceProps.Humanlike || ForPrisoners || !Medical || myPawn2.Drafted || base.Faction != Faction.OfPlayer || !RestUtility.CanUseBedEver(myPawn2, def))
+			if (!myPawn.RaceProps.Humanlike || ForPrisoners || !Medical || myPawn.Drafted || base.Faction != Faction.OfPlayer || !RestUtility.CanUseBedEver(myPawn, def))
 			{
 				yield break;
 			}
-			if (!HealthAIUtility.ShouldSeekMedicalRest(myPawn2) && !HealthAIUtility.ShouldSeekMedicalRestUrgent(myPawn2))
+			if (!HealthAIUtility.ShouldSeekMedicalRest(myPawn) && !HealthAIUtility.ShouldSeekMedicalRestUrgent(myPawn))
 			{
 				yield return new FloatMenuOption("UseMedicalBed".Translate() + " (" + "NotInjured".Translate() + ")", null);
 				yield break;
 			}
 			Action action = delegate
 			{
-				if (!building_Bed.ForPrisoners && building_Bed.Medical && myPawn2.CanReserveAndReach(building_Bed, PathEndMode.ClosestTouch, Danger.Deadly, building_Bed.SleepingSlotsCount, -1, null, ignoreOtherReservations: true))
+				if (!ForPrisoners && Medical && myPawn.CanReserveAndReach(this, PathEndMode.ClosestTouch, Danger.Deadly, SleepingSlotsCount, -1, null, ignoreOtherReservations: true))
 				{
-					if (myPawn2.CurJobDef == JobDefOf.LayDown && myPawn2.CurJob.GetTarget(TargetIndex.A).Thing == building_Bed)
+					if (myPawn.CurJobDef == JobDefOf.LayDown && myPawn.CurJob.GetTarget(TargetIndex.A).Thing == this)
 					{
-						myPawn2.CurJob.restUntilHealed = true;
+						myPawn.CurJob.restUntilHealed = true;
 					}
 					else
 					{
-						Job job = JobMaker.MakeJob(JobDefOf.LayDown, building_Bed);
+						Job job = JobMaker.MakeJob(JobDefOf.LayDown, this);
 						job.restUntilHealed = true;
-						myPawn2.jobs.TryTakeOrderedJob(job);
+						myPawn.jobs.TryTakeOrderedJob(job);
 					}
-					myPawn2.mindState.ResetLastDisturbanceTick();
+					myPawn.mindState.ResetLastDisturbanceTick();
 				}
 			};
-			yield return FloatMenuUtility.DecoratePrioritizedTask(new FloatMenuOption("UseMedicalBed".Translate(), action), myPawn2, this, (AnyUnoccupiedSleepingSlot ? "ReservedBy" : "SomeoneElseSleeping").CapitalizeFirst());
+			yield return FloatMenuUtility.DecoratePrioritizedTask(new FloatMenuOption("UseMedicalBed".Translate(), action), myPawn, this, (AnyUnoccupiedSleepingSlot ? "ReservedBy" : "SomeoneElseSleeping").CapitalizeFirst());
 		}
 
 		public override void DrawGUIOverlay()

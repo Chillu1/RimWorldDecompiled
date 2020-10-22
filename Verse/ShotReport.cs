@@ -1,6 +1,6 @@
-using RimWorld;
 using System.Collections.Generic;
 using System.Text;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -217,7 +217,7 @@ namespace Verse
 
 		public Thing GetRandomCoverToMissInto()
 		{
-			if (covers.TryRandomElementByWeight((CoverInfo c) => c.BlockChance, out CoverInfo result))
+			if (covers.TryRandomElementByWeight((CoverInfo c) => c.BlockChance, out var result))
 			{
 				return result.Thing;
 			}

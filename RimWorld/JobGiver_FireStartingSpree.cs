@@ -48,7 +48,7 @@ namespace RimWorld
 
 		private Thing TryFindRandomIgniteTarget(Pawn pawn)
 		{
-			if (!CellFinder.TryFindClosestRegionWith(pawn.GetRegion(), TraverseParms.For(pawn), (Region candidateRegion) => !candidateRegion.IsForbiddenEntirely(pawn), 100, out Region result))
+			if (!CellFinder.TryFindClosestRegionWith(pawn.GetRegion(), TraverseParms.For(pawn), (Region candidateRegion) => !candidateRegion.IsForbiddenEntirely(pawn), 100, out var result))
 			{
 				return null;
 			}

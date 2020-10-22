@@ -10,7 +10,7 @@ namespace RimWorld.BaseGen
 			{
 				return false;
 			}
-			if (!TryFindSpawnCell(rp.rect, out IntVec3 _))
+			if (!TryFindSpawnCell(rp.rect, out var _))
 			{
 				return false;
 			}
@@ -19,7 +19,7 @@ namespace RimWorld.BaseGen
 
 		public override void Resolve(ResolveParams rp)
 		{
-			if (TryFindSpawnCell(rp.rect, out IntVec3 result))
+			if (TryFindSpawnCell(rp.rect, out var result))
 			{
 				Thing thing = ThingMaker.MakeThing(ThingDefOf.Campfire);
 				thing.SetFaction(rp.faction);

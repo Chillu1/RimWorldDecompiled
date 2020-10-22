@@ -26,7 +26,7 @@ namespace RimWorld.SketchGen
 				}
 				foreach (IntVec3 item in thing2.OccupiedRect)
 				{
-					if (!thingsAt.TryGetValue(item, out List<SketchThing> value))
+					if (!thingsAt.TryGetValue(item, out var value))
 					{
 						value = new List<SketchThing>();
 						thingsAt.Add(item, value);
@@ -56,7 +56,7 @@ namespace RimWorld.SketchGen
 					sketchThing.stuff = stuff;
 					foreach (IntVec3 item2 in sketchThing.OccupiedRect.ExpandedBy(1))
 					{
-						if (!thingsAt.TryGetValue(item2, out List<SketchThing> value2))
+						if (!thingsAt.TryGetValue(item2, out var value2))
 						{
 							continue;
 						}

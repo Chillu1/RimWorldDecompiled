@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
@@ -9,8 +10,6 @@ namespace RimWorld
 	public class Psycast : Ability
 	{
 		private Mote moteCast;
-
-		private Sustainer soundCast;
 
 		private static float MoteCastFadeTime = 0.4f;
 
@@ -35,7 +34,7 @@ namespace RimWorld
 					}
 					return !pawn.psychicEntropy.WouldOverflowEntropy(def.EntropyGain);
 				}
-				if (def.PsyfocusCost > pawn.psychicEntropy.CurrentPsyfocus)
+				if (def.PsyfocusCost > pawn.psychicEntropy.CurrentPsyfocus + 0.0005f)
 				{
 					return false;
 				}
@@ -55,49 +54,66 @@ namespace RimWorld
 
 		public override IEnumerable<Command> GetGizmos()
 		{
-			if (gizmo == null)
+			if (ModLister.RoyaltyInstalled)
 			{
-				gizmo = new Command_Psycast(this);
+				if (gizmo == null)
+				{
+					gizmo = new Command_Psycast(this);
+				}
+				yield return gizmo;
 			}
-			yield return gizmo;
 		}
 
 		public override bool Activate(LocalTargetInfo target, LocalTargetInfo dest)
+		{
+			if (!ModLister.RoyaltyInstalled)
+			{
+				Log.ErrorOnce("Psycasts are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 324345643);
+				return false;
+			}
+			if (def.EntropyGain > float.Epsilon && !pawn.psychicEntropy.TryAddEntropy(def.EntropyGain))
+			{
+				return false;
+			}
+			float num = FinalPsyfocusCost(target);
+			if (num > float.Epsilon)
+			{
+				pawn.psychicEntropy.OffsetPsyfocusDirectly(0f - num);
+			}
+			if (def.showPsycastEffects)
+			{
+				if (base.EffectComps.Any((CompAbilityEffect c) => c.Props.psychic))
+				{
+					if (def.HasAreaOfEffect)
+					{
+						MoteMaker.MakeStaticMote(target.Cell, pawn.Map, ThingDefOf.Mote_PsycastAreaEffect, def.EffectRadius);
+						SoundDefOf.PsycastPsychicPulse.PlayOneShot(new TargetInfo(target.Cell, pawn.Map));
+					}
+					else
+					{
+						SoundDefOf.PsycastPsychicEffect.PlayOneShot(new TargetInfo(target.Cell, pawn.Map));
+					}
+				}
+				else if (def.HasAreaOfEffect && def.canUseAoeToGetTargets)
+				{
+					SoundDefOf.Psycast_Skip_Pulse.PlayOneShot(new TargetInfo(target.Cell, pawn.Map));
+				}
+			}
+			return base.Activate(target, dest);
+		}
+
+		public override bool Activate(GlobalTargetInfo target)
 		{
 			if (def.EntropyGain > float.Epsilon && !pawn.psychicEntropy.TryAddEntropy(def.EntropyGain))
 			{
 				return false;
 			}
-			if (def.PsyfocusCost > float.Epsilon)
+			float psyfocusCost = def.PsyfocusCost;
+			if (psyfocusCost > float.Epsilon)
 			{
-				pawn.psychicEntropy.OffsetPsyfocusDirectly(0f - def.PsyfocusCost);
+				pawn.psychicEntropy.OffsetPsyfocusDirectly(0f - psyfocusCost);
 			}
-			bool flag = base.EffectComps.Any((CompAbilityEffect c) => c.Props.psychic);
-			if (flag)
-			{
-				if (def.HasAreaOfEffect)
-				{
-					MoteMaker.MakeStaticMote(target.Cell, pawn.Map, ThingDefOf.Mote_PsycastAreaEffect, def.EffectRadius);
-					SoundDefOf.PsycastPsychicPulse.PlayOneShot(new TargetInfo(target.Cell, pawn.Map));
-				}
-				else
-				{
-					SoundDefOf.PsycastPsychicEffect.PlayOneShot(new TargetInfo(target.Cell, pawn.Map));
-				}
-			}
-			else if (def.HasAreaOfEffect)
-			{
-				SoundDefOf.PsycastSkipPulse.PlayOneShot(new TargetInfo(target.Cell, pawn.Map));
-			}
-			else
-			{
-				SoundDefOf.PsycastSkipEffect.PlayOneShot(new TargetInfo(target.Cell, pawn.Map));
-			}
-			if (target.Thing != pawn)
-			{
-				MoteMaker.MakeConnectingLine(pawn.DrawPos, target.CenterVector3, flag ? ThingDefOf.Mote_PsycastPsychicLine : ThingDefOf.Mote_PsycastSkipLine, pawn.Map);
-			}
-			return base.Activate(target, dest);
+			return base.Activate(target);
 		}
 
 		protected override void ApplyEffects(IEnumerable<CompAbilityEffect> effects, LocalTargetInfo target, LocalTargetInfo dest)
@@ -138,25 +154,25 @@ namespace RimWorld
 
 		public override bool GizmoDisabled(out string reason)
 		{
-			if (pawn.GetStatValue(StatDefOf.PsychicSensitivity) < float.Epsilon)
+			if (pawn.psychicEntropy.PsychicSensitivity < float.Epsilon)
 			{
 				reason = "CommandPsycastZeroPsychicSensitivity".Translate();
 				return true;
 			}
-			Hediff firstHediffOfDef = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.PsychicAmplifier);
-			if ((firstHediffOfDef == null || firstHediffOfDef.Severity < (float)def.level) && def.level > 0)
+			float num = PsycastUtility.TotalPsyfocusCostOfQueuedPsycasts(pawn);
+			if (def.level > 0 && pawn.GetPsylinkLevel() < def.level)
 			{
 				reason = "CommandPsycastHigherLevelPsylinkRequired".Translate(def.level);
+				return true;
+			}
+			if (def.PsyfocusCost + num > pawn.psychicEntropy.CurrentPsyfocus + 0.0005f)
+			{
+				reason = "CommandPsycastNotEnoughPsyfocus".Translate(def.PsyfocusCostPercent, (pawn.psychicEntropy.CurrentPsyfocus - num).ToStringPercent("0.#"), def.label.Named("PSYCASTNAME"), pawn.Named("CASTERNAME"));
 				return true;
 			}
 			if (def.level > pawn.psychicEntropy.MaxAbilityLevel)
 			{
 				reason = "CommandPsycastLowPsyfocus".Translate(Pawn_PsychicEntropyTracker.PsyfocusBandPercentages[def.RequiredPsyfocusBand].ToStringPercent());
-				return true;
-			}
-			if (def.PsyfocusCost > pawn.psychicEntropy.CurrentPsyfocus)
-			{
-				reason = "CommandPsycastNotEnoughPsyfocus".Translate(def.PsyfocusCost.ToStringPercent(), pawn.psychicEntropy.CurrentPsyfocus.ToStringPercent(), def.label.Named("PSYCASTNAME"), pawn.Named("CASTERNAME"));
 				return true;
 			}
 			if (def.EntropyGain > float.Epsilon && pawn.psychicEntropy.WouldOverflowEntropy(def.EntropyGain + PsycastUtility.TotalEntropyFromQueuedPsycasts(pawn)))
@@ -167,31 +183,18 @@ namespace RimWorld
 			return base.GizmoDisabled(out reason);
 		}
 
-		public override void QueueCastingJob(LocalTargetInfo target, LocalTargetInfo destination)
-		{
-			base.QueueCastingJob(target, destination);
-			if (moteCast == null || moteCast.Destroyed)
-			{
-				moteCast = MoteMaker.MakeAttachedOverlay(pawn, ThingDefOf.Mote_CastPsycast, MoteCastOffset, MoteCastScale, base.verb.verbProps.warmupTime - MoteCastFadeTime);
-			}
-		}
-
 		public override void AbilityTick()
 		{
 			base.AbilityTick();
-			if (moteCast != null && !moteCast.Destroyed && base.verb.WarmingUp)
+			if (pawn.Spawned && base.Casting)
 			{
-				moteCast.Maintain();
-			}
-			if (base.verb.WarmingUp)
-			{
-				if (soundCast == null || soundCast.Ended)
+				if (moteCast == null || moteCast.Destroyed)
 				{
-					soundCast = SoundDefOf.PsycastCastLoop.TrySpawnSustainer(SoundInfo.InMap(new TargetInfo(pawn.Position, pawn.Map), MaintenanceType.PerTick));
+					moteCast = MoteMaker.MakeAttachedOverlay(pawn, ThingDefOf.Mote_CastPsycast, MoteCastOffset, MoteCastScale, base.verb.verbProps.warmupTime - MoteCastFadeTime);
 				}
 				else
 				{
-					soundCast.Maintain();
+					moteCast.Maintain();
 				}
 			}
 		}

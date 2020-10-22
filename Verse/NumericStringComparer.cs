@@ -27,7 +27,7 @@ namespace Verse
 				x = x.Substring(0, x.Length - 1);
 				y = y.Substring(0, y.Length - 1);
 			}
-			if (float.TryParse(x, out float result) && float.TryParse(y, out float result2))
+			if (float.TryParse(x, out var result) && float.TryParse(y, out var result2))
 			{
 				return result.CompareTo(result2);
 			}

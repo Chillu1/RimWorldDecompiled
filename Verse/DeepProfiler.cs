@@ -16,7 +16,7 @@ namespace Verse
 			lock (DeepProfilersLock)
 			{
 				int managedThreadId = Thread.CurrentThread.ManagedThreadId;
-				if (!deepProfilers.TryGetValue(managedThreadId, out ThreadLocalDeepProfiler value))
+				if (!deepProfilers.TryGetValue(managedThreadId, out var value))
 				{
 					value = new ThreadLocalDeepProfiler();
 					deepProfilers.Add(managedThreadId, value);

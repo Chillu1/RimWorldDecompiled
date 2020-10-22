@@ -171,6 +171,12 @@ namespace RimWorld
 			explanationText = stringBuilder.ToString().TrimEndNewlines();
 		}
 
+		public StatDrawEntry SetReportText(string reportText)
+		{
+			overrideReportText = reportText;
+			return this;
+		}
+
 		public float Draw(float x, float y, float width, bool selected, Action clickedCallback, Action mousedOverCallback, Vector2 scrollPosition, Rect scrollOutRect)
 		{
 			float num = width * 0.45f;

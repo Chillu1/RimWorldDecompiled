@@ -14,9 +14,9 @@ namespace RimWorld
 
 		private float ProgressDays => (float)progressTicks / 60000f;
 
-		private float CurrentRadius => Mathf.Min(Props.radius, ProgressDays / Props.daysToRadius * Props.radius);
+		protected float CurrentRadius => Mathf.Min(Props.radius, ProgressDays / Props.daysToRadius * Props.radius);
 
-		private bool Working
+		protected bool Working
 		{
 			get
 			{

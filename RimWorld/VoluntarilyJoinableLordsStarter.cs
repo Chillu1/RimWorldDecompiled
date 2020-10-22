@@ -54,7 +54,7 @@ namespace RimWorld
 					tmpGatherings.Add(item);
 				}
 			}
-			if (!tmpGatherings.TryRandomElementByWeight((GatheringDef def) => def.randomSelectionWeight, out GatheringDef result))
+			if (!tmpGatherings.TryRandomElementByWeight((GatheringDef def) => def.randomSelectionWeight, out var result))
 			{
 				return false;
 			}

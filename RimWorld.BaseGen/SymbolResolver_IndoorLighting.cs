@@ -9,7 +9,7 @@ namespace RimWorld.BaseGen
 		public override void Resolve(ResolveParams rp)
 		{
 			Map map = BaseGen.globalSettings.map;
-			ThingDef thingDef = (rp.faction == null || (int)rp.faction.def.techLevel >= 4) ? ThingDefOf.StandingLamp : ((!(map.mapTemperature.OutdoorTemp > 18f)) ? ThingDefOf.TorchLamp : null);
+			ThingDef thingDef = ((rp.faction == null || (int)rp.faction.def.techLevel >= 4) ? ThingDefOf.StandingLamp : ((!(map.mapTemperature.OutdoorTemp > 18f)) ? ThingDefOf.TorchLamp : null));
 			if (thingDef != null)
 			{
 				ResolveParams resolveParams = rp;

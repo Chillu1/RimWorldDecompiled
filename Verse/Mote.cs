@@ -20,6 +20,8 @@ namespace Verse
 
 		public int spawnTick;
 
+		public int detachAfterTicks = -1;
+
 		public float spawnRealTime;
 
 		public MoteAttachLink link1 = MoteAttachLink.Invalid;
@@ -60,7 +62,7 @@ namespace Verse
 			}
 		}
 
-		public override Vector3 DrawPos => exactPosition;
+		public override Vector3 DrawPos => exactPosition + def.mote.unattachedDrawOffset;
 
 		protected virtual bool EndOfLife => AgeSecs >= def.mote.Lifespan;
 

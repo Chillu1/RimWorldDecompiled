@@ -1,8 +1,8 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse
@@ -412,7 +412,7 @@ namespace Verse
 			{
 				if (Any)
 				{
-					return GenThing.ThingsToCommaList(this, useAnd: true);
+					return GenThing.ThingsToCommaList(this);
 				}
 				return "NothingLower".Translate();
 			}
@@ -871,7 +871,7 @@ namespace Verse
 			bool result = true;
 			for (int num = Count - 1; num >= 0; num--)
 			{
-				if (!TryDrop_NewTmp(GetAt(num), dropLoc, map, mode, out Thing _, placeAction, nearPlaceValidator))
+				if (!TryDrop_NewTmp(GetAt(num), dropLoc, map, mode, out var _, placeAction, nearPlaceValidator))
 				{
 					result = false;
 				}

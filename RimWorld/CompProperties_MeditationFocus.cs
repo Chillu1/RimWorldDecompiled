@@ -23,5 +23,14 @@ namespace RimWorld
 				}
 			}
 		}
+
+		public override void ResolveReferences(ThingDef parent)
+		{
+			base.PostLoadSpecial(parent);
+			for (int i = 0; i < offsets.Count; i++)
+			{
+				offsets[i].ResolveReferences();
+			}
+		}
 	}
 }

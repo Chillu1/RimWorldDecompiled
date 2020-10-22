@@ -37,7 +37,7 @@ namespace Verse
 
 			public Graphic_Multi GetGraphic(Color color, bool dessicated = false)
 			{
-				Shader shader = (!dessicated) ? ShaderDatabase.CutoutSkin : ShaderDatabase.Cutout;
+				Shader shader = ((!dessicated) ? ShaderDatabase.CutoutSkin : ShaderDatabase.Cutout);
 				for (int i = 0; i < graphics.Count; i++)
 				{
 					if (color.IndistinguishableFrom(graphics[i].Key) && graphics[i].Value.Shader == shader)

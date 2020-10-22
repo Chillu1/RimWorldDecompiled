@@ -1,8 +1,8 @@
-using RimWorld.Planet;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
@@ -15,11 +15,15 @@ namespace RimWorld
 
 		private List<object> selected = new List<object>();
 
+		private List<object> shelved = new List<object>();
+
 		private static List<string> cantTakeReasons = new List<string>();
 
 		private const float PawnSelectRadius = 1f;
 
 		private const int MaxNumSelected = 200;
+
+		private static List<Pawn> tmpSelectedPawns = new List<Pawn>();
 
 		private bool ShiftIsHeld
 		{
@@ -74,6 +78,23 @@ namespace RimWorld
 					return null;
 				}
 				return selected[0];
+			}
+		}
+
+		public List<Pawn> SelectedPawns
+		{
+			get
+			{
+				tmpSelectedPawns.Clear();
+				for (int i = 0; i < selected.Count; i++)
+				{
+					Pawn item;
+					if ((item = selected[i] as Pawn) != null)
+					{
+						tmpSelectedPawns.Add(item);
+					}
+				}
+				return tmpSelectedPawns;
 			}
 		}
 
@@ -136,7 +157,7 @@ namespace RimWorld
 					{
 						FloatMenuMakerMap.TryMakeFloatMenu((Pawn)selected[0]);
 					}
-					else
+					else if (!FloatMenuMakerMap.TryMakeMultiSelectFloatMenu(SelectedPawns))
 					{
 						cantTakeReasons.Clear();
 						for (int i = 0; i < selected.Count; i++)
@@ -144,7 +165,7 @@ namespace RimWorld
 							Pawn pawn = selected[i] as Pawn;
 							if (pawn != null)
 							{
-								MassTakeFirstAutoTakeableOption_NewTemp(pawn, UI.MouseCell(), out string cantTakeReason);
+								MassTakeFirstAutoTakeableOption_NewTemp(pawn, UI.MouseCell(), out var cantTakeReason);
 								if (cantTakeReason != null)
 								{
 									cantTakeReasons.Add(cantTakeReason);
@@ -189,17 +210,50 @@ namespace RimWorld
 		{
 			SelectionDrawer.Clear();
 			selected.Clear();
+			shelved.Clear();
 		}
 
 		public void Deselect(object obj)
 		{
+			DeselectInternal(obj);
+		}
+
+		private void DeselectInternal(object obj, bool clearShelfOnRemove = true)
+		{
 			if (selected.Contains(obj))
 			{
 				selected.Remove(obj);
+				if (clearShelfOnRemove)
+				{
+					shelved.Clear();
+				}
+			}
+		}
+
+		public void ShelveSelected(object obj)
+		{
+			if (IsSelected(obj))
+			{
+				DeselectInternal(obj, clearShelfOnRemove: false);
+				shelved.Add(obj);
+			}
+		}
+
+		public void Unshelve(object obj, bool playSound = true, bool forceDesignatorDeselect = true)
+		{
+			if (shelved.Contains(obj))
+			{
+				shelved.Remove(obj);
+				SelectInternal(obj, playSound, forceDesignatorDeselect, clearShelfOnAdd: false);
 			}
 		}
 
 		public void Select(object obj, bool playSound = true, bool forceDesignatorDeselect = true)
+		{
+			SelectInternal(obj, playSound, forceDesignatorDeselect);
+		}
+
+		private void SelectInternal(object obj, bool playSound = true, bool forceDesignatorDeselect = true, bool clearShelfOnAdd = true)
 		{
 			if (obj == null)
 			{
@@ -235,7 +289,7 @@ namespace RimWorld
 			{
 				ClearSelection();
 			}
-			Map map = (thing != null) ? thing.Map : ((Zone)obj).Map;
+			Map map = ((thing != null) ? thing.Map : ((Zone)obj).Map);
 			for (int num = selected.Count - 1; num >= 0; num--)
 			{
 				Thing thing2 = selected[num] as Thing;
@@ -258,6 +312,10 @@ namespace RimWorld
 					PlaySelectionSoundFor(obj);
 				}
 				selected.Add(obj);
+				if (clearShelfOnAdd)
+				{
+					shelved.Clear();
+				}
 				SelectionDrawer.Notify_Selected(obj);
 			}
 		}
@@ -523,10 +581,10 @@ namespace RimWorld
 				return;
 			}
 			Thing clickedThing = list.FirstOrDefault((object o) => o is Pawn && ((Pawn)o).Faction == Faction.OfPlayer && !((Pawn)o).IsPrisoner) as Thing;
-			clickedThing = (list.FirstOrDefault((object o) => o is Pawn) as Thing);
+			clickedThing = list.FirstOrDefault((object o) => o is Pawn) as Thing;
 			if (clickedThing == null)
 			{
-				clickedThing = (list.Where((object o) => o is Thing && !((Thing)o).def.neverMultiSelect).FirstOrDefault() as Thing);
+				clickedThing = list.Where((object o) => o is Thing && !((Thing)o).def.neverMultiSelect).FirstOrDefault() as Thing;
 			}
 			Rect rect = new Rect(0f, 0f, UI.screenWidth, UI.screenHeight);
 			if (clickedThing == null)
@@ -578,7 +636,7 @@ namespace RimWorld
 		[Obsolete("Obsolete, only used to avoid error when patching")]
 		private static void MassTakeFirstAutoTakeableOption(Pawn pawn, IntVec3 dest)
 		{
-			MassTakeFirstAutoTakeableOption_NewTemp(pawn, dest, out string _);
+			MassTakeFirstAutoTakeableOption_NewTemp(pawn, dest, out var _);
 		}
 
 		private static void MassTakeFirstAutoTakeableOption_NewTemp(Pawn pawn, IntVec3 dest, out string cantTakeReason)

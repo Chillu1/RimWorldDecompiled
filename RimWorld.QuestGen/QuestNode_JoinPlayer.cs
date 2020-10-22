@@ -25,7 +25,7 @@ namespace RimWorld.QuestGen
 			if (pawns.GetValue(slate) != null)
 			{
 				QuestPart_JoinPlayer questPart_JoinPlayer = new QuestPart_JoinPlayer();
-				questPart_JoinPlayer.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+				questPart_JoinPlayer.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 				questPart_JoinPlayer.joinPlayer = joinPlayer.GetValue(slate);
 				questPart_JoinPlayer.makePrisoners = makePrisoners.GetValue(slate);
 				questPart_JoinPlayer.mapParent = QuestGen.slate.Get<Map>("map").Parent;

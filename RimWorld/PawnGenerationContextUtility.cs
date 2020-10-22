@@ -7,17 +7,13 @@ namespace RimWorld
 	{
 		public static string ToStringHuman(this PawnGenerationContext context)
 		{
-			switch (context)
+			return context switch
 			{
-			case PawnGenerationContext.All:
-				return "PawnGenerationContext_All".Translate();
-			case PawnGenerationContext.PlayerStarter:
-				return "PawnGenerationContext_PlayerStarter".Translate();
-			case PawnGenerationContext.NonPlayer:
-				return "PawnGenerationContext_NonPlayer".Translate();
-			default:
-				throw new NotImplementedException();
-			}
+				PawnGenerationContext.All => "PawnGenerationContext_All".Translate(), 
+				PawnGenerationContext.PlayerStarter => "PawnGenerationContext_PlayerStarter".Translate(), 
+				PawnGenerationContext.NonPlayer => "PawnGenerationContext_NonPlayer".Translate(), 
+				_ => throw new NotImplementedException(), 
+			};
 		}
 
 		public static bool Includes(this PawnGenerationContext includer, PawnGenerationContext other)

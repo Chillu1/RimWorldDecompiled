@@ -8,12 +8,12 @@ namespace RimWorld
 	{
 		protected override LordJob MakeLordJob(IncidentParms parms, Map map, List<Pawn> pawns, int raidSeed)
 		{
-			IntVec3 originCell = parms.spawnCenter.IsValid ? parms.spawnCenter : pawns[0].PositionHeld;
+			IntVec3 originCell = (parms.spawnCenter.IsValid ? parms.spawnCenter : pawns[0].PositionHeld);
 			if (parms.faction.HostileTo(Faction.OfPlayer))
 			{
 				return new LordJob_AssaultColony(parms.faction);
 			}
-			RCellFinder.TryFindRandomSpotJustOutsideColony(originCell, map, out IntVec3 result);
+			RCellFinder.TryFindRandomSpotJustOutsideColony(originCell, map, out var result);
 			return new LordJob_AssistColony(parms.faction, result);
 		}
 	}

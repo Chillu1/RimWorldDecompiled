@@ -106,7 +106,7 @@ namespace Verse
 			}
 			else
 			{
-				GetCornerMats(out Material topLeft, out Material topRight, out Material botRight, out Material botLeft, b);
+				GetCornerMats(out var topLeft, out var topRight, out var botRight, out var botLeft, b);
 				if (topLeft != null)
 				{
 					availableOverlays.Add(DamageOverlay.TopLeftCorner);

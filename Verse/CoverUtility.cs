@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 
 namespace Verse
 {
@@ -14,7 +14,7 @@ namespace Verse
 			for (int i = 0; i < 8; i++)
 			{
 				IntVec3 intVec = cell + GenAdj.AdjacentCells[i];
-				if (intVec.InBounds(map) && TryFindAdjustedCoverInCell(shooterLoc, target, intVec, map, out CoverInfo result) && result.BlockChance > 0f)
+				if (intVec.InBounds(map) && TryFindAdjustedCoverInCell(shooterLoc, target, intVec, map, out var result) && result.BlockChance > 0f)
 				{
 					list.Add(result);
 				}
@@ -29,7 +29,7 @@ namespace Verse
 			for (int i = 0; i < 8; i++)
 			{
 				IntVec3 intVec = cell + GenAdj.AdjacentCells[i];
-				if (intVec.InBounds(map) && TryFindAdjustedCoverInCell(shooterLoc, target, intVec, map, out CoverInfo result))
+				if (intVec.InBounds(map) && TryFindAdjustedCoverInCell(shooterLoc, target, intVec, map, out var result))
 				{
 					num += (1f - num) * result.BlockChance;
 				}

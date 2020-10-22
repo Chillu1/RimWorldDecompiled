@@ -182,7 +182,7 @@ namespace RimWorld
 			thingDef.SetStatBaseValue(StatDefOf.Beauty, -8f);
 			thingDef.SetStatBaseValue(StatDefOf.Flammability, def.BaseFlammability);
 			thingDef.fillPercent = 0.2f;
-			thingDef.pathCost = 10;
+			thingDef.pathCost = DefGenerator.StandardItemPathCost;
 			thingDef.description = def.description;
 			thingDef.passability = def.passability;
 			if ((int)thingDef.passability > 1)

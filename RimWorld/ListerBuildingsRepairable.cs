@@ -78,7 +78,7 @@ namespace RimWorld
 
 		private List<Thing> ListFor(Faction fac)
 		{
-			if (!repairables.TryGetValue(fac, out List<Thing> value))
+			if (!repairables.TryGetValue(fac, out var value))
 			{
 				value = new List<Thing>();
 				repairables.Add(fac, value);
@@ -88,7 +88,7 @@ namespace RimWorld
 
 		private HashSet<Thing> HashSetFor(Faction fac)
 		{
-			if (!repairablesSet.TryGetValue(fac, out HashSet<Thing> value))
+			if (!repairablesSet.TryGetValue(fac, out var value))
 			{
 				value = new HashSet<Thing>();
 				repairablesSet.Add(fac, value);

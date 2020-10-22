@@ -44,7 +44,6 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			JobDriver_WatchBuilding jobDriver_WatchBuilding = this;
 			this.EndOnDespawnedOrNull(TargetIndex.A);
 			Toil watch;
 			if (base.TargetC.HasThing && base.TargetC.Thing is Building_Bed)
@@ -62,16 +61,24 @@ namespace RimWorld
 			}
 			watch.AddPreTickAction(delegate
 			{
-				jobDriver_WatchBuilding.WatchTickAction();
+				WatchTickAction();
 			});
 			watch.AddFinishAction(delegate
 			{
-				JoyUtility.TryGainRecRoomThought(jobDriver_WatchBuilding.pawn);
+				JoyUtility.TryGainRecRoomThought(pawn);
 			});
 			watch.defaultCompleteMode = ToilCompleteMode.Delay;
 			watch.defaultDuration = job.def.joyDuration;
 			watch.handlingFacing = true;
+			if (base.TargetA.Thing.def.building != null && base.TargetA.Thing.def.building.effectWatching != null)
+			{
+				watch.WithEffect(() => base.TargetA.Thing.def.building.effectWatching, EffectTargetGetter);
+			}
 			yield return watch;
+			LocalTargetInfo EffectTargetGetter()
+			{
+				return base.TargetA.Thing.OccupiedRect().RandomCell + IntVec3.North.RotatedBy(base.TargetA.Thing.Rotation);
+			}
 		}
 
 		protected virtual void WatchTickAction()

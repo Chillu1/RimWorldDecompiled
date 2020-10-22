@@ -77,7 +77,7 @@ namespace RimWorld
 			newReq.maxRangeFromTarget = 9999f;
 			newReq.locus = GetDefendee(pawn).PositionHeld;
 			newReq.maxRangeFromLocus = GetFlagRadius(pawn);
-			newReq.wantCoverFromTarget = (verb.verbProps.range > 7f);
+			newReq.wantCoverFromTarget = verb.verbProps.range > 7f;
 			newReq.maxRegions = 50;
 			return CastPositionFinder.TryFindCastPosition(newReq, out dest);
 		}

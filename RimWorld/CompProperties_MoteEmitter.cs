@@ -12,6 +12,8 @@ namespace RimWorld
 
 		public int emissionInterval = -1;
 
+		public SoundDef soundOnEmission;
+
 		public bool maintain;
 
 		public string saveKeysPrefix;

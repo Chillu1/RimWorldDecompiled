@@ -58,15 +58,15 @@ namespace RimWorld.QuestGen
 		protected override void RunInt()
 		{
 			Slate slate = QuestGen.slate;
-			TryFindRootTile(out int tile);
-			TryFindDestinationTile(tile, out int tile2);
+			TryFindRootTile(out var tile);
+			TryFindDestinationTile(tile, out var tile2);
 			slate.Set(storeAs.GetValue(slate), tile2);
 		}
 
 		protected override bool TestRunInt(Slate slate)
 		{
 			int tile2;
-			if (TryFindRootTile(out int tile))
+			if (TryFindRootTile(out var tile))
 			{
 				return TryFindDestinationTile(tile, out tile2);
 			}

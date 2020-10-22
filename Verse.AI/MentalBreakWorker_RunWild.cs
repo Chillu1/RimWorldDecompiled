@@ -6,7 +6,7 @@ namespace Verse.AI
 	{
 		public override bool BreakCanOccur(Pawn pawn)
 		{
-			if (!pawn.IsColonistPlayerControlled || pawn.Downed || !pawn.Spawned || !base.BreakCanOccur(pawn))
+			if (!pawn.IsColonistPlayerControlled || pawn.Downed || !pawn.Spawned || pawn.IsQuestLodger() || !base.BreakCanOccur(pawn))
 			{
 				return false;
 			}
@@ -25,6 +25,7 @@ namespace Verse.AI
 		public override bool TryStart(Pawn pawn, string reason, bool causedByMood)
 		{
 			TrySendLetter(pawn, "LetterRunWildMentalBreak", reason);
+			QuestUtility.SendQuestTargetSignals(pawn.questTags, "RanWild", pawn.Named("SUBJECT"));
 			pawn.ChangeKind(PawnKindDefOf.WildMan);
 			if (pawn.Faction != null)
 			{

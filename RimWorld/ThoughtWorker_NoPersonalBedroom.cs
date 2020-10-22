@@ -15,7 +15,7 @@ namespace RimWorld
 
 		public override string PostProcessDescription(Pawn p, string description)
 		{
-			return description.Formatted(p.royalty.HighestTitleWithBedroomRequirements().def.GetLabelCapFor(p).Named("TITLE"));
+			return description.Formatted(p.royalty.HighestTitleWithBedroomRequirements().Named("TITLE")).CapitalizeFirst();
 		}
 	}
 }

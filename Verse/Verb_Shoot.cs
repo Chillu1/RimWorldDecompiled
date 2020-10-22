@@ -12,7 +12,7 @@ namespace Verse
 			Pawn pawn = currentTarget.Thing as Pawn;
 			if (pawn != null && !pawn.Downed && CasterIsPawn && CasterPawn.skills != null)
 			{
-				float num = pawn.HostileTo(caster) ? 170f : 20f;
+				float num = (pawn.HostileTo(caster) ? 170f : 20f);
 				float num2 = verbProps.AdjustedFullCycleTime(this, CasterPawn);
 				CasterPawn.skills.Learn(SkillDefOf.Shooting, num * num2);
 			}

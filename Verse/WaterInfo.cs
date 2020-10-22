@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -83,14 +83,14 @@ namespace Verse
 			Buffer.BlockCopy(riverOffsetMap, 0, array, 0, array.Length * 4);
 			for (int i = riverFlowMapBounds.minZ; i <= riverFlowMapBounds.maxZ; i++)
 			{
-				int newZ = (i == riverFlowMapBounds.minZ) ? i : (i - 1);
-				int newZ2 = (i == riverFlowMapBounds.maxZ) ? i : (i + 1);
-				float num = (i == riverFlowMapBounds.minZ || i == riverFlowMapBounds.maxZ) ? 1 : 2;
+				int newZ = ((i == riverFlowMapBounds.minZ) ? i : (i - 1));
+				int newZ2 = ((i == riverFlowMapBounds.maxZ) ? i : (i + 1));
+				float num = ((i == riverFlowMapBounds.minZ || i == riverFlowMapBounds.maxZ) ? 1 : 2);
 				for (int j = riverFlowMapBounds.minX; j <= riverFlowMapBounds.maxX; j++)
 				{
-					int newX = (j == riverFlowMapBounds.minX) ? j : (j - 1);
-					int newX2 = (j == riverFlowMapBounds.maxX) ? j : (j + 1);
-					float num2 = (j == riverFlowMapBounds.minX || j == riverFlowMapBounds.maxX) ? 1 : 2;
+					int newX = ((j == riverFlowMapBounds.minX) ? j : (j - 1));
+					int newX2 = ((j == riverFlowMapBounds.maxX) ? j : (j + 1));
+					float num2 = ((j == riverFlowMapBounds.minX || j == riverFlowMapBounds.maxX) ? 1 : 2);
 					float x = (array[riverFlowMapBounds.IndexOf(new IntVec3(newX2, 0, i)) * 2 + 1] - array[riverFlowMapBounds.IndexOf(new IntVec3(newX, 0, i)) * 2 + 1]) / num2;
 					float z = (array[riverFlowMapBounds.IndexOf(new IntVec3(j, 0, newZ2)) * 2 + 1] - array[riverFlowMapBounds.IndexOf(new IntVec3(j, 0, newZ)) * 2 + 1]) / num;
 					Vector3 vector = new Vector3(x, 0f, z);

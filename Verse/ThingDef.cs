@@ -1,8 +1,8 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
 using UnityEngine;
 using Verse.AI;
 
@@ -108,6 +108,8 @@ namespace Verse
 		public FloatRange displayNumbersBetweenSameDefDistRange = FloatRange.Zero;
 
 		public int minRewardCount = 1;
+
+		public bool preventSkyfallersLandingOn;
 
 		public GraphicData graphicData;
 
@@ -260,6 +262,8 @@ namespace Verse
 		public StuffProperties stuffProps;
 
 		public SkyfallerProperties skyfaller;
+
+		public PawnFlyerProperties pawnFlyer;
 
 		public bool canBeUsedUnderRoof = true;
 
@@ -488,15 +492,12 @@ namespace Verse
 				{
 					return true;
 				}
-				switch (category)
+				return category switch
 				{
-				case ThingCategory.Pawn:
-					return true;
-				case ThingCategory.Building:
-					return true;
-				default:
-					return false;
-				}
+					ThingCategory.Pawn => true, 
+					ThingCategory.Building => true, 
+					_ => false, 
+				};
 			}
 		}
 
@@ -675,13 +676,9 @@ namespace Verse
 		{
 			get
 			{
-				if (category == ThingCategory.Item)
+				if (category == ThingCategory.Item && (!verbs.NullOrEmpty() || !tools.NullOrEmpty()))
 				{
-					if (verbs.NullOrEmpty())
-					{
-						return !tools.NullOrEmpty();
-					}
-					return true;
+					return !IsApparel;
 				}
 				return false;
 			}
@@ -1056,7 +1053,7 @@ namespace Verse
 					tools[i].id = i.ToString();
 				}
 			}
-			if (verbs != null && verbs.Count == 1)
+			if (verbs != null && verbs.Count == 1 && verbs[0].label.NullOrEmpty())
 			{
 				verbs[0].label = label;
 			}
@@ -1068,6 +1065,10 @@ namespace Verse
 			if (building != null)
 			{
 				building.PostLoadSpecial(this);
+			}
+			if (apparel != null)
+			{
+				apparel.PostLoadSpecial(this);
 			}
 			if (plant != null)
 			{
@@ -1418,11 +1419,10 @@ namespace Verse
 			}
 			if (race != null && tools != null)
 			{
-				ThingDef thingDef = this;
 				int i;
 				for (i = 0; i < tools.Count; i++)
 				{
-					if (tools[i].linkedBodyPartsGroup != null && !race.body.AllParts.Any((BodyPartRecord part) => part.groups.Contains(thingDef.tools[i].linkedBodyPartsGroup)))
+					if (tools[i].linkedBodyPartsGroup != null && !race.body.AllParts.Any((BodyPartRecord part) => part.groups.Contains(tools[i].linkedBodyPartsGroup)))
 					{
 						yield return string.Concat("has tool with linkedBodyPartsGroup ", tools[i].linkedBodyPartsGroup, " but body ", race.body, " has no parts with that group.");
 					}
@@ -1513,7 +1513,7 @@ namespace Verse
 				yield return new StatDrawEntry(StatCategoryDefOf.Basics, "SkillRequiredToBuild".Translate(SkillDefOf.Artistic.LabelCap), artisticSkillPrerequisite.ToString(), "SkillRequiredToBuildExplanation".Translate(SkillDefOf.Artistic.LabelCap), 1100);
 			}
 			string[] array = (from u in DefDatabase<RecipeDef>.AllDefsListForReading.Where((RecipeDef r) => r.recipeUsers != null && r.products.Count == 1 && r.products.Any((ThingDefCountClass p) => p.thingDef == this) && !r.IsSurgery).SelectMany((RecipeDef r) => r.recipeUsers)
-				select u.label).ToArray();
+				select u.label).Distinct().ToArray();
 			if (array.Any())
 			{
 				string valueString = array.ToCommaList().CapitalizeFirst();
@@ -1541,7 +1541,7 @@ namespace Verse
 				float warmupTime = verb.warmupTime;
 				if (warmupTime > 0f)
 				{
-					TaggedString taggedString = (category == ThingCategory.Pawn) ? "MeleeWarmupTime".Translate() : "WarmupTime".Translate();
+					TaggedString taggedString = ((category == ThingCategory.Pawn) ? "MeleeWarmupTime".Translate() : "WarmupTime".Translate());
 					yield return new StatDrawEntry(verbStatCategory, taggedString, warmupTime.ToString("0.##") + " " + "LetterSecond".Translate(), "Stat_Thing_Weapon_MeleeWarmupTime_Desc".Translate(), 3555);
 				}
 				if (verb.defaultProjectile != null)
@@ -1618,7 +1618,7 @@ namespace Verse
 				bool multiple = enumerable.Count() >= 2;
 				foreach (RecipeDef item6 in enumerable)
 				{
-					string extraLabelPart = multiple ? (" (" + item6.addsHediff.label + ")") : "";
+					string extraLabelPart = (multiple ? (" (" + item6.addsHediff.label + ")") : "");
 					HediffDef diff = item6.addsHediff;
 					if (diff.addedPartProps != null)
 					{
@@ -1696,10 +1696,16 @@ namespace Verse
 			{
 				if (building.mineableThing != null)
 				{
-					yield return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, "Stat_MineableThing_Name".Translate(), building.mineableThing.LabelCap, "Stat_MineableThing_Desc".Translate(), 2200, null, new Dialog_InfoCard.Hyperlink[1]
+					Dialog_InfoCard.Hyperlink[] hyperlinks = new Dialog_InfoCard.Hyperlink[1]
 					{
 						new Dialog_InfoCard.Hyperlink(building.mineableThing)
-					});
+					};
+					yield return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, "Stat_MineableThing_Name".Translate(), building.mineableThing.LabelCap, "Stat_MineableThing_Desc".Translate(), 2200, null, hyperlinks);
+					StringBuilder stringBuilder4 = new StringBuilder();
+					stringBuilder4.AppendLine("Stat_MiningYield_Desc".Translate());
+					stringBuilder4.AppendLine();
+					stringBuilder4.AppendLine("StatsReport_DifficultyMultiplier".Translate(Find.Storyteller.difficulty.label) + ": " + Find.Storyteller.difficultyValues.mineYieldFactor.ToStringByStyle(ToStringStyle.PercentZero, ToStringNumberSense.Factor));
+					yield return new StatDrawEntry(StatCategoryDefOf.Basics, "Stat_MiningYield_Name".Translate(), Mathf.CeilToInt(building.EffectiveMineableYield).ToString("F0"), stringBuilder4.ToString(), 2200, null, hyperlinks);
 				}
 				if (building.IsTurret)
 				{
@@ -1756,7 +1762,31 @@ namespace Verse
 			{
 				for (int k = 0; k < equippedStatOffsets.Count; k++)
 				{
-					yield return new StatDrawEntry(StatCategoryDefOf.EquippedStatOffsets, equippedStatOffsets[k].stat, equippedStatOffsets[k].value, StatRequest.ForEmpty(), ToStringNumberSense.Offset, null, forceUnfinalizedMode: true);
+					StatDef stat = equippedStatOffsets[k].stat;
+					float num3 = equippedStatOffsets[k].value;
+					StringBuilder stringBuilder5 = new StringBuilder(stat.description);
+					if (req.HasThing && stat.Worker != null)
+					{
+						stringBuilder5.AppendLine();
+						stringBuilder5.AppendLine();
+						stringBuilder5.AppendLine("StatsReport_BaseValue".Translate() + ": " + stat.ValueToString(num3, ToStringNumberSense.Offset, stat.finalizeEquippedStatOffset));
+						num3 = StatWorker.StatOffsetFromGear(req.Thing, stat);
+						if (!stat.parts.NullOrEmpty())
+						{
+							stringBuilder5.AppendLine();
+							for (int l = 0; l < stat.parts.Count; l++)
+							{
+								string text = stat.parts[l].ExplanationPart(req);
+								if (!text.NullOrEmpty())
+								{
+									stringBuilder5.AppendLine(text);
+								}
+							}
+						}
+						stringBuilder5.AppendLine();
+						stringBuilder5.AppendLine("StatsReport_FinalValue".Translate() + ": " + stat.ValueToString(num3, ToStringNumberSense.Offset, !stat.formatString.NullOrEmpty()));
+					}
+					yield return new StatDrawEntry(StatCategoryDefOf.EquippedStatOffsets, equippedStatOffsets[k].stat, num3, StatRequest.ForEmpty(), ToStringNumberSense.Offset, null, forceUnfinalizedMode: true).SetReportText(stringBuilder5.ToString());
 				}
 			}
 			if (!IsDrug)

@@ -1,4 +1,5 @@
-using UnityEngine;
+using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 using Verse.Sound;
 
@@ -34,20 +35,11 @@ namespace RimWorld
 			Pawn pawn2 = target.Pawn;
 			if (pawn2 != null)
 			{
-				Faction factionOrExtraHomeFaction = pawn2.FactionOrExtraHomeFaction;
-				if (Props.goodwillImpact != 0 && pawn.Faction != null && factionOrExtraHomeFaction != null && !factionOrExtraHomeFaction.HostileTo(pawn.Faction) && (Props.applyGoodwillImpactToLodgers || !pawn2.IsQuestLodger()) && !pawn2.IsQuestHelper())
+				Faction factionOrExtraMiniOrHomeFaction = pawn2.FactionOrExtraMiniOrHomeFaction;
+				if (Props.goodwillImpact != 0 && pawn.Faction != null && factionOrExtraMiniOrHomeFaction != null && !factionOrExtraMiniOrHomeFaction.HostileTo(pawn.Faction) && (Props.applyGoodwillImpactToLodgers || !pawn2.IsQuestLodger()) && !pawn2.IsQuestHelper())
 				{
-					factionOrExtraHomeFaction.TryAffectGoodwillWith(pawn.Faction, Props.goodwillImpact, canSendMessage: true, canSendHostilityLetter: true, "GoodwillChangedReason_UsedAbility".Translate(parent.def.LabelCap, pawn2.LabelShort), pawn2);
+					factionOrExtraMiniOrHomeFaction.TryAffectGoodwillWith(pawn.Faction, Props.goodwillImpact, canSendMessage: true, canSendHostilityLetter: true, "GoodwillChangedReason_UsedAbility".Translate(parent.def.LabelCap, pawn2.LabelShort), pawn2);
 				}
-			}
-			ThingDef moteDef = (!Props.psychic) ? ThingDefOf.Mote_PsycastSkipEffect : ThingDefOf.Mote_PsycastPsychicEffect;
-			if (target.HasThing)
-			{
-				MoteMaker.MakeAttachedOverlay(target.Thing, moteDef, Vector3.zero);
-			}
-			else
-			{
-				MoteMaker.MakeStaticMote(target.Cell, parent.pawn.Map, moteDef);
 			}
 			if (Props.clamorType != null)
 			{
@@ -63,6 +55,10 @@ namespace RimWorld
 			}
 		}
 
+		public virtual void Apply(GlobalTargetInfo target)
+		{
+		}
+
 		public virtual bool CanApplyOn(LocalTargetInfo target, LocalTargetInfo dest)
 		{
 			if (!Props.availableWhenTargetIsWounded && (target.Pawn.health.hediffSet.BleedRateTotal > 0f || target.Pawn.health.HasHediffsNeedingTend()))
@@ -72,6 +68,16 @@ namespace RimWorld
 			return true;
 		}
 
+		public virtual bool CanApplyOn(GlobalTargetInfo target)
+		{
+			return true;
+		}
+
+		public virtual IEnumerable<PreCastAction> GetPreCastActions()
+		{
+			yield break;
+		}
+
 		public virtual void DrawEffectPreview(LocalTargetInfo target)
 		{
 		}
@@ -79,6 +85,31 @@ namespace RimWorld
 		public virtual bool Valid(LocalTargetInfo target, bool throwMessages = false)
 		{
 			return true;
+		}
+
+		public virtual bool Valid(GlobalTargetInfo target, bool throwMessages = false)
+		{
+			return true;
+		}
+
+		public virtual string ExtraLabel(LocalTargetInfo target)
+		{
+			return null;
+		}
+
+		public virtual string WorldMapExtraLabel(GlobalTargetInfo target)
+		{
+			return null;
+		}
+
+		public virtual string ConfirmationDialogText(LocalTargetInfo target)
+		{
+			return null;
+		}
+
+		public virtual string ConfirmationDialogText(GlobalTargetInfo target)
+		{
+			return null;
 		}
 	}
 }

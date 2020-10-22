@@ -30,7 +30,7 @@ namespace RimWorld.QuestGen
 
 		private void SetVars(Slate slate)
 		{
-			object obj = (type.GetValue(slate) != null) ? ConvertHelper.Convert(this.obj.GetValue(slate), type.GetValue(slate)) : this.obj.GetValue(slate);
+			object obj = ((type.GetValue(slate) != null) ? ConvertHelper.Convert(this.obj.GetValue(slate), type.GetValue(slate)) : this.obj.GetValue(slate));
 			FieldInfo fieldInfo = obj.GetType().GetField(field.GetValue(slate), BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 			if (fieldInfo == null)
 			{

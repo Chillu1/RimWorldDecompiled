@@ -38,7 +38,7 @@ namespace RimWorld.QuestGen
 
 		public T Get<T>(string name, T defaultValue = default(T), bool isAbsoluteName = false)
 		{
-			if (TryGet(name, out T var, isAbsoluteName))
+			if (TryGet<T>(name, out var var, isAbsoluteName))
 			{
 				return var;
 			}
@@ -61,7 +61,7 @@ namespace RimWorld.QuestGen
 			{
 				name = TryResolveFirstAvailableName(name);
 			}
-			if (!vars.TryGetValue(name, out object value))
+			if (!vars.TryGetValue(name, out var value))
 			{
 				var = default(T);
 				return false;
@@ -101,7 +101,7 @@ namespace RimWorld.QuestGen
 			ISlateRef slateRef = var as ISlateRef;
 			if (slateRef != null)
 			{
-				slateRef.TryGetConvertedValue(this, out object value);
+				slateRef.TryGetConvertedValue<object>(this, out var value);
 				vars[name] = value;
 			}
 			else
@@ -232,7 +232,7 @@ namespace RimWorld.QuestGen
 			try
 			{
 				object var;
-				bool exists = TryGet(name, out var);
+				bool exists = TryGet<object>(name, out var);
 				return new VarRestoreInfo(name, exists, var);
 			}
 			finally
@@ -287,7 +287,7 @@ namespace RimWorld.QuestGen
 				{
 					stringBuilder.AppendLine();
 				}
-				string str = (item.Value is IEnumerable && !(item.Value is string)) ? ((IEnumerable)item.Value).ToStringSafeEnumerable() : item.Value.ToStringSafe();
+				string str = ((item.Value is IEnumerable && !(item.Value is string)) ? ((IEnumerable)item.Value).ToStringSafeEnumerable() : item.Value.ToStringSafe());
 				stringBuilder.Append(item.Key + "=" + str);
 			}
 			if (stringBuilder.Length == 0)

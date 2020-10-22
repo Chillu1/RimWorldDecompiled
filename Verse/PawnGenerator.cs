@@ -1,9 +1,9 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse
@@ -248,9 +248,16 @@ namespace Verse
 			{
 				return false;
 			}
-			if (!request.AllowDead && (pawn.Dead || pawn.Destroyed))
+			if (!request.AllowDead)
 			{
-				return false;
+				if (pawn.Dead || pawn.Destroyed)
+				{
+					return false;
+				}
+				if (pawn.health.hediffSet.GetBrain() == null)
+				{
+					return false;
+				}
 			}
 			if (!request.AllowDowned && pawn.Downed)
 			{
@@ -444,7 +451,7 @@ namespace Verse
 				if (pawn.RaceProps.Humanlike)
 				{
 					Faction faction;
-					FactionDef factionType = (request.Faction != null) ? request.Faction.def : ((!Find.FactionManager.TryGetRandomNonColonyHumanlikeFaction(out faction, tryMedievalOrBetter: false, allowDefeated: true)) ? Faction.OfAncients.def : faction.def);
+					FactionDef factionType = ((request.Faction != null) ? request.Faction.def : ((!Find.FactionManager.TryGetRandomNonColonyHumanlikeFaction_NewTemp(out faction, tryMedievalOrBetter: false, allowDefeated: true)) ? Faction.OfAncients.def : faction.def));
 					pawn.story.melanin = (request.FixedMelanin.HasValue ? request.FixedMelanin.Value : PawnSkinColors.RandomMelanin(request.Faction));
 					pawn.story.crownType = ((Rand.Value < 0.5f) ? CrownType.Average : CrownType.Narrow);
 					pawn.story.hairColor = PawnHairColors.RandomHairColor(pawn.story.SkinColor, pawn.ageTracker.AgeBiologicalYears);
@@ -462,7 +469,7 @@ namespace Verse
 					}
 					pawn.story.hairDef = PawnHairChooser.RandomHairDefFor(pawn, factionType);
 					GenerateTraits(pawn, request);
-					GenerateBodyType(pawn);
+					GenerateBodyType_NewTemp(pawn, request);
 					GenerateSkills(pawn);
 				}
 				if (pawn.RaceProps.Animal && request.Faction != null && request.Faction.IsPlayer)
@@ -471,37 +478,44 @@ namespace Verse
 					pawn.training.Train(TrainableDefOf.Tameness, null, complete: true);
 				}
 				GenerateInitialHediffs(pawn, request);
-				RoyalTitleDef royalTitleDef = request.FixedTitle;
-				if (royalTitleDef == null)
+				if (!request.ForbidAnyTitle)
 				{
-					if (request.KindDef.titleRequired != null)
+					RoyalTitleDef royalTitleDef = request.FixedTitle;
+					if (royalTitleDef == null)
 					{
-						royalTitleDef = request.KindDef.titleRequired;
+						if (request.KindDef.titleRequired != null)
+						{
+							royalTitleDef = request.KindDef.titleRequired;
+						}
+						else if (!request.KindDef.titleSelectOne.NullOrEmpty() && Rand.Chance(request.KindDef.royalTitleChance))
+						{
+							royalTitleDef = request.KindDef.titleSelectOne.RandomElementByWeight((RoyalTitleDef t) => t.commonality);
+						}
 					}
-					else if (!request.KindDef.titleSelectOne.NullOrEmpty() && Rand.Chance(request.KindDef.royalTitleChance))
+					if (request.KindDef.minTitleRequired != null && (royalTitleDef == null || royalTitleDef.seniority < request.KindDef.minTitleRequired.seniority))
 					{
-						royalTitleDef = request.KindDef.titleSelectOne.RandomElementByWeight((RoyalTitleDef t) => t.commonality);
+						royalTitleDef = request.KindDef.minTitleRequired;
 					}
-				}
-				if (request.KindDef.minTitleRequired != null && (royalTitleDef == null || royalTitleDef.seniority < request.KindDef.minTitleRequired.seniority))
-				{
-					royalTitleDef = request.KindDef.minTitleRequired;
-				}
-				if (royalTitleDef != null)
-				{
-					Faction faction2 = (request.Faction != null && request.Faction.def.HasRoyalTitles) ? request.Faction : Find.FactionManager.RandomRoyalFaction();
-					pawn.royalty.SetTitle(faction2, royalTitleDef, grantRewards: false);
-					int amount = 0;
-					if (royalTitleDef.GetNextTitle(faction2) != null)
+					if (royalTitleDef != null)
 					{
-						amount = Rand.Range(0, royalTitleDef.GetNextTitle(faction2).favorCost - 1);
-					}
-					pawn.royalty.SetFavor(faction2, amount);
-					if (royalTitleDef.maxPsylinkLevel > 0)
-					{
-						Hediff_ImplantWithLevel hediff_ImplantWithLevel = HediffMaker.MakeHediff(HediffDefOf.PsychicAmplifier, pawn, pawn.health.hediffSet.GetBrain()) as Hediff_ImplantWithLevel;
-						pawn.health.AddHediff(hediff_ImplantWithLevel);
-						hediff_ImplantWithLevel.SetLevelTo(royalTitleDef.maxPsylinkLevel);
+						Faction faction2 = ((request.Faction != null && request.Faction.def.HasRoyalTitles) ? request.Faction : Find.FactionManager.RandomRoyalFaction());
+						pawn.royalty.SetTitle(faction2, royalTitleDef, grantRewards: false);
+						if (request.Faction != null && !request.Faction.IsPlayer)
+						{
+							PurchasePermits(pawn, faction2);
+						}
+						int amount = 0;
+						if (royalTitleDef.GetNextTitle(faction2) != null)
+						{
+							amount = Rand.Range(0, royalTitleDef.GetNextTitle(faction2).favorCost - 1);
+						}
+						pawn.royalty.SetFavor_NewTemp(faction2, amount);
+						if (royalTitleDef.maxPsylinkLevel > 0)
+						{
+							Hediff_ImplantWithLevel hediff_ImplantWithLevel = HediffMaker.MakeHediff(HediffDefOf.PsychicAmplifier, pawn, pawn.health.hediffSet.GetBrain()) as Hediff_ImplantWithLevel;
+							pawn.health.AddHediff(hediff_ImplantWithLevel);
+							hediff_ImplantWithLevel.SetLevelTo(royalTitleDef.maxPsylinkLevel);
+						}
 					}
 				}
 				if (pawn.royalty != null)
@@ -592,6 +606,28 @@ namespace Verse
 			finally
 			{
 				pawnsBeingGenerated.RemoveLast();
+			}
+		}
+
+		private static void PurchasePermits(Pawn pawn, Faction faction)
+		{
+			pawn.royalty.RecalculatePermitPoints(faction);
+			int num = 200;
+			while (true)
+			{
+				IEnumerable<RoyalTitlePermitDef> source = DefDatabase<RoyalTitlePermitDef>.AllDefs.Where((RoyalTitlePermitDef x) => x.permitPointCost > 0 && x.AvailableForPawn(pawn, faction) && !x.IsPrerequisiteOfHeldPermit(pawn, faction));
+				if (source.Any())
+				{
+					pawn.royalty.AddPermit(source.RandomElement(), faction);
+					num--;
+					if (num <= 0)
+					{
+						Log.ErrorOnce("PurchasePermits exceeded max iterations.", 947492);
+						break;
+					}
+					continue;
+				}
+				break;
 			}
 		}
 
@@ -687,21 +723,16 @@ namespace Verse
 				return;
 			}
 			int num2 = 0;
-			while (true)
+			while (pawn.health.HasHediffsNeedingTend())
 			{
-				if (pawn.health.HasHediffsNeedingTend())
+				num2++;
+				if (num2 > 10000)
 				{
-					num2++;
-					if (num2 > 10000)
-					{
-						break;
-					}
-					TendUtility.DoTend(null, pawn, null);
-					continue;
+					Log.Error("Too many iterations.");
+					break;
 				}
-				return;
+				TendUtility.DoTend(null, pawn, null);
 			}
-			Log.Error("Too many iterations.");
 		}
 
 		private static void GenerateRandomAge(Pawn pawn, PawnGenerationRequest request)
@@ -859,9 +890,19 @@ namespace Verse
 			}
 		}
 
+		[Obsolete]
 		private static void GenerateBodyType(Pawn pawn)
 		{
-			if (pawn.story.adulthood != null)
+			GenerateBodyType_NewTemp(pawn, default(PawnGenerationRequest));
+		}
+
+		private static void GenerateBodyType_NewTemp(Pawn pawn, PawnGenerationRequest request)
+		{
+			if (request.ForceBodyType != null)
+			{
+				pawn.story.bodyType = request.ForceBodyType;
+			}
+			else if (pawn.story.adulthood != null)
 			{
 				pawn.story.bodyType = pawn.story.adulthood.BodyTypeFor(pawn.gender);
 			}
@@ -925,7 +966,7 @@ namespace Verse
 
 		private static int FinalLevelOfSkill(Pawn pawn, SkillDef sk)
 		{
-			float num = (!sk.usuallyDefinedInBackstories) ? Rand.ByCurve(LevelRandomCurve) : ((float)Rand.RangeInclusive(0, 4));
+			float num = ((!sk.usuallyDefinedInBackstories) ? Rand.ByCurve(LevelRandomCurve) : ((float)Rand.RangeInclusive(0, 4)));
 			foreach (Backstory item in pawn.story.AllBackstories.Where((Backstory bs) => bs != null))
 			{
 				foreach (KeyValuePair<SkillDef, int> item2 in item.skillGainsResolved)

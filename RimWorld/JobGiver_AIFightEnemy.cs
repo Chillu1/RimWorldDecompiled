@@ -81,7 +81,7 @@ namespace RimWorld
 			{
 				return JobMaker.MakeJob(JobDefOf.Wait_Combat, ExpiryInterval_ShooterSucceeded.RandomInRange, checkOverrideOnExpiry: true);
 			}
-			if (!TryFindShootingPosition(pawn, out IntVec3 dest))
+			if (!TryFindShootingPosition(pawn, out var dest))
 			{
 				return null;
 			}

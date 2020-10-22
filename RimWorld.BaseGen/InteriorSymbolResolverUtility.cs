@@ -34,7 +34,7 @@ namespace RimWorld.BaseGen
 					singleThingDef = ((map.mapTemperature.OutdoorTemp < -20f) ? ThingDefOf.Campfire : ThingDefOf.TorchLamp);
 					flag = true;
 				}
-				int num = (!(map.mapTemperature.OutdoorTemp < -45f)) ? 1 : 2;
+				int num = ((!(map.mapTemperature.OutdoorTemp < -45f)) ? 1 : 2);
 				for (int i = 0; i < num; i++)
 				{
 					ResolveParams resolveParams2 = rp;

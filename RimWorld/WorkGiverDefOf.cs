@@ -7,6 +7,8 @@ namespace RimWorld
 
 		public static WorkGiverDef Repair;
 
+		public static WorkGiverDef DoBillsMedicalHumanOperation;
+
 		static WorkGiverDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(WorkGiverDefOf));

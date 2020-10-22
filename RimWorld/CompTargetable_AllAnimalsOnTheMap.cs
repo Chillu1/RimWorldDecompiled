@@ -7,7 +7,7 @@ namespace RimWorld
 		protected override TargetingParameters GetTargetingParameters()
 		{
 			TargetingParameters targetingParameters = base.GetTargetingParameters();
-			targetingParameters.validator = ((TargetInfo targ) => BaseTargetValidator(targ.Thing) && ((targ.Thing as Pawn)?.RaceProps.Animal ?? false));
+			targetingParameters.validator = (TargetInfo targ) => BaseTargetValidator(targ.Thing) && ((targ.Thing as Pawn)?.RaceProps.Animal ?? false);
 			return targetingParameters;
 		}
 	}

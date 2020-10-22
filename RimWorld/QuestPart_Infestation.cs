@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -61,7 +61,7 @@ namespace RimWorld
 				for (int i = 0; i < hives.Count; i++)
 				{
 					Hive hive;
-					if ((hive = (hives[i] as Hive)) != null && !hive.questTags.NullOrEmpty() && hive.questTags.Contains(tag))
+					if ((hive = hives[i] as Hive) != null && !hive.questTags.NullOrEmpty() && hive.questTags.Contains(tag))
 					{
 						yield return hive;
 					}
@@ -87,8 +87,8 @@ namespace RimWorld
 				loc = thing.Position;
 				if (sendStandardLetter)
 				{
-					TaggedString label = customLetterLabel.NullOrEmpty() ? ((TaggedString)IncidentDefOf.Infestation.letterLabel) : customLetterLabel.Formatted(IncidentDefOf.Infestation.letterLabel.Named("BASELABEL"));
-					TaggedString text = customLetterText.NullOrEmpty() ? ((TaggedString)IncidentDefOf.Infestation.letterText) : customLetterText.Formatted(IncidentDefOf.Infestation.letterText.Named("BASETEXT"));
+					TaggedString label = (customLetterLabel.NullOrEmpty() ? ((TaggedString)IncidentDefOf.Infestation.letterLabel) : customLetterLabel.Formatted(IncidentDefOf.Infestation.letterLabel.Named("BASELABEL")));
+					TaggedString text = (customLetterText.NullOrEmpty() ? ((TaggedString)IncidentDefOf.Infestation.letterText) : customLetterText.Formatted(IncidentDefOf.Infestation.letterText.Named("BASETEXT")));
 					Find.LetterStack.ReceiveLetter(label, text, customLetterDef ?? IncidentDefOf.Infestation.letterDef, new TargetInfo(loc, mapParent.Map), null, quest);
 				}
 			}

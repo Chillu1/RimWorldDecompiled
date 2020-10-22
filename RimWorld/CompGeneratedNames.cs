@@ -9,6 +9,8 @@ namespace RimWorld
 
 		public CompProperties_GeneratedName Props => (CompProperties_GeneratedName)props;
 
+		public string Name => name;
+
 		public override string TransformLabel(string label)
 		{
 			if (parent.GetComp<CompBladelinkWeapon>() != null)

@@ -1,6 +1,7 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
+using RimWorld.Planet;
 using Verse.AI.Group;
 
 namespace Verse.AI
@@ -18,6 +19,8 @@ namespace Verse.AI
 		public List<LocalTargetInfo> targetQueueA;
 
 		public List<LocalTargetInfo> targetQueueB;
+
+		public GlobalTargetInfo globalTarget = GlobalTargetInfo.Invalid;
 
 		public int count = -1;
 
@@ -105,11 +108,19 @@ namespace Verse.AI
 
 		public Mote mote;
 
+		public float psyfocusTargetLast = -1f;
+
+		public bool wasOnMeditationTimeAssignment;
+
+		public bool reactingToMeleeThreat;
+
 		public ThinkTreeDef jobGiverThinkTree;
 
 		public ThinkNode jobGiver;
 
 		public WorkGiverDef workGiverDef;
+
+		public Ability ability;
 
 		private JobDriver cachedDriver;
 
@@ -180,9 +191,13 @@ namespace Verse.AI
 			endAfterTendedOnce = false;
 			quest = null;
 			mote = null;
+			reactingToMeleeThreat = false;
+			wasOnMeditationTimeAssignment = false;
+			psyfocusTargetLast = -1f;
 			jobGiverThinkTree = null;
 			jobGiver = null;
 			workGiverDef = null;
+			ability = null;
 			if (cachedDriver != null)
 			{
 				cachedDriver.job = null;
@@ -240,17 +255,13 @@ namespace Verse.AI
 
 		public LocalTargetInfo GetTarget(TargetIndex ind)
 		{
-			switch (ind)
+			return ind switch
 			{
-			case TargetIndex.A:
-				return targetA;
-			case TargetIndex.B:
-				return targetB;
-			case TargetIndex.C:
-				return targetC;
-			default:
-				throw new ArgumentException();
-			}
+				TargetIndex.A => targetA, 
+				TargetIndex.B => targetB, 
+				TargetIndex.C => targetC, 
+				_ => throw new ArgumentException(), 
+			};
 		}
 
 		public List<LocalTargetInfo> GetTargetQueue(TargetIndex ind)
@@ -311,6 +322,7 @@ namespace Verse.AI
 			Scribe_TargetInfo.Look(ref targetA, "targetA");
 			Scribe_TargetInfo.Look(ref targetB, "targetB");
 			Scribe_TargetInfo.Look(ref targetC, "targetC");
+			Scribe_TargetInfo.Look(ref globalTarget, "globalTarget");
 			Scribe_Collections.Look(ref targetQueueA, "targetQueueA", LookMode.Undefined);
 			Scribe_Collections.Look(ref targetQueueB, "targetQueueB", LookMode.Undefined);
 			Scribe_Values.Look(ref count, "count", -1);
@@ -350,6 +362,10 @@ namespace Verse.AI
 			Scribe_Defs.Look(ref workGiverDef, "workGiverDef");
 			Scribe_Defs.Look(ref jobGiverThinkTree, "jobGiverThinkTree");
 			Scribe_Values.Look(ref doUntilGatheringEnded, "doUntilGatheringEnded", defaultValue: false);
+			Scribe_Values.Look(ref psyfocusTargetLast, "psyfocusTargetLast", 0f);
+			Scribe_Values.Look(ref wasOnMeditationTimeAssignment, "wasOnMeditationTimeAssignment", defaultValue: false);
+			Scribe_Values.Look(ref reactingToMeleeThreat, "reactingToMeleeThreat", defaultValue: false);
+			Scribe_References.Look(ref ability, "ability");
 			if (Scribe.mode == LoadSaveMode.Saving)
 			{
 				jobGiverKey = ((jobGiver != null) ? jobGiver.UniqueSaveKey : (-1));
@@ -451,7 +467,7 @@ namespace Verse.AI
 
 		public bool AnyTargetOutsideArea(Area zone)
 		{
-			if ((targetA.IsValid && !zone[targetA.Cell]) || (targetB.IsValid && !zone[targetB.Cell]) || (targetC.IsValid && !zone[targetC.Cell]))
+			if (IsTargetOutsideArea(targetA, zone) || IsTargetOutsideArea(targetB, zone) || IsTargetOutsideArea(targetC, zone))
 			{
 				return true;
 			}
@@ -459,7 +475,7 @@ namespace Verse.AI
 			{
 				foreach (LocalTargetInfo item in targetQueueA)
 				{
-					if (item.IsValid && !zone[item.Cell])
+					if (IsTargetOutsideArea(item, zone))
 					{
 						return true;
 					}
@@ -469,11 +485,21 @@ namespace Verse.AI
 			{
 				foreach (LocalTargetInfo item2 in targetQueueB)
 				{
-					if (item2.IsValid && !zone[item2.Cell])
+					if (IsTargetOutsideArea(item2, zone))
 					{
 						return true;
 					}
 				}
+			}
+			return false;
+		}
+
+		private static bool IsTargetOutsideArea(LocalTargetInfo target, Area zone)
+		{
+			IntVec3 cell = target.Cell;
+			if (cell.IsValid)
+			{
+				return !zone[cell];
 			}
 			return false;
 		}

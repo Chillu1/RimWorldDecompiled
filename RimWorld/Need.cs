@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -145,7 +145,7 @@ namespace RimWorld
 				TooltipHandler.TipRegion(rect, new TipSignal(() => GetTipString(), rect.GetHashCode()));
 			}
 			float num2 = 14f;
-			float num3 = (customMargin >= 0f) ? customMargin : (num2 + 15f);
+			float num3 = ((customMargin >= 0f) ? customMargin : (num2 + 15f));
 			if (rect.height < 50f)
 			{
 				num2 *= Mathf.InverseLerp(0f, 50f, rect.height);
@@ -211,7 +211,7 @@ namespace RimWorld
 
 		private void DrawBarThreshold(Rect barRect, float threshPct)
 		{
-			float num = (!(barRect.width > 60f)) ? 1 : 2;
+			float num = ((!(barRect.width > 60f)) ? 1 : 2);
 			Rect position = new Rect(barRect.x + barRect.width * threshPct - (num - 1f), barRect.y + barRect.height / 2f, num, barRect.height / 2f);
 			Texture2D image;
 			if (threshPct < CurLevelPercentage)

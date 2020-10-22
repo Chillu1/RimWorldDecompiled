@@ -204,7 +204,7 @@ namespace RimWorld
 		private void DoColumnLabels(Rect rect)
 		{
 			rect.width -= 16f;
-			CalculateColumnsWidths(rect, out float addictionWidth, out float allowJoyWidth, out float scheduledWidth, out float drugNameWidth, out float frequencyWidth, out float moodThresholdWidth, out float joyThresholdWidth, out float takeToInventoryWidth);
+			CalculateColumnsWidths(rect, out var addictionWidth, out var allowJoyWidth, out var scheduledWidth, out var drugNameWidth, out var frequencyWidth, out var moodThresholdWidth, out var joyThresholdWidth, out var takeToInventoryWidth);
 			float x = rect.x;
 			Text.Anchor = TextAnchor.LowerCenter;
 			Rect rect2 = new Rect(x + 4f, rect.y, drugNameWidth, rect.height);
@@ -212,49 +212,51 @@ namespace RimWorld
 			TooltipHandler.TipRegionByKey(rect2, "DrugNameColumnDesc");
 			x += drugNameWidth;
 			Text.Anchor = TextAnchor.UpperCenter;
-			Rect rect3 = new Rect(x, rect.y, allowJoyWidth + allowJoyWidth, rect.height / 2f);
-			Widgets.Label(rect3, "DrugUsageColumnLabel".Translate());
-			TooltipHandler.TipRegionByKey(rect3, "DrugUsageColumnDesc");
-			Rect rect4 = new Rect(x, rect.yMax - 24f, 24f, 24f);
-			GUI.DrawTexture(rect4, IconForAddiction);
-			TooltipHandler.TipRegionByKey(rect4, "DrugUsageTipForAddiction");
-			x += addictionWidth;
+			Rect rect3 = new Rect(x, rect.y, takeToInventoryWidth, rect.height);
+			Widgets.Label(rect3, "TakeToInventoryColumnLabel".Translate());
+			TooltipHandler.TipRegionByKey(rect3, "TakeToInventoryColumnDesc");
+			x += takeToInventoryWidth;
+			Rect rect4 = new Rect(x, rect.y, allowJoyWidth + allowJoyWidth, rect.height / 2f);
+			Widgets.Label(rect4, "DrugUsageColumnLabel".Translate());
+			TooltipHandler.TipRegionByKey(rect4, "DrugUsageColumnDesc");
 			Rect rect5 = new Rect(x, rect.yMax - 24f, 24f, 24f);
-			GUI.DrawTexture(rect5, IconForJoy);
-			TooltipHandler.TipRegionByKey(rect5, "DrugUsageTipForJoy");
-			x += allowJoyWidth;
+			GUI.DrawTexture(rect5, IconForAddiction);
+			TooltipHandler.TipRegionByKey(rect5, "DrugUsageTipForAddiction");
+			x += addictionWidth;
 			Rect rect6 = new Rect(x, rect.yMax - 24f, 24f, 24f);
-			GUI.DrawTexture(rect6, IconScheduled);
-			TooltipHandler.TipRegionByKey(rect6, "DrugUsageTipScheduled");
+			GUI.DrawTexture(rect6, IconForJoy);
+			TooltipHandler.TipRegionByKey(rect6, "DrugUsageTipForJoy");
+			x += allowJoyWidth;
+			Rect rect7 = new Rect(x, rect.yMax - 24f, 24f, 24f);
+			GUI.DrawTexture(rect7, IconScheduled);
+			TooltipHandler.TipRegionByKey(rect7, "DrugUsageTipScheduled");
 			x += scheduledWidth;
 			Text.Anchor = TextAnchor.LowerCenter;
-			Rect rect7 = new Rect(x, rect.y, frequencyWidth, rect.height);
-			Widgets.Label(rect7, "FrequencyColumnLabel".Translate());
-			TooltipHandler.TipRegionByKey(rect7, "FrequencyColumnDesc");
+			Rect rect8 = new Rect(x, rect.y, frequencyWidth, rect.height);
+			Widgets.Label(rect8, "FrequencyColumnLabel".Translate());
+			TooltipHandler.TipRegionByKey(rect8, "FrequencyColumnDesc");
 			x += frequencyWidth;
-			Rect rect8 = new Rect(x, rect.y, moodThresholdWidth, rect.height);
-			Widgets.Label(rect8, "MoodThresholdColumnLabel".Translate());
-			TooltipHandler.TipRegionByKey(rect8, "MoodThresholdColumnDesc");
+			Rect rect9 = new Rect(x, rect.y, moodThresholdWidth, rect.height);
+			Widgets.Label(rect9, "MoodThresholdColumnLabel".Translate());
+			TooltipHandler.TipRegionByKey(rect9, "MoodThresholdColumnDesc");
 			x += moodThresholdWidth;
-			Rect rect9 = new Rect(x, rect.y, joyThresholdWidth, rect.height);
-			Widgets.Label(rect9, "JoyThresholdColumnLabel".Translate());
-			TooltipHandler.TipRegionByKey(rect9, "JoyThresholdColumnDesc");
+			Rect rect10 = new Rect(x, rect.y, joyThresholdWidth, rect.height);
+			Widgets.Label(rect10, "JoyThresholdColumnLabel".Translate());
+			TooltipHandler.TipRegionByKey(rect10, "JoyThresholdColumnDesc");
 			x += joyThresholdWidth;
-			Rect rect10 = new Rect(x, rect.y, takeToInventoryWidth, rect.height);
-			Widgets.Label(rect10, "TakeToInventoryColumnLabel".Translate());
-			TooltipHandler.TipRegionByKey(rect10, "TakeToInventoryColumnDesc");
-			x += takeToInventoryWidth;
 			Text.Anchor = TextAnchor.UpperLeft;
 		}
 
 		private void DoEntryRow(Rect rect, DrugPolicyEntry entry)
 		{
-			CalculateColumnsWidths(rect, out float addictionWidth, out float allowJoyWidth, out float scheduledWidth, out float drugNameWidth, out float frequencyWidth, out float moodThresholdWidth, out float joyThresholdWidth, out float takeToInventoryWidth);
+			CalculateColumnsWidths(rect, out var addictionWidth, out var allowJoyWidth, out var scheduledWidth, out var drugNameWidth, out var frequencyWidth, out var moodThresholdWidth, out var joyThresholdWidth, out var takeToInventoryWidth);
 			Text.Anchor = TextAnchor.MiddleLeft;
 			float x = rect.x;
 			Widgets.Label(new Rect(x, rect.y, drugNameWidth, rect.height).ContractedBy(4f), entry.drug.LabelCap);
 			Widgets.InfoCardButton(x + Text.CalcSize(entry.drug.LabelCap).x + 5f, rect.y + (rect.height - 24f) / 2f, entry.drug);
 			x += drugNameWidth;
+			Widgets.TextFieldNumeric(new Rect(x, rect.y, takeToInventoryWidth, rect.height).ContractedBy(4f), ref entry.takeToInventory, ref entry.takeToInventoryTempBuffer, 0f, 15f);
+			x += takeToInventoryWidth;
 			if (entry.drug.IsAddictiveDrug)
 			{
 				Widgets.Checkbox(x, rect.y, ref entry.allowedForAddiction, 24f, disabled: false, paintable: true);
@@ -280,8 +282,6 @@ namespace RimWorld
 			{
 				x += frequencyWidth + moodThresholdWidth + joyThresholdWidth;
 			}
-			Widgets.TextFieldNumeric(new Rect(x, rect.y, takeToInventoryWidth, rect.height).ContractedBy(4f), ref entry.takeToInventory, ref entry.takeToInventoryTempBuffer, 0f, 15f);
-			x += takeToInventoryWidth;
 			Text.Anchor = TextAnchor.UpperLeft;
 		}
 	}

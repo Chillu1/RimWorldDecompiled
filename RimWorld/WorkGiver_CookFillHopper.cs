@@ -76,7 +76,7 @@ namespace RimWorld
 				}
 				thingDef = firstItem.def;
 			}
-			List<Thing> list = (thingDef != null) ? pawn.Map.listerThings.ThingsOfDef(thingDef) : pawn.Map.listerThings.ThingsInGroup(ThingRequestGroup.FoodSourceNotPlantOrTree);
+			List<Thing> list = ((thingDef != null) ? pawn.Map.listerThings.ThingsOfDef(thingDef) : pawn.Map.listerThings.ThingsInGroup(ThingRequestGroup.FoodSourceNotPlantOrTree));
 			bool flag = false;
 			for (int i = 0; i < list.Count; i++)
 			{

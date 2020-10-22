@@ -1,4 +1,5 @@
 using Verse;
+using Verse.Sound;
 
 namespace RimWorld
 {
@@ -52,6 +53,10 @@ namespace RimWorld
 		protected void Emit()
 		{
 			mote = MoteMaker.MakeStaticMote(parent.DrawPos + Props.offset, parent.Map, Props.mote);
+			if (!Props.soundOnEmission.NullOrUndefined())
+			{
+				Props.soundOnEmission.PlayOneShot(SoundInfo.InMap(parent));
+			}
 		}
 
 		public override void PostExposeData()

@@ -93,6 +93,8 @@ namespace RimWorld
 
 		public static RulePackDef Event_AbilityUsed;
 
+		public static RulePackDef Event_ItemUsed;
+
 		public static RulePackDef Battle_Solo;
 
 		public static RulePackDef Battle_Duel;

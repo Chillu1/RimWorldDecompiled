@@ -1,9 +1,9 @@
-using RimWorld.QuestGen;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using RimWorld.QuestGen;
 
 namespace Verse
 {
@@ -48,7 +48,7 @@ namespace Verse
 					string currentValue = (string)value;
 					string text = curNormalizedPath + "." + item.Name;
 					string suggestedPath = curSuggestedPath + "." + item.Name;
-					if (TKeySystem.TrySuggestTKeyPath(text, out string tKeyPath))
+					if (TKeySystem.TrySuggestTKeyPath(text, out var tKeyPath))
 					{
 						suggestedPath = tKeyPath;
 					}
@@ -60,7 +60,7 @@ namespace Verse
 					bool flag2 = item.HasAttribute<TranslationCanChangeCountAttribute>();
 					string text2 = curNormalizedPath + "." + item.Name;
 					string suggestedPath2 = curSuggestedPath + "." + item.Name;
-					if (TKeySystem.TrySuggestTKeyPath(text2, out string tKeyPath2))
+					if (TKeySystem.TrySuggestTKeyPath(text2, out var tKeyPath2))
 					{
 						suggestedPath2 = tKeyPath2;
 					}

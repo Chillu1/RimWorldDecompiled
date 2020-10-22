@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -181,19 +181,14 @@ namespace Verse
 			{
 				return 1f;
 			}
-			switch (plantDef.plant.purpose)
+			return plantDef.plant.purpose switch
 			{
-			case PlantPurpose.Food:
-				return 4f;
-			case PlantPurpose.Health:
-				return 3f;
-			case PlantPurpose.Beauty:
-				return 2f;
-			case PlantPurpose.Misc:
-				return 0f;
-			default:
-				return 0f;
-			}
+				PlantPurpose.Food => 4f, 
+				PlantPurpose.Health => 3f, 
+				PlantPurpose.Beauty => 2f, 
+				PlantPurpose.Misc => 0f, 
+				_ => 0f, 
+			};
 		}
 	}
 }

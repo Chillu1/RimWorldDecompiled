@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse.AI
@@ -154,8 +154,8 @@ namespace Verse.AI
 
 		protected virtual string ReportStringProcessed(string str)
 		{
-			LocalTargetInfo a = job.targetA.IsValid ? job.targetA : job.targetQueueA.FirstValid();
-			LocalTargetInfo b = job.targetB.IsValid ? job.targetB : job.targetQueueB.FirstValid();
+			LocalTargetInfo a = (job.targetA.IsValid ? job.targetA : job.targetQueueA.FirstValid());
+			LocalTargetInfo b = (job.targetB.IsValid ? job.targetB : job.targetQueueB.FirstValid());
 			LocalTargetInfo targetC = job.targetC;
 			return JobUtility.GetResolvedJobReport(str, a, b, targetC);
 		}

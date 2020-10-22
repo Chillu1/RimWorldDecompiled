@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Verse
 {
@@ -7,6 +8,12 @@ namespace Verse
 		public EffecterDef def;
 
 		public List<SubEffecter> children = new List<SubEffecter>();
+
+		public int ticksLeft = -1;
+
+		public Vector3 offset;
+
+		public float scale = 1f;
 
 		public Effecter(EffecterDef def)
 		{

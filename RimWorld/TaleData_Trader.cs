@@ -25,7 +25,7 @@ namespace RimWorld
 		public override IEnumerable<Rule> GetRules(string prefix)
 		{
 			yield return new Rule_String(output: (!IsPawn) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(name) : name, keyword: prefix + "_nameFull");
-			string nameShortIndefinite2 = (!IsPawn) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(name) : name;
+			string nameShortIndefinite2 = ((!IsPawn) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(name) : name);
 			yield return new Rule_String(prefix + "_indefinite", nameShortIndefinite2);
 			yield return new Rule_String(prefix + "_nameIndef", nameShortIndefinite2);
 			nameShortIndefinite2 = ((!IsPawn) ? Find.ActiveLanguageWorker.WithDefiniteArticle(name) : name);

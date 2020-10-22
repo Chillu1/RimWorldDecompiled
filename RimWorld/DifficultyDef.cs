@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using Verse;
 
@@ -5,10 +6,15 @@ namespace RimWorld
 {
 	public sealed class DifficultyDef : Def
 	{
+		[Obsolete]
 		public Color drawColor = Color.white;
 
+		[Obsolete]
 		public bool isExtreme;
 
+		public bool isCustom;
+
+		[Obsolete]
 		public int difficulty = -1;
 
 		public float threatScale = 1f;
@@ -51,6 +57,7 @@ namespace RimWorld
 
 		public float foodPoisonChanceFactor = 1f;
 
+		[Obsolete]
 		public float threatsGeneratorThreatCountFactor = 1f;
 
 		public float maintenanceCostFactor = 1f;
@@ -62,5 +69,17 @@ namespace RimWorld
 		public float adaptationEffectFactor = 1f;
 
 		public float questRewardValueFactor = 1f;
+
+		public float raidLootPointsFactor = 1f;
+
+		public bool allowTraps = true;
+
+		public bool allowTurrets = true;
+
+		public bool allowMortars = true;
+
+		public bool allowExtremeWeatherIncidents = true;
+
+		public bool fixedWealthMode;
 	}
 }

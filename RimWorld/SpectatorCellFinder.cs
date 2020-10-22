@@ -202,7 +202,7 @@ namespace RimWorld
 			int num = 50;
 			for (int i = 0; i < num; i++)
 			{
-				if (!TryFindSpectatorCellFor(null, spectateRect, map, out IntVec3 cell, allowedSides, margin, list))
+				if (!TryFindSpectatorCellFor(null, spectateRect, map, out var cell, allowedSides, margin, list))
 				{
 					break;
 				}
@@ -247,7 +247,7 @@ namespace RimWorld
 			CellRect cellRect = spectateRect.ExpandedBy(margin).ClipInsideMap(map);
 			for (int j = 0; j < num; j++)
 			{
-				if (!TryFindSpectatorCellFor(null, spectateRect, map, out IntVec3 cell, allowedSides, margin, usedCells))
+				if (!TryFindSpectatorCellFor(null, spectateRect, map, out var cell, allowedSides, margin, usedCells))
 				{
 					break;
 				}
@@ -300,70 +300,50 @@ namespace RimWorld
 
 		public static bool ValidSingleSide(this SpectateRectSide side)
 		{
-			switch (side)
+			return side switch
 			{
-			case SpectateRectSide.Up:
-				return true;
-			case SpectateRectSide.Right:
-				return true;
-			case SpectateRectSide.Down:
-				return true;
-			case SpectateRectSide.Left:
-				return true;
-			default:
-				return false;
-			}
+				SpectateRectSide.Up => true, 
+				SpectateRectSide.Right => true, 
+				SpectateRectSide.Down => true, 
+				SpectateRectSide.Left => true, 
+				_ => false, 
+			};
 		}
 
 		public static Rot4 AsRot4(this SpectateRectSide side)
 		{
-			switch (side)
+			return side switch
 			{
-			case SpectateRectSide.Up:
-				return Rot4.North;
-			case SpectateRectSide.Right:
-				return Rot4.East;
-			case SpectateRectSide.Down:
-				return Rot4.South;
-			case SpectateRectSide.Left:
-				return Rot4.West;
-			default:
-				return Rot4.Invalid;
-			}
+				SpectateRectSide.Up => Rot4.North, 
+				SpectateRectSide.Right => Rot4.East, 
+				SpectateRectSide.Down => Rot4.South, 
+				SpectateRectSide.Left => Rot4.West, 
+				_ => Rot4.Invalid, 
+			};
 		}
 
 		public static int AsInt(this SpectateRectSide side)
 		{
-			switch (side)
+			return side switch
 			{
-			case SpectateRectSide.Up:
-				return 0;
-			case SpectateRectSide.Right:
-				return 1;
-			case SpectateRectSide.Down:
-				return 2;
-			case SpectateRectSide.Left:
-				return 3;
-			default:
-				return 0;
-			}
+				SpectateRectSide.Up => 0, 
+				SpectateRectSide.Right => 1, 
+				SpectateRectSide.Down => 2, 
+				SpectateRectSide.Left => 3, 
+				_ => 0, 
+			};
 		}
 
 		public static SpectateRectSide ToSpectatorSide(this int side)
 		{
-			switch (side)
+			return side switch
 			{
-			case 0:
-				return SpectateRectSide.Up;
-			case 1:
-				return SpectateRectSide.Right;
-			case 2:
-				return SpectateRectSide.Down;
-			case 3:
-				return SpectateRectSide.Left;
-			default:
-				return SpectateRectSide.None;
-			}
+				0 => SpectateRectSide.Up, 
+				1 => SpectateRectSide.Right, 
+				2 => SpectateRectSide.Down, 
+				3 => SpectateRectSide.Left, 
+				_ => SpectateRectSide.None, 
+			};
 		}
 	}
 }

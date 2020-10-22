@@ -60,7 +60,15 @@ namespace RimWorld
 
 		public virtual IEnumerable<Gizmo> GetWornGizmos()
 		{
-			yield break;
+			List<ThingComp> comps = base.AllComps;
+			for (int i = 0; i < comps.Count; i++)
+			{
+				ThingComp thingComp = comps[i];
+				foreach (Gizmo item in thingComp.CompGetWornGizmosExtra())
+				{
+					yield return item;
+				}
+			}
 		}
 
 		public override IEnumerable<StatDrawEntry> SpecialDisplayStats()

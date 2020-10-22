@@ -27,8 +27,8 @@ namespace Verse
 			{
 				graphicData.texPath = texPath;
 			}
-			graphicData.color = (color ?? other.color);
-			graphicData.colorTwo = (colorTwo ?? other.colorTwo);
+			graphicData.color = color ?? other.color;
+			graphicData.colorTwo = colorTwo ?? other.colorTwo;
 			return graphicData.Graphic;
 		}
 	}

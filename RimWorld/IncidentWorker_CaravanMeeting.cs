@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 using Verse.AI.Group;
 
@@ -31,7 +31,7 @@ namespace RimWorld
 				return IncidentDefOf.TravelerGroup.Worker.TryExecute(parms);
 			}
 			Caravan caravan = (Caravan)parms.target;
-			if (!TryFindFaction(out Faction faction))
+			if (!TryFindFaction(out var faction))
 			{
 				return false;
 			}
@@ -75,6 +75,7 @@ namespace RimWorld
 					Pawn t2 = caravan.PawnsListForReading[0];
 					faction.TrySetRelationKind(Faction.OfPlayer, FactionRelationKind.Hostile, canSendLetter: true, "GoodwillChangedReason_AttackedCaravan".Translate(), t2);
 					Map map = CaravanIncidentUtility.GetOrGenerateMapForIncident(caravan, new IntVec3(100, 1, 100), WorldObjectDefOf.AttackedNonPlayerCaravan);
+					map.Parent.SetFaction(faction);
 					IntVec3 playerSpot = default(IntVec3);
 					IntVec3 enemySpot = default(IntVec3);
 					MultipleCaravansCellFinder.FindStartingCellsFor2Groups(map, out playerSpot, out enemySpot);
@@ -104,7 +105,7 @@ namespace RimWorld
 
 		private bool TryFindFaction(out Faction faction)
 		{
-			return Find.FactionManager.AllFactionsListForReading.Where((Faction x) => !x.IsPlayer && !x.HostileTo(Faction.OfPlayer) && !x.def.hidden && x.def.humanlikeFaction && x.def.caravanTraderKinds.Any() && !x.def.pawnGroupMakers.NullOrEmpty()).TryRandomElement(out faction);
+			return Find.FactionManager.AllFactionsListForReading.Where((Faction x) => !x.IsPlayer && !x.HostileTo(Faction.OfPlayer) && !x.Hidden && x.def.humanlikeFaction && !x.temporary && x.def.caravanTraderKinds.Any() && !x.def.pawnGroupMakers.NullOrEmpty()).TryRandomElement(out faction);
 		}
 
 		private List<Pawn> GenerateCaravanPawns(Faction faction)

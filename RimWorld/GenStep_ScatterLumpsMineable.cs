@@ -23,7 +23,7 @@ namespace RimWorld
 			int num = CalculateFinalCount(map);
 			for (int i = 0; i < num; i++)
 			{
-				if (!TryFindScatterCell(map, out IntVec3 result))
+				if (!TryFindScatterCell(map, out var result))
 				{
 					return;
 				}
@@ -70,7 +70,7 @@ namespace RimWorld
 			{
 				return;
 			}
-			int numCells = (forcedLumpSize > 0) ? forcedLumpSize : thingDef.building.mineableScatterLumpSizeRange.RandomInRange;
+			int numCells = ((forcedLumpSize > 0) ? forcedLumpSize : thingDef.building.mineableScatterLumpSizeRange.RandomInRange);
 			recentLumpCells.Clear();
 			foreach (IntVec3 item in GridShapeMaker.IrregularLump(c, map, numCells))
 			{

@@ -1,7 +1,7 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 
 namespace Verse.AI
 {
@@ -29,7 +29,7 @@ namespace Verse.AI
 							thing2.DeSpawn();
 						}
 					}
-					ThingDef stuff = curJob.RecipeDef.unfinishedThingDef.MadeFromStuff ? thing.def : null;
+					ThingDef stuff = (curJob.RecipeDef.unfinishedThingDef.MadeFromStuff ? thing.def : null);
 					UnfinishedThing unfinishedThing = (UnfinishedThing)ThingMaker.MakeThing(curJob.RecipeDef.unfinishedThingDef, stuff);
 					unfinishedThing.Creator = actor;
 					unfinishedThing.BoundBill = (Bill_ProductionWithUft)curJob.bill;
@@ -91,7 +91,7 @@ namespace Verse.AI
 					{
 						actor2.skills.Learn(curJob2.RecipeDef.workSkill, 0.1f * curJob2.RecipeDef.workSkillLearnFactor);
 					}
-					float num = (curJob2.RecipeDef.workSpeedStat == null) ? 1f : actor2.GetStatValue(curJob2.RecipeDef.workSpeedStat);
+					float num = ((curJob2.RecipeDef.workSpeedStat == null) ? 1f : actor2.GetStatValue(curJob2.RecipeDef.workSpeedStat));
 					if (curJob2.RecipeDef.workTableSpeedStat != null)
 					{
 						Building_WorkTable building_WorkTable = jobDriver_DoBill.BillGiver as Building_WorkTable;
@@ -147,7 +147,7 @@ namespace Verse.AI
 				}
 				return toil.actor.CurJob.bill.suspended;
 			});
-			toil.activeSkill = (() => toil.actor.CurJob.bill.recipe.workSkill);
+			toil.activeSkill = () => toil.actor.CurJob.bill.recipe.workSkill;
 			return toil;
 		}
 
@@ -259,7 +259,7 @@ namespace Verse.AI
 						Log.Error(string.Concat("PlacedThing ", job.placedThings[i], " with count ", job.placedThings[i].Count, " for job ", job));
 						continue;
 					}
-					Thing thing = (job.placedThings[i].Count >= job.placedThings[i].thing.stackCount) ? job.placedThings[i].thing : job.placedThings[i].thing.SplitOff(job.placedThings[i].Count);
+					Thing thing = ((job.placedThings[i].Count >= job.placedThings[i].thing.stackCount) ? job.placedThings[i].thing : job.placedThings[i].thing.SplitOff(job.placedThings[i].Count));
 					job.placedThings[i].Count = 0;
 					if (list.Contains(thing))
 					{

@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 using Verse.Sound;
 
@@ -90,15 +90,12 @@ namespace Verse
 		{
 			get
 			{
-				_003C_003Ec__DisplayClass30_0 _003C_003Ec__DisplayClass30_ = new _003C_003Ec__DisplayClass30_0();
-				_003C_003Ec__DisplayClass30_._003C_003E4__this = this;
 				foreach (FloatMenuOption rightClickFloatMenuOption in base.RightClickFloatMenuOptions)
 				{
 					yield return rightClickFloatMenuOption;
 				}
 				if (hasDesignateAllFloatMenuOption)
 				{
-					_003C_003Ec__DisplayClass30_0 _003C_003Ec__DisplayClass30_2 = _003C_003Ec__DisplayClass30_;
 					int num = 0;
 					List<Thing> things = Map.listerThings.AllThings;
 					for (int i = 0; i < things.Count; i++)
@@ -116,9 +113,9 @@ namespace Verse
 							for (int k = 0; k < things.Count; k++)
 							{
 								Thing t2 = things[k];
-								if (!t2.Fogged() && _003C_003Ec__DisplayClass30_2._003C_003E4__this.CanDesignateThing(t2).Accepted)
+								if (!t2.Fogged() && CanDesignateThing(t2).Accepted)
 								{
-									_003C_003Ec__DisplayClass30_2._003C_003E4__this.DesignateThing(things[k]);
+									DesignateThing(things[k]);
 								}
 							}
 						});
@@ -128,17 +125,16 @@ namespace Verse
 						yield return new FloatMenuOption(designateAllLabel + " (" + "NoneLower".Translate() + ")", null);
 					}
 				}
-				_003C_003Ec__DisplayClass30_.designation = Designation;
+				DesignationDef designation = Designation;
 				if (Designation == null)
 				{
 					yield break;
 				}
-				_003C_003Ec__DisplayClass30_0 _003C_003Ec__DisplayClass30_3 = _003C_003Ec__DisplayClass30_;
 				int num2 = 0;
 				List<Designation> designations = Map.designationManager.allDesignations;
 				for (int j = 0; j < designations.Count; j++)
 				{
-					if (designations[j].def == _003C_003Ec__DisplayClass30_3.designation && RemoveAllDesignationsAffects(designations[j].target))
+					if (designations[j].def == designation && RemoveAllDesignationsAffects(designations[j].target))
 					{
 						num2++;
 					}
@@ -149,9 +145,9 @@ namespace Verse
 					{
 						for (int num3 = designations.Count - 1; num3 >= 0; num3--)
 						{
-							if (designations[num3].def == _003C_003Ec__DisplayClass30_3.designation && _003C_003Ec__DisplayClass30_3._003C_003E4__this.RemoveAllDesignationsAffects(designations[num3].target))
+							if (designations[num3].def == designation && RemoveAllDesignationsAffects(designations[num3].target))
 							{
-								_003C_003Ec__DisplayClass30_3._003C_003E4__this.Map.designationManager.RemoveDesignation(designations[num3]);
+								Map.designationManager.RemoveDesignation(designations[num3]);
 							}
 						}
 					});

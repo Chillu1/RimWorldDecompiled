@@ -247,7 +247,7 @@ namespace RimWorld
 						flag2 = true;
 					}
 				}
-				SetCaveAround(intVec, width, map, visited, out bool hitAnotherTunnel);
+				SetCaveAround(intVec, width, map, visited, out var hitAnotherTunnel);
 				if (hitAnotherTunnel)
 				{
 					break;

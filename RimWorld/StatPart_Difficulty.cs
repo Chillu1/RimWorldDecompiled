@@ -1,9 +1,10 @@
+using System;
 using System.Collections.Generic;
-using UnityEngine;
 using Verse;
 
 namespace RimWorld
 {
+	[Obsolete]
 	public class StatPart_Difficulty : StatPart
 	{
 		private List<float> factorsPerDifficulty = new List<float>();
@@ -20,13 +21,7 @@ namespace RimWorld
 
 		private float Multiplier(DifficultyDef d)
 		{
-			int num = d.difficulty;
-			if (num < 0 || num > factorsPerDifficulty.Count - 1)
-			{
-				Log.ErrorOnce("Not enough difficulty offsets defined for StatPart_Difficulty", 3598689);
-				num = Mathf.Clamp(num, 0, factorsPerDifficulty.Count - 1);
-			}
-			return factorsPerDifficulty[num];
+			return 1f;
 		}
 	}
 }

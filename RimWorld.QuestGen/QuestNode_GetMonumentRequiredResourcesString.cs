@@ -42,7 +42,7 @@ namespace RimWorld.QuestGen
 			List<Pair<List<StuffCategoryDef>, int>> list2 = new List<Pair<List<StuffCategoryDef>, int>>();
 			List<List<Pair<ThingDef, int>>> list3 = new List<List<Pair<ThingDef, int>>>();
 			SketchTerrain sketchTerrain;
-			int num = value.sketch.Entities.Where((SketchEntity x) => (sketchTerrain = (x as SketchTerrain)) != null && sketchTerrain.treatSimilarAsSame).Count();
+			int num = value.sketch.Entities.Where((SketchEntity x) => (sketchTerrain = x as SketchTerrain) != null && sketchTerrain.treatSimilarAsSame).Count();
 			foreach (SketchEntity entity in value.sketch.Entities)
 			{
 				SketchBuildable sketchBuildable = entity as SketchBuildable;
@@ -68,7 +68,7 @@ namespace RimWorld.QuestGen
 					for (int i = 0; i < sketchBuildable.Buildable.costList.Count; i++)
 					{
 						ThingDefCountClass thingDefCountClass = sketchBuildable.Buildable.costList[i];
-						if (!dictionary.TryGetValue(thingDefCountClass.thingDef, out int value2))
+						if (!dictionary.TryGetValue(thingDefCountClass.thingDef, out var value2))
 						{
 							value2 = 0;
 						}
@@ -77,7 +77,7 @@ namespace RimWorld.QuestGen
 					continue;
 				}
 				SketchTerrain st;
-				if ((st = (sketchBuildable as SketchTerrain)) != null && st.treatSimilarAsSame)
+				if ((st = sketchBuildable as SketchTerrain) != null && st.treatSimilarAsSame)
 				{
 					foreach (TerrainDef item in DefDatabase<TerrainDef>.AllDefs.Where((TerrainDef x) => st.IsSameOrSimilar(x)))
 					{
@@ -100,7 +100,7 @@ namespace RimWorld.QuestGen
 				List<ThingDefCountClass> list4 = sketchBuildable.Buildable.CostListAdjusted(sketchBuildable.Stuff);
 				for (int j = 0; j < list4.Count; j++)
 				{
-					if (!dictionary.TryGetValue(list4[j].thingDef, out int value3))
+					if (!dictionary.TryGetValue(list4[j].thingDef, out var value3))
 					{
 						value3 = 0;
 					}

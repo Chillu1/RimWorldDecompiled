@@ -16,7 +16,7 @@ namespace RimWorld
 			}
 			if (!(from p in pawn.Map.mapPawns.SpawnedPawnsInFaction(pawn.Faction)
 				where !p.NonHumanlikeOrWildMan() && p != pawn && p.Position.InHorDistOf(pawn.Position, 40f) && pawn.GetRoom() == p.GetRoom() && !p.Position.IsForbidden(pawn) && p.CanCasuallyInteractNow()
-				select p).TryRandomElement(out Pawn result))
+				select p).TryRandomElement(out var result))
 			{
 				return null;
 			}

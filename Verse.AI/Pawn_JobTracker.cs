@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 using Verse.AI.Group;
 
@@ -218,6 +218,18 @@ namespace Verse.AI
 			}
 		}
 
+		public IEnumerable<Job> AllJobs()
+		{
+			if (curJob != null)
+			{
+				yield return curJob;
+			}
+			foreach (QueuedJob item in jobQueue)
+			{
+				yield return item.job;
+			}
+		}
+
 		public void StartJob(Job newJob, JobCondition lastJobEndCondition = JobCondition.None, ThinkNode jobGiver = null, bool resumeCurJobAfterwards = false, bool cancelBusyStances = true, ThinkTreeDef thinkTree = null, JobTag? tag = null, bool fromQueue = false, bool canReturnCurJobToPool = false)
 		{
 			startingNewJob = true;
@@ -358,7 +370,7 @@ namespace Verse.AI
 			{
 				TaleRecorder.RecordTale(curJob.def.taleOnCompletion, curDriver.TaleParameters());
 			}
-			JobDef jobDef = (curJob != null) ? curJob.def : null;
+			JobDef jobDef = ((curJob != null) ? curJob.def : null);
 			CleanupCurrentJob(condition, releaseReservations: true, cancelBusyStancesSoft: true, canReturnToPool);
 			if (!startNewJob)
 			{
@@ -408,11 +420,38 @@ namespace Verse.AI
 				}
 				if (!pawn.Destroyed && pawn.carryTracker != null && pawn.carryTracker.CarriedThing != null)
 				{
-					pawn.carryTracker.TryDropCarriedThing(pawn.Position, ThingPlaceMode.Near, out Thing _);
+					pawn.carryTracker.TryDropCarriedThing(pawn.Position, ThingPlaceMode.Near, out var _);
 				}
 				if (releaseReservations && canReturnToPool)
 				{
 					JobMaker.ReturnToPool(job);
+				}
+			}
+		}
+
+		public JobQueue CaptureAndClearJobQueue()
+		{
+			JobQueue result = jobQueue.Capture();
+			ClearQueuedJobs(canReturnToPool: false);
+			return result;
+		}
+
+		public void RestoreCapturedJobs(JobQueue incomming, bool canReturnToPool = true)
+		{
+			bool flag = false;
+			QueuedJob queuedJob;
+			while ((queuedJob = incomming.Dequeue()) != null)
+			{
+				if (flag)
+				{
+					if (canReturnToPool)
+					{
+						JobMaker.ReturnToPool(queuedJob.job);
+					}
+				}
+				else if (!pawn.jobs.TryTakeOrderedJob_NewTemp(queuedJob.job, queuedJob.tag, requestQueueing: true))
+				{
+					flag = true;
 				}
 			}
 		}
@@ -703,6 +742,11 @@ namespace Verse.AI
 
 		public bool TryTakeOrderedJob(Job job, JobTag tag = JobTag.Misc)
 		{
+			return TryTakeOrderedJob_NewTemp(job, tag);
+		}
+
+		public bool TryTakeOrderedJob_NewTemp(Job job, JobTag? tag = JobTag.Misc, bool requestQueueing = false)
+		{
 			if (debugLog)
 			{
 				DebugLogEvent("TryTakeOrderedJob " + job);
@@ -719,6 +763,7 @@ namespace Verse.AI
 			{
 				PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.QueueOrders, KnowledgeAmount.NoteTaught);
 			}
+			isDownEvent = isDownEvent || requestQueueing;
 			if (num && (!isDownEvent || flag))
 			{
 				pawn.stances.CancelBusyStanceSoft();

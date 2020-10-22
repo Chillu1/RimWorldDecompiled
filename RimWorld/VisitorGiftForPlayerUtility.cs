@@ -96,7 +96,7 @@ namespace RimWorld
 			stringBuilder.AppendLine("Chance per faction:");
 			foreach (Faction allFaction in Find.FactionManager.AllFactions)
 			{
-				if (!allFaction.IsPlayer && !allFaction.HostileTo(Faction.OfPlayer) && !allFaction.def.hidden)
+				if (!allFaction.IsPlayer && !allFaction.HostileTo(Faction.OfPlayer) && !allFaction.Hidden)
 				{
 					stringBuilder.Append(allFaction.Name + " (" + allFaction.PlayerGoodwill.ToStringWithSign() + ", " + allFaction.PlayerRelationKind.GetLabel() + ")");
 					stringBuilder.Append(": " + ChanceToLeaveGift(allFaction, Find.CurrentMap).ToStringPercent());
@@ -106,7 +106,7 @@ namespace RimWorld
 			int num = 0;
 			for (int i = 0; i < 6; i++)
 			{
-				StorytellerUtility.DebugGetFutureIncidents(60, currentMapOnly: true, out Dictionary<IIncidentTarget, int> _, out int[] _, out List<Pair<IncidentDef, IncidentParms>> allIncidents, out int _);
+				StorytellerUtility.DebugGetFutureIncidents(60, currentMapOnly: true, out var _, out var _, out var allIncidents, out var _);
 				for (int j = 0; j < allIncidents.Count; j++)
 				{
 					if ((allIncidents[j].First == IncidentDefOf.VisitorGroup || allIncidents[j].First == IncidentDefOf.TraderCaravanArrival) && Rand.Chance(ChanceToLeaveGift(allIncidents[j].Second.faction ?? Find.FactionManager.RandomNonHostileFaction(allowHidden: false, allowDefeated: false, allowNonHumanlike: false), Find.CurrentMap)))

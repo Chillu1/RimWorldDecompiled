@@ -79,7 +79,7 @@ namespace RimWorld
 				}
 				stringBuilder.Append("  - " + list[i].LabelNoCountColored.Resolve());
 			}
-			string text = (!list.Any()) ? "" : string.Format(def.letterText, list.Count.ToString(), Faction.OfPlayer.def.pawnsPlural, def.diseaseIncident.label, stringBuilder.ToString());
+			string text = ((!list.Any()) ? "" : string.Format(def.letterText, list.Count.ToString(), Faction.OfPlayer.def.pawnsPlural, def.diseaseIncident.label, stringBuilder.ToString()));
 			if (!blockedInfo.NullOrEmpty())
 			{
 				if (!text.NullOrEmpty())

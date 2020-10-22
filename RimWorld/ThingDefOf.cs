@@ -101,6 +101,12 @@ namespace RimWorld
 		[MayRequireRoyalty]
 		public static ThingDef ShuttleLeaving;
 
+		[MayRequireRoyalty]
+		public static ThingDef ShuttleCrashing;
+
+		[MayRequireRoyalty]
+		public static ThingDef PawnJumper;
+
 		public static ThingDef ActiveDropPod;
 
 		public static ThingDef Fire;
@@ -347,6 +353,15 @@ namespace RimWorld
 		[MayRequireRoyalty]
 		public static ThingDef ShieldGeneratorMortar;
 
+		[MayRequireRoyalty]
+		public static ThingDef BroadshieldProjector;
+
+		[MayRequireRoyalty]
+		public static ThingDef Brazier;
+
+		[MayRequireRoyalty]
+		public static ThingDef ShuttleCrashed;
+
 		public static ThingDef Plant_Potato;
 
 		public static ThingDef Plant_TreeOak;
@@ -390,6 +405,9 @@ namespace RimWorld
 		public static ThingDef Apparel_Parka;
 
 		public static ThingDef Apparel_Tuque;
+
+		[MayRequireRoyalty]
+		public static ThingDef Apparel_RobeRoyal;
 
 		public static ThingDef Mote_Text;
 
@@ -488,16 +506,7 @@ namespace RimWorld
 		public static ThingDef Mote_CastPsycast;
 
 		[MayRequireRoyalty]
-		public static ThingDef Mote_PsycastSkipEffect;
-
-		[MayRequireRoyalty]
-		public static ThingDef Mote_PsycastSkipEffectSource;
-
-		[MayRequireRoyalty]
 		public static ThingDef Mote_EntropyPulse;
-
-		[MayRequireRoyalty]
-		public static ThingDef Mote_PsycastSkipLine;
 
 		[MayRequireRoyalty]
 		public static ThingDef Mote_PsychicLinkLine;
@@ -507,6 +516,24 @@ namespace RimWorld
 
 		[MayRequireRoyalty]
 		public static ThingDef Mote_PsyfocusPulse;
+
+		[MayRequireRoyalty]
+		public static ThingDef Mote_PsycastSkipFlashEntry;
+
+		[MayRequireRoyalty]
+		public static ThingDef Mote_PsycastSkipInnerExit;
+
+		[MayRequireRoyalty]
+		public static ThingDef Mote_PsycastSkipOuterRingEntry;
+
+		[MayRequireRoyalty]
+		public static ThingDef Mote_PsycastSkipOuterRingExit;
+
+		[MayRequireRoyalty]
+		public static ThingDef Mote_Bestow;
+
+		[MayRequireRoyalty]
+		public static ThingDef Mote_BroadshieldActivation;
 
 		public static ThingDef Gas_Smoke;
 
@@ -521,6 +548,9 @@ namespace RimWorld
 
 		[MayRequireRoyalty]
 		public static ThingDef Piano;
+
+		[MayRequireRoyalty]
+		public static ThingDef MeleeWeapon_PsyfocusStaff;
 
 		[MayRequireRoyalty]
 		public static ThingDef ShipLandingBeacon;

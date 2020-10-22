@@ -1,4 +1,6 @@
 using UnityEngine;
+using Verse;
+using Verse.Sound;
 
 namespace RimWorld
 {
@@ -6,19 +8,41 @@ namespace RimWorld
 	{
 		private CompSendSignalOnPawnProximity proximityCompCached;
 
+		private Sustainer sustainer;
+
 		private CompProperties_MoteEmitterProximityScan Props => (CompProperties_MoteEmitterProximityScan)props;
 
 		private CompSendSignalOnPawnProximity ProximityComp => proximityCompCached ?? (proximityCompCached = parent.GetComp<CompSendSignalOnPawnProximity>());
+
+		public override void PostDeSpawn(Map map)
+		{
+			if (sustainer != null && !sustainer.Ended)
+			{
+				sustainer.End();
+			}
+		}
 
 		public override void CompTick()
 		{
 			if (ProximityComp == null || ProximityComp.Sent)
 			{
+				if (sustainer != null && !sustainer.Ended)
+				{
+					sustainer.End();
+				}
 				return;
 			}
 			if (mote == null)
 			{
 				Emit();
+			}
+			if (!Props.soundEmitting.NullOrUndefined())
+			{
+				if (sustainer == null || sustainer.Ended)
+				{
+					sustainer = Props.soundEmitting.TrySpawnSustainer(SoundInfo.InMap(parent));
+				}
+				sustainer.Maintain();
 			}
 			if (mote == null)
 			{

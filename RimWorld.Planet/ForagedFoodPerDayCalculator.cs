@@ -19,7 +19,7 @@ namespace RimWorld.Planet
 			float foragedFoodCountPerInterval = GetForagedFoodCountPerInterval(pawns, biome, faction, explanation);
 			float progressPerTick = GetProgressPerTick(caravanMovingNow, caravanNightResting, explanation);
 			float num = foragedFoodCountPerInterval * progressPerTick * 60000f;
-			float num2 = (num == 0f) ? 0f : (num * biome.foragedFood.GetStatValueAbstract(StatDefOf.Nutrition));
+			float num2 = ((num == 0f) ? 0f : (num * biome.foragedFood.GetStatValueAbstract(StatDefOf.Nutrition)));
 			if (explanation != null)
 			{
 				explanation.AppendLine();
@@ -51,7 +51,7 @@ namespace RimWorld.Planet
 
 		public static float GetForagedFoodCountPerInterval(List<Pawn> pawns, BiomeDef biome, Faction faction, StringBuilder explanation = null)
 		{
-			float num = (biome.foragedFood != null) ? biome.forageability : 0f;
+			float num = ((biome.foragedFood != null) ? biome.forageability : 0f);
 			explanation?.Append("ForagedNutritionPerDay".Translate() + ":");
 			float num2 = 0f;
 			bool flag = false;

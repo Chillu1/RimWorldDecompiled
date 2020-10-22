@@ -56,7 +56,9 @@ namespace RimWorld
 					return;
 				}
 			}
-			Find.WindowStack.Add(new Dialog_LoadTransporters(transComp.Map, transporters));
+			Dialog_LoadTransporters dialog_LoadTransporters = new Dialog_LoadTransporters(transComp.Map, transporters);
+			dialog_LoadTransporters.autoLoot = transComp.Shuttle != null && transComp.Shuttle.CanAutoLoot;
+			Find.WindowStack.Add(dialog_LoadTransporters);
 		}
 
 		public override bool InheritInteractionsFrom(Gizmo other)

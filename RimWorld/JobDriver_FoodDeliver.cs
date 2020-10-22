@@ -35,8 +35,8 @@ namespace RimWorld
 		public override void Notify_Starting()
 		{
 			base.Notify_Starting();
-			usingNutrientPasteDispenser = (base.TargetThingA is Building_NutrientPasteDispenser);
-			eatingFromInventory = (pawn.inventory != null && pawn.inventory.Contains(base.TargetThingA));
+			usingNutrientPasteDispenser = base.TargetThingA is Building_NutrientPasteDispenser;
+			eatingFromInventory = pawn.inventory != null && pawn.inventory.Contains(base.TargetThingA);
 		}
 
 		public override bool TryMakePreToilReservations(bool errorOnFailed)
@@ -81,11 +81,10 @@ namespace RimWorld
 				return (!pawn.guest.CanBeBroughtFood) ? true : false;
 			});
 			yield return toil;
-			JobDriver_FoodDeliver jobDriver_FoodDeliver = this;
 			Toil toil2 = new Toil();
 			toil2.initAction = delegate
 			{
-				jobDriver_FoodDeliver.pawn.carryTracker.TryDropCarriedThing(toil2.actor.jobs.curJob.targetC.Cell, ThingPlaceMode.Direct, out Thing _);
+				pawn.carryTracker.TryDropCarriedThing(toil2.actor.jobs.curJob.targetC.Cell, ThingPlaceMode.Direct, out var _);
 			};
 			toil2.defaultCompleteMode = ToilCompleteMode.Instant;
 			yield return toil2;

@@ -22,7 +22,7 @@ namespace RimWorld
 
 		private CompShuttle cachedCompShuttle;
 
-		private static readonly Texture2D CancelLoadCommandTex = ContentFinder<Texture2D>.Get("UI/Designators/Cancel");
+		public static readonly Texture2D CancelLoadCommandTex = ContentFinder<Texture2D>.Get("UI/Designators/Cancel");
 
 		private static readonly Texture2D LoadCommandTex = ContentFinder<Texture2D>.Get("UI/Commands/LoadTransporter");
 
@@ -244,7 +244,7 @@ namespace RimWorld
 			{
 				yield return item;
 			}
-			if (Shuttle != null && !Shuttle.ShowLoadingGizmos)
+			if (Shuttle != null && !Shuttle.ShowLoadingGizmos && !Shuttle.permitShuttle)
 			{
 				yield break;
 			}
@@ -356,7 +356,7 @@ namespace RimWorld
 		public override void PostDeSpawn(Map map)
 		{
 			base.PostDeSpawn(map);
-			if (CancelLoad(map))
+			if (CancelLoad(map) && (Shuttle == null || Shuttle.permitShuttle))
 			{
 				if (Props.max1PerGroup)
 				{

@@ -70,7 +70,7 @@ namespace RimWorld
 					candidates.Remove(choiceLetter_RansomDemand.kidnapped);
 				}
 			}
-			if (!candidates.TryRandomElement(out Pawn result))
+			if (!candidates.TryRandomElement(out var result))
 			{
 				return null;
 			}

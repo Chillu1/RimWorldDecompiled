@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -57,7 +57,7 @@ namespace RimWorld
 				incidentParms.target = mapParent.Map;
 				incidentParms.points = (useCurrentThreatPoints ? StorytellerUtility.DefaultThreatPointsNow(mapParent.Map) : pointsRange.RandomInRange);
 				incidentParms.faction = faction;
-				IncidentDef incidentDef = (faction != null && !faction.HostileTo(Faction.OfPlayer)) ? IncidentDefOf.RaidFriendly : IncidentDefOf.RaidEnemy;
+				IncidentDef incidentDef = ((faction != null && !faction.HostileTo(Faction.OfPlayer)) ? IncidentDefOf.RaidFriendly : IncidentDefOf.RaidEnemy);
 				if (incidentDef.Worker.CanFireNow(incidentParms, forced: true))
 				{
 					incidentDef.Worker.TryExecute(incidentParms);

@@ -103,7 +103,14 @@ namespace RimWorld
 				TooltipHandler.TipRegionByKey(listing_Standard.Label("PrisonerReleasePotentialRelationGains".Translate() + ": " + t), "PrisonerReleaseRelationGainsDesc");
 				if (base.SelPawn.guilt.IsGuilty)
 				{
-					listing_Standard.Label("ConsideredGuilty".Translate(base.SelPawn.guilt.TicksUntilInnocent.ToStringTicksToPeriod().Colorize(ColoredText.DateTimeColor)));
+					if (!base.SelPawn.InAggroMentalState)
+					{
+						listing_Standard.Label("ConsideredGuilty".Translate(base.SelPawn.guilt.TicksUntilInnocent.ToStringTicksToPeriod().Colorize(ColoredText.DateTimeColor)));
+					}
+					else
+					{
+						listing_Standard.Label("ConsideredGuiltyNoTimer".Translate() + " (" + base.SelPawn.MentalStateDef.label + ")");
+					}
 				}
 				int num = (int)PrisonBreakUtility.InitiatePrisonBreakMtbDays(base.SelPawn);
 				string text2 = "PrisonBreakMTBDays".Translate() + ": ";

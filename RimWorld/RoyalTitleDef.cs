@@ -178,6 +178,10 @@ namespace RimWorld
 
 		public bool allowDignifiedMeditationFocus = true;
 
+		public int permitPointsAwarded;
+
+		public Type awardWorkerClass;
+
 		public ThoughtDef awardThought;
 
 		public ThoughtDef lostThought;
@@ -215,6 +219,8 @@ namespace RimWorld
 
 		[Unsaved(false)]
 		private List<ThingDef> satisfyingMealsNoDrugsCached;
+
+		private RoyalTitleAwardWorker awardWorker;
 
 		private RoyalTitleInheritanceWorker inheritanceWorkerOverride;
 
@@ -261,6 +267,19 @@ namespace RimWorld
 					return 0f;
 				}
 				return roomRequirement_Impressiveness.impressiveness;
+			}
+		}
+
+		public RoyalTitleAwardWorker AwardWorker
+		{
+			get
+			{
+				if (awardWorker == null)
+				{
+					awardWorker = (RoyalTitleAwardWorker)Activator.CreateInstance(awardWorkerClass);
+					awardWorker.def = this;
+				}
+				return awardWorker;
 			}
 		}
 
@@ -462,8 +481,7 @@ namespace RimWorld
 
 		private IEnumerable<string> RequiredApparelListForGender(Gender g)
 		{
-			Gender g2 = g;
-			foreach (TaggedString item in from a in requiredApparel.SelectMany((ApparelRequirement r) => r.AllRequiredApparel(g2))
+			foreach (TaggedString item in from a in requiredApparel.SelectMany((ApparelRequirement r) => r.AllRequiredApparel(g)).Distinct()
 				select a.LabelCap)
 			{
 				yield return item;

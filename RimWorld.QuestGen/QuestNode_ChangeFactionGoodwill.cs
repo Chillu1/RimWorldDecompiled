@@ -13,6 +13,8 @@ namespace RimWorld.QuestGen
 
 		public SlateRef<int> change;
 
+		public SlateRef<string> reason;
+
 		protected override bool TestRunInt(Slate slate)
 		{
 			return true;
@@ -23,8 +25,9 @@ namespace RimWorld.QuestGen
 			Slate slate = QuestGen.slate;
 			QuestPart_FactionGoodwillChange questPart_FactionGoodwillChange = new QuestPart_FactionGoodwillChange();
 			questPart_FactionGoodwillChange.change = change.GetValue(slate);
-			questPart_FactionGoodwillChange.faction = (faction.GetValue(slate) ?? factionOf.GetValue(slate).Faction);
-			questPart_FactionGoodwillChange.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart_FactionGoodwillChange.faction = faction.GetValue(slate) ?? factionOf.GetValue(slate).Faction;
+			questPart_FactionGoodwillChange.reason = reason.GetValue(slate);
+			questPart_FactionGoodwillChange.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			QuestGen.quest.AddPart(questPart_FactionGoodwillChange);
 		}
 	}

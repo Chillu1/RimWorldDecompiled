@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Verse;
+using Verse.AI;
 
 namespace RimWorld
 {
@@ -23,21 +24,20 @@ namespace RimWorld
 			}
 			int num = DesiredTreeCountForMap(map);
 			int num2 = 0;
-			do
+			IntVec3 result;
+			while (num > 0 && CellFinderLoose.TryFindRandomNotEdgeCellWith(25, (IntVec3 x) => CanSpawnAt(x, map, 0, 50), map, out result))
 			{
-				if (num > 0 && CellFinderLoose.TryFindRandomNotEdgeCellWith(25, (IntVec3 x) => CanSpawnAt(x, map, 0, 50), map, out IntVec3 result))
+				if (TrySpawnAt(result, map, GrowthRange.RandomInRange, out var _))
 				{
-					if (TrySpawnAt(result, map, GrowthRange.RandomInRange, out Thing _))
-					{
-						num--;
-					}
-					num2++;
-					continue;
+					num--;
 				}
-				return;
+				num2++;
+				if (num2 > 1000)
+				{
+					Log.Error("Could not place anima tree; too many iterations.");
+					break;
+				}
 			}
-			while (num2 <= 1000);
-			Log.Error("Could not place anima tree; too many iterations.");
 		}
 
 		public static bool TrySpawnAt(IntVec3 cell, Map map, float growth, out Thing plant)
@@ -92,14 +92,17 @@ namespace RimWorld
 			int num2 = 0;
 			for (int j = 0; j < num; j++)
 			{
-				IntVec3 c2 = c + GenRadial.RadialPattern[j];
-				if (!c2.Roofed(map) && c2.GetTerrain(map).fertility > 0f)
+				IntVec3 intVec = c + GenRadial.RadialPattern[j];
+				if (WanderUtility.InSameRoom(intVec, c, map))
 				{
-					num2++;
-				}
-				if (num2 >= minFertileUnroofedCells)
-				{
-					return true;
+					if (intVec.InBounds(map) && !intVec.Roofed(map) && intVec.GetTerrain(map).fertility > 0f)
+					{
+						num2++;
+					}
+					if (num2 >= minFertileUnroofedCells)
+					{
+						return true;
+					}
 				}
 			}
 			return false;

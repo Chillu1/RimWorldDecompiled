@@ -1,5 +1,3 @@
-using RimWorld;
-using RimWorld.IO;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,6 +6,8 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Xml.Linq;
+using RimWorld;
+using RimWorld.IO;
 
 namespace Verse
 {
@@ -230,7 +230,7 @@ namespace Verse
 								}
 								try
 								{
-									if (activeLanguage.TryGetTextFromKey(xElement2.Name.ToString(), out TaggedString translated))
+									if (activeLanguage.TryGetTextFromKey(xElement2.Name.ToString(), out var translated))
 									{
 										if (!translated.NullOrEmpty())
 										{
@@ -303,7 +303,7 @@ namespace Verse
 					}
 					SaveXMLDocumentWithProcessedNewlineTags(new XDocument(new XElement("LanguageData", new XComment("NEWLINE"), new XComment(" UNUSED "), item3.Select(delegate(LoadedLanguage.KeyedReplacement x)
 					{
-						string text4 = x.isPlaceholder ? "TODO" : x.value;
+						string text4 = (x.isPlaceholder ? "TODO" : x.value);
 						return new XElement(x.key, new XText(text4.NullOrEmpty() ? "" : text4.Replace("\n", "\\n")));
 					}), new XComment("NEWLINE"))), item3.Key);
 				}
@@ -458,11 +458,11 @@ namespace Verse
 													num2++;
 													string text = item3.normalizedPath + "." + num2;
 													string suggestedPath2 = item3.suggestedPath + "." + num2;
-													if (TKeySystem.TrySuggestTKeyPath(text, out string tKeyPath))
+													if (TKeySystem.TrySuggestTKeyPath(text, out var tKeyPath))
 													{
 														suggestedPath2 = tKeyPath;
 													}
-													if (!dictionary.TryGetValue(text, out DefInjectionPackage.DefInjection value))
+													if (!dictionary.TryGetValue(text, out var value))
 													{
 														value = null;
 													}
@@ -499,7 +499,7 @@ namespace Verse
 													}
 												}
 											}
-											if (!dictionary.TryGetValue(item3.normalizedPath, out DefInjectionPackage.DefInjection value2))
+											if (!dictionary.TryGetValue(item3.normalizedPath, out var value2))
 											{
 												value2 = null;
 											}
@@ -524,11 +524,11 @@ namespace Verse
 											xElement.Add(GetDefInjectableFieldNode(item3.suggestedPath, value2));
 											continue;
 										}
-										if (!dictionary.TryGetValue(item3.normalizedPath, out DefInjectionPackage.DefInjection value3))
+										if (!dictionary.TryGetValue(item3.normalizedPath, out var value3))
 										{
 											value3 = null;
 										}
-										string text3 = (value3 != null && value3.injected) ? value3.replacedString : item3.curValue;
+										string text3 = ((value3 != null && value3.injected) ? value3.replacedString : item3.curValue);
 										if (value3 == null && !DefInjectionUtility.ShouldCheckMissingInjection(text3, item3.fieldInfo, item3.def))
 										{
 											continue;
@@ -633,7 +633,7 @@ namespace Verse
 				{
 					addTo.Add(new XComment(SanitizeXComment(" EN: " + untranslatedValue.Replace("\n", "\\n") + " ")));
 				}
-				string text = wasTranslated ? currentValue : "TODO";
+				string text = (wasTranslated ? currentValue : "TODO");
 				addTo.Add(new XElement(fieldName, text.NullOrEmpty() ? "" : text.Replace("\n", "\\n")));
 			}
 		}
@@ -744,7 +744,7 @@ namespace Verse
 
 		private static IEnumerable<string> GetEnglishList(string normalizedPath, IEnumerable<string> curValue, Dictionary<string, DefInjectionPackage.DefInjection> injectionsByNormalizedPath)
 		{
-			if (injectionsByNormalizedPath.TryGetValue(normalizedPath, out DefInjectionPackage.DefInjection value) && value.injected)
+			if (injectionsByNormalizedPath.TryGetValue(normalizedPath, out var value) && value.injected)
 			{
 				return value.replacedList;
 			}
@@ -756,7 +756,7 @@ namespace Verse
 			for (int i = 0; i < list.Count; i++)
 			{
 				string key = normalizedPath + "." + i;
-				if (injectionsByNormalizedPath.TryGetValue(key, out DefInjectionPackage.DefInjection value2) && value2.injected)
+				if (injectionsByNormalizedPath.TryGetValue(key, out var value2) && value2.injected)
 				{
 					list[i] = value2.replacedString;
 				}

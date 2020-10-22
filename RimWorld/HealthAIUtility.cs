@@ -56,7 +56,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (pawn.Map.designationManager.DesignationOn(pawn, DesignationDefOf.Slaughter) != null)
+			if (pawn.Map?.designationManager.DesignationOn(pawn, DesignationDefOf.Slaughter) != null)
 			{
 				return false;
 			}

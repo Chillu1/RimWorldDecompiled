@@ -77,14 +77,12 @@ namespace RimWorld.Planet
 
 		private IEnumerable AccumulatePawnGCData(Dictionary<Pawn, string> keptPawns)
 		{
-			WorldPawnGC worldPawnGC = this;
-			Dictionary<Pawn, string> keptPawns2 = keptPawns;
 			foreach (Pawn item in PawnsFinder.AllMapsWorldAndTemporary_AliveOrDead)
 			{
 				string criticalPawnReason = GetCriticalPawnReason(item);
 				if (!criticalPawnReason.NullOrEmpty())
 				{
-					keptPawns2[item] = criticalPawnReason;
+					keptPawns[item] = criticalPawnReason;
 					if (logDotgraph != null)
 					{
 						logDotgraph.AppendLine(string.Format("{0} [label=<{0}<br/><font point-size=\"10\">{1}</font>> color=\"{2}\" shape=\"{3}\"];", DotgraphIdentifier(item), criticalPawnReason, (item.relations != null && item.relations.everSeenByPlayer) ? "black" : "grey", item.RaceProps.Humanlike ? "oval" : "box"));
@@ -96,23 +94,23 @@ namespace RimWorld.Planet
 				}
 			}
 			foreach (Pawn item2 in (from pawn in PawnsFinder.AllMapsWorldAndTemporary_Alive
-				where worldPawnGC.AllowedAsStoryPawn(pawn) && !keptPawns2.ContainsKey(pawn)
+				where AllowedAsStoryPawn(pawn) && !keptPawns.ContainsKey(pawn)
 				orderby pawn.records.StoryRelevance descending
 				select pawn).Take(20))
 			{
-				keptPawns2[item2] = "StoryRelevant";
+				keptPawns[item2] = "StoryRelevant";
 			}
-			Pawn[] criticalPawns = keptPawns2.Keys.ToArray();
+			Pawn[] criticalPawns = keptPawns.Keys.ToArray();
 			Pawn[] array = criticalPawns;
 			foreach (Pawn pawn2 in array)
 			{
-				AddAllRelationships(pawn2, keptPawns2);
+				AddAllRelationships(pawn2, keptPawns);
 				yield return null;
 			}
 			Pawn[] array2 = criticalPawns;
 			foreach (Pawn pawn3 in array2)
 			{
-				AddAllMemories(pawn3, keptPawns2);
+				AddAllMemories(pawn3, keptPawns);
 			}
 		}
 

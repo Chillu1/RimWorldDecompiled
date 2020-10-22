@@ -1,9 +1,9 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse.Grammar
@@ -47,7 +47,7 @@ namespace Verse.Grammar
 						for (int i = 0; i < rule.constantConstraints.Count; i++)
 						{
 							Rule.ConstantConstraint constantConstraint = rule.constantConstraints[i];
-							string text = (constraints != null) ? constraints.TryGetValue(constantConstraint.key, "") : "";
+							string text = ((constraints != null) ? constraints.TryGetValue(constantConstraint.key, "") : "");
 							float result = 0f;
 							float result2 = 0f;
 							bool flag = !text.NullOrEmpty() && !constantConstraint.value.NullOrEmpty() && float.TryParse(text, out result) && float.TryParse(constantConstraint.value, out result2);
@@ -61,16 +61,16 @@ namespace Verse.Grammar
 								flag2 = !text.EqualsIgnoreCase(constantConstraint.value);
 								break;
 							case Rule.ConstantConstraint.Type.Less:
-								flag2 = (flag && result < result2);
+								flag2 = flag && result < result2;
 								break;
 							case Rule.ConstantConstraint.Type.Greater:
-								flag2 = (flag && result > result2);
+								flag2 = flag && result > result2;
 								break;
 							case Rule.ConstantConstraint.Type.LessOrEqual:
-								flag2 = (flag && result <= result2);
+								flag2 = flag && result <= result2;
 								break;
 							case Rule.ConstantConstraint.Type.GreaterOrEqual:
-								flag2 = (flag && result >= result2);
+								flag2 = flag && result >= result2;
 								break;
 							default:
 								Log.Error("Unknown ConstantConstraint type: " + constantConstraint.type);
@@ -231,7 +231,7 @@ namespace Verse.Grammar
 						logSbMid.AppendLine($"{rulePackDef.defName}");
 					}
 					hashSet.Add(rulePackDef);
-					List<Rule> list2 = useUntranslatedRules ? rulePackDef.UntranslatedRulesImmediate : rulePackDef.RulesImmediate;
+					List<Rule> list2 = (useUntranslatedRules ? rulePackDef.UntranslatedRulesImmediate : rulePackDef.RulesImmediate);
 					if (list2 != null)
 					{
 						foreach (Rule item in list2)
@@ -255,7 +255,7 @@ namespace Verse.Grammar
 				}
 				for (int j = 0; j < includesBareAllowNull.Count; j++)
 				{
-					List<Rule> list3 = useUntranslatedRules ? includesBareAllowNull[j].UntranslatedRules : includesBareAllowNull[j].Rules;
+					List<Rule> list3 = (useUntranslatedRules ? includesBareAllowNull[j].UntranslatedRules : includesBareAllowNull[j].Rules);
 					for (int k = 0; k < list3.Count; k++)
 					{
 						AddRule(list3[k]);
@@ -275,7 +275,7 @@ namespace Verse.Grammar
 					logSbMid.AppendLine("  " + extraTags[l]);
 				}
 			}
-			List<Rule> list4 = useUntranslatedRules ? RulePackDefOf.GlobalUtility.UntranslatedRulesPlusIncludes : RulePackDefOf.GlobalUtility.RulesPlusIncludes;
+			List<Rule> list4 = (useUntranslatedRules ? RulePackDefOf.GlobalUtility.UntranslatedRulesPlusIncludes : RulePackDefOf.GlobalUtility.RulesPlusIncludes);
 			for (int m = 0; m < list4.Count; m++)
 			{
 				AddRule(list4[m]);
@@ -443,7 +443,7 @@ namespace Verse.Grammar
 					}
 					ruleEntry.uses++;
 					List<string> list = resolvedTags.ToList();
-					if (TryResolveRecursive(ruleEntry, depth + 1, constants, out string output2, log, extraTags, list))
+					if (TryResolveRecursive(ruleEntry, depth + 1, constants, out var output2, log, extraTags, list))
 					{
 						text2 = text2.Substring(0, num) + output2 + text2.Substring(j + 1);
 						j = num;

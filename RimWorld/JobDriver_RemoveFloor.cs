@@ -10,6 +10,11 @@ namespace RimWorld
 
 		protected override StatDef SpeedStat => StatDefOf.ConstructionSpeed;
 
+		public JobDriver_RemoveFloor()
+		{
+			clearSnow = true;
+		}
+
 		protected override void DoEffect(IntVec3 c)
 		{
 			if (base.Map.terrainGrid.CanRemoveTopLayerAt(c))

@@ -83,79 +83,42 @@ namespace Verse
 			get
 			{
 				GUIStyle gUIStyle = null;
-				switch (fontInt)
+				gUIStyle = fontInt switch
 				{
-				case GameFont.Tiny:
-					gUIStyle = fontStyles[0];
-					break;
-				case GameFont.Small:
-					gUIStyle = fontStyles[1];
-					break;
-				case GameFont.Medium:
-					gUIStyle = fontStyles[2];
-					break;
-				default:
-					throw new NotImplementedException();
-				}
+					GameFont.Tiny => fontStyles[0], 
+					GameFont.Small => fontStyles[1], 
+					GameFont.Medium => fontStyles[2], 
+					_ => throw new NotImplementedException(), 
+				};
 				gUIStyle.alignment = anchorInt;
 				gUIStyle.wordWrap = wordWrapInt;
 				return gUIStyle;
 			}
 		}
 
-		public static GUIStyle CurTextFieldStyle
+		public static GUIStyle CurTextFieldStyle => fontInt switch
 		{
-			get
-			{
-				switch (fontInt)
-				{
-				case GameFont.Tiny:
-					return textFieldStyles[0];
-				case GameFont.Small:
-					return textFieldStyles[1];
-				case GameFont.Medium:
-					return textFieldStyles[2];
-				default:
-					throw new NotImplementedException();
-				}
-			}
-		}
+			GameFont.Tiny => textFieldStyles[0], 
+			GameFont.Small => textFieldStyles[1], 
+			GameFont.Medium => textFieldStyles[2], 
+			_ => throw new NotImplementedException(), 
+		};
 
-		public static GUIStyle CurTextAreaStyle
+		public static GUIStyle CurTextAreaStyle => fontInt switch
 		{
-			get
-			{
-				switch (fontInt)
-				{
-				case GameFont.Tiny:
-					return textAreaStyles[0];
-				case GameFont.Small:
-					return textAreaStyles[1];
-				case GameFont.Medium:
-					return textAreaStyles[2];
-				default:
-					throw new NotImplementedException();
-				}
-			}
-		}
+			GameFont.Tiny => textAreaStyles[0], 
+			GameFont.Small => textAreaStyles[1], 
+			GameFont.Medium => textAreaStyles[2], 
+			_ => throw new NotImplementedException(), 
+		};
 
-		public static GUIStyle CurTextAreaReadOnlyStyle
+		public static GUIStyle CurTextAreaReadOnlyStyle => fontInt switch
 		{
-			get
-			{
-				switch (fontInt)
-				{
-				case GameFont.Tiny:
-					return textAreaReadOnlyStyles[0];
-				case GameFont.Small:
-					return textAreaReadOnlyStyles[1];
-				case GameFont.Medium:
-					return textAreaReadOnlyStyles[2];
-				default:
-					throw new NotImplementedException();
-				}
-			}
-		}
+			GameFont.Tiny => textAreaReadOnlyStyles[0], 
+			GameFont.Small => textAreaReadOnlyStyles[1], 
+			GameFont.Medium => textAreaReadOnlyStyles[2], 
+			_ => throw new NotImplementedException(), 
+		};
 
 		static Text()
 		{

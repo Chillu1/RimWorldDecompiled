@@ -52,7 +52,7 @@ namespace RimWorld
 
 		public FoodRestriction MakeNewFoodRestriction()
 		{
-			int id = (!foodRestrictions.Any()) ? 1 : (foodRestrictions.Max((FoodRestriction o) => o.id) + 1);
+			int id = ((!foodRestrictions.Any()) ? 1 : (foodRestrictions.Max((FoodRestriction o) => o.id) + 1));
 			FoodRestriction foodRestriction = new FoodRestriction(id, "FoodRestriction".Translate() + " " + id.ToString());
 			foodRestriction.filter.SetAllow(ThingCategoryDefOf.Foods, allow: true);
 			foodRestriction.filter.SetAllow(ThingCategoryDefOf.CorpsesHumanlike, allow: true);

@@ -10,8 +10,6 @@ namespace RimWorld
 			PodContentsType podContentsType = parms.podContentsType ?? Gen.RandomEnumValue<PodContentsType>(disallowFirstValue: true);
 			switch (podContentsType)
 			{
-			case PodContentsType.Empty:
-				break;
 			case PodContentsType.AncientFriendly:
 				outThings.Add(GenerateFriendlyAncient());
 				break;
@@ -30,6 +28,8 @@ namespace RimWorld
 				break;
 			default:
 				Log.Error("Pod contents type not handled: " + podContentsType);
+				break;
+			case PodContentsType.Empty:
 				break;
 			}
 		}

@@ -8,4 +8,4 @@ using System.Runtime.CompilerServices;
 [assembly: AssemblyCompany("Ludeon Studios")]
 [assembly: AssemblyCopyright("Copyright Ludeon Studios.")]
 [assembly: AssemblyTrademark("RimWorld is a registered trademark of Ludeon Studios.")]
-[assembly: AssemblyVersion("1.1.7459.20236")]
+[assembly: AssemblyVersion("1.2.7558.21451")]

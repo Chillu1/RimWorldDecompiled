@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.QuestGen;
 using Verse;
 
 namespace RimWorld.Planet
@@ -9,12 +10,7 @@ namespace RimWorld.Planet
 	{
 		public static IEnumerable<FloatMenuOption> GetFloatMenuOptions<T>(Func<FloatMenuAcceptanceReport> acceptanceReportGetter, Func<T> arrivalActionGetter, string label, CompLaunchable representative, int destinationTile, Action<Action> uiConfirmationCallback = null) where T : TransportPodsArrivalAction
 		{
-			Func<FloatMenuAcceptanceReport> acceptanceReportGetter2 = acceptanceReportGetter;
-			Action<Action> uiConfirmationCallback2 = uiConfirmationCallback;
-			CompLaunchable representative2 = representative;
-			int destinationTile2 = destinationTile;
-			Func<T> arrivalActionGetter2 = arrivalActionGetter;
-			FloatMenuAcceptanceReport floatMenuAcceptanceReport = acceptanceReportGetter2();
+			FloatMenuAcceptanceReport floatMenuAcceptanceReport = acceptanceReportGetter();
 			if (!floatMenuAcceptanceReport.Accepted && floatMenuAcceptanceReport.FailReason.NullOrEmpty() && floatMenuAcceptanceReport.FailMessage.NullOrEmpty())
 			{
 				yield break;
@@ -26,24 +22,49 @@ namespace RimWorld.Planet
 			}
 			yield return new FloatMenuOption(label, delegate
 			{
-				FloatMenuAcceptanceReport floatMenuAcceptanceReport2 = acceptanceReportGetter2();
+				FloatMenuAcceptanceReport floatMenuAcceptanceReport2 = acceptanceReportGetter();
 				if (floatMenuAcceptanceReport2.Accepted)
 				{
-					if (uiConfirmationCallback2 == null)
+					if (uiConfirmationCallback == null)
 					{
-						representative2.TryLaunch(destinationTile2, arrivalActionGetter2());
+						representative.TryLaunch(destinationTile, arrivalActionGetter());
 					}
 					else
 					{
-						uiConfirmationCallback2(delegate
+						uiConfirmationCallback(delegate
 						{
-							representative2.TryLaunch(destinationTile2, arrivalActionGetter2());
+							representative.TryLaunch(destinationTile, arrivalActionGetter());
 						});
 					}
 				}
 				else if (!floatMenuAcceptanceReport2.FailMessage.NullOrEmpty())
 				{
-					Messages.Message(floatMenuAcceptanceReport2.FailMessage, new GlobalTargetInfo(destinationTile2), MessageTypeDefOf.RejectInput, historical: false);
+					Messages.Message(floatMenuAcceptanceReport2.FailMessage, new GlobalTargetInfo(destinationTile), MessageTypeDefOf.RejectInput, historical: false);
+				}
+			});
+		}
+
+		public static IEnumerable<FloatMenuOption> GetFloatMenuOptions<T>(Func<FloatMenuAcceptanceReport> acceptanceReportGetter, Func<T> arrivalActionGetter, string label, Action<int, TransportPodsArrivalAction> launchAction, int destinationTile) where T : TransportPodsArrivalAction
+		{
+			FloatMenuAcceptanceReport floatMenuAcceptanceReport = acceptanceReportGetter();
+			if (!floatMenuAcceptanceReport.Accepted && floatMenuAcceptanceReport.FailReason.NullOrEmpty() && floatMenuAcceptanceReport.FailMessage.NullOrEmpty())
+			{
+				yield break;
+			}
+			if (!floatMenuAcceptanceReport.Accepted && !floatMenuAcceptanceReport.FailReason.NullOrEmpty())
+			{
+				label = label + " (" + floatMenuAcceptanceReport.FailReason + ")";
+			}
+			yield return new FloatMenuOption(label, delegate
+			{
+				FloatMenuAcceptanceReport floatMenuAcceptanceReport2 = acceptanceReportGetter();
+				if (floatMenuAcceptanceReport2.Accepted)
+				{
+					launchAction(destinationTile, arrivalActionGetter());
+				}
+				else if (!floatMenuAcceptanceReport2.FailMessage.NullOrEmpty())
+				{
+					Messages.Message(floatMenuAcceptanceReport2.FailMessage, new GlobalTargetInfo(destinationTile), MessageTypeDefOf.RejectInput, historical: false);
 				}
 			});
 		}
@@ -112,9 +133,33 @@ namespace RimWorld.Planet
 			RemovePawnsFromWorldPawns(dropPods);
 			for (int i = 0; i < dropPods.Count; i++)
 			{
-				DropCellFinder.TryFindDropSpotNear(near, map, out IntVec3 result, allowFogged: false, canRoofPunch: true);
+				DropCellFinder.TryFindDropSpotNear(near, map, out var result, allowFogged: false, canRoofPunch: true);
 				DropPodUtility.MakeDropPodAt(result, map, dropPods[i]);
 			}
+		}
+
+		public static Thing DropShuttle_NewTemp(List<ActiveDropPodInfo> pods, Map map, IntVec3 cell, Faction faction = null)
+		{
+			RemovePawnsFromWorldPawns(pods);
+			Thing thing = QuestGen_Shuttle.GenerateShuttle(faction, null, null, acceptColonists: false, onlyAcceptColonists: false, onlyAcceptHealthy: false, 0, dropEverythingIfUnsatisfied: false, leaveImmediatelyWhenSatisfied: false, dropEverythingOnArrival: true);
+			thing.TryGetComp<CompShuttle>().hideControls = true;
+			CompTransporter compTransporter = thing.TryGetComp<CompTransporter>();
+			for (int i = 0; i < pods.Count; i++)
+			{
+				compTransporter.innerContainer.TryAddRangeOrTransfer(pods[i].innerContainer);
+			}
+			if (!cell.IsValid)
+			{
+				cell = DropCellFinder.GetBestShuttleLandingSpot(map, Faction.OfPlayer, out var _);
+			}
+			GenPlace.TryPlaceThing(SkyfallerMaker.MakeSkyfaller(ThingDefOf.ShuttleIncoming, thing), cell, map, ThingPlaceMode.Near);
+			return thing;
+		}
+
+		[Obsolete("Will be removed in the future, replaced with DropShuttle_NewTemp")]
+		public static void DropShuttle(List<ActiveDropPodInfo> pods, Map map, IntVec3 cell, Faction faction = null)
+		{
+			DropShuttle_NewTemp(pods, map, cell, faction);
 		}
 
 		public static void RemovePawnsFromWorldPawns(List<ActiveDropPodInfo> pods)

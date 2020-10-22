@@ -38,6 +38,8 @@ namespace RimWorld
 
 		public const float LearnFactorPassionMajor = 1.5f;
 
+		public const float MinXPAmount = -1000f;
+
 		private static readonly SimpleCurve XpForLevelUpCurve = new SimpleCurve
 		{
 			new CurvePoint(0f, 1000f),
@@ -90,59 +92,31 @@ namespace RimWorld
 			}
 		}
 
-		public string LevelDescriptor
+		public string LevelDescriptor => levelInt switch
 		{
-			get
-			{
-				switch (levelInt)
-				{
-				case 0:
-					return "Skill0".Translate();
-				case 1:
-					return "Skill1".Translate();
-				case 2:
-					return "Skill2".Translate();
-				case 3:
-					return "Skill3".Translate();
-				case 4:
-					return "Skill4".Translate();
-				case 5:
-					return "Skill5".Translate();
-				case 6:
-					return "Skill6".Translate();
-				case 7:
-					return "Skill7".Translate();
-				case 8:
-					return "Skill8".Translate();
-				case 9:
-					return "Skill9".Translate();
-				case 10:
-					return "Skill10".Translate();
-				case 11:
-					return "Skill11".Translate();
-				case 12:
-					return "Skill12".Translate();
-				case 13:
-					return "Skill13".Translate();
-				case 14:
-					return "Skill14".Translate();
-				case 15:
-					return "Skill15".Translate();
-				case 16:
-					return "Skill16".Translate();
-				case 17:
-					return "Skill17".Translate();
-				case 18:
-					return "Skill18".Translate();
-				case 19:
-					return "Skill19".Translate();
-				case 20:
-					return "Skill20".Translate();
-				default:
-					return "Unknown";
-				}
-			}
-		}
+			0 => "Skill0".Translate(), 
+			1 => "Skill1".Translate(), 
+			2 => "Skill2".Translate(), 
+			3 => "Skill3".Translate(), 
+			4 => "Skill4".Translate(), 
+			5 => "Skill5".Translate(), 
+			6 => "Skill6".Translate(), 
+			7 => "Skill7".Translate(), 
+			8 => "Skill8".Translate(), 
+			9 => "Skill9".Translate(), 
+			10 => "Skill10".Translate(), 
+			11 => "Skill11".Translate(), 
+			12 => "Skill12".Translate(), 
+			13 => "Skill13".Translate(), 
+			14 => "Skill14".Translate(), 
+			15 => "Skill15".Translate(), 
+			16 => "Skill16".Translate(), 
+			17 => "Skill17".Translate(), 
+			18 => "Skill18".Translate(), 
+			19 => "Skill19".Translate(), 
+			20 => "Skill20".Translate(), 
+			_ => "Unknown", 
+		};
 
 		public bool LearningSaturatedToday => xpSinceMidnight > 4000f;
 
@@ -172,7 +146,7 @@ namespace RimWorld
 
 		public void Interval()
 		{
-			float num = pawn.story.traits.HasTrait(TraitDefOf.GreatMemory) ? 0.5f : 1f;
+			float num = (pawn.story.traits.HasTrait(TraitDefOf.GreatMemory) ? 0.5f : 1f);
 			switch (levelInt)
 			{
 			case 10:
@@ -222,6 +196,7 @@ namespace RimWorld
 			{
 				return;
 			}
+			bool flag = false;
 			if (xp > 0f)
 			{
 				xp *= LearnRateFactor(direct);
@@ -239,6 +214,7 @@ namespace RimWorld
 			{
 				xpSinceLastLevel -= XpRequiredForLevelUp;
 				levelInt++;
+				flag = true;
 				if (levelInt == 14)
 				{
 					if (passion == Passion.None)
@@ -257,19 +233,21 @@ namespace RimWorld
 					break;
 				}
 			}
-			do
+			while (xpSinceLastLevel <= -1000f)
 			{
-				if (xpSinceLastLevel < 0f)
+				levelInt--;
+				xpSinceLastLevel += XpRequiredForLevelUp;
+				if (levelInt <= 0)
 				{
-					levelInt--;
-					xpSinceLastLevel += XpRequiredForLevelUp;
-					continue;
+					levelInt = 0;
+					xpSinceLastLevel = 0f;
+					break;
 				}
-				return;
 			}
-			while (levelInt > 0);
-			levelInt = 0;
-			xpSinceLastLevel = 0f;
+			if (flag && pawn.IsColonist && pawn.Spawned)
+			{
+				MoteMaker.ThrowText(pawn.DrawPos, pawn.Map, def.LabelCap + "\n" + "TextMote_SkillUp".Translate(levelInt));
+			}
 		}
 
 		public float LearnRateFactor(bool direct = false)
@@ -278,21 +256,13 @@ namespace RimWorld
 			{
 				return 200f;
 			}
-			float num;
-			switch (passion)
+			float num = passion switch
 			{
-			case Passion.None:
-				num = 0.35f;
-				break;
-			case Passion.Minor:
-				num = 1f;
-				break;
-			case Passion.Major:
-				num = 1.5f;
-				break;
-			default:
-				throw new NotImplementedException("Passion level " + passion);
-			}
+				Passion.None => 0.35f, 
+				Passion.Minor => 1f, 
+				Passion.Major => 1.5f, 
+				_ => throw new NotImplementedException("Passion level " + passion), 
+			};
 			if (!direct)
 			{
 				num *= pawn.GetStatValue(StatDefOf.GlobalLearningFactor);

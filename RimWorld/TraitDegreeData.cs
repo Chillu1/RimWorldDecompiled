@@ -9,6 +9,12 @@ namespace RimWorld
 		[MustTranslate]
 		public string label;
 
+		[MustTranslate]
+		public string labelMale;
+
+		[MustTranslate]
+		public string labelFemale;
+
 		[Unsaved(false)]
 		[TranslationHandle]
 		public string untranslatedLabel;
@@ -64,6 +70,12 @@ namespace RimWorld
 		[Unsaved(false)]
 		private string cachedLabelCap;
 
+		[Unsaved(false)]
+		private string cachedLabelMaleCap;
+
+		[Unsaved(false)]
+		private string cachedLabelFemaleCap;
+
 		public string LabelCap
 		{
 			get
@@ -86,6 +98,66 @@ namespace RimWorld
 					mentalStateGiverInt.traitDegreeData = this;
 				}
 				return mentalStateGiverInt;
+			}
+		}
+
+		public string GetLabelFor(Pawn pawn)
+		{
+			return GetLabelFor(pawn?.gender ?? Gender.None);
+		}
+
+		public string GetLabelCapFor(Pawn pawn)
+		{
+			return GetLabelCapFor(pawn?.gender ?? Gender.None);
+		}
+
+		public string GetLabelFor(Gender gender)
+		{
+			switch (gender)
+			{
+			case Gender.Male:
+				if (!labelMale.NullOrEmpty())
+				{
+					return labelMale;
+				}
+				return label;
+			case Gender.Female:
+				if (!labelFemale.NullOrEmpty())
+				{
+					return labelFemale;
+				}
+				return label;
+			default:
+				return label;
+			}
+		}
+
+		public string GetLabelCapFor(Gender gender)
+		{
+			switch (gender)
+			{
+			case Gender.Male:
+				if (labelMale.NullOrEmpty())
+				{
+					return LabelCap;
+				}
+				if (cachedLabelMaleCap == null)
+				{
+					cachedLabelMaleCap = labelMale.CapitalizeFirst();
+				}
+				return cachedLabelMaleCap;
+			case Gender.Female:
+				if (labelFemale.NullOrEmpty())
+				{
+					return LabelCap;
+				}
+				if (cachedLabelFemaleCap == null)
+				{
+					cachedLabelFemaleCap = labelFemale.CapitalizeFirst();
+				}
+				return cachedLabelFemaleCap;
+			default:
+				return LabelCap;
 			}
 		}
 

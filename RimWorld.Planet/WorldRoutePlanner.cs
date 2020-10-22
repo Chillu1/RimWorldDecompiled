@@ -137,7 +137,7 @@ namespace RimWorld.Planet
 			currentFormCaravanDialog = formCaravanDialog;
 			caravanInfoFromFormCaravanDialog = new CaravanTicksPerMoveUtility.CaravanInfo(formCaravanDialog);
 			formCaravanDialog.choosingRoute = true;
-			Find.WindowStack.TryRemove(formCaravanDialog);
+			Find.WindowStack.TryRemove(formCaravanDialog, doCloseSound: false);
 			Start();
 			TryAddWaypoint(formCaravanDialog.CurrentTile);
 			cantRemoveFirstWaypoint = true;
@@ -301,7 +301,7 @@ namespace RimWorld.Planet
 			{
 				return false;
 			}
-			if (Widgets.ButtonText(new Rect(((float)UI.screenWidth - BottomButtonSize.x) / 2f, (float)UI.screenHeight - BottomWindowSize.y - 45f - 10f - BottomButtonSize.y, BottomButtonSize.x, BottomButtonSize.y), "ChooseRouteButton".Translate()))
+			if (Widgets.ButtonText(new Rect(((float)UI.screenWidth - BottomButtonSize.x) / 2f, (float)UI.screenHeight - BottomWindowSize.y - 45f - 10f - BottomButtonSize.y, BottomButtonSize.x, BottomButtonSize.y), "Accept".Translate()))
 			{
 				Find.WindowStack.Add(currentFormCaravanDialog);
 				currentFormCaravanDialog.Notify_ChoseRoute(waypoints[1].Tile);
@@ -323,38 +323,31 @@ namespace RimWorld.Planet
 			{
 				return;
 			}
-			int num2 = 0;
-			while (true)
+			for (int i = 0; i < paths.Count; i++)
 			{
-				if (num2 < paths.Count)
+				if (paths[i].NodesReversed.Contains(num))
 				{
-					if (paths[num2].NodesReversed.Contains(num))
+					string str = GetTileTip(num, i);
+					Text.Font = GameFont.Small;
+					Vector2 size = Text.CalcSize(str);
+					size.x += 20f;
+					size.y += 20f;
+					Vector2 mouseAttachedWindowPos = GenUI.GetMouseAttachedWindowPos(size.x, size.y);
+					Rect rect = new Rect(mouseAttachedWindowPos, size);
+					Find.WindowStack.ImmediateWindow(1859615246, rect, WindowLayer.Super, delegate
 					{
-						break;
-					}
-					num2++;
-					continue;
+						Text.Font = GameFont.Small;
+						Widgets.Label(rect.AtZero().ContractedBy(10f), str);
+					});
+					break;
 				}
-				return;
 			}
-			string str = GetTileTip(num, num2);
-			Text.Font = GameFont.Small;
-			Vector2 size = Text.CalcSize(str);
-			size.x += 20f;
-			size.y += 20f;
-			Vector2 mouseAttachedWindowPos = GenUI.GetMouseAttachedWindowPos(size.x, size.y);
-			Rect rect = new Rect(mouseAttachedWindowPos, size);
-			Find.WindowStack.ImmediateWindow(1859615246, rect, WindowLayer.Super, delegate
-			{
-				Text.Font = GameFont.Small;
-				Widgets.Label(rect.AtZero().ContractedBy(10f), str);
-			});
 		}
 
 		private string GetTileTip(int tile, int pathIndex)
 		{
 			int num = paths[pathIndex].NodesReversed.IndexOf(tile);
-			int num2 = (num > 0) ? paths[pathIndex].NodesReversed[num - 1] : ((pathIndex >= paths.Count - 1 || paths[pathIndex + 1].NodesReversed.Count < 2) ? (-1) : paths[pathIndex + 1].NodesReversed[paths[pathIndex + 1].NodesReversed.Count - 2]);
+			int num2 = ((num > 0) ? paths[pathIndex].NodesReversed[num - 1] : ((pathIndex >= paths.Count - 1 || paths[pathIndex + 1].NodesReversed.Count < 2) ? (-1) : paths[pathIndex + 1].NodesReversed[paths[pathIndex + 1].NodesReversed.Count - 2]));
 			int num3 = cachedTicksToWaypoint[pathIndex] + CaravanArrivalTimeEstimator.EstimatedTicksToArrive(paths[pathIndex].FirstNode, tile, paths[pathIndex], 0f, CaravanTicksPerMove, GenTicks.TicksAbs + cachedTicksToWaypoint[pathIndex]);
 			int num4 = GenTicks.TicksAbs + num3;
 			StringBuilder stringBuilder = new StringBuilder();

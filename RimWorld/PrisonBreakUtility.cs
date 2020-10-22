@@ -87,7 +87,7 @@ namespace RimWorld
 
 		public static void StartPrisonBreak(Pawn initiator)
 		{
-			StartPrisonBreak(initiator, out string letterText, out string letterLabel, out LetterDef letterDef);
+			StartPrisonBreak(initiator, out var letterText, out var letterLabel, out var letterDef);
 			if (!letterText.NullOrEmpty())
 			{
 				Find.LetterStack.ReceiveLetter(letterLabel, letterText, letterDef, initiator);
@@ -198,7 +198,7 @@ namespace RimWorld
 					AddPrisonersFrom(participatingRoom, escapingPrisonersGroup);
 				}
 			}
-			if (!RCellFinder.TryFindRandomExitSpot(escapingPrisonersGroup[0], out IntVec3 spot, TraverseMode.PassDoors) || !TryFindGroupUpLoc(escapingPrisonersGroup, spot, out IntVec3 groupUpLoc))
+			if (!RCellFinder.TryFindRandomExitSpot(escapingPrisonersGroup[0], out var spot, TraverseMode.PassDoors) || !TryFindGroupUpLoc(escapingPrisonersGroup, spot, out var groupUpLoc))
 			{
 				return;
 			}
@@ -273,14 +273,12 @@ namespace RimWorld
 			{
 				return false;
 			}
-			using (PawnPath pawnPath = a.Map.pathFinder.FindPath(anyCell, anyCell2, TraverseParms.For(TraverseMode.PassDoors)))
+			using PawnPath pawnPath = a.Map.pathFinder.FindPath(anyCell, anyCell2, TraverseParms.For(TraverseMode.PassDoors));
+			if (!pawnPath.Found)
 			{
-				if (!pawnPath.Found)
-				{
-					return false;
-				}
-				return pawnPath.NodesLeftCount < 24;
+				return false;
 			}
+			return pawnPath.NodesLeftCount < 24;
 		}
 	}
 }

@@ -19,7 +19,7 @@ namespace RimWorld.QuestGen
 		{
 			Slate slate = QuestGen.slate;
 			QuestPart_MechCluster questPart_MechCluster = new QuestPart_MechCluster();
-			questPart_MechCluster.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart_MechCluster.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			questPart_MechCluster.tag = QuestGenUtility.HardcodedTargetQuestTagWithQuestID(tag.GetValue(slate));
 			questPart_MechCluster.mapParent = slate.Get<Map>("map").Parent;
 			questPart_MechCluster.sketch = GenerateSketch(slate);
@@ -27,7 +27,7 @@ namespace RimWorld.QuestGen
 			string text = "";
 			if (questPart_MechCluster.sketch.pawns != null)
 			{
-				text += PawnUtility.PawnKindsToLineList(questPart_MechCluster.sketch.pawns.Select((MechClusterSketch.Mech m) => m.kindDef), "  - ");
+				text += PawnUtility.PawnKindsToLineList(questPart_MechCluster.sketch.pawns.Select((MechClusterSketch.Mech m) => m.kindDef), "  - ", ColoredText.ThreatColor);
 			}
 			string[] array = (from t in questPart_MechCluster.sketch.buildingsSketch.Things
 				where GenHostility.IsDefMechClusterThreat(t.def)
@@ -42,7 +42,7 @@ namespace RimWorld.QuestGen
 				{
 					text += "\n";
 				}
-				text += array.ToLineList("  - ");
+				text += array.ToLineList(ColoredText.ThreatColor, "  - ");
 			}
 			if (text != "")
 			{
@@ -55,12 +55,12 @@ namespace RimWorld.QuestGen
 
 		private MechClusterSketch GenerateSketch(Slate slate)
 		{
-			return MechClusterGenerator.GenerateClusterSketch(points.GetValue(slate) ?? slate.Get("points", 0f), slate.Get<Map>("map"));
+			return MechClusterGenerator.GenerateClusterSketch_NewTemp(points.GetValue(slate) ?? slate.Get("points", 0f), slate.Get<Map>("map"));
 		}
 
 		protected override bool TestRunInt(Slate slate)
 		{
-			if (!Find.Storyteller.difficulty.allowViolentQuests)
+			if (!Find.Storyteller.difficultyValues.allowViolentQuests)
 			{
 				return false;
 			}

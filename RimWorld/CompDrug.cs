@@ -21,7 +21,7 @@ namespace RimWorld
 			}
 			else if (Rand.Value < Props.addictiveness && num >= Props.minToleranceToAddict)
 			{
-				ingester.health.AddHediff(Props.chemical.addictionHediff);
+				ingester.health.AddHediff(addictionHediffDef);
 				if (PawnUtility.ShouldSendNotificationAbout(ingester))
 				{
 					Find.LetterStack.ReceiveLetter("LetterLabelNewlyAddicted".Translate(Props.chemical.label).CapitalizeFirst(), "LetterNewlyAddicted".Translate(ingester.LabelShort, Props.chemical.label, ingester.Named("PAWN")).AdjustedFor(ingester).CapitalizeFirst(), LetterDefOf.NegativeEvent, ingester);

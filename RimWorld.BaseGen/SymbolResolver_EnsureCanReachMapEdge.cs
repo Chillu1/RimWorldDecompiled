@@ -127,7 +127,7 @@ namespace RimWorld.BaseGen
 			{
 				return true;
 			}
-			if (!canPathThroughNonStandable && !c.Standable(map))
+			if (!canPathThroughNonStandable && (!c.Standable(map) || c.GetEdifice(map) != null))
 			{
 				return false;
 			}

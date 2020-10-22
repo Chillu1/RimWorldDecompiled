@@ -34,7 +34,7 @@ namespace RimWorld.Planet
 						return 0f;
 					}
 					return (extraValidator != null && !extraValidator(x)) ? 0f : tile.biome.settlementSelectionWeight;
-				}, out int result) && IsValidTileForNewSettlement(result))
+				}, out var result) && IsValidTileForNewSettlement(result))
 				{
 					return result;
 				}
@@ -155,17 +155,17 @@ namespace RimWorld.Planet
 			{
 				return true;
 			}
-			if (Find.Maps.Where((Map x) => x.IsPlayerHome && (validator == null || validator(x.Tile))).TryRandomElement(out Map result))
+			if (Find.Maps.Where((Map x) => x.IsPlayerHome && (validator == null || validator(x.Tile))).TryRandomElement(out var result))
 			{
 				tile = result.Tile;
 				return true;
 			}
-			if (Find.Maps.Where((Map x) => x.mapPawns.FreeColonistsSpawnedCount != 0 && (validator == null || validator(x.Tile))).TryRandomElement(out Map result2))
+			if (Find.Maps.Where((Map x) => x.mapPawns.FreeColonistsSpawnedCount != 0 && (validator == null || validator(x.Tile))).TryRandomElement(out var result2))
 			{
 				tile = result2.Tile;
 				return true;
 			}
-			if (!allowCaravans && Find.WorldObjects.Caravans.Where((Caravan x) => x.IsPlayerControlled && (validator == null || validator(x.Tile))).TryRandomElement(out Caravan result3))
+			if (!allowCaravans && Find.WorldObjects.Caravans.Where((Caravan x) => x.IsPlayerControlled && (validator == null || validator(x.Tile))).TryRandomElement(out var result3))
 			{
 				tile = result3.Tile;
 				return true;

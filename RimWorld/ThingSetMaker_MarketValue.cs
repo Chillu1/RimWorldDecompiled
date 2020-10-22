@@ -15,7 +15,8 @@ namespace RimWorld
 
 		protected override bool CanGenerateSub(ThingSetMakerParams parms)
 		{
-			if (!AllowedThingDefs(parms).Any())
+			List<ThingDef> list = AllowedThingDefs(parms).ToList();
+			if (!list.Any())
 			{
 				return false;
 			}
@@ -32,7 +33,7 @@ namespace RimWorld
 			{
 				float? maxTotalMass = parms.maxTotalMass;
 				totalMarketValue = float.MaxValue;
-				if (!(maxTotalMass == totalMarketValue) && !ThingSetMakerUtility.PossibleToWeighNoMoreThan(AllowedThingDefs(parms), parms.techLevel ?? TechLevel.Undefined, parms.maxTotalMass.Value, (!parms.countRange.HasValue) ? 1 : parms.countRange.Value.min))
+				if (!(maxTotalMass == totalMarketValue) && !ThingSetMakerUtility.PossibleToWeighNoMoreThan(list, parms.techLevel ?? TechLevel.Undefined, parms.maxTotalMass.Value, (!parms.countRange.HasValue) ? 1 : parms.countRange.Value.min))
 				{
 					return false;
 				}

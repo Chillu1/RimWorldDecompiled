@@ -13,7 +13,7 @@ namespace RimWorld
 			{
 				canTargetPawns = true,
 				canTargetBuildings = false,
-				validator = ((TargetInfo x) => BaseTargetValidator(x.Thing))
+				validator = (TargetInfo x) => BaseTargetValidator(x.Thing)
 			};
 		}
 

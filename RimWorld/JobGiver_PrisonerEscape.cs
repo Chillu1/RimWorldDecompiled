@@ -9,7 +9,7 @@ namespace RimWorld
 
 		protected override Job TryGiveJob(Pawn pawn)
 		{
-			if (ShouldStartEscaping(pawn) && RCellFinder.TryFindBestExitSpot(pawn, out IntVec3 spot))
+			if (ShouldStartEscaping(pawn) && RCellFinder.TryFindBestExitSpot(pawn, out var spot))
 			{
 				if (!pawn.guest.Released)
 				{

@@ -126,7 +126,7 @@ namespace RimWorld
 				Thing thing = list[i];
 				if (thing.Faction == Faction.OfPlayer)
 				{
-					wealthBuildings += thing.MarketValue;
+					wealthBuildings += thing.GetStatValue(StatDefOf.MarketValueIgnoreHp);
 					totalHealth += thing.HitPoints;
 				}
 			}

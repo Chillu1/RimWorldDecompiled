@@ -23,5 +23,10 @@ namespace RimWorld
 			reason = null;
 			return false;
 		}
+
+		public virtual float PsyfocusCostForTarget(LocalTargetInfo target)
+		{
+			return 0f;
+		}
 	}
 }

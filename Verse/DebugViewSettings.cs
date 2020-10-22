@@ -166,6 +166,8 @@ namespace Verse
 
 		public static bool logCombatLogMouseover = false;
 
+		public static bool logCauseOfDeath = false;
+
 		public static bool logMapLoad = false;
 
 		public static bool logTutor = false;

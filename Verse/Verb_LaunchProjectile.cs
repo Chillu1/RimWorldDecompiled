@@ -47,6 +47,7 @@ namespace Verse
 			if (base.EquipmentSource != null)
 			{
 				base.EquipmentSource.GetComp<CompChangeableProjectile>()?.Notify_ProjectileLaunched();
+				base.EquipmentSource.GetComp<CompReloadable>()?.UsedOnce();
 			}
 			Thing launcher = caster;
 			Thing equipment = base.EquipmentSource;

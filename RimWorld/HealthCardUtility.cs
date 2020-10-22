@@ -106,7 +106,7 @@ namespace RimWorld
 			}, !onOperationTab));
 			if (allowOperations)
 			{
-				string label = pawn.RaceProps.IsMechanoid ? "MedicalOperationsMechanoidsShort".Translate(pawn.BillStack.Count) : "MedicalOperationsShort".Translate(pawn.BillStack.Count);
+				string label = (pawn.RaceProps.IsMechanoid ? "MedicalOperationsMechanoidsShort".Translate(pawn.BillStack.Count) : "MedicalOperationsShort".Translate(pawn.BillStack.Count));
 				list.Add(new TabRecord(label, delegate
 				{
 					onOperationTab = true;
@@ -213,7 +213,6 @@ namespace RimWorld
 
 		private static IEnumerable<Hediff> VisibleHediffs(Pawn pawn, bool showBloodLoss)
 		{
-			bool showBloodLoss2 = showBloodLoss;
 			if (!showAllHediffs)
 			{
 				List<Hediff_MissingPart> mpca = pawn.health.hediffSet.GetMissingPartsCommonAncestors();
@@ -231,7 +230,7 @@ namespace RimWorld
 					{
 						return false;
 					}
-					return (showBloodLoss2 || d.def != HediffDefOf.BloodLoss) ? true : false;
+					return (showBloodLoss || d.def != HediffDefOf.BloodLoss) ? true : false;
 				});
 				foreach (Hediff item in enumerable)
 				{
@@ -335,7 +334,7 @@ namespace RimWorld
 				floatMenuOption = ((recipe.Worker is Recipe_AdministerIngestible) ? new FloatMenuOption(text, action, recipe.ingredients.FirstOrDefault()?.FixedIngredient) : ((!(recipe.Worker is Recipe_RemoveBodyPart)) ? new FloatMenuOption(text, action, null) : new FloatMenuOption(text, action, part.def.spawnThingOnRemoved)));
 			}
 			floatMenuOption.extraPartWidth = 29f;
-			floatMenuOption.extraPartOnGUI = ((Rect rect) => Widgets.InfoCardButton(rect.x + 5f, rect.y + (rect.height - 24f) / 2f, recipe));
+			floatMenuOption.extraPartOnGUI = (Rect rect) => Widgets.InfoCardButton(rect.x + 5f, rect.y + (rect.height - 24f) / 2f, recipe);
 			return floatMenuOption;
 		}
 
@@ -367,9 +366,9 @@ namespace RimWorld
 					Messages.Message("MessageNoAnimalBeds".Translate(), medPawn, MessageTypeDefOf.CautionInput, historical: false);
 				}
 			}
-			if (medPawn.Faction != null && !medPawn.Faction.def.hidden && !medPawn.Faction.HostileTo(Faction.OfPlayer) && recipe.Worker.IsViolationOnPawn(medPawn, part, Faction.OfPlayer))
+			if (medPawn.Faction != null && !medPawn.Faction.Hidden && !medPawn.Faction.HostileTo(Faction.OfPlayer) && recipe.Worker.IsViolationOnPawn(medPawn, part, Faction.OfPlayer))
 			{
-				Messages.Message("MessageMedicalOperationWillAngerFaction".Translate(medPawn.FactionOrExtraHomeFaction), medPawn, MessageTypeDefOf.CautionInput, historical: false);
+				Messages.Message("MessageMedicalOperationWillAngerFaction".Translate(medPawn.FactionOrExtraMiniOrHomeFaction), medPawn, MessageTypeDefOf.CautionInput, historical: false);
 			}
 			ThingDef minRequiredMedicine = GetMinRequiredMedicine(recipe);
 			if (minRequiredMedicine != null && medPawn.playerSettings != null && !medPawn.playerSettings.medCare.AllowsMedicine(minRequiredMedicine))
@@ -417,7 +416,7 @@ namespace RimWorld
 			Text.Font = GameFont.Tiny;
 			Text.Anchor = TextAnchor.UpperLeft;
 			GUI.color = new Color(0.9f, 0.9f, 0.9f);
-			string str = (pawn.gender == Gender.None) ? ((string)"PawnSummary".Translate(pawn.Named("PAWN"))) : ((string)"PawnSummaryWithGender".Translate(pawn.Named("PAWN")));
+			string str = ((pawn.gender == Gender.None) ? ((string)"PawnSummary".Translate(pawn.Named("PAWN"))) : ((string)"PawnSummaryWithGender".Translate(pawn.Named("PAWN"))));
 			Rect rect = new Rect(0f, curY, leftRect.width, 34f);
 			Widgets.Label(rect, str.CapitalizeFirst());
 			if (Mouse.IsOver(rect))
@@ -495,7 +494,7 @@ namespace RimWorld
 			}
 			if (!pawn.Dead)
 			{
-				IEnumerable<PawnCapacityDef> source = pawn.def.race.Humanlike ? DefDatabase<PawnCapacityDef>.AllDefs.Where((PawnCapacityDef x) => x.showOnHumanlikes) : ((!pawn.def.race.Animal) ? DefDatabase<PawnCapacityDef>.AllDefs.Where((PawnCapacityDef x) => x.showOnMechanoids) : DefDatabase<PawnCapacityDef>.AllDefs.Where((PawnCapacityDef x) => x.showOnAnimals));
+				IEnumerable<PawnCapacityDef> source = (pawn.def.race.Humanlike ? DefDatabase<PawnCapacityDef>.AllDefs.Where((PawnCapacityDef x) => x.showOnHumanlikes) : ((!pawn.def.race.Animal) ? DefDatabase<PawnCapacityDef>.AllDefs.Where((PawnCapacityDef x) => x.showOnMechanoids) : DefDatabase<PawnCapacityDef>.AllDefs.Where((PawnCapacityDef x) => x.showOnAnimals)));
 				{
 					foreach (PawnCapacityDef item in source.OrderBy((PawnCapacityDef act) => act.listOrder))
 					{
@@ -539,7 +538,7 @@ namespace RimWorld
 			float num = rect.width * 0.375f;
 			float width = rect.width - num - lastMaxIconsTotalWidth;
 			BodyPartRecord part = diffs.First().Part;
-			float a = (part != null) ? Text.CalcHeight(part.LabelCap, num) : Text.CalcHeight("WholeBody".Translate(), num);
+			float a = ((part != null) ? Text.CalcHeight(part.LabelCap, num) : Text.CalcHeight("WholeBody".Translate(), num));
 			float num2 = 0f;
 			float num3 = curY;
 			float num4 = 0f;
@@ -672,6 +671,8 @@ namespace RimWorld
 		{
 			List<PawnCapacityUtility.CapacityImpactor> list = new List<PawnCapacityUtility.CapacityImpactor>();
 			float eff = PawnCapacityUtility.CalculateCapacityLevel(pawn.health.hediffSet, capacity, list);
+			PawnCapacityUtility.CapacityImpactorCapacity capacityImpactorCapacity;
+			list.RemoveAll((PawnCapacityUtility.CapacityImpactor x) => (capacityImpactorCapacity = x as PawnCapacityUtility.CapacityImpactorCapacity) != null && !capacityImpactorCapacity.capacity.CanShowOnPawn(pawn));
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.AppendLine(capacity.GetLabelFor(pawn).CapitalizeFirst() + ": " + GetEfficiencyEstimateLabel(eff));
 			if (list.Count > 0)
@@ -751,7 +752,7 @@ namespace RimWorld
 					}
 				}
 			}
-			if (GetCombatLogInfo(diffs, out TaggedString combatLogText, out LogEntry _))
+			if (GetCombatLogInfo(diffs, out var combatLogText, out var _))
 			{
 				stringBuilder.AppendLine();
 				stringBuilder.Append("Cause".Translate());
@@ -763,7 +764,7 @@ namespace RimWorld
 
 		private static bool CanEntryBeClicked(IEnumerable<Hediff> diffs, Pawn pawn)
 		{
-			if (!GetCombatLogInfo(diffs, out TaggedString _, out LogEntry combatLogEntry) || combatLogEntry == null)
+			if (!GetCombatLogInfo(diffs, out var _, out var combatLogEntry) || combatLogEntry == null)
 			{
 				return false;
 			}
@@ -776,7 +777,7 @@ namespace RimWorld
 
 		private static void EntryClicked(IEnumerable<Hediff> diffs, Pawn pawn)
 		{
-			if (GetCombatLogInfo(diffs, out TaggedString _, out LogEntry combatLogEntry) && combatLogEntry != null && Find.BattleLog.Battles.Any((Battle b) => b.Concerns(pawn) && b.Entries.Any((LogEntry e) => e == combatLogEntry)))
+			if (GetCombatLogInfo(diffs, out var _, out var combatLogEntry) && combatLogEntry != null && Find.BattleLog.Battles.Any((Battle b) => b.Concerns(pawn) && b.Entries.Any((LogEntry e) => e == combatLogEntry)))
 			{
 				ITab_Pawn_Log tab_Pawn_Log = InspectPaneUtility.OpenTab(typeof(ITab_Pawn_Log)) as ITab_Pawn_Log;
 				if (tab_Pawn_Log != null)

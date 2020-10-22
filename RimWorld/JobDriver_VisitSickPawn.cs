@@ -50,7 +50,7 @@ namespace RimWorld
 				Patient.needs.joy.GainJoy(job.def.joyGainRate * 0.000144f, job.def.joyKind);
 				if (pawn.IsHashIntervalTick(320))
 				{
-					InteractionDef intDef = (Rand.Value < 0.8f) ? InteractionDefOf.Chitchat : InteractionDefOf.DeepTalk;
+					InteractionDef intDef = ((Rand.Value < 0.8f) ? InteractionDefOf.Chitchat : InteractionDefOf.DeepTalk);
 					pawn.interactions.TryInteractWith(Patient, intDef);
 				}
 				pawn.rotationTracker.FaceCell(Patient.Position);

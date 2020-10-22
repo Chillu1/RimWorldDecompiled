@@ -1,7 +1,7 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -87,7 +87,7 @@ namespace Verse
 
 		public static float GetTemperatureForCell(IntVec3 c, Map map)
 		{
-			TryGetTemperatureForCell(c, map, out float tempResult);
+			TryGetTemperatureForCell(c, map, out var tempResult);
 			return tempResult;
 		}
 
@@ -143,7 +143,7 @@ namespace Verse
 			List<IntVec3> list = GenAdjFast.AdjacentCells8Way(t);
 			for (int i = 0; i < list.Count; i++)
 			{
-				if (list[i].InBounds(t.Map) && TryGetDirectAirTemperatureForCell(list[i], t.Map, out float temperature2))
+				if (list[i].InBounds(t.Map) && TryGetDirectAirTemperatureForCell(list[i], t.Map, out var temperature2))
 				{
 					num += temperature2;
 					num2++;
@@ -327,7 +327,7 @@ namespace Verse
 			{
 				for (int i = 0; i < 2; i++)
 				{
-					IntVec3 intVec = (i == 0) ? (b.Position + b.Rotation.FacingCell) : (b.Position - b.Rotation.FacingCell);
+					IntVec3 intVec = ((i == 0) ? (b.Position + b.Rotation.FacingCell) : (b.Position - b.Rotation.FacingCell));
 					if (intVec.InBounds(b.Map))
 					{
 						RoomGroup roomGroup = intVec.GetRoomGroup(b.Map);
@@ -448,32 +448,24 @@ namespace Verse
 
 		public static float CelsiusTo(float temp, TemperatureDisplayMode oldMode)
 		{
-			switch (oldMode)
+			return oldMode switch
 			{
-			case TemperatureDisplayMode.Celsius:
-				return temp;
-			case TemperatureDisplayMode.Fahrenheit:
-				return temp * 1.8f + 32f;
-			case TemperatureDisplayMode.Kelvin:
-				return temp + 273.15f;
-			default:
-				throw new InvalidOperationException();
-			}
+				TemperatureDisplayMode.Celsius => temp, 
+				TemperatureDisplayMode.Fahrenheit => temp * 1.8f + 32f, 
+				TemperatureDisplayMode.Kelvin => temp + 273.15f, 
+				_ => throw new InvalidOperationException(), 
+			};
 		}
 
 		public static float CelsiusToOffset(float temp, TemperatureDisplayMode oldMode)
 		{
-			switch (oldMode)
+			return oldMode switch
 			{
-			case TemperatureDisplayMode.Celsius:
-				return temp;
-			case TemperatureDisplayMode.Fahrenheit:
-				return temp * 1.8f;
-			case TemperatureDisplayMode.Kelvin:
-				return temp;
-			default:
-				throw new InvalidOperationException();
-			}
+				TemperatureDisplayMode.Celsius => temp, 
+				TemperatureDisplayMode.Fahrenheit => temp * 1.8f, 
+				TemperatureDisplayMode.Kelvin => temp, 
+				_ => throw new InvalidOperationException(), 
+			};
 		}
 
 		public static float ConvertTemperatureOffset(float temp, TemperatureDisplayMode oldMode, TemperatureDisplayMode newMode)

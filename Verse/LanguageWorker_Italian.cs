@@ -9,7 +9,7 @@ namespace Verse
 				return str;
 			}
 			char c = str[0];
-			char c2 = (str.Length >= 2) ? str[1] : '\0';
+			char c2 = ((str.Length >= 2) ? str[1] : '\0');
 			if (gender == Gender.Female)
 			{
 				if (IsVowel(c))
@@ -42,7 +42,7 @@ namespace Verse
 				return str;
 			}
 			char c = str[0];
-			char ch = (str.Length >= 2) ? str[1] : '\0';
+			char ch = ((str.Length >= 2) ? str[1] : '\0');
 			if (gender == Gender.Female)
 			{
 				if (IsVowel(c))

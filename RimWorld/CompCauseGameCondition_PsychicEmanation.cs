@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 using Verse.Sound;
 
@@ -54,7 +55,7 @@ namespace RimWorld
 			if (droneLevel != PsychicDroneLevel.BadExtreme)
 			{
 				droneLevel++;
-				TaggedString taggedString = "LetterPsychicDroneLevelIncreased".Translate();
+				TaggedString taggedString = "LetterPsychicDroneLevelIncreased".Translate(gender.GetLabel());
 				Find.LetterStack.ReceiveLetter("LetterLabelPsychicDroneLevelIncreased".Translate(), taggedString, LetterDefOf.NegativeEvent);
 				SoundDefOf.PsychicPulseGlobal.PlayOneShotOnCamera(parent.Map);
 				ReSetupAllConditions();
@@ -120,9 +121,21 @@ namespace RimWorld
 			return text + ("AffectedGender".Translate() + ": " + gender.GetLabel().CapitalizeFirst() + "\n" + "PsychicDroneLevel".Translate(droneLevel.GetLabelCap()));
 		}
 
-		public override void RandomizeSettings()
+		public override void RandomizeSettings_NewTemp_NewTemp(Site site)
 		{
 			gender = (Rand.Bool ? Gender.Male : Gender.Female);
+			if (site.ActualThreatPoints < 800f)
+			{
+				droneLevel = PsychicDroneLevel.BadLow;
+			}
+			else if (site.ActualThreatPoints < 2000f)
+			{
+				droneLevel = PsychicDroneLevel.BadMedium;
+			}
+			else
+			{
+				droneLevel = PsychicDroneLevel.BadHigh;
+			}
 		}
 	}
 }

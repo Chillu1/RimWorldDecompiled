@@ -1,8 +1,8 @@
-using Verse;
+using Verse.AI;
 
 namespace RimWorld
 {
-	public class Verb_MechCluster : Verb
+	public class Verb_MechCluster : Verb_CastBase
 	{
 		public const float Points = 2500f;
 
@@ -12,11 +12,8 @@ namespace RimWorld
 			{
 				return false;
 			}
-			MechClusterUtility.SpawnCluster(currentTarget.Cell, caster.Map, MechClusterGenerator.GenerateClusterSketch(2500f, caster.Map));
-			if (base.EquipmentSource != null && !base.EquipmentSource.Destroyed)
-			{
-				base.EquipmentSource.Destroy();
-			}
+			MechClusterUtility.SpawnCluster(currentTarget.Cell, caster.Map, MechClusterGenerator.GenerateClusterSketch_NewTemp(2500f, caster.Map, startDormant: true, forceNoConditionCauser: true));
+			base.ReloadableCompSource?.UsedOnce();
 			return true;
 		}
 

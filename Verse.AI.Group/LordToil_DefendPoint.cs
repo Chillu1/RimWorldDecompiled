@@ -18,11 +18,12 @@ namespace Verse.AI.Group
 			data = new LordToilData_DefendPoint();
 		}
 
-		public LordToil_DefendPoint(IntVec3 defendPoint, float defendRadius = 28f)
+		public LordToil_DefendPoint(IntVec3 defendPoint, float defendRadius = 28f, float? wanderRadius = null)
 			: this()
 		{
 			Data.defendPoint = defendPoint;
 			Data.defendRadius = defendRadius;
+			Data.wanderRadius = wanderRadius;
 		}
 
 		public override void UpdateAllDuties()
@@ -34,6 +35,7 @@ namespace Verse.AI.Group
 				pawn.mindState.duty = new PawnDuty(DutyDefOf.Defend, data.defendPoint);
 				pawn.mindState.duty.focusSecond = data.defendPoint;
 				pawn.mindState.duty.radius = ((pawn.kindDef.defendPointRadius >= 0f) ? pawn.kindDef.defendPointRadius : data.defendRadius);
+				pawn.mindState.duty.wanderRadius = data.wanderRadius;
 			}
 		}
 

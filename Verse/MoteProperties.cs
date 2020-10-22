@@ -22,6 +22,8 @@ namespace Verse
 
 		public SoundDef landSound;
 
+		public Vector3 unattachedDrawOffset = Vector3.zero;
+
 		public Vector3 attachedDrawOffset;
 
 		public bool needsMaintenance;

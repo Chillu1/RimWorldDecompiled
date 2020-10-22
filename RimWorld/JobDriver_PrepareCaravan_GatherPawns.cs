@@ -1,10 +1,11 @@
+using System;
 using System.Collections.Generic;
 using Verse;
 using Verse.AI;
-using Verse.AI.Group;
 
 namespace RimWorld
 {
+	[Obsolete]
 	public class JobDriver_PrepareCaravan_GatherPawns : JobDriver
 	{
 		private const TargetIndex AnimalOrSlaveInd = TargetIndex.A;
@@ -18,23 +19,13 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			this.FailOn(() => !base.Map.lordManager.lords.Contains(job.lord));
-			this.FailOn(() => AnimalOrSlave == null || AnimalOrSlave.GetLord() != job.lord);
-			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch).FailOnDespawnedOrNull(TargetIndex.A).FailOn(() => GatherAnimalsAndSlavesForCaravanUtility.IsFollowingAnyone(AnimalOrSlave));
-			yield return SetFollowerToil();
+			yield break;
 		}
 
+		[Obsolete]
 		private Toil SetFollowerToil()
 		{
-			return new Toil
-			{
-				initAction = delegate
-				{
-					GatherAnimalsAndSlavesForCaravanUtility.SetFollower(AnimalOrSlave, pawn);
-					RestUtility.WakeUp(pawn);
-				},
-				defaultCompleteMode = ToilCompleteMode.Instant
-			};
+			return null;
 		}
 	}
 }

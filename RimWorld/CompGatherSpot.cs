@@ -67,7 +67,7 @@ namespace RimWorld
 			command_Toggle.hotKey = KeyBindingDefOf.Command_TogglePower;
 			command_Toggle.defaultLabel = "CommandGatherSpotToggleLabel".Translate();
 			command_Toggle.icon = TexCommand.GatherSpotActive;
-			command_Toggle.isActive = (() => Active);
+			command_Toggle.isActive = () => Active;
 			command_Toggle.toggleAction = delegate
 			{
 				Active = !Active;

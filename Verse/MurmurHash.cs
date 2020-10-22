@@ -17,18 +17,18 @@ namespace Verse
 		public static int GetInt(uint seed, uint input)
 		{
 			uint num = input;
-			num = (uint)((int)num * -862048943);
-			num = ((num << 15) | (num >> 17));
+			num *= 3432918353u;
+			num = (num << 15) | (num >> 17);
 			num *= 461845907;
 			uint num2 = seed;
 			num2 ^= num;
-			num2 = ((num2 << 13) | (num2 >> 19));
-			num2 = (uint)((int)(num2 * 5) + -430675100);
-			num2 = (uint)((int)num2 ^ -1460423078);
+			num2 = (num2 << 13) | (num2 >> 19);
+			num2 = num2 * 5 + 3864292196u;
+			num2 ^= 0xA8F3B65Au;
 			num2 ^= num2 >> 16;
-			num2 = (uint)((int)num2 * -2048144789);
+			num2 *= 2246822507u;
 			num2 ^= num2 >> 13;
-			num2 = (uint)((int)num2 * -1028477387);
+			num2 *= 3266489909u;
 			return (int)(num2 ^ (num2 >> 16));
 		}
 	}

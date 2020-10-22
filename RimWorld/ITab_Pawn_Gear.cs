@@ -1,10 +1,9 @@
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
-using Verse.AI;
 using Verse.Sound;
 
 namespace RimWorld
@@ -28,6 +27,8 @@ namespace RimWorld
 		private const float ThingLeftX = 36f;
 
 		private const float StandardLineHeight = 22f;
+
+		private const float InitialHeight = 450f;
 
 		private static List<Thing> workingInvList = new List<Thing>();
 
@@ -155,7 +156,15 @@ namespace RimWorld
 			}
 			if (Event.current.type == EventType.Layout)
 			{
-				scrollViewHeight = curY + 30f;
+				if (curY + 70f > 450f)
+				{
+					size.y = Mathf.Min(curY + 70f, (float)(UI.screenHeight - 35) - 165f - 30f);
+				}
+				else
+				{
+					size.y = 450f;
+				}
+				scrollViewHeight = curY + 20f;
 			}
 			Widgets.EndScrollView();
 			GUI.EndGroup();
@@ -172,34 +181,14 @@ namespace RimWorld
 			if (CanControl && (inventory || CanControlColonist || (SelPawnForGear.Spawned && !SelPawnForGear.Map.IsPlayerHome)))
 			{
 				Rect rect2 = new Rect(rect.width - 24f, y, 24f, 24f);
-				bool flag2;
+				bool flag2 = false;
 				if (SelPawnForGear.IsQuestLodger())
 				{
-					if (inventory)
-					{
-						flag2 = true;
-					}
-					else
-					{
-						CompBiocodable compBiocodable = thing.TryGetComp<CompBiocodable>();
-						if (compBiocodable != null && compBiocodable.Biocoded)
-						{
-							flag2 = true;
-						}
-						else
-						{
-							CompBladelinkWeapon compBladelinkWeapon = thing.TryGetComp<CompBladelinkWeapon>();
-							flag2 = (compBladelinkWeapon != null && compBladelinkWeapon.bondedPawn == SelPawnForGear);
-						}
-					}
-				}
-				else
-				{
-					flag2 = false;
+					flag2 = inventory || !EquipmentUtility.QuestLodgerCanUnequip(thing, SelPawnForGear);
 				}
 				Apparel apparel;
-				bool flag3 = (apparel = (thing as Apparel)) != null && SelPawnForGear.apparel != null && SelPawnForGear.apparel.IsLocked(apparel);
-				flag = (flag2 || flag3);
+				bool flag3 = (apparel = thing as Apparel) != null && SelPawnForGear.apparel != null && SelPawnForGear.apparel.IsLocked(apparel);
+				flag = flag2 || flag3;
 				if (Mouse.IsOver(rect2))
 				{
 					if (flag3)
@@ -215,8 +204,8 @@ namespace RimWorld
 						TooltipHandler.TipRegion(rect2, "DropThing".Translate());
 					}
 				}
-				Color color = flag ? Color.grey : Color.white;
-				Color mouseoverColor = flag ? color : GenUI.MouseoverColor;
+				Color color = (flag ? Color.grey : Color.white);
+				Color mouseoverColor = (flag ? color : GenUI.MouseoverColor);
 				if (Widgets.ButtonImage(rect2, TexButton.Drop, color, mouseoverColor, !flag) && !flag)
 				{
 					SoundDefOf.Tick_High.PlayOneShotOnCamera();
@@ -226,14 +215,14 @@ namespace RimWorld
 			}
 			if (CanControlColonist)
 			{
-				if ((thing.def.IsNutritionGivingIngestible || thing.def.IsNonMedicalDrug) && thing.IngestibleNow && base.SelPawn.WillEat(thing))
+				if (FoodUtility.WillIngestFromInventoryNow(SelPawnForGear, thing))
 				{
 					Rect rect3 = new Rect(rect.width - 24f, y, 24f, 24f);
 					TooltipHandler.TipRegionByKey(rect3, "ConsumeThing", thing.LabelNoCount, thing);
 					if (Widgets.ButtonImage(rect3, TexButton.Ingest))
 					{
 						SoundDefOf.Tick_High.PlayOneShotOnCamera();
-						InterfaceIngest(thing);
+						FoodUtility.IngestFromInventoryNow(SelPawnForGear, thing);
 					}
 				}
 				rect.width -= 24f;
@@ -284,7 +273,7 @@ namespace RimWorld
 			float num = 0f;
 			float num2 = Mathf.Clamp01(SelPawnForGear.GetStatValue(stat) / 2f);
 			List<BodyPartRecord> allParts = SelPawnForGear.RaceProps.body.AllParts;
-			List<Apparel> list = (SelPawnForGear.apparel != null) ? SelPawnForGear.apparel.WornApparel : null;
+			List<Apparel> list = ((SelPawnForGear.apparel != null) ? SelPawnForGear.apparel.WornApparel : null);
 			for (int i = 0; i < allParts.Count; i++)
 			{
 				float num3 = 1f - num2;
@@ -346,16 +335,14 @@ namespace RimWorld
 			}
 			else if (!t.def.destroyOnDrop)
 			{
-				SelPawnForGear.inventory.innerContainer.TryDrop(t, SelPawnForGear.Position, SelPawnForGear.Map, ThingPlaceMode.Near, out Thing _);
+				SelPawnForGear.inventory.innerContainer.TryDrop(t, SelPawnForGear.Position, SelPawnForGear.Map, ThingPlaceMode.Near, out var _);
 			}
 		}
 
+		[Obsolete("Will be removed in a future update, use FoodUtility.IngestFromInventoryNow()")]
 		private void InterfaceIngest(Thing t)
 		{
-			Job job = JobMaker.MakeJob(JobDefOf.Ingest, t);
-			job.count = Mathf.Min(t.stackCount, t.def.ingestible.maxNumToIngestAtOnce);
-			job.count = Mathf.Min(job.count, FoodUtility.WillIngestStackCountOf(SelPawnForGear, t.def, t.GetStatValue(StatDefOf.Nutrition)));
-			SelPawnForGear.jobs.TryTakeOrderedJob(job);
+			FoodUtility.IngestFromInventoryNow(SelPawnForGear, t);
 		}
 
 		private bool ShouldShowInventory(Pawn p)

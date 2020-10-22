@@ -46,7 +46,7 @@ namespace RimWorld
 			{
 				foreach (PawnKindDef item in DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef k) => k.RaceProps.Animal))
 				{
-					if (!TryGetFreeRect(6, 3, out CellRect result))
+					if (!TryGetFreeRect(6, 3, out var result))
 					{
 						return;
 					}
@@ -152,7 +152,7 @@ namespace RimWorld
 					}
 				}
 			}
-			if (!TryGetFreeRect(33, 33, out CellRect result2))
+			if (!TryGetFreeRect(33, 33, out var result2))
 			{
 				Log.Error("Could not get wallable rect");
 			}
@@ -195,7 +195,7 @@ namespace RimWorld
 			}
 			if (flags.Contains(ColonyMakerFlag.Fire))
 			{
-				if (!TryGetFreeRect(30, 30, out CellRect result3))
+				if (!TryGetFreeRect(30, 30, out var result3))
 				{
 					Log.Error("Could not get free rect for fire.");
 				}
@@ -239,7 +239,7 @@ namespace RimWorld
 				foreach (HediffDef item8 in DefDatabase<HediffDef>.AllDefs.Where((HediffDef d) => d.hediffClass != typeof(Hediff_AddedPart) && (d.HasComp(typeof(HediffComp_Immunizable)) || d.HasComp(typeof(HediffComp_GrowthMode)))))
 				{
 					Pawn pawn = PawnGenerator.GeneratePawn(Faction.OfPlayer.def.basicMemberKind, Faction.OfPlayer);
-					TryGetFreeRect(1, 1, out CellRect result4);
+					TryGetFreeRect(1, 1, out var result4);
 					GenSpawn.Spawn(pawn, result4.CenterCell, Map);
 					pawn.health.AddHediff(item8);
 				}
@@ -262,7 +262,7 @@ namespace RimWorld
 				Designator_ZoneAddStockpile_Resources designator_ZoneAddStockpile_Resources = new Designator_ZoneAddStockpile_Resources();
 				foreach (StoragePriority value in Enum.GetValues(typeof(StoragePriority)))
 				{
-					TryGetFreeRect(7, 7, out CellRect result5);
+					TryGetFreeRect(7, 7, out var result5);
 					result5 = result5.ContractedBy(1);
 					designator_ZoneAddStockpile_Resources.DesignateMultiCell(result5.Cells);
 					((Zone_Stockpile)Map.zoneManager.ZoneAt(result5.CenterCell)).settings.Priority = value;
@@ -274,7 +274,7 @@ namespace RimWorld
 				Map.zoneManager.RegisterZone(dummyZone);
 				foreach (ThingDef item9 in DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.plant != null && PlantUtility.CanSowOnGrower(d, dummyZone)))
 				{
-					if (!TryGetFreeRect(6, 6, out CellRect result6))
+					if (!TryGetFreeRect(6, 6, out var result6))
 					{
 						Log.Error("Could not get growing zone rect.");
 					}
@@ -313,7 +313,7 @@ namespace RimWorld
 
 		private static Thing TryMakeBuilding(ThingDef def)
 		{
-			if (!TryGetFreeRect(def.size.x + 2, def.size.z + 2, out CellRect result))
+			if (!TryGetFreeRect(def.size.x + 2, def.size.z + 2, out var result))
 			{
 				return null;
 			}
@@ -391,7 +391,7 @@ namespace RimWorld
 		{
 			for (int i = 0; i < count; i++)
 			{
-				TryGetFreeRect(1, 1, out CellRect result);
+				TryGetFreeRect(1, 1, out var result);
 				Pawn pawn = PawnGenerator.GeneratePawn(Faction.OfPlayer.def.basicMemberKind, Faction.OfPlayer);
 				foreach (WorkTypeDef allDef in DefDatabase<WorkTypeDef>.AllDefs)
 				{

@@ -8,7 +8,6 @@ namespace RimWorld
 		public override void Interacted(Pawn initiator, Pawn recipient, List<RulePackDef> extraSentencePacks, out string letterText, out string letterLabel, out LetterDef letterDef, out LookTargets lookTargets)
 		{
 			AddNuzzledThought(initiator, recipient);
-			TryGiveName(initiator, recipient);
 			letterText = null;
 			letterLabel = null;
 			letterDef = null;
@@ -21,14 +20,6 @@ namespace RimWorld
 			if (recipient.needs.mood != null)
 			{
 				recipient.needs.mood.thoughts.memories.TryGainMemory(newThought);
-			}
-		}
-
-		private void TryGiveName(Pawn initiator, Pawn recipient)
-		{
-			if ((initiator.Name == null || initiator.Name.Numerical) && Rand.Value < initiator.RaceProps.nameOnNuzzleChance)
-			{
-				PawnUtility.GiveNameBecauseOfNuzzle(recipient, initiator);
 			}
 		}
 	}

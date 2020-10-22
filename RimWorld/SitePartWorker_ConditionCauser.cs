@@ -1,5 +1,8 @@
+using System.Collections.Generic;
 using RimWorld.Planet;
+using RimWorld.QuestGen;
 using Verse;
+using Verse.Grammar;
 
 namespace RimWorld
 {
@@ -15,7 +18,7 @@ namespace RimWorld
 		{
 			sitePart.conditionCauser = ThingMaker.MakeThing(sitePart.def.conditionCauserDef);
 			CompCauseGameCondition compCauseGameCondition = sitePart.conditionCauser.TryGetComp<CompCauseGameCondition>();
-			compCauseGameCondition.RandomizeSettings();
+			compCauseGameCondition.RandomizeSettings_NewTemp_NewTemp(site);
 			compCauseGameCondition.LinkWithSite(sitePart.site);
 		}
 
@@ -41,6 +44,13 @@ namespace RimWorld
 				sitePart.conditionCauser.DeSpawn();
 				sitePart.conditionCauserWasSpawned = false;
 			}
+		}
+
+		public override void Notify_GeneratedByQuestGen(SitePart part, Slate slate, List<Rule> outExtraDescriptionRules, Dictionary<string, string> outExtraDescriptionConstants)
+		{
+			base.Notify_GeneratedByQuestGen(part, slate, outExtraDescriptionRules, outExtraDescriptionConstants);
+			slate.Set("conditionCauser", part.conditionCauser);
+			outExtraDescriptionRules.Add(new Rule_String("problemCauserLabel", part.conditionCauser.Label));
 		}
 	}
 }

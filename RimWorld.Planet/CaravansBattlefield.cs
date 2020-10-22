@@ -34,15 +34,22 @@ namespace RimWorld.Planet
 			}
 		}
 
+		public override void PostMapGenerate()
+		{
+			base.PostMapGenerate();
+			GetComponent<TimedDetectionRaids>().StartDetectionCountdown(240000);
+		}
+
 		private void CheckWonBattle()
 		{
 			if (!wonBattle && !GenHostility.AnyHostileActiveThreatToPlayer(base.Map))
 			{
-				string forceExitAndRemoveMapCountdownTimeLeftString = TimedForcedExit.GetForceExitAndRemoveMapCountdownTimeLeftString(60000);
-				Find.LetterStack.ReceiveLetter("LetterLabelCaravansBattlefieldVictory".Translate(), "LetterCaravansBattlefieldVictory".Translate(forceExitAndRemoveMapCountdownTimeLeftString), LetterDefOf.PositiveEvent, this);
+				TimedDetectionRaids component = GetComponent<TimedDetectionRaids>();
+				component.SetNotifiedSilently();
+				string detectionCountdownTimeLeftString = component.DetectionCountdownTimeLeftString;
+				Find.LetterStack.ReceiveLetter("LetterLabelCaravansBattlefieldVictory".Translate(), "LetterCaravansBattlefieldVictory".Translate(detectionCountdownTimeLeftString), LetterDefOf.PositiveEvent, this);
 				TaleRecorder.RecordTale(TaleDefOf.CaravanAmbushDefeated, base.Map.mapPawns.FreeColonists.RandomElement());
 				wonBattle = true;
-				GetComponent<TimedForcedExit>().StartForceExitAndRemoveMapCountdown();
 			}
 		}
 	}

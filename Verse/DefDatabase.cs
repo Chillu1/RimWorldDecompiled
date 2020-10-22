@@ -47,7 +47,7 @@ namespace Verse
 					Log.Error(typeof(T).Name + " in " + sourceName + " with label " + def.label + " lacks a defName. Giving name " + text);
 					def.defName = text;
 				}
-				if (defsByName.TryGetValue(def.defName, out T value))
+				if (defsByName.TryGetValue(def.defName, out var value))
 				{
 					Remove(value);
 				}
@@ -194,14 +194,14 @@ namespace Verse
 		{
 			if (errorOnFail)
 			{
-				if (defsByName.TryGetValue(defName, out T value))
+				if (defsByName.TryGetValue(defName, out var value))
 				{
 					return value;
 				}
 				Log.Error(string.Concat("Failed to find ", typeof(T), " named ", defName, ". There are ", defsList.Count, " defs of this type loaded."));
 				return null;
 			}
-			if (defsByName.TryGetValue(defName, out T value2))
+			if (defsByName.TryGetValue(defName, out var value2))
 			{
 				return value2;
 			}

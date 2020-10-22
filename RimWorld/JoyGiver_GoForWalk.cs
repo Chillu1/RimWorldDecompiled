@@ -20,15 +20,15 @@ namespace RimWorld
 			Predicate<IntVec3> cellValidator = (IntVec3 x) => !PawnUtility.KnownDangerAt(x, pawn.Map, pawn) && !x.GetTerrain(pawn.Map).avoidWander && x.Standable(pawn.Map) && !x.Roofed(pawn.Map);
 			IntVec3 result4;
 			Predicate<Region> validator = (Region x) => x.Room.PsychologicallyOutdoors && !x.IsForbiddenEntirely(pawn) && x.TryFindRandomCellInRegionUnforbidden(pawn, cellValidator, out result4);
-			if (!CellFinder.TryFindClosestRegionWith(pawn.GetRegion(), TraverseParms.For(pawn), validator, 100, out Region result))
+			if (!CellFinder.TryFindClosestRegionWith(pawn.GetRegion(), TraverseParms.For(pawn), validator, 100, out var result))
 			{
 				return null;
 			}
-			if (!result.TryFindRandomCellInRegionUnforbidden(pawn, cellValidator, out IntVec3 result2))
+			if (!result.TryFindRandomCellInRegionUnforbidden(pawn, cellValidator, out var result2))
 			{
 				return null;
 			}
-			if (!WalkPathFinder.TryFindWalkPath(pawn, result2, out List<IntVec3> result3))
+			if (!WalkPathFinder.TryFindWalkPath(pawn, result2, out var result3))
 			{
 				return null;
 			}

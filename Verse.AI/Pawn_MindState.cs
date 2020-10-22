@@ -1,6 +1,6 @@
+using System.Collections.Generic;
 using RimWorld;
 using RimWorld.Planet;
-using System.Collections.Generic;
 
 namespace Verse.AI
 {
@@ -145,7 +145,7 @@ namespace Verse.AI
 		{
 			get
 			{
-				if (meleeThreat != null && meleeThreat.Spawned && !meleeThreat.Downed && pawn.Spawned && Find.TickManager.TicksGame <= lastMeleeThreatHarmTick + 400 && (float)(pawn.Position - meleeThreat.Position).LengthHorizontalSquared <= 9f)
+				if (meleeThreat != null && meleeThreat.Spawned && !meleeThreat.Downed && meleeThreat.Awake() && pawn.Spawned && Find.TickManager.TicksGame <= lastMeleeThreatHarmTick + 400 && (float)(pawn.Position - meleeThreat.Position).LengthHorizontalSquared <= 9f)
 				{
 					return GenSight.LineOfSight(pawn.Position, meleeThreat.Position, pawn.Map);
 				}
@@ -337,7 +337,7 @@ namespace Verse.AI
 			{
 				if (pawn.Spawned)
 				{
-					int regionsToScan = anyCloseHostilesRecently ? 24 : 18;
+					int regionsToScan = (anyCloseHostilesRecently ? 24 : 18);
 					anyCloseHostilesRecently = PawnUtility.EnemiesAreNearby(pawn, regionsToScan, passDoors: true);
 				}
 				else
@@ -529,7 +529,7 @@ namespace Verse.AI
 			string text = letterTextKey.Translate(pawn.Label, pawn.Named("PAWN")).AdjustedFor(pawn);
 			GlobalTargetInfo target = pawn;
 			int num = 1;
-			if (Find.Storyteller.difficulty.allowBigThreats && Rand.Value < 0.5f)
+			if (Find.Storyteller.difficultyValues.allowBigThreats && Rand.Value < 0.5f)
 			{
 				foreach (Pawn packmate in GetPackmates(pawn, 24f))
 				{
@@ -545,7 +545,7 @@ namespace Verse.AI
 					text += "AnimalManhunterOthers".Translate(pawn.kindDef.GetLabelPlural(), pawn);
 				}
 			}
-			string value = pawn.RaceProps.Animal ? pawn.Label : pawn.def.label;
+			string value = (pawn.RaceProps.Animal ? pawn.Label : pawn.def.label);
 			string str = "LetterLabelAnimalManhunterRevenge".Translate(value).CapitalizeFirst();
 			Find.LetterStack.ReceiveLetter(str, text, (num == 1) ? LetterDefOf.ThreatSmall : LetterDefOf.ThreatBig, target);
 		}

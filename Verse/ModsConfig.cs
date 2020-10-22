@@ -1,10 +1,9 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using UnityEngine;
+using RimWorld;
 
 namespace Verse
 {
@@ -91,7 +90,7 @@ namespace Verse
 						data.activeMods[i] = modMetaData.PackageId;
 						flag2 = true;
 					}
-					if (TryGetPackageIdWithoutExtraSteamPostfix(packageId, out string nonSteamPackageId) && ModLister.GetModWithIdentifier(nonSteamPackageId) != null)
+					if (TryGetPackageIdWithoutExtraSteamPostfix(packageId, out var nonSteamPackageId) && ModLister.GetModWithIdentifier(nonSteamPackageId) != null)
 					{
 						data.activeMods[i] = nonSteamPackageId;
 					}
@@ -105,7 +104,7 @@ namespace Verse
 					if (hashSet.Contains(allInstalledMod.PackageIdNonUnique))
 					{
 						allInstalledMod.Active = false;
-						Debug.LogWarning("There was more than one enabled instance of mod with PackageID: " + allInstalledMod.PackageIdNonUnique + ". Disabling the duplicates.");
+						Log.Warning("There was more than one enabled instance of mod with PackageID: " + allInstalledMod.PackageIdNonUnique + ". Disabling the duplicates.");
 						continue;
 					}
 					hashSet.Add(allInstalledMod.PackageIdNonUnique);
@@ -144,7 +143,7 @@ namespace Verse
 			for (int num = data.activeMods.Count - 1; num >= 0; num--)
 			{
 				ModMetaData modWithIdentifier = ModLister.GetModWithIdentifier(data.activeMods[num]);
-				if (modWithIdentifier == null && TryGetPackageIdWithoutExtraSteamPostfix(data.activeMods[num], out string nonSteamPackageId))
+				if (modWithIdentifier == null && TryGetPackageIdWithoutExtraSteamPostfix(data.activeMods[num], out var nonSteamPackageId))
 				{
 					modWithIdentifier = ModLister.GetModWithIdentifier(nonSteamPackageId);
 				}
@@ -174,12 +173,33 @@ namespace Verse
 
 		public static void Reorder(int modIndex, int newIndex)
 		{
-			if (modIndex != newIndex)
+			if (modIndex != newIndex && !ReorderConflict(modIndex, newIndex))
 			{
 				data.activeMods.Insert(newIndex, data.activeMods[modIndex]);
 				data.activeMods.RemoveAt((modIndex < newIndex) ? modIndex : (modIndex + 1));
 				activeModsInLoadOrderCachedDirty = true;
 			}
+		}
+
+		private static bool ReorderConflict(int modIndex, int newIndex)
+		{
+			ModMetaData modWithIdentifier = ModLister.GetModWithIdentifier(data.activeMods[modIndex]);
+			for (int i = 0; i < data.activeMods.Count; i++)
+			{
+				if (i != modIndex)
+				{
+					ModMetaData modWithIdentifier2 = ModLister.GetModWithIdentifier(data.activeMods[i]);
+					if (modWithIdentifier.IsCoreMod && modWithIdentifier2.Source == ContentSource.OfficialModsFolder && i < newIndex)
+					{
+						return true;
+					}
+					if (modWithIdentifier.Source == ContentSource.OfficialModsFolder && modWithIdentifier2.IsCoreMod)
+					{
+						return i >= newIndex;
+					}
+				}
+			}
+			return false;
 		}
 
 		public static void Reorder(List<int> newIndices)

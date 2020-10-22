@@ -336,7 +336,7 @@ namespace RimWorld.Planet
 			{
 				if (!ShiftIsHeld)
 				{
-					int tile = canSelectTile ? GenWorld.MouseTile() : (-1);
+					int tile = (canSelectTile ? GenWorld.MouseTile() : (-1));
 					SelectFirstOrNextFrom(list, tile);
 					return;
 				}

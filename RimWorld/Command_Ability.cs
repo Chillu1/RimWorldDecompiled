@@ -1,3 +1,4 @@
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
@@ -11,9 +12,15 @@ namespace RimWorld
 
 		public new static readonly Texture2D BGTex = ContentFinder<Texture2D>.Get("UI/Widgets/AbilityButBG");
 
+		public new static readonly Texture2D BGTexShrunk = ContentFinder<Texture2D>.Get("UI/Widgets/AbilityButBGShrunk");
+
 		private static readonly Texture2D cooldownBarTex = SolidColorMaterials.NewSolidColorTexture(new Color32(9, 203, 4, 64));
 
+		public Ability Ability => ability;
+
 		public override Texture2D BGTexture => BGTex;
+
+		public override Texture2D BGTextureShrunk => BGTexShrunk;
 
 		public virtual string Tooltip => ability.def.GetTooltip(ability.pawn);
 
@@ -28,17 +35,11 @@ namespace RimWorld
 
 		public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth)
 		{
-			defaultDesc = Tooltip;
-			disabled = ability.GizmoDisabled(out string reason);
-			if (disabled)
-			{
-				DisableWithReason(reason.CapitalizeFirst());
-			}
+			Rect rect = new Rect(topLeft.x, topLeft.y, GetWidth(maxWidth), 75f);
 			GizmoResult result = base.GizmoOnGUI(topLeft, maxWidth);
 			if (ability.CooldownTicksRemaining > 0)
 			{
 				float num = Mathf.InverseLerp(ability.CooldownTicksTotal, 0f, ability.CooldownTicksRemaining);
-				Rect rect = new Rect(topLeft.x, topLeft.y, GetWidth(maxWidth), 75f);
 				Widgets.FillableBar(rect, Mathf.Clamp01(num), cooldownBarTex, null, doBorder: false);
 				if (ability.CooldownTicksRemaining > 0)
 				{
@@ -55,24 +56,57 @@ namespace RimWorld
 			return new GizmoResult(result.State);
 		}
 
+		protected override GizmoResult GizmoOnGUIInt(Rect butRect, bool shrunk = false)
+		{
+			if (Mouse.IsOver(butRect))
+			{
+				defaultDesc = Tooltip;
+			}
+			DisabledCheck();
+			return base.GizmoOnGUIInt(butRect, shrunk);
+		}
+
+		protected virtual void DisabledCheck()
+		{
+			disabled = ability.GizmoDisabled(out var reason);
+			if (disabled)
+			{
+				DisableWithReason(reason.CapitalizeFirst());
+			}
+		}
+
 		public override void ProcessInput(Event ev)
 		{
 			base.ProcessInput(ev);
 			SoundDefOf.Tick_Tiny.PlayOneShotOnCamera();
 			if (ability.def.targetRequired)
 			{
-				Find.Targeter.BeginTargeting(ability.verb);
+				if (!ability.def.targetWorldCell)
+				{
+					Find.Targeter.BeginTargeting(ability.verb);
+					return;
+				}
+				CameraJumper.TryJump(CameraJumper.GetWorldTarget(ability.pawn));
+				Find.WorldTargeter.BeginTargeting_NewTemp(delegate(GlobalTargetInfo t)
+				{
+					if (ability.ValidateGlobalTarget(t))
+					{
+						ability.QueueCastingJob(t);
+						return true;
+					}
+					return false;
+				}, canTargetTiles: true, ability.def.uiIcon, !ability.pawn.IsCaravanMember(), null, ability.WorldMapExtraLabel, ability.ValidateGlobalTarget);
 			}
 			else
 			{
-				ability.verb.TryStartCastOn(ability.pawn);
+				ability.QueueCastingJob(ability.pawn, LocalTargetInfo.Invalid);
 			}
 		}
 
 		public override void GizmoUpdateOnMouseover()
 		{
 			Verb_CastAbility verb_CastAbility;
-			if ((verb_CastAbility = (ability.verb as Verb_CastAbility)) != null && ability.def.targetRequired)
+			if ((verb_CastAbility = ability.verb as Verb_CastAbility) != null)
 			{
 				verb_CastAbility.DrawRadius();
 			}

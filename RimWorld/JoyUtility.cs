@@ -19,7 +19,7 @@ namespace RimWorld
 				outFailReason?.Append(map.weatherManager.curWeather.label);
 				return false;
 			}
-			if (!map.gameConditionManager.AllowEnjoyableOutsideNow(map, out GameConditionDef reason))
+			if (!map.gameConditionManager.AllowEnjoyableOutsideNow(map, out var reason))
 			{
 				outFailReason?.Append(reason.label);
 				return false;

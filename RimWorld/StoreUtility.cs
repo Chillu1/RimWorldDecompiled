@@ -52,7 +52,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (TryFindBestBetterStorageFor(t, null, t.Map, haulDestination.GetStoreSettings().Priority, Faction.OfPlayer, out IntVec3 _, out IHaulDestination _, needAccurateResult: false))
+			if (TryFindBestBetterStorageFor(t, null, t.Map, haulDestination.GetStoreSettings().Priority, Faction.OfPlayer, out var _, out var _, needAccurateResult: false))
 			{
 				return false;
 			}
@@ -133,7 +133,7 @@ namespace RimWorld
 			{
 				storagePriority = foundCell2.GetSlotGroup(map).Settings.Priority;
 			}
-			if (!TryFindBestBetterNonSlotGroupStorageFor(t, carrier, map, currentPriority, faction, out IHaulDestination haulDestination2))
+			if (!TryFindBestBetterNonSlotGroupStorageFor(t, carrier, map, currentPriority, faction, out var haulDestination2))
 			{
 				haulDestination2 = null;
 			}
@@ -199,10 +199,10 @@ namespace RimWorld
 			{
 				return;
 			}
-			IntVec3 a = t.SpawnedOrAnyParentSpawned ? t.PositionHeld : carrier.PositionHeld;
+			IntVec3 a = (t.SpawnedOrAnyParentSpawned ? t.PositionHeld : carrier.PositionHeld);
 			List<IntVec3> cellsList = slotGroup.CellsList;
 			int count = cellsList.Count;
-			int num = needAccurateResult ? Mathf.FloorToInt((float)count * Rand.Range(0.005f, 0.018f)) : 0;
+			int num = (needAccurateResult ? Mathf.FloorToInt((float)count * Rand.Range(0.005f, 0.018f)) : 0);
 			for (int i = 0; i < count; i++)
 			{
 				IntVec3 intVec = cellsList[i];
@@ -223,7 +223,7 @@ namespace RimWorld
 		public static bool TryFindBestBetterNonSlotGroupStorageFor(Thing t, Pawn carrier, Map map, StoragePriority currentPriority, Faction faction, out IHaulDestination haulDestination, bool acceptSamePriority = false)
 		{
 			List<IHaulDestination> allHaulDestinationsListInPriorityOrder = map.haulDestinationManager.AllHaulDestinationsListInPriorityOrder;
-			IntVec3 intVec = t.SpawnedOrAnyParentSpawned ? t.PositionHeld : carrier.PositionHeld;
+			IntVec3 intVec = (t.SpawnedOrAnyParentSpawned ? t.PositionHeld : carrier.PositionHeld);
 			float num = float.MaxValue;
 			StoragePriority storagePriority = StoragePriority.Unstored;
 			haulDestination = null;
@@ -345,7 +345,7 @@ namespace RimWorld
 			}
 			for (int i = -4; i < 20; i++)
 			{
-				int num = (i < 0) ? Rand.RangeInclusive(0, 4) : i;
+				int num = ((i < 0) ? Rand.RangeInclusive(0, 4) : i);
 				IntVec3 intVec = carrier.Position + GenRadial.RadialPattern[num];
 				if (intVec.InBounds(carrier.Map) && carrier.Map.areaManager.Home[intVec] && carrier.CanReach(intVec, PathEndMode.ClosestTouch, Danger.Deadly) && intVec.GetSlotGroup(carrier.Map) == null && IsGoodStoreCell(intVec, carrier.Map, item, carrier, carrier.Faction))
 				{

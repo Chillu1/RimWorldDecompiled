@@ -1,10 +1,11 @@
 using Verse;
+using Verse.AI;
 
 namespace RimWorld
 {
-	public class Verb_Bombardment : Verb
+	public class Verb_Bombardment : Verb_CastBase
 	{
-		private const int DurationTicks = 540;
+		public const int DurationTicks = 540;
 
 		protected override bool TryCastShot()
 		{
@@ -16,11 +17,7 @@ namespace RimWorld
 			obj.duration = 540;
 			obj.instigator = caster;
 			obj.weaponDef = ((base.EquipmentSource != null) ? base.EquipmentSource.def : null);
-			obj.StartStrike();
-			if (base.EquipmentSource != null && !base.EquipmentSource.Destroyed)
-			{
-				base.EquipmentSource.Destroy();
-			}
+			base.ReloadableCompSource?.UsedOnce();
 			return true;
 		}
 

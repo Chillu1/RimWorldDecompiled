@@ -47,7 +47,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!FoodUtility.TryFindBestFoodSourceFor(pawn, pawn2, pawn2.needs.food.CurCategory == HungerCategory.Starving, out Thing _, out ThingDef _, canRefillDispenser: false))
+			if (!FoodUtility.TryFindBestFoodSourceFor(pawn, pawn2, pawn2.needs.food.CurCategory == HungerCategory.Starving, out var _, out var _, canRefillDispenser: false))
 			{
 				JobFailReason.Is("NoFood".Translate());
 				return false;
@@ -58,7 +58,7 @@ namespace RimWorld
 		public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
 			Pawn pawn2 = (Pawn)t;
-			if (FoodUtility.TryFindBestFoodSourceFor(pawn, pawn2, pawn2.needs.food.CurCategory == HungerCategory.Starving, out Thing foodSource, out ThingDef foodDef, canRefillDispenser: false))
+			if (FoodUtility.TryFindBestFoodSourceFor(pawn, pawn2, pawn2.needs.food.CurCategory == HungerCategory.Starving, out var foodSource, out var foodDef, canRefillDispenser: false))
 			{
 				float nutrition = FoodUtility.GetNutrition(foodSource, foodDef);
 				Job job = JobMaker.MakeJob(JobDefOf.FeedPatient);

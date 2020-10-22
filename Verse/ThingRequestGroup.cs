@@ -51,6 +51,7 @@ namespace Verse
 		Throne,
 		FoodDispenser,
 		Projectile,
+		Chunk,
 		MeditationFocus
 	}
 }

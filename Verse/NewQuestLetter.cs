@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 
 namespace Verse
 {
@@ -9,7 +9,7 @@ namespace Verse
 		{
 			get
 			{
-				if (quest != null)
+				if (quest != null && !quest.hidden)
 				{
 					yield return Option_ViewInQuestsTab("ViewQuest");
 				}

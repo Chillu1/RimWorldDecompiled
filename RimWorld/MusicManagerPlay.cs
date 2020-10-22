@@ -1,7 +1,7 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -69,7 +69,7 @@ namespace RimWorld
 		{
 			get
 			{
-				float num = ignorePrefsVolumeThisSong ? 1f : Prefs.VolumeMusic;
+				float num = (ignorePrefsVolumeThisSong ? 1f : Prefs.VolumeMusic);
 				if (lastStartedSong == null)
 				{
 					return num;
@@ -165,7 +165,7 @@ namespace RimWorld
 				}
 				if (nextSongStartTime < CurTime - 5f)
 				{
-					float num3 = (!DangerMusicMode) ? SongIntervalRelax.RandomInRange : SongIntervalTension.RandomInRange;
+					float num3 = ((!DangerMusicMode) ? SongIntervalRelax.RandomInRange : SongIntervalTension.RandomInRange);
 					nextSongStartTime = CurTime + num3;
 				}
 				if (CurTime >= nextSongStartTime)

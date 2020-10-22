@@ -1,5 +1,5 @@
-using RimWorld.SketchGen;
 using System.Collections.Generic;
+using RimWorld.SketchGen;
 using UnityEngine;
 using Verse;
 
@@ -66,7 +66,7 @@ namespace RimWorld.QuestGen
 			parms.onlyBuildableByPlayer = true;
 			if (useOnlyResourcesAvailableOnMap.GetValue(slate) != null)
 			{
-				parms.allowWood = (useOnlyResourcesAvailableOnMap.GetValue(slate).Biome.TreeDensity >= BiomeDefOf.BorealForest.TreeDensity);
+				parms.allowWood = useOnlyResourcesAvailableOnMap.GetValue(slate).Biome.TreeDensity >= BiomeDefOf.BorealForest.TreeDensity;
 			}
 			parms.allowedMonumentThings = new ThingFilter();
 			parms.allowedMonumentThings.SetAllowAll(null, includeNonStorable: true);

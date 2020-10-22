@@ -1,9 +1,9 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -222,12 +222,6 @@ namespace Verse
 					AddFolders(list);
 					return;
 				}
-				List<LoadFolder> list2 = modWithIdentifier.LoadFoldersForVersion("default");
-				if (list2 != null)
-				{
-					AddFolders(list2);
-					return;
-				}
 				int num = VersionControl.CurrentVersion.Major;
 				int num2 = VersionControl.CurrentVersion.Minor;
 				while (true)
@@ -245,25 +239,17 @@ namespace Verse
 					{
 						break;
 					}
-					List<LoadFolder> list3 = modWithIdentifier.LoadFoldersForVersion(num + "." + num2);
-					if (list3 != null)
+					List<LoadFolder> list2 = modWithIdentifier.LoadFoldersForVersion(num + "." + num2);
+					if (list2 != null)
 					{
-						AddFolders(list3);
+						AddFolders(list2);
 						return;
 					}
 				}
-				Version version = new Version(0, 0);
-				List<string> list4 = modWithIdentifier.loadFolders.DefinedVersions();
-				for (int i = 0; i < list4.Count; i++)
+				List<LoadFolder> list3 = modWithIdentifier.LoadFoldersForVersion("default");
+				if (list3 != null)
 				{
-					if (VersionControl.TryParseVersionString(list4[i], out Version version2) && version2 > version)
-					{
-						version = version2;
-					}
-				}
-				if (version.Major > 0)
-				{
-					AddFolders(modWithIdentifier.LoadFoldersForVersion(version.ToString()));
+					AddFolders(list3);
 					return;
 				}
 			}
@@ -278,18 +264,18 @@ namespace Verse
 			}
 			else
 			{
-				Version version3 = new Version(0, 0);
+				Version version = new Version(0, 0);
 				DirectoryInfo[] directories = rootDirInt.GetDirectories();
-				for (int j = 0; j < directories.Length; j++)
+				for (int i = 0; i < directories.Length; i++)
 				{
-					if (VersionControl.TryParseVersionString(directories[j].Name, out Version version4) && version4 > version3)
+					if (VersionControl.TryParseVersionString(directories[i].Name, out var version2) && version2 > version)
 					{
-						version3 = version4;
+						version = version2;
 					}
 				}
-				if (version3.Major > 0)
+				if (version.Major > 0)
 				{
-					foldersToLoadDescendingOrder.Add(Path.Combine(RootDir, version3.ToString()));
+					foldersToLoadDescendingOrder.Add(Path.Combine(RootDir, version.ToString()));
 				}
 			}
 			string text2 = Path.Combine(RootDir, CommonFolderName);
@@ -410,6 +396,19 @@ namespace Verse
 
 		public bool AnyContentLoaded()
 		{
+			if (AnyNonTranslationContentLoaded())
+			{
+				return true;
+			}
+			if (AnyTranslationsLoaded())
+			{
+				return true;
+			}
+			return false;
+		}
+
+		public bool AnyNonTranslationContentLoaded()
+		{
 			if (textures.contentList != null && textures.contentList.Count != 0)
 			{
 				return true;
@@ -438,6 +437,11 @@ namespace Verse
 			{
 				return true;
 			}
+			return false;
+		}
+
+		public bool AnyTranslationsLoaded()
+		{
 			foreach (string item in foldersToLoadDescendingOrder)
 			{
 				string path = Path.Combine(item, "Languages");

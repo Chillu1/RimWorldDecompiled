@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse.AI
@@ -108,7 +108,6 @@ namespace Verse.AI
 			{
 				yield break;
 			}
-			JobDriver_DoBill jobDriver_DoBill = this;
 			yield return Toils_Reserve.Reserve(TargetIndex.B);
 			findPlaceTarget2 = Toils_Haul.CarryHauledThingToCell(TargetIndex.B);
 			yield return findPlaceTarget2;
@@ -119,7 +118,7 @@ namespace Verse.AI
 				Bill_Production bill_Production = recount.actor.jobs.curJob.bill as Bill_Production;
 				if (bill_Production != null && bill_Production.repeatMode == BillRepeatModeDefOf.TargetCount)
 				{
-					jobDriver_DoBill.Map.resourceCounter.UpdateResourceCounts();
+					base.Map.resourceCounter.UpdateResourceCounts();
 				}
 			};
 			yield return recount;
@@ -141,36 +140,29 @@ namespace Verse.AI
 					List<LocalTargetInfo> targetQueue = curJob.GetTargetQueue(ind);
 					if (!targetQueue.NullOrEmpty())
 					{
-						int num = 0;
-						int a;
-						while (true)
+						for (int i = 0; i < targetQueue.Count; i++)
 						{
-							if (num >= targetQueue.Count)
+							if (GenAI.CanUseItemForWork(actor, targetQueue[i].Thing) && targetQueue[i].Thing.CanStackWith(actor.carryTracker.CarriedThing) && !((float)(actor.Position - targetQueue[i].Thing.Position).LengthHorizontalSquared > 64f))
 							{
-								return;
-							}
-							if (GenAI.CanUseItemForWork(actor, targetQueue[num].Thing) && targetQueue[num].Thing.CanStackWith(actor.carryTracker.CarriedThing) && !((float)(actor.Position - targetQueue[num].Thing.Position).LengthHorizontalSquared > 64f))
-							{
-								int num2 = (actor.carryTracker.CarriedThing != null) ? actor.carryTracker.CarriedThing.stackCount : 0;
-								a = curJob.countQueue[num];
-								a = Mathf.Min(a, targetQueue[num].Thing.def.stackLimit - num2);
-								a = Mathf.Min(a, actor.carryTracker.AvailableStackSpace(targetQueue[num].Thing.def));
+								int num = ((actor.carryTracker.CarriedThing != null) ? actor.carryTracker.CarriedThing.stackCount : 0);
+								int a = curJob.countQueue[i];
+								a = Mathf.Min(a, targetQueue[i].Thing.def.stackLimit - num);
+								a = Mathf.Min(a, actor.carryTracker.AvailableStackSpace(targetQueue[i].Thing.def));
 								if (a > 0)
 								{
+									curJob.count = a;
+									curJob.SetTarget(ind, targetQueue[i].Thing);
+									curJob.countQueue[i] -= a;
+									if (curJob.countQueue[i] <= 0)
+									{
+										curJob.countQueue.RemoveAt(i);
+										targetQueue.RemoveAt(i);
+									}
+									actor.jobs.curDriver.JumpToToil(gotoGetTargetToil);
 									break;
 								}
 							}
-							num++;
 						}
-						curJob.count = a;
-						curJob.SetTarget(ind, targetQueue[num].Thing);
-						curJob.countQueue[num] -= a;
-						if (curJob.countQueue[num] <= 0)
-						{
-							curJob.countQueue.RemoveAt(num);
-							targetQueue.RemoveAt(num);
-						}
-						actor.jobs.curDriver.JumpToToil(gotoGetTargetToil);
 					}
 				}
 			};

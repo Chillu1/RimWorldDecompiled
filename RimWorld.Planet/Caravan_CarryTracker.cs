@@ -116,7 +116,7 @@ namespace RimWorld.Planet
 					num++;
 				}
 			}
-			string str = (tmpPawnLabels.Count > 5) ? (tmpPawnLabels.Take(5).ToCommaList() + "...") : tmpPawnLabels.ToCommaList(useAnd: true);
+			string str = ((tmpPawnLabels.Count > 5) ? (tmpPawnLabels.Take(5).ToCommaList() + "...") : tmpPawnLabels.ToCommaList(useAnd: true));
 			string result = CaravanBedUtility.AppendUsingBedsLabel("BeingCarriedDueToIllness".Translate() + ": " + str.CapitalizeFirst(), num);
 			tmpPawnLabels.Clear();
 			return result;

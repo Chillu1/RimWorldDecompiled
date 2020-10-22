@@ -6,7 +6,7 @@ namespace Verse
 		{
 			if (Scribe.mode == LoadSaveMode.Saving)
 			{
-				string value2 = (value != null) ? value.defName : "null";
+				string value2 = ((value != null) ? value.defName : "null");
 				Scribe_Values.Look(ref value2, label, "null");
 			}
 			else if (Scribe.mode == LoadSaveMode.LoadingVars)

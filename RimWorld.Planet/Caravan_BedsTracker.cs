@@ -96,7 +96,7 @@ namespace RimWorld.Planet
 
 		public Building_Bed GetBedUsedBy(Pawn p)
 		{
-			if (usedBeds.TryGetValue(p, out Building_Bed value) && !value.DestroyedOrNull())
+			if (usedBeds.TryGetValue(p, out var value) && !value.DestroyedOrNull())
 			{
 				return value;
 			}
@@ -166,7 +166,7 @@ namespace RimWorld.Planet
 			{
 				return null;
 			}
-			string t = (tmpPawnLabels.Count > 5) ? (tmpPawnLabels.Take(5).ToCommaList() + "...") : tmpPawnLabels.ToCommaList(useAnd: true);
+			string t = ((tmpPawnLabels.Count > 5) ? (tmpPawnLabels.Take(5).ToCommaList() + "...") : tmpPawnLabels.ToCommaList(useAnd: true));
 			tmpPawnLabels.Clear();
 			return "UsingBedrollsDueToIllness".Translate() + ": " + t;
 		}

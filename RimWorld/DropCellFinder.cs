@@ -26,7 +26,7 @@ namespace RimWorld
 			if (building != null)
 			{
 				IntVec3 position = building.Position;
-				if (!TryFindDropSpotNear(position, map, out IntVec3 result, allowFogged: false, canRoofPunch: false))
+				if (!TryFindDropSpotNear(position, map, out var result, allowFogged: false, canRoofPunch: false))
 				{
 					Log.Error(string.Concat("Could find no good TradeDropSpot near dropCenter ", position, ". Using a random standable unfogged cell."));
 					return CellFinderLoose.RandomCellWith((IntVec3 c) => c.Standable(map) && !c.Fogged(map), map);
@@ -56,7 +56,7 @@ namespace RimWorld
 			{
 				for (int i = 0; i < list.Count; i++)
 				{
-					if (CellFinder.TryFindRandomCellNear(list[i].Position, map, num, validator, out IntVec3 position))
+					if (CellFinder.TryFindRandomCellNear(list[i].Position, map, num, validator, out var position))
 					{
 						return position;
 					}
@@ -81,7 +81,7 @@ namespace RimWorld
 			tmpColonyBuildings.Shuffle();
 			for (int i = 0; i < tmpColonyBuildings.Count; i++)
 			{
-				if (TryFindDropSpotNear(tmpColonyBuildings[i].Position, map, out IntVec3 result, allowFogged: false, canRoofPunch: false, allowIndoors: false, size) && SkyfallerCanLandAt(result, map, size, faction))
+				if (TryFindDropSpotNear(tmpColonyBuildings[i].Position, map, out var result, allowFogged: false, canRoofPunch: false, allowIndoors: false, size) && SkyfallerCanLandAt(result, map, size, faction))
 				{
 					tmpColonyBuildings.Clear();
 					return result;
@@ -116,7 +116,7 @@ namespace RimWorld
 
 		public static bool SkyfallerCanLandAt(IntVec3 c, Map map, IntVec2 size, Faction faction = null)
 		{
-			if (!IsSafeDropSpot(c, map, faction, size))
+			if (!IsSafeDropSpot(c, map, faction, size, 5))
 			{
 				return false;
 			}
@@ -135,6 +135,10 @@ namespace RimWorld
 					{
 						return false;
 					}
+					if (thing.def.preventSkyfallersLandingOn)
+					{
+						return false;
+					}
 					if (thing.def.category == ThingCategory.Item || thing.def.category == ThingCategory.Building)
 					{
 						return false;
@@ -142,6 +146,23 @@ namespace RimWorld
 				}
 			}
 			return true;
+		}
+
+		public static IntVec3 GetBestShuttleLandingSpot(Map map, Faction factionForFindingSpot, out Thing firstBlockingThing)
+		{
+			if (!TryFindShipLandingArea(map, out var result, out firstBlockingThing))
+			{
+				result = TryFindSafeLandingSpotCloseToColony(map, ThingDefOf.Shuttle.Size, factionForFindingSpot);
+			}
+			if (!result.IsValid && !FindSafeLandingSpot(out result, factionForFindingSpot, map, 35, 15, 25, ThingDefOf.Shuttle.Size))
+			{
+				IntVec3 intVec = RandomDropSpot(map);
+				if (!TryFindDropSpotNear(intVec, map, out result, allowFogged: false, canRoofPunch: false, allowIndoors: false, ThingDefOf.Shuttle.Size))
+				{
+					result = intVec;
+				}
+			}
+			return result;
 		}
 
 		public static bool TryFindShipLandingArea(Map map, out IntVec3 result, out Thing firstBlockingThing)
@@ -269,6 +290,10 @@ namespace RimWorld
 				{
 					return false;
 				}
+				if (thing.def.preventSkyfallersLandingOn)
+				{
+					return false;
+				}
 				if (thing.def.category != ThingCategory.Plant && GenSpawn.SpawningWipes(ThingDefOf.ActiveDropPod, thing.def))
 				{
 					return false;
@@ -372,7 +397,7 @@ namespace RimWorld
 						RCellFinder.TryFindRandomCellNearTheCenterOfTheMapWith((IntVec3 x) => CanPhysicallyDropInto(x, map, canRoofPunch, allowIndoors) && !x.Fogged(map) && x.Standable(map), map, out result);
 					}
 				}
-				int num2 = (maxRadius >= 0) ? maxRadius : 10;
+				int num2 = ((maxRadius >= 0) ? maxRadius : 10);
 				if (!closeWalk)
 				{
 					CellFinder.TryFindRandomCellNear(result, map, num2 * num2, null, out spot, 50);
@@ -406,6 +431,11 @@ namespace RimWorld
 				}
 			}
 			return false;
+		}
+
+		public static bool FindSafeLandingSpotNearAvoidingHostiles(Thing thing, Map map, out IntVec3 spot, int distToHostiles = 35, int distToFires = 15, int distToEdge = 25, IntVec2? size = null)
+		{
+			return RCellFinder.TryFindRandomSpotNearAvoidingHostilePawns(thing, map, (IntVec3 s) => IsSafeDropSpot(s, map, thing.Faction, size, distToEdge, distToHostiles, distToFires), out spot);
 		}
 
 		public static bool CanPhysicallyDropInto(IntVec3 c, Map map, bool canRoofPunch, bool allowedIndoors = true)

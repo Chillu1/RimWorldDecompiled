@@ -17,7 +17,7 @@ namespace RimWorld
 				{
 					foreach (Pawn freeColonist in maps[i].mapPawns.FreeColonists)
 					{
-						if (freeColonist.royalty == null || !freeColonist.royalty.CanRequireThroneroom())
+						if (freeColonist.royalty == null || freeColonist.Suspended || !freeColonist.royalty.CanRequireThroneroom())
 						{
 							continue;
 						}

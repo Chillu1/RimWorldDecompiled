@@ -117,25 +117,19 @@ namespace Verse
 				else
 				{
 					visitedCells.Add(x);
-					int num = 0;
-					while (true)
+					for (int i = 0; i < 5; i++)
 					{
-						if (num >= 5)
-						{
-							return;
-						}
-						IntVec3 c2 = x + GenAdj.CardinalDirectionsAndInside[num];
+						IntVec3 c2 = x + GenAdj.CardinalDirectionsAndInside[i];
 						if (c2.InBounds(map))
 						{
 							Building edifice = c2.GetEdifice(map);
 							if (edifice != null && edifice.def.holdsRoof)
 							{
+								connected = true;
 								break;
 							}
 						}
-						num++;
 					}
-					connected = true;
 				}
 			});
 			return connected;

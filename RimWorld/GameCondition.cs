@@ -121,7 +121,7 @@ namespace RimWorld
 				}
 				else
 				{
-					Vector2 location = (SingleMap != null) ? Find.WorldGrid.LongLatOf(SingleMap.Tile) : ((Find.CurrentMap != null) ? Find.WorldGrid.LongLatOf(Find.CurrentMap.Tile) : ((Find.AnyPlayerHomeMap == null) ? Vector2.zero : Find.WorldGrid.LongLatOf(Find.AnyPlayerHomeMap.Tile)));
+					Vector2 location = ((SingleMap != null) ? Find.WorldGrid.LongLatOf(SingleMap.Tile) : ((Find.CurrentMap != null) ? Find.WorldGrid.LongLatOf(Find.CurrentMap.Tile) : ((Find.AnyPlayerHomeMap == null) ? Vector2.zero : Find.WorldGrid.LongLatOf(Find.AnyPlayerHomeMap.Tile))));
 					t += "\n" + "Started".Translate() + ": " + GenDate.DateFullStringAt(GenDate.TickGameToAbs(startTick), location);
 					t += "\n" + "Lasted".Translate() + ": " + TicksPassed.ToStringTicksToPeriod().Colorize(ColoredText.DateTimeColor);
 				}

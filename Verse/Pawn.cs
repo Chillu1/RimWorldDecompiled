@@ -1,9 +1,9 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse.AI;
 using Verse.AI.Group;
@@ -97,6 +97,8 @@ namespace Verse
 		private Pawn_DrawTracker drawer;
 
 		public int becameWorldPawnTickAbs = -1;
+
+		public bool teleporting;
 
 		private const float HumanSizedHeatOutput = 0.3f;
 
@@ -448,12 +450,16 @@ namespace Verse
 			}
 		}
 
-		public Faction FactionOrExtraHomeFaction
+		public Faction FactionOrExtraMiniOrHomeFaction
 		{
 			get
 			{
 				if (base.Faction != null && base.Faction.IsPlayer)
 				{
+					if (this.HasExtraMiniFaction())
+					{
+						return this.GetExtraMiniFaction();
+					}
 					return this.GetExtraHomeFaction() ?? base.Faction;
 				}
 				return base.Faction;
@@ -630,7 +636,7 @@ namespace Verse
 		{
 			get
 			{
-				WorkTags workTags = (story != null) ? story.DisabledWorkTagsBackstoryAndTraits : WorkTags.None;
+				WorkTags workTags = ((story != null) ? story.DisabledWorkTagsBackstoryAndTraits : WorkTags.None);
 				if (royalty != null)
 				{
 					foreach (RoyalTitle item in royalty.AllTitlesForReading)
@@ -730,6 +736,7 @@ namespace Verse
 			Scribe_Defs.Look(ref kindDef, "kindDef");
 			Scribe_Values.Look(ref gender, "gender", Gender.Male);
 			Scribe_Values.Look(ref becameWorldPawnTickAbs, "becameWorldPawnTickAbs", -1);
+			Scribe_Values.Look(ref teleporting, "teleporting", defaultValue: false);
 			Scribe_Deep.Look(ref nameInt, "name");
 			Scribe_Deep.Look(ref mindState, "mindState", this);
 			Scribe_Deep.Look(ref jobs, "jobs", this);
@@ -751,7 +758,7 @@ namespace Verse
 			Scribe_Deep.Look(ref filth, "filth", this);
 			Scribe_Deep.Look(ref needs, "needs", this);
 			Scribe_Deep.Look(ref guest, "guest", this);
-			Scribe_Deep.Look(ref guilt, "guilt");
+			Scribe_Deep.Look(ref guilt, "guilt", this);
 			Scribe_Deep.Look(ref royalty, "royalty", this);
 			Scribe_Deep.Look(ref relations, "social", this);
 			Scribe_Deep.Look(ref psychicEntropy, "psychicEntropy", this);
@@ -944,6 +951,9 @@ namespace Verse
 				{
 					stances.StanceTrackerTick();
 					verbTracker.VerbsTick();
+				}
+				if (base.Spawned)
+				{
 					natives.NativeVerbsTick();
 				}
 				if (base.Spawned)
@@ -1056,14 +1066,14 @@ namespace Verse
 						SetFaction(this.GetExtraHomeFaction());
 					}
 				}
-				else if (Find.FactionManager.TryGetRandomNonColonyHumanlikeFaction(out faction, tryMedievalOrBetter))
+				else if (Find.FactionManager.TryGetRandomNonColonyHumanlikeFaction_NewTemp(out faction, tryMedievalOrBetter))
 				{
 					if (base.Faction != faction)
 					{
 						SetFaction(faction);
 					}
 				}
-				else if (Find.FactionManager.TryGetRandomNonColonyHumanlikeFaction(out faction, tryMedievalOrBetter, allowDefeated: true))
+				else if (Find.FactionManager.TryGetRandomNonColonyHumanlikeFaction_NewTemp(out faction, tryMedievalOrBetter, allowDefeated: true))
 				{
 					if (base.Faction != faction)
 					{
@@ -1186,8 +1196,8 @@ namespace Verse
 			bool flag4 = false;
 			if (Current.ProgramState == ProgramState.Playing && map != null)
 			{
-				flag3 = (map.designationManager.DesignationOn(this, DesignationDefOf.Hunt) != null);
-				flag4 = (map.designationManager.DesignationOn(this, DesignationDefOf.Slaughter) != null);
+				flag3 = map.designationManager.DesignationOn(this, DesignationDefOf.Hunt) != null;
+				flag4 = map.designationManager.DesignationOn(this, DesignationDefOf.Slaughter) != null;
 			}
 			bool flag5 = PawnUtility.ShouldSendNotificationAbout(this) && (!flag4 || !dinfo.HasValue || dinfo.Value.Def != DamageDefOf.ExecutionCut);
 			float num = 0f;
@@ -1214,6 +1224,10 @@ namespace Verse
 				if (pawn != null)
 				{
 					RecordsUtility.Notify_PawnKilled(this, pawn);
+					if (pawn.equipment != null)
+					{
+						pawn.equipment.Notify_KilledPawn();
+					}
 					if (IsColonist)
 					{
 						pawn.records.AccumulateStoryEvent(StoryEventDefOf.KilledPlayer);
@@ -1240,12 +1254,13 @@ namespace Verse
 				health.hediffSet.hediffs[i].Notify_PawnKilled();
 			}
 			Pawn_CarryTracker pawn_CarryTracker = base.ParentHolder as Pawn_CarryTracker;
-			if (pawn_CarryTracker != null && holdingOwner.TryDrop_NewTmp(this, pawn_CarryTracker.pawn.Position, pawn_CarryTracker.pawn.Map, ThingPlaceMode.Near, out Thing _))
+			if (pawn_CarryTracker != null && holdingOwner.TryDrop_NewTmp(this, pawn_CarryTracker.pawn.Position, pawn_CarryTracker.pawn.Map, ThingPlaceMode.Near, out var _))
 			{
 				map = pawn_CarryTracker.pawn.Map;
 				flag = true;
 			}
 			PawnDiedOrDownedThoughtsUtility.RemoveLostThoughts(this);
+			PawnDiedOrDownedThoughtsUtility.RemoveResuedRelativeThought(this);
 			PawnDiedOrDownedThoughtsUtility.TryGiveThoughts(this, dinfo, PawnDiedOrDownedThoughtsKind.Died);
 			health.SetDead();
 			if (health.deflectionEffecter != null)
@@ -1332,7 +1347,7 @@ namespace Verse
 				Hediff firstHediffOfDef = health.hediffSet.GetFirstHediffOfDef(HediffDefOf.ToxicBuildup);
 				Hediff firstHediffOfDef2 = health.hediffSet.GetFirstHediffOfDef(HediffDefOf.Scaria);
 				CompRottable comp = corpse.GetComp<CompRottable>();
-				if ((firstHediffOfDef != null && Rand.Value < firstHediffOfDef.Severity && comp != null) || (firstHediffOfDef2 != null && Rand.Chance(Find.Storyteller.difficulty.scariaRotChance)))
+				if ((firstHediffOfDef != null && Rand.Value < firstHediffOfDef.Severity && comp != null) || (firstHediffOfDef2 != null && Rand.Chance(Find.Storyteller.difficultyValues.scariaRotChance)))
 				{
 					comp.RotImmediately();
 				}
@@ -1348,7 +1363,7 @@ namespace Verse
 			{
 				health.hediffSet.hediffs[num2].Notify_PawnDied();
 			}
-			FactionOrExtraHomeFaction?.Notify_MemberDied(this, dinfo, wasWorldPawn, mapHeld);
+			FactionOrExtraMiniOrHomeFaction?.Notify_MemberDied(this, dinfo, wasWorldPawn, mapHeld);
 			if (corpse != null)
 			{
 				if (RaceProps.DeathActionWorker != null && flag)
@@ -1378,6 +1393,7 @@ namespace Verse
 				health.NotifyPlayerOfKilled(dinfo, exactCulprit, caravan);
 			}
 			Find.QuestManager.Notify_PawnKilled(this, dinfo);
+			Find.FactionManager.Notify_PawnKilled(this);
 		}
 
 		public override void Destroy(DestroyMode mode = DestroyMode.Vanish)
@@ -1401,7 +1417,7 @@ namespace Verse
 			Lord lord = this.GetLord();
 			if (lord != null)
 			{
-				PawnLostCondition cond = (mode != DestroyMode.KillFinalize) ? PawnLostCondition.Vanished : PawnLostCondition.IncappedOrKilled;
+				PawnLostCondition cond = ((mode != DestroyMode.KillFinalize) ? PawnLostCondition.Vanished : PawnLostCondition.IncappedOrKilled);
 				lord.Notify_PawnLost(this, cond);
 			}
 			if (Current.ProgramState == ProgramState.Playing)
@@ -1412,6 +1428,10 @@ namespace Verse
 			foreach (Pawn item in PawnsFinder.AllMapsWorldAndTemporary_Alive.Where((Pawn p) => p.playerSettings != null && p.playerSettings.Master == this))
 			{
 				item.playerSettings.Master = null;
+			}
+			if (equipment != null)
+			{
+				equipment.Notify_PawnDied();
 			}
 			if (mode != DestroyMode.KillFinalize)
 			{
@@ -1577,6 +1597,7 @@ namespace Verse
 			}
 			Find.WorldPawns.PassToWorld(this);
 			QuestUtility.SendQuestTargetSignals(questTags, "LeftMap", this.Named("SUBJECT"));
+			Find.FactionManager.Notify_PawnLeftMap(this);
 		}
 
 		public override void PreTraded(TradeAction action, Pawn playerNegotiator, ITrader trader)
@@ -1678,9 +1699,13 @@ namespace Verse
 				Find.ColonistBar.MarkColonistsDirty();
 			}
 			this.GetLord()?.Notify_PawnLost(this, PawnLostCondition.ChangedFaction);
-			if (PawnUtility.IsFactionLeader(this) && newFaction != PawnUtility.GetFactionLeaderFaction(this) && !this.HasExtraHomeFaction(PawnUtility.GetFactionLeaderFaction(this)))
+			if (PawnUtility.IsFactionLeader(this))
 			{
-				base.Faction.Notify_LeaderLost();
+				Faction factionLeaderFaction = PawnUtility.GetFactionLeaderFaction(this);
+				if (newFaction != factionLeaderFaction && !this.HasExtraHomeFaction(factionLeaderFaction) && !this.HasExtraMiniFaction(factionLeaderFaction))
+				{
+					factionLeaderFaction.Notify_LeaderLost();
+				}
 			}
 			if (newFaction == Faction.OfPlayer && RaceProps.Humanlike && !this.IsQuestLodger())
 			{
@@ -1870,7 +1895,7 @@ namespace Verse
 				}
 				if (carryTracker != null && carryTracker.CarriedThing != null)
 				{
-					carryTracker.TryDropCarriedThing(base.PositionHeld, ThingPlaceMode.Near, out Thing _);
+					carryTracker.TryDropCarriedThing(base.PositionHeld, ThingPlaceMode.Near, out var _);
 				}
 				if (!keepInventoryAndEquipmentIfInBed || !this.InBed())
 				{
@@ -1970,7 +1995,7 @@ namespace Verse
 		public string MainDesc(bool writeFaction)
 		{
 			bool flag = base.Faction == null || !base.Faction.IsPlayer;
-			string text = (gender == Gender.None) ? "" : gender.GetLabel(this.AnimalOrWildMan());
+			string text = ((gender == Gender.None) ? "" : gender.GetLabel(this.AnimalOrWildMan()));
 			if (RaceProps.Animal || RaceProps.IsMechanoid)
 			{
 				string str = GenLabel.BestKindLabel(this, mustNoteGender: false, mustNoteLifeStage: true);
@@ -1999,13 +2024,16 @@ namespace Verse
 			{
 				tmpExtraFactions.Clear();
 				QuestUtility.GetExtraFactionsFromQuestParts(this, tmpExtraFactions);
-				if (base.Faction != null && !base.Faction.def.hidden)
+				if (base.Faction != null && !base.Faction.Hidden)
 				{
 					text = ((tmpExtraFactions.Count != 0) ? "PawnMainDescUnderFactionedWrap".Translate(text, base.Faction.NameColored).Resolve() : "PawnMainDescFactionedWrap".Translate(text, base.Faction.NameColored).Resolve());
 				}
 				for (int i = 0; i < tmpExtraFactions.Count; i++)
 				{
-					text += $"\n{tmpExtraFactions[i].factionType.GetLabel().CapitalizeFirst()}: {tmpExtraFactions[i].faction.NameColored.Resolve()}";
+					if (base.Faction != tmpExtraFactions[i].faction)
+					{
+						text += $"\n{tmpExtraFactions[i].factionType.GetLabel().CapitalizeFirst()}: {tmpExtraFactions[i].faction.NameColored.Resolve()}";
+					}
 				}
 				tmpExtraFactions.Clear();
 			}
@@ -2145,7 +2173,7 @@ namespace Verse
 					yield return gizmo3;
 				}
 			}
-			if (psychicEntropy != null && psychicEntropy.NeedToShowGizmo())
+			if (Find.Selector.SingleSelectedThing == this && psychicEntropy != null && psychicEntropy.NeedToShowGizmo())
 			{
 				yield return psychicEntropy.GetGizmo();
 			}
@@ -2173,33 +2201,70 @@ namespace Verse
 					yield return gizmo6;
 				}
 			}
-			foreach (Gizmo gizmo7 in mindState.GetGizmos())
+			if (inventory != null)
 			{
-				yield return gizmo7;
+				foreach (Gizmo gizmo7 in inventory.GetGizmos())
+				{
+					yield return gizmo7;
+				}
+			}
+			foreach (Gizmo gizmo8 in mindState.GetGizmos())
+			{
+				yield return gizmo8;
 			}
 			if (royalty != null && IsColonistPlayerControlled)
 			{
+				bool anyPermitOnCooldown = false;
+				foreach (FactionPermit allFactionPermit in royalty.AllFactionPermits)
+				{
+					if (allFactionPermit.OnCooldown)
+					{
+						anyPermitOnCooldown = true;
+					}
+					IEnumerable<Gizmo> pawnGizmos = allFactionPermit.Permit.Worker.GetPawnGizmos(this, allFactionPermit.Faction);
+					if (pawnGizmos == null)
+					{
+						continue;
+					}
+					foreach (Gizmo item in pawnGizmos)
+					{
+						yield return item;
+					}
+				}
 				if (royalty.HasAidPermit)
 				{
 					yield return royalty.RoyalAidGizmo();
 				}
-				foreach (RoyalTitle item in royalty.AllTitlesForReading)
+				if (Prefs.DevMode && anyPermitOnCooldown)
 				{
-					if (item.def.permits == null)
+					Command_Action command_Action = new Command_Action();
+					command_Action.defaultLabel = "Reset permit cooldowns";
+					command_Action.action = delegate
+					{
+						foreach (FactionPermit allFactionPermit2 in royalty.AllFactionPermits)
+						{
+							allFactionPermit2.ResetCooldown();
+						}
+					};
+					yield return command_Action;
+				}
+				foreach (RoyalTitle item2 in royalty.AllTitlesForReading)
+				{
+					if (item2.def.permits == null)
 					{
 						continue;
 					}
-					Faction faction = item.faction;
-					foreach (RoyalTitlePermitDef permit in item.def.permits)
+					Faction faction = item2.faction;
+					foreach (RoyalTitlePermitDef permit in item2.def.permits)
 					{
-						IEnumerable<Gizmo> pawnGizmos = permit.Worker.GetPawnGizmos(this, faction);
-						if (pawnGizmos == null)
+						IEnumerable<Gizmo> pawnGizmos2 = permit.Worker.GetPawnGizmos(this, faction);
+						if (pawnGizmos2 == null)
 						{
 							continue;
 						}
-						foreach (Gizmo item2 in pawnGizmos)
+						foreach (Gizmo item3 in pawnGizmos2)
 						{
-							yield return item2;
+							yield return item3;
 						}
 					}
 				}
@@ -2207,6 +2272,14 @@ namespace Verse
 			foreach (Gizmo questRelatedGizmo in QuestUtility.GetQuestRelatedGizmos(this))
 			{
 				yield return questRelatedGizmo;
+			}
+			if (royalty == null || !ModsConfig.RoyaltyActive)
+			{
+				yield break;
+			}
+			foreach (Gizmo gizmo9 in royalty.GetGizmos())
+			{
+				yield return gizmo9;
 			}
 		}
 
@@ -2246,7 +2319,7 @@ namespace Verse
 			}
 			if (ModsConfig.RoyaltyActive && RaceProps.intelligence == Intelligence.Humanlike)
 			{
-				yield return new StatDrawEntry(StatCategoryDefOf.BasicsPawn, "MeditationFocuses".Translate(), MeditationUtility.FocusTypesAvailableForPawnString(this).CapitalizeFirst(), ("MeditationFocusesPawnDesc".Translate() + "\n\n" + MeditationUtility.FocusTypeAvailableExplanation(this)).Resolve(), 99995);
+				yield return new StatDrawEntry(StatCategoryDefOf.BasicsPawn, "MeditationFocuses".Translate(), MeditationUtility.FocusTypesAvailableForPawnString(this).CapitalizeFirst(), ("MeditationFocusesPawnDesc".Translate() + "\n\n" + MeditationUtility.FocusTypeAvailableExplanation(this)).Resolve(), 99995, null, MeditationUtility.FocusObjectsForPawnHyperlinks(this));
 			}
 		}
 
@@ -2314,7 +2387,7 @@ namespace Verse
 			}
 			else
 			{
-				IntVec3 pos = (Corpse != null) ? Corpse.PositionHeld : base.PositionHeld;
+				IntVec3 pos = ((Corpse != null) ? Corpse.PositionHeld : base.PositionHeld);
 				if (equipment != null)
 				{
 					equipment.DropAllEquipment(pos, forbid: false);
@@ -2416,6 +2489,11 @@ namespace Verse
 			mindState.Notify_Explosion(explosion);
 		}
 
+		public override void Notify_BulletImpactNearby(BulletImpactData impactData)
+		{
+			apparel?.Notify_BulletImpactNearby(impactData);
+		}
+
 		private void CheckForDisturbedSleep(Pawn source)
 		{
 			if (needs.mood != null && !this.Awake() && base.Faction == Faction.OfPlayer && Find.TickManager.TicksGame >= lastSleepDisturbedTick + 300 && (source == null || (!LovePartnerRelationUtility.LovePartnerRelationExists(this, source) && !(source.RaceProps.petness > 0f) && (source.relations == null || !source.relations.DirectRelations.Any((DirectPawnRelation dr) => dr.def == PawnRelationDefOf.Bond)))))
@@ -2427,7 +2505,7 @@ namespace Verse
 
 		public float GetAcceptArrestChance(Pawn arrester)
 		{
-			float num = StatDefOf.ArrestSuccessChance.Worker.IsDisabledFor(arrester) ? StatDefOf.ArrestSuccessChance.valueIfMissing : arrester.GetStatValue(StatDefOf.ArrestSuccessChance);
+			float num = (StatDefOf.ArrestSuccessChance.Worker.IsDisabledFor(arrester) ? StatDefOf.ArrestSuccessChance.valueIfMissing : arrester.GetStatValue(StatDefOf.ArrestSuccessChance));
 			if (this.IsWildMan())
 			{
 				return num * 0.5f;
@@ -2437,6 +2515,11 @@ namespace Verse
 
 		public bool CheckAcceptArrest(Pawn arrester)
 		{
+			Faction factionOrExtraMiniOrHomeFaction = FactionOrExtraMiniOrHomeFaction;
+			if (factionOrExtraMiniOrHomeFaction != null && factionOrExtraMiniOrHomeFaction != arrester.factionInt)
+			{
+				factionOrExtraMiniOrHomeFaction.Notify_MemberCaptured(this, arrester.Faction);
+			}
 			if (health.Downed)
 			{
 				return true;
@@ -2444,11 +2527,6 @@ namespace Verse
 			if (WorkTagIsDisabled(WorkTags.Violent))
 			{
 				return true;
-			}
-			Faction factionOrExtraHomeFaction = FactionOrExtraHomeFaction;
-			if (factionOrExtraHomeFaction != null && factionOrExtraHomeFaction != arrester.factionInt)
-			{
-				factionOrExtraHomeFaction.Notify_MemberCaptured(this, arrester.Faction);
 			}
 			float acceptArrestChance = GetAcceptArrestChance(arrester);
 			if (Rand.Value < acceptArrestChance)

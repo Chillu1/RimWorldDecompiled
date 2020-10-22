@@ -20,7 +20,7 @@ namespace Verse
 		public static Mesh GetShadowMesh(float baseWidth, float baseHeight, float tallness)
 		{
 			int key = HashOf(baseWidth, baseHeight, tallness);
-			if (!shadowMeshDict.TryGetValue(key, out Mesh value))
+			if (!shadowMeshDict.TryGetValue(key, out var value))
 			{
 				value = MeshMakerShadows.NewShadowMesh(baseWidth, baseHeight, tallness);
 				shadowMeshDict.Add(key, value);

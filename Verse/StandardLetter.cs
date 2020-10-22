@@ -13,23 +13,23 @@ namespace Verse
 				{
 					yield return base.Option_JumpToLocation;
 				}
-				if (quest != null)
+				if (quest != null && !quest.hidden)
 				{
 					yield return Option_ViewInQuestsTab();
 				}
 				if (!hyperlinkThingDefs.NullOrEmpty())
 				{
-					for (int i = 0; i < hyperlinkThingDefs.Count; i++)
+					for (int k = 0; k < hyperlinkThingDefs.Count; k++)
 					{
-						yield return Option_ViewInfoCard(i);
+						yield return Option_ViewInfoCard(k);
 					}
 				}
 				if (!hyperlinkHediffDefs.NullOrEmpty())
 				{
-					int i = (hyperlinkThingDefs != null) ? hyperlinkThingDefs.Count : 0;
-					for (int j = 0; j < hyperlinkHediffDefs.Count; j++)
+					int k = ((hyperlinkThingDefs != null) ? hyperlinkThingDefs.Count : 0);
+					for (int i = 0; i < hyperlinkHediffDefs.Count; i++)
 					{
-						yield return Option_ViewInfoCard(i + j);
+						yield return Option_ViewInfoCard(k + i);
 					}
 				}
 			}

@@ -178,7 +178,7 @@ namespace RimWorld
 				}
 				return cachedSellablePawns;
 			}
-			if (cachedSellableItemsByCategory.TryGetValue(category, out List<ThingDef> value))
+			if (cachedSellableItemsByCategory.TryGetValue(category, out var value))
 			{
 				return value;
 			}

@@ -67,8 +67,8 @@ namespace RimWorld.Planet
 			CellRect cellRect2 = CellRect.CenteredOn(intVec2, Mathf.Max(Mathf.RoundToInt((float)num * maxDistPctToOppositeSpots), 1)).ClipInsideMap(map);
 			for (int i = 0; i < 20; i++)
 			{
-				IntVec3 intVec3 = (i == 0) ? intVec : cellRect.RandomCell;
-				IntVec3 intVec4 = (i == 0) ? intVec2 : cellRect2.RandomCell;
+				IntVec3 intVec3 = ((i == 0) ? intVec : cellRect.RandomCell);
+				IntVec3 intVec4 = ((i == 0) ? intVec2 : cellRect2.RandomCell);
 				if (intVec3.Standable(map) && !intVec3.Fogged(map) && intVec4.Standable(map) && !intVec4.Fogged(map) && map.reachability.CanReach(intVec3, intVec4, PathEndMode.OnCell, TraverseParms.For(TraverseMode.NoPassClosedDoors)))
 				{
 					first = intVec3;

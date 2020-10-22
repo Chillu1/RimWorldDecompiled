@@ -97,22 +97,17 @@ namespace RimWorld
 
 		private static IEnumerable<ScenPart> RandomScenPartsOfCategory(Scenario scen, ScenPartCategory cat, int count)
 		{
-			ScenPartCategory cat2 = cat;
 			if (count <= 0)
 			{
 				yield break;
 			}
 			IEnumerable<ScenPartDef> allowedParts = from d in AddableParts(scen)
-				where d.category == cat2
+				where d.category == cat
 				select d;
 			int numYielded = 0;
 			int numTries = 0;
-			do
+			while (numYielded < count && allowedParts.Any())
 			{
-				if (numYielded >= count || !allowedParts.Any())
-				{
-					yield break;
-				}
 				ScenPart scenPart = MakeScenPart(allowedParts.RandomElementByWeight((ScenPartDef d) => d.selectionWeight));
 				if (CanAddPart(scen, scenPart))
 				{
@@ -120,9 +115,12 @@ namespace RimWorld
 					numYielded++;
 				}
 				numTries++;
+				if (numTries > 100)
+				{
+					Log.Error(string.Concat("Could not add ScenPart of category ", cat, " to scenario ", scen, " after 50 tries."));
+					break;
+				}
 			}
-			while (numTries <= 100);
-			Log.Error(string.Concat("Could not add ScenPart of category ", cat2, " to scenario ", scen, " after 50 tries."));
 		}
 
 		public static IEnumerable<ScenPartDef> AddableParts(Scenario scen)

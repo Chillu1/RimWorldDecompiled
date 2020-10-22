@@ -46,7 +46,7 @@ namespace RimWorld.BaseGen
 				value = default(ThingSetMakerParams);
 				value.techLevel = ((rp.faction != null) ? rp.faction.def.techLevel : TechLevel.Undefined);
 				value.makingFaction = rp.faction;
-				value.validator = ((ThingDef x) => (rp.faction == null || (int)x.techLevel >= (int)rp.faction.def.techLevel || !x.IsWeapon || !(x.GetStatValueAbstract(StatDefOf.MarketValue, GenStuff.DefaultStuffFor(x)) < 100f)) ? true : false);
+				value.validator = (ThingDef x) => (rp.faction == null || (int)x.techLevel >= (int)rp.faction.def.techLevel || !x.IsWeapon || !(x.GetStatValueAbstract(StatDefOf.MarketValue, GenStuff.DefaultStuffFor(x)) < 100f)) ? true : false;
 				float num4 = rp.stockpileMarketValue ?? Mathf.Min((float)cells.Count * 130f, 1800f);
 				value.totalMarketValueRange = new FloatRange(num4, num4);
 			}

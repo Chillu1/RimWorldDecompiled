@@ -13,19 +13,26 @@ namespace RimWorld
 		{
 			tmpGenerated.Clear();
 			int countToGenerate = CountChanceUtility.RandomCount(countChances);
-			for (int i = 0; i < countToGenerate; i++)
+			int i = 0;
+			while (true)
 			{
-				if (!TechprintUtility.TryGetTechprintDefToGenerate(faction, out ThingDef result, tmpGenerated))
+				if (i < countToGenerate)
 				{
-					yield break;
+					if (!TechprintUtility.TryGetTechprintDefToGenerate(faction, out var result, tmpGenerated))
+					{
+						break;
+					}
+					tmpGenerated.Add(result);
+					foreach (Thing item in StockGeneratorUtility.TryMakeForStock(result, 1))
+					{
+						yield return item;
+					}
+					i++;
+					continue;
 				}
-				tmpGenerated.Add(result);
-				foreach (Thing item in StockGeneratorUtility.TryMakeForStock(result, 1))
-				{
-					yield return item;
-				}
+				tmpGenerated.Clear();
+				break;
 			}
-			tmpGenerated.Clear();
 		}
 
 		public override bool HandlesThingDef(ThingDef thingDef)

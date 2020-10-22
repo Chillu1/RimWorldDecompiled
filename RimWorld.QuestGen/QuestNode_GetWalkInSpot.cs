@@ -18,7 +18,7 @@ namespace RimWorld.QuestGen
 				return false;
 			}
 			Map map = slate.Get<Map>("map");
-			if (TryFindWalkInSpot(map, out IntVec3 spawnSpot))
+			if (TryFindWalkInSpot(map, out var spawnSpot))
 			{
 				slate.Set(storeAs.GetValue(slate), spawnSpot);
 				return true;
@@ -32,7 +32,7 @@ namespace RimWorld.QuestGen
 			if (!QuestGen.slate.Exists(storeAs.GetValue(slate)))
 			{
 				Map map = QuestGen.slate.Get<Map>("map");
-				if (map != null && TryFindWalkInSpot(map, out IntVec3 spawnSpot))
+				if (map != null && TryFindWalkInSpot(map, out var spawnSpot))
 				{
 					QuestGen.slate.Set(storeAs.GetValue(slate), spawnSpot);
 				}

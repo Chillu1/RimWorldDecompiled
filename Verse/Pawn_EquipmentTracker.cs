@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 
 namespace Verse
 {
@@ -8,6 +8,8 @@ namespace Verse
 		public Pawn pawn;
 
 		private ThingOwner<ThingWithComps> equipment;
+
+		public Thing bondedWeapon;
 
 		public ThingWithComps Primary
 		{
@@ -90,6 +92,7 @@ namespace Verse
 		public void ExposeData()
 		{
 			Scribe_Deep.Look(ref equipment, "equipment", this);
+			Scribe_References.Look(ref bondedWeapon, "bondedWeapon");
 			if (Scribe.mode != LoadSaveMode.PostLoadInit)
 			{
 				return;
@@ -113,6 +116,11 @@ namespace Verse
 			}
 		}
 
+		public void EquipmentTrackerTickRare()
+		{
+			equipment.ThingOwnerTickRare();
+		}
+
 		public bool HasAnything()
 		{
 			return equipment.Any;
@@ -122,7 +130,7 @@ namespace Verse
 		{
 			if (eq.def.equipmentType == EquipmentType.Primary && Primary != null)
 			{
-				if (TryDropEquipment(Primary, out ThingWithComps resultingEq, pawn.Position))
+				if (TryDropEquipment(Primary, out var resultingEq, pawn.Position))
 				{
 					resultingEq?.SetForbidden(value: false);
 				}
@@ -161,7 +169,7 @@ namespace Verse
 		{
 			for (int num = equipment.Count - 1; num >= 0; num--)
 			{
-				TryDropEquipment(equipment[num], out ThingWithComps _, pos, forbid);
+				TryDropEquipment(equipment[num], out var _, pos, forbid);
 			}
 		}
 
@@ -252,11 +260,19 @@ namespace Verse
 				allVerb.Notify_PickedUp();
 			}
 			eq.Notify_Equipped(pawn);
+			if (ModsConfig.RoyaltyActive && eq.def.equipmentType == EquipmentType.Primary && bondedWeapon != null && !bondedWeapon.Destroyed)
+			{
+				bondedWeapon.TryGetComp<CompBladelinkWeapon>()?.Notify_WieldedOtherWeapon();
+			}
 		}
 
 		public void Notify_EquipmentRemoved(ThingWithComps eq)
 		{
-			eq.GetComp<CompEquippable>().Notify_EquipmentLost();
+			eq.GetComp<CompEquippable>()?.Notify_EquipmentLost();
+			if (ModsConfig.RoyaltyActive)
+			{
+				eq.TryGetComp<CompBladelinkWeapon>()?.Notify_EquipmentLost(pawn);
+			}
 		}
 
 		public void Notify_PawnSpawned()
@@ -271,6 +287,22 @@ namespace Verse
 				{
 					DropAllEquipment(pawn.Position);
 				}
+			}
+		}
+
+		public void Notify_PawnDied()
+		{
+			if (ModsConfig.RoyaltyActive && bondedWeapon != null)
+			{
+				bondedWeapon.TryGetComp<CompBladelinkWeapon>()?.UnBond();
+			}
+		}
+
+		public void Notify_KilledPawn()
+		{
+			foreach (ThingWithComps item in equipment)
+			{
+				item.Notify_KilledPawn(pawn);
 			}
 		}
 

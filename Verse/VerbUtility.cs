@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -196,7 +196,7 @@ namespace Verse
 
 		private static float AdditionalSelectionFactor(Verb v)
 		{
-			float num = (v.tool != null) ? v.tool.chanceFactor : 1f;
+			float num = ((v.tool != null) ? v.tool.chanceFactor : 1f);
 			if (v.verbProps.meleeDamageDef != null && !v.verbProps.meleeDamageDef.additionalHediffs.NullOrEmpty())
 			{
 				foreach (DamageDefAdditionalHediff additionalHediff in v.verbProps.meleeDamageDef.additionalHediffs)

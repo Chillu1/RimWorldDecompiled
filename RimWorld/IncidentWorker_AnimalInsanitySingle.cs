@@ -21,7 +21,7 @@ namespace RimWorld
 		protected override bool TryExecuteWorker(IncidentParms parms)
 		{
 			Map map = (Map)parms.target;
-			if (!TryFindRandomAnimal(map, out Pawn animal))
+			if (!TryFindRandomAnimal(map, out var animal))
 			{
 				return false;
 			}

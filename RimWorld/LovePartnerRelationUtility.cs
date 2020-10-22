@@ -96,7 +96,7 @@ namespace RimWorld
 
 		public static void GiveRandomExLoverOrExSpouseRelation(Pawn first, Pawn second)
 		{
-			PawnRelationDef def = (!(Rand.Value < 0.5f)) ? PawnRelationDefOf.ExSpouse : PawnRelationDefOf.ExLover;
+			PawnRelationDef def = ((!(Rand.Value < 0.5f)) ? PawnRelationDefOf.ExSpouse : PawnRelationDefOf.ExLover);
 			first.relations.AddDirectRelation(def, second);
 		}
 
@@ -182,7 +182,18 @@ namespace RimWorld
 			{
 				return -1f;
 			}
-			return 12f * num * num2 / Mathf.Max(pawn.relations.SecondaryLovinChanceFactor(partner), 0.1f) / Mathf.Max(partner.relations.SecondaryLovinChanceFactor(pawn), 0.1f) * GenMath.LerpDouble(-100f, 100f, 1.3f, 0.7f, pawn.relations.OpinionOf(partner)) * GenMath.LerpDouble(-100f, 100f, 1.3f, 0.7f, partner.relations.OpinionOf(pawn));
+			float num3 = 12f;
+			num3 *= num;
+			num3 *= num2;
+			num3 /= Mathf.Max(pawn.relations.SecondaryLovinChanceFactor(partner), 0.1f);
+			num3 /= Mathf.Max(partner.relations.SecondaryLovinChanceFactor(pawn), 0.1f);
+			num3 *= GenMath.LerpDouble(-100f, 100f, 1.3f, 0.7f, pawn.relations.OpinionOf(partner));
+			num3 *= GenMath.LerpDouble(-100f, 100f, 1.3f, 0.7f, partner.relations.OpinionOf(pawn));
+			if (pawn.health.hediffSet.HasHediff(HediffDefOf.PsychicLove))
+			{
+				num3 /= 4f;
+			}
+			return num3;
 		}
 
 		private static float LovinMtbSinglePawnFactor(Pawn pawn)
@@ -252,7 +263,7 @@ namespace RimWorld
 			{
 				return 0f;
 			}
-			float num3 = (generated.gender == other.gender) ? 0.01f : 1f;
+			float num3 = ((generated.gender == other.gender) ? 0.01f : 1f);
 			float generationChanceAgeFactor = GetGenerationChanceAgeFactor(generated);
 			float generationChanceAgeFactor2 = GetGenerationChanceAgeFactor(other);
 			float generationChanceAgeGapFactor = GetGenerationChanceAgeGapFactor(generated, other, ex);

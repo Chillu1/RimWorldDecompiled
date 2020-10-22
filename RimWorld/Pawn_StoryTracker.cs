@@ -150,14 +150,14 @@ namespace RimWorld
 
 		public void ExposeData()
 		{
-			string value = (childhood != null) ? childhood.identifier : null;
+			string value = ((childhood != null) ? childhood.identifier : null);
 			Scribe_Values.Look(ref value, "childhood");
 			if (Scribe.mode == LoadSaveMode.LoadingVars && !value.NullOrEmpty() && !BackstoryDatabase.TryGetWithIdentifier(value, out childhood))
 			{
 				Log.Error("Couldn't load child backstory with identifier " + value + ". Giving random.");
 				childhood = BackstoryDatabase.RandomBackstory(BackstorySlot.Childhood);
 			}
-			string value2 = (adulthood != null) ? adulthood.identifier : null;
+			string value2 = ((adulthood != null) ? adulthood.identifier : null);
 			Scribe_Values.Look(ref value2, "adulthood");
 			if (Scribe.mode == LoadSaveMode.LoadingVars && !value2.NullOrEmpty() && !BackstoryDatabase.TryGetWithIdentifier(value2, out adulthood))
 			{

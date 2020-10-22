@@ -1,8 +1,8 @@
-using RimWorld.IO;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using RimWorld.IO;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -103,19 +103,17 @@ namespace Verse
 					try
 					{
 						string uri = GenFilePaths.SafeURIForUnityWWWFromPath(file.FullPath);
-						using (UnityWebRequest unityWebRequest = UnityWebRequestMultimedia.GetAudioClip(uri, GetAudioTypeFromURI(uri)))
+						using UnityWebRequest unityWebRequest = UnityWebRequestMultimedia.GetAudioClip(uri, GetAudioTypeFromURI(uri));
+						unityWebRequest.SendWebRequest();
+						while (!unityWebRequest.isDone)
 						{
-							unityWebRequest.SendWebRequest();
-							while (!unityWebRequest.isDone)
-							{
-								Thread.Sleep(1);
-							}
-							if (unityWebRequest.error != null)
-							{
-								throw new InvalidOperationException(unityWebRequest.error);
-							}
-							val = (T)(object)DownloadHandlerAudioClip.GetContent(unityWebRequest);
+							Thread.Sleep(1);
 						}
+						if (unityWebRequest.error != null)
+						{
+							throw new InvalidOperationException(unityWebRequest.error);
+						}
+						val = (T)(object)DownloadHandlerAudioClip.GetContent(unityWebRequest);
 					}
 					finally
 					{
@@ -171,7 +169,7 @@ namespace Verse
 				texture2D.LoadImage(data);
 				texture2D.Compress(highQuality: true);
 				texture2D.name = Path.GetFileNameWithoutExtension(file.Name);
-				texture2D.filterMode = FilterMode.Bilinear;
+				texture2D.filterMode = FilterMode.Trilinear;
 				texture2D.anisoLevel = 2;
 				texture2D.Apply(updateMipmaps: true, makeNoLongerReadable: true);
 			}

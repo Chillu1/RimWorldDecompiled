@@ -226,7 +226,7 @@ namespace Verse
 			Color color = new Color(0.45f, 0.45f, 0.45f);
 			Color color2 = new Color(0.7f, 0.7f, 0.7f);
 			GUI.BeginGroup(rect);
-			CalculateMeasureStartAndInc(out float start, out float inc, out int count, viewRect.xMin, viewRect.xMax, xLabelsCount, xIntegersOnly);
+			CalculateMeasureStartAndInc(out var start, out var inc, out var count, viewRect.xMin, viewRect.xMax, xLabelsCount, xIntegersOnly);
 			Text.Anchor = TextAnchor.UpperCenter;
 			string b = string.Empty;
 			for (int i = 0; i < count; i++)
@@ -247,7 +247,7 @@ namespace Verse
 					Text.Font = GameFont.Small;
 				}
 			}
-			CalculateMeasureStartAndInc(out float start2, out float inc2, out int count2, viewRect.yMin, viewRect.yMax, yLabelsCount, yIntegersOnly);
+			CalculateMeasureStartAndInc(out var start2, out var inc2, out var count2, viewRect.yMin, viewRect.yMax, yLabelsCount, yIntegersOnly);
 			string b2 = string.Empty;
 			Text.Anchor = TextAnchor.UpperRight;
 			for (int j = 0; j < count2; j++)
@@ -377,7 +377,7 @@ namespace Verse
 						Text.Anchor = TextAnchor.LowerRight;
 					}
 				}
-				string text = (!simpleCurveDrawInfo.valueFormat.NullOrEmpty()) ? string.Format(simpleCurveDrawInfo.valueFormat, vector.y) : vector.y.ToString("0.##");
+				string text = ((!simpleCurveDrawInfo.valueFormat.NullOrEmpty()) ? string.Format(simpleCurveDrawInfo.valueFormat, vector.y.ToString("0.##")) : vector.y.ToString("0.##"));
 				Widgets.Label(rect, simpleCurveDrawInfo.label + "\n" + labelX + " " + vector.x.ToString("0.##") + "\n" + text);
 				Text.Anchor = TextAnchor.UpperLeft;
 			}
@@ -388,16 +388,15 @@ namespace Verse
 		{
 			float x = viewRect.x;
 			float num = viewRect.x + viewRect.width;
-			float num2 = rect.y + 5f;
-			float num3 = rect.yMax - 5f;
-			int num4;
-			for (num4 = 0; num4 < marks.Count; num4++)
+			float y = rect.y + 5f;
+			_ = rect.yMax;
+			for (int i = 0; i < marks.Count; i++)
 			{
-				CurveMark curveMark = marks[num4];
+				CurveMark curveMark = marks[i];
 				if (curveMark.X >= x && curveMark.X <= num)
 				{
 					GUI.color = curveMark.Color;
-					Vector2 screenPoint = new Vector2(rect.x + (curveMark.X - x) / (num - x) * rect.width, (num4 % 2 == 0) ? num2 : num3);
+					Vector2 screenPoint = new Vector2(rect.x + (curveMark.X - x) / (num - x) * rect.width, y);
 					DrawPoint(screenPoint);
 					Rect rect2 = new Rect(screenPoint.x - 5f, screenPoint.y - 5f, 10f, 10f);
 					if (Mouse.IsOver(rect2))
@@ -405,7 +404,6 @@ namespace Verse
 						TooltipHandler.TipRegion(rect2, new TipSignal(curveMark.Message));
 					}
 				}
-				num4++;
 			}
 			GUI.color = Color.white;
 		}
@@ -422,8 +420,7 @@ namespace Verse
 
 		private static void DrawInfiniteHorizontalLine(Rect rect, Rect viewRect, float curveY)
 		{
-			Vector2 vector = CurveToScreenCoordsInsideScreenRect(rect, viewRect, new Vector2(0f, curveY));
-			Widgets.DrawLineHorizontal(-999f, vector.y, 9999f);
+			Widgets.DrawLineHorizontal(-999f, CurveToScreenCoordsInsideScreenRect(rect, viewRect, new Vector2(0f, curveY)).y, 9999f);
 		}
 
 		public static Vector2 CurveToScreenCoordsInsideScreenRect(Rect rect, Rect viewRect, Vector2 curvePoint)

@@ -68,7 +68,7 @@ namespace RimWorld.Planet
 			if (num)
 			{
 				Find.TickManager.Notify_GeneratedPotentiallyHostileMap();
-				Find.LetterStack.ReceiveLetter("EscapeShipFoundLabel".Translate(), (Find.Storyteller.difficulty.difficulty == 0) ? "EscapeShipFoundPeaceful".Translate() : "EscapeShipFound".Translate(), LetterDefOf.PositiveEvent, new GlobalTargetInfo(target.Map.Center, target.Map));
+				Find.LetterStack.ReceiveLetter("EscapeShipFoundLabel".Translate(), (!Find.Storyteller.difficultyValues.allowBigThreats) ? "EscapeShipFoundPeaceful".Translate() : "EscapeShipFound".Translate(), LetterDefOf.PositiveEvent, new GlobalTargetInfo(target.Map.Center, target.Map));
 			}
 			else
 			{
@@ -84,7 +84,7 @@ namespace RimWorld.Planet
 			}
 			if (escapeShip.EnterCooldownBlocksEntering())
 			{
-				return FloatMenuAcceptanceReport.WithFailMessage("MessageEnterCooldownBlocksEntering".Translate(escapeShip.EnterCooldownDaysLeft().ToString("0.#")));
+				return FloatMenuAcceptanceReport.WithFailMessage("MessageEnterCooldownBlocksEntering".Translate(escapeShip.EnterCooldownTicksLeft().ToStringTicksToPeriod()));
 			}
 			return true;
 		}

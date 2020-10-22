@@ -21,17 +21,13 @@ namespace RimWorld
 
 		public override float GetOffset(Thing parent, Pawn user = null)
 		{
-			if (!CanApply(parent, user))
-			{
-				return 0f;
-			}
 			return offset;
 		}
 
 		public override bool CanApply(Thing parent, Pawn user = null)
 		{
 			Building_Grave building_Grave;
-			if (parent.Spawned && (building_Grave = (parent as Building_Grave)) != null && building_Grave.HasCorpse)
+			if (parent.Spawned && (building_Grave = parent as Building_Grave) != null && building_Grave.HasCorpse)
 			{
 				return building_Grave.Corpse.InnerPawn.RaceProps.Humanlike;
 			}

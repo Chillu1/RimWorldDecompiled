@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -45,7 +45,7 @@ namespace RimWorld
 			foreach (Thing item in (IEnumerable<Thing>)compTransporter.innerContainer)
 			{
 				Pawn pawn;
-				if ((pawn = (item as Pawn)) != null && pawn.IsFreeColonist)
+				if ((pawn = item as Pawn) != null && pawn.IsFreeColonist)
 				{
 					lentColonists.Add(pawn);
 				}
@@ -64,7 +64,7 @@ namespace RimWorld
 
 		protected override void Complete(SignalArgs signalArgs)
 		{
-			Map map = (returnMap == null) ? Find.AnyPlayerHomeMap : returnMap.Map;
+			Map map = ((returnMap == null) ? Find.AnyPlayerHomeMap : returnMap.Map);
 			if (map != null)
 			{
 				base.Complete(new SignalArgs(new LookTargets(lentColonists).Named("SUBJECT"), lentColonists.Select((Thing c) => c.LabelShort).ToCommaList(useAnd: true).Named("PAWNS")));
@@ -74,7 +74,7 @@ namespace RimWorld
 				}
 				else
 				{
-					DropPodUtility.DropThingsNear(DropCellFinder.TradeDropSpot(map), map, lentColonists, 110, canInstaDropDuringInit: false, leaveSlag: false, canRoofPunch: true, forbid: false);
+					DropPodUtility.DropThingsNear(DropCellFinder.TradeDropSpot(map), map, lentColonists, 110, canInstaDropDuringInit: false, leaveSlag: false, canRoofPunch: false, forbid: false);
 				}
 			}
 		}
@@ -93,7 +93,7 @@ namespace RimWorld
 				Map anyPlayerHomeMap = Find.AnyPlayerHomeMap;
 				if (anyPlayerHomeMap != null)
 				{
-					DropPodUtility.DropThingsNear(DropCellFinder.TradeDropSpot(anyPlayerHomeMap), anyPlayerHomeMap, Gen.YieldSingle(val), 110, canInstaDropDuringInit: false, leaveSlag: false, canRoofPunch: true, forbid: false);
+					DropPodUtility.DropThingsNear(DropCellFinder.TradeDropSpot(anyPlayerHomeMap), anyPlayerHomeMap, Gen.YieldSingle(val), 110, canInstaDropDuringInit: false, leaveSlag: false, canRoofPunch: false, forbid: false);
 				}
 			}
 		}

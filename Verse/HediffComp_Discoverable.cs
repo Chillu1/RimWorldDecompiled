@@ -44,8 +44,8 @@ namespace Verse
 			}
 			if (base.Pawn.RaceProps.Humanlike)
 			{
-				string str = Props.discoverLetterLabel.NullOrEmpty() ? ((string)("LetterLabelNewDisease".Translate() + ": " + base.Def.LabelCap)) : string.Format(Props.discoverLetterLabel, base.Pawn.LabelShortCap).CapitalizeFirst();
-				string str2 = (!Props.discoverLetterText.NullOrEmpty()) ? ((string)Props.discoverLetterText.Formatted(base.Pawn.LabelIndefinite(), base.Pawn.Named("PAWN")).AdjustedFor(base.Pawn).CapitalizeFirst()) : ((parent.Part != null) ? ((string)"NewPartDisease".Translate(base.Pawn.Named("PAWN"), parent.Part.Label, base.Pawn.LabelDefinite(), base.Def.label).AdjustedFor(base.Pawn).CapitalizeFirst()) : ((string)"NewDisease".Translate(base.Pawn.Named("PAWN"), base.Def.label, base.Pawn.LabelDefinite()).AdjustedFor(base.Pawn).CapitalizeFirst()));
+				string str = (Props.discoverLetterLabel.NullOrEmpty() ? ((string)("LetterLabelNewDisease".Translate() + ": " + base.Def.LabelCap)) : string.Format(Props.discoverLetterLabel, base.Pawn.LabelShortCap).CapitalizeFirst());
+				string str2 = ((!Props.discoverLetterText.NullOrEmpty()) ? ((string)Props.discoverLetterText.Formatted(base.Pawn.LabelIndefinite(), base.Pawn.Named("PAWN")).AdjustedFor(base.Pawn).CapitalizeFirst()) : ((parent.Part != null) ? ((string)"NewPartDisease".Translate(base.Pawn.Named("PAWN"), parent.Part.Label, base.Pawn.LabelDefinite(), base.Def.label).AdjustedFor(base.Pawn).CapitalizeFirst()) : ((string)"NewDisease".Translate(base.Pawn.Named("PAWN"), base.Def.label, base.Pawn.LabelDefinite()).AdjustedFor(base.Pawn).CapitalizeFirst())));
 				Find.LetterStack.ReceiveLetter(str, str2, (Props.letterType != null) ? Props.letterType : LetterDefOf.NegativeEvent, base.Pawn);
 				return;
 			}

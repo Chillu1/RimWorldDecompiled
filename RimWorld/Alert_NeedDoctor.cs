@@ -21,9 +21,9 @@ namespace RimWorld
 						continue;
 					}
 					bool flag = false;
-					foreach (Pawn item in maps[i].mapPawns.FreeColonistsSpawned)
+					foreach (Pawn freeColonist in maps[i].mapPawns.FreeColonists)
 					{
-						if (!item.Downed && item.workSettings != null && item.workSettings.WorkIsActive(WorkTypeDefOf.Doctor))
+						if ((freeColonist.Spawned || freeColonist.BrieflyDespawned()) && !freeColonist.Downed && freeColonist.workSettings != null && freeColonist.workSettings.WorkIsActive(WorkTypeDefOf.Doctor))
 						{
 							flag = true;
 							break;
@@ -33,11 +33,11 @@ namespace RimWorld
 					{
 						continue;
 					}
-					foreach (Pawn item2 in maps[i].mapPawns.FreeColonistsSpawned)
+					foreach (Pawn freeColonist2 in maps[i].mapPawns.FreeColonists)
 					{
-						if ((item2.Downed && (int)item2.needs.food.CurCategory < 0 && item2.InBed()) || HealthAIUtility.ShouldBeTendedNowByPlayer(item2))
+						if ((freeColonist2.Spawned || freeColonist2.BrieflyDespawned()) && ((freeColonist2.Downed && freeColonist2.needs != null && (int)freeColonist2.needs.food.CurCategory < 0 && freeColonist2.InBed()) || HealthAIUtility.ShouldBeTendedNowByPlayer(freeColonist2)))
 						{
-							patientsResult.Add(item2);
+							patientsResult.Add(freeColonist2);
 						}
 					}
 				}

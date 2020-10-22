@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld.QuestGen
@@ -61,7 +61,7 @@ namespace RimWorld.QuestGen
 					IEnumerable<SitePartDef> enumerable = SiteMakerHelper.SitePartDefsWithTag(x);
 					IEnumerable<SitePartDef> enumerable2 = enumerable.Where((SitePartDef y) => points >= y.minThreatPoints);
 					return (!enumerable2.Any()) ? enumerable : enumerable2;
-				}), out List<SitePartDef> siteParts, out Faction faction, factionToUse, disallowNonHostileFactions: true, delegate(Faction x)
+				}), out var siteParts, out var faction, factionToUse, disallowNonHostileFactions: true, delegate(Faction x)
 				{
 					if (asker != null && asker.Faction != null && asker.Faction == x)
 					{

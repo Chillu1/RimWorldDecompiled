@@ -13,23 +13,13 @@ namespace Verse
 
 		private List<Thing> thingsToDeregister = new List<Thing>();
 
-		private int TickInterval
+		private int TickInterval => tickType switch
 		{
-			get
-			{
-				switch (tickType)
-				{
-				case TickerType.Normal:
-					return 1;
-				case TickerType.Rare:
-					return 250;
-				case TickerType.Long:
-					return 2000;
-				default:
-					return -1;
-				}
-			}
-		}
+			TickerType.Normal => 1, 
+			TickerType.Rare => 250, 
+			TickerType.Long => 2000, 
+			_ => -1, 
+		};
 
 		public TickList(TickerType tickType)
 		{
@@ -121,7 +111,7 @@ namespace Verse
 				}
 				catch (Exception ex)
 				{
-					string text = list2[m].Spawned ? string.Concat(" (at ", list2[m].Position, ")") : "";
+					string text = (list2[m].Spawned ? string.Concat(" (at ", list2[m].Position, ")") : "");
 					if (Prefs.DevMode)
 					{
 						Log.Error("Exception ticking " + list2[m].ToStringSafe() + text + ": " + ex);

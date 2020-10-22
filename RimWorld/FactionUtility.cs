@@ -58,7 +58,7 @@ namespace RimWorld
 			{
 				return Faction.OfPlayer;
 			}
-			if (Find.FactionManager.AllFactions.Where((Faction fac) => fac.def == ft).TryRandomElement(out Faction result))
+			if (Find.FactionManager.AllFactions.Where((Faction fac) => fac.def == ft).TryRandomElement(out var result))
 			{
 				return result;
 			}

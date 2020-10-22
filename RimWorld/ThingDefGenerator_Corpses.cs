@@ -36,7 +36,7 @@ namespace RimWorld
 					thingDef.SetStatBaseValue(StatDefOf.FoodPoisonChanceFixedHuman, 0.05f);
 					thingDef.alwaysHaulable = true;
 					thingDef.soundDrop = SoundDefOf.Corpse_Drop;
-					thingDef.pathCost = 15;
+					thingDef.pathCost = DefGenerator.StandardItemPathCost;
 					thingDef.socialPropernessMatters = false;
 					thingDef.tradeability = Tradeability.None;
 					thingDef.messageOnDeteriorateInStorage = false;

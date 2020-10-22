@@ -123,7 +123,7 @@ namespace RimWorld
 			Rot4 a = new Rot4(watchRot);
 			if (def.building == null)
 			{
-				def = (def.entityDefToBuild as ThingDef);
+				def = def.entityDefToBuild as ThingDef;
 			}
 			CellRect result;
 			if (a.IsHorizontal)
@@ -169,7 +169,7 @@ namespace RimWorld
 
 		private static bool EverPossibleToWatchFrom(IntVec3 watchCell, IntVec3 buildingCenter, Map map, bool bedAllowed, ThingDef def)
 		{
-			Room room = (def.building != null && def.building.watchBuildingInSameRoom) ? buildingCenter.GetRoom(map) : null;
+			Room room = ((def.building != null && def.building.watchBuildingInSameRoom) ? buildingCenter.GetRoom(map) : null);
 			if ((room == null || room.ContainsCell(watchCell)) && (watchCell.Standable(map) || (bedAllowed && watchCell.GetEdifice(map) is Building_Bed)))
 			{
 				return GenSight.LineOfSight(buildingCenter, watchCell, map, skipFirstCell: true);

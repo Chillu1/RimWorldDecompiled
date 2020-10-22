@@ -1,5 +1,6 @@
-using RimWorld;
+using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -37,6 +38,8 @@ namespace Verse
 		private int cachedMatsBodyBaseHash = -1;
 
 		public static readonly Color RottingColor = new Color(0.34f, 0.32f, 0.3f);
+
+		public static readonly Color DessicatedColorInsect = new Color(0.8f, 0.8f, 0.8f);
 
 		public bool AllResolved => nakedGraphic != null;
 
@@ -78,7 +81,7 @@ namespace Verse
 				}
 				for (int i = 0; i < apparelGraphics.Count; i++)
 				{
-					if (apparelGraphics[i].sourceApparel.def.apparel.LastLayer != ApparelLayerDefOf.Shell && apparelGraphics[i].sourceApparel.def.apparel.LastLayer != ApparelLayerDefOf.Overhead)
+					if ((apparelGraphics[i].sourceApparel.def.apparel.shellRenderedBehindHead || apparelGraphics[i].sourceApparel.def.apparel.LastLayer != ApparelLayerDefOf.Shell) && !PawnRenderer.RenderAsPack(apparelGraphics[i].sourceApparel) && apparelGraphics[i].sourceApparel.def.apparel.LastLayer != ApparelLayerDefOf.Overhead)
 					{
 						cachedMatsBodyBase.Add(apparelGraphics[i].graphic.MatAt(facing));
 					}
@@ -87,7 +90,7 @@ namespace Verse
 			return cachedMatsBodyBase;
 		}
 
-		public Material HeadMatAt(Rot4 facing, RotDrawMode bodyCondition = RotDrawMode.Fresh, bool stump = false)
+		public Material HeadMatAt_NewTemp(Rot4 facing, RotDrawMode bodyCondition = RotDrawMode.Fresh, bool stump = false, bool portrait = false)
 		{
 			Material material = null;
 			switch (bodyCondition)
@@ -107,7 +110,7 @@ namespace Verse
 			}
 			if (material != null)
 			{
-				if (pawn.IsInvisible())
+				if (!portrait && pawn.IsInvisible())
 				{
 					material = InvisibilityMatPool.GetInvisibleMat(material);
 				}
@@ -116,14 +119,26 @@ namespace Verse
 			return material;
 		}
 
-		public Material HairMatAt(Rot4 facing)
+		[Obsolete("Only need this overload to not break mod compatibility.")]
+		public Material HeadMatAt(Rot4 facing, RotDrawMode bodyCondition = RotDrawMode.Fresh, bool stump = false)
+		{
+			return HeadMatAt_NewTemp(facing, bodyCondition, stump);
+		}
+
+		public Material HairMatAt_NewTemp(Rot4 facing, bool portrait = false)
 		{
 			Material baseMat = hairGraphic.MatAt(facing);
-			if (pawn.IsInvisible())
+			if (!portrait && pawn.IsInvisible())
 			{
 				baseMat = InvisibilityMatPool.GetInvisibleMat(baseMat);
 			}
 			return flasher.GetDamagedMat(baseMat);
+		}
+
+		[Obsolete("Only need this overload to not break mod compatibility.")]
+		public Material HairMatAt(Rot4 facing)
+		{
+			return HairMatAt_NewTemp(facing);
 		}
 
 		public PawnGraphicSet(Pawn pawn)
@@ -150,7 +165,7 @@ namespace Verse
 				skullGraphic = GraphicDatabaseHeadRecords.GetSkull();
 				headStumpGraphic = GraphicDatabaseHeadRecords.GetStump(pawn.story.SkinColor);
 				desiccatedHeadStumpGraphic = GraphicDatabaseHeadRecords.GetStump(RottingColor);
-				hairGraphic = GraphicDatabase.Get<Graphic_Multi>(pawn.story.hairDef.texPath, ShaderDatabase.Cutout, Vector2.one, pawn.story.hairColor);
+				hairGraphic = GraphicDatabase.Get<Graphic_Multi>(pawn.story.hairDef.texPath, ShaderDatabase.Transparent, Vector2.one, pawn.story.hairColor);
 				ResolveApparelGraphics();
 				return;
 			}
@@ -170,7 +185,18 @@ namespace Verse
 			rottingGraphic = nakedGraphic.GetColoredVersion(ShaderDatabase.CutoutSkin, RottingColor, RottingColor);
 			if (curKindLifeStage.dessicatedBodyGraphicData != null)
 			{
-				if (pawn.gender != Gender.Female || curKindLifeStage.femaleDessicatedBodyGraphicData == null)
+				if (pawn.RaceProps.FleshType == FleshTypeDefOf.Insectoid)
+				{
+					if (pawn.gender != Gender.Female || curKindLifeStage.femaleDessicatedBodyGraphicData == null)
+					{
+						dessicatedGraphic = curKindLifeStage.dessicatedBodyGraphicData.Graphic.GetColoredVersion(ShaderDatabase.Cutout, DessicatedColorInsect, DessicatedColorInsect);
+					}
+					else
+					{
+						dessicatedGraphic = curKindLifeStage.femaleDessicatedBodyGraphicData.Graphic.GetColoredVersion(ShaderDatabase.Cutout, DessicatedColorInsect, DessicatedColorInsect);
+					}
+				}
+				else if (pawn.gender != Gender.Female || curKindLifeStage.femaleDessicatedBodyGraphicData == null)
 				{
 					dessicatedGraphic = curKindLifeStage.dessicatedBodyGraphicData.GraphicColoredFor(pawn);
 				}
@@ -205,7 +231,7 @@ namespace Verse
 			apparelGraphics.Clear();
 			foreach (Apparel item in pawn.apparel.WornApparel)
 			{
-				if (ApparelGraphicRecordGetter.TryGetGraphicApparel(item, pawn.story.bodyType, out ApparelGraphicRecord rec))
+				if (ApparelGraphicRecordGetter.TryGetGraphicApparel(item, pawn.story.bodyType, out var rec))
 				{
 					apparelGraphics.Add(rec);
 				}

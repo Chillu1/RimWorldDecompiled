@@ -36,7 +36,7 @@ namespace RimWorld
 
 		public float GetProgress(ResearchProjectDef proj)
 		{
-			if (progress.TryGetValue(proj, out float value))
+			if (progress.TryGetValue(proj, out var value))
 			{
 				return value;
 			}
@@ -46,7 +46,7 @@ namespace RimWorld
 
 		public int GetTechprints(ResearchProjectDef proj)
 		{
-			if (!techprints.TryGetValue(proj, out int value))
+			if (!techprints.TryGetValue(proj, out var value))
 			{
 				return 0;
 			}
@@ -63,17 +63,17 @@ namespace RimWorld
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.AppendLine("LetterTechprintAppliedPartIntro".Translate(NamedArgumentUtility.Named(proj, "PROJECT")));
 			stringBuilder.AppendLine();
-			if (proj.techprintCount > GetTechprints(proj))
+			if (proj.TechprintCount > GetTechprints(proj))
 			{
 				AddTechprints(proj, 1);
-				if (proj.techprintCount == GetTechprints(proj))
+				if (proj.TechprintCount == GetTechprints(proj))
 				{
 					stringBuilder.AppendLine("LetterTechprintAppliedPartJustUnlocked".Translate(NamedArgumentUtility.Named(proj, "PROJECT")));
 					stringBuilder.AppendLine();
 				}
 				else
 				{
-					stringBuilder.AppendLine("LetterTechprintAppliedPartNotUnlockedYet".Translate(GetTechprints(proj), proj.techprintCount.ToString(), NamedArgumentUtility.Named(proj, "PROJECT")));
+					stringBuilder.AppendLine("LetterTechprintAppliedPartNotUnlockedYet".Translate(GetTechprints(proj), proj.TechprintCount.ToString(), NamedArgumentUtility.Named(proj, "PROJECT")));
 					stringBuilder.AppendLine();
 				}
 			}
@@ -87,7 +87,7 @@ namespace RimWorld
 				float num = (proj.baseCost - GetProgress(proj)) * 0.5f;
 				stringBuilder.AppendLine("LetterTechprintAppliedPartAlreadyUnlocked".Translate(num, NamedArgumentUtility.Named(proj, "PROJECT")));
 				stringBuilder.AppendLine();
-				if (!progress.TryGetValue(proj, out float value))
+				if (!progress.TryGetValue(proj, out var value))
 				{
 					progress.Add(proj, Mathf.Min(num, proj.baseCost));
 				}
@@ -109,12 +109,12 @@ namespace RimWorld
 
 		public void AddTechprints(ResearchProjectDef proj, int amount)
 		{
-			if (techprints.TryGetValue(proj, out int value))
+			if (techprints.TryGetValue(proj, out var value))
 			{
 				value += amount;
-				if (value > proj.techprintCount)
+				if (value > proj.TechprintCount)
 				{
-					value = proj.techprintCount;
+					value = proj.TechprintCount;
 				}
 				techprints[proj] = value;
 			}
@@ -132,7 +132,7 @@ namespace RimWorld
 				return;
 			}
 			amount *= ResearchPointsPerWorkTick;
-			amount *= Find.Storyteller.difficulty.researchSpeedFactor;
+			amount *= Find.Storyteller.difficultyValues.researchSpeedFactor;
 			if (researcher != null && researcher.Faction != null)
 			{
 				amount /= currentProj.CostFactor(researcher.Faction.def.techLevel);
@@ -175,9 +175,9 @@ namespace RimWorld
 				}
 			}
 			int num = GetTechprints(proj);
-			if (num < proj.techprintCount)
+			if (num < proj.TechprintCount)
 			{
-				AddTechprints(proj, proj.techprintCount - num);
+				AddTechprints(proj, proj.TechprintCount - num);
 			}
 			progress[proj] = proj.baseCost;
 			if (researcher != null)
@@ -198,14 +198,9 @@ namespace RimWorld
 				diaNode.options.Add(diaOption);
 				Find.WindowStack.Add(new Dialog_NodeTree(diaNode, delayInteractivity: true));
 			}
-			if (!proj.discoveredLetterTitle.NullOrEmpty() && Find.Storyteller.difficulty.difficulty >= proj.discoveredLetterMinDifficulty)
+			if (!proj.discoveredLetterTitle.NullOrEmpty() && Find.Storyteller.difficultyValues.AllowedBy(proj.discoveredLetterDisabledWhen))
 			{
 				Find.LetterStack.ReceiveLetter(proj.discoveredLetterTitle, proj.discoveredLetterText, LetterDefOf.NeutralEvent);
-			}
-			if (proj.unlockExtremeDifficulty && Find.Storyteller.difficulty.difficulty >= DifficultyDefOf.Rough.difficulty)
-			{
-				Prefs.ExtremeDifficultyUnlocked = true;
-				Prefs.Save();
 			}
 			if (currentProj == proj)
 			{

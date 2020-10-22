@@ -7,14 +7,14 @@ namespace RimWorld
 	{
 		public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
-			if (!ShouldTakeCareOfPrisoner(pawn, t))
+			if (!ShouldTakeCareOfPrisoner_NewTemp(pawn, t, forced))
 			{
 				return null;
 			}
 			Pawn pawn2 = (Pawn)t;
 			if (pawn2.guest.interactionMode == PrisonerInteractionModeDefOf.Release && !pawn2.Downed)
 			{
-				if (!RCellFinder.TryFindPrisonerReleaseCell(pawn2, pawn, out IntVec3 result))
+				if (!RCellFinder.TryFindPrisonerReleaseCell(pawn2, pawn, out var result))
 				{
 					return null;
 				}

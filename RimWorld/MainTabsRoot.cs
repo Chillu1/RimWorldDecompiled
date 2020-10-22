@@ -11,10 +11,7 @@ namespace RimWorld
 
 		public void HandleLowPriorityShortcuts()
 		{
-			if (OpenTab == MainButtonDefOf.Inspect && (Find.Selector.NumSelected == 0 || WorldRendererUtility.WorldRenderedNow))
-			{
-				EscapeCurrentTab();
-			}
+			AutoCloseInspectionTabIfNothingSelected(playSound: true);
 			if (Find.Selector.NumSelected == 0 && Event.current.type == EventType.MouseDown && Event.current.button == 1 && !WorldRendererUtility.WorldRenderedNow)
 			{
 				Event.current.Use();
@@ -81,6 +78,19 @@ namespace RimWorld
 			if (TutorSystem.TutorialMode && newTab != null)
 			{
 				TutorSystem.Notify_Event("Open-MainTab-" + newTab.defName);
+			}
+		}
+
+		public void Notify_SelectedObjectDespawned()
+		{
+			AutoCloseInspectionTabIfNothingSelected(playSound: false);
+		}
+
+		private void AutoCloseInspectionTabIfNothingSelected(bool playSound)
+		{
+			if (OpenTab == MainButtonDefOf.Inspect && (Find.Selector.NumSelected == 0 || WorldRendererUtility.WorldRenderedNow))
+			{
+				EscapeCurrentTab(playSound);
 			}
 		}
 	}

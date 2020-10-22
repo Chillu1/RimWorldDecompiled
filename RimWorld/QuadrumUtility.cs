@@ -9,36 +9,26 @@ namespace RimWorld
 
 		public static Twelfth GetFirstTwelfth(this Quadrum quadrum)
 		{
-			switch (quadrum)
+			return quadrum switch
 			{
-			case Quadrum.Aprimay:
-				return Twelfth.First;
-			case Quadrum.Jugust:
-				return Twelfth.Fourth;
-			case Quadrum.Septober:
-				return Twelfth.Seventh;
-			case Quadrum.Decembary:
-				return Twelfth.Tenth;
-			default:
-				return Twelfth.Undefined;
-			}
+				Quadrum.Aprimay => Twelfth.First, 
+				Quadrum.Jugust => Twelfth.Fourth, 
+				Quadrum.Septober => Twelfth.Seventh, 
+				Quadrum.Decembary => Twelfth.Tenth, 
+				_ => Twelfth.Undefined, 
+			};
 		}
 
 		public static Twelfth GetMiddleTwelfth(this Quadrum quadrum)
 		{
-			switch (quadrum)
+			return quadrum switch
 			{
-			case Quadrum.Aprimay:
-				return Twelfth.Second;
-			case Quadrum.Jugust:
-				return Twelfth.Fifth;
-			case Quadrum.Septober:
-				return Twelfth.Eighth;
-			case Quadrum.Decembary:
-				return Twelfth.Eleventh;
-			default:
-				return Twelfth.Undefined;
-			}
+				Quadrum.Aprimay => Twelfth.Second, 
+				Quadrum.Jugust => Twelfth.Fifth, 
+				Quadrum.Septober => Twelfth.Eighth, 
+				Quadrum.Decembary => Twelfth.Eleventh, 
+				_ => Twelfth.Undefined, 
+			};
 		}
 
 		public static float GetMiddleYearPct(this Quadrum quadrum)
@@ -48,36 +38,26 @@ namespace RimWorld
 
 		public static string Label(this Quadrum quadrum)
 		{
-			switch (quadrum)
+			return quadrum switch
 			{
-			case Quadrum.Aprimay:
-				return "QuadrumAprimay".Translate();
-			case Quadrum.Jugust:
-				return "QuadrumJugust".Translate();
-			case Quadrum.Septober:
-				return "QuadrumSeptober".Translate();
-			case Quadrum.Decembary:
-				return "QuadrumDecembary".Translate();
-			default:
-				return "Unknown quadrum";
-			}
+				Quadrum.Aprimay => "QuadrumAprimay".Translate(), 
+				Quadrum.Jugust => "QuadrumJugust".Translate(), 
+				Quadrum.Septober => "QuadrumSeptober".Translate(), 
+				Quadrum.Decembary => "QuadrumDecembary".Translate(), 
+				_ => "Unknown quadrum", 
+			};
 		}
 
 		public static string LabelShort(this Quadrum quadrum)
 		{
-			switch (quadrum)
+			return quadrum switch
 			{
-			case Quadrum.Aprimay:
-				return "QuadrumAprimay_Short".Translate();
-			case Quadrum.Jugust:
-				return "QuadrumJugust_Short".Translate();
-			case Quadrum.Septober:
-				return "QuadrumSeptober_Short".Translate();
-			case Quadrum.Decembary:
-				return "QuadrumDecembary_Short".Translate();
-			default:
-				return "Unknown quadrum";
-			}
+				Quadrum.Aprimay => "QuadrumAprimay_Short".Translate(), 
+				Quadrum.Jugust => "QuadrumJugust_Short".Translate(), 
+				Quadrum.Septober => "QuadrumSeptober_Short".Translate(), 
+				Quadrum.Decembary => "QuadrumDecembary_Short".Translate(), 
+				_ => "Unknown quadrum", 
+			};
 		}
 
 		public static Season GetSeason(this Quadrum q, float latitude)

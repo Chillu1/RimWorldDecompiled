@@ -135,7 +135,7 @@ namespace RimWorld
 					else
 					{
 						corpse.SetForbidden(value: false);
-						if (StoreUtility.TryFindBestBetterStoreCellFor(corpse, pawn, base.Map, StoragePriority.Unstored, pawn.Faction, out IntVec3 foundCell))
+						if (StoreUtility.TryFindBestBetterStoreCellFor(corpse, pawn, base.Map, StoragePriority.Unstored, pawn.Faction, out var foundCell))
 						{
 							pawn.Reserve(corpse, job);
 							pawn.Reserve(foundCell, job);

@@ -185,7 +185,7 @@ namespace RimWorld
 				{
 					calculatedWholeMapNumNonZeroFertilityCellsTmp++;
 				}
-				float mtb = GoodRoofForCavePlant(intVec) ? 130f : map.Biome.wildPlantRegrowDays;
+				float mtb = (GoodRoofForCavePlant(intVec) ? 130f : map.Biome.wildPlantRegrowDays);
 				if (Rand.Chance(chance) && Rand.MTBEventOccurs(mtb, 60000f, num2) && CanRegrowAt(intVec))
 				{
 					CheckSpawnWildPlantAt(intVec, currentPlantDensity, calculatedWholeMapNumDesiredPlants);
@@ -217,7 +217,7 @@ namespace RimWorld
 				float value = PlantChoiceWeight(tmpPossiblePlants[i], c, distanceSqToNearbyClusters, wholeMapNumDesiredPlants, plantDensity);
 				tmpPossiblePlantsWithWeight.Add(new KeyValuePair<ThingDef, float>(tmpPossiblePlants[i], value));
 			}
-			if (!tmpPossiblePlantsWithWeight.TryRandomElementByWeight((KeyValuePair<ThingDef, float> x) => x.Value, out KeyValuePair<ThingDef, float> result))
+			if (!tmpPossiblePlantsWithWeight.TryRandomElementByWeight((KeyValuePair<ThingDef, float> x) => x.Value, out var result))
 			{
 				return false;
 			}
@@ -251,11 +251,11 @@ namespace RimWorld
 			}
 			if (plantDef.plant.GrowsInClusters && num2 < 1.1f)
 			{
-				float num3 = plantDef.plant.cavePlant ? CavePlantsCommonalitiesSum : map.Biome.PlantCommonalitiesSum;
+				float num3 = (plantDef.plant.cavePlant ? CavePlantsCommonalitiesSum : map.Biome.PlantCommonalitiesSum);
 				float x = commonalityOfPlant * plantDef.plant.wildClusterWeight / (num3 - commonalityOfPlant + commonalityOfPlant * plantDef.plant.wildClusterWeight);
 				float outTo = 1f / ((float)Math.PI * (float)plantDef.plant.wildClusterRadius * (float)plantDef.plant.wildClusterRadius);
 				outTo = GenMath.LerpDoubleClamped(commonalityPctOfPlant, 1f, 1f, outTo, x);
-				if (distanceSqToNearbyClusters.TryGetValue(plantDef, out float value))
+				if (distanceSqToNearbyClusters.TryGetValue(plantDef, out var value))
 				{
 					float x2 = Mathf.Sqrt(value);
 					num *= GenMath.LerpDoubleClamped((float)plantDef.plant.wildClusterRadius * 0.9f, (float)plantDef.plant.wildClusterRadius * 1.1f, plantDef.plant.wildClusterWeight, outTo, x2);
@@ -413,7 +413,7 @@ namespace RimWorld
 					if (thing.def.category == ThingCategory.Plant && thing.def.plant.GrowsInClusters)
 					{
 						float item = intVec.DistanceToSquared(c);
-						if (!nearbyClusters.TryGetValue(thing.def, out List<float> value))
+						if (!nearbyClusters.TryGetValue(thing.def, out var value))
 						{
 							value = SimplePool<List<float>>.Get();
 							nearbyClusters.Add(thing.def, value);

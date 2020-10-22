@@ -20,7 +20,7 @@ namespace RimWorld
 			newReq.target = enemyTarget;
 			newReq.verb = verb;
 			newReq.maxRangeFromTarget = verb.verbProps.range;
-			newReq.wantCoverFromTarget = (verb.verbProps.range > 5f);
+			newReq.wantCoverFromTarget = verb.verbProps.range > 5f;
 			return CastPositionFinder.TryFindCastPosition(newReq, out dest);
 		}
 	}

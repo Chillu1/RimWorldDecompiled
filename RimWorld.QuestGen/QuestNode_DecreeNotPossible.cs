@@ -20,7 +20,7 @@ namespace RimWorld.QuestGen
 		{
 			Slate slate = QuestGen.slate;
 			QuestPart_Filter_DecreeNotPossible questPart_Filter_DecreeNotPossible = new QuestPart_Filter_DecreeNotPossible();
-			questPart_Filter_DecreeNotPossible.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart_Filter_DecreeNotPossible.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			if (node != null)
 			{
 				questPart_Filter_DecreeNotPossible.outSignal = QuestGen.GenerateNewSignal("OuterNodeCompleted");

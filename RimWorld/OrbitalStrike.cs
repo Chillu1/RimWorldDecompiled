@@ -50,7 +50,7 @@ namespace RimWorld
 			}
 			angle = AngleRange.RandomInRange;
 			startTick = Find.TickManager.TicksGame;
-			GetComp<CompAffectsSky>().StartFadeInHoldFadeOut(30, duration - 30 - 15, 15);
+			GetComp<CompAffectsSky>()?.StartFadeInHoldFadeOut(30, duration - 30 - 15, 15);
 			GetComp<CompOrbitalBeam>().StartAnimation(duration, 10, angle);
 		}
 

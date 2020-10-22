@@ -66,7 +66,7 @@ namespace RimWorld.Planet
 				float num = 0f;
 				for (int i = 0; i < pawns.Count; i++)
 				{
-					float a = (pawns[i].Downed || pawns[i].CarriedByCaravan()) ? 450 : pawns[i].TicksPerMoveCardinal;
+					float a = ((pawns[i].Downed || pawns[i].CarriedByCaravan()) ? 450 : pawns[i].TicksPerMoveCardinal);
 					a = Mathf.Min(a, 150f) * 340f;
 					float num2 = 60000f / a;
 					if (explanation != null)

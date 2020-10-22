@@ -21,7 +21,7 @@ namespace Verse
 		{
 			get
 			{
-				if (KeyPrefs.KeyPrefsData.keyPrefs.TryGetValue(this, out KeyBindingData value))
+				if (KeyPrefs.KeyPrefsData.keyPrefs.TryGetValue(this, out var value))
 				{
 					if (value.keyBindingA != 0)
 					{
@@ -42,7 +42,7 @@ namespace Verse
 		{
 			get
 			{
-				if (Event.current.type == EventType.KeyDown && Event.current.keyCode != 0 && KeyPrefs.KeyPrefsData.keyPrefs.TryGetValue(this, out KeyBindingData value))
+				if (Event.current.type == EventType.KeyDown && Event.current.keyCode != 0 && KeyPrefs.KeyPrefsData.keyPrefs.TryGetValue(this, out var value))
 				{
 					if (value.keyBindingA != KeyCode.LeftCommand && value.keyBindingA != KeyCode.RightCommand && value.keyBindingB != KeyCode.LeftCommand && value.keyBindingB != KeyCode.RightCommand && Event.current.command)
 					{
@@ -66,7 +66,7 @@ namespace Verse
 				{
 					return false;
 				}
-				if (!KeyPrefs.KeyPrefsData.keyPrefs.TryGetValue(this, out KeyBindingData value))
+				if (!KeyPrefs.KeyPrefsData.keyPrefs.TryGetValue(this, out var value))
 				{
 					return false;
 				}
@@ -98,7 +98,7 @@ namespace Verse
 		{
 			get
 			{
-				if (KeyPrefs.KeyPrefsData.keyPrefs.TryGetValue(this, out KeyBindingData value))
+				if (KeyPrefs.KeyPrefsData.keyPrefs.TryGetValue(this, out var value))
 				{
 					if (!Input.GetKeyDown(value.keyBindingA))
 					{
@@ -114,7 +114,7 @@ namespace Verse
 		{
 			get
 			{
-				if (KeyPrefs.KeyPrefsData.keyPrefs.TryGetValue(this, out KeyBindingData value))
+				if (KeyPrefs.KeyPrefsData.keyPrefs.TryGetValue(this, out var value))
 				{
 					if (!Input.GetKey(value.keyBindingA))
 					{
@@ -128,15 +128,12 @@ namespace Verse
 
 		public KeyCode GetDefaultKeyCode(KeyPrefs.BindingSlot slot)
 		{
-			switch (slot)
+			return slot switch
 			{
-			case KeyPrefs.BindingSlot.A:
-				return defaultKeyCodeA;
-			case KeyPrefs.BindingSlot.B:
-				return defaultKeyCodeB;
-			default:
-				throw new InvalidOperationException();
-			}
+				KeyPrefs.BindingSlot.A => defaultKeyCodeA, 
+				KeyPrefs.BindingSlot.B => defaultKeyCodeB, 
+				_ => throw new InvalidOperationException(), 
+			};
 		}
 
 		public static KeyBindingDef Named(string name)

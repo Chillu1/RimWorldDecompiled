@@ -1,10 +1,10 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using RimWorld;
 using UnityEngine;
 using Verse.AI;
 
@@ -400,7 +400,7 @@ namespace Verse
 				{
 					for (IThingHolder parentHolder = ParentHolder; parentHolder != null; parentHolder = parentHolder.ParentHolder)
 					{
-						if (ThingOwnerUtility.TryGetFixedTemperature(parentHolder, this, out float temperature))
+						if (ThingOwnerUtility.TryGetFixedTemperature(parentHolder, this, out var temperature))
 						{
 							return temperature;
 						}
@@ -651,7 +651,11 @@ namespace Verse
 				map.linkGrid.Notify_LinkerCreatedOrDestroyed(this);
 				map.mapDrawer.MapMeshDirty(Position, MapMeshFlag.Things, regenAdjacentCells: true, regenAdjacentSections: false);
 			}
-			Find.Selector.Deselect(this);
+			if (Find.Selector.IsSelected(this))
+			{
+				Find.Selector.Deselect(this);
+				Find.MainButtonsRoot.tabs.Notify_SelectedObjectDespawned();
+			}
 			DirtyMapMesh(map);
 			if (def.drawerType != DrawerType.MapMeshOnly)
 			{
@@ -731,7 +735,7 @@ namespace Verse
 			CompExplosive compExplosive = this.TryGetComp<CompExplosive>();
 			if (spawned)
 			{
-				List<Thing> list = (compExplosive != null) ? new List<Thing>() : null;
+				List<Thing> list = ((compExplosive != null) ? new List<Thing>() : null);
 				GenLeaving.DoLeavingsFor(this, map, mode, list);
 				compExplosive?.AddThingsIgnoredByExplosion(list);
 			}
@@ -846,7 +850,7 @@ namespace Verse
 				Scribe_Values.Look(ref stackCount, "stackCount", 0, forceSave: true);
 			}
 			Scribe_Defs.Look(ref stuffInt, "stuff");
-			string facID = (factionInt != null) ? factionInt.GetUniqueLoadID() : "null";
+			string facID = ((factionInt != null) ? factionInt.GetUniqueLoadID() : "null");
 			Scribe_Values.Look(ref facID, "faction", "null");
 			if (Scribe.mode == LoadSaveMode.LoadingVars || Scribe.mode == LoadSaveMode.ResolvingCrossRefs || Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
@@ -958,6 +962,11 @@ namespace Verse
 			yield break;
 		}
 
+		public virtual IEnumerable<FloatMenuOption> GetMultiSelectFloatMenuOptions(List<Pawn> selPawns)
+		{
+			yield break;
+		}
+
 		public virtual IEnumerable<InspectTabBase> GetInspectTabs()
 		{
 			return def.inspectorTabsResolved;
@@ -989,7 +998,7 @@ namespace Verse
 					}
 				}
 			}
-			PreApplyDamage(ref dinfo, out bool absorbed);
+			PreApplyDamage(ref dinfo, out var absorbed);
 			if (absorbed)
 			{
 				return new DamageWorker.DamageResult();
@@ -1139,6 +1148,10 @@ namespace Verse
 		}
 
 		public virtual void Notify_Explosion(Explosion explosion)
+		{
+		}
+
+		public virtual void Notify_BulletImpactNearby(BulletImpactData impactData)
 		{
 		}
 
@@ -1300,10 +1313,10 @@ namespace Verse
 			{
 				TaleRecorder.RecordTale(TaleDefOf.AteRawHumanlikeMeat, ingester);
 			}
-			IngestedCalculateAmounts(ingester, nutritionWanted, out int numTaken, out float nutritionIngested);
+			IngestedCalculateAmounts(ingester, nutritionWanted, out var numTaken, out var nutritionIngested);
 			if (!ingester.Dead && ingester.needs.joy != null && Mathf.Abs(def.ingestible.joy) > 0.0001f && numTaken > 0)
 			{
-				JoyKindDef joyKind = (def.ingestible.joyKind != null) ? def.ingestible.joyKind : JoyKindDefOf.Gluttonous;
+				JoyKindDef joyKind = ((def.ingestible.joyKind != null) ? def.ingestible.joyKind : JoyKindDefOf.Gluttonous);
 				ingester.needs.joy.GainJoy((float)numTaken * def.ingestible.joy, joyKind);
 			}
 			if (ingester.RaceProps.Humanlike && Rand.Chance(this.GetStatValue(StatDefOf.FoodPoisonChanceFixedHuman) * FoodUtility.GetFoodPoisonChanceFactor(ingester)))
@@ -1327,6 +1340,10 @@ namespace Verse
 				}
 			}
 			PrePostIngested(ingester);
+			if (flag)
+			{
+				ingester.carryTracker.innerContainer.Remove(this);
+			}
 			if (def.ingestible.outcomeDoers != null)
 			{
 				for (int j = 0; j < def.ingestible.outcomeDoers.Count; j++)

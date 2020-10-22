@@ -48,7 +48,7 @@ namespace RimWorld.Planet
 			{
 				return 0f;
 			}
-			StringBuilder stringBuilder = (explanation != null) ? new StringBuilder() : null;
+			StringBuilder stringBuilder = ((explanation != null) ? new StringBuilder() : null);
 			float result = ApproxTilesPerDay(CaravanTicksPerMoveUtility.GetTicksPerMove(tmpPawns, massUsage, massCapacity, stringBuilder), tile, nextTile, explanation, stringBuilder?.ToString());
 			tmpPawns.Clear();
 			return result;
@@ -72,7 +72,7 @@ namespace RimWorld.Planet
 			{
 				return 0f;
 			}
-			StringBuilder stringBuilder = (explanation != null) ? new StringBuilder() : null;
+			StringBuilder stringBuilder = ((explanation != null) ? new StringBuilder() : null);
 			float result = ApproxTilesPerDay(CaravanTicksPerMoveUtility.GetTicksPerMove(tmpPawns, massUsageLeftAfterTransfer, massCapacityLeftAfterTransfer, stringBuilder), tile, nextTile, explanation, stringBuilder?.ToString());
 			tmpPawns.Clear();
 			return result;
@@ -105,7 +105,7 @@ namespace RimWorld.Planet
 			{
 				return 0f;
 			}
-			StringBuilder stringBuilder = (explanation != null) ? new StringBuilder() : null;
+			StringBuilder stringBuilder = ((explanation != null) ? new StringBuilder() : null);
 			float result = ApproxTilesPerDay(CaravanTicksPerMoveUtility.GetTicksPerMove(tmpPawns, massUsage, massCapacity, stringBuilder), tile, nextTile, explanation, stringBuilder?.ToString());
 			tmpPawns.Clear();
 			return result;

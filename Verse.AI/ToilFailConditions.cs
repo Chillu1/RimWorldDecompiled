@@ -1,5 +1,5 @@
-using RimWorld;
 using System;
+using RimWorld;
 
 namespace Verse.AI
 {

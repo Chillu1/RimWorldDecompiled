@@ -41,8 +41,8 @@ namespace Verse
 			for (int i = 0; i < elements; i++)
 			{
 				ushort num = reader(i);
-				array[i * 2] = (byte)(num & 0xFF);
-				array[i * 2 + 1] = (byte)((num >> 8) & 0xFF);
+				array[i * 2] = (byte)(num & 0xFFu);
+				array[i * 2 + 1] = (byte)((uint)(num >> 8) & 0xFFu);
 			}
 			return array;
 		}
@@ -79,10 +79,10 @@ namespace Verse
 			for (int i = 0; i < elements; i++)
 			{
 				int num = reader(i);
-				array[i * 4] = (byte)(num & 0xFF);
-				array[i * 4 + 1] = (byte)((num >> 8) & 0xFF);
-				array[i * 4 + 2] = (byte)((num >> 16) & 0xFF);
-				array[i * 4 + 3] = (byte)((num >> 24) & 0xFF);
+				array[i * 4] = (byte)((uint)num & 0xFFu);
+				array[i * 4 + 1] = (byte)((uint)(num >> 8) & 0xFFu);
+				array[i * 4 + 2] = (byte)((uint)(num >> 16) & 0xFFu);
+				array[i * 4 + 3] = (byte)((uint)(num >> 24) & 0xFFu);
 			}
 			return array;
 		}

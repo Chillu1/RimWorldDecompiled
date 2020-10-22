@@ -105,7 +105,7 @@ namespace RimWorld
 			key.entDef = entDef;
 			key.stuffDef = stuffDef;
 			key.stackCount = stackCount;
-			if (!labelDictionary.TryGetValue(key, out string value))
+			if (!labelDictionary.TryGetValue(key, out var value))
 			{
 				if (labelDictionary.Count > 2000)
 				{
@@ -119,7 +119,7 @@ namespace RimWorld
 
 		private static string NewThingLabel(BuildableDef entDef, ThingDef stuffDef, int stackCount)
 		{
-			string text = (stuffDef != null) ? ((string)"ThingMadeOfStuffLabel".Translate(stuffDef.LabelAsStuff, entDef.label)) : entDef.label;
+			string text = ((stuffDef != null) ? ((string)"ThingMadeOfStuffLabel".Translate(stuffDef.LabelAsStuff, entDef.label)) : entDef.label);
 			if (stackCount > 1)
 			{
 				text = text + " x" + stackCount.ToStringCached();
@@ -144,7 +144,7 @@ namespace RimWorld
 			{
 				key.wornByCorpse = apparel.WornByCorpse;
 			}
-			if (!labelDictionary.TryGetValue(key, out string value))
+			if (!labelDictionary.TryGetValue(key, out var value))
 			{
 				if (labelDictionary.Count > 2000)
 				{
@@ -510,7 +510,7 @@ namespace RimWorld
 				{
 					if (tmpHumanlikes[j].Faction != null)
 					{
-						string key = (!definite) ? tmpHumanlikes[j].Faction.def.pawnsPlural : Find.ActiveLanguageWorker.WithDefiniteArticle(tmpHumanlikes[j].Faction.def.pawnsPlural, LanguageDatabase.activeLanguage.ResolveGender(tmpHumanlikes[j].Faction.def.pawnsPlural, tmpHumanlikes[j].Faction.def.pawnSingular), plural: true);
+						string key = ((!definite) ? tmpHumanlikes[j].Faction.def.pawnsPlural : Find.ActiveLanguageWorker.WithDefiniteArticle(tmpHumanlikes[j].Faction.def.pawnsPlural, LanguageDatabase.activeLanguage.ResolveGender(tmpHumanlikes[j].Faction.def.pawnsPlural, tmpHumanlikes[j].Faction.def.pawnSingular), plural: true));
 						if (!tmpHumanlikeLabels.ContainsKey(key))
 						{
 							tmpHumanlikeLabels.Add(key, 1);
@@ -522,7 +522,7 @@ namespace RimWorld
 					}
 					else
 					{
-						string key2 = (!definite) ? tmpHumanlikes[j].kindDef.GetLabelPlural() : Find.ActiveLanguageWorker.WithDefiniteArticle(tmpHumanlikes[j].kindDef.GetLabelPlural(), LanguageDatabase.activeLanguage.ResolveGender(tmpHumanlikes[j].kindDef.GetLabelPlural(), tmpHumanlikes[j].kindDef.label), plural: true);
+						string key2 = ((!definite) ? tmpHumanlikes[j].kindDef.GetLabelPlural() : Find.ActiveLanguageWorker.WithDefiniteArticle(tmpHumanlikes[j].kindDef.GetLabelPlural(), LanguageDatabase.activeLanguage.ResolveGender(tmpHumanlikes[j].kindDef.GetLabelPlural(), tmpHumanlikes[j].kindDef.label), plural: true));
 						if (!tmpHumanlikeLabels.ContainsKey(key2))
 						{
 							tmpHumanlikeLabels.Add(key2, 1);
@@ -550,7 +550,7 @@ namespace RimWorld
 			tmpLabels.Clear();
 			for (int k = 0; k < pawns.Count; k++)
 			{
-				string key3 = (!definite) ? pawns[k].kindDef.GetLabelPlural() : Find.ActiveLanguageWorker.WithDefiniteArticle(pawns[k].kindDef.GetLabelPlural(), LanguageDatabase.activeLanguage.ResolveGender(pawns[k].kindDef.GetLabelPlural(), pawns[k].kindDef.label), plural: true);
+				string key3 = ((!definite) ? pawns[k].kindDef.GetLabelPlural() : Find.ActiveLanguageWorker.WithDefiniteArticle(pawns[k].kindDef.GetLabelPlural(), LanguageDatabase.activeLanguage.ResolveGender(pawns[k].kindDef.GetLabelPlural(), pawns[k].kindDef.label), plural: true));
 				if (!tmpLabels.ContainsKey(key3))
 				{
 					tmpLabels.Add(key3, 1);

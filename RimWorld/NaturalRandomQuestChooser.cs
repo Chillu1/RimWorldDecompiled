@@ -14,11 +14,11 @@ namespace RimWorld
 		public static QuestScriptDef ChooseNaturalRandomQuest(float points, IIncidentTarget target)
 		{
 			bool flag = Rand.Chance(PopulationIncreasingQuestChance());
-			if (TryGetQuest(flag, out QuestScriptDef chosen2))
+			if (TryGetQuest(flag, out var chosen2))
 			{
 				return chosen2;
 			}
-			if (flag && TryGetQuest(incPop: false, out QuestScriptDef chosen3))
+			if (flag && TryGetQuest(incPop: false, out var chosen3))
 			{
 				return chosen3;
 			}
@@ -37,6 +37,10 @@ namespace RimWorld
 				return 0f;
 			}
 			float num = quest.rootSelectionWeight;
+			if (quest.rootSelectionWeightFactorFromPointsCurve != null)
+			{
+				num *= quest.rootSelectionWeightFactorFromPointsCurve.Evaluate(points);
+			}
 			for (int i = 0; i < storyState.RecentRandomQuests.Count; i++)
 			{
 				if (storyState.RecentRandomQuests[i] == quest)
@@ -63,7 +67,7 @@ namespace RimWorld
 			}
 			if (!quest.canGiveRoyalFavor && PlayerWantsRoyalFavorFromAnyFaction())
 			{
-				int num2 = (storyState.LastRoyalFavorQuestTick != -1) ? storyState.LastRoyalFavorQuestTick : 0;
+				int num2 = ((storyState.LastRoyalFavorQuestTick != -1) ? storyState.LastRoyalFavorQuestTick : 0);
 				float x = (float)(Find.TickManager.TicksGame - num2) / 60000f;
 				num *= QuestTuning.NonFavorQuestSelectionWeightFactorByDaysSinceFavorQuestCurve.Evaluate(x);
 			}
@@ -73,7 +77,7 @@ namespace RimWorld
 				List<Faction> allFactionsListForReading = Find.FactionManager.AllFactionsListForReading;
 				for (int j = 0; j < allFactionsListForReading.Count; j++)
 				{
-					if (allFactionsListForReading[j].allowRoyalFavorRewards && allFactionsListForReading[j] != Faction.OfPlayer && allFactionsListForReading[j].def.HasRoyalTitles)
+					if (allFactionsListForReading[j].allowRoyalFavorRewards && allFactionsListForReading[j] != Faction.OfPlayer && allFactionsListForReading[j].def.HasRoyalTitles && !allFactionsListForReading[j].temporary)
 					{
 						return true;
 					}

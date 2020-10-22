@@ -23,7 +23,7 @@ namespace RimWorld
 			{
 				return true;
 			}
-			IntVec3 intVec = t.def.hasInteractionCell ? t.InteractionCell : t.Position;
+			IntVec3 intVec = (t.def.hasInteractionCell ? t.InteractionCell : t.Position);
 			if (forPrisoner)
 			{
 				if (p != null)

@@ -115,7 +115,7 @@ namespace RimWorld
 				command_Toggle.icon = CommandTex;
 				command_Toggle.defaultLabel = Props.commandLabelKey.Translate();
 				command_Toggle.defaultDesc = Props.commandDescKey.Translate();
-				command_Toggle.isActive = (() => wantSwitchOn);
+				command_Toggle.isActive = () => wantSwitchOn;
 				command_Toggle.toggleAction = delegate
 				{
 					wantSwitchOn = !wantSwitchOn;

@@ -55,6 +55,7 @@ namespace RimWorld
 				recipeDef.fixedIngredientFilter.SetAllowAllWhoCanMake(def);
 				recipeDef.productHasIngredientStuff = true;
 			}
+			recipeDef.useIngredientsForColor = recipeMaker.useIngredientsForColor;
 			if (def.costList != null)
 			{
 				foreach (ThingDefCountClass cost in def.costList)

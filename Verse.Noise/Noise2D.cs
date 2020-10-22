@@ -192,7 +192,7 @@ namespace Verse.Noise
 			{
 				for (int j = 0; j < num2; j++)
 				{
-					float num3 = array2[i, j] = ((!isNormalized) ? array[i, j] : ((array[i, j] + 1f) / 2f));
+					float num3 = (array2[i, j] = ((!isNormalized) ? array[i, j] : ((array[i, j] + 1f) / 2f)));
 				}
 			}
 			return array2;

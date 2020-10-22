@@ -1,7 +1,7 @@
-using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse.AI.Group
@@ -69,7 +69,11 @@ namespace Verse.AI.Group
 			{
 				if (ownedPawns.Count <= 0 && !CanExistWithoutPawns)
 				{
-					return ownedBuildings.Count > 0;
+					if (ownedBuildings.Count > 0)
+					{
+						return curJob.KeepExistingWhileHasAnyBuilding;
+					}
+					return false;
 				}
 				return true;
 			}
@@ -524,6 +528,7 @@ namespace Verse.AI.Group
 					lordManager.RemoveLord(this);
 				}
 			}
+			CheckTransitionOnSignal(TriggerSignal.ForSignal(signal));
 		}
 
 		public void Notify_DormancyWakeup()
@@ -578,7 +583,7 @@ namespace Verse.AI.Group
 			GenDraw.DrawLineBetween(a, flagLoc.ToVector3Shifted(), SimpleColor.Red);
 			foreach (Pawn ownedPawn in ownedPawns)
 			{
-				SimpleColor color = ownedPawn.InMentalState ? SimpleColor.Yellow : SimpleColor.White;
+				SimpleColor color = (ownedPawn.InMentalState ? SimpleColor.Yellow : SimpleColor.White);
 				GenDraw.DrawLineBetween(a, ownedPawn.DrawPos, color);
 			}
 		}
@@ -587,7 +592,7 @@ namespace Verse.AI.Group
 		{
 			Text.Anchor = TextAnchor.MiddleCenter;
 			Text.Font = GameFont.Tiny;
-			string label = (CurLordToil == null) ? "toil=NULL" : ("toil " + graph.lordToils.IndexOf(CurLordToil) + "\n" + CurLordToil.ToString());
+			string label = ((CurLordToil == null) ? "toil=NULL" : ("toil " + graph.lordToils.IndexOf(CurLordToil) + "\n" + CurLordToil.ToString()));
 			Vector2 vector = DebugCenter().MapToUIPosition();
 			Widgets.Label(new Rect(vector.x - 100f, vector.y - 100f, 200f, 200f), label);
 			Text.Anchor = TextAnchor.UpperLeft;

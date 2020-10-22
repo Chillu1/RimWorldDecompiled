@@ -34,6 +34,14 @@ namespace RimWorld
 			return true;
 		}
 
+		public override void Notify_FactionRemoved(Faction faction)
+		{
+			if (pawnData.faction == faction)
+			{
+				pawnData.faction = null;
+			}
+		}
+
 		public override void ExposeData()
 		{
 			base.ExposeData();

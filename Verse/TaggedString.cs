@@ -38,7 +38,42 @@ namespace Verse
 
 		public TaggedString CapitalizeFirst()
 		{
-			return RawText.CapitalizeFirst();
+			if (rawText.NullOrEmpty() || char.IsUpper(rawText[0]))
+			{
+				return this;
+			}
+			if (rawText.Length == 1)
+			{
+				return new TaggedString(rawText.ToUpper());
+			}
+			int num = FirstLetterBetweenTags();
+			if (num == 0)
+			{
+				return new TaggedString(char.ToUpper(rawText[num]) + rawText.Substring(num + 1));
+			}
+			return new TaggedString(rawText.Substring(0, num) + char.ToUpper(rawText[num]) + rawText.Substring(num + 1));
+		}
+
+		private int FirstLetterBetweenTags()
+		{
+			bool flag = false;
+			for (int i = 0; i < rawText.Length - 1; i++)
+			{
+				if (rawText[i] == '(' && rawText[i + 1] == '*')
+				{
+					flag = true;
+					continue;
+				}
+				if (flag && rawText[i] == ')' && rawText[i + 1] != '(')
+				{
+					return i + 1;
+				}
+				if (!flag)
+				{
+					return i;
+				}
+			}
+			return 0;
 		}
 
 		public bool NullOrEmpty()

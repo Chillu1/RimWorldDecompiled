@@ -78,7 +78,7 @@ namespace RimWorld
 			int num = 0;
 			for (int i = 0; i < DefDatabase<TrainableDef>.AllDefsListForReading.Count; i++)
 			{
-				p.training.CanAssignToTrain(DefDatabase<TrainableDef>.AllDefsListForReading[i], out bool visible);
+				p.training.CanAssignToTrain(DefDatabase<TrainableDef>.AllDefsListForReading[i], out var visible);
 				if (visible)
 				{
 					num++;
@@ -136,8 +136,8 @@ namespace RimWorld
 			bool num = pawn.training.HasLearned(td);
 			bool checkOn = pawn.training.GetWanted(td);
 			bool flag = checkOn;
-			Texture2D texChecked = num ? LearnedTrainingTex : null;
-			Texture2D texUnchecked = num ? LearnedNotTrainingTex : null;
+			Texture2D texChecked = (num ? LearnedTrainingTex : null);
+			Texture2D texUnchecked = (num ? LearnedNotTrainingTex : null);
 			if (drawLabel)
 			{
 				Widgets.CheckboxLabeled(rect, td.LabelCap, ref checkOn, !canTrain.Accepted, texChecked, texUnchecked);

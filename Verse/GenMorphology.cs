@@ -38,7 +38,7 @@ namespace Verse
 				return;
 			}
 			tmpOutput.Clear();
-			Predicate<IntVec3> passCheck = (extraPredicate == null) ? ((Predicate<IntVec3>)((IntVec3 x) => cellsSet.Contains(x))) : ((Predicate<IntVec3>)((IntVec3 x) => cellsSet.Contains(x) && extraPredicate(x)));
+			Predicate<IntVec3> passCheck = ((extraPredicate == null) ? ((Predicate<IntVec3>)((IntVec3 x) => cellsSet.Contains(x))) : ((Predicate<IntVec3>)((IntVec3 x) => cellsSet.Contains(x) && extraPredicate(x))));
 			map.floodFiller.FloodFill(IntVec3.Invalid, passCheck, delegate(IntVec3 cell, int traversalDist)
 			{
 				if (traversalDist >= count)

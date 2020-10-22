@@ -11,6 +11,10 @@ namespace RimWorld
 				return false;
 			}
 			Map map = (Map)parms.target;
+			if (map.Biome.isExtremeBiome)
+			{
+				return false;
+			}
 			int num = GenStep_AnimaTrees.DesiredTreeCountForMap(map);
 			if (map.listerThings.ThingsOfDef(ThingDefOf.Plant_TreeAnima).Count >= num)
 			{
@@ -23,11 +27,11 @@ namespace RimWorld
 		protected override bool TryExecuteWorker(IncidentParms parms)
 		{
 			Map map = (Map)parms.target;
-			if (!TryFindRootCell(map, out IntVec3 cell))
+			if (!TryFindRootCell(map, out var cell))
 			{
 				return false;
 			}
-			if (!GenStep_AnimaTrees.TrySpawnAt(cell, map, 0.05f, out Thing plant))
+			if (!GenStep_AnimaTrees.TrySpawnAt(cell, map, 0.05f, out var plant))
 			{
 				return false;
 			}

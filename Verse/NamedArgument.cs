@@ -1,6 +1,6 @@
+using System.Text;
 using RimWorld;
 using RimWorld.Planet;
-using System.Text;
 
 namespace Verse
 {

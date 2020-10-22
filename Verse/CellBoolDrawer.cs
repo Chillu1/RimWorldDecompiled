@@ -50,7 +50,7 @@ namespace Verse
 		public CellBoolDrawer(ICellBoolGiver giver, int mapSizeX, int mapSizeZ, float opacity = 0.33f)
 			: this(mapSizeX, mapSizeZ, opacity)
 		{
-			colorGetter = (() => giver.Color);
+			colorGetter = () => giver.Color;
 			extraColorGetter = giver.GetCellExtraColor;
 			cellBoolGetter = giver.GetCellBool;
 		}

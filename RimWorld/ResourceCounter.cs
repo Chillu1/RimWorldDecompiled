@@ -62,7 +62,7 @@ namespace RimWorld
 			{
 				return 0;
 			}
-			if (countedAmounts.TryGetValue(rDef, out int value))
+			if (countedAmounts.TryGetValue(rDef, out var value))
 			{
 				return value;
 			}

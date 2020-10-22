@@ -101,7 +101,7 @@ namespace RimWorld
 			{
 				for (int i = 0; i < stockGenerators.Count; i++)
 				{
-					if (stockGenerators[i].TryGetPriceType(thingDef, action, out PriceType priceType))
+					if (stockGenerators[i].TryGetPriceType(thingDef, action, out var priceType))
 					{
 						return priceType;
 					}

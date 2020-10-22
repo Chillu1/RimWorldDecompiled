@@ -117,7 +117,7 @@ namespace Verse.Noise
 				double x2 = Utils.MakeInt32Range(x);
 				double y2 = Utils.MakeInt32Range(y);
 				double z2 = Utils.MakeInt32Range(z);
-				long num4 = (seed + i) & uint.MaxValue;
+				long num4 = (seed + i) & 0xFFFFFFFFu;
 				num2 = Utils.GradientCoherentNoise3D(x2, y2, z2, num4, quality);
 				num += num2 * num3;
 				x *= lacunarity;

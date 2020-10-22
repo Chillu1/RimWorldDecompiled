@@ -61,12 +61,10 @@ namespace RimWorld.IO
 			List<string> list = new List<string>();
 			using (MemoryStream stream = new MemoryStream(data))
 			{
-				using (StreamReader streamReader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true))
+				using StreamReader streamReader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
+				while (!streamReader.EndOfStream)
 				{
-					while (!streamReader.EndOfStream)
-					{
-						list.Add(streamReader.ReadLine());
-					}
+					list.Add(streamReader.ReadLine());
 				}
 			}
 			return list.ToArray();
@@ -75,13 +73,9 @@ namespace RimWorld.IO
 		public override string ReadAllText()
 		{
 			CheckAccess();
-			using (MemoryStream stream = new MemoryStream(data))
-			{
-				using (StreamReader streamReader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true))
-				{
-					return streamReader.ReadToEnd();
-				}
-			}
+			using MemoryStream stream = new MemoryStream(data);
+			using StreamReader streamReader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
+			return streamReader.ReadToEnd();
 		}
 
 		public override string ToString()

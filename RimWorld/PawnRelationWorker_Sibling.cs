@@ -113,19 +113,19 @@ namespace RimWorld
 		{
 			float ageChronologicalYearsFloat = generatedChild.ageTracker.AgeChronologicalYearsFloat;
 			float ageChronologicalYearsFloat2 = existingChild.ageTracker.AgeChronologicalYearsFloat;
-			float num = (genderToGenerate == Gender.Male) ? 14f : 16f;
-			float num2 = (genderToGenerate == Gender.Male) ? 50f : 45f;
-			float num3 = (genderToGenerate == Gender.Male) ? 30f : 27f;
+			float num = ((genderToGenerate == Gender.Male) ? 14f : 16f);
+			float num2 = ((genderToGenerate == Gender.Male) ? 50f : 45f);
+			float num3 = ((genderToGenerate == Gender.Male) ? 30f : 27f);
 			float num4 = Mathf.Max(ageChronologicalYearsFloat, ageChronologicalYearsFloat2) + num;
 			float maxChronologicalAge = num4 + (num2 - num);
 			float midChronologicalAge = num4 + (num3 - num);
-			GenerateParentParams(num4, maxChronologicalAge, midChronologicalAge, num, generatedChild, existingChild, childRequest, out float biologicalAge, out float chronologicalAge, out float melanin, out string lastName);
+			GenerateParentParams(num4, maxChronologicalAge, midChronologicalAge, num, generatedChild, existingChild, childRequest, out var biologicalAge, out var chronologicalAge, out var melanin, out var lastName);
 			bool allowGay = true;
 			Faction faction = existingChild.Faction;
 			if (faction == null || faction.IsPlayer)
 			{
 				bool tryMedievalOrBetter = faction != null && (int)faction.def.techLevel >= 3;
-				if (!Find.FactionManager.TryGetRandomNonColonyHumanlikeFaction(out faction, tryMedievalOrBetter, allowDefeated: true))
+				if (!Find.FactionManager.TryGetRandomNonColonyHumanlikeFaction_NewTemp(out faction, tryMedievalOrBetter, allowDefeated: true))
 				{
 					faction = Faction.OfAncients;
 				}

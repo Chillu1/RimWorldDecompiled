@@ -1,9 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.AI;
+using Verse.AI.Group;
 
 namespace RimWorld
 {
@@ -14,7 +16,15 @@ namespace RimWorld
 
 		public List<Pawn> requiredPawns = new List<Pawn>();
 
+		public List<Thing> sendAwayIfAllDespawned;
+
+		public Faction sendAwayIfAllPawnsLeftToLoadAreNotOfFaction;
+
+		public Quest sendAwayIfQuestFinished;
+
 		public int requiredColonistCount;
+
+		public int maxColonistCount = -1;
 
 		public bool acceptColonists;
 
@@ -30,9 +40,23 @@ namespace RimWorld
 
 		public bool dropEverythingOnArrival;
 
+		public bool stayAfterDroppedEverythingOnArrival;
+
+		public bool permitShuttle;
+
+		public WorldObject missionShuttleTarget;
+
+		public WorldObject missionShuttleHome;
+
+		public bool hideControls;
+
 		private bool autoload;
 
 		public bool leaveASAP;
+
+		public int leaveAfterTicks;
+
+		private List<Thing> droppedOnArrival = new List<Thing>();
 
 		private CompTransporter cachedCompTransporter;
 
@@ -48,7 +72,13 @@ namespace RimWorld
 
 		private static readonly Texture2D SendCommandTex = CompLaunchable.LaunchCommandTex;
 
+		public static readonly Texture2D TargeterMouseAttachment = ContentFinder<Texture2D>.Get("UI/Overlays/LaunchableMouseAttachment");
+
+		public static readonly IntVec3 DropoffSpotOffset = IntVec3.South * 2;
+
 		private static List<ThingDefCount> tmpRequiredItemsWithoutDuplicates = new List<ThingDefCount>();
+
+		private static List<Pawn> tmpAllowedPawns = new List<Pawn>();
 
 		private static List<string> tmpRequiredLabels = new List<string>();
 
@@ -68,6 +98,34 @@ namespace RimWorld
 
 		public List<CompTransporter> TransportersInGroup => Transporter.TransportersInGroup(parent.Map);
 
+		public bool CanAutoLoot
+		{
+			get
+			{
+				if ((permitShuttle || IsMissionShuttle) && !parent.Map.IsPlayerHome)
+				{
+					return !GenHostility.AnyHostileActiveThreatToPlayer(parent.Map, countDormantPawnsAsHostile: true);
+				}
+				return false;
+			}
+		}
+
+		public bool ShowLoadingGizmos
+		{
+			get
+			{
+				if (hideControls)
+				{
+					return false;
+				}
+				if (parent.Faction == null || parent.Faction == Faction.OfPlayer)
+				{
+					return true;
+				}
+				return false;
+			}
+		}
+
 		public CompTransporter Transporter
 		{
 			get
@@ -77,18 +135,6 @@ namespace RimWorld
 					cachedCompTransporter = parent.GetComp<CompTransporter>();
 				}
 				return cachedCompTransporter;
-			}
-		}
-
-		public bool ShowLoadingGizmos
-		{
-			get
-			{
-				if (parent.Faction != null)
-				{
-					return parent.Faction == Faction.OfPlayer;
-				}
-				return true;
 			}
 		}
 
@@ -119,14 +165,14 @@ namespace RimWorld
 						Transporter
 					};
 				}
-				foreach (Pawn item in TransporterUtility.AllSendablePawns(cachedTransporterList, parent.Map))
+				foreach (Pawn item in TransporterUtility.AllSendablePawns_NewTmp(cachedTransporterList, parent.Map, autoLoot: false))
 				{
 					if (!IsRequired(item))
 					{
 						return false;
 					}
 				}
-				foreach (Thing item2 in TransporterUtility.AllSendableItems(cachedTransporterList, parent.Map))
+				foreach (Thing item2 in TransporterUtility.AllSendableItems_NewTmp(cachedTransporterList, parent.Map, autoLoot: false))
 				{
 					if (!IsRequired(item2))
 					{
@@ -144,7 +190,7 @@ namespace RimWorld
 				ThingOwner innerContainer = Transporter.innerContainer;
 				for (int i = 0; i < requiredPawns.Count; i++)
 				{
-					if (!innerContainer.Contains(requiredPawns[i]))
+					if (!requiredPawns[i].Dead && !innerContainer.Contains(requiredPawns[i]))
 					{
 						return false;
 					}
@@ -209,13 +255,28 @@ namespace RimWorld
 				StringBuilder stringBuilder = new StringBuilder();
 				for (int i = 0; i < requiredPawns.Count; i++)
 				{
-					stringBuilder.AppendLine("  - " + requiredPawns[i].NameShortColored.Resolve());
+					if (!requiredPawns[i].Dead)
+					{
+						stringBuilder.AppendLine("  - " + requiredPawns[i].NameShortColored.Resolve());
+					}
 				}
 				for (int j = 0; j < requiredItems.Count; j++)
 				{
 					stringBuilder.AppendLine("  - " + requiredItems[j].LabelCap);
 				}
 				return stringBuilder.ToString().TrimEndNewlines();
+			}
+		}
+
+		public bool IsMissionShuttle
+		{
+			get
+			{
+				if (missionShuttleTarget == null)
+				{
+					return missionShuttleHome != null;
+				}
+				return true;
 			}
 		}
 
@@ -245,7 +306,7 @@ namespace RimWorld
 					command_Toggle.defaultLabel = "CommandAutoloadTransporters".Translate();
 					command_Toggle.defaultDesc = "CommandAutoloadTransportersDesc".Translate();
 					command_Toggle.icon = AutoloadToggleTex;
-					command_Toggle.isActive = (() => autoload);
+					command_Toggle.isActive = () => autoload;
 					command_Toggle.toggleAction = delegate
 					{
 						autoload = !autoload;
@@ -257,20 +318,23 @@ namespace RimWorld
 					};
 					yield return command_Toggle;
 				}
-				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "CommandSendShuttle".Translate();
-				command_Action.defaultDesc = "CommandSendShuttleDesc".Translate();
-				command_Action.icon = SendCommandTex;
-				command_Action.alsoClickIfOtherInGroupClicked = false;
-				command_Action.action = delegate
+				if (!IsMissionShuttle)
 				{
-					Send();
-				};
-				if (!LoadingInProgressOrReadyToLaunch || !AllRequiredThingsLoaded)
-				{
-					command_Action.Disable("CommandSendShuttleFailMissingRequiredThing".Translate());
+					Command_Action command_Action = new Command_Action();
+					command_Action.defaultLabel = "CommandSendShuttle".Translate();
+					command_Action.defaultDesc = "CommandSendShuttleDesc".Translate();
+					command_Action.icon = SendCommandTex;
+					command_Action.alsoClickIfOtherInGroupClicked = false;
+					command_Action.action = delegate
+					{
+						Send();
+					};
+					if (!LoadingInProgressOrReadyToLaunch || !AllRequiredThingsLoaded)
+					{
+						command_Action.Disable("CommandSendShuttleFailMissingRequiredThing".Translate());
+					}
+					yield return command_Action;
 				}
-				yield return command_Action;
 			}
 			foreach (Gizmo questRelatedGizmo in QuestUtility.GetQuestRelatedGizmos(parent))
 			{
@@ -280,26 +344,70 @@ namespace RimWorld
 
 		public override IEnumerable<FloatMenuOption> CompFloatMenuOptions(Pawn selPawn)
 		{
-			CompShuttle compShuttle = this;
-			Pawn selPawn2 = selPawn;
-			if (!selPawn2.CanReach(parent, PathEndMode.Touch, Danger.Deadly))
+			if (!selPawn.CanReach(parent, PathEndMode.Touch, Danger.Deadly))
 			{
 				yield break;
 			}
 			string text = "EnterShuttle".Translate();
-			if (!IsAllowed(selPawn2))
+			if (!IsAllowedNow(selPawn))
 			{
 				yield return new FloatMenuOption(text + " (" + "NotAllowed".Translate() + ")", null);
 				yield break;
 			}
 			yield return new FloatMenuOption(text, delegate
 			{
-				if (!compShuttle.LoadingInProgressOrReadyToLaunch)
+				if (!LoadingInProgressOrReadyToLaunch)
 				{
-					TransporterUtility.InitiateLoading(Gen.YieldSingle(compShuttle.Transporter));
+					TransporterUtility.InitiateLoading(Gen.YieldSingle(Transporter));
 				}
-				Job job = JobMaker.MakeJob(JobDefOf.EnterTransporter, compShuttle.parent);
-				selPawn2.jobs.TryTakeOrderedJob(job);
+				Job job = JobMaker.MakeJob(JobDefOf.EnterTransporter, parent);
+				selPawn.jobs.TryTakeOrderedJob(job);
+			});
+		}
+
+		public override IEnumerable<FloatMenuOption> CompMultiSelectFloatMenuOptions(List<Pawn> selPawns)
+		{
+			tmpAllowedPawns.Clear();
+			string text = "EnterShuttle".Translate();
+			for (int i = 0; i < selPawns.Count; i++)
+			{
+				if (selPawns[i].CanReach(parent, PathEndMode.Touch, Danger.Deadly))
+				{
+					tmpAllowedPawns.Add(selPawns[i]);
+				}
+			}
+			if (!tmpAllowedPawns.Any())
+			{
+				yield return new FloatMenuOption(text + " (" + "NoPath".Translate() + ")", null);
+				yield break;
+			}
+			for (int num = tmpAllowedPawns.Count - 1; num >= 0; num--)
+			{
+				if (!IsAllowedNow(tmpAllowedPawns[num]))
+				{
+					tmpAllowedPawns.RemoveAt(num);
+				}
+			}
+			if (!tmpAllowedPawns.Any())
+			{
+				yield return new FloatMenuOption(text + " (" + "NotAllowed".Translate() + ")", null);
+				yield break;
+			}
+			yield return new FloatMenuOption(text, delegate
+			{
+				if (!LoadingInProgressOrReadyToLaunch)
+				{
+					TransporterUtility.InitiateLoading(Gen.YieldSingle(Transporter));
+				}
+				for (int j = 0; j < tmpAllowedPawns.Count; j++)
+				{
+					Pawn pawn = tmpAllowedPawns[j];
+					if (pawn.CanReach(parent, PathEndMode.Touch, Danger.Deadly) && !pawn.Downed && !pawn.Dead && pawn.Spawned)
+					{
+						Job job = JobMaker.MakeJob(JobDefOf.EnterTransporter, parent);
+						tmpAllowedPawns[j].jobs.TryTakeOrderedJob(job);
+					}
+				}
 			});
 		}
 
@@ -310,23 +418,9 @@ namespace RimWorld
 			{
 				CheckAutoload();
 			}
-			if (parent.Spawned && dropEverythingOnArrival && parent.IsHashIntervalTick(60))
+			if (parent.Spawned && (dropEverythingOnArrival || (sendAwayIfQuestFinished != null && sendAwayIfQuestFinished.Historical)) && parent.IsHashIntervalTick(60))
 			{
-				if (Transporter.innerContainer.Any())
-				{
-					Thing thing = Transporter.innerContainer[0];
-					IntVec3 dropLoc = parent.Position + IntVec3.South;
-					Pawn pawn;
-					if (Transporter.innerContainer.TryDrop_NewTmp(thing, dropLoc, parent.Map, ThingPlaceMode.Near, out Thing _, null, (IntVec3 c) => ((pawn = (Transporter.innerContainer[0] as Pawn)) == null || !pawn.Downed || c.GetFirstPawn(parent.Map) == null) ? true : false, playDropSound: false))
-					{
-						Transporter.Notify_ThingRemoved(thing);
-					}
-				}
-				else
-				{
-					TransporterUtility.InitiateLoading(Gen.YieldSingle(Transporter));
-					Send();
-				}
+				OffloadShuttleOrSend();
 			}
 			if (leaveASAP && parent.Spawned)
 			{
@@ -336,16 +430,117 @@ namespace RimWorld
 				}
 				Send();
 			}
-			if (leaveImmediatelyWhenSatisfied && AllRequiredThingsLoaded)
+			if (leaveAfterTicks > 0 && parent.Spawned && !IsMissionShuttle)
+			{
+				leaveAfterTicks--;
+				if (leaveAfterTicks == 0)
+				{
+					if (!LoadingInProgressOrReadyToLaunch)
+					{
+						TransporterUtility.InitiateLoading(Gen.YieldSingle(Transporter));
+					}
+					Send();
+				}
+			}
+			Pawn pawn;
+			if (!IsMissionShuttle && !dropEverythingOnArrival && ((leaveImmediatelyWhenSatisfied && AllRequiredThingsLoaded) || (!sendAwayIfAllDespawned.NullOrEmpty() && sendAwayIfAllDespawned.All((Thing p) => !p.Spawned && ((pawn = p as Pawn) == null || pawn.CarriedBy == null))) || (sendAwayIfAllPawnsLeftToLoadAreNotOfFaction != null && requiredPawns.All((Pawn p) => Transporter.innerContainer.Contains(p) || p.Faction != sendAwayIfAllPawnsLeftToLoadAreNotOfFaction))))
 			{
 				Send();
+			}
+		}
+
+		private void OffloadShuttleOrSend()
+		{
+			Thing thingToDrop = null;
+			float num = 0f;
+			for (int i = 0; i < Transporter.innerContainer.Count; i++)
+			{
+				Thing thing = Transporter.innerContainer[i];
+				float num2 = GetDropPriority(thing);
+				if (num2 > num)
+				{
+					thingToDrop = thing;
+					num = num2;
+				}
+			}
+			if (thingToDrop != null)
+			{
+				IntVec3 dropLoc = parent.Position + DropoffSpotOffset;
+				if (!Transporter.innerContainer.TryDrop_NewTmp(thingToDrop, dropLoc, parent.Map, ThingPlaceMode.Near, out var _, null, delegate(IntVec3 c)
+				{
+					if (c.Fogged(parent.Map))
+					{
+						return false;
+					}
+					Pawn pawn2;
+					return ((pawn2 = thingToDrop as Pawn) == null || !pawn2.Downed || c.GetFirstPawn(parent.Map) == null) ? true : false;
+				}, playDropSound: false))
+				{
+					return;
+				}
+				Transporter.Notify_ThingRemoved(thingToDrop);
+				droppedOnArrival.Add(thingToDrop);
+				Pawn pawn;
+				if ((pawn = thingToDrop as Pawn) != null)
+				{
+					if (pawn.IsColonist && pawn.Spawned && !parent.Map.IsPlayerHome)
+					{
+						pawn.drafter.Drafted = true;
+					}
+					if (pawn.guest != null && pawn.guest.IsPrisoner)
+					{
+						pawn.guest.WaitInsteadOfEscapingForDefaultTicks();
+					}
+				}
+			}
+			else
+			{
+				if (!Transporter.LoadingInProgressOrReadyToLaunch)
+				{
+					TransporterUtility.InitiateLoading(Gen.YieldSingle(Transporter));
+				}
+				if (!stayAfterDroppedEverythingOnArrival || (sendAwayIfQuestFinished != null && sendAwayIfQuestFinished.Historical))
+				{
+					Send();
+				}
+				else
+				{
+					dropEverythingOnArrival = false;
+				}
+			}
+			float GetDropPriority(Thing t)
+			{
+				if (droppedOnArrival.Contains(t))
+				{
+					return 0f;
+				}
+				Pawn p;
+				if ((p = t as Pawn) != null)
+				{
+					Lord lord = p.GetLord();
+					LordToil_EnterShuttleOrLeave lordToil_EnterShuttleOrLeave;
+					if (lord?.CurLordToil != null && (lordToil_EnterShuttleOrLeave = lord.CurLordToil as LordToil_EnterShuttleOrLeave) != null && lordToil_EnterShuttleOrLeave.shuttle == parent)
+					{
+						return 0f;
+					}
+					LordToil_LoadAndEnterTransporters lordToil_LoadAndEnterTransporters;
+					if (lord?.CurLordToil != null && (lordToil_LoadAndEnterTransporters = lord.CurLordToil as LordToil_LoadAndEnterTransporters) != null && lordToil_LoadAndEnterTransporters.transportersGroup == parent.TryGetComp<CompTransporter>().groupID)
+					{
+						return 0f;
+					}
+					if (!p.AnimalOrWildMan())
+					{
+						return 1f;
+					}
+					return 0.5f;
+				}
+				return 0.25f;
 			}
 		}
 
 		public override string CompInspectStringExtra()
 		{
 			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.Append("Required".Translate() + ": ");
 			tmpRequiredLabels.Clear();
 			if (requiredColonistCount > 0)
 			{
@@ -353,19 +548,21 @@ namespace RimWorld
 			}
 			for (int i = 0; i < requiredPawns.Count; i++)
 			{
-				tmpRequiredLabels.Add(requiredPawns[i].LabelShort);
+				if (!requiredPawns[i].Dead && !Transporter.innerContainer.Contains(requiredPawns[i]))
+				{
+					tmpRequiredLabels.Add(requiredPawns[i].LabelShort);
+				}
 			}
 			for (int j = 0; j < requiredItems.Count; j++)
 			{
-				tmpRequiredLabels.Add(requiredItems[j].Label);
+				if (Transporter.innerContainer.TotalStackCountOfDef(requiredItems[j].ThingDef) < requiredItems[j].Count)
+				{
+					tmpRequiredLabels.Add(requiredItems[j].Label);
+				}
 			}
 			if (tmpRequiredLabels.Any())
 			{
-				stringBuilder.Append(tmpRequiredLabels.ToCommaList(useAnd: true).CapitalizeFirst());
-			}
-			else
-			{
-				stringBuilder.Append("Nothing".Translate());
+				stringBuilder.Append("Required".Translate() + ": " + tmpRequiredLabels.ToCommaList().CapitalizeFirst());
 			}
 			return stringBuilder.ToString();
 		}
@@ -412,30 +609,25 @@ namespace RimWorld
 								{
 									Thing thing = transportersInGroup[i].innerContainer[num];
 									Pawn pawn;
-									if (!IsRequired(thing) && (requiredColonistCount <= 0 || (pawn = (thing as Pawn)) == null || !pawn.IsColonist))
+									if (!IsRequired(thing) && (requiredColonistCount <= 0 || (pawn = thing as Pawn) == null || !pawn.IsColonist))
 									{
-										transportersInGroup[i].innerContainer.TryDrop(thing, ThingPlaceMode.Near, out Thing _);
+										transportersInGroup[i].innerContainer.TryDrop(thing, ThingPlaceMode.Near, out var _);
 									}
 								}
 							}
 						}
 					}
 					sending = true;
-					bool allRequiredThingsLoaded = AllRequiredThingsLoaded;
 					Map map = parent.Map;
 					Transporter.TryRemoveLord(map);
-					string signalPart = allRequiredThingsLoaded ? "SentSatisfied" : "SentUnsatisfied";
+					SendLaunchedSignals(transportersInGroup);
+					List<Pawn> list = new List<Pawn>();
 					for (int j = 0; j < transportersInGroup.Count; j++)
 					{
-						QuestUtility.SendQuestTargetSignals(transportersInGroup[j].parent.questTags, signalPart, transportersInGroup[j].parent.Named("SUBJECT"), transportersInGroup[j].innerContainer.ToList().Named("SENT"));
-					}
-					List<Pawn> list = new List<Pawn>();
-					for (int k = 0; k < transportersInGroup.Count; k++)
-					{
-						CompTransporter compTransporter = transportersInGroup[k];
-						for (int num2 = transportersInGroup[k].innerContainer.Count - 1; num2 >= 0; num2--)
+						CompTransporter compTransporter = transportersInGroup[j];
+						for (int num2 = transportersInGroup[j].innerContainer.Count - 1; num2 >= 0; num2--)
 						{
-							Pawn pawn2 = transportersInGroup[k].innerContainer[num2] as Pawn;
+							Pawn pawn2 = transportersInGroup[j].innerContainer[num2] as Pawn;
 							if (pawn2 != null)
 							{
 								if (pawn2.IsColonist && !requiredPawns.Contains(pawn2))
@@ -446,20 +638,31 @@ namespace RimWorld
 							}
 						}
 						compTransporter.innerContainer.ClearAndDestroyContentsOrPassToWorld();
-						Thing newThing = ThingMaker.MakeThing(ThingDefOf.ShuttleLeaving);
+						DropPodLeaving obj = (DropPodLeaving)ThingMaker.MakeThing(ThingDefOf.ShuttleLeaving);
+						obj.createWorldObject = permitShuttle && compTransporter.innerContainer.Any();
+						obj.worldObjectDef = WorldObjectDefOf.TravelingShuttle;
 						compTransporter.CleanUpLoadingVars(map);
 						compTransporter.parent.Destroy(DestroyMode.QuestLogic);
-						GenSpawn.Spawn(newThing, compTransporter.parent.Position, map);
+						GenSpawn.Spawn(obj, compTransporter.parent.Position, map);
 					}
 					if (list.Count != 0)
 					{
-						for (int l = 0; l < transportersInGroup.Count; l++)
+						for (int k = 0; k < transportersInGroup.Count; k++)
 						{
-							QuestUtility.SendQuestTargetSignals(transportersInGroup[l].parent.questTags, "SentWithExtraColonists", transportersInGroup[l].parent.Named("SUBJECT"), list.Named("SENTCOLONISTS"));
+							QuestUtility.SendQuestTargetSignals(transportersInGroup[k].parent.questTags, "SentWithExtraColonists", transportersInGroup[k].parent.Named("SUBJECT"), list.Named("SENTCOLONISTS"));
 						}
 					}
 					sending = false;
 				}
+			}
+		}
+
+		public void SendLaunchedSignals(List<CompTransporter> transporters)
+		{
+			string signalPart = (AllRequiredThingsLoaded ? "SentSatisfied" : "SentUnsatisfied");
+			for (int i = 0; i < transporters.Count; i++)
+			{
+				QuestUtility.SendQuestTargetSignals(transporters[i].parent.questTags, signalPart, transporters[i].parent.Named("SUBJECT"), transporters[i].innerContainer.ToList().Named("SENT"));
 			}
 		}
 
@@ -468,6 +671,8 @@ namespace RimWorld
 			base.PostExposeData();
 			Scribe_Collections.Look(ref requiredItems, "requiredItems", LookMode.Deep);
 			Scribe_Collections.Look(ref requiredPawns, "requiredPawns", LookMode.Reference);
+			Scribe_Collections.Look(ref sendAwayIfAllDespawned, "sendAwayIfAllDespawned", LookMode.Reference);
+			Scribe_Collections.Look(ref droppedOnArrival, "droppedOnArrival", LookMode.Reference);
 			Scribe_Values.Look(ref requiredColonistCount, "requiredColonistCount", 0);
 			Scribe_Values.Look(ref acceptColonists, "acceptColonists", defaultValue: false);
 			Scribe_Values.Look(ref onlyAcceptColonists, "onlyAcceptColonists", defaultValue: false);
@@ -476,10 +681,23 @@ namespace RimWorld
 			Scribe_Values.Look(ref dropEverythingIfUnsatisfied, "dropEverythingIfUnsatisfied", defaultValue: false);
 			Scribe_Values.Look(ref dropNonRequiredIfUnsatisfied, "dropNonRequiredIfUnsatisfied", defaultValue: false);
 			Scribe_Values.Look(ref leaveASAP, "leaveASAP", defaultValue: false);
+			Scribe_Values.Look(ref leaveAfterTicks, "leaveAfterTicks", 0);
 			Scribe_Values.Look(ref dropEverythingOnArrival, "dropEverythingOnArrival", defaultValue: false);
+			Scribe_Values.Look(ref stayAfterDroppedEverythingOnArrival, "stayAfterDroppedEverythingOnArrival", defaultValue: false);
+			Scribe_Values.Look(ref permitShuttle, "permitShuttle", defaultValue: false);
+			Scribe_References.Look(ref missionShuttleTarget, "missionShuttleTarget");
+			Scribe_References.Look(ref missionShuttleHome, "missionShuttleHome");
+			Scribe_Values.Look(ref hideControls, "hideControls", defaultValue: false);
+			Scribe_Values.Look(ref maxColonistCount, "maxColonistCount", -1);
+			Scribe_References.Look(ref sendAwayIfAllPawnsLeftToLoadAreNotOfFaction, "sendAwayIfAllPawnsLeftToLoadAreNotOfFaction");
+			Scribe_References.Look(ref sendAwayIfQuestFinished, "sendAwayIfQuestFinished");
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				requiredPawns.RemoveAll((Pawn x) => x == null);
+			}
+			if (maxColonistCount == 0)
+			{
+				maxColonistCount = -1;
 			}
 		}
 
@@ -530,9 +748,9 @@ namespace RimWorld
 					Transporter.leftToLoad.Clear();
 				}
 				tmpAllSendablePawns.Clear();
-				tmpAllSendablePawns.AddRange(TransporterUtility.AllSendablePawns(TransportersInGroup, parent.Map));
+				tmpAllSendablePawns.AddRange(TransporterUtility.AllSendablePawns_NewTmp(TransportersInGroup, parent.Map, autoLoot: false));
 				tmpAllSendableItems.Clear();
-				tmpAllSendableItems.AddRange(TransporterUtility.AllSendableItems(TransportersInGroup, parent.Map));
+				tmpAllSendableItems.AddRange(TransporterUtility.AllSendableItems_NewTmp(TransportersInGroup, parent.Map, autoLoot: false));
 				tmpAllSendableItems.AddRange(TransporterUtility.ThingsBeingHauledTo(TransportersInGroup, parent.Map));
 				tmpRequiredPawnsPossibleToSend.Clear();
 				for (int k = 0; k < tmpRequiredPawns.Count; k++)
@@ -622,7 +840,74 @@ namespace RimWorld
 					return true;
 				}
 			}
+			if (permitShuttle)
+			{
+				Pawn pawn2;
+				if ((pawn2 = t as Pawn) == null)
+				{
+					return true;
+				}
+				if (pawn2.Faction == Faction.OfPlayer && !pawn2.IsQuestLodger())
+				{
+					return true;
+				}
+			}
+			if (IsMissionShuttle && !(t is Pawn) && CanAutoLoot)
+			{
+				return true;
+			}
 			return false;
+		}
+
+		public bool IsAllowedNow(Thing t)
+		{
+			if (!IsAllowed(t))
+			{
+				return false;
+			}
+			if (maxColonistCount == -1)
+			{
+				return true;
+			}
+			int num = 0;
+			foreach (Thing item in (IEnumerable<Thing>)Transporter.innerContainer)
+			{
+				if (item != t)
+				{
+					Pawn pawn = item as Pawn;
+					if (pawn != null && pawn.IsColonist)
+					{
+						num++;
+					}
+				}
+			}
+			foreach (Pawn allPawn in parent.Map.mapPawns.AllPawns)
+			{
+				if (allPawn.jobs == null || allPawn.jobs.curDriver == null || allPawn == t)
+				{
+					continue;
+				}
+				foreach (QueuedJob item2 in allPawn.jobs.jobQueue)
+				{
+					if (CheckJob(item2.job))
+					{
+						num++;
+					}
+				}
+				if (CheckJob(allPawn.jobs.curJob))
+				{
+					num++;
+				}
+			}
+			return num < maxColonistCount;
+			bool CheckJob(Job job)
+			{
+				if (typeof(JobDriver_EnterTransporter).IsAssignableFrom(job.def.driverClass) && job.GetTarget(TargetIndex.A).Thing == parent)
+				{
+					return true;
+				}
+				return false;
+			}
 		}
 
 		private bool PawnIsHealthyEnoughForShuttle(Pawn p)

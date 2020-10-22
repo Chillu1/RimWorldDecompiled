@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
@@ -79,6 +80,27 @@ namespace RimWorld.Planet
 		{
 			base.PostExposeData();
 			Scribe_Values.Look(ref ticksLeft, "ticksLeft", 0);
+		}
+
+		public override IEnumerable<Gizmo> GetGizmos()
+		{
+			if (Prefs.DevMode)
+			{
+				Command_Action command_Action = new Command_Action();
+				command_Action.defaultLabel = "Dev: Set enter cooldown to 1 hour";
+				command_Action.action = delegate
+				{
+					ticksLeft = 2500;
+				};
+				yield return command_Action;
+				Command_Action command_Action2 = new Command_Action();
+				command_Action2.defaultLabel = "Dev: Reset enter cooldown";
+				command_Action2.action = delegate
+				{
+					ticksLeft = 0;
+				};
+				yield return command_Action2;
+			}
 		}
 	}
 }

@@ -1,7 +1,7 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.AI;
@@ -30,6 +30,8 @@ namespace RimWorld
 		private Tab tab;
 
 		private float lastMassFlashTime = -9999f;
+
+		public bool autoLoot;
 
 		private bool massUsageDirty = true;
 
@@ -138,7 +140,8 @@ namespace RimWorld
 				if (massUsageDirty)
 				{
 					massUsageDirty = false;
-					cachedMassUsage = CollectionsMassCalculator.MassUsageTransferables(transferables, IgnorePawnsInventoryMode.IgnoreIfAssignedToUnload, includePawnsMass: true);
+					CompShuttle shuttle = transporters[0].Shuttle;
+					cachedMassUsage = CollectionsMassCalculator.MassUsageTransferables(transferables, IgnorePawnsInventoryMode.IgnoreIfAssignedToUnload, shuttle == null || (shuttle.requiredColonistCount == 0 && !shuttle.IsMissionShuttle));
 				}
 				return cachedMassUsage;
 			}
@@ -309,7 +312,7 @@ namespace RimWorld
 		private void DoBottomButtons(Rect rect)
 		{
 			Rect rect2 = new Rect(rect.width / 2f - BottomButtonSize.x / 2f, rect.height - 55f, BottomButtonSize.x, BottomButtonSize.y);
-			if (Widgets.ButtonText(rect2, "AcceptButton".Translate()))
+			if (Widgets.ButtonText(rect2, autoLoot ? "LoadSelected".Translate() : "AcceptButton".Translate()))
 			{
 				if (CaravanMassUsage > CaravanMassCapacity && CaravanMassCapacity != 0f)
 				{
@@ -319,6 +322,10 @@ namespace RimWorld
 						{
 							if (TryAccept())
 							{
+								if (autoLoot)
+								{
+									LoadInstantly();
+								}
 								SoundDefOf.Tick_High.PlayOneShotOnCamera();
 								Close(doCloseSound: false);
 							}
@@ -327,6 +334,10 @@ namespace RimWorld
 				}
 				else if (TryAccept())
 				{
+					if (autoLoot)
+					{
+						LoadInstantly();
+					}
 					SoundDefOf.Tick_High.PlayOneShotOnCamera();
 					Close(doCloseSound: false);
 				}
@@ -394,6 +405,19 @@ namespace RimWorld
 				});
 			}
 			return true;
+		}
+
+		private void LoadInstantly()
+		{
+			TransporterUtility.InitiateLoading(transporters);
+			int i;
+			for (i = 0; i < transferables.Count; i++)
+			{
+				TransferableUtility.Transfer(transferables[i].things, transferables[i].CountToTransfer, delegate(Thing splitPiece, IThingHolder originalThing)
+				{
+					transporters[i % transporters.Count].GetDirectlyHeldThings().TryAdd(splitPiece);
+				});
+			}
 		}
 
 		private bool TryAccept()
@@ -534,7 +558,7 @@ namespace RimWorld
 					int num5 = num4 / (transporters.Count - num3);
 					for (int n = num3; n < transporters.Count; n++)
 					{
-						int num6 = (n == transporters.Count - 1) ? num4 : num5;
+						int num6 = ((n == transporters.Count - 1) ? num4 : num5);
 						if (num6 > 0)
 						{
 							transporters[n].AddToTheToLoadList(transferableOneWay2, num6);
@@ -556,7 +580,7 @@ namespace RimWorld
 					int num9 = transporters[num7].SubtractFromToLoadList(thing2, thing2.stackCount, sendMessageOnFinished: false);
 					if (num9 < thing2.stackCount)
 					{
-						transporters[num7].innerContainer.TryDrop(thing2, ThingPlaceMode.Near, thing2.stackCount - num9, out Thing _);
+						transporters[num7].innerContainer.TryDrop(thing2, ThingPlaceMode.Near, thing2.stackCount - num9, out var _);
 					}
 				}
 			}
@@ -575,6 +599,15 @@ namespace RimWorld
 					Messages.Message("CantSendEmptyTransportPods".Translate(), MessageTypeDefOf.RejectInput, historical: false);
 				}
 				return false;
+			}
+			if (transporters[0].Props.max1PerGroup)
+			{
+				CompShuttle shuttle = transporters[0].Shuttle;
+				if (shuttle != null && shuttle.requiredColonistCount > 0 && pawns.Count > shuttle.requiredColonistCount)
+				{
+					Messages.Message("TransporterSingleTooManyColonists".Translate(shuttle.requiredColonistCount), MessageTypeDefOf.RejectInput, historical: false);
+					return false;
+				}
 			}
 			if (MassUsage > MassCapacity)
 			{
@@ -658,7 +691,7 @@ namespace RimWorld
 
 		private void AddPawnsToTransferables()
 		{
-			foreach (Pawn item in TransporterUtility.AllSendablePawns(transporters, map))
+			foreach (Pawn item in TransporterUtility.AllSendablePawns_NewTmp(transporters, map, autoLoot))
 			{
 				AddToTransferables(item);
 			}
@@ -666,7 +699,7 @@ namespace RimWorld
 
 		private void AddItemsToTransferables()
 		{
-			foreach (Thing item in TransporterUtility.AllSendableItems(transporters, map))
+			foreach (Thing item in TransporterUtility.AllSendableItems_NewTmp(transporters, map, autoLoot))
 			{
 				AddToTransferables(item);
 			}

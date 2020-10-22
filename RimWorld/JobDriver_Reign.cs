@@ -67,10 +67,6 @@ namespace RimWorld
 				}
 				rotateToFace = TargetIndex.B;
 				MeditationTick();
-				if (job.ignoreJoyTimeAssignment && pawn.IsHashIntervalTick(300))
-				{
-					pawn.jobs.CheckForJobOverride();
-				}
 			};
 			yield return toil;
 		}

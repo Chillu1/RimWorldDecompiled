@@ -1,5 +1,5 @@
-using RimWorld;
 using System;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse

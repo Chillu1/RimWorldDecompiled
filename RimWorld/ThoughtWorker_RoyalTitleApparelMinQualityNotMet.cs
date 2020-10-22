@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Verse;
 
@@ -5,7 +6,14 @@ namespace RimWorld
 {
 	public class ThoughtWorker_RoyalTitleApparelMinQualityNotMet : ThoughtWorker
 	{
-		private RoyalTitleDef Validate(Pawn p, out QualityCategory minQuality)
+		[Obsolete("Will be removed in the future")]
+		private static RoyalTitleDef Validate(Pawn p, out QualityCategory minQuality)
+		{
+			minQuality = QualityCategory.Awful;
+			return null;
+		}
+
+		private RoyalTitle Validate_NewTemp(Pawn p, out QualityCategory minQuality)
 		{
 			minQuality = QualityCategory.Awful;
 			foreach (RoyalTitle item in p.royalty.AllTitlesInEffectForReading)
@@ -14,9 +22,9 @@ namespace RimWorld
 				minQuality = item.def.requiredMinimumApparelQuality;
 				for (int i = 0; i < wornApparel.Count; i++)
 				{
-					if (wornApparel[i].TryGetQuality(out QualityCategory qc) && (int)qc < (int)item.def.requiredMinimumApparelQuality)
+					if (wornApparel[i].TryGetQuality(out var qc) && (int)qc < (int)item.def.requiredMinimumApparelQuality)
 					{
-						return item.def;
+						return item;
 					}
 				}
 			}
@@ -26,23 +34,23 @@ namespace RimWorld
 		public override string PostProcessLabel(Pawn p, string label)
 		{
 			QualityCategory minQuality;
-			RoyalTitleDef royalTitleDef = Validate(p, out minQuality);
-			if (royalTitleDef == null)
+			RoyalTitle royalTitle = Validate_NewTemp(p, out minQuality);
+			if (royalTitle == null)
 			{
 				return string.Empty;
 			}
-			return label.Formatted(royalTitleDef.GetLabelCapFor(p).Named("TITLE"), p.Named("PAWN"));
+			return label.Formatted(royalTitle.Named("TITLE"), p.Named("PAWN"));
 		}
 
 		public override string PostProcessDescription(Pawn p, string description)
 		{
 			QualityCategory minQuality;
-			RoyalTitleDef royalTitleDef = Validate(p, out minQuality);
-			if (royalTitleDef == null)
+			RoyalTitle royalTitle = Validate_NewTemp(p, out minQuality);
+			if (royalTitle == null)
 			{
 				return string.Empty;
 			}
-			return description.Formatted(royalTitleDef.GetLabelCapFor(p).Named("TITLE"), minQuality.GetLabel().Named("QUALITY"), p.Named("PAWN"));
+			return description.Formatted(royalTitle.Named("TITLE"), minQuality.GetLabel().Named("QUALITY"), p.Named("PAWN")).CapitalizeFirst();
 		}
 
 		protected override ThoughtState CurrentStateInternal(Pawn p)
@@ -51,7 +59,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (Validate(p, out QualityCategory _) == null)
+			if (Validate_NewTemp(p, out var _) == null)
 			{
 				return ThoughtState.Inactive;
 			}

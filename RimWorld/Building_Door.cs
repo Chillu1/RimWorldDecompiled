@@ -513,7 +513,7 @@ namespace RimWorld
 				command_Toggle.defaultDesc = "CommandToggleDoorHoldOpenDesc".Translate();
 				command_Toggle.hotKey = KeyBindingDefOf.Misc3;
 				command_Toggle.icon = TexCommand.HoldOpen;
-				command_Toggle.isActive = (() => holdOpenInt);
+				command_Toggle.isActive = () => holdOpenInt;
 				command_Toggle.toggleAction = delegate
 				{
 					holdOpenInt = !holdOpenInt;

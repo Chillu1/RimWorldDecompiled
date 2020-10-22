@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -52,7 +52,7 @@ namespace Verse
 				{
 					float stat2 = room.GetStat(allDefsListForReading[i]);
 					RoomStatScoreStage scoreStage2 = allDefsListForReading[i].GetScoreStage(stat2);
-					Rect rect4 = (num2 % 2 == 0) ? new Rect(rect2.x, num, rect2.width / 2f, 100f) : new Rect(rect2.x + rect2.width / 2f, num, rect2.width / 2f, 100f);
+					Rect rect4 = ((num2 % 2 == 0) ? new Rect(rect2.x, num, rect2.width / 2f, 100f) : new Rect(rect2.x + rect2.width / 2f, num, rect2.width / 2f, 100f));
 					string str2 = scoreStage2.label.CapitalizeFirst() + " (" + allDefsListForReading[i].ScoreToString(stat2) + ")";
 					Widgets.Label(rect4, str2.Truncate(rect4.width));
 					if (num2 % 2 == 1)
@@ -72,7 +72,7 @@ namespace Verse
 				Rect windowRect = EnvironmentStatsDrawer.GetWindowRect(shouldShowBeauty: false, shouldShowRoomStats: true);
 				Find.WindowStack.ImmediateWindow(74975, windowRect, WindowLayer.Super, delegate
 				{
-					float curY = 18f;
+					float curY = 12f;
 					EnvironmentStatsDrawer.DoRoomInfo(room, ref curY, windowRect);
 				});
 				return new GizmoResult(GizmoState.Mouseover);

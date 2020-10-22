@@ -1,7 +1,7 @@
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -275,7 +275,7 @@ namespace RimWorld
 					}
 				}
 			}
-			if (cachedAnimalCommonalities.TryGetValue(animalDef, out float value))
+			if (cachedAnimalCommonalities.TryGetValue(animalDef, out var value))
 			{
 				return value;
 			}
@@ -285,7 +285,7 @@ namespace RimWorld
 		public float CommonalityOfPlant(ThingDef plantDef)
 		{
 			CachePlantCommonalitiesIfShould();
-			if (cachedPlantCommonalities.TryGetValue(plantDef, out float value))
+			if (cachedPlantCommonalities.TryGetValue(plantDef, out var value))
 			{
 				return value;
 			}
@@ -321,7 +321,7 @@ namespace RimWorld
 					}
 				}
 			}
-			if (cachedDiseaseCommonalities.TryGetValue(diseaseInc, out float value))
+			if (cachedDiseaseCommonalities.TryGetValue(diseaseInc, out var value))
 			{
 				return value;
 			}

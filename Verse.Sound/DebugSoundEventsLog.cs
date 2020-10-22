@@ -24,8 +24,8 @@ namespace Verse.Sound
 		{
 			if (DebugViewSettings.writeSoundEventsRecord)
 			{
-				string str = (def == null) ? "null: " : ((!def.isUndefined) ? (def.sustain ? "SustainerSpawn: " : "OneShot: ") : "Undefined: ");
-				string str2 = (def != null) ? def.defName : "null";
+				string str = ((def == null) ? "null: " : ((!def.isUndefined) ? (def.sustain ? "SustainerSpawn: " : "OneShot: ") : "Undefined: "));
+				string str2 = ((def != null) ? def.defName : "null");
 				CreateRecord(str + str2 + " - " + info.ToString());
 			}
 		}

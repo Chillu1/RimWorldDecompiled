@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -73,8 +73,6 @@ namespace RimWorld
 
 		public static IEnumerable<GenUI.AnonymousStackElement> GetRewardStackElementsForThings(IEnumerable<Thing> things, bool detailsHidden = false)
 		{
-			_003C_003Ec__DisplayClass8_0 _003C_003Ec__DisplayClass8_ = new _003C_003Ec__DisplayClass8_0();
-			_003C_003Ec__DisplayClass8_.detailsHidden = detailsHidden;
 			tmpThings.Clear();
 			foreach (Thing thing2 in things)
 			{
@@ -95,12 +93,11 @@ namespace RimWorld
 			}
 			for (int i = 0; i < tmpThings.Count; i++)
 			{
-				_003C_003Ec__DisplayClass8_0 _003C_003Ec__DisplayClass8_2 = _003C_003Ec__DisplayClass8_;
 				Thing thing = tmpThings[i].First.GetInnerIfMinified();
 				int second = tmpThings[i].Second;
 				Pawn value;
 				string label;
-				if ((value = (thing as Pawn)) != null)
+				if ((value = thing as Pawn) != null)
 				{
 					label = "PawnQuestReward".Translate(value);
 				}
@@ -117,9 +114,9 @@ namespace RimWorld
 						if (Mouse.IsOver(rect))
 						{
 							Widgets.DrawHighlight(rect);
-							TaggedString t = _003C_003Ec__DisplayClass8_2.detailsHidden ? "NoMoreInfoAvailable".Translate() : "ClickForMoreInfo".Translate();
+							TaggedString t = (detailsHidden ? "NoMoreInfoAvailable".Translate() : "ClickForMoreInfo".Translate());
 							Pawn pawn;
-							if ((pawn = (thing as Pawn)) != null && pawn.RaceProps.Humanlike)
+							if ((pawn = thing as Pawn) != null && pawn.RaceProps.Humanlike)
 							{
 								TooltipHandler.TipRegion(rect, pawn.LabelCap + "\n\n" + t);
 							}
@@ -134,7 +131,7 @@ namespace RimWorld
 						Widgets.Label(rect3, label);
 						if (Widgets.ButtonInvisible(rect))
 						{
-							if (_003C_003Ec__DisplayClass8_2.detailsHidden)
+							if (detailsHidden)
 							{
 								Messages.Message("NoMoreInfoAvailable".Translate(), MessageTypeDefOf.RejectInput, historical: false);
 							}

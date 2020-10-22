@@ -10,7 +10,7 @@ namespace RimWorld
 
 		public static LatitudeSection GetReportedLatitudeSection(float latitude)
 		{
-			GetLatitudeSection(latitude, out float equatorial, out float seasonal, out float polar);
+			GetLatitudeSection(latitude, out var equatorial, out var seasonal, out var polar);
 			if (equatorial == 0f && seasonal == 0f && polar == 0f)
 			{
 				return LatitudeSection.Undefined;
@@ -28,7 +28,7 @@ namespace RimWorld
 
 		public static LatitudeSection GetDominantLatitudeSection(float latitude)
 		{
-			GetLatitudeSection(latitude, out float equatorial, out float seasonal, out float polar);
+			GetLatitudeSection(latitude, out var equatorial, out var seasonal, out var polar);
 			if (equatorial == 0f && seasonal == 0f && polar == 0f)
 			{
 				return LatitudeSection.Undefined;

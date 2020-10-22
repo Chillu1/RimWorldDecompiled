@@ -11,7 +11,7 @@ namespace RimWorld
 			int count = countRange.RandomInRange;
 			for (int i = 0; i < count; i++)
 			{
-				if (!DefDatabase<ThingDef>.AllDefs.Where((ThingDef t) => HandlesThingDef(t) && t.tradeability.TraderCanSell() && (int)t.techLevel <= (int)maxTechLevelGenerate).TryRandomElementByWeight(SelectionWeight, out ThingDef result))
+				if (!DefDatabase<ThingDef>.AllDefs.Where((ThingDef t) => HandlesThingDef(t) && t.tradeability.TraderCanSell() && (int)t.techLevel <= (int)maxTechLevelGenerate).TryRandomElementByWeight(SelectionWeight, out var result))
 				{
 					break;
 				}

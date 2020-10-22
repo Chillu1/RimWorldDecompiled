@@ -65,13 +65,13 @@ namespace RimWorld
 					Pawn pawn = (Pawn)job.targetA.Thing;
 					pawn.GetLord()?.Notify_PawnAttemptArrested(pawn);
 					GenClamor.DoClamor(pawn, 10f, ClamorDefOf.Harm);
-					if (job.def == JobDefOf.Arrest && !pawn.CheckAcceptArrest(base.pawn))
-					{
-						base.pawn.jobs.EndCurrentJob(JobCondition.Incompletable);
-					}
 					if (!pawn.IsPrisoner)
 					{
 						QuestUtility.SendQuestTargetSignals(pawn.questTags, "Arrested", pawn.Named("SUBJECT"));
+					}
+					if (job.def == JobDefOf.Arrest && !pawn.CheckAcceptArrest(base.pawn))
+					{
+						base.pawn.jobs.EndCurrentJob(JobCondition.Incompletable);
 					}
 				}
 			};
@@ -95,7 +95,7 @@ namespace RimWorld
 			toil4.initAction = delegate
 			{
 				IntVec3 position = DropBed.Position;
-				pawn.carryTracker.TryDropCarriedThing(position, ThingPlaceMode.Direct, out Thing _);
+				pawn.carryTracker.TryDropCarriedThing(position, ThingPlaceMode.Direct, out var _);
 				if (!DropBed.Destroyed && (DropBed.OwnersForReading.Contains(Takee) || (DropBed.Medical && DropBed.AnyUnoccupiedSleepingSlot) || Takee.ownership == null))
 				{
 					Takee.jobs.Notify_TuckedIntoBed(DropBed);

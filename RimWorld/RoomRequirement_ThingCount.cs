@@ -20,7 +20,7 @@ namespace RimWorld
 		public override string Label(Room r = null)
 		{
 			bool flag = !labelKey.NullOrEmpty();
-			string text = flag ? ((string)labelKey.Translate()) : thingDef.label;
+			string text = (flag ? ((string)labelKey.Translate()) : thingDef.label);
 			if (r != null)
 			{
 				return text + " " + Count(r) + "/" + count;

@@ -10,7 +10,7 @@ namespace RimWorld
 			{
 				base.Apply(target, dest);
 				Pawn pawn = target.Thing as Pawn;
-				pawn?.stances.stunner.StunFor(GetDurationSeconds(pawn).SecondsToTicks(), parent.pawn, addBattleLog: false);
+				pawn?.stances.stunner.StunFor_NewTmp(GetDurationSeconds(pawn).SecondsToTicks(), parent.pawn, addBattleLog: false);
 			}
 		}
 	}

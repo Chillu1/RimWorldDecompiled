@@ -26,7 +26,7 @@ namespace RimWorld
 		{
 			Map map = (Map)parms.target;
 			PawnKindDef alphabeaver = PawnKindDefOf.Alphabeaver;
-			if (!RCellFinder.TryFindRandomPawnEntryCell(out IntVec3 result, map, CellFinder.EdgeRoadChance_Animal))
+			if (!RCellFinder.TryFindRandomPawnEntryCell(out var result, map, CellFinder.EdgeRoadChance_Animal))
 			{
 				return false;
 			}

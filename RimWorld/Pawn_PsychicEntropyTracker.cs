@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
@@ -41,6 +41,8 @@ namespace RimWorld
 		public const float PercentageAfterGainingPsylink = 0.75f;
 
 		public const int PsyfocusUpdateInterval = 150;
+
+		public const float PsyfocusCostTolerance = 0.0005f;
 
 		public static readonly Dictionary<PsychicEntropySeverity, float> EntropyThresholds = new Dictionary<PsychicEntropySeverity, float>
 		{
@@ -90,6 +92,10 @@ namespace RimWorld
 
 		public static Dictionary<PsychicEntropySeverity, SoundDef> EntropyThresholdSounds;
 
+		private float psychicSensitivityCached;
+
+		private int psychicSensitivityCachedTick = -1;
+
 		public static string psyfocusLevelInfoCached = null;
 
 		public Pawn Pawn => pawn;
@@ -112,29 +118,20 @@ namespace RimWorld
 
 		public bool IsCurrentlyMeditating => Find.TickManager.TicksGame < lastMeditationTick + 10;
 
-		public float EntropyRelativeValue
+		public float PsychicSensitivity
 		{
 			get
 			{
-				if (currentEntropy < float.Epsilon)
+				if (psychicSensitivityCachedTick != Find.TickManager.TicksGame)
 				{
-					return 0f;
+					psychicSensitivityCached = pawn.GetStatValue(StatDefOf.PsychicSensitivity);
+					psychicSensitivityCachedTick = Find.TickManager.TicksGame;
 				}
-				if (currentEntropy < MaxEntropy)
-				{
-					if (!(MaxEntropy > float.Epsilon))
-					{
-						return 0f;
-					}
-					return currentEntropy / MaxEntropy;
-				}
-				if (!(MaxPotentialEntropy > float.Epsilon))
-				{
-					return 0f;
-				}
-				return 1f + (currentEntropy - MaxEntropy) / MaxPotentialEntropy;
+				return psychicSensitivityCached;
 			}
 		}
+
+		public float EntropyRelativeValue => EntropyToRelativeValue(currentEntropy);
 
 		public PsychicEntropySeverity Severity
 		{
@@ -295,7 +292,7 @@ namespace RimWorld
 		public bool TryAddEntropy(float value, Thing source = null, bool scale = true, bool overLimit = false)
 		{
 			PsychicEntropySeverity severity = Severity;
-			float num = scale ? (value * pawn.GetStatValue(StatDefOf.PsychicEntropyGain)) : value;
+			float num = (scale ? (value * pawn.GetStatValue(StatDefOf.PsychicEntropyGain)) : value);
 			if (!WouldOverflowEntropy(num) || overLimit)
 			{
 				currentEntropy = Mathf.Max(currentEntropy + num, 0f);
@@ -367,6 +364,27 @@ namespace RimWorld
 			targetPsyfocus = Mathf.Clamp(val, 0f, 1f);
 		}
 
+		public float EntropyToRelativeValue(float val)
+		{
+			if (val < float.Epsilon)
+			{
+				return 0f;
+			}
+			if (val < MaxEntropy)
+			{
+				if (!(MaxEntropy > float.Epsilon))
+				{
+					return 0f;
+				}
+				return val / MaxEntropy;
+			}
+			if (!(MaxPotentialEntropy > float.Epsilon))
+			{
+				return 0f;
+			}
+			return 1f + (val - MaxEntropy) / MaxPotentialEntropy;
+		}
+
 		public void Notify_GainedPsylink()
 		{
 			currentPsyfocus = Mathf.Max(currentPsyfocus, 0.75f);
@@ -404,7 +422,13 @@ namespace RimWorld
 			return gizmo;
 		}
 
+		[Obsolete("Only need this overload to not break mod compatibility.")]
 		public string PsyfocusTipString()
+		{
+			return PsyfocusTipString_NewTemp();
+		}
+
+		public string PsyfocusTipString_NewTemp(float psyfocusTargetOverride = -1f)
 		{
 			if (psyfocusLevelInfoCached == null)
 			{
@@ -418,7 +442,7 @@ namespace RimWorld
 					psyfocusLevelInfoCached += "PsyfocusLevelInfoRange".Translate((PsyfocusBandPercentages[j] * 100f).ToStringDecimalIfSmall(), (PsyfocusBandPercentages[j + 1] * 100f).ToStringDecimalIfSmall()) + ": " + "PsyfocusLevelInfoFallRate".Translate(FallRatePerPsyfocusBand[j].ToStringPercent()) + "\n";
 				}
 			}
-			return "Psyfocus".Translate() + ": " + currentPsyfocus.ToStringPercent("0.#") + "\n" + "DesiredPsyfocus".Translate() + ": " + targetPsyfocus.ToStringPercent("0.#") + "\n\n" + "DesiredPsyfocusDesc".Translate(pawn.Named("PAWN")) + "\n\n" + "PsyfocusDesc".Translate() + ":\n\n" + psyfocusLevelInfoCached;
+			return "Psyfocus".Translate() + ": " + currentPsyfocus.ToStringPercent("0.#") + "\n" + "DesiredPsyfocus".Translate() + ": " + ((psyfocusTargetOverride >= 0f) ? psyfocusTargetOverride : targetPsyfocus).ToStringPercent("0.#") + "\n\n" + "DesiredPsyfocusDesc".Translate(pawn.Named("PAWN")) + "\n\n" + "PsyfocusDesc".Translate() + ":\n\n" + psyfocusLevelInfoCached;
 		}
 
 		public void ExposeData()

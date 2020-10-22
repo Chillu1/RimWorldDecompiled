@@ -1,8 +1,8 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse.AI;
 
@@ -54,7 +54,9 @@ namespace Verse
 			{
 				for (int i = 0; i < 1000; i++)
 				{
-					item.TakeDamage(new DamageInfo(DamageDefOf.Crush, 10f));
+					DamageInfo dinfo = new DamageInfo(DamageDefOf.Crush, 10f);
+					dinfo.SetIgnoreInstantKillProtection(ignore: true);
+					item.TakeDamage(dinfo);
 					if (!item.Destroyed)
 					{
 						continue;
@@ -154,7 +156,7 @@ namespace Verse
 		{
 			if ((from x in p.health.hediffSet.GetHediffs<Hediff_Injury>()
 				where x.CanHealNaturally() || x.CanHealFromTending()
-				select x).TryRandomElement(out Hediff_Injury result))
+				select x).TryRandomElement(out var result))
 			{
 				result.Heal(10f);
 			}
@@ -171,7 +173,14 @@ namespace Verse
 					HediffGiver localHdg = item;
 					list.Add(new FloatMenuOption(localHdg.hediff.defName, delegate
 					{
-						localHdg.TryApply(p);
+						if (localHdg.TryApply(p))
+						{
+							Messages.Message(localHdg.hediff.defName + " applied to " + p.Label, MessageTypeDefOf.NeutralEvent, historical: false);
+						}
+						else
+						{
+							Messages.Message("failed to apply " + localHdg.hediff.defName + " to " + p.Label, MessageTypeDefOf.NegativeEvent, historical: false);
+						}
 					}));
 				}
 			}
@@ -180,6 +189,38 @@ namespace Verse
 				Find.WindowStack.Add(new FloatMenu(list));
 				DebugActionsUtility.DustPuffFrom(p);
 			}
+		}
+
+		[DebugAction("Pawns", "Activate HediffGiver World Pawn", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void ActivateHediffGiverWorldPawn()
+		{
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			foreach (Pawn item in Find.WorldPawns.AllPawnsAlive.Where((Pawn p) => p.RaceProps.Humanlike))
+			{
+				Pawn pawnLocal = item;
+				list.Add(new DebugMenuOption(pawnLocal.Label, DebugMenuOptionMode.Action, delegate
+				{
+					List<DebugMenuOption> list2 = new List<DebugMenuOption>();
+					HediffGiver hediffGiverLocal = default(HediffGiver);
+					foreach (HediffGiver item2 in pawnLocal.RaceProps.hediffGiverSets.SelectMany((HediffGiverSetDef s) => s.hediffGivers))
+					{
+						hediffGiverLocal = item2;
+						list2.Add(new DebugMenuOption(hediffGiverLocal.hediff.defName, DebugMenuOptionMode.Action, delegate
+						{
+							if (hediffGiverLocal.TryApply(pawnLocal))
+							{
+								Messages.Message(hediffGiverLocal.hediff.defName + " applied to " + pawnLocal.Label, MessageTypeDefOf.NeutralEvent, historical: false);
+							}
+							else
+							{
+								Messages.Message("failed to apply " + hediffGiverLocal.hediff.defName + " to " + pawnLocal.Label, MessageTypeDefOf.NegativeEvent, historical: false);
+							}
+						}));
+					}
+					Find.WindowStack.Add(new Dialog_DebugOptionListLister(list2));
+				}));
+			}
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
 		}
 
 		[DebugAction("Pawns", null, actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
@@ -307,17 +348,11 @@ namespace Verse
 					return text;
 				}),
 				new TableDataGetter<Verb>("weight", (Verb v) => VerbUtility.InitialVerbWeight(v, p)),
-				new TableDataGetter<Verb>("category", delegate(Verb v)
+				new TableDataGetter<Verb>("category", (Verb v) => v.GetSelectionCategory(p, highestWeight) switch
 				{
-					switch (v.GetSelectionCategory(p, highestWeight))
-					{
-					case VerbSelectionCategory.Best:
-						return "Best".Colorize(Color.green);
-					case VerbSelectionCategory.Worst:
-						return "Worst".Colorize(Color.grey);
-					default:
-						return "Mid";
-					}
+					VerbSelectionCategory.Best => "Best".Colorize(Color.green), 
+					VerbSelectionCategory.Worst => "Worst".Colorize(Color.grey), 
+					_ => "Mid", 
 				}),
 				new TableDataGetter<Verb>("sel %", (Verb v) => GetSelectionPercent(v).ToStringPercent("F2"))
 			};
@@ -519,8 +554,29 @@ namespace Verse
 			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
 		}
 
+		[DebugAction("Pawns", null, actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void MaxSkill()
+		{
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			foreach (SkillDef def in DefDatabase<SkillDef>.AllDefs)
+			{
+				SkillDef skillDef = def;
+				list.Add(new DebugMenuOption(skillDef.defName, DebugMenuOptionMode.Tool, delegate
+				{
+					Pawn pawn = (from t in Find.CurrentMap.thingGrid.ThingsAt(UI.MouseCell())
+						where t is Pawn
+						select t).Cast<Pawn>().FirstOrDefault();
+					if (pawn != null && pawn.skills != null)
+					{
+						pawn.skills.Learn(def, 1E+08f);
+					}
+				}));
+			}
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+		}
+
 		[DebugAction("Pawns", null, actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void MaxSkill(Pawn p)
+		private static void MaxAllSkills(Pawn p)
 		{
 			if (p.skills != null)
 			{
@@ -537,7 +593,7 @@ namespace Verse
 			foreach (TrainableDef allDef2 in DefDatabase<TrainableDef>.AllDefs)
 			{
 				Pawn trainer = p.Map.mapPawns.FreeColonistsSpawned.RandomElement();
-				if (p.training.CanAssignToTrain(allDef2, out bool _).Accepted)
+				if (p.training.CanAssignToTrain(allDef2, out var _).Accepted)
 				{
 					p.training.Train(allDef2, trainer);
 				}
@@ -633,6 +689,16 @@ namespace Verse
 				}));
 			}
 			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+		}
+
+		[DebugAction("Pawns", "Stop mental state", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void StopMentalState(Pawn p)
+		{
+			if (p.InMentalState)
+			{
+				p.MentalState.RecoverFromState();
+				p.jobs.EndCurrentJob(JobCondition.InterruptForced);
+			}
 		}
 
 		[DebugAction("Pawns", "Inspiration...", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
@@ -783,7 +849,7 @@ namespace Verse
 						Hediff_ImplantWithLevel hediff_ImplantWithLevel = item.GetMainPsylinkSource();
 						if (hediff_ImplantWithLevel == null)
 						{
-							hediff_ImplantWithLevel = (HediffMaker.MakeHediff(HediffDefOf.PsychicAmplifier, item, item.health.hediffSet.GetBrain()) as Hediff_ImplantWithLevel);
+							hediff_ImplantWithLevel = HediffMaker.MakeHediff(HediffDefOf.PsychicAmplifier, item, item.health.hediffSet.GetBrain()) as Hediff_ImplantWithLevel;
 							item.health.AddHediff(hediff_ImplantWithLevel);
 						}
 						hediff_ImplantWithLevel.ChangeLevel(level - hediff_ImplantWithLevel.level);
@@ -861,6 +927,85 @@ namespace Verse
 			}
 		}
 
+		[DebugAction("Pawns", "Wear apparel (selected)...", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void WearApparel_ToSelected()
+		{
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			list.Add(new DebugMenuOption("*Remove all apparel", DebugMenuOptionMode.Action, delegate
+			{
+				foreach (object item in Find.Selector.SelectedObjectsListForReading)
+				{
+					Pawn pawn2;
+					if ((pawn2 = item as Pawn) != null)
+					{
+						pawn2.apparel.DestroyAll();
+					}
+				}
+			}));
+			foreach (ThingDef def2 in from def in DefDatabase<ThingDef>.AllDefs
+				where def.IsApparel
+				select def into d
+				orderby d.defName
+				select d)
+			{
+				list.Add(new DebugMenuOption(def2.defName, DebugMenuOptionMode.Action, delegate
+				{
+					foreach (object item2 in Find.Selector.SelectedObjectsListForReading)
+					{
+						Apparel newApparel = (Apparel)ThingMaker.MakeThing(stuff: GenStuff.RandomStuffFor(def2), def: def2);
+						Pawn pawn;
+						if ((pawn = item2 as Pawn) != null)
+						{
+							pawn.apparel.Wear(newApparel, dropReplacedApparel: false);
+						}
+					}
+				}));
+			}
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+		}
+
+		[DebugAction("Pawns", "Equip primary (selected)...", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void EquipPrimary_ToSelected()
+		{
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			list.Add(new DebugMenuOption("*Remove primary", DebugMenuOptionMode.Action, delegate
+			{
+				foreach (object item in Find.Selector.SelectedObjectsListForReading)
+				{
+					Pawn pawn2;
+					if ((pawn2 = item as Pawn) != null && pawn2.equipment != null && pawn2.equipment.Primary != null)
+					{
+						pawn2.equipment.DestroyEquipment(pawn2.equipment.Primary);
+					}
+				}
+			}));
+			foreach (ThingDef def2 in from def in DefDatabase<ThingDef>.AllDefs
+				where def.equipmentType == EquipmentType.Primary
+				select def into d
+				orderby d.defName
+				select d)
+			{
+				list.Add(new DebugMenuOption(def2.defName, DebugMenuOptionMode.Action, delegate
+				{
+					foreach (object item2 in Find.Selector.SelectedObjectsListForReading)
+					{
+						Pawn pawn;
+						if ((pawn = item2 as Pawn) != null && pawn.equipment != null)
+						{
+							if (pawn.equipment.Primary != null)
+							{
+								pawn.equipment.DestroyEquipment(pawn.equipment.Primary);
+							}
+							ThingDef stuff = GenStuff.RandomStuffFor(def2);
+							ThingWithComps newEq = (ThingWithComps)ThingMaker.MakeThing(def2, stuff);
+							pawn.equipment.AddEquipment(newEq);
+						}
+					}
+				}));
+			}
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+		}
+
 		[DebugAction("Pawns", null, actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void TameAnimal(Pawn p)
 		{
@@ -898,16 +1043,6 @@ namespace Verse
 				{
 					p.training.Train(allDef2, null, complete: true);
 				}
-			}
-		}
-
-		[DebugAction("Pawns", null, actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void NameAnimalByNuzzling(Pawn p)
-		{
-			if ((p.Name == null || p.Name.Numerical) && p.RaceProps.Animal)
-			{
-				PawnUtility.GiveNameBecauseOfNuzzle(p.Map.mapPawns.FreeColonists.First(), p);
-				DebugActionsUtility.DustPuffFrom(p);
 			}
 		}
 
@@ -1155,6 +1290,19 @@ namespace Verse
 			{
 				Faction faction = Find.FactionManager.RandomEnemyFaction();
 				faction?.kidnapped.Kidnap(p, faction.leader);
+			}
+		}
+
+		[DebugAction("Pawns", "Face cell (selected)...", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void Selected_SetFacing()
+		{
+			foreach (object item in Find.Selector.SelectedObjectsListForReading)
+			{
+				Pawn pawn;
+				if ((pawn = item as Pawn) != null)
+				{
+					pawn.rotationTracker.FaceTarget(UI.MouseCell());
+				}
 			}
 		}
 	}

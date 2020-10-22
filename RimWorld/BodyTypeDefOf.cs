@@ -15,7 +15,7 @@ namespace RimWorld
 
 		static BodyTypeDefOf()
 		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(BodyTypeDef));
+			DefOfHelper.EnsureInitializedInCtor(typeof(BodyTypeDefOf));
 		}
 	}
 }

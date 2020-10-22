@@ -212,12 +212,12 @@ namespace Verse
 			{
 				if (saveDataPath == null)
 				{
-					if (GenCommandLine.TryGetCommandLineArg("savedatafolder", out string value))
+					if (GenCommandLine.TryGetCommandLineArg("savedatafolder", out var value))
 					{
 						value.TrimEnd('\\', '/');
 						if (value == "")
 						{
-							value = (Path.DirectorySeparatorChar.ToString() ?? "");
+							value = Path.DirectorySeparatorChar.ToString() ?? "";
 						}
 						saveDataPath = value;
 						Log.Message("Save data folder overridden to " + saveDataPath);
@@ -408,7 +408,7 @@ namespace Verse
 		private static string GetOrCreateModsFolder(string folderName)
 		{
 			DirectoryInfo directoryInfo = new DirectoryInfo(UnityData.dataPath);
-			DirectoryInfo directoryInfo2 = (!UnityData.isEditor) ? directoryInfo.Parent : directoryInfo;
+			DirectoryInfo directoryInfo2 = ((!UnityData.isEditor) ? directoryInfo.Parent : directoryInfo);
 			string text = Path.Combine(directoryInfo2.ToString(), folderName);
 			DirectoryInfo directoryInfo3 = new DirectoryInfo(text);
 			if (!directoryInfo3.Exists)

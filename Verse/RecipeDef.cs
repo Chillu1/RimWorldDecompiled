@@ -1,8 +1,8 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
 
 namespace Verse
 {
@@ -51,6 +51,8 @@ namespace Verse
 
 		public bool productHasIngredientStuff;
 
+		public bool useIngredientsForColor = true;
+
 		public int targetCountAdjustment = 1;
 
 		public ThingDef unfinishedThingDef;
@@ -64,6 +66,8 @@ namespace Verse
 		public EffecterDef effectWorking;
 
 		public SoundDef soundWorking;
+
+		private ThingDef uiIconThing;
 
 		public List<ThingDef> recipeUsers;
 
@@ -261,6 +265,8 @@ namespace Verse
 				return products[0].thingDef;
 			}
 		}
+
+		public ThingDef UIIconThing => uiIconThing ?? ProducedThingDef;
 
 		public bool AvailableOnNow(Thing thing)
 		{
@@ -502,6 +508,11 @@ namespace Verse
 			if (products != null && products.Count > 0)
 			{
 				yield return new StatDrawEntry(StatCategoryDefOf.Basics, "Products".Translate(), products.Select((ThingDefCountClass pr) => pr.Summary).ToCommaList(), "Stat_Recipe_Products_Desc".Translate(), 4405, null, GetProductsHyperlinks());
+				float num = WorkAmountTotal(null);
+				if (num > 0f)
+				{
+					yield return new StatDrawEntry(StatCategoryDefOf.Basics, StatDefOf.WorkToMake.LabelCap, num.ToStringWorkAmount(), StatDefOf.WorkToMake.description, StatDefOf.WorkToMake.displayPriorityInCategory);
+				}
 			}
 			if (workSpeedStat != null)
 			{

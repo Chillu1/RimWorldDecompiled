@@ -35,7 +35,7 @@ namespace RimWorld
 					def = DamageDefOf.Blunt;
 				}
 			}
-			ThingDef source = (base.EquipmentSource == null) ? CasterPawn.def : base.EquipmentSource.def;
+			ThingDef source = ((base.EquipmentSource == null) ? CasterPawn.def : base.EquipmentSource.def);
 			Vector3 direction = (target.Thing.Position - CasterPawn.Position).ToVector3();
 			DamageInfo damageInfo = new DamageInfo(def, num, armorPenetration, -1f, caster, null, source);
 			damageInfo.SetBodyRegion(BodyPartHeight.Undefined, BodyPartDepth.Outside);

@@ -22,7 +22,7 @@ namespace Verse.AI
 
 		public static bool MakesOccupiedCellsAlwaysReachableDiagonally(ThingDef def)
 		{
-			ThingDef thingDef = def.IsFrame ? (def.entityDefToBuild as ThingDef) : def;
+			ThingDef thingDef = (def.IsFrame ? (def.entityDefToBuild as ThingDef) : def);
 			if (thingDef != null && thingDef.CanInteractThroughCorners)
 			{
 				return true;
@@ -53,7 +53,7 @@ namespace Verse.AI
 
 		public static void AddAllowedAdjacentRegions(LocalTargetInfo dest, TraverseParms traverseParams, Map map, List<Region> regions)
 		{
-			GenAdj.GetAdjacentCorners(dest, out IntVec3 BL, out IntVec3 TL, out IntVec3 TR, out IntVec3 BR);
+			GenAdj.GetAdjacentCorners(dest, out var BL, out var TL, out var TR, out var BR);
 			if (!dest.HasThing || (dest.Thing.def.size.x == 1 && dest.Thing.def.size.z == 1))
 			{
 				IntVec3 cell = dest.Cell;
@@ -87,7 +87,7 @@ namespace Verse.AI
 
 		public static bool IsAdjacentOrInsideAndAllowedToTouch(IntVec3 root, LocalTargetInfo target, Map map)
 		{
-			GenAdj.GetAdjacentCorners(target, out IntVec3 BL, out IntVec3 TL, out IntVec3 TR, out IntVec3 BR);
+			GenAdj.GetAdjacentCorners(target, out var BL, out var TL, out var TR, out var BR);
 			if (root.AdjacentTo8WayOrInside(target))
 			{
 				return !IsAdjacentCornerAndNotAllowed(root, BL, TL, TR, BR, map);

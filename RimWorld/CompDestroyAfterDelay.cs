@@ -1,3 +1,4 @@
+using UnityEngine;
 using Verse;
 
 namespace RimWorld
@@ -13,8 +14,18 @@ namespace RimWorld
 			base.CompTick();
 			if (Find.TickManager.TicksGame > spawnTick + Props.delayTicks && !parent.Destroyed)
 			{
-				parent.Destroy();
+				parent.Destroy(Props.destroyMode);
 			}
+		}
+
+		public override string CompInspectStringExtra()
+		{
+			if (Props.countdownLabel.NullOrEmpty())
+			{
+				return "";
+			}
+			int numTicks = Mathf.Max(0, spawnTick + Props.delayTicks - Find.TickManager.TicksGame);
+			return Props.countdownLabel + ": " + numTicks.ToStringSecondsFromTicks();
 		}
 
 		public override void PostSpawnSetup(bool respawningAfterLoad)

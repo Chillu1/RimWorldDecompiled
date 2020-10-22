@@ -8,6 +8,10 @@ namespace RimWorld.BaseGen
 			{
 				return false;
 			}
+			if (BaseGen.globalSettings.basePart_throneRoomsResolved < BaseGen.globalSettings.minThroneRooms)
+			{
+				return false;
+			}
 			if (BaseGen.globalSettings.basePart_barracksResolved < BaseGen.globalSettings.minBarracks)
 			{
 				return false;

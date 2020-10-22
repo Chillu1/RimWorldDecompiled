@@ -1,5 +1,6 @@
-using RimWorld;
+using System;
 using System.Linq;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -58,6 +59,12 @@ namespace Verse
 					pawn.health.woundedEffecter = damageEffecter.Spawn();
 					pawn.health.woundedEffecter.Trigger(pawn, dinfo.Instigator ?? pawn);
 				}
+				if (dinfo.Def.damageEffecter != null)
+				{
+					Effecter effecter = dinfo.Def.damageEffecter.Spawn();
+					effecter.Trigger(pawn, pawn);
+					effecter.Cleanup();
+				}
 			}
 			if (damageResult.headshot && pawn.Spawned)
 			{
@@ -69,7 +76,7 @@ namespace Verse
 			}
 			if ((damageResult.deflected || damageResult.diminished) && spawnedOrAnyParentSpawned)
 			{
-				EffecterDef effecterDef = damageResult.deflected ? ((damageResult.deflectedByMetalArmor && dinfo.Def.canUseDeflectMetalEffect) ? ((dinfo.Def != DamageDefOf.Bullet) ? EffecterDefOf.Deflect_Metal : EffecterDefOf.Deflect_Metal_Bullet) : ((dinfo.Def != DamageDefOf.Bullet) ? EffecterDefOf.Deflect_General : EffecterDefOf.Deflect_General_Bullet)) : ((!damageResult.diminishedByMetalArmor) ? EffecterDefOf.DamageDiminished_General : EffecterDefOf.DamageDiminished_Metal);
+				EffecterDef effecterDef = (damageResult.deflected ? ((damageResult.deflectedByMetalArmor && dinfo.Def.canUseDeflectMetalEffect) ? ((dinfo.Def != DamageDefOf.Bullet) ? EffecterDefOf.Deflect_Metal : EffecterDefOf.Deflect_Metal_Bullet) : ((dinfo.Def != DamageDefOf.Bullet) ? EffecterDefOf.Deflect_General : EffecterDefOf.Deflect_General_Bullet)) : ((!damageResult.diminishedByMetalArmor) ? EffecterDefOf.DamageDiminished_General : EffecterDefOf.DamageDiminished_Metal));
 				if (pawn.health.deflectionEffecter == null || pawn.health.deflectionEffecter.def != effecterDef)
 				{
 					if (pawn.health.deflectionEffecter != null)
@@ -92,6 +99,7 @@ namespace Verse
 			return damageResult;
 		}
 
+		[Obsolete]
 		private void CheckApplySpreadDamage(DamageInfo dinfo, Thing t)
 		{
 			if ((dinfo.Def != DamageDefOf.Flame || t.FlammableNow) && Rand.Chance(0.5f))
@@ -125,7 +133,7 @@ namespace Verse
 			if (num2)
 			{
 				DamageDef damageDef = dinfo.Def;
-				num = ArmorUtility.GetPostArmorDamage(pawn, num, dinfo.ArmorPenetrationInt, dinfo.HitPart, ref damageDef, out deflectedByMetalArmor, out bool diminishedByMetalArmor);
+				num = ArmorUtility.GetPostArmorDamage(pawn, num, dinfo.ArmorPenetrationInt, dinfo.HitPart, ref damageDef, out deflectedByMetalArmor, out var diminishedByMetalArmor);
 				dinfo.Def = damageDef;
 				if (num < dinfo.Amount)
 				{
@@ -199,13 +207,35 @@ namespace Verse
 		protected float FinalizeAndAddInjury(Pawn pawn, Hediff_Injury injury, DamageInfo dinfo, DamageResult result)
 		{
 			injury.TryGetComp<HediffComp_GetsPermanent>()?.PreFinalizeInjury();
+			float partHealth = pawn.health.hediffSet.GetPartHealth(injury.Part);
+			if (pawn.IsColonist && !dinfo.IgnoreInstantKillProtection && dinfo.Def.ExternalViolenceFor(pawn) && !Rand.Chance(Find.Storyteller.difficultyValues.allowInstantKillChance))
+			{
+				float num = ((injury.def.lethalSeverity > 0f) ? (injury.def.lethalSeverity * 1.1f) : 1f);
+				float min = 1f;
+				float max = Mathf.Min(injury.Severity, partHealth);
+				for (int i = 0; i < 7; i++)
+				{
+					if (!pawn.health.WouldDieAfterAddingHediff(injury))
+					{
+						break;
+					}
+					float num2 = Mathf.Clamp(partHealth - num, min, max);
+					if (DebugViewSettings.logCauseOfDeath)
+					{
+						Log.Message($"CauseOfDeath: attempt to prevent death for {pawn.Name} on {injury.Part.Label} attempt:{i + 1} severity:{injury.Severity}->{num2} part health:{partHealth}");
+					}
+					injury.Severity = num2;
+					num *= 2f;
+					min = 0f;
+				}
+			}
 			pawn.health.AddHediff(injury, null, dinfo, result);
-			float num = Mathf.Min(injury.Severity, pawn.health.hediffSet.GetPartHealth(injury.Part));
-			result.totalDamageDealt += num;
+			float num3 = Mathf.Min(injury.Severity, partHealth);
+			result.totalDamageDealt += num3;
 			result.wounded = true;
 			result.AddPart(pawn, injury.Part);
 			result.AddHediff(injury);
-			return num;
+			return num3;
 		}
 
 		private void CheckDuplicateDamageToOuterParts(DamageInfo dinfo, Pawn pawn, float totalDamage, DamageResult result)

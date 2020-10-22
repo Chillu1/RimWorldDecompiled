@@ -11,6 +11,8 @@ namespace RimWorld
 
 		private DifficultyDef difficulty;
 
+		private Difficulty difficultyValues = new Difficulty();
+
 		private Listing_Standard selectedStorytellerInfoListing = new Listing_Standard();
 
 		public override string PageTitle => "ChooseAIStoryteller".Translate();
@@ -25,23 +27,14 @@ namespace RimWorld
 					orderby d.listOrder
 					select d).First();
 			}
+			StorytellerUI.ResetStorytellerSelectionInterface();
 		}
 
 		public override void DoWindowContents(Rect rect)
 		{
 			DrawPageTitle(rect);
-			StorytellerUI.DrawStorytellerSelectionInterface(GetMainRect(rect), ref storyteller, ref difficulty, selectedStorytellerInfoListing);
-			string midLabel = null;
-			Action midAct = null;
-			if (!Prefs.ExtremeDifficultyUnlocked)
-			{
-				midLabel = "UnlockExtremeDifficulty".Translate();
-				midAct = delegate
-				{
-					OpenDifficultyUnlockConfirmation();
-				};
-			}
-			DoBottomButtons(rect, null, midLabel, midAct);
+			StorytellerUI.DrawStorytellerSelectionInterface_NewTemp(GetMainRect(rect), ref storyteller, ref difficulty, ref difficultyValues, selectedStorytellerInfoListing);
+			DoBottomButtons(rect);
 			Rect rect2 = new Rect(rect.xMax - Page.BottomButSize.x - 200f - 6f, rect.yMax - Page.BottomButSize.y, 200f, Page.BottomButSize.y);
 			Text.Font = GameFont.Tiny;
 			Text.Anchor = TextAnchor.MiddleRight;
@@ -49,13 +42,9 @@ namespace RimWorld
 			Text.Anchor = TextAnchor.UpperLeft;
 		}
 
+		[Obsolete]
 		private void OpenDifficultyUnlockConfirmation()
 		{
-			Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("ConfirmUnlockExtremeDifficulty".Translate(), delegate
-			{
-				Prefs.ExtremeDifficultyUnlocked = true;
-				Prefs.Save();
-			}, destructive: true));
 		}
 
 		protected override bool CanDoNext()
@@ -73,6 +62,7 @@ namespace RimWorld
 				}
 				Messages.Message("Difficulty has been automatically selected (debug mode only)", MessageTypeDefOf.SilentInput, historical: false);
 				difficulty = DifficultyDefOf.Rough;
+				difficultyValues = new Difficulty(difficulty);
 			}
 			if (!Find.GameInitData.permadeathChosen)
 			{
@@ -85,7 +75,7 @@ namespace RimWorld
 				Find.GameInitData.permadeathChosen = true;
 				Find.GameInitData.permadeath = false;
 			}
-			Current.Game.storyteller = new Storyteller(storyteller, difficulty);
+			Current.Game.storyteller = new Storyteller(storyteller, difficulty, difficultyValues);
 			return true;
 		}
 	}

@@ -1,6 +1,6 @@
-using RimWorld;
 using System.Collections.Generic;
 using System.Text;
+using RimWorld;
 
 namespace Verse.AI
 {
@@ -150,7 +150,7 @@ namespace Verse.AI
 					list = map.thingGrid.ThingsListAtFast(c2);
 					for (int k = 0; k < list.Count; k++)
 					{
-						fire = (list[k] as Fire);
+						fire = list[k] as Fire;
 						if (fire != null)
 						{
 							break;

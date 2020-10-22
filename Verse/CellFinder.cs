@@ -1,7 +1,7 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 using UnityEngine;
 using Verse.AI;
 
@@ -212,7 +212,7 @@ namespace Verse
 
 		public static IntVec3 RandomClosewalkCellNear(IntVec3 root, Map map, int radius, Predicate<IntVec3> extraValidator = null)
 		{
-			if (TryRandomClosewalkCellNear(root, map, radius, out IntVec3 result, extraValidator))
+			if (TryRandomClosewalkCellNear(root, map, radius, out var result, extraValidator))
 			{
 				return result;
 			}
@@ -226,7 +226,7 @@ namespace Verse
 
 		public static IntVec3 RandomClosewalkCellNearNotForbidden(IntVec3 root, Map map, int radius, Pawn pawn)
 		{
-			if (!TryFindRandomReachableCellNear(root, map, radius, TraverseParms.For(TraverseMode.NoPassClosedDoors), (IntVec3 c) => !c.IsForbidden(pawn) && c.Standable(map), null, out IntVec3 result))
+			if (!TryFindRandomReachableCellNear(root, map, radius, TraverseParms.For(TraverseMode.NoPassClosedDoors), (IntVec3 c) => !c.IsForbidden(pawn) && c.Standable(map), null, out var result))
 			{
 				return RandomClosewalkCellNear(root, map, radius);
 			}
@@ -588,14 +588,20 @@ namespace Verse
 
 		public static IntVec3 RandomSpawnCellForPawnNear(IntVec3 root, Map map, int firstTryWithRadius = 4)
 		{
-			if (TryFindRandomSpawnCellForPawnNear(root, map, out IntVec3 result, firstTryWithRadius))
+			if (TryFindRandomSpawnCellForPawnNear_NewTmp(root, map, out var result, firstTryWithRadius))
 			{
 				return result;
 			}
 			return root;
 		}
 
+		[Obsolete("Only need this overload to not break mod compatibility.")]
 		public static bool TryFindRandomSpawnCellForPawnNear(IntVec3 root, Map map, out IntVec3 result, int firstTryWithRadius = 4)
+		{
+			return TryFindRandomSpawnCellForPawnNear_NewTmp(root, map, out result, firstTryWithRadius);
+		}
+
+		public static bool TryFindRandomSpawnCellForPawnNear_NewTmp(IntVec3 root, Map map, out IntVec3 result, int firstTryWithRadius = 4, Predicate<IntVec3> extraValidator = null)
 		{
 			if (root.Standable(map) && root.GetFirstPawn(map) == null)
 			{
@@ -606,7 +612,7 @@ namespace Verse
 			int num = firstTryWithRadius;
 			for (int i = 0; i < 3; i++)
 			{
-				if (TryFindRandomReachableCellNear(root, map, num, TraverseParms.For(TraverseMode.NoPassClosedDoors), (IntVec3 c) => c.Standable(map) && (rootFogged || !c.Fogged(map)) && c.GetFirstPawn(map) == null, null, out result))
+				if (TryFindRandomReachableCellNear(root, map, num, TraverseParms.For(TraverseMode.NoPassClosedDoors), (IntVec3 c) => c.Standable(map) && (rootFogged || !c.Fogged(map)) && c.GetFirstPawn(map) == null && (extraValidator == null || extraValidator(c)), null, out result))
 				{
 					return true;
 				}

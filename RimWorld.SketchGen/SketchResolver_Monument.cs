@@ -42,7 +42,7 @@ namespace RimWorld.SketchGen
 			}
 			int width = intVec.x;
 			int height = intVec.z;
-			bool flag = (!parms.monumentOpen.HasValue) ? Rand.Chance(OpenChancePerSizeCurve.Evaluate(Mathf.Max(width, height))) : parms.monumentOpen.Value;
+			bool flag = ((!parms.monumentOpen.HasValue) ? Rand.Chance(OpenChancePerSizeCurve.Evaluate(Mathf.Max(width, height))) : parms.monumentOpen.Value);
 			Sketch monument = new Sketch();
 			bool onlyBuildableByPlayer = parms.onlyBuildableByPlayer ?? false;
 			bool filterAllowsAll = parms.allowedMonumentThings == null;
@@ -68,7 +68,7 @@ namespace RimWorld.SketchGen
 			else
 			{
 				horizontalSymmetry = Rand.Bool;
-				verticalSymmetry = (!horizontalSymmetry || Rand.Bool);
+				verticalSymmetry = !horizontalSymmetry || Rand.Bool;
 				bool[,] shape = AbstractShapeGenerator.Generate(width - 2, height - 2, horizontalSymmetry, verticalSymmetry, allTruesMustBeConnected: true);
 				Func<int, int, bool> func = (int x, int z) => x >= 0 && z >= 0 && x < shape.GetLength(0) && z < shape.GetLength(1) && shape[x, z];
 				for (int k = -1; k < shape.GetLength(0) + 1; k++)
@@ -110,8 +110,8 @@ namespace RimWorld.SketchGen
 				parms3.singleFloorType = true;
 				parms3.sketch = monument;
 				parms3.floorFillRoomsOnly = !flag;
-				parms3.onlyStoneFloors = (parms.onlyStoneFloors ?? true);
-				parms3.allowConcrete = (parms.allowConcrete ?? false);
+				parms3.onlyStoneFloors = parms.onlyStoneFloors ?? true;
+				parms3.allowConcrete = parms.allowConcrete ?? false;
 				parms3.rect = new CellRect(0, 0, width, height);
 				SketchResolverDefOf.FloorFill.Resolve(parms3);
 			}
@@ -133,7 +133,7 @@ namespace RimWorld.SketchGen
 				SketchResolverDefOf.AddInnerMonuments.Resolve(parms5);
 			}
 			bool num5 = parms.allowMonumentDoors ?? (filterAllowsAll || parms.allowedMonumentThings.Allows(ThingDefOf.Door));
-			if (num5 && list.Where((IntVec3 x) => (!horizontalSymmetry || x.x < width / 2) && (!verticalSymmetry || x.z < height / 2) && monument.ThingsAt(x).Any((SketchThing y) => y.def == ThingDefOf.Wall) && ((!monument.ThingsAt(new IntVec3(x.x - 1, x.y, x.z)).Any() && !monument.ThingsAt(new IntVec3(x.x + 1, x.y, x.z)).Any()) || (!monument.ThingsAt(new IntVec3(x.x, x.y, x.z - 1)).Any() && !monument.ThingsAt(new IntVec3(x.x, x.y, x.z + 1)).Any()))).TryRandomElement(out IntVec3 result))
+			if (num5 && list.Where((IntVec3 x) => (!horizontalSymmetry || x.x < width / 2) && (!verticalSymmetry || x.z < height / 2) && monument.ThingsAt(x).Any((SketchThing y) => y.def == ThingDefOf.Wall) && ((!monument.ThingsAt(new IntVec3(x.x - 1, x.y, x.z)).Any() && !monument.ThingsAt(new IntVec3(x.x + 1, x.y, x.z)).Any()) || (!monument.ThingsAt(new IntVec3(x.x, x.y, x.z - 1)).Any() && !monument.ThingsAt(new IntVec3(x.x, x.y, x.z + 1)).Any()))).TryRandomElement(out var result))
 			{
 				SketchThing sketchThing = monument.ThingsAt(result).FirstOrDefault((SketchThing x) => x.def == ThingDefOf.Wall);
 				if (sketchThing != null)
@@ -144,7 +144,7 @@ namespace RimWorld.SketchGen
 			}
 			TryPlaceFurniture(parms, monument, CanUse);
 			ApplySymmetry(parms, horizontalSymmetry, verticalSymmetry, monument, width, height);
-			if (num5 && !flag && !monument.Things.Any((SketchThing x) => x.def == ThingDefOf.Door) && monument.Things.Where((SketchThing x) => x.def == ThingDefOf.Wall && ((monument.Passable(x.pos.x - 1, x.pos.z) && monument.Passable(x.pos.x + 1, x.pos.z) && monument.AnyTerrainAt(x.pos.x - 1, x.pos.z) != monument.AnyTerrainAt(x.pos.x + 1, x.pos.z)) || (monument.Passable(x.pos.x, x.pos.z - 1) && monument.Passable(x.pos.x, x.pos.z + 1) && monument.AnyTerrainAt(x.pos.x, x.pos.z - 1) != monument.AnyTerrainAt(x.pos.x, x.pos.z + 1)))).TryRandomElement(out SketchThing result2))
+			if (num5 && !flag && !monument.Things.Any((SketchThing x) => x.def == ThingDefOf.Door) && monument.Things.Where((SketchThing x) => x.def == ThingDefOf.Wall && ((monument.Passable(x.pos.x - 1, x.pos.z) && monument.Passable(x.pos.x + 1, x.pos.z) && monument.AnyTerrainAt(x.pos.x - 1, x.pos.z) != monument.AnyTerrainAt(x.pos.x + 1, x.pos.z)) || (monument.Passable(x.pos.x, x.pos.z - 1) && monument.Passable(x.pos.x, x.pos.z + 1) && monument.AnyTerrainAt(x.pos.x, x.pos.z - 1) != monument.AnyTerrainAt(x.pos.x, x.pos.z + 1)))).TryRandomElement(out var result2))
 			{
 				SketchThing sketchThing2 = monument.ThingsAt(result2.pos).FirstOrDefault((SketchThing x) => x.def == ThingDefOf.Wall);
 				if (sketchThing2 != null)
@@ -189,7 +189,7 @@ namespace RimWorld.SketchGen
 				parms2.sketch = monument;
 				parms2.symmetryVertical = false;
 				parms2.symmetryOrigin = width / 2;
-				parms2.symmetryOriginIncluded = (width % 2 == 1);
+				parms2.symmetryOriginIncluded = width % 2 == 1;
 				SketchResolverDefOf.Symmetry.Resolve(parms2);
 			}
 			if (verticalSymmetry)
@@ -198,7 +198,7 @@ namespace RimWorld.SketchGen
 				parms3.sketch = monument;
 				parms3.symmetryVertical = true;
 				parms3.symmetryOrigin = height / 2;
-				parms3.symmetryOriginIncluded = (height % 2 == 1);
+				parms3.symmetryOriginIncluded = height % 2 == 1;
 				SketchResolverDefOf.Symmetry.Resolve(parms3);
 			}
 		}

@@ -10,6 +10,10 @@ namespace RimWorld
 
 		public PsychicDroneLevel level = PsychicDroneLevel.BadMedium;
 
+		public const float MaxPointsDroneLow = 800f;
+
+		public const float MaxPointsDroneMedium = 2000f;
+
 		public override string Label
 		{
 			get

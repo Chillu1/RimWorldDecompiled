@@ -37,15 +37,15 @@ namespace RimWorld
 				else
 				{
 					ThingCount firstUnloadableThing = otherPawn.inventory.FirstUnloadableThing;
-					if (!firstUnloadableThing.Thing.def.EverStorable(willMinifyIfPossible: false) || !pawn.health.capacities.CapableOf(PawnCapacityDefOf.Manipulation) || !StoreUtility.TryFindStoreCellNearColonyDesperate(firstUnloadableThing.Thing, pawn, out IntVec3 storeCell))
+					if (!firstUnloadableThing.Thing.def.EverStorable(willMinifyIfPossible: false) || !pawn.health.capacities.CapableOf(PawnCapacityDefOf.Manipulation) || !StoreUtility.TryFindStoreCellNearColonyDesperate(firstUnloadableThing.Thing, pawn, out var storeCell))
 					{
-						otherPawn.inventory.innerContainer.TryDrop(firstUnloadableThing.Thing, ThingPlaceMode.Near, firstUnloadableThing.Count, out Thing lastResultingThing);
+						otherPawn.inventory.innerContainer.TryDrop(firstUnloadableThing.Thing, ThingPlaceMode.Near, firstUnloadableThing.Count, out var lastResultingThing);
 						EndJobWith(JobCondition.Succeeded);
 						lastResultingThing?.SetForbidden(value: false, warnOnFail: false);
 					}
 					else
 					{
-						otherPawn.inventory.innerContainer.TryTransferToContainer(firstUnloadableThing.Thing, pawn.carryTracker.innerContainer, firstUnloadableThing.Count, out Thing resultingTransferredItem);
+						otherPawn.inventory.innerContainer.TryTransferToContainer(firstUnloadableThing.Thing, pawn.carryTracker.innerContainer, firstUnloadableThing.Count, out var resultingTransferredItem);
 						job.count = resultingTransferredItem.stackCount;
 						job.SetTarget(TargetIndex.B, resultingTransferredItem);
 						job.SetTarget(TargetIndex.C, storeCell);

@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
@@ -21,7 +20,7 @@ namespace RimWorld.Planet
 			float viewAngle = Find.WorldGrid.viewAngle;
 			if (viewAngle < 180f)
 			{
-				SphereGenerator.Generate(4, 99.85f, -viewCenter, 180f - Mathf.Min(viewAngle, 180f) + 10f, out List<Vector3> outVerts, out List<int> outIndices);
+				SphereGenerator.Generate(4, 99.85f, -viewCenter, 180f - Mathf.Min(viewAngle, 180f) + 10f, out var outVerts, out var outIndices);
 				LayerSubMesh subMesh = GetSubMesh(WorldMaterials.UngeneratedPlanetParts);
 				subMesh.verts.AddRange(outVerts);
 				subMesh.tris.AddRange(outIndices);

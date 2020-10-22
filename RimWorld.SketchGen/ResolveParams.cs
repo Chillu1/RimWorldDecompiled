@@ -65,6 +65,8 @@ namespace RimWorld.SketchGen
 
 		public Map mechClusterForMap;
 
+		public bool? forceNoConditionCauser;
+
 		private Dictionary<string, object> custom;
 
 		public void SetCustom<T>(string name, T obj, bool inherit = false)
@@ -79,7 +81,7 @@ namespace RimWorld.SketchGen
 
 		public bool TryGetCustom<T>(string name, out T obj)
 		{
-			return ResolveParamsUtility.TryGetCustom(custom, name, out obj);
+			return ResolveParamsUtility.TryGetCustom<T>(custom, name, out obj);
 		}
 
 		public T GetCustom<T>(string name)

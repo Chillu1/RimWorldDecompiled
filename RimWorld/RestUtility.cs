@@ -154,7 +154,7 @@ namespace RimWorld
 					}
 					for (int j = 0; j < 2; j++)
 					{
-						Danger maxDanger2 = (j == 0) ? Danger.None : Danger.Deadly;
+						Danger maxDanger2 = ((j == 0) ? Danger.None : Danger.Deadly);
 						Building_Bed building_Bed = (Building_Bed)GenClosest.ClosestThingReachable(sleeper.Position, sleeper.Map, ThingRequest.ForDef(thingDef), PathEndMode.OnCell, TraverseParms.For(traveler), 9999f, (Thing b) => ((Building_Bed)b).Medical && (int)b.Position.GetDangerFor(sleeper, sleeper.Map) <= (int)maxDanger2 && IsValidBedFor(b, sleeper, traveler, sleeperWillBePrisoner, checkSocialProperness, allowMedBedEvenIfSetToNoCare: false, ignoreOtherReservations));
 						if (building_Bed != null)
 						{
@@ -178,7 +178,7 @@ namespace RimWorld
 			}
 			for (int k = 0; k < 2; k++)
 			{
-				Danger maxDanger = (k == 0) ? Danger.None : Danger.Deadly;
+				Danger maxDanger = ((k == 0) ? Danger.None : Danger.Deadly);
 				for (int l = 0; l < bedDefsBestToWorst_RestEffectiveness.Count; l++)
 				{
 					ThingDef thingDef2 = bedDefsBestToWorst_RestEffectiveness[l];
@@ -216,7 +216,7 @@ namespace RimWorld
 			}
 			for (int i = 0; i < 2; i++)
 			{
-				Danger maxDanger = (i == 0) ? Danger.None : Danger.Deadly;
+				Danger maxDanger = ((i == 0) ? Danger.None : Danger.Deadly);
 				Building_Bed building_Bed = (Building_Bed)GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForGroup(ThingRequestGroup.Bed), PathEndMode.OnCell, TraverseParms.For(pawn), 9999f, (Thing b) => (int)b.Position.GetDangerFor(pawn, pawn.Map) <= (int)maxDanger && medBedValidator(b));
 				if (building_Bed != null)
 				{
@@ -313,7 +313,7 @@ namespace RimWorld
 			List<Thing> thingList = p.Position.GetThingList(p.Map);
 			for (int i = 0; i < thingList.Count; i++)
 			{
-				building_Bed = (thingList[i] as Building_Bed);
+				building_Bed = thingList[i] as Building_Bed;
 				if (building_Bed != null)
 				{
 					break;
@@ -344,7 +344,7 @@ namespace RimWorld
 			{
 				p.jobs.EndCurrentJob(JobCondition.InterruptForced);
 			}
-			p.GetComp<CompCanBeDormant>()?.WakeUpWithDelay();
+			p.GetComp<CompCanBeDormant>()?.WakeUp();
 		}
 
 		public static float WakeThreshold(Pawn p)

@@ -1,7 +1,7 @@
-using RimWorld;
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Text;
+using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse
@@ -62,7 +62,7 @@ namespace Verse
 				{
 					if (Visible && PawnUtility.ShouldSendNotificationAbout(pawn))
 					{
-						string value = pawn.Name.Numerical ? pawn.LabelShort : (pawn.LabelShort + " (" + pawn.kindDef.label + ")");
+						string value = (pawn.Name.Numerical ? pawn.LabelShort : (pawn.LabelShort + " (" + pawn.kindDef.label + ")"));
 						Messages.Message("MessageMiscarriedStarvation".Translate(value, pawn), pawn, MessageTypeDefOf.NegativeHealthEvent);
 					}
 					Miscarry();
@@ -72,7 +72,7 @@ namespace Verse
 				{
 					if (Visible && PawnUtility.ShouldSendNotificationAbout(pawn))
 					{
-						string value2 = pawn.Name.Numerical ? pawn.LabelShort : (pawn.LabelShort + " (" + pawn.kindDef.label + ")");
+						string value2 = (pawn.Name.Numerical ? pawn.LabelShort : (pawn.LabelShort + " (" + pawn.kindDef.label + ")"));
 						Messages.Message("MessageMiscarriedPoorHealth".Translate(value2, pawn), pawn, MessageTypeDefOf.NegativeHealthEvent);
 					}
 					Miscarry();
@@ -98,7 +98,7 @@ namespace Verse
 
 		public static void DoBirthSpawn(Pawn mother, Pawn father)
 		{
-			int num = (mother.RaceProps.litterSizeCurve == null) ? 1 : Mathf.RoundToInt(Rand.ByCurve(mother.RaceProps.litterSizeCurve));
+			int num = ((mother.RaceProps.litterSizeCurve == null) ? 1 : Mathf.RoundToInt(Rand.ByCurve(mother.RaceProps.litterSizeCurve)));
 			if (num < 1)
 			{
 				num = 1;

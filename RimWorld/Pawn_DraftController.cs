@@ -97,7 +97,7 @@ namespace RimWorld
 		{
 			Command_Toggle command_Toggle = new Command_Toggle();
 			command_Toggle.hotKey = KeyBindingDefOf.Command_ColonistDraft;
-			command_Toggle.isActive = (() => Drafted);
+			command_Toggle.isActive = () => Drafted;
 			command_Toggle.toggleAction = delegate
 			{
 				Drafted = !Drafted;
@@ -111,10 +111,8 @@ namespace RimWorld
 			command_Toggle.icon = TexCommand.Draft;
 			command_Toggle.turnOnSound = SoundDefOf.DraftOn;
 			command_Toggle.turnOffSound = SoundDefOf.DraftOff;
-			if (!Drafted)
-			{
-				command_Toggle.defaultLabel = "CommandDraftLabel".Translate();
-			}
+			command_Toggle.groupKey = 81729172;
+			command_Toggle.defaultLabel = (Drafted ? "CommandUndraftLabel" : "CommandDraftLabel").Translate();
 			if (pawn.Downed)
 			{
 				command_Toggle.Disable("IsIncapped".Translate(pawn.LabelShort, pawn));
@@ -132,7 +130,7 @@ namespace RimWorld
 			{
 				Command_Toggle command_Toggle2 = new Command_Toggle();
 				command_Toggle2.hotKey = KeyBindingDefOf.Misc6;
-				command_Toggle2.isActive = (() => FireAtWill);
+				command_Toggle2.isActive = () => FireAtWill;
 				command_Toggle2.toggleAction = delegate
 				{
 					FireAtWill = !FireAtWill;

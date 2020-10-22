@@ -614,5 +614,11 @@ namespace Verse
 			double num4 = num2 / (double)num;
 			return Mathf.Sqrt((float)(num3 / (double)num - num4 * num4));
 		}
+
+		public static float InverseParabola(float x)
+		{
+			x = Mathf.Clamp01(x);
+			return -4f * x * (x - 1f);
+		}
 	}
 }

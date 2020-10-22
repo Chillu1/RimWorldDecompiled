@@ -9,6 +9,9 @@ namespace RimWorld
 
 		public static MentalStateDef Binging_DrugExtreme;
 
+		[MayRequireRoyalty]
+		public static MentalStateDef BerserkMechanoid;
+
 		public static MentalStateDef Wander_Psychotic;
 
 		public static MentalStateDef Binging_DrugMajor;

@@ -1,6 +1,6 @@
-using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 
 namespace Verse.AI
 {
@@ -8,11 +8,15 @@ namespace Verse.AI
 	{
 		private static List<IntVec3> gatherSpots = new List<IntVec3>();
 
+		private static List<IntVec3> candidateCells = new List<IntVec3>();
+
+		private static List<Building> candidateBuildingsInRandomOrder = new List<Building>();
+
 		public static IntVec3 BestCloseWanderRoot(IntVec3 trueWanderRoot, Pawn pawn)
 		{
 			for (int i = 0; i < 50; i++)
 			{
-				IntVec3 intVec = (i >= 8) ? (trueWanderRoot + GenRadial.RadialPattern[i - 8 + 1] * 7) : (trueWanderRoot + GenRadial.RadialPattern[i]);
+				IntVec3 intVec = ((i >= 8) ? (trueWanderRoot + GenRadial.RadialPattern[i - 8 + 1] * 7) : (trueWanderRoot + GenRadial.RadialPattern[i]));
 				if (intVec.InBounds(pawn.Map) && intVec.Walkable(pawn.Map) && pawn.CanReach(intVec, PathEndMode.OnCell, Danger.Some))
 				{
 					return intVec;
@@ -49,34 +53,35 @@ namespace Verse.AI
 					return gatherSpots.RandomElement();
 				}
 			}
-			List<Building> allBuildingsColonist = pawn.Map.listerBuildings.allBuildingsColonist;
-			if (allBuildingsColonist.Count > 0)
+			candidateCells.Clear();
+			candidateBuildingsInRandomOrder.Clear();
+			candidateBuildingsInRandomOrder.AddRange(pawn.Map.listerBuildings.allBuildingsColonist);
+			candidateBuildingsInRandomOrder.Shuffle();
+			int num = 0;
+			int num2 = 0;
+			while (num2 < candidateBuildingsInRandomOrder.Count)
 			{
-				int num = 0;
-				while (true)
+				if (num > 80 && candidateCells.Count > 0)
 				{
-					num++;
-					if (num > 20)
+					return candidateCells.RandomElement();
+				}
+				Building building = candidateBuildingsInRandomOrder[num2];
+				if ((building.def == ThingDefOf.Wall || building.def.building.ai_chillDestination) && !building.Position.IsForbidden(pawn) && pawn.Map.areaManager.Home[building.Position])
+				{
+					IntVec3 intVec = GenAdjFast.AdjacentCells8Way(building).RandomElement();
+					if (intVec.Standable(building.Map) && !intVec.IsForbidden(pawn) && pawn.CanReach(intVec, PathEndMode.OnCell, Danger.None) && !intVec.IsInPrisonCell(pawn.Map))
 					{
-						break;
-					}
-					Building building = allBuildingsColonist.RandomElement();
-					if ((building.def != ThingDefOf.Wall && !building.def.building.ai_chillDestination) || building.Position.IsForbidden(pawn) || !pawn.Map.areaManager.Home[building.Position])
-					{
-						continue;
-					}
-					int num2 = 15 + num * 2;
-					if ((pawn.Position - building.Position).LengthHorizontalSquared <= num2 * num2)
-					{
-						IntVec3 intVec = GenAdjFast.AdjacentCells8Way(building).RandomElement();
-						if (intVec.Standable(building.Map) && !intVec.IsForbidden(pawn) && pawn.CanReach(intVec, PathEndMode.OnCell, Danger.None) && !intVec.IsInPrisonCell(pawn.Map))
+						candidateCells.Add(intVec);
+						if ((pawn.Position - building.Position).LengthHorizontalSquared <= 1225)
 						{
 							return intVec;
 						}
 					}
 				}
+				num2++;
+				num++;
 			}
-			if (pawn.Map.mapPawns.FreeColonistsSpawned.Where((Pawn c) => !c.Position.IsForbidden(pawn) && pawn.CanReach(c.Position, PathEndMode.Touch, Danger.None)).TryRandomElement(out Pawn result))
+			if (pawn.Map.mapPawns.FreeColonistsSpawned.Where((Pawn c) => !c.Position.IsForbidden(pawn) && pawn.CanReach(c.Position, PathEndMode.Touch, Danger.None)).TryRandomElement(out var result))
 			{
 				return result.Position;
 			}

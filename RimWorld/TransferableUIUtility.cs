@@ -166,10 +166,10 @@ namespace RimWorld
 			}
 			Text.Anchor = TextAnchor.UpperLeft;
 			GUI.color = Color.white;
-			if (trad.Interactive && !flag)
+			if (trad.Interactive && !flag && !readOnly)
 			{
 				TransferablePositiveCountDirection positiveCountDirection = trad.PositiveCountDirection;
-				int num = (positiveCountDirection == TransferablePositiveCountDirection.Source) ? 1 : (-1);
+				int num = ((positiveCountDirection == TransferablePositiveCountDirection.Source) ? 1 : (-1));
 				int num2 = GenUI.CurrentAdjustmentMultiplier();
 				bool flag3 = trad.GetRange() == 1;
 				if (trad.CanAdjustBy(num * num2).Accepted)
@@ -470,7 +470,7 @@ namespace RimWorld
 			float num2 = 0f;
 			for (int i = 0; i < info.Count; i++)
 			{
-				float num3 = (i == info.Count - 1) ? (rect.width - num2) : num;
+				float num3 = ((i == info.Count - 1) ? (rect.width - num2) : num);
 				Rect rect2 = new Rect(num2, 0f, num3, rect.height);
 				Rect rect3 = new Rect(num2, 0f, num3, rect.height / 2f);
 				Rect rect4 = new Rect(num2, rect.height / 2f, num3, rect.height / 2f);

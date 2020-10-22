@@ -103,7 +103,7 @@ namespace RimWorld.Planet
 				{
 					FeatureWorker.visited[x] = true;
 					tmpGroup.Add(x);
-					if (!anyMember && IsMember(x, out bool _))
+					if (!anyMember && IsMember(x, out var _))
 					{
 						anyMember = true;
 					}
@@ -133,7 +133,7 @@ namespace RimWorld.Planet
 					{
 						return false;
 					}
-					if (!CanTraverse(x, out bool ifRootThenRootGroupSizeMustMatch2))
+					if (!CanTraverse(x, out var ifRootThenRootGroupSizeMustMatch2))
 					{
 						return false;
 					}
@@ -155,7 +155,7 @@ namespace RimWorld.Planet
 				for (int l = 0; l < currentGroup.Count; l++)
 				{
 					int num3 = currentGroup[l];
-					if (IsMember(num3, out bool ifRootThenRootGroupSizeMustMatch) && (!ifRootThenRootGroupSizeMustMatch || !rootsSet.Contains(num3) || (FeatureWorker.groupSize[num3] >= minRootGroupSize && FeatureWorker.groupSize[num3] <= maxRootGroupSize)))
+					if (IsMember(num3, out var ifRootThenRootGroupSizeMustMatch) && (!ifRootThenRootGroupSizeMustMatch || !rootsSet.Contains(num3) || (FeatureWorker.groupSize[num3] >= minRootGroupSize && FeatureWorker.groupSize[num3] <= maxRootGroupSize)))
 					{
 						currentGroupMembers.Add(currentGroup[l]);
 					}

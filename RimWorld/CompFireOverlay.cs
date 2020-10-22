@@ -18,7 +18,7 @@ namespace RimWorld
 			if (refuelableComp == null || refuelableComp.HasFuel)
 			{
 				Vector3 drawPos = parent.DrawPos;
-				drawPos.y += 0.0454545468f;
+				drawPos.y += 3f / 70f;
 				FireGraphic.Draw(drawPos, Rot4.North, parent);
 			}
 		}

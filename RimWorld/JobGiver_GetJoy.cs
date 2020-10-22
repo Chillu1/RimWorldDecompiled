@@ -60,7 +60,7 @@ namespace RimWorld
 			}
 			for (int j = 0; j < joyGiverChances.Count; j++)
 			{
-				if (!allDefsListForReading.TryRandomElementByWeight((JoyGiverDef d) => joyGiverChances[d], out JoyGiverDef result))
+				if (!allDefsListForReading.TryRandomElementByWeight((JoyGiverDef d) => joyGiverChances[d], out var result))
 				{
 					break;
 				}

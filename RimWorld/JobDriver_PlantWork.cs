@@ -32,10 +32,9 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			JobDriver_PlantWork jobDriver_PlantWork = this;
 			Init();
 			yield return Toils_JobTransforms.MoveCurrentTargetIntoQueue(TargetIndex.A);
-			Toil initExtractTargetFromQueue = Toils_JobTransforms.ClearDespawnedNullOrForbiddenQueuedTargets(TargetIndex.A, (RequiredDesignation != null) ? ((Func<Thing, bool>)((Thing t) => jobDriver_PlantWork.Map.designationManager.DesignationOn(t, jobDriver_PlantWork.RequiredDesignation) != null)) : null);
+			Toil initExtractTargetFromQueue = Toils_JobTransforms.ClearDespawnedNullOrForbiddenQueuedTargets(TargetIndex.A, (RequiredDesignation != null) ? ((Func<Thing, bool>)((Thing t) => base.Map.designationManager.DesignationOn(t, RequiredDesignation) != null)) : null);
 			yield return initExtractTargetFromQueue;
 			yield return Toils_JobTransforms.SucceedOnNoTargetInQueue(TargetIndex.A);
 			yield return Toils_JobTransforms.ExtractNextTargetFromQueue(TargetIndex.A);
@@ -51,19 +50,19 @@ namespace RimWorld
 				Pawn actor = cut.actor;
 				if (actor.skills != null)
 				{
-					actor.skills.Learn(SkillDefOf.Plants, jobDriver_PlantWork.xpPerTick);
+					actor.skills.Learn(SkillDefOf.Plants, xpPerTick);
 				}
 				float statValue = actor.GetStatValue(StatDefOf.PlantWorkSpeed);
-				Plant plant = jobDriver_PlantWork.Plant;
+				Plant plant = Plant;
 				statValue *= Mathf.Lerp(3.3f, 1f, plant.Growth);
-				jobDriver_PlantWork.workDone += statValue;
-				if (jobDriver_PlantWork.workDone >= plant.def.plant.harvestWork)
+				workDone += statValue;
+				if (workDone >= plant.def.plant.harvestWork)
 				{
 					if (plant.def.plant.harvestedThingDef != null)
 					{
 						if (actor.RaceProps.Humanlike && plant.def.plant.harvestFailable && !plant.Blighted && Rand.Value > actor.GetStatValue(StatDefOf.PlantHarvestYield))
 						{
-							MoteMaker.ThrowText((jobDriver_PlantWork.pawn.DrawPos + plant.DrawPos) / 2f, jobDriver_PlantWork.Map, "TextMote_HarvestFailed".Translate(), 3.65f);
+							MoteMaker.ThrowText((pawn.DrawPos + plant.DrawPos) / 2f, base.Map, "TextMote_HarvestFailed".Translate(), 3.65f);
 						}
 						else
 						{
@@ -77,15 +76,15 @@ namespace RimWorld
 									thing.SetForbidden(value: true);
 								}
 								Find.QuestManager.Notify_PlantHarvested(actor, thing);
-								GenPlace.TryPlaceThing(thing, actor.Position, jobDriver_PlantWork.Map, ThingPlaceMode.Near);
+								GenPlace.TryPlaceThing(thing, actor.Position, base.Map, ThingPlaceMode.Near);
 								actor.records.Increment(RecordDefOf.PlantsHarvested);
 							}
 						}
 					}
 					plant.def.plant.soundHarvestFinish.PlayOneShot(actor);
 					plant.PlantCollected();
-					jobDriver_PlantWork.workDone = 0f;
-					jobDriver_PlantWork.ReadyForNextToil();
+					workDone = 0f;
+					ReadyForNextToil();
 				}
 			};
 			cut.FailOnDespawnedNullOrForbidden(TargetIndex.A);
@@ -96,9 +95,9 @@ namespace RimWorld
 			cut.FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
 			cut.defaultCompleteMode = ToilCompleteMode.Never;
 			cut.WithEffect(EffecterDefOf.Harvest, TargetIndex.A);
-			cut.WithProgressBar(TargetIndex.A, () => jobDriver_PlantWork.workDone / jobDriver_PlantWork.Plant.def.plant.harvestWork, interpolateBetweenActorAndTarget: true);
-			cut.PlaySustainerOrSound(() => jobDriver_PlantWork.Plant.def.plant.soundHarvesting);
-			cut.activeSkill = (() => SkillDefOf.Plants);
+			cut.WithProgressBar(TargetIndex.A, () => workDone / Plant.def.plant.harvestWork, interpolateBetweenActorAndTarget: true);
+			cut.PlaySustainerOrSound(() => Plant.def.plant.soundHarvesting);
+			cut.activeSkill = () => SkillDefOf.Plants;
 			yield return cut;
 			Toil toil2 = PlantWorkDoneToil();
 			if (toil2 != null)

@@ -29,7 +29,7 @@ namespace RimWorld
 
 		public static Thing FindAmmoForTurret(Pawn pawn, Building_TurretGun gun)
 		{
-			StorageSettings allowedShellsSettings = pawn.IsColonist ? gun.gun.TryGetComp<CompChangeableProjectile>().allowedShellsSettings : null;
+			StorageSettings allowedShellsSettings = (pawn.IsColonist ? gun.gun.TryGetComp<CompChangeableProjectile>().allowedShellsSettings : null);
 			Predicate<Thing> validator = delegate(Thing t)
 			{
 				if (t.IsForbidden(pawn))
@@ -52,7 +52,6 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			JobDriver_ManTurret jobDriver_ManTurret = this;
 			this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
 			Toil gotoTurret = Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.InteractionCell);
 			Toil loadIfNeeded = new Toil();
@@ -63,11 +62,11 @@ namespace RimWorld
 				Building_TurretGun building_TurretGun2 = obj as Building_TurretGun;
 				if (!GunNeedsLoading(obj))
 				{
-					jobDriver_ManTurret.JumpToToil(gotoTurret);
+					JumpToToil(gotoTurret);
 				}
 				else
 				{
-					Thing thing = FindAmmoForTurret(jobDriver_ManTurret.pawn, building_TurretGun2);
+					Thing thing = FindAmmoForTurret(pawn, building_TurretGun2);
 					if (thing == null)
 					{
 						if (actor3.Faction == Faction.OfPlayer)
@@ -103,7 +102,7 @@ namespace RimWorld
 				Building building = (Building)actor.CurJob.targetA.Thing;
 				if (GunNeedsLoading(building))
 				{
-					jobDriver_ManTurret.JumpToToil(loadIfNeeded);
+					JumpToToil(loadIfNeeded);
 				}
 				else
 				{

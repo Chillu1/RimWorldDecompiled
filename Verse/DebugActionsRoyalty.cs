@@ -1,14 +1,14 @@
-using RimWorld;
-using RimWorld.QuestGen;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
+using RimWorld.QuestGen;
 
 namespace Verse
 {
 	public static class DebugActionsRoyalty
 	{
-		[DebugAction("General", "Award 4 royal favor", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("General", "Award 4 honor", allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void Award4RoyalFavor()
 		{
 			List<DebugMenuOption> list = new List<DebugMenuOption>();
@@ -18,6 +18,36 @@ namespace Verse
 				list.Add(new DebugMenuOption(localFaction.Name, DebugMenuOptionMode.Tool, delegate
 				{
 					UI.MouseCell().GetFirstPawn(Find.CurrentMap)?.royalty.GainFavor(localFaction, 4);
+				}));
+			}
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+		}
+
+		[DebugAction("General", "Award 10 honor", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void Award10RoyalFavor()
+		{
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			foreach (Faction item in Find.FactionManager.AllFactions.Where((Faction f) => f.def.RoyalTitlesAwardableInSeniorityOrderForReading.Count > 0))
+			{
+				Faction localFaction = item;
+				list.Add(new DebugMenuOption(localFaction.Name, DebugMenuOptionMode.Tool, delegate
+				{
+					UI.MouseCell().GetFirstPawn(Find.CurrentMap)?.royalty.GainFavor(localFaction, 10);
+				}));
+			}
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+		}
+
+		[DebugAction("General", "Remove 4 honor", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void Remove4RoyalFavor()
+		{
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			foreach (Faction item in Find.FactionManager.AllFactions.Where((Faction f) => f.def.RoyalTitlesAwardableInSeniorityOrderForReading.Count > 0))
+			{
+				Faction localFaction = item;
+				list.Add(new DebugMenuOption(localFaction.Name, DebugMenuOptionMode.Tool, delegate
+				{
+					UI.MouseCell().GetFirstPawn(Find.CurrentMap)?.royalty.TryRemoveFavor(localFaction, 4);
 				}));
 			}
 			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
@@ -71,7 +101,7 @@ namespace Verse
 				select f.defName).ToArray())));
 		}
 
-		[DebugOutput(name = "Royal Favor Availability (slow)")]
+		[DebugOutput(name = "Honor Availability (slow)")]
 		private static void RoyalFavorAvailability()
 		{
 			StorytellerCompProperties_OnOffCycle storytellerCompProperties_OnOffCycle = (StorytellerCompProperties_OnOffCycle)StorytellerDefOf.Cassandra.comps.Find(delegate(StorytellerCompProperties x)
@@ -159,12 +189,12 @@ namespace Verse
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.AppendLine("Results for: Days=" + 200 + ", intervalDays=" + onDays + ", questsPerInterval=" + average + ":");
 			stringBuilder.AppendLine("Quests: " + num4);
-			stringBuilder.AppendLine("Quests with royal favor: " + num6);
+			stringBuilder.AppendLine("Quests with honor: " + num6);
 			stringBuilder.AppendLine("Quests from Empire: " + num7);
-			stringBuilder.AppendLine("Min royal favor reward: " + num9);
-			stringBuilder.AppendLine("Max royal favor reward: " + num10);
-			stringBuilder.AppendLine("Total royal favor: " + num5);
-			stringBuilder.AppendLine("Royal favor required for Count: " + num2);
+			stringBuilder.AppendLine("Min honor reward: " + num9);
+			stringBuilder.AppendLine("Max honor reward: " + num10);
+			stringBuilder.AppendLine("Total honor: " + num5);
+			stringBuilder.AppendLine("Honor required for Count: " + num2);
 			stringBuilder.AppendLine("Count title possible on day: " + num8);
 			Log.Message(stringBuilder.ToString());
 		}

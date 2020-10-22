@@ -22,7 +22,7 @@ namespace RimWorld
 						if (freeColonist.Spawned && (freeColonist.story == null || !freeColonist.story.traits.HasTrait(TraitDefOf.Ascetic)))
 						{
 							RoyalTitle royalTitle = freeColonist.royalty?.MostSeniorTitle;
-							if (royalTitle != null && royalTitle.conceited && royalTitle.def.foodRequirement.Defined && !FoodUtility.TryFindBestFoodSourceFor(freeColonist, freeColonist, desperate: false, out Thing _, out ThingDef _, canRefillDispenser: true, canUseInventory: true, allowForbidden: false, allowCorpse: false, allowSociallyImproper: false, allowHarvest: false, forceScanWholeMap: false, ignoreReservations: true, FoodPreferability.DesperateOnly))
+							if (royalTitle != null && royalTitle.conceited && royalTitle.def.foodRequirement.Defined && !FoodUtility.TryFindBestFoodSourceFor(freeColonist, freeColonist, desperate: false, out var _, out var _, canRefillDispenser: true, canUseInventory: true, allowForbidden: false, allowCorpse: false, allowSociallyImproper: false, allowHarvest: false, forceScanWholeMap: false, ignoreReservations: true, FoodPreferability.DesperateOnly))
 							{
 								targetsResult.Add(freeColonist);
 							}

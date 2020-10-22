@@ -12,7 +12,7 @@ namespace RimWorld.SketchGen
 		protected override void ResolveInt(ResolveParams parms)
 		{
 			ResolveParams parms2 = parms;
-			parms2.allowWood = (parms.allowWood ?? false);
+			parms2.allowWood = parms.allowWood ?? false;
 			if (parms2.allowedMonumentThings == null)
 			{
 				parms2.allowedMonumentThings = new ThingFilter();

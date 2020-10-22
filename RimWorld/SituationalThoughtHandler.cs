@@ -111,7 +111,7 @@ namespace RimWorld
 		{
 			try
 			{
-				if (!cachedSocialThoughts.TryGetValue(otherPawn, out CachedSocialThoughts value))
+				if (!cachedSocialThoughts.TryGetValue(otherPawn, out var value))
 				{
 					value = new CachedSocialThoughts();
 					cachedSocialThoughts.Add(otherPawn, value);
@@ -161,7 +161,7 @@ namespace RimWorld
 			Thought_Situational thought_Situational = null;
 			try
 			{
-				if (!ThoughtUtility.CanGetThought(pawn, def))
+				if (!ThoughtUtility.CanGetThought_NewTemp(pawn, def))
 				{
 					return null;
 				}
@@ -186,7 +186,7 @@ namespace RimWorld
 			Thought_SituationalSocial thought_SituationalSocial = null;
 			try
 			{
-				if (!ThoughtUtility.CanGetThought(pawn, def))
+				if (!ThoughtUtility.CanGetThought_NewTemp(pawn, def))
 				{
 					return null;
 				}

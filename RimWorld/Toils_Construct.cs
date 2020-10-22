@@ -16,7 +16,7 @@ namespace RimWorld
 				if (blueprint != null)
 				{
 					bool flag = targetToUpdate != 0 && curJob.GetTarget(targetToUpdate).Thing == blueprint;
-					if (blueprint.TryReplaceWithSolidThing(actor, out Thing createdThing, out bool _))
+					if (blueprint.TryReplaceWithSolidThing(actor, out var createdThing, out var _))
 					{
 						curJob.SetTarget(blueTarget, createdThing);
 						if (flag)

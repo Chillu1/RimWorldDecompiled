@@ -14,6 +14,8 @@ namespace RimWorld
 
 		public List<AbilityCompProperties> comps = new List<AbilityCompProperties>();
 
+		public AbilityCategoryDef category;
+
 		public List<StatModifier> statBases;
 
 		public VerbProperties verbProperties;
@@ -24,11 +26,25 @@ namespace RimWorld
 
 		public ThingDef warmupMote;
 
+		public SoundDef warmupStartSound;
+
+		public SoundDef warmupSound;
+
+		public SoundDef warmupPreEndSound;
+
+		public float warmupPreEndSoundSeconds;
+
 		public Vector3 moteDrawOffset;
+
+		public float moteOffsetAmountTowardsTarget;
 
 		public bool canUseAoeToGetTargets = true;
 
 		public bool targetRequired = true;
+
+		public bool targetWorldCell;
+
+		public bool showGizmoOnWorldView;
 
 		public int level;
 
@@ -40,8 +56,20 @@ namespace RimWorld
 
 		public bool disableGizmoWhileUndrafted = true;
 
+		public bool writeCombatLog;
+
+		public bool stunTargetWhileCasting;
+
+		public bool showPsycastEffects = true;
+
+		public bool showCastingProgressBar;
+
 		public float detectionChanceOverride = -1f;
 
+		[MustTranslate]
+		public string confirmationDialogText;
+
+		[NoTranslate]
 		public string iconPath;
 
 		public Texture2D uiIcon = BaseContent.BadTex;
@@ -51,6 +79,14 @@ namespace RimWorld
 		private List<string> cachedTargets;
 
 		private int requiredPsyfocusBandCached = -1;
+
+		private bool? anyCompOverridesPsyfocusCost;
+
+		private FloatRange psyfocusCostRange = new FloatRange(-1f, -1f);
+
+		private string psyfocusCostPercent;
+
+		private string psyfocusCostPercentMax;
 
 		public float EntropyGain => statBases.GetStatValueFromList(StatDefOf.Ability_EntropyGain, 0f);
 
@@ -71,6 +107,30 @@ namespace RimWorld
 					return this.GetStatValueAbstract(StatDefOf.Ability_DetectChancePerEntropy);
 				}
 				return detectionChanceOverride;
+			}
+		}
+
+		public string PsyfocusCostPercent
+		{
+			get
+			{
+				if (psyfocusCostPercent.NullOrEmpty())
+				{
+					psyfocusCostPercent = PsyfocusCost.ToStringPercent();
+				}
+				return psyfocusCostPercent;
+			}
+		}
+
+		public string PsyfocusCostPercentMax
+		{
+			get
+			{
+				if (psyfocusCostPercentMax.NullOrEmpty())
+				{
+					psyfocusCostPercentMax = PsyfocusCostRange.max.ToStringPercent();
+				}
+				return psyfocusCostPercentMax;
 			}
 		}
 
@@ -95,13 +155,78 @@ namespace RimWorld
 			}
 		}
 
+		public bool AnyCompOverridesPsyfocusCost
+		{
+			get
+			{
+				if (!anyCompOverridesPsyfocusCost.HasValue)
+				{
+					anyCompOverridesPsyfocusCost = false;
+					if (comps != null)
+					{
+						foreach (AbilityCompProperties comp in comps)
+						{
+							if (comp.OverridesPsyfocusCost)
+							{
+								anyCompOverridesPsyfocusCost = true;
+								break;
+							}
+						}
+					}
+				}
+				return anyCompOverridesPsyfocusCost.Value;
+			}
+		}
+
+		public FloatRange PsyfocusCostRange
+		{
+			get
+			{
+				if (psyfocusCostRange.min < 0f)
+				{
+					if (!AnyCompOverridesPsyfocusCost)
+					{
+						psyfocusCostRange = new FloatRange(PsyfocusCost, PsyfocusCost);
+					}
+					else
+					{
+						foreach (AbilityCompProperties comp in comps)
+						{
+							if (comp.OverridesPsyfocusCost)
+							{
+								psyfocusCostRange = comp.PsyfocusCostRange;
+								break;
+							}
+						}
+					}
+				}
+				return psyfocusCostRange;
+			}
+		}
+
 		public IEnumerable<string> StatSummary
 		{
 			get
 			{
-				if (PsyfocusCost > float.Epsilon)
+				string text = null;
+				foreach (AbilityCompProperties comp in comps)
 				{
-					yield return "AbilityPsyfocusCost".Translate() + ": " + PsyfocusCost.ToStringPercent();
+					if (comp.OverridesPsyfocusCost)
+					{
+						text = comp.PsyfocusCostExplanation;
+						break;
+					}
+				}
+				if (text == null)
+				{
+					if (PsyfocusCost > float.Epsilon)
+					{
+						yield return "AbilityPsyfocusCost".Translate() + ": " + PsyfocusCost.ToStringPercent();
+					}
+				}
+				else
+				{
+					yield return text;
 				}
 				if (EntropyGain > float.Epsilon)
 				{
@@ -111,9 +236,11 @@ namespace RimWorld
 				{
 					yield return (string)("AbilityCastingTime".Translate() + ": ") + verbProperties.warmupTime + "LetterSecond".Translate();
 				}
-				if (EffectDuration > float.Epsilon)
+				float effectDuration = EffectDuration;
+				if (effectDuration > float.Epsilon)
 				{
-					yield return "AbilityDuration".Translate() + ": " + EffectDuration.SecondsToTicks().ToStringTicksToPeriod();
+					int num = effectDuration.SecondsToTicks();
+					yield return "AbilityDuration".Translate() + ": " + ((num >= 2500) ? num.ToStringTicksToPeriod() : (effectDuration + (string)"LetterSecond".Translate()));
 				}
 				if (HasAreaOfEffect)
 				{
@@ -192,7 +319,10 @@ namespace RimWorld
 				yield return new StatDrawEntry(StatCategoryDefOf.Ability, StatDefOf.Ability_RequiredPsylink, level, req);
 			}
 			yield return new StatDrawEntry(StatCategoryDefOf.Ability, StatDefOf.Ability_CastingTime, verbProperties.warmupTime, req);
-			yield return new StatDrawEntry(StatCategoryDefOf.Ability, StatDefOf.Ability_Range, verbProperties.range, req);
+			if (verbProperties.range > 0f)
+			{
+				yield return new StatDrawEntry(StatCategoryDefOf.Ability, StatDefOf.Ability_Range, verbProperties.range, req);
+			}
 			yield return new StatDrawEntry(StatCategoryDefOf.Ability, "Target".Translate(), cachedTargets.ToCommaList().CapitalizeFirst(), "AbilityTargetDesc".Translate(), 1001);
 			yield return new StatDrawEntry(StatCategoryDefOf.Ability, "AbilityRequiresLOS".Translate(), verbProperties.requireLineOfSight ? "Yes".Translate() : "No".Translate(), "", 1000);
 		}

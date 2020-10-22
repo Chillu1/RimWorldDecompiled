@@ -19,7 +19,10 @@ namespace RimWorld
 			float num = 0f;
 			for (int i = 0; i < Props.offsets.Count; i++)
 			{
-				num += Props.offsets[i].GetOffset(parent, pawn);
+				if (Props.offsets[i].CanApply(parent, pawn))
+				{
+					num += Props.offsets[i].GetOffset(parent, pawn);
+				}
 			}
 			return num;
 		}
@@ -54,7 +57,7 @@ namespace RimWorld
 			foreach (FocusStrengthOffset offset in Props.offsets)
 			{
 				FocusStrengthOffset_ArtificialBuildings focusStrengthOffset_ArtificialBuildings;
-				if ((focusStrengthOffset_ArtificialBuildings = (offset as FocusStrengthOffset_ArtificialBuildings)) != null && MeditationUtility.CountsAsArtificialBuilding(def, faction) && cellRect.ClosestCellTo(parent.Position).DistanceTo(parent.Position) <= focusStrengthOffset_ArtificialBuildings.radius)
+				if ((focusStrengthOffset_ArtificialBuildings = offset as FocusStrengthOffset_ArtificialBuildings) != null && MeditationUtility.CountsAsArtificialBuilding(def, faction) && cellRect.ClosestCellTo(parent.Position).DistanceTo(parent.Position) <= focusStrengthOffset_ArtificialBuildings.radius)
 				{
 					return true;
 				}

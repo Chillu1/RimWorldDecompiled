@@ -7,6 +7,8 @@ namespace RimWorld
 {
 	public static class GenStuff
 	{
+		private static List<ThingDef> allowedStuffTmp = new List<ThingDef>();
+
 		public static ThingDef DefaultStuffFor(BuildableDef bd)
 		{
 			if (!bd.MadeFromStuff)
@@ -85,7 +87,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			if (!TryRandomStuffByCommonalityFor(td, out ThingDef stuff, maxTechLevel))
+			if (!TryRandomStuffByCommonalityFor(td, out var stuff, maxTechLevel))
 			{
 				return DefaultStuffFor(td);
 			}
@@ -159,12 +161,23 @@ namespace RimWorld
 				stuff = null;
 				return true;
 			}
-			IEnumerable<ThingDef> source = AllowedStuffsFor(td, maxTechLevel);
 			if (validator != null)
 			{
-				source = source.Where((ThingDef x) => validator(x));
+				allowedStuffTmp.Clear();
+				foreach (ThingDef item in AllowedStuffsFor(td, maxTechLevel))
+				{
+					if (validator(item))
+					{
+						allowedStuffTmp.Add(item);
+					}
+				}
 			}
-			return source.TryRandomElement(out stuff);
+			else
+			{
+				allowedStuffTmp.Clear();
+				allowedStuffTmp.AddRange(AllowedStuffsFor(td, maxTechLevel));
+			}
+			return allowedStuffTmp.TryRandomElement(out stuff);
 		}
 
 		public static ThingDef RandomStuffInexpensiveFor(ThingDef thingDef, Faction faction, Predicate<ThingDef> validator = null)
@@ -193,7 +206,7 @@ namespace RimWorld
 				}
 			}
 			enumerable = enumerable.Where((ThingDef x) => x.BaseMarketValue / x.VolumePerUnit <= cheapestPrice * 4f);
-			if (enumerable.TryRandomElementByWeight((ThingDef x) => x.stuffProps.commonality, out ThingDef result))
+			if (enumerable.TryRandomElementByWeight((ThingDef x) => x.stuffProps.commonality, out var result))
 			{
 				return result;
 			}

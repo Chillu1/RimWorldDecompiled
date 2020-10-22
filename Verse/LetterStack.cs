@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 using Verse.Sound;
 
@@ -86,23 +86,15 @@ namespace Verse
 		public void LetterStackTick()
 		{
 			int num = Find.TickManager.TicksGame + 1;
-			int num2 = 0;
-			LetterWithTimeout letterWithTimeout;
-			while (true)
+			for (int i = 0; i < letters.Count; i++)
 			{
-				if (num2 < letters.Count)
+				LetterWithTimeout letterWithTimeout = letters[i] as LetterWithTimeout;
+				if (letterWithTimeout != null && letterWithTimeout.TimeoutActive && letterWithTimeout.disappearAtTick == num)
 				{
-					letterWithTimeout = (letters[num2] as LetterWithTimeout);
-					if (letterWithTimeout != null && letterWithTimeout.TimeoutActive && letterWithTimeout.disappearAtTick == num)
-					{
-						break;
-					}
-					num2++;
-					continue;
+					letterWithTimeout.OpenLetter();
+					break;
 				}
-				return;
 			}
-			letterWithTimeout.OpenLetter();
 		}
 
 		public void LetterStackUpdate()
@@ -124,6 +116,17 @@ namespace Verse
 		public void Notify_LetterMouseover(Letter let)
 		{
 			mouseoverLetterIndex = letters.IndexOf(let);
+		}
+
+		public void Notify_FactionRemoved(Faction faction)
+		{
+			for (int i = 0; i < letters.Count; i++)
+			{
+				if (letters[i].relatedFaction == faction)
+				{
+					letters[i].relatedFaction = null;
+				}
+			}
 		}
 
 		public void ExposeData()

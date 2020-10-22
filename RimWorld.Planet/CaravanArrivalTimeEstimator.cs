@@ -50,14 +50,12 @@ namespace RimWorld.Planet
 
 		public static int EstimatedTicksToArrive(int from, int to, Caravan caravan)
 		{
-			using (WorldPath worldPath = Find.WorldPathFinder.FindPath(from, to, caravan))
+			using WorldPath worldPath = Find.WorldPathFinder.FindPath(from, to, caravan);
+			if (!worldPath.Found)
 			{
-				if (!worldPath.Found)
-				{
-					return 0;
-				}
-				return EstimatedTicksToArrive(from, to, worldPath, 0f, caravan?.TicksPerMove ?? 3300, Find.TickManager.TicksAbs);
+				return 0;
 			}
+			return EstimatedTicksToArrive(from, to, worldPath, 0f, caravan?.TicksPerMove ?? 3300, Find.TickManager.TicksAbs);
 		}
 
 		public static int EstimatedTicksToArrive(int from, int to, WorldPath path, float nextTileCostLeft, int caravanTicksPerMove, int curTicksAbs)

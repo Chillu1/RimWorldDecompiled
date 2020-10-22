@@ -55,7 +55,7 @@ namespace RimWorld.QuestGen
 					int amt = Mathf.Max(c.amount.RandomInRange, 1);
 					for (int i = 0; i < amt; i++)
 					{
-						if (DefDatabase<ThingDef>.AllDefs.Where((ThingDef x) => x.thingCategories != null && x.thingCategories.Contains(c.category) && (c.allowDuplicates || !tmpItems.Contains(x))).TryRandomElement(out ThingDef result))
+						if (DefDatabase<ThingDef>.AllDefs.Where((ThingDef x) => x.thingCategories != null && x.thingCategories.Contains(c.category) && (c.allowDuplicates || !tmpItems.Contains(x))).TryRandomElement(out var result))
 						{
 							tmpItems.Add(result);
 							yield return result;

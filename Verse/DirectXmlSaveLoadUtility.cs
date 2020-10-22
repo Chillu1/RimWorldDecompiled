@@ -44,11 +44,9 @@ namespace Verse
 			{
 				return "";
 			}
-			using (XmlReader xmlReader = element.CreateReader())
-			{
-				xmlReader.MoveToContent();
-				return xmlReader.ReadInnerXml();
-			}
+			using XmlReader xmlReader = element.CreateReader();
+			xmlReader.MoveToContent();
+			return xmlReader.ReadInnerXml();
 		}
 
 		private static int GetElementIndexForXPath(XmlElement element, out bool multiple)

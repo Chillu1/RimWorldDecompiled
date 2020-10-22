@@ -185,7 +185,7 @@ namespace Verse
 		{
 			freeWorkers = new Queue<BFSWorker>();
 			NumWorkers = 8;
-			PassAll = ((Region from, Region to) => true);
+			PassAll = (Region from, Region to) => true;
 			RecreateWorkers();
 		}
 

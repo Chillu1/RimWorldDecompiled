@@ -1,6 +1,7 @@
-using RimWorld;
 using System;
+using System.Collections.Generic;
 using System.Xml;
+using RimWorld;
 
 namespace Verse
 {
@@ -30,6 +31,10 @@ namespace Verse
 					return "Psytrainer_EntropyDump";
 				case "PsylinkNeuroformer":
 					return "PsychicAmplifier";
+				case "PsychicShockLance":
+					return "Apparel_PsychicShockLance";
+				case "PsychicInsanityLance":
+					return "Apparel_PsychicInsanityLance";
 				}
 			}
 			if (defType == typeof(AbilityDef) && defName == "EntropyLink")
@@ -45,9 +50,43 @@ namespace Verse
 
 		public override Type GetBackCompatibleType(Type baseType, string providedClassName, XmlNode node)
 		{
-			if (providedClassName == "Hediff_PsychicAmplifier")
+			switch (providedClassName)
 			{
+			case "Hediff_PsychicAmplifier":
 				return typeof(Hediff_Psylink);
+			case "ThingWithComps":
+			case "Verse.ThingWithComps":
+			{
+				XmlElement xmlElement = node["def"];
+				if (xmlElement != null)
+				{
+					if (xmlElement.InnerText == "PsychicShockLance")
+					{
+						return typeof(Apparel);
+					}
+					if (xmlElement.InnerText == "PsychicInsanityLance")
+					{
+						return typeof(Apparel);
+					}
+					if (xmlElement.InnerText == "OrbitalTargeterBombardment")
+					{
+						return typeof(Apparel);
+					}
+					if (xmlElement.InnerText == "OrbitalTargeterPowerBeam")
+					{
+						return typeof(Apparel);
+					}
+					if (xmlElement.InnerText == "OrbitalTargeterMechCluster")
+					{
+						return typeof(Apparel);
+					}
+					if (xmlElement.InnerText == "TornadoGenerator")
+					{
+						return typeof(Apparel);
+					}
+				}
+				break;
+			}
 			}
 			return null;
 		}
@@ -58,7 +97,7 @@ namespace Verse
 			{
 				int num = VersionControl.BuildFromVersionString(ScribeMetaHeaderUtility.loadedGameVersion);
 				Pawn_RoyaltyTracker pawn_RoyaltyTracker;
-				if ((pawn_RoyaltyTracker = (obj as Pawn_RoyaltyTracker)) != null && num <= 2575)
+				if ((pawn_RoyaltyTracker = obj as Pawn_RoyaltyTracker) != null && num <= 2575)
 				{
 					foreach (RoyalTitle item in pawn_RoyaltyTracker.AllTitlesForReading)
 					{
@@ -66,41 +105,85 @@ namespace Verse
 					}
 				}
 				Pawn_NeedsTracker pawn_NeedsTracker;
-				if ((pawn_NeedsTracker = (obj as Pawn_NeedsTracker)) != null)
+				if ((pawn_NeedsTracker = obj as Pawn_NeedsTracker) != null)
 				{
 					pawn_NeedsTracker.AllNeeds.RemoveAll((Need n) => n.def.defName == "Authority");
 				}
 			}
 			Pawn pawn;
-			if ((pawn = (obj as Pawn)) == null)
+			Map map;
+			if ((pawn = obj as Pawn) != null)
 			{
-				return;
+				if (pawn.abilities == null)
+				{
+					pawn.abilities = new Pawn_AbilityTracker(pawn);
+				}
+				if (pawn.health != null)
+				{
+					if (pawn.health.hediffSet.hediffs.RemoveAll((Hediff x) => x == null) != 0)
+					{
+						Log.Error(pawn.ToStringSafe() + " had some null hediffs.");
+					}
+					Hediff hediff = pawn.health?.hediffSet?.GetFirstHediffOfDef(HediffDefOf.PsychicHangover);
+					if (hediff != null)
+					{
+						pawn.health.hediffSet.hediffs.Remove(hediff);
+					}
+					Hediff firstHediffOfDef = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.WakeUpTolerance);
+					if (firstHediffOfDef != null)
+					{
+						pawn.health.hediffSet.hediffs.Remove(firstHediffOfDef);
+					}
+					Hediff firstHediffOfDef2 = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.GoJuiceTolerance);
+					if (firstHediffOfDef2 != null)
+					{
+						pawn.health.hediffSet.hediffs.Remove(firstHediffOfDef2);
+					}
+				}
+				if (pawn.equipment == null || pawn.apparel == null || pawn.inventory == null)
+				{
+					return;
+				}
+				List<ThingWithComps> list = null;
+				for (int i = 0; i < pawn.equipment.AllEquipmentListForReading.Count; i++)
+				{
+					ThingWithComps thingWithComps = pawn.equipment.AllEquipmentListForReading[i];
+					if (thingWithComps.def.defName == "OrbitalTargeterBombardment" || thingWithComps.def.defName == "OrbitalTargeterPowerBeam" || thingWithComps.def.defName == "OrbitalTargeterMechCluster" || thingWithComps.def.defName == "TornadoGenerator")
+					{
+						list = list ?? new List<ThingWithComps>();
+						list.Add(thingWithComps);
+					}
+				}
+				if (list == null)
+				{
+					return;
+				}
+				foreach (Apparel item2 in list)
+				{
+					pawn.equipment.Remove(item2);
+					ResetVerbs(item2);
+					if (pawn.apparel.CanWearWithoutDroppingAnything(item2.def))
+					{
+						pawn.apparel.Wear(item2);
+					}
+					else
+					{
+						pawn.inventory.innerContainer.TryAdd(item2);
+					}
+				}
 			}
-			if (pawn.abilities == null)
+			else if (Scribe.mode == LoadSaveMode.LoadingVars && (map = obj as Map) != null && map.temporaryThingDrawer == null)
 			{
-				pawn.abilities = new Pawn_AbilityTracker(pawn);
+				map.temporaryThingDrawer = new TemporaryThingDrawer();
 			}
-			if (pawn.health != null)
+		}
+
+		private void ResetVerbs(ThingWithComps t)
+		{
+			(t as IVerbOwner)?.VerbTracker?.VerbsNeedReinitOnLoad();
+			foreach (ThingComp allComp in t.AllComps)
 			{
-				if (pawn.health.hediffSet.hediffs.RemoveAll((Hediff x) => x == null) != 0)
-				{
-					Log.Error(pawn.ToStringSafe() + " had some null hediffs.");
-				}
-				Hediff hediff = pawn.health?.hediffSet?.GetFirstHediffOfDef(HediffDefOf.PsychicHangover);
-				if (hediff != null)
-				{
-					pawn.health.hediffSet.hediffs.Remove(hediff);
-				}
-				Hediff firstHediffOfDef = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.WakeUpTolerance);
-				if (firstHediffOfDef != null)
-				{
-					pawn.health.hediffSet.hediffs.Remove(firstHediffOfDef);
-				}
-				Hediff firstHediffOfDef2 = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.GoJuiceTolerance);
-				if (firstHediffOfDef2 != null)
-				{
-					pawn.health.hediffSet.hediffs.Remove(firstHediffOfDef2);
-				}
+				(allComp as IVerbOwner)?.VerbTracker?.VerbsNeedReinitOnLoad();
 			}
 		}
 	}

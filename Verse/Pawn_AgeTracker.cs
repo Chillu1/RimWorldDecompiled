@@ -1,6 +1,6 @@
-using RimWorld;
 using System.Collections.Generic;
 using System.Text;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -89,8 +89,8 @@ namespace Verse
 		{
 			get
 			{
-				ageBiologicalTicksInt.TicksToPeriod(out int years, out int quadrums, out int days, out float hoursFloat);
-				(GenTicks.TicksAbs - birthAbsTicksInt).TicksToPeriod(out int years2, out int quadrums2, out int days2, out hoursFloat);
+				ageBiologicalTicksInt.TicksToPeriod(out var years, out var quadrums, out var days, out var hoursFloat);
+				(GenTicks.TicksAbs - birthAbsTicksInt).TicksToPeriod(out var years2, out var quadrums2, out var days2, out hoursFloat);
 				string value = "FullDate".Translate(Find.ActiveLanguageWorker.OrdinalNumber(BirthDayOfSeasonZeroBased + 1), BirthQuadrum.Label(), BirthYear);
 				string text = "Born".Translate(value) + "\n" + "AgeChronological".Translate(years2, quadrums2, days2) + "\n" + "AgeBiological".Translate(years, quadrums, days);
 				if (Prefs.DevMode)
@@ -204,7 +204,7 @@ namespace Verse
 			if (cachedLifeStageIndex < lifeStageAges.Count - 1)
 			{
 				float num4 = lifeStageAges[cachedLifeStageIndex + 1].minAge - AgeBiologicalYearsFloat;
-				int num5 = (Current.ProgramState == ProgramState.Playing) ? Find.TickManager.TicksGame : 0;
+				int num5 = ((Current.ProgramState == ProgramState.Playing) ? Find.TickManager.TicksGame : 0);
 				nextLifeStageChangeTick = num5 + (long)Mathf.Ceil(num4 * 3600000f);
 			}
 			else

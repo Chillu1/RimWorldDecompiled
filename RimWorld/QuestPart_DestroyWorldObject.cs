@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -45,7 +45,7 @@ namespace RimWorld
 		{
 			base.AssignDebugData();
 			inSignal = "DebugSignal" + Rand.Int;
-			if (TileFinder.TryFindNewSiteTile(out int tile))
+			if (TileFinder.TryFindNewSiteTile(out var tile))
 			{
 				worldObject = SiteMaker.MakeSite((SitePartDef)null, tile, (Faction)null, ifHostileThenMustRemainHostile: true, (float?)null);
 			}

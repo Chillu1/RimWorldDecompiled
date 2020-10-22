@@ -5,6 +5,8 @@ namespace RimWorld
 {
 	public class FocusStrengthOffset_GraveCorpseRelationship : FocusStrengthOffset
 	{
+		public override bool DependsOnPawn => true;
+
 		public override string GetExplanationAbstract(ThingDef def = null)
 		{
 			return "StatsReport_GraveCorpseRelatedAbstract".Translate() + ": " + offset.ToStringWithSign("0%");
@@ -12,10 +14,6 @@ namespace RimWorld
 
 		public override float GetOffset(Thing parent, Pawn user = null)
 		{
-			if (!CanApply(parent, user))
-			{
-				return 0f;
-			}
 			return offset;
 		}
 

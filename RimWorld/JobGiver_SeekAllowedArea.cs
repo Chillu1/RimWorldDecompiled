@@ -39,7 +39,7 @@ namespace RimWorld
 			RegionTraverser.BreadthFirstTraverse(region, entryCondition, regionProcessor, 9999);
 			if (reg != null)
 			{
-				if (!reg.TryFindRandomCellInRegionUnforbidden(pawn, null, out IntVec3 result))
+				if (!reg.TryFindRandomCellInRegionUnforbidden(pawn, null, out var result))
 				{
 					return null;
 				}

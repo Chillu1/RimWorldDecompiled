@@ -24,7 +24,7 @@ namespace RimWorld.QuestGen
 
 		protected override bool TestRunInt(Slate slate)
 		{
-			if (!Find.Storyteller.difficulty.allowViolentQuests)
+			if (!Find.Storyteller.difficultyValues.allowViolentQuests)
 			{
 				return false;
 			}
@@ -41,7 +41,7 @@ namespace RimWorld.QuestGen
 			MapParent parent = slate.Get<Map>("map").Parent;
 			string text = QuestGen.GenerateNewSignal("PawnOfRaceKilled");
 			QuestPart_PawnsKilled questPart_PawnsKilled = new QuestPart_PawnsKilled();
-			questPart_PawnsKilled.inSignalEnable = (QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart_PawnsKilled.inSignalEnable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			questPart_PawnsKilled.race = race.GetValue(slate);
 			questPart_PawnsKilled.requiredInstigatorFaction = Faction.OfPlayer;
 			questPart_PawnsKilled.count = count.GetValue(slate);
@@ -57,7 +57,7 @@ namespace RimWorld.QuestGen
 			}
 			QuestGen.quest.AddPart(questPart_PawnsKilled);
 			QuestPart_PawnsAvailable questPart_PawnsAvailable = new QuestPart_PawnsAvailable();
-			questPart_PawnsAvailable.inSignalEnable = (QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart_PawnsAvailable.inSignalEnable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			if (!outSignalPawnsNotAvailable.GetValue(slate).NullOrEmpty())
 			{
 				questPart_PawnsAvailable.outSignalPawnsNotAvailable = QuestGenUtility.HardcodedSignalWithQuestID(outSignalPawnsNotAvailable.GetValue(slate));

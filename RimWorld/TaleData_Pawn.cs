@@ -75,7 +75,7 @@ namespace RimWorld
 			taleData_Pawn.chronologicalAge = pawn.ageTracker.AgeChronologicalYears;
 			taleData_Pawn.everBeenColonistOrTameAnimal = PawnUtility.EverBeenColonistOrTameAnimal(pawn);
 			taleData_Pawn.everBeenQuestLodger = PawnUtility.EverBeenQuestLodger(pawn);
-			taleData_Pawn.isFactionLeader = (pawn.Faction != null && pawn.Faction.leader == pawn);
+			taleData_Pawn.isFactionLeader = pawn.Faction != null && pawn.Faction.leader == pawn;
 			if (pawn.royalty != null)
 			{
 				taleData_Pawn.royalTitles = new List<RoyalTitle>();
@@ -98,7 +98,7 @@ namespace RimWorld
 				{
 					taleData_Pawn.primaryEquipment = pawn.equipment.Primary.def;
 				}
-				if (pawn.apparel.WornApparel.TryRandomElement(out Apparel result))
+				if (pawn.apparel.WornApparel.TryRandomElement(out var result))
 				{
 					taleData_Pawn.notableApparel = result.def;
 				}

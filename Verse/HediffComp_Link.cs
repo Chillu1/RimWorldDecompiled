@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Linq;
+using RimWorld;
 
 namespace Verse
 {

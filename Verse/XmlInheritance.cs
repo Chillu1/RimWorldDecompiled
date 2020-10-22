@@ -126,7 +126,7 @@ namespace Verse
 		{
 			if (originalNode.Attributes["ParentName"] != null)
 			{
-				if (resolvedNodes.TryGetValue(originalNode, out XmlInheritanceNode value))
+				if (resolvedNodes.TryGetValue(originalNode, out var value))
 				{
 					return value.resolvedXmlNode;
 				}
@@ -203,7 +203,7 @@ namespace Verse
 		private static XmlInheritanceNode GetBestParentFor(XmlInheritanceNode node, string parentName)
 		{
 			XmlInheritanceNode xmlInheritanceNode = null;
-			if (nodesByName.TryGetValue(parentName, out List<XmlInheritanceNode> value))
+			if (nodesByName.TryGetValue(parentName, out var value))
 			{
 				if (node.mod == null)
 				{

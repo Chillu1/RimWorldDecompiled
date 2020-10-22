@@ -32,7 +32,7 @@ namespace Verse
 				}
 				return;
 			}
-			int num2 = (def.cutExtraTargetsCurve != null) ? GenMath.RoundRandom(def.cutExtraTargetsCurve.Evaluate(Rand.Value)) : 0;
+			int num2 = ((def.cutExtraTargetsCurve != null) ? GenMath.RoundRandom(def.cutExtraTargetsCurve.Evaluate(Rand.Value)) : 0);
 			List<BodyPartRecord> list2 = null;
 			if (num2 != 0)
 			{

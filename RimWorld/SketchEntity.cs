@@ -14,6 +14,11 @@ namespace RimWorld
 			get;
 		}
 
+		public abstract string LabelCap
+		{
+			get;
+		}
+
 		public abstract CellRect OccupiedRect
 		{
 			get;
@@ -42,13 +47,19 @@ namespace RimWorld
 
 		public abstract bool SameForSubtracting(SketchEntity other);
 
+		[Obsolete("Only used for mod compatibility")]
 		public bool SpawnNear(IntVec3 near, Map map, float radius, Faction faction, Sketch.SpawnMode spawnMode = Sketch.SpawnMode.Normal, bool wipeIfCollides = false, List<Thing> spawnedThings = null, bool dormant = false)
+		{
+			return SpawnNear_NewTmp(near, map, radius, faction, spawnMode, wipeIfCollides, spawnedThings, dormant);
+		}
+
+		public bool SpawnNear_NewTmp(IntVec3 near, Map map, float radius, Faction faction, Sketch.SpawnMode spawnMode = Sketch.SpawnMode.Normal, bool wipeIfCollides = false, List<Thing> spawnedThings = null, bool dormant = false, Func<SketchEntity, IntVec3, bool> validator = null)
 		{
 			int num = GenRadial.NumCellsInRadius(radius);
 			for (int i = 0; i < num; i++)
 			{
 				IntVec3 intVec = near + GenRadial.RadialPattern[i];
-				if (intVec.InBounds(map) && Spawn(intVec, map, faction, spawnMode, wipeIfCollides, spawnedThings, dormant))
+				if (intVec.InBounds(map) && (validator == null || validator(this, intVec)) && Spawn(intVec, map, faction, spawnMode, wipeIfCollides, spawnedThings, dormant))
 				{
 					return true;
 				}

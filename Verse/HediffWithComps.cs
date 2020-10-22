@@ -1,8 +1,8 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
 
 namespace Verse
 {
@@ -165,11 +165,17 @@ namespace Verse
 			}
 		}
 
+		[Obsolete("Only need this overload to not break mod compatibility.")]
 		public override void Tended(float quality, int batchPosition = 0)
+		{
+			Tended_NewTemp(quality, 1f, batchPosition);
+		}
+
+		public override void Tended_NewTemp(float quality, float maxQuality, int batchPosition = 0)
 		{
 			for (int i = 0; i < comps.Count; i++)
 			{
-				comps[i].CompTended(quality, batchPosition);
+				comps[i].CompTended_NewTemp(quality, maxQuality, batchPosition);
 			}
 		}
 
@@ -299,7 +305,7 @@ namespace Verse
 			{
 				for (int i = 0; i < comps.Count; i++)
 				{
-					string str = (!comps[i].ToString().Contains('_')) ? comps[i].ToString() : comps[i].ToString().Split('_')[1];
+					string str = ((!comps[i].ToString().Contains('_')) ? comps[i].ToString() : comps[i].ToString().Split('_')[1]);
 					stringBuilder.AppendLine("--" + str);
 					string text = comps[i].CompDebugString();
 					if (!text.NullOrEmpty())

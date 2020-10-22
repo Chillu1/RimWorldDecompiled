@@ -115,7 +115,7 @@ namespace Ionic.Zlib
 			int num3 = bitb;
 			int i = bitk;
 			int num4 = writeAt;
-			int num5 = (num4 < readAt) ? (readAt - num4 - 1) : (end - num4);
+			int num5 = ((num4 < readAt) ? (readAt - num4 - 1) : (end - num4));
 			while (true)
 			{
 				switch (mode)
@@ -140,13 +140,13 @@ namespace Ionic.Zlib
 						return Flush(r);
 					}
 					int num6 = num3 & 7;
-					last = (num6 & 1);
+					last = num6 & 1;
 					switch ((uint)num6 >> 1)
 					{
 					case 0u:
 						num3 >>= 3;
 						i -= 3;
-						num6 = (i & 7);
+						num6 = i & 7;
 						num3 >>= num6;
 						i -= num6;
 						mode = InflateBlockMode.LENS;
@@ -216,7 +216,7 @@ namespace Ionic.Zlib
 						writeAt = num4;
 						return Flush(r);
 					}
-					left = (num3 & 0xFFFF);
+					left = num3 & 0xFFFF;
 					num3 = (i = 0);
 					mode = ((left != 0) ? InflateBlockMode.STORED : ((last != 0) ? InflateBlockMode.DRY : InflateBlockMode.TYPE));
 					break;
@@ -302,7 +302,7 @@ namespace Ionic.Zlib
 						writeAt = num4;
 						return Flush(r);
 					}
-					int num6 = table = (num3 & 0x3FFF);
+					int num6 = (table = num3 & 0x3FFF);
 					if ((num6 & 0x1F) > 29 || ((num6 >> 5) & 0x1F) > 29)
 					{
 						mode = InflateBlockMode.BAD;
@@ -352,7 +352,7 @@ namespace Ionic.Zlib
 							writeAt = num4;
 							return Flush(r);
 						}
-						blens[border[index++]] = (num3 & 7);
+						blens[border[index++]] = num3 & 7;
 						num3 >>= 3;
 						i -= 3;
 					}
@@ -418,8 +418,8 @@ namespace Ionic.Zlib
 							blens[index++] = num7;
 							continue;
 						}
-						int num8 = (num7 == 18) ? 7 : (num7 - 14);
-						int num9 = (num7 == 18) ? 11 : 3;
+						int num8 = ((num7 == 18) ? 7 : (num7 - 14));
+						int num9 = ((num7 == 18) ? 11 : 3);
 						for (; i < num6 + num8; i += 8)
 						{
 							if (num2 != 0)
@@ -439,7 +439,7 @@ namespace Ionic.Zlib
 						}
 						num3 >>= num6;
 						i -= num6;
-						num9 += (num3 & InternalInflateConstants.InflateMask[num8]);
+						num9 += num3 & InternalInflateConstants.InflateMask[num8];
 						num3 >>= num8;
 						i -= num8;
 						num8 = index;
@@ -599,7 +599,7 @@ namespace Ionic.Zlib
 		{
 			for (int i = 0; i < 2; i++)
 			{
-				int num = (i != 0) ? (writeAt - readAt) : (((readAt <= writeAt) ? writeAt : end) - readAt);
+				int num = ((i != 0) ? (writeAt - readAt) : (((readAt <= writeAt) ? writeAt : end) - readAt));
 				if (num == 0)
 				{
 					if (r == -5)

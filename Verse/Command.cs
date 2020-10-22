@@ -33,13 +33,19 @@ namespace Verse
 
 		public string tutorTag = "TutorTagNotSet";
 
+		public bool shrinkable;
+
 		public static readonly Texture2D BGTex = ContentFinder<Texture2D>.Get("UI/Widgets/DesButBG");
+
+		public static readonly Texture2D BGTexShrunk = ContentFinder<Texture2D>.Get("UI/Widgets/DesButBG");
 
 		protected const float InnerIconDrawScale = 0.85f;
 
 		public virtual string Label => defaultLabel;
 
 		public virtual string LabelCap => Label.CapitalizeFirst();
+
+		public virtual string TopRightLabel => null;
 
 		public virtual string Desc => defaultDesc;
 
@@ -55,6 +61,10 @@ namespace Verse
 
 		public virtual Texture2D BGTexture => BGTex;
 
+		public virtual Texture2D BGTextureShrunk => BGTexShrunk;
+
+		public float GetShrunkSize => 36f;
+
 		public override float GetWidth(float maxWidth)
 		{
 			return 75f;
@@ -62,10 +72,19 @@ namespace Verse
 
 		public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth)
 		{
+			return GizmoOnGUIInt(new Rect(topLeft.x, topLeft.y, GetWidth(maxWidth), 75f));
+		}
+
+		public virtual GizmoResult GizmoOnGUIShrunk(Vector2 topLeft, float size)
+		{
+			return GizmoOnGUIInt(new Rect(topLeft.x, topLeft.y, size, size), shrunk: true);
+		}
+
+		protected virtual GizmoResult GizmoOnGUIInt(Rect butRect, bool shrunk = false)
+		{
 			Text.Font = GameFont.Tiny;
-			Rect rect = new Rect(topLeft.x, topLeft.y, GetWidth(maxWidth), 75f);
 			bool flag = false;
-			if (Mouse.IsOver(rect))
+			if (Mouse.IsOver(butRect))
 			{
 				flag = true;
 				if (!disabled)
@@ -73,15 +92,16 @@ namespace Verse
 					GUI.color = GenUI.MouseoverColor;
 				}
 			}
-			MouseoverSounds.DoRegion(rect, SoundDefOf.Mouseover_Command);
-			Material material = disabled ? TexUI.GrayscaleGUI : null;
-			GenUI.DrawTextureWithMaterial(rect, BGTexture, material);
-			DrawIcon(rect, material);
+			MouseoverSounds.DoRegion(butRect, SoundDefOf.Mouseover_Command);
+			Material material = (disabled ? TexUI.GrayscaleGUI : null);
+			GenUI.DrawTextureWithMaterial(butRect, shrunk ? BGTextureShrunk : BGTexture, material);
+			DrawIcon(butRect, material);
 			bool flag2 = false;
-			KeyCode keyCode = (hotKey != null) ? hotKey.MainKey : KeyCode.None;
+			KeyCode keyCode = ((hotKey != null) ? hotKey.MainKey : KeyCode.None);
 			if (keyCode != 0 && !GizmoGridDrawer.drawnHotKeys.Contains(keyCode))
 			{
-				Widgets.Label(new Rect(rect.x + 5f, rect.y + 5f, rect.width - 10f, 18f), keyCode.ToStringReadable());
+				Vector2 vector = (shrunk ? new Vector2(3f, 0f) : new Vector2(5f, 3f));
+				Widgets.Label(new Rect(butRect.x + vector.x, butRect.y + vector.y, butRect.width - 10f, 18f), keyCode.ToStringReadable());
 				GizmoGridDrawer.drawnHotKeys.Add(keyCode);
 				if (hotKey.KeyDownEvent)
 				{
@@ -89,24 +109,41 @@ namespace Verse
 					Event.current.Use();
 				}
 			}
-			if (Widgets.ButtonInvisible(rect))
+			if (Widgets.ButtonInvisible(butRect))
 			{
 				flag2 = true;
 			}
-			string labelCap = LabelCap;
-			if (!labelCap.NullOrEmpty())
+			if (!shrunk)
 			{
-				float num = Text.CalcHeight(labelCap, rect.width);
-				Rect rect2 = new Rect(rect.x, rect.yMax - num + 12f, rect.width, num);
-				GUI.DrawTexture(rect2, TexUI.GrayTextBG);
-				GUI.color = Color.white;
-				Text.Anchor = TextAnchor.UpperCenter;
-				Widgets.Label(rect2, labelCap);
-				Text.Anchor = TextAnchor.UpperLeft;
+				string topRightLabel = TopRightLabel;
+				if (!topRightLabel.NullOrEmpty())
+				{
+					Vector2 vector2 = Text.CalcSize(topRightLabel);
+					Rect position;
+					Rect rect = (position = new Rect(butRect.xMax - vector2.x - 2f, butRect.y + 3f, vector2.x, vector2.y));
+					position.x -= 2f;
+					position.width += 3f;
+					GUI.color = Color.white;
+					Text.Anchor = TextAnchor.UpperRight;
+					GUI.DrawTexture(position, TexUI.GrayTextBG);
+					Widgets.Label(rect, topRightLabel);
+					Text.Anchor = TextAnchor.UpperLeft;
+				}
+				string labelCap = LabelCap;
+				if (!labelCap.NullOrEmpty())
+				{
+					float num = Text.CalcHeight(labelCap, butRect.width);
+					Rect rect2 = new Rect(butRect.x, butRect.yMax - num + 12f, butRect.width, num);
+					GUI.DrawTexture(rect2, TexUI.GrayTextBG);
+					GUI.color = Color.white;
+					Text.Anchor = TextAnchor.UpperCenter;
+					Widgets.Label(rect2, labelCap);
+					Text.Anchor = TextAnchor.UpperLeft;
+					GUI.color = Color.white;
+				}
 				GUI.color = Color.white;
 			}
-			GUI.color = Color.white;
-			if (Mouse.IsOver(rect) && DoTooltip)
+			if (Mouse.IsOver(butRect) && DoTooltip)
 			{
 				TipSignal tip = Desc;
 				if (disabled && !disabledReason.NullOrEmpty())
@@ -114,11 +151,11 @@ namespace Verse
 					ref string text = ref tip.text;
 					text += "\n\n" + "DisabledCommand".Translate() + ": " + disabledReason;
 				}
-				TooltipHandler.TipRegion(rect, tip);
+				TooltipHandler.TipRegion(butRect, tip);
 			}
-			if (!HighlightTag.NullOrEmpty() && (Find.WindowStack.FloatMenu == null || !Find.WindowStack.FloatMenu.windowRect.Overlaps(rect)))
+			if (!HighlightTag.NullOrEmpty() && (Find.WindowStack.FloatMenu == null || !Find.WindowStack.FloatMenu.windowRect.Overlaps(butRect)))
 			{
-				UIHighlighter.HighlightOpportunity(rect, HighlightTag);
+				UIHighlighter.HighlightOpportunity(butRect, HighlightTag);
 			}
 			Text.Font = GameFont.Small;
 			if (flag2)

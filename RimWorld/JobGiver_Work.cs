@@ -22,7 +22,7 @@ namespace RimWorld
 			{
 				return 0f;
 			}
-			TimeAssignmentDef timeAssignmentDef = (pawn.timetable == null) ? TimeAssignmentDefOf.Anything : pawn.timetable.CurrentAssignment;
+			TimeAssignmentDef timeAssignmentDef = ((pawn.timetable == null) ? TimeAssignmentDefOf.Anything : pawn.timetable.CurrentAssignment);
 			if (timeAssignmentDef == TimeAssignmentDefOf.Anything)
 			{
 				return 5.5f;
@@ -66,7 +66,7 @@ namespace RimWorld
 				}
 				pawn.mindState.priorityWork.Clear();
 			}
-			List<WorkGiver> list = (!emergency) ? pawn.workSettings.WorkGiversInOrderNormal : pawn.workSettings.WorkGiversInOrderEmergency;
+			List<WorkGiver> list = ((!emergency) ? pawn.workSettings.WorkGiversInOrderNormal : pawn.workSettings.WorkGiversInOrderEmergency);
 			int num = -999;
 			TargetInfo bestTargetOfLastPriority = TargetInfo.Invalid;
 			WorkGiver_Scanner scannerWhoProvidedTarget = null;
@@ -95,7 +95,7 @@ namespace RimWorld
 					{
 						return new ThinkResult(job2, this, list[j].def.tagToGive);
 					}
-					scanner = (workGiver as WorkGiver_Scanner);
+					scanner = workGiver as WorkGiver_Scanner;
 					if (scanner != null)
 					{
 						if (scanner.def.scanThings)
@@ -141,7 +141,7 @@ namespace RimWorld
 							maxPathDanger = scanner.MaxPathDanger(pawn);
 							IEnumerable<IntVec3> enumerable4 = scanner.PotentialWorkCellsGlobal(pawn);
 							IList<IntVec3> list2;
-							if ((list2 = (enumerable4 as IList<IntVec3>)) != null)
+							if ((list2 = enumerable4 as IList<IntVec3>) != null)
 							{
 								for (int k = 0; k < list2.Count; k++)
 								{
@@ -203,7 +203,7 @@ namespace RimWorld
 				}
 				if (bestTargetOfLastPriority.IsValid)
 				{
-					Job job3 = (!bestTargetOfLastPriority.HasThing) ? scannerWhoProvidedTarget.JobOnCell(pawn, bestTargetOfLastPriority.Cell) : scannerWhoProvidedTarget.JobOnThing(pawn, bestTargetOfLastPriority.Thing);
+					Job job3 = ((!bestTargetOfLastPriority.HasThing) ? scannerWhoProvidedTarget.JobOnCell(pawn, bestTargetOfLastPriority.Cell) : scannerWhoProvidedTarget.JobOnThing(pawn, bestTargetOfLastPriority.Thing));
 					if (job3 != null)
 					{
 						job3.workGiverDef = scannerWhoProvidedTarget.def;

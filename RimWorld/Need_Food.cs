@@ -75,20 +75,15 @@ namespace RimWorld
 
 		public float FoodFallPerTickAssumingCategory(HungerCategory cat, bool ignoreMalnutrition = false)
 		{
-			float num = ignoreMalnutrition ? HungerRateIgnoringMalnutrition : HungerRate;
-			switch (cat)
+			float num = (ignoreMalnutrition ? HungerRateIgnoringMalnutrition : HungerRate);
+			return cat switch
 			{
-			case HungerCategory.Fed:
-				return 2.66666666E-05f * num;
-			case HungerCategory.Hungry:
-				return 2.66666666E-05f * num * 0.5f;
-			case HungerCategory.UrgentlyHungry:
-				return 2.66666666E-05f * num * 0.25f;
-			case HungerCategory.Starving:
-				return 2.66666666E-05f * num * 0.15f;
-			default:
-				return 999f;
-			}
+				HungerCategory.Fed => 2.66666666E-05f * num, 
+				HungerCategory.Hungry => 2.66666666E-05f * num * 0.5f, 
+				HungerCategory.UrgentlyHungry => 2.66666666E-05f * num * 0.25f, 
+				HungerCategory.Starving => 2.66666666E-05f * num * 0.15f, 
+				_ => 999f, 
+			};
 		}
 
 		public override void NeedInterval()

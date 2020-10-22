@@ -1,9 +1,9 @@
-using Ionic.Crc;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using Ionic.Crc;
 
 namespace Ionic.Zlib
 {
@@ -84,7 +84,7 @@ namespace Ionic.Zlib
 
 		private object _eLock = new object();
 
-		private TraceBits _DesiredTrace = TraceBits.EmitLock | TraceBits.EmitEnter | TraceBits.EmitBegin | TraceBits.EmitDone | TraceBits.EmitSkip | TraceBits.Session | TraceBits.Compress | TraceBits.WriteEnter | TraceBits.WriteTake;
+		private TraceBits _DesiredTrace = TraceBits.EmitAll | TraceBits.EmitEnter | TraceBits.Session | TraceBits.Compress | TraceBits.WriteEnter | TraceBits.WriteTake;
 
 		public CompressionStrategy Strategy
 		{
@@ -226,7 +226,7 @@ namespace Ionic.Zlib
 				_InitializePoolOfWorkItems();
 				_firstWriteDone = true;
 			}
-			while (true)
+			do
 			{
 				EmitPendingBuffers(doAll: false, mustWait);
 				mustWait = false;
@@ -240,13 +240,13 @@ namespace Ionic.Zlib
 					if (_toFill.Count == 0)
 					{
 						mustWait = true;
-						goto IL_0145;
+						continue;
 					}
 					num = _toFill.Dequeue();
 					_lastFilled++;
 				}
 				WorkItem workItem = _pool[num];
-				int num2 = (workItem.buffer.Length - workItem.inputBytesAvailable > count) ? count : (workItem.buffer.Length - workItem.inputBytesAvailable);
+				int num2 = ((workItem.buffer.Length - workItem.inputBytesAvailable > count) ? count : (workItem.buffer.Length - workItem.inputBytesAvailable));
 				workItem.ordinal = _lastFilled;
 				Buffer.BlockCopy(buffer, offset, workItem.buffer, workItem.inputBytesAvailable, num2);
 				count -= num2;
@@ -256,7 +256,7 @@ namespace Ionic.Zlib
 				{
 					if (!ThreadPool.QueueUserWorkItem(_DeflateOne, workItem))
 					{
-						break;
+						throw new Exception("Cannot enqueue workitem");
 					}
 					_currentlyFilling = -1;
 				}
@@ -265,14 +265,8 @@ namespace Ionic.Zlib
 					_currentlyFilling = num;
 				}
 				_ = 0;
-				goto IL_0145;
-				IL_0145:
-				if (count <= 0)
-				{
-					return;
-				}
 			}
-			throw new Exception("Cannot enqueue workitem");
+			while (count > 0);
 		}
 
 		private void _FlushFinish()
@@ -410,7 +404,7 @@ namespace Ionic.Zlib
 			do
 			{
 				int num = -1;
-				int num2 = doAll ? 200 : (mustWait ? (-1) : 0);
+				int num2 = (doAll ? 200 : (mustWait ? (-1) : 0));
 				int num3 = -1;
 				do
 				{

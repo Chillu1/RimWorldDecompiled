@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -80,7 +80,7 @@ namespace RimWorld
 			return text + ("AffectedGender".Translate() + ": " + gender.GetLabel().CapitalizeFirst());
 		}
 
-		public override void RandomizeSettings()
+		public override void RandomizeSettings_NewTemp_NewTemp(Site site)
 		{
 			gender = (Rand.Bool ? Gender.Male : Gender.Female);
 		}

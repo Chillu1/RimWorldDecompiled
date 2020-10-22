@@ -11,19 +11,14 @@ namespace RimWorld
 			{
 				return ThoughtState.Inactive;
 			}
-			switch (p.needs.rest.CurCategory)
+			return p.needs.rest.CurCategory switch
 			{
-			case RestCategory.Rested:
-				return ThoughtState.Inactive;
-			case RestCategory.Tired:
-				return ThoughtState.ActiveAtStage(0);
-			case RestCategory.VeryTired:
-				return ThoughtState.ActiveAtStage(1);
-			case RestCategory.Exhausted:
-				return ThoughtState.ActiveAtStage(2);
-			default:
-				throw new NotImplementedException();
-			}
+				RestCategory.Rested => ThoughtState.Inactive, 
+				RestCategory.Tired => ThoughtState.ActiveAtStage(0), 
+				RestCategory.VeryTired => ThoughtState.ActiveAtStage(1), 
+				RestCategory.Exhausted => ThoughtState.ActiveAtStage(2), 
+				_ => throw new NotImplementedException(), 
+			};
 		}
 	}
 }

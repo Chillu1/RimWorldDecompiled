@@ -50,25 +50,14 @@ namespace RimWorld
 			}
 		}
 
-		public float RestFallPerTick
+		public float RestFallPerTick => CurCategory switch
 		{
-			get
-			{
-				switch (CurCategory)
-				{
-				case RestCategory.Rested:
-					return 1.58333332E-05f * RestFallFactor;
-				case RestCategory.Tired:
-					return 1.58333332E-05f * RestFallFactor * 0.7f;
-				case RestCategory.VeryTired:
-					return 1.58333332E-05f * RestFallFactor * 0.3f;
-				case RestCategory.Exhausted:
-					return 1.58333332E-05f * RestFallFactor * 0.6f;
-				default:
-					return 999f;
-				}
-			}
-		}
+			RestCategory.Rested => 1.58333332E-05f * RestFallFactor, 
+			RestCategory.Tired => 1.58333332E-05f * RestFallFactor * 0.7f, 
+			RestCategory.VeryTired => 1.58333332E-05f * RestFallFactor * 0.3f, 
+			RestCategory.Exhausted => 1.58333332E-05f * RestFallFactor * 0.6f, 
+			_ => 999f, 
+		};
 
 		private float RestFallFactor => pawn.health.hediffSet.RestFallFactor;
 
@@ -137,7 +126,7 @@ namespace RimWorld
 			{
 				return;
 			}
-			float mtb = (ticksAtZero < 15000) ? 0.25f : ((ticksAtZero < 30000) ? 0.125f : ((ticksAtZero >= 45000) ? 0.0625f : 0.0833333358f));
+			float mtb = ((ticksAtZero < 15000) ? 0.25f : ((ticksAtZero < 30000) ? 0.125f : ((ticksAtZero >= 45000) ? 0.0625f : 0.0833333358f)));
 			if (Rand.MTBEventOccurs(mtb, 60000f, 150f) && (pawn.CurJob == null || pawn.CurJob.def != JobDefOf.LayDown))
 			{
 				pawn.jobs.StartJob(JobMaker.MakeJob(JobDefOf.LayDown, pawn.Position), JobCondition.InterruptForced, null, resumeCurJobAfterwards: false, cancelBusyStances: true, null, JobTag.SatisfyingNeeds);

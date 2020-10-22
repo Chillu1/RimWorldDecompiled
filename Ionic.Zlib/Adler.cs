@@ -12,11 +12,11 @@ namespace Ionic.Zlib
 			{
 				return 1u;
 			}
-			uint num = adler & 0xFFFF;
-			uint num2 = (adler >> 16) & 0xFFFF;
+			uint num = adler & 0xFFFFu;
+			uint num2 = (adler >> 16) & 0xFFFFu;
 			while (len > 0)
 			{
-				int num3 = (len < NMAX) ? len : NMAX;
+				int num3 = ((len < NMAX) ? len : NMAX);
 				len -= num3;
 				while (num3 >= 16)
 				{

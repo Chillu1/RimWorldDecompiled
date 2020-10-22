@@ -33,7 +33,7 @@ namespace RimWorld
 			Map map = (Map)parms.target;
 			tmpDrills.Clear();
 			DeepDrillInfestationIncidentUtility.GetUsableDeepDrills(map, tmpDrills);
-			if (!tmpDrills.TryRandomElement(out Thing deepDrill))
+			if (!tmpDrills.TryRandomElement(out var deepDrill))
 			{
 				return false;
 			}

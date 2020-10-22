@@ -40,7 +40,7 @@ namespace RimWorld
 					break;
 				}
 			}
-			Func<int, string> textGetter = (!refuelable.parent.def.building.hasFuelingPort) ? ((Func<int, string>)((int x) => "SetTargetFuelLevel".Translate(x))) : ((Func<int, string>)((int x) => "SetPodLauncherTargetFuelLevel".Translate(x, CompLaunchable.MaxLaunchDistanceAtFuelLevel(x))));
+			Func<int, string> textGetter = ((!refuelable.parent.def.building.hasFuelingPort) ? ((Func<int, string>)((int x) => "SetTargetFuelLevel".Translate(x))) : ((Func<int, string>)((int x) => "SetPodLauncherTargetFuelLevel".Translate(x, CompLaunchable.MaxLaunchDistanceAtFuelLevel(x)))));
 			Dialog_Slider window = new Dialog_Slider(textGetter, 0, num, delegate(int value)
 			{
 				for (int k = 0; k < refuelables.Count; k++)

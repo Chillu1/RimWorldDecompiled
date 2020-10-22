@@ -1,6 +1,6 @@
+using System.Collections.Generic;
 using RimWorld.Planet;
 using RimWorld.QuestGen;
-using System.Collections.Generic;
 using Verse;
 using Verse.Grammar;
 
@@ -44,6 +44,7 @@ namespace RimWorld
 			float num = QuestTuning.PointsToRaidSourceRaidsMTBDaysCurve.Evaluate(part.parms.threatPoints);
 			outExtraDescriptionRules.Add(new Rule_String("enemiesCount", enemiesCount.ToString()));
 			outExtraDescriptionRules.Add(new Rule_String("mtbDays", ((int)(num * 60000f)).ToStringTicksToPeriod(allowSeconds: true, shortForm: false, canUseDecimals: false)));
+			outExtraDescriptionRules.Add(new Rule_String("enemiesLabel", GetEnemiesLabel(part.site, enemiesCount)));
 		}
 	}
 }

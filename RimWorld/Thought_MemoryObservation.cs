@@ -36,7 +36,7 @@ namespace RimWorld
 			}
 			if (thought_MemoryObservation != null)
 			{
-				showBubble = (thought_MemoryObservation.age > thought_MemoryObservation.def.DurationTicks / 2);
+				showBubble = thought_MemoryObservation.age > thought_MemoryObservation.def.DurationTicks / 2;
 				thought_MemoryObservation.Renew();
 				return true;
 			}

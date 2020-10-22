@@ -6,27 +6,18 @@ namespace RimWorld
 	{
 		public static string LabelShort(this Direction8Way dir)
 		{
-			switch (dir)
+			return dir switch
 			{
-			case Direction8Way.North:
-				return "Direction8Way_North_Short".Translate();
-			case Direction8Way.NorthEast:
-				return "Direction8Way_NorthEast_Short".Translate();
-			case Direction8Way.East:
-				return "Direction8Way_East_Short".Translate();
-			case Direction8Way.SouthEast:
-				return "Direction8Way_SouthEast_Short".Translate();
-			case Direction8Way.South:
-				return "Direction8Way_South_Short".Translate();
-			case Direction8Way.SouthWest:
-				return "Direction8Way_SouthWest_Short".Translate();
-			case Direction8Way.West:
-				return "Direction8Way_West_Short".Translate();
-			case Direction8Way.NorthWest:
-				return "Direction8Way_NorthWest_Short".Translate();
-			default:
-				return "Unknown Direction8Way";
-			}
+				Direction8Way.North => "Direction8Way_North_Short".Translate(), 
+				Direction8Way.NorthEast => "Direction8Way_NorthEast_Short".Translate(), 
+				Direction8Way.East => "Direction8Way_East_Short".Translate(), 
+				Direction8Way.SouthEast => "Direction8Way_SouthEast_Short".Translate(), 
+				Direction8Way.South => "Direction8Way_South_Short".Translate(), 
+				Direction8Way.SouthWest => "Direction8Way_SouthWest_Short".Translate(), 
+				Direction8Way.West => "Direction8Way_West_Short".Translate(), 
+				Direction8Way.NorthWest => "Direction8Way_NorthWest_Short".Translate(), 
+				_ => "Unknown Direction8Way", 
+			};
 		}
 	}
 }

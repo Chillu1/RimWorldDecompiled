@@ -31,7 +31,7 @@ namespace RimWorld.QuestGen
 		{
 			Slate slate = QuestGen.slate;
 			QuestPart_ThingsProduced questPart_ThingsProduced = new QuestPart_ThingsProduced();
-			questPart_ThingsProduced.inSignalEnable = (QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart_ThingsProduced.inSignalEnable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			questPart_ThingsProduced.def = def.GetValue(slate);
 			questPart_ThingsProduced.stuff = stuff.GetValue(slate);
 			questPart_ThingsProduced.count = count.GetValue(slate);

@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 using Verse.AI;
 
 namespace Verse
@@ -74,7 +74,7 @@ namespace Verse
 
 		public IEnumerable<Gizmo> GetGizmos()
 		{
-			if ((!IsPrioritized && (pawn.CurJob == null || !pawn.CurJob.playerForced) && !pawn.jobs.jobQueue.AnyPlayerForced) || pawn.Drafted)
+			if ((!IsPrioritized && (pawn.CurJob == null || !pawn.CurJob.playerForced || !pawn.CurJob.def.playerInterruptible) && !pawn.jobs.jobQueue.AnyPlayerForced) || pawn.Drafted)
 			{
 				yield break;
 			}

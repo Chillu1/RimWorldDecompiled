@@ -1,7 +1,7 @@
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -95,7 +95,7 @@ namespace RimWorld
 			Season season = GenDate.Season(Find.TickManager.TicksAbs, vector);
 			Quadrum quadrum = GenDate.Quadrum(Find.TickManager.TicksAbs, vector.x);
 			int num2 = GenDate.Year(Find.TickManager.TicksAbs, vector.x);
-			string text = SeasonLabelVisible ? seasonsCached[(int)season] : "";
+			string text = (SeasonLabelVisible ? seasonsCached[(int)season] : "");
 			if (num != dateStringDay || season != dateStringSeason || quadrum != dateStringQuadrum || num2 != dateStringYear)
 			{
 				dateString = GenDate.DateReadoutStringAt(Find.TickManager.TicksAbs, vector);

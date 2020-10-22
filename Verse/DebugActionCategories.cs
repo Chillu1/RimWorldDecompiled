@@ -43,7 +43,7 @@ namespace Verse
 
 		public static int GetOrderFor(string category)
 		{
-			if (categoryOrders.TryGetValue(category, out int value))
+			if (categoryOrders.TryGetValue(category, out var value))
 			{
 				return value;
 			}

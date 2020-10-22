@@ -1,8 +1,8 @@
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -13,6 +13,8 @@ namespace RimWorld
 		public StorytellerDef def;
 
 		public DifficultyDef difficulty;
+
+		public Difficulty difficultyValues = new Difficulty();
 
 		public List<StorytellerComp> storytellerComps;
 
@@ -63,9 +65,15 @@ namespace RimWorld
 		}
 
 		public Storyteller(StorytellerDef def, DifficultyDef difficulty)
+			: this(def, difficulty, new Difficulty(difficulty))
+		{
+		}
+
+		public Storyteller(StorytellerDef def, DifficultyDef difficulty, Difficulty difficultyValues)
 		{
 			this.def = def;
 			this.difficulty = difficulty;
+			this.difficultyValues = difficultyValues;
 			InitializeStorytellerComps();
 		}
 
@@ -92,7 +100,15 @@ namespace RimWorld
 			if (difficulty == null)
 			{
 				Log.Error("Loaded storyteller without difficulty");
-				difficulty = DefDatabase<DifficultyDef>.AllDefsListForReading[3];
+				difficulty = DifficultyDefOf.Rough;
+			}
+			if (difficulty.isCustom)
+			{
+				Scribe_Deep.Look(ref difficultyValues, "customDifficulty", difficulty);
+			}
+			else if (Scribe.mode == LoadSaveMode.LoadingVars)
+			{
+				difficultyValues = new Difficulty(difficulty);
 			}
 			if (Scribe.mode == LoadSaveMode.ResolvingCrossRefs)
 			{
@@ -187,7 +203,7 @@ namespace RimWorld
 				}
 				foreach (FiringIncident item2 in comp.MakeIntervalIncidents(incidentTarget))
 				{
-					if (Find.Storyteller.difficulty.allowBigThreats || item2.def.category != IncidentCategoryDefOf.ThreatBig)
+					if (Find.Storyteller.difficultyValues.allowBigThreats || item2.def.category != IncidentCategoryDefOf.ThreatBig)
 					{
 						yield return item2;
 					}
@@ -242,6 +258,11 @@ namespace RimWorld
 					stringBuilder.AppendLine("Wealth: ".PadRight(40) + incidentTarget.PlayerWealthForStoryteller.ToString("F0"));
 					if (map != null)
 					{
+						if (Find.Storyteller.difficultyValues.fixedWealthMode)
+						{
+							stringBuilder.AppendLine($"- Wealth calculated using fixed model curve, time factor: {Find.Storyteller.difficultyValues.fixedWealthTimeFactor:F1}");
+							stringBuilder.AppendLine("- Map age: ".PadRight(40) + map.AgeInDays.ToString("F1"));
+						}
 						stringBuilder.AppendLine("- Items: ".PadRight(40) + map.wealthWatcher.WealthItems.ToString("F0"));
 						stringBuilder.AppendLine("- Buildings: ".PadRight(40) + map.wealthWatcher.WealthBuildings.ToString("F0"));
 						stringBuilder.AppendLine("- Floors: ".PadRight(40) + map.wealthWatcher.WealthFloorsOnly.ToString("F0"));

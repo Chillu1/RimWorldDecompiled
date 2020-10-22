@@ -20,9 +20,9 @@ namespace RimWorld.Planet
 
 		private SiteCoreBackCompat coreBackCompat;
 
-		private bool startedCountdown;
-
 		private bool anyEnemiesInitially;
+
+		private bool caravanAssaultSuccessfulTaleRecorded;
 
 		private bool allEnemiesDefeatedSignalSent;
 
@@ -92,7 +92,7 @@ namespace RimWorld.Planet
 			}
 		}
 
-		private SitePartDef MainSitePartDef => MainSitePart.def;
+		public SitePartDef MainSitePartDef => MainSitePart.def;
 
 		public override IEnumerable<GenStepWithParams> ExtraGenStepDefs
 		{
@@ -213,8 +213,8 @@ namespace RimWorld.Planet
 			Scribe_Values.Look(ref customLabel, "customLabel");
 			Scribe_Deep.Look(ref coreBackCompat, "core");
 			Scribe_Collections.Look(ref parts, "parts", LookMode.Deep);
-			Scribe_Values.Look(ref startedCountdown, "startedCountdown", defaultValue: false);
 			Scribe_Values.Look(ref anyEnemiesInitially, "anyEnemiesInitially", defaultValue: false);
+			Scribe_Values.Look(ref caravanAssaultSuccessfulTaleRecorded, "caravanAssaultSuccessfulTaleRecorded", defaultValue: false);
 			Scribe_Values.Look(ref allEnemiesDefeatedSignalSent, "allEnemiesDefeatedSignalSent", defaultValue: false);
 			Scribe_Values.Look(ref factionMustRemainHostile, "factionMustRemainHostile", defaultValue: false);
 			Scribe_Values.Look(ref desiredThreatPoints, "desiredThreatPoints", 0f);
@@ -256,7 +256,7 @@ namespace RimWorld.Planet
 			}
 			if (base.HasMap)
 			{
-				CheckStartForceExitAndRemoveMapCountdown();
+				CheckRecordAssaultSuccessfulTale();
 				CheckAllEnemiesDefeated();
 			}
 		}
@@ -269,7 +269,14 @@ namespace RimWorld.Planet
 			{
 				parts[i].def.Worker.PostMapGenerate(map);
 			}
-			anyEnemiesInitially = GenHostility.AnyHostileActiveThreatToPlayer(base.Map);
+			float num = 0f;
+			for (int j = 0; j < parts.Count; j++)
+			{
+				num = Mathf.Max(num, parts[j].def.forceExitAndRemoveMapCountdownDurationDays);
+			}
+			num *= MapParentTuning.SiteDetectionCountdownMultiplier.RandomInRange;
+			int ticks = Mathf.RoundToInt(num * 60000f);
+			GetComponent<TimedDetectionRaids>().StartDetectionCountdown(ticks);
 			allEnemiesDefeatedSignalSent = false;
 		}
 
@@ -295,7 +302,7 @@ namespace RimWorld.Planet
 		{
 			if (!base.Map.mapPawns.AnyPawnBlockingMapRemoval)
 			{
-				alsoRemoveWorldObject = (!base.Map.listerThings.ThingsInGroup(ThingRequestGroup.ConditionCauser).Any() || !parts.Any((SitePart x) => x.def.Worker is SitePartWorker_ConditionCauser));
+				alsoRemoveWorldObject = !parts.Any((SitePart x) => x.def.Worker is SitePartWorker_ConditionCauser && x.conditionCauser != null && !x.conditionCauser.Destroyed);
 				return true;
 			}
 			alsoRemoveWorldObject = false;
@@ -351,29 +358,15 @@ namespace RimWorld.Planet
 			}
 		}
 
-		private void CheckStartForceExitAndRemoveMapCountdown()
+		private void CheckRecordAssaultSuccessfulTale()
 		{
-			if (startedCountdown)
+			if (anyEnemiesInitially && !caravanAssaultSuccessfulTaleRecorded && !GenHostility.AnyHostileActiveThreatToPlayer(base.Map))
 			{
-				if (GenHostility.AnyHostileActiveThreatToPlayer(base.Map))
+				caravanAssaultSuccessfulTaleRecorded = true;
+				if (base.Map.mapPawns.FreeColonists.Any())
 				{
-					anyEnemiesInitially = true;
-					startedCountdown = false;
-					GetComponent<TimedForcedExit>().ResetForceExitAndRemoveMapCountdown();
+					TaleRecorder.RecordTale(TaleDefOf.CaravanAssaultSuccessful, base.Map.mapPawns.FreeColonists.RandomElement());
 				}
-			}
-			else if (!GenHostility.AnyHostileActiveThreatToPlayer(base.Map))
-			{
-				startedCountdown = true;
-				float num = 0f;
-				for (int i = 0; i < parts.Count; i++)
-				{
-					num = Mathf.Max(num, parts[i].def.forceExitAndRemoveMapCountdownDurationDays);
-				}
-				int num2 = Mathf.RoundToInt(num * 60000f);
-				Messages.Message(anyEnemiesInitially ? "MessageSiteCountdownBecauseNoMoreEnemies".Translate(TimedForcedExit.GetForceExitAndRemoveMapCountdownTimeLeftString(num2)) : "MessageSiteCountdownBecauseNoEnemiesInitially".Translate(TimedForcedExit.GetForceExitAndRemoveMapCountdownTimeLeftString(num2)), this, MessageTypeDefOf.PositiveEvent);
-				GetComponent<TimedForcedExit>().StartForceExitAndRemoveMapCountdown(num2);
-				TaleRecorder.RecordTale(TaleDefOf.CaravanAssaultSuccessful, base.Map.mapPawns.FreeColonists.RandomElement());
 			}
 		}
 
@@ -406,6 +399,12 @@ namespace RimWorld.Planet
 				if (parts[i].hidden)
 				{
 					continue;
+				}
+				if (MainSitePart == parts[i] && !parts[i].def.mainPartAllThreatsLabel.NullOrEmpty() && ActualThreatPoints > 0f)
+				{
+					stringBuilder.Length = 0;
+					stringBuilder.Append(parts[i].def.mainPartAllThreatsLabel.CapitalizeFirst());
+					break;
 				}
 				string postProcessedThreatLabel = parts[i].def.Worker.GetPostProcessedThreatLabel(this, parts[i]);
 				if (!postProcessedThreatLabel.NullOrEmpty())

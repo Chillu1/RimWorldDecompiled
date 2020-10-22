@@ -11,7 +11,7 @@ namespace Verse.AI
 			{
 				return 18f;
 			}
-			int num = room.IsHuge ? 9999 : room.CellCount;
+			int num = (room.IsHuge ? 9999 : room.CellCount);
 			float num2 = GenMath.LerpDoubleClamped(2f, 25f, 6f, 1f, num);
 			return 18f / num2;
 		}

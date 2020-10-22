@@ -76,7 +76,7 @@ namespace RimWorld
 
 		public void TrySpawnFilth()
 		{
-			if (parent.Map != null && CellFinder.TryFindRandomReachableCellNear(parent.Position, parent.Map, Props.spawnRadius, TraverseParms.For(TraverseMode.NoPassClosedDoors), (IntVec3 x) => x.Standable(parent.Map), (Region x) => true, out IntVec3 result))
+			if (parent.Map != null && CellFinder.TryFindRandomReachableCellNear(parent.Position, parent.Map, Props.spawnRadius, TraverseParms.For(TraverseMode.NoPassClosedDoors), (IntVec3 x) => x.Standable(parent.Map), (Region x) => true, out var result))
 			{
 				FilthMaker.TryMakeFilth(result, parent.Map, Props.filthDef);
 			}

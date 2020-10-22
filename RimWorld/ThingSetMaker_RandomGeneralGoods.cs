@@ -1,7 +1,7 @@
-using RimWorld.BaseGen;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.BaseGen;
 using UnityEngine;
 using Verse;
 
@@ -45,26 +45,15 @@ namespace RimWorld
 			int num = 0;
 			while (thing == null && num < 50)
 			{
-				switch (GoodsWeights.RandomElementByWeight((Pair<GoodsType, float> x) => x.Second).First)
+				thing = GoodsWeights.RandomElementByWeight((Pair<GoodsType, float> x) => x.Second).First switch
 				{
-				case GoodsType.Meals:
-					thing = RandomMeals(techLevel);
-					break;
-				case GoodsType.RawFood:
-					thing = RandomRawFood(techLevel);
-					break;
-				case GoodsType.Medicine:
-					thing = RandomMedicine(techLevel);
-					break;
-				case GoodsType.Drugs:
-					thing = RandomDrugs(techLevel);
-					break;
-				case GoodsType.Resources:
-					thing = RandomResources(techLevel);
-					break;
-				default:
-					throw new Exception();
-				}
+					GoodsType.Meals => RandomMeals(techLevel), 
+					GoodsType.RawFood => RandomRawFood(techLevel), 
+					GoodsType.Medicine => RandomMedicine(techLevel), 
+					GoodsType.Drugs => RandomDrugs(techLevel), 
+					GoodsType.Resources => RandomResources(techLevel), 
+					_ => throw new Exception(), 
+				};
 				num++;
 			}
 			return thing;
@@ -90,7 +79,7 @@ namespace RimWorld
 
 		private Thing RandomRawFood(TechLevel techLevel)
 		{
-			if (!PossibleRawFood(techLevel).TryRandomElement(out ThingDef result))
+			if (!PossibleRawFood(techLevel).TryRandomElement(out var result))
 			{
 				return null;
 			}
@@ -128,7 +117,7 @@ namespace RimWorld
 
 		private Thing RandomDrugs(TechLevel techLevel)
 		{
-			if (!ThingSetMakerUtility.allGeneratableItems.Where((ThingDef x) => x.IsDrug && (int)x.techLevel <= (int)techLevel).TryRandomElement(out ThingDef result))
+			if (!ThingSetMakerUtility.allGeneratableItems.Where((ThingDef x) => x.IsDrug && (int)x.techLevel <= (int)techLevel).TryRandomElement(out var result))
 			{
 				return null;
 			}

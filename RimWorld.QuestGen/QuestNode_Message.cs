@@ -29,8 +29,8 @@ namespace RimWorld.QuestGen
 		{
 			Slate slate = QuestGen.slate;
 			QuestPart_Message message = new QuestPart_Message();
-			message.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? slate.Get<string>("inSignal"));
-			message.messageType = (messageType.GetValue(slate) ?? MessageTypeDefOf.NeutralEvent);
+			message.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? slate.Get<string>("inSignal");
+			message.messageType = messageType.GetValue(slate) ?? MessageTypeDefOf.NeutralEvent;
 			message.lookTargets = QuestGenUtility.ToLookTargets(lookTargets, slate);
 			QuestGen.AddTextRequest("root", delegate(string x)
 			{

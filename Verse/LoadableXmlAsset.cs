@@ -30,14 +30,10 @@ namespace Verse
 					IgnoreWhitespace = true,
 					CheckCharacters = false
 				};
-				using (StringReader input = new StringReader(contents))
-				{
-					using (XmlReader xmlReader = XmlReader.Create(input, settings))
-					{
-						xmlDoc = new XmlDocument();
-						xmlDoc.Load(xmlReader);
-					}
-				}
+				using StringReader input = new StringReader(contents);
+				using XmlReader xmlReader = XmlReader.Create(input, settings);
+				xmlDoc = new XmlDocument();
+				xmlDoc.Load(xmlReader);
 			}
 			catch (Exception ex)
 			{

@@ -49,17 +49,20 @@ namespace RimWorld
 		{
 			if (def.building.mineableThing != null && !(Rand.Value > def.building.mineableDropChance))
 			{
-				int num = Mathf.Max(1, def.building.mineableYield);
+				int num = Mathf.Max(1, def.building.EffectiveMineableYield);
 				if (def.building.mineableYieldWasteable)
 				{
 					num = Mathf.Max(1, GenMath.RoundRandom((float)num * yieldPct));
 				}
-				Thing thing = ThingMaker.MakeThing(def.building.mineableThing);
-				thing.stackCount = num;
-				GenSpawn.Spawn(thing, base.Position, map);
+				Thing thing2 = ThingMaker.MakeThing(def.building.mineableThing);
+				thing2.stackCount = num;
+				GenPlace.TryPlaceThing(thing2, base.Position, map, ThingPlaceMode.Near, ForbidIfNecessary);
+			}
+			void ForbidIfNecessary(Thing thing, int count)
+			{
 				if ((pawn == null || !pawn.IsColonist) && thing.def.EverHaulable && !thing.def.designateHaulable)
 				{
-					thing.SetForbidden(value: true);
+					thing.SetForbidden(value: true, warnOnFail: false);
 				}
 			}
 		}

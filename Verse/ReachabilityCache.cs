@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 
 namespace Verse
 {
@@ -84,7 +84,7 @@ namespace Verse
 
 		public BoolUnknown CachedResultFor(Room A, Room B, TraverseParms traverseParams)
 		{
-			if (cacheDict.TryGetValue(new CachedEntry(A.ID, B.ID, traverseParams), out bool value))
+			if (cacheDict.TryGetValue(new CachedEntry(A.ID, B.ID, traverseParams), out var value))
 			{
 				if (!value)
 				{

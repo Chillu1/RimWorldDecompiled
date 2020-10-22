@@ -77,23 +77,16 @@ namespace RimWorld.Planet
 
 		public static SimpleCurve GetRainfallCurve(this OverallRainfall overallRainfall)
 		{
-			switch (overallRainfall)
+			return overallRainfall switch
 			{
-			case OverallRainfall.AlmostNone:
-				return Curve_AlmostNone;
-			case OverallRainfall.Little:
-				return Curve_Little;
-			case OverallRainfall.LittleBitLess:
-				return Curve_LittleBitLess;
-			case OverallRainfall.LittleBitMore:
-				return Curve_LittleBitMore;
-			case OverallRainfall.High:
-				return Curve_High;
-			case OverallRainfall.VeryHigh:
-				return Curve_VeryHigh;
-			default:
-				return null;
-			}
+				OverallRainfall.AlmostNone => Curve_AlmostNone, 
+				OverallRainfall.Little => Curve_Little, 
+				OverallRainfall.LittleBitLess => Curve_LittleBitLess, 
+				OverallRainfall.LittleBitMore => Curve_LittleBitMore, 
+				OverallRainfall.High => Curve_High, 
+				OverallRainfall.VeryHigh => Curve_VeryHigh, 
+				_ => null, 
+			};
 		}
 	}
 }

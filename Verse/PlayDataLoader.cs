@@ -1,10 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using RimWorld;
 using RimWorld.BaseGen;
 using RimWorld.IO;
 using RimWorld.QuestGen;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Verse.AI;
 
 namespace Verse
@@ -381,6 +381,7 @@ namespace Verse
 					DeepProfiler.End();
 				}
 			});
+			LongEventHandler.ExecuteWhenFinished(Log.ResetMessageCount);
 		}
 
 		public static void ClearAllPlayData()

@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Text;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -168,9 +168,9 @@ namespace Verse
 			}
 		}
 
-		public override void CompTended(float quality, int batchPosition = 0)
+		public override void CompTended_NewTemp(float quality, float maxQuality, int batchPosition = 0)
 		{
-			tendQuality = Mathf.Clamp01(quality + Rand.Range(-0.25f, 0.25f));
+			tendQuality = Mathf.Clamp(quality + Rand.Range(-0.25f, 0.25f), 0f, maxQuality);
 			totalTendQuality += tendQuality;
 			if (TProps.TendIsPermanent)
 			{

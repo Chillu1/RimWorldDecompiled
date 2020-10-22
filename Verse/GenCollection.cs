@@ -100,7 +100,7 @@ namespace Verse
 
 		public static T RandomElementWithFallback<T>(this IEnumerable<T> source, T fallback = default(T))
 		{
-			if (source.TryRandomElement(out T result))
+			if (source.TryRandomElement(out var result))
 			{
 				return result;
 			}
@@ -217,7 +217,7 @@ namespace Verse
 
 		public static T RandomElementByWeightWithFallback<T>(this IEnumerable<T> source, Func<T, float> weightSelector, T fallback = default(T))
 		{
-			if (source.TryRandomElementByWeight(weightSelector, out T result))
+			if (source.TryRandomElementByWeight(weightSelector, out var result))
 			{
 				return result;
 			}
@@ -334,14 +334,12 @@ namespace Verse
 
 		public static T FirstOrFallback<T>(this IEnumerable<T> source, T fallback = default(T))
 		{
-			using (IEnumerator<T> enumerator = source.GetEnumerator())
+			using IEnumerator<T> enumerator = source.GetEnumerator();
+			if (enumerator.MoveNext())
 			{
-				if (enumerator.MoveNext())
-				{
-					return enumerator.Current;
-				}
-				return fallback;
+				return enumerator.Current;
 			}
+			return fallback;
 		}
 
 		public static T FirstOrFallback<T>(this IEnumerable<T> source, Func<T, bool> predicate, T fallback = default(T))
@@ -368,26 +366,24 @@ namespace Verse
 			{
 				throw new ArgumentNullException("comparer");
 			}
-			using (IEnumerator<TSource> enumerator = source.GetEnumerator())
+			using IEnumerator<TSource> enumerator = source.GetEnumerator();
+			if (!enumerator.MoveNext())
 			{
-				if (!enumerator.MoveNext())
-				{
-					throw new InvalidOperationException("Sequence contains no elements");
-				}
-				TSource val = enumerator.Current;
-				TKey y = selector(val);
-				while (enumerator.MoveNext())
-				{
-					TSource current = enumerator.Current;
-					TKey val2 = selector(current);
-					if (comparer.Compare(val2, y) > 0)
-					{
-						val = current;
-						y = val2;
-					}
-				}
-				return val;
+				throw new InvalidOperationException("Sequence contains no elements");
 			}
+			TSource val = enumerator.Current;
+			TKey y = selector(val);
+			while (enumerator.MoveNext())
+			{
+				TSource current = enumerator.Current;
+				TKey val2 = selector(current);
+				if (comparer.Compare(val2, y) > 0)
+				{
+					val = current;
+					y = val2;
+				}
+			}
+			return val;
 		}
 
 		public static TSource MaxByWithFallback<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> selector, TSource fallback = default(TSource))
@@ -409,26 +405,24 @@ namespace Verse
 			{
 				throw new ArgumentNullException("comparer");
 			}
-			using (IEnumerator<TSource> enumerator = source.GetEnumerator())
+			using IEnumerator<TSource> enumerator = source.GetEnumerator();
+			if (!enumerator.MoveNext())
 			{
-				if (!enumerator.MoveNext())
-				{
-					return fallback;
-				}
-				TSource val = enumerator.Current;
-				TKey y = selector(val);
-				while (enumerator.MoveNext())
-				{
-					TSource current = enumerator.Current;
-					TKey val2 = selector(current);
-					if (comparer.Compare(val2, y) > 0)
-					{
-						val = current;
-						y = val2;
-					}
-				}
-				return val;
+				return fallback;
 			}
+			TSource val = enumerator.Current;
+			TKey y = selector(val);
+			while (enumerator.MoveNext())
+			{
+				TSource current = enumerator.Current;
+				TKey val2 = selector(current);
+				if (comparer.Compare(val2, y) > 0)
+				{
+					val = current;
+					y = val2;
+				}
+			}
+			return val;
 		}
 
 		public static bool TryMaxBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> selector, out TSource value)
@@ -450,28 +444,26 @@ namespace Verse
 			{
 				throw new ArgumentNullException("comparer");
 			}
-			using (IEnumerator<TSource> enumerator = source.GetEnumerator())
+			using IEnumerator<TSource> enumerator = source.GetEnumerator();
+			if (!enumerator.MoveNext())
 			{
-				if (!enumerator.MoveNext())
-				{
-					value = default(TSource);
-					return false;
-				}
-				TSource val = enumerator.Current;
-				TKey y = selector(val);
-				while (enumerator.MoveNext())
-				{
-					TSource current = enumerator.Current;
-					TKey val2 = selector(current);
-					if (comparer.Compare(val2, y) > 0)
-					{
-						val = current;
-						y = val2;
-					}
-				}
-				value = val;
-				return true;
+				value = default(TSource);
+				return false;
 			}
+			TSource val = enumerator.Current;
+			TKey y = selector(val);
+			while (enumerator.MoveNext())
+			{
+				TSource current = enumerator.Current;
+				TKey val2 = selector(current);
+				if (comparer.Compare(val2, y) > 0)
+				{
+					val = current;
+					y = val2;
+				}
+			}
+			value = val;
+			return true;
 		}
 
 		public static TSource MinBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> selector)
@@ -493,26 +485,24 @@ namespace Verse
 			{
 				throw new ArgumentNullException("comparer");
 			}
-			using (IEnumerator<TSource> enumerator = source.GetEnumerator())
+			using IEnumerator<TSource> enumerator = source.GetEnumerator();
+			if (!enumerator.MoveNext())
 			{
-				if (!enumerator.MoveNext())
-				{
-					throw new InvalidOperationException("Sequence contains no elements");
-				}
-				TSource val = enumerator.Current;
-				TKey y = selector(val);
-				while (enumerator.MoveNext())
-				{
-					TSource current = enumerator.Current;
-					TKey val2 = selector(current);
-					if (comparer.Compare(val2, y) < 0)
-					{
-						val = current;
-						y = val2;
-					}
-				}
-				return val;
+				throw new InvalidOperationException("Sequence contains no elements");
 			}
+			TSource val = enumerator.Current;
+			TKey y = selector(val);
+			while (enumerator.MoveNext())
+			{
+				TSource current = enumerator.Current;
+				TKey val2 = selector(current);
+				if (comparer.Compare(val2, y) < 0)
+				{
+					val = current;
+					y = val2;
+				}
+			}
+			return val;
 		}
 
 		public static bool TryMinBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> selector, out TSource value)
@@ -534,28 +524,26 @@ namespace Verse
 			{
 				throw new ArgumentNullException("comparer");
 			}
-			using (IEnumerator<TSource> enumerator = source.GetEnumerator())
+			using IEnumerator<TSource> enumerator = source.GetEnumerator();
+			if (!enumerator.MoveNext())
 			{
-				if (!enumerator.MoveNext())
-				{
-					value = default(TSource);
-					return false;
-				}
-				TSource val = enumerator.Current;
-				TKey y = selector(val);
-				while (enumerator.MoveNext())
-				{
-					TSource current = enumerator.Current;
-					TKey val2 = selector(current);
-					if (comparer.Compare(val2, y) < 0)
-					{
-						val = current;
-						y = val2;
-					}
-				}
-				value = val;
-				return true;
+				value = default(TSource);
+				return false;
 			}
+			TSource val = enumerator.Current;
+			TKey y = selector(val);
+			while (enumerator.MoveNext())
+			{
+				TSource current = enumerator.Current;
+				TKey val2 = selector(current);
+				if (comparer.Compare(val2, y) < 0)
+				{
+					val = current;
+					y = val2;
+				}
+			}
+			value = val;
+			return true;
 		}
 
 		public static void SortBy<T, TSortBy>(this List<T> list, Func<T, TSortBy> selector) where TSortBy : IComparable<TSortBy>
@@ -882,7 +870,7 @@ namespace Verse
 
 		public static V TryGetValue<T, V>(this IDictionary<T, V> dict, T key, V fallback = default(V))
 		{
-			if (!dict.TryGetValue(key, out V value))
+			if (!dict.TryGetValue(key, out var value))
 			{
 				return fallback;
 			}
@@ -1045,6 +1033,11 @@ namespace Verse
 				}
 			}
 			return num;
+		}
+
+		public static Pair<K, List<E>> ConvertIGroupingToPair<K, E>(IGrouping<K, E> g)
+		{
+			return new Pair<K, List<E>>(g.Key, g.ToList());
 		}
 	}
 }

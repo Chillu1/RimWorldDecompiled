@@ -277,6 +277,10 @@ namespace RimWorld.Planet
 			{
 				return WorldPawnSituation.ReservedByQuest;
 			}
+			if (p.teleporting)
+			{
+				return WorldPawnSituation.Teleporting;
+			}
 			return WorldPawnSituation.Free;
 		}
 
@@ -360,6 +364,19 @@ namespace RimWorld.Planet
 			}
 			else
 			{
+				try
+				{
+					int num = 0;
+					while (ShouldAutoTendTo(p) && num < 30)
+					{
+						TendUtility.DoTend(null, p, null);
+						num++;
+					}
+				}
+				catch (Exception ex)
+				{
+					Log.ErrorOnce("Exception tending to a world pawn " + p.ToStringSafe() + ". Suppressing further errors. " + ex, p.thingIDNumber ^ 0x85C154);
+				}
 				pawnsAlive.Add(p);
 			}
 			p.Notify_PassedToWorld();
@@ -443,7 +460,7 @@ namespace RimWorld.Planet
 					orderby (x.Faction != null) ? x.Faction.loadID : (-1)
 					select x)
 				{
-					string str = (item.Name != null) ? item.Name.ToStringFull : item.LabelCap;
+					string str = ((item.Name != null) ? item.Name.ToStringFull : item.LabelCap);
 					str = str + ", " + item.KindLabel;
 					if (item.royalty != null && item.royalty.AllTitlesForReading.Count > 0)
 					{

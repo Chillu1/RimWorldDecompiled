@@ -12,7 +12,7 @@ namespace RimWorld
 
 		protected override bool TryExecuteWorker(IncidentParms parms)
 		{
-			if (!ShortCircuitUtility.GetShortCircuitablePowerConduits((Map)parms.target).TryRandomElement(out Building result))
+			if (!ShortCircuitUtility.GetShortCircuitablePowerConduits((Map)parms.target).TryRandomElement(out var result))
 			{
 				return false;
 			}

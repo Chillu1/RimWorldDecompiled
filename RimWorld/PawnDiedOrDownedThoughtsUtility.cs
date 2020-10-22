@@ -1,8 +1,8 @@
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.AI;
@@ -248,7 +248,7 @@ namespace RimWorld
 				PawnRelationDef mostImportantRelation = potentiallyRelatedPawn.GetMostImportantRelation(victim);
 				if (mostImportantRelation != null)
 				{
-					ThoughtDef thoughtDef = flag ? mostImportantRelation.GetGenderSpecificLostThought(victim) : mostImportantRelation.GetGenderSpecificDiedThought(victim);
+					ThoughtDef thoughtDef = (flag ? mostImportantRelation.GetGenderSpecificLostThought(victim) : mostImportantRelation.GetGenderSpecificDiedThought(victim));
 					if (thoughtDef != null)
 					{
 						outIndividualThoughts.Add(new IndividualThoughtToAdd(thoughtDef, potentiallyRelatedPawn, victim));
@@ -290,8 +290,8 @@ namespace RimWorld
 					}
 				}
 			}
-			ThoughtDef thoughtDef2 = (thoughtsKind == PawnDiedOrDownedThoughtsKind.Lost) ? ThoughtDefOf.PawnWithGoodOpinionLost : ThoughtDefOf.PawnWithGoodOpinionDied;
-			ThoughtDef thoughtDef3 = (thoughtsKind == PawnDiedOrDownedThoughtsKind.Lost) ? ThoughtDefOf.PawnWithBadOpinionLost : ThoughtDefOf.PawnWithBadOpinionDied;
+			ThoughtDef thoughtDef2 = ((thoughtsKind == PawnDiedOrDownedThoughtsKind.Lost) ? ThoughtDefOf.PawnWithGoodOpinionLost : ThoughtDefOf.PawnWithGoodOpinionDied);
+			ThoughtDef thoughtDef3 = ((thoughtsKind == PawnDiedOrDownedThoughtsKind.Lost) ? ThoughtDefOf.PawnWithBadOpinionLost : ThoughtDefOf.PawnWithBadOpinionDied);
 			if (!victim.RaceProps.Humanlike)
 			{
 				return;
@@ -383,6 +383,17 @@ namespace RimWorld
 					{
 						memories.RemoveMemoriesOfDefWhereOtherPawnIs(genderSpecificLostThought, pawn);
 					}
+				}
+			}
+		}
+
+		public static void RemoveResuedRelativeThought(Pawn pawn)
+		{
+			foreach (Pawn item in PawnsFinder.AllMapsWorldAndTemporary_Alive)
+			{
+				if (item.needs != null && item.needs.mood != null && item != pawn)
+				{
+					item.needs.mood.thoughts.memories.RemoveMemoriesOfDefWhereOtherPawnIs(ThoughtDefOf.RescuedRelative, pawn);
 				}
 			}
 		}

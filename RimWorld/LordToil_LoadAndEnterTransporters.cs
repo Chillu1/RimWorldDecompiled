@@ -5,7 +5,7 @@ namespace RimWorld
 {
 	public class LordToil_LoadAndEnterTransporters : LordToil
 	{
-		private int transportersGroup = -1;
+		public int transportersGroup = -1;
 
 		public override bool AllowSatisfyLongNeeds => false;
 

@@ -83,8 +83,8 @@ namespace Verse
 			}
 			set
 			{
-				seed = (uint)(value & uint.MaxValue);
-				iterations = (uint)((value >> 32) & uint.MaxValue);
+				seed = (uint)(value & 0xFFFFFFFFu);
+				iterations = (uint)((value >> 32) & 0xFFFFFFFFu);
 			}
 		}
 

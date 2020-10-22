@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -68,7 +68,7 @@ namespace Verse
 			{
 				return pawn.MentalStateDef.nameColor;
 			}
-			int index = (pawn.Faction != null) ? (pawn.Faction.randomKey % 10) : 0;
+			int index = ((pawn.Faction != null) ? (pawn.Faction.randomKey % 10) : 0);
 			if (pawn.IsPrisoner)
 			{
 				return ColorsPrisoner[index];

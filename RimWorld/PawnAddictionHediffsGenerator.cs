@@ -31,7 +31,7 @@ namespace RimWorld
 				{
 					allDrugs.AddRange(DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef x) => x.category == ThingCategory.Item && x.GetCompProperties<CompProperties_Drug>() != null));
 				}
-				if (!DefDatabase<ChemicalDef>.AllDefsListForReading.Where((ChemicalDef x) => PossibleWithTechLevel(x, pawn.Faction) && !AddictionUtility.IsAddicted(pawn, x)).TryRandomElement(out ChemicalDef result))
+				if (!DefDatabase<ChemicalDef>.AllDefsListForReading.Where((ChemicalDef x) => PossibleWithTechLevel(x, pawn.Faction) && !AddictionUtility.IsAddicted(pawn, x)).TryRandomElement(out var result))
 				{
 					break;
 				}

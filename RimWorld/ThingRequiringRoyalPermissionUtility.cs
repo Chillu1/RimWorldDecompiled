@@ -51,7 +51,7 @@ namespace RimWorld
 		public static RoyalTitleDef GetMinTitleToUse(Def implantOrWeapon, Faction faction, int implantLevel = 0)
 		{
 			HediffDef implantDef;
-			if ((implantDef = (implantOrWeapon as HediffDef)) != null)
+			if ((implantDef = implantOrWeapon as HediffDef) != null)
 			{
 				return faction.GetMinTitleForImplant(implantDef, implantLevel);
 			}

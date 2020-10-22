@@ -47,7 +47,7 @@ namespace RimWorld.SketchGen
 				List<ThingDefCountClass> list = floor.CostListAdjusted(null);
 				for (int i = 0; i < list.Count; i++)
 				{
-					if (list[i].thingDef.stuffProps != null && !list[i].thingDef.stuffProps.categories.Contains(StuffCategoryDefOf.Stony))
+					if (list[i].thingDef.stuffProps == null || !list[i].thingDef.stuffProps.categories.Contains(StuffCategoryDefOf.Stony))
 					{
 						return false;
 					}
@@ -63,7 +63,7 @@ namespace RimWorld.SketchGen
 					if (list2[j].thingDef.stuffProps != null && list2[j].thingDef.stuffProps.SourceNaturalRock != null && list2[j].thingDef.stuffProps.SourceNaturalRock.IsNonResourceNaturalRock)
 					{
 						flag = true;
-						flag2 = (flag2 && Find.World.NaturalRockTypesIn(useOnlyStonesAvailableOnMap.Tile).Contains(list2[j].thingDef.stuffProps.SourceNaturalRock));
+						flag2 = flag2 && Find.World.NaturalRockTypesIn(useOnlyStonesAvailableOnMap.Tile).Contains(list2[j].thingDef.stuffProps.SourceNaturalRock);
 					}
 				}
 				if (flag && !flag2)

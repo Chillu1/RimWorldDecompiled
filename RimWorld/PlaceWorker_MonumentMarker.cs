@@ -35,12 +35,9 @@ namespace RimWorld
 					{
 						if (!entity.CanBuildOnTerrain(item, map))
 						{
-							return "MonumentBadTerrain".Translate();
+							TerrainDef terrain = item.GetTerrain(map);
+							return "CannotPlaceMonumentOnTerrain".Translate(terrain.LabelCap);
 						}
-					}
-					if (entity.IsSpawningBlockedPermanently(loc + entity.pos, map, thingToIgnore2))
-					{
-						return "MonumentBlockedPermanently".Translate();
 					}
 				}
 				tmpMonumentThings.Clear();
@@ -52,7 +49,7 @@ namespace RimWorld
 					{
 						tmpMonumentThings.Add(spawnedBlueprintOrFrame);
 					}
-					else if ((sketchThing = (buildable as SketchThing)) != null)
+					else if ((sketchThing = buildable as SketchThing) != null)
 					{
 						Thing sameSpawned = sketchThing.GetSameSpawned(loc + sketchThing.pos, map);
 						if (sameSpawned != null)
@@ -75,28 +72,32 @@ namespace RimWorld
 							if (firstBuilding != null && !tmpMonumentThings.Contains(firstBuilding))
 							{
 								tmpMonumentThings.Clear();
-								return "MonumentOverlapsBuilding".Translate();
+								return "CannotPlaceMonumentOver".Translate(firstBuilding.LabelCap);
 							}
+						}
+					}
+					SketchBuildable sketchBuildable;
+					if ((sketchBuildable = entity2 as SketchBuildable) != null)
+					{
+						Thing thing2 = sketchBuildable.FirstPermanentBlockerAt(loc + entity2.pos, map);
+						if (thing2 != null && !tmpMonumentThings.Contains(thing2))
+						{
+							tmpMonumentThings.Clear();
+							return "CannotPlaceMonumentOver".Translate(thing2.LabelCap);
 						}
 					}
 				}
 				foreach (SketchEntity entity3 in monumentMarker.sketch.Entities)
 				{
-					if (entity3.IsSameSpawnedOrBlueprintOrFrame(loc + entity3.pos, map))
+					Building firstAdjacentBuilding = MonumentMarkerUtility.GetFirstAdjacentBuilding(entity3, loc, tmpMonumentThings, map);
+					if (firstAdjacentBuilding != null)
 					{
-						continue;
+						return "MonumentAdjacentToBuilding".Translate(firstAdjacentBuilding.LabelCap);
 					}
-					foreach (IntVec3 edgeCell in entity3.OccupiedRect.MovedBy(loc).ExpandedBy(1).EdgeCells)
+					if (entity3.IsSpawningBlockedPermanently(loc + entity3.pos, map, thingToIgnore2))
 					{
-						if (edgeCell.InBounds(map))
-						{
-							Building firstBuilding2 = edgeCell.GetFirstBuilding(map);
-							if (firstBuilding2 != null && !tmpMonumentThings.Contains(firstBuilding2) && (firstBuilding2.Faction == null || firstBuilding2.Faction == Faction.OfPlayer))
-							{
-								tmpMonumentThings.Clear();
-								return "MonumentAdjacentToBuilding".Translate();
-							}
-						}
+						tmpMonumentThings.Clear();
+						return "MonumentBlockedPermanently".Translate();
 					}
 				}
 				tmpMonumentThings.Clear();

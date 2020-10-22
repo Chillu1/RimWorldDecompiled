@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using Verse.AI;
 
 namespace Verse
@@ -49,7 +49,7 @@ namespace Verse
 				do
 				{
 					num = thing.stackCount;
-					if (!TryFindPlaceSpotNear(center, rot, map, thing, allowStacking: true, out IntVec3 bestSpot, nearPlaceValidator))
+					if (!TryFindPlaceSpotNear(center, rot, map, thing, allowStacking: true, out var bestSpot, nearPlaceValidator))
 					{
 						return false;
 					}

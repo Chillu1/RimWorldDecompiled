@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -17,7 +17,7 @@ namespace RimWorld
 			foreach (Thing item in (IEnumerable<Thing>)activeDropPod.Contents.innerContainer)
 			{
 				Pawn pawn;
-				if ((pawn = (item as Pawn)) != null && pawn.IsWorldPawn())
+				if ((pawn = item as Pawn) != null && pawn.IsWorldPawn())
 				{
 					Find.WorldPawns.RemovePawn(pawn);
 					pawn.psychicEntropy?.SetInitialPsyfocusLevel();
@@ -42,7 +42,7 @@ namespace RimWorld
 		{
 			foreach (List<Thing> thingsGroup in thingsGroups)
 			{
-				if (!DropCellFinder.TryFindDropSpotNear(dropCenter, map, out IntVec3 result, allowFogged, canRoofPunch) && (canRoofPunch || !DropCellFinder.TryFindDropSpotNear(dropCenter, map, out result, allowFogged, canRoofPunch: true)))
+				if (!DropCellFinder.TryFindDropSpotNear(dropCenter, map, out var result, allowFogged, canRoofPunch) && (canRoofPunch || !DropCellFinder.TryFindDropSpotNear(dropCenter, map, out result, allowFogged, canRoofPunch: true)))
 				{
 					Log.Warning(string.Concat("DropThingsNear failed to find a place to drop ", thingsGroup.FirstOrDefault(), " near ", dropCenter, ". Dropping on random square instead."));
 					result = CellFinderLoose.RandomCellWith((IntVec3 c) => c.Walkable(map), map);

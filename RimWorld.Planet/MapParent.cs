@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -185,9 +186,7 @@ namespace RimWorld.Planet
 
 		public override IEnumerable<FloatMenuOption> GetTransportPodsFloatMenuOptions(IEnumerable<IThingHolder> pods, CompLaunchable representative)
 		{
-			CompLaunchable representative2 = representative;
-			MapParent mapParent = this;
-			foreach (FloatMenuOption transportPodsFloatMenuOption in base.GetTransportPodsFloatMenuOptions(pods, representative2))
+			foreach (FloatMenuOption transportPodsFloatMenuOption in base.GetTransportPodsFloatMenuOptions(pods, representative))
 			{
 				yield return transportPodsFloatMenuOption;
 			}
@@ -197,13 +196,13 @@ namespace RimWorld.Planet
 			}
 			yield return new FloatMenuOption("LandInExistingMap".Translate(Label), delegate
 			{
-				Map myMap = representative2.parent.Map;
-				Map map = mapParent.Map;
+				Map myMap = representative.parent.Map;
+				Map map = Map;
 				Current.Game.CurrentMap = map;
 				CameraJumper.TryHideWorld();
 				Find.Targeter.BeginTargeting(TargetingParameters.ForDropPodsDestination(), delegate(LocalTargetInfo x)
 				{
-					representative2.TryLaunch(mapParent.Tile, new TransportPodsArrivalAction_LandInSpecificCell(mapParent, x.Cell));
+					representative.TryLaunch(base.Tile, new TransportPodsArrivalAction_LandInSpecificCell(this, x.Cell, representative.parent.TryGetComp<CompShuttle>() != null));
 				}, null, delegate
 				{
 					if (Find.Maps.Contains(myMap))
@@ -214,9 +213,38 @@ namespace RimWorld.Planet
 			});
 		}
 
+		public override IEnumerable<FloatMenuOption> GetShuttleFloatMenuOptions(IEnumerable<IThingHolder> pods, Action<int, TransportPodsArrivalAction> launchAction)
+		{
+			if (!TransportPodsArrivalAction_LandInSpecificCell.CanLandInSpecificCell(pods, this))
+			{
+				yield break;
+			}
+			yield return new FloatMenuOption("LandInExistingMap".Translate(Label), delegate
+			{
+				Map map = Map;
+				Current.Game.CurrentMap = map;
+				CameraJumper.TryHideWorld();
+				Find.Targeter.BeginTargeting(TargetingParameters.ForDropPodsDestination(), delegate(LocalTargetInfo x)
+				{
+					launchAction(base.Tile, new TransportPodsArrivalAction_LandInSpecificCell(this, x.Cell, landInShuttle: true));
+				}, delegate(LocalTargetInfo x)
+				{
+					RoyalTitlePermitWorker_CallShuttle.DrawShuttleGhost(x, Map);
+				}, delegate(LocalTargetInfo x)
+				{
+					AcceptanceReport acceptanceReport = RoyalTitlePermitWorker_CallShuttle.ShuttleCanLandHere(x, Map);
+					if (!acceptanceReport.Accepted)
+					{
+						Messages.Message(acceptanceReport.Reason, new LookTargets(this), MessageTypeDefOf.RejectInput, historical: false);
+					}
+					return acceptanceReport.Accepted;
+				}, null, null, CompLaunchable.TargeterMouseAttachment);
+			});
+		}
+
 		public void CheckRemoveMapNow()
 		{
-			if (HasMap && ShouldRemoveMapNow(out bool alsoRemoveWorldObject))
+			if (HasMap && ShouldRemoveMapNow(out var alsoRemoveWorldObject))
 			{
 				Map map = Map;
 				Current.Game.DeinitAndRemoveMap(map);
@@ -236,7 +264,7 @@ namespace RimWorld.Planet
 				{
 					text += "\n";
 				}
-				text += "EnterCooldown".Translate(this.EnterCooldownDaysLeft().ToString("0.#"));
+				text += "EnterCooldown".Translate(this.EnterCooldownTicksLeft().ToStringTicksToPeriod());
 			}
 			if (!HandlesConditionCausers && HasMap)
 			{

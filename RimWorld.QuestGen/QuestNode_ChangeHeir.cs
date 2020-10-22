@@ -19,8 +19,8 @@ namespace RimWorld.QuestGen
 		{
 			Slate slate = QuestGen.slate;
 			QuestPart_ChangeHeir questPart_ChangeHeir = new QuestPart_ChangeHeir();
-			questPart_ChangeHeir.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
-			questPart_ChangeHeir.faction = (faction.GetValue(slate) ?? factionOf.GetValue(slate).Faction);
+			questPart_ChangeHeir.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
+			questPart_ChangeHeir.faction = faction.GetValue(slate) ?? factionOf.GetValue(slate).Faction;
 			questPart_ChangeHeir.holder = holder.GetValue(slate);
 			questPart_ChangeHeir.heir = heir.GetValue(slate);
 			QuestGen.quest.AddPart(questPart_ChangeHeir);

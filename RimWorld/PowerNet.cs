@@ -83,21 +83,14 @@ namespace RimWorld
 				}
 			}
 			hasPowerSource = false;
-			int num = 0;
-			while (true)
+			for (int j = 0; j < transmitters.Count; j++)
 			{
-				if (num < transmitters.Count)
+				if (IsPowerSource(transmitters[j]))
 				{
-					if (IsPowerSource(transmitters[num]))
-					{
-						break;
-					}
-					num++;
-					continue;
+					hasPowerSource = true;
+					break;
 				}
-				return;
 			}
-			hasPowerSource = true;
 		}
 
 		private bool IsPowerSource(CompPower cp)
@@ -220,7 +213,7 @@ namespace RimWorld
 			float num2 = CurrentStoredEnergy();
 			if (num2 + num >= -1E-07f && !Map.gameConditionManager.ElectricityDisabled)
 			{
-				float num3 = (batteryComps.Count <= 0 || !(num2 >= 0.1f)) ? num2 : (num2 - 5f);
+				float num3 = ((batteryComps.Count <= 0 || !(num2 >= 0.1f)) ? num2 : (num2 - 5f));
 				if (num3 + num >= 0f)
 				{
 					partsWantingPowerOn.Clear();

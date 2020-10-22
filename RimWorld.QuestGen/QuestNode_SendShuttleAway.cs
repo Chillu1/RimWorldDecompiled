@@ -22,7 +22,7 @@ namespace RimWorld.QuestGen
 			if (shuttle.GetValue(slate) != null)
 			{
 				QuestPart_SendShuttleAway questPart_SendShuttleAway = new QuestPart_SendShuttleAway();
-				questPart_SendShuttleAway.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+				questPart_SendShuttleAway.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 				questPart_SendShuttleAway.shuttle = shuttle.GetValue(slate);
 				questPart_SendShuttleAway.dropEverything = dropEverything.GetValue(slate);
 				QuestGen.quest.AddPart(questPart_SendShuttleAway);

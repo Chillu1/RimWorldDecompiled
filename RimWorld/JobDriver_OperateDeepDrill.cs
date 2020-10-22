@@ -13,11 +13,10 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			JobDriver_OperateDeepDrill jobDriver_OperateDeepDrill = this;
 			this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
 			this.FailOnBurningImmobile(TargetIndex.A);
 			this.FailOnThingHavingDesignation(TargetIndex.A, DesignationDefOf.Uninstall);
-			this.FailOn(() => !jobDriver_OperateDeepDrill.job.targetA.Thing.TryGetComp<CompDeepDrill>().CanDrillNow());
+			this.FailOn(() => !job.targetA.Thing.TryGetComp<CompDeepDrill>().CanDrillNow());
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.InteractionCell);
 			Toil work = new Toil();
 			work.tickAction = delegate
@@ -29,7 +28,7 @@ namespace RimWorld
 			work.defaultCompleteMode = ToilCompleteMode.Never;
 			work.WithEffect(EffecterDefOf.Drill, TargetIndex.A);
 			work.FailOnCannotTouch(TargetIndex.A, PathEndMode.InteractionCell);
-			work.activeSkill = (() => SkillDefOf.Mining);
+			work.activeSkill = () => SkillDefOf.Mining;
 			yield return work;
 		}
 	}

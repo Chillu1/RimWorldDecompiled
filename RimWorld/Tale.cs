@@ -126,6 +126,10 @@ namespace RimWorld
 			}
 		}
 
+		public virtual void Notify_FactionRemoved(Faction faction)
+		{
+		}
+
 		public IEnumerable<RulePack> GetTextGenerationIncludes()
 		{
 			if (def.rulePack != null)

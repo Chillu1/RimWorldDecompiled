@@ -11,7 +11,7 @@ namespace RimWorld.Planet
 		{
 			Building building = ((MapParent)parent).Map.listerBuildings.AllBuildingsColonistOfDef(ThingDefOf.Ship_Reactor).FirstOrDefault();
 			Building_ShipReactor building_ShipReactor;
-			if (building != null && (building_ShipReactor = (building as Building_ShipReactor)) != null)
+			if (building != null && (building_ShipReactor = building as Building_ShipReactor) != null)
 			{
 				building_ShipReactor.charlonsReactor = true;
 			}

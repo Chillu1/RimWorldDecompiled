@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -95,7 +95,7 @@ namespace RimWorld
 
 		protected virtual void OnDropThing(Thing t, int count)
 		{
-			GenDrop.TryDropSpawn_NewTmp(t.SplitOff(count), base.SelThing.Position, base.SelThing.Map, ThingPlaceMode.Near, out Thing _);
+			GenDrop.TryDropSpawn_NewTmp(t.SplitOff(count), base.SelThing.Position, base.SelThing.Map, ThingPlaceMode.Near, out var _);
 		}
 
 		protected void DoThingRow(ThingDef thingDef, int count, List<Thing> things, float width, ref float curY, Action<int> discardAction)
@@ -151,7 +151,7 @@ namespace RimWorld
 			Text.Anchor = TextAnchor.MiddleLeft;
 			GUI.color = ThingLabelColor;
 			Rect rect3 = new Rect(36f, curY, rect.width - 36f, rect.height);
-			string str = (things.Count != 1 || count != things[0].stackCount) ? GenLabel.ThingLabel(thingDef, null, count).CapitalizeFirst() : things[0].LabelCap;
+			string str = ((things.Count != 1 || count != things[0].stackCount) ? GenLabel.ThingLabel(thingDef, null, count).CapitalizeFirst() : things[0].LabelCap);
 			Text.WordWrap = false;
 			Widgets.Label(rect3, str.Truncate(rect3.width));
 			Text.WordWrap = true;

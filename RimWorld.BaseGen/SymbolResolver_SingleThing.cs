@@ -54,7 +54,7 @@ namespace RimWorld.BaseGen
 				{
 					return;
 				}
-				ThingDef thingDef = (rp.singleThingToSpawn != null) ? rp.singleThingToSpawn.def : (rp.singleThingDef ?? ThingSetMakerUtility.allGeneratableItems.Where((ThingDef x) => x.IsWeapon || x.IsMedicine || x.IsDrug).RandomElement());
+				ThingDef thingDef = ((rp.singleThingToSpawn != null) ? rp.singleThingToSpawn.def : (rp.singleThingDef ?? ThingSetMakerUtility.allGeneratableItems.Where((ThingDef x) => x.IsWeapon || x.IsMedicine || x.IsDrug).RandomElement()));
 				Rot4? rot = rp.thingRot;
 				IntVec3 result;
 				if (thingDef.category == ThingCategory.Item)
@@ -71,7 +71,7 @@ namespace RimWorld.BaseGen
 				}
 				else
 				{
-					result = FindBestSpawnCellForNonItem(rp.rect, thingDef, ref rot, out bool hasToWipeBuilding, out bool doesntFit);
+					result = FindBestSpawnCellForNonItem(rp.rect, thingDef, ref rot, out var hasToWipeBuilding, out var doesntFit);
 					if ((hasToWipeBuilding || doesntFit) && rp.skipSingleThingIfHasToWipeBuildingOrDoesntFit.HasValue && rp.skipSingleThingIfHasToWipeBuildingOrDoesntFit.Value)
 					{
 						return;
@@ -84,9 +84,9 @@ namespace RimWorld.BaseGen
 				Thing thing;
 				if (rp.singleThingToSpawn == null)
 				{
-					ThingDef stuff = (rp.singleThingStuff == null || !rp.singleThingStuff.stuffProps.CanMake(thingDef)) ? GenStuff.RandomStuffInexpensiveFor(thingDef, rp.faction) : rp.singleThingStuff;
+					ThingDef stuff = ((rp.singleThingStuff == null || !rp.singleThingStuff.stuffProps.CanMake(thingDef)) ? GenStuff.RandomStuffInexpensiveFor(thingDef, rp.faction) : rp.singleThingStuff);
 					thing = ThingMaker.MakeThing(thingDef, stuff);
-					thing.stackCount = (rp.singleThingStackCount ?? 1);
+					thing.stackCount = rp.singleThingStackCount ?? 1;
 					if (thing.stackCount <= 0)
 					{
 						thing.stackCount = 1;

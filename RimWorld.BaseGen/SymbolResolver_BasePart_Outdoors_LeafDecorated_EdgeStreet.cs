@@ -5,7 +5,7 @@ namespace RimWorld.BaseGen
 		public override void Resolve(ResolveParams rp)
 		{
 			ResolveParams resolveParams = rp;
-			resolveParams.floorDef = (rp.pathwayFloorDef ?? BaseGenUtility.RandomBasicFloorDef(rp.faction));
+			resolveParams.floorDef = rp.pathwayFloorDef ?? BaseGenUtility.RandomBasicFloorDef(rp.faction);
 			BaseGen.symbolStack.Push("edgeStreet", resolveParams);
 			ResolveParams resolveParams2 = rp;
 			resolveParams2.rect = rp.rect.ContractedBy(1);

@@ -1,7 +1,7 @@
-using RimWorld;
-using Steamworks;
 using System.IO;
 using System.Linq;
+using RimWorld;
+using Steamworks;
 
 namespace Verse.Steam
 {

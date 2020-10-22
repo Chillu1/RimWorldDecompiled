@@ -17,7 +17,7 @@ namespace RimWorld
 				{
 					foreach (Pawn freeColonist in maps[i].mapPawns.FreeColonists)
 					{
-						if (freeColonist.royalty != null && freeColonist.royalty.CanRequireBedroom() && freeColonist.royalty.HighestTitleWithBedroomRequirements() != null && !freeColonist.royalty.HasPersonalBedroom())
+						if (freeColonist.royalty != null && freeColonist.royalty.CanRequireBedroom() && freeColonist.royalty.HighestTitleWithBedroomRequirements() != null && !freeColonist.Suspended && !freeColonist.royalty.HasPersonalBedroom())
 						{
 							targetsResult.Add(freeColonist);
 						}

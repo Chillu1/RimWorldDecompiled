@@ -1,8 +1,8 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
+using RimWorld.Planet;
 
 namespace Verse
 {
@@ -63,7 +63,7 @@ namespace Verse
 			mapBeingGenerated = null;
 			DeepProfiler.Start("InitNewGeneratedMap");
 			Rand.PushState();
-			int seed = Rand.Seed = Gen.HashCombineInt(Find.World.info.Seed, parent.Tile);
+			int seed = (Rand.Seed = Gen.HashCombineInt(Find.World.info.Seed, parent.Tile));
 			try
 			{
 				if (parent != null && parent.HasMap)
@@ -156,7 +156,7 @@ namespace Verse
 
 		public static T GetVar<T>(string name)
 		{
-			if (data.TryGetValue(name, out object value))
+			if (data.TryGetValue(name, out var value))
 			{
 				return (T)value;
 			}
@@ -165,7 +165,7 @@ namespace Verse
 
 		public static bool TryGetVar<T>(string name, out T var)
 		{
-			if (data.TryGetValue(name, out object value))
+			if (data.TryGetValue(name, out var value))
 			{
 				var = (T)value;
 				return true;

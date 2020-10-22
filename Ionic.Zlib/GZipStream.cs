@@ -267,10 +267,10 @@ namespace Ionic.Zlib
 
 		private int EmitHeader()
 		{
-			byte[] array = (Comment == null) ? null : iso8859dash1.GetBytes(Comment);
-			byte[] array2 = (FileName == null) ? null : iso8859dash1.GetBytes(FileName);
-			int num = (Comment != null) ? (array.Length + 1) : 0;
-			int num2 = (FileName != null) ? (array2.Length + 1) : 0;
+			byte[] array = ((Comment == null) ? null : iso8859dash1.GetBytes(Comment));
+			byte[] array2 = ((FileName == null) ? null : iso8859dash1.GetBytes(FileName));
+			int num = ((Comment != null) ? (array.Length + 1) : 0);
+			int num2 = ((FileName != null) ? (array2.Length + 1) : 0);
 			byte[] array3 = new byte[10 + num + num2];
 			int num3 = 0;
 			array3[num3++] = 31;
@@ -279,11 +279,11 @@ namespace Ionic.Zlib
 			byte b = 0;
 			if (Comment != null)
 			{
-				b = (byte)(b ^ 0x10);
+				b = (byte)(b ^ 0x10u);
 			}
 			if (FileName != null)
 			{
-				b = (byte)(b ^ 8);
+				b = (byte)(b ^ 8u);
 			}
 			array3[num3++] = b;
 			if (!LastModified.HasValue)
@@ -312,40 +312,32 @@ namespace Ionic.Zlib
 
 		public static byte[] CompressString(string s)
 		{
-			using (MemoryStream memoryStream = new MemoryStream())
-			{
-				Stream compressor = new GZipStream(memoryStream, CompressionMode.Compress, CompressionLevel.BestCompression);
-				ZlibBaseStream.CompressString(s, compressor);
-				return memoryStream.ToArray();
-			}
+			using MemoryStream memoryStream = new MemoryStream();
+			Stream compressor = new GZipStream(memoryStream, CompressionMode.Compress, CompressionLevel.BestCompression);
+			ZlibBaseStream.CompressString(s, compressor);
+			return memoryStream.ToArray();
 		}
 
 		public static byte[] CompressBuffer(byte[] b)
 		{
-			using (MemoryStream memoryStream = new MemoryStream())
-			{
-				Stream compressor = new GZipStream(memoryStream, CompressionMode.Compress, CompressionLevel.BestCompression);
-				ZlibBaseStream.CompressBuffer(b, compressor);
-				return memoryStream.ToArray();
-			}
+			using MemoryStream memoryStream = new MemoryStream();
+			Stream compressor = new GZipStream(memoryStream, CompressionMode.Compress, CompressionLevel.BestCompression);
+			ZlibBaseStream.CompressBuffer(b, compressor);
+			return memoryStream.ToArray();
 		}
 
 		public static string UncompressString(byte[] compressed)
 		{
-			using (MemoryStream stream = new MemoryStream(compressed))
-			{
-				Stream decompressor = new GZipStream(stream, CompressionMode.Decompress);
-				return ZlibBaseStream.UncompressString(compressed, decompressor);
-			}
+			using MemoryStream stream = new MemoryStream(compressed);
+			Stream decompressor = new GZipStream(stream, CompressionMode.Decompress);
+			return ZlibBaseStream.UncompressString(compressed, decompressor);
 		}
 
 		public static byte[] UncompressBuffer(byte[] compressed)
 		{
-			using (MemoryStream stream = new MemoryStream(compressed))
-			{
-				Stream decompressor = new GZipStream(stream, CompressionMode.Decompress);
-				return ZlibBaseStream.UncompressBuffer(compressed, decompressor);
-			}
+			using MemoryStream stream = new MemoryStream(compressed);
+			Stream decompressor = new GZipStream(stream, CompressionMode.Decompress);
+			return ZlibBaseStream.UncompressBuffer(compressed, decompressor);
 		}
 	}
 }

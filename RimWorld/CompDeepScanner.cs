@@ -9,16 +9,25 @@ namespace RimWorld
 
 		public override void PostDrawExtraSelectionOverlays()
 		{
-			if (powerComp.PowerOn)
+			if (ShouldShowDeepResourceOverlay())
 			{
 				parent.Map.deepResourceGrid.MarkForDraw();
 			}
 		}
 
+		public bool ShouldShowDeepResourceOverlay()
+		{
+			if (powerComp != null)
+			{
+				return powerComp.PowerOn;
+			}
+			return false;
+		}
+
 		protected override void DoFind(Pawn worker)
 		{
 			Map map = parent.Map;
-			if (!CellFinderLoose.TryFindRandomNotEdgeCellWith(10, (IntVec3 x) => CanScatterAt(x, map), map, out IntVec3 result))
+			if (!CellFinderLoose.TryFindRandomNotEdgeCellWith(10, (IntVec3 x) => CanScatterAt(x, map), map, out var result))
 			{
 				Log.Error("Could not find a center cell for deep scanning lump generation!");
 			}
@@ -31,7 +40,7 @@ namespace RimWorld
 					map.deepResourceGrid.SetAt(item, thingDef, thingDef.deepCountPerCell);
 				}
 			}
-			string key = "LetterDeepScannerFoundLump".CanTranslate() ? "LetterDeepScannerFoundLump" : ((!"DeepScannerFoundLump".CanTranslate()) ? "LetterDeepScannerFoundLump" : "DeepScannerFoundLump");
+			string key = ("LetterDeepScannerFoundLump".CanTranslate() ? "LetterDeepScannerFoundLump" : ((!"DeepScannerFoundLump".CanTranslate()) ? "LetterDeepScannerFoundLump" : "DeepScannerFoundLump"));
 			Find.LetterStack.ReceiveLetter("LetterLabelDeepScannerFoundLump".Translate() + ": " + thingDef.LabelCap, key.Translate(thingDef.label, worker.Named("FINDER")), LetterDefOf.PositiveEvent, new LookTargets(result, map));
 		}
 

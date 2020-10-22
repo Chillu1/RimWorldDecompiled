@@ -22,8 +22,8 @@ namespace RimWorld
 				request.Rules.Add(new Rule_String("ANYPAWN_nameDef", testPawnNameSymbol));
 				request.Rules.Add(new Rule_String("ANYPAWN_nameIndef", testPawnNameSymbol));
 			}
-			string rootKeyword2 = (rootKeyword != null) ? rootKeyword : rootPack.FirstRuleKeyword;
-			string untranslatedRootKeyword = (rootKeyword != null) ? rootKeyword : rootPack.FirstUntranslatedRuleKeyword;
+			string rootKeyword2 = ((rootKeyword != null) ? rootKeyword : rootPack.FirstRuleKeyword);
+			string untranslatedRootKeyword = ((rootKeyword != null) ? rootKeyword : rootPack.FirstUntranslatedRuleKeyword);
 			return GenerateName(request, validator, appendNumberIfNameUsed, rootKeyword2, untranslatedRootKeyword);
 		}
 

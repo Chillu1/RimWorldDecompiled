@@ -19,6 +19,12 @@ namespace RimWorld
 
 		public static LetterDef NewQuest;
 
+		public static LetterDef AcceptVisitors;
+
+		public static LetterDef BetrayVisitors;
+
+		public static LetterDef ChoosePawn;
+
 		static LetterDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(LetterDefOf));

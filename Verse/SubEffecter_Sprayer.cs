@@ -19,8 +19,8 @@ namespace Verse
 				break;
 			case MoteSpawnLocType.BetweenPositions:
 			{
-				Vector3 vector2 = A.HasThing ? A.Thing.DrawPos : A.Cell.ToVector3Shifted();
-				Vector3 vector3 = B.HasThing ? B.Thing.DrawPos : B.Cell.ToVector3Shifted();
+				Vector3 vector2 = (A.HasThing ? A.Thing.DrawPos : A.Cell.ToVector3Shifted());
+				Vector3 vector3 = (B.HasThing ? B.Thing.DrawPos : B.Cell.ToVector3Shifted());
 				vector = ((A.HasThing && !A.Thing.Spawned) ? vector3 : ((!B.HasThing || B.Thing.Spawned) ? (vector2 * def.positionLerpFactor + vector3 * (1f - def.positionLerpFactor)) : vector2));
 				break;
 			}
@@ -38,11 +38,12 @@ namespace Verse
 				{
 					vector += (B.CenterVector3 - A.CenterVector3).normalized * parent.def.offsetTowardsTarget.RandomInRange;
 				}
-				vector += Gen.RandomHorizontalVector(parent.def.positionRadius);
+				vector += Gen.RandomHorizontalVector(parent.def.positionRadius) + parent.offset;
 				Rand.PopState();
 			}
 			Map map = A.Map ?? B.Map;
-			float num = def.absoluteAngle ? 0f : (B.Cell - A.Cell).AngleFlat;
+			float num = (def.absoluteAngle ? 0f : (B.Cell - A.Cell).AngleFlat);
+			float num2 = ((parent != null) ? parent.scale : 1f);
 			if (map == null || !vector.ShouldSpawnMotesAt(map))
 			{
 				return;
@@ -52,8 +53,8 @@ namespace Verse
 			{
 				Mote obj = (Mote)ThingMaker.MakeThing(def.moteDef);
 				GenSpawn.Spawn(obj, vector.ToIntVec3(), map);
-				obj.Scale = def.scale.RandomInRange;
-				obj.exactPosition = vector + Gen.RandomHorizontalVector(def.positionRadius);
+				obj.Scale = def.scale.RandomInRange * num2;
+				obj.exactPosition = vector + def.positionOffset * num2 + Gen.RandomHorizontalVector(def.positionRadius) * num2;
 				obj.rotationRate = def.rotationRate.RandomInRange;
 				obj.exactRotation = def.rotation.RandomInRange + num;
 				obj.instanceColor = def.color;

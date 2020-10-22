@@ -1,3 +1,4 @@
+using System;
 using RimWorld;
 
 namespace Verse
@@ -57,7 +58,12 @@ namespace Verse
 		{
 		}
 
+		[Obsolete("Only need this overload to not break mod compatibility.")]
 		public virtual void CompTended(float quality, int batchPosition = 0)
+		{
+		}
+
+		public virtual void CompTended_NewTemp(float quality, float maxQuality, int batchPosition = 0)
 		{
 		}
 

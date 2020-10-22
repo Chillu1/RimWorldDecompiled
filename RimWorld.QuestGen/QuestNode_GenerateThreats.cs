@@ -25,7 +25,7 @@ namespace RimWorld.QuestGen
 
 		protected override bool TestRunInt(Slate slate)
 		{
-			if (!Find.Storyteller.difficulty.allowViolentQuests)
+			if (!Find.Storyteller.difficultyValues.allowViolentQuests)
 			{
 				return false;
 			}
@@ -38,10 +38,10 @@ namespace RimWorld.QuestGen
 			Map map = slate.Get<Map>("map");
 			QuestPart_ThreatsGenerator questPart_ThreatsGenerator = new QuestPart_ThreatsGenerator();
 			questPart_ThreatsGenerator.threatStartTicks = threatStartTicks.GetValue(slate);
-			questPart_ThreatsGenerator.inSignalEnable = (QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? slate.Get<string>("inSignal"));
+			questPart_ThreatsGenerator.inSignalEnable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? slate.Get<string>("inSignal");
 			questPart_ThreatsGenerator.inSignalDisable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalDisable.GetValue(slate));
 			ThreatsGeneratorParams value = parms.GetValue(slate);
-			value.faction = (faction.GetValue(slate) ?? value.faction);
+			value.faction = faction.GetValue(slate) ?? value.faction;
 			questPart_ThreatsGenerator.parms = value;
 			questPart_ThreatsGenerator.mapParent = map.Parent;
 			QuestGen.quest.AddPart(questPart_ThreatsGenerator);
@@ -50,9 +50,9 @@ namespace RimWorld.QuestGen
 				PawnGroupMakerParms pawnGroupMakerParms = new PawnGroupMakerParms();
 				pawnGroupMakerParms.groupKind = PawnGroupKindDefOf.Combat;
 				pawnGroupMakerParms.raidStrategy = RaidStrategyDefOf.ImmediateAttack;
-				pawnGroupMakerParms.faction = (value.faction ?? (from x in Find.FactionManager.GetFactions(allowHidden: false, allowDefeated: false, allowNonHumanlike: true, TechLevel.Industrial)
+				pawnGroupMakerParms.faction = value.faction ?? (from x in Find.FactionManager.GetFactions_NewTemp(allowHidden: false, allowDefeated: false, allowNonHumanlike: true, TechLevel.Industrial)
 					where x.HostileTo(Faction.OfPlayer)
-					select x).RandomElement());
+					select x).RandomElement();
 				float num = value.threatPoints ?? (StorytellerUtility.DefaultThreatPointsNow(map) * value.currentThreatPointsFactor);
 				if (value.minThreatPoints.HasValue)
 				{
@@ -60,7 +60,7 @@ namespace RimWorld.QuestGen
 				}
 				pawnGroupMakerParms.points = IncidentWorker_Raid.AdjustedRaidPoints(num, PawnsArrivalModeDefOf.EdgeWalkIn, RaidStrategyDefOf.ImmediateAttack, pawnGroupMakerParms.faction, PawnGroupKindDefOf.Combat);
 				IEnumerable<PawnKindDef> pawnKinds = PawnGroupMakerUtility.GeneratePawnKindsExample(pawnGroupMakerParms);
-				slate.Set(storeThreatExampleAs.GetValue(slate), PawnUtility.PawnKindsToLineList(pawnKinds, "  - "));
+				slate.Set(storeThreatExampleAs.GetValue(slate), PawnUtility.PawnKindsToLineList(pawnKinds, "  - ", ColoredText.ThreatColor));
 			}
 		}
 	}

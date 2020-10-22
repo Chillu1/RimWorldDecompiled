@@ -280,7 +280,7 @@ namespace RimWorld
 		{
 			get
 			{
-				if (!GenTemperature.TryGetTemperatureForCell(base.Position, base.Map, out float tempResult))
+				if (!GenTemperature.TryGetTemperatureForCell(base.Position, base.Map, out var tempResult))
 				{
 					return 1f;
 				}
@@ -535,6 +535,7 @@ namespace RimWorld
 			{
 				return;
 			}
+			base.TickLong();
 			if (PlantUtility.GrowthSeasonNow(base.Position, base.Map))
 			{
 				float num = growthInt;
@@ -570,7 +571,7 @@ namespace RimWorld
 				{
 					if (isCrop && def.plant.Harvestable && MessagesRepeatAvoider.MessageShowAllowed("MessagePlantDiedOfRot-" + def.defName, 240f))
 					{
-						string key = harvestableNow ? "MessagePlantDiedOfRot_LeftUnharvested" : ((!dyingBecauseExposedToLight) ? "MessagePlantDiedOfRot" : "MessagePlantDiedOfRot_ExposedToLight");
+						string key = (harvestableNow ? "MessagePlantDiedOfRot_LeftUnharvested" : ((!dyingBecauseExposedToLight) ? "MessagePlantDiedOfRot" : "MessagePlantDiedOfRot_ExposedToLight"));
 						Messages.Message(key.Translate(GetCustomLabelNoCount(includeHp: false)), new TargetInfo(base.Position, map), MessageTypeDefOf.NegativeEvent);
 					}
 					return;
@@ -639,7 +640,7 @@ namespace RimWorld
 			float harvestYield = def.plant.harvestYield;
 			float num = Mathf.InverseLerp(def.plant.harvestMinGrowth, 1f, growthInt);
 			num = 0.5f + num * 0.5f;
-			return GenMath.RoundRandom(harvestYield * num * Mathf.Lerp(0.5f, 1f, (float)HitPoints / (float)base.MaxHitPoints) * Find.Storyteller.difficulty.cropYieldFactor);
+			return GenMath.RoundRandom(harvestYield * num * Mathf.Lerp(0.5f, 1f, (float)HitPoints / (float)base.MaxHitPoints) * Find.Storyteller.difficultyValues.cropYieldFactor);
 		}
 
 		public override void Print(SectionLayer layer)
@@ -723,7 +724,7 @@ namespace RimWorld
 				{
 					center2.z = base.Position.ToVector3Shifted().z + def.graphicData.shadowData.offset.z;
 				}
-				center2.y -= 0.0454545468f;
+				center2.y -= 3f / 70f;
 				Vector3 volume = def.graphicData.shadowData.volume * num2;
 				Printer_Shadow.PrintShadow(layer, center2, volume, Rot4.North);
 			}

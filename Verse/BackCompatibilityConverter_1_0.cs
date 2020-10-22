@@ -1,9 +1,9 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml;
+using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse.AI.Group;
 
@@ -98,25 +98,17 @@ namespace Verse
 		{
 			if (body == BodyDefOf.MechanicalCentipede)
 			{
-				switch (index)
+				return index switch
 				{
-				case 9:
-					return 10;
-				case 10:
-					return 12;
-				case 11:
-					return 14;
-				case 12:
-					return 15;
-				case 13:
-					return 9;
-				case 14:
-					return 11;
-				case 15:
-					return 13;
-				default:
-					return index;
-				}
+					9 => 10, 
+					10 => 12, 
+					11 => 14, 
+					12 => 15, 
+					13 => 9, 
+					14 => 11, 
+					15 => 13, 
+					_ => index, 
+				};
 			}
 			return index;
 		}

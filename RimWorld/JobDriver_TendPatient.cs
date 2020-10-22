@@ -26,7 +26,7 @@ namespace RimWorld
 		public override void Notify_Starting()
 		{
 			base.Notify_Starting();
-			usesMedicine = (MedicineUsed != null);
+			usesMedicine = MedicineUsed != null;
 		}
 
 		public override bool TryMakePreToilReservations(bool errorOnFailed)
@@ -48,34 +48,33 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			JobDriver_TendPatient jobDriver_TendPatient = this;
 			this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
 			this.FailOn(delegate
 			{
-				if (!WorkGiver_Tend.GoodLayingStatusForTend(jobDriver_TendPatient.Deliveree, jobDriver_TendPatient.pawn))
+				if (!WorkGiver_Tend.GoodLayingStatusForTend(Deliveree, pawn))
 				{
 					return true;
 				}
-				if (jobDriver_TendPatient.MedicineUsed != null && jobDriver_TendPatient.pawn.Faction == Faction.OfPlayer)
+				if (MedicineUsed != null && pawn.Faction == Faction.OfPlayer)
 				{
-					if (jobDriver_TendPatient.Deliveree.playerSettings == null)
+					if (Deliveree.playerSettings == null)
 					{
 						return true;
 					}
-					if (!jobDriver_TendPatient.Deliveree.playerSettings.medCare.AllowsMedicine(jobDriver_TendPatient.MedicineUsed.def))
+					if (!Deliveree.playerSettings.medCare.AllowsMedicine(MedicineUsed.def))
 					{
 						return true;
 					}
 				}
-				return (jobDriver_TendPatient.pawn == jobDriver_TendPatient.Deliveree && jobDriver_TendPatient.pawn.Faction == Faction.OfPlayer && !jobDriver_TendPatient.pawn.playerSettings.selfTend) ? true : false;
+				return (pawn == Deliveree && pawn.Faction == Faction.OfPlayer && !pawn.playerSettings.selfTend) ? true : false;
 			});
 			AddEndCondition(delegate
 			{
-				if (jobDriver_TendPatient.pawn.Faction == Faction.OfPlayer && HealthAIUtility.ShouldBeTendedNowByPlayer(jobDriver_TendPatient.Deliveree))
+				if (pawn.Faction == Faction.OfPlayer && HealthAIUtility.ShouldBeTendedNowByPlayer(Deliveree))
 				{
 					return JobCondition.Ongoing;
 				}
-				return (jobDriver_TendPatient.pawn.Faction != Faction.OfPlayer && jobDriver_TendPatient.Deliveree.health.HasHediffsNeedingTend()) ? JobCondition.Ongoing : JobCondition.Succeeded;
+				return (pawn.Faction != Faction.OfPlayer && Deliveree.health.HasHediffsNeedingTend()) ? JobCondition.Ongoing : JobCondition.Succeeded;
 			});
 			this.FailOnAggroMentalState(TargetIndex.A);
 			Toil reserveMedicine = null;
@@ -87,19 +86,19 @@ namespace RimWorld
 				yield return Toils_Tend.PickupMedicine(TargetIndex.B, Deliveree).FailOnDestroyedOrNull(TargetIndex.B);
 				yield return Toils_Haul.CheckForGetOpportunityDuplicate(reserveMedicine, TargetIndex.B, TargetIndex.None, takeFromValidStorage: true);
 			}
-			PathEndMode interactionCell = (Deliveree == pawn) ? PathEndMode.OnCell : PathEndMode.InteractionCell;
+			PathEndMode interactionCell = ((Deliveree == pawn) ? PathEndMode.OnCell : PathEndMode.InteractionCell);
 			Toil gotoToil = Toils_Goto.GotoThing(TargetIndex.A, interactionCell);
 			yield return gotoToil;
 			Toil toil = Toils_General.Wait((int)(1f / pawn.GetStatValue(StatDefOf.MedicalTendSpeed) * 600f)).FailOnCannotTouch(TargetIndex.A, interactionCell).WithProgressBarToilDelay(TargetIndex.A)
 				.PlaySustainerOrSound(SoundDefOf.Interact_Tend);
-			toil.activeSkill = (() => SkillDefOf.Medicine);
+			toil.activeSkill = () => SkillDefOf.Medicine;
 			if (pawn == Deliveree && pawn.Faction != Faction.OfPlayer)
 			{
 				toil.tickAction = delegate
 				{
-					if (jobDriver_TendPatient.pawn.IsHashIntervalTick(100) && !jobDriver_TendPatient.pawn.Position.Fogged(jobDriver_TendPatient.pawn.Map))
+					if (pawn.IsHashIntervalTick(100) && !pawn.Position.Fogged(pawn.Map))
 					{
-						MoteMaker.ThrowMetaIcon(jobDriver_TendPatient.pawn.Position, jobDriver_TendPatient.pawn.Map, ThingDefOf.Mote_HealingCross);
+						MoteMaker.ThrowMetaIcon(pawn.Position, pawn.Map, ThingDefOf.Mote_HealingCross);
 					}
 				};
 			}
@@ -110,13 +109,13 @@ namespace RimWorld
 				Toil toil2 = new Toil();
 				toil2.initAction = delegate
 				{
-					if (jobDriver_TendPatient.MedicineUsed.DestroyedOrNull())
+					if (MedicineUsed.DestroyedOrNull())
 					{
-						Thing thing = HealthAIUtility.FindBestMedicine(jobDriver_TendPatient.pawn, jobDriver_TendPatient.Deliveree);
+						Thing thing = HealthAIUtility.FindBestMedicine(pawn, Deliveree);
 						if (thing != null)
 						{
-							jobDriver_TendPatient.job.targetB = thing;
-							jobDriver_TendPatient.JumpToToil(reserveMedicine);
+							job.targetB = thing;
+							JumpToToil(reserveMedicine);
 						}
 					}
 				};

@@ -20,7 +20,7 @@ namespace RimWorld.QuestGen
 
 		private static Map GetMap(Slate slate)
 		{
-			if (!slate.TryGet("map", out Map var))
+			if (!slate.TryGet<Map>("map", out var var))
 			{
 				return Find.RandomPlayerHomeMap;
 			}
@@ -56,7 +56,7 @@ namespace RimWorld.QuestGen
 				questPart_GameCondition.mapParent = map.Parent;
 				gameCondition.RandomizeSettings(points, map, list, dictionary);
 			}
-			questPart_GameCondition.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart_GameCondition.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			QuestGen.quest.AddPart(questPart_GameCondition);
 			if (!storeGameConditionDescriptionFutureAs.GetValue(slate).NullOrEmpty())
 			{

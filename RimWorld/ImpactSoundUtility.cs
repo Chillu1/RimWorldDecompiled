@@ -16,13 +16,23 @@ namespace RimWorld
 				Log.Warning("Can't play impact sound because map is null.");
 				return;
 			}
-			SoundDef soundDef = null;
-			soundDef = ((hitThing.Stuff == null) ? hitThing.def.soundImpactDefault : hitThing.Stuff.stuffProps.soundImpactStuff);
-			if (soundDef.NullOrUndefined())
+			SoundDef soundDef;
+			if (hitThing is Pawn)
 			{
-				soundDef = SoundDefOf.BulletImpact_Ground;
+				soundDef = ist.soundDef;
 			}
-			soundDef.PlayOneShot(new TargetInfo(hitThing.PositionHeld, map));
+			else
+			{
+				soundDef = ((hitThing.Stuff == null) ? hitThing.def.soundImpactDefault : hitThing.Stuff.stuffProps.soundImpactStuff);
+				if (soundDef.NullOrUndefined())
+				{
+					soundDef = SoundDefOf.BulletImpact_Ground;
+				}
+			}
+			if (!soundDef.NullOrUndefined())
+			{
+				soundDef.PlayOneShot(new TargetInfo(hitThing.PositionHeld, map));
+			}
 		}
 	}
 }

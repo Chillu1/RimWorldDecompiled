@@ -75,7 +75,7 @@ namespace RimWorld
 				float num = 0.5f * StorytellerDef.adaptDaysGrowthRateCurve.Evaluate(adaptDays);
 				if (adaptDays > 0f)
 				{
-					num *= Find.Storyteller.difficulty.adaptationGrowthRateFactorOverZero;
+					num *= Find.Storyteller.difficultyValues.adaptationGrowthRateFactorOverZero;
 				}
 				adaptDays += num;
 				adaptDays = Mathf.Min(adaptDays, StorytellerDef.adaptDaysMax);

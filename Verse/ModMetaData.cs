@@ -1,5 +1,3 @@
-using RimWorld;
-using Steamworks;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
+using RimWorld;
+using Steamworks;
 using UnityEngine;
 using Verse.Steam;
 
@@ -61,7 +61,7 @@ namespace Verse
 
 			private bool TryParseVersion(string str, bool logIssues = true)
 			{
-				if (!VersionControl.TryParseVersionString(str, out System.Version version))
+				if (!VersionControl.TryParseVersionString(str, out var version))
 				{
 					if (logIssues)
 					{
@@ -312,6 +312,8 @@ namespace Verse
 		private PublishedFileId_t publishedFileIdInt = PublishedFileId_t.Invalid;
 
 		public bool appendPackageIdSteamPostfix;
+
+		public bool translationMod;
 
 		private string packageIdLowerCase;
 
@@ -564,7 +566,7 @@ namespace Verse
 			meta.InitVersionedData();
 			meta.ValidateDependencies_NewTmp(shouldLogIssues);
 			string publishedFileIdPath = PublishedFileIdPath;
-			if (File.Exists(PublishedFileIdPath) && ulong.TryParse(File.ReadAllText(publishedFileIdPath), out ulong result))
+			if (File.Exists(PublishedFileIdPath) && ulong.TryParse(File.ReadAllText(publishedFileIdPath), out var result))
 			{
 				publishedFileIdInt = new PublishedFileId_t(result);
 			}
@@ -628,9 +630,16 @@ namespace Verse
 
 		public IList<string> GetWorkshopTags()
 		{
+			if (!translationMod)
+			{
+				return new List<string>
+				{
+					"Mod"
+				};
+			}
 			return new List<string>
 			{
-				"Mod"
+				"Translation"
 			};
 		}
 

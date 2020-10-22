@@ -13,15 +13,12 @@ namespace RimWorld
 			{
 				return 0f;
 			}
-			switch (num)
+			return num switch
 			{
-			case 0:
-				return -5f;
-			case -1:
-				return -20f;
-			default:
-				return -30f;
-			}
+				0 => -5f, 
+				-1 => -20f, 
+				_ => -30f, 
+			};
 		}
 	}
 }

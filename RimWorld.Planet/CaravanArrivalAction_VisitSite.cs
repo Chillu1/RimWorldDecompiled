@@ -69,7 +69,17 @@ namespace RimWorld.Planet
 				PawnRelationUtility.Notify_PawnsSeenByPlayer_Letter_Send(orGenerateMap.mapPawns.AllPawns, "LetterRelatedPawnsSite".Translate(Faction.OfPlayer.def.pawnsPlural), LetterDefOf.NeutralEvent, informEvenIfSeenBefore: true);
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.Append("LetterCaravanEnteredMap".Translate(caravan.Label, site).CapitalizeFirst());
-				AppendThreatInfo(stringBuilder, site, orGenerateMap, out LetterDef letterDef, out LookTargets allLookTargets);
+				AppendThreatInfo(stringBuilder, site, orGenerateMap, out var letterDef, out var allLookTargets);
+				TaggedString letterText = null;
+				SettlementUtility.AffectRelationsOnAttacked_NewTmp(site, ref letterText);
+				if (!letterText.NullOrEmpty())
+				{
+					if (stringBuilder.Length > 0)
+					{
+						stringBuilder.AppendLine();
+					}
+					stringBuilder.AppendLineTagged(letterText);
+				}
 				List<HediffDef> list = null;
 				foreach (SitePart part in site.parts)
 				{
@@ -154,7 +164,7 @@ namespace RimWorld.Planet
 			}
 			if (site.EnterCooldownBlocksEntering())
 			{
-				return FloatMenuAcceptanceReport.WithFailMessage("MessageEnterCooldownBlocksEntering".Translate(site.EnterCooldownDaysLeft().ToString("0.#")));
+				return FloatMenuAcceptanceReport.WithFailMessage("MessageEnterCooldownBlocksEntering".Translate(site.EnterCooldownTicksLeft().ToStringTicksToPeriod()));
 			}
 			return true;
 		}

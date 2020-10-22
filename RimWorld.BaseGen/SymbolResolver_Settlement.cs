@@ -29,14 +29,14 @@ namespace RimWorld.BaseGen
 			resolveParams.rect = rp.rect;
 			resolveParams.faction = faction;
 			resolveParams.singlePawnLord = singlePawnLord;
-			resolveParams.pawnGroupKindDef = (rp.pawnGroupKindDef ?? PawnGroupKindDefOf.Settlement);
-			resolveParams.singlePawnSpawnCellExtraPredicate = (rp.singlePawnSpawnCellExtraPredicate ?? ((Predicate<IntVec3>)((IntVec3 x) => map.reachability.CanReachMapEdge(x, traverseParms))));
+			resolveParams.pawnGroupKindDef = rp.pawnGroupKindDef ?? PawnGroupKindDefOf.Settlement;
+			resolveParams.singlePawnSpawnCellExtraPredicate = rp.singlePawnSpawnCellExtraPredicate ?? ((Predicate<IntVec3>)((IntVec3 x) => map.reachability.CanReachMapEdge(x, traverseParms)));
 			if (resolveParams.pawnGroupMakerParams == null)
 			{
 				resolveParams.pawnGroupMakerParams = new PawnGroupMakerParms();
 				resolveParams.pawnGroupMakerParams.tile = map.Tile;
 				resolveParams.pawnGroupMakerParams.faction = faction;
-				resolveParams.pawnGroupMakerParams.points = (rp.settlementPawnGroupPoints ?? DefaultPawnsPoints.RandomInRange);
+				resolveParams.pawnGroupMakerParams.points = rp.settlementPawnGroupPoints ?? DefaultPawnsPoints.RandomInRange;
 				resolveParams.pawnGroupMakerParams.inhabitants = true;
 				resolveParams.pawnGroupMakerParams.seed = rp.settlementPawnGroupSeed;
 			}
@@ -44,7 +44,7 @@ namespace RimWorld.BaseGen
 			BaseGen.symbolStack.Push("outdoorLighting", rp);
 			if ((int)faction.def.techLevel >= 4)
 			{
-				int num3 = Rand.Chance(0.75f) ? GenMath.RoundRandom((float)rp.rect.Area / 400f) : 0;
+				int num3 = (Rand.Chance(0.75f) ? GenMath.RoundRandom((float)rp.rect.Area / 400f) : 0);
 				for (int i = 0; i < num3; i++)
 				{
 					ResolveParams resolveParams2 = rp;
@@ -57,7 +57,7 @@ namespace RimWorld.BaseGen
 				ResolveParams resolveParams3 = rp;
 				resolveParams3.faction = faction;
 				resolveParams3.edgeDefenseWidth = num;
-				resolveParams3.edgeThingMustReachMapEdge = (rp.edgeThingMustReachMapEdge ?? true);
+				resolveParams3.edgeThingMustReachMapEdge = rp.edgeThingMustReachMapEdge ?? true;
 				BaseGen.symbolStack.Push("edgeDefense", resolveParams3);
 			}
 			ResolveParams resolveParams4 = rp;
@@ -67,12 +67,12 @@ namespace RimWorld.BaseGen
 			ResolveParams resolveParams5 = rp;
 			resolveParams5.rect = rp.rect.ContractedBy(num);
 			resolveParams5.faction = faction;
-			resolveParams5.floorOnlyIfTerrainSupports = (rp.floorOnlyIfTerrainSupports ?? true);
+			resolveParams5.floorOnlyIfTerrainSupports = rp.floorOnlyIfTerrainSupports ?? true;
 			BaseGen.symbolStack.Push("basePart_outdoors", resolveParams5);
 			ResolveParams resolveParams6 = rp;
 			resolveParams6.floorDef = TerrainDefOf.Bridge;
-			resolveParams6.floorOnlyIfTerrainSupports = (rp.floorOnlyIfTerrainSupports ?? true);
-			resolveParams6.allowBridgeOnAnyImpassableTerrain = (rp.allowBridgeOnAnyImpassableTerrain ?? true);
+			resolveParams6.floorOnlyIfTerrainSupports = rp.floorOnlyIfTerrainSupports ?? true;
+			resolveParams6.allowBridgeOnAnyImpassableTerrain = rp.allowBridgeOnAnyImpassableTerrain ?? true;
 			BaseGen.symbolStack.Push("floor", resolveParams6);
 		}
 	}

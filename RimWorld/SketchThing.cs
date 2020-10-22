@@ -25,6 +25,8 @@ namespace RimWorld
 
 		public override string Label => GenLabel.ThingLabel(def, stuff, stackCount);
 
+		public override string LabelCap => Label.CapitalizeFirst();
+
 		public override CellRect OccupiedRect => GenAdj.OccupiedRect(pos, rot, def.size);
 
 		public override float SpawnOrder => 2f;
@@ -48,7 +50,7 @@ namespace RimWorld
 
 		public override void DrawGhost(IntVec3 at, Color color)
 		{
-			GhostDrawer.DrawGhostThing(at, rot, def, def.graphic, color, AltitudeLayer.Blueprint);
+			GhostDrawer.DrawGhostThing_NewTmp(at, rot, def, def.graphic, color, AltitudeLayer.Blueprint, null, drawPlaceWorkers: false);
 		}
 
 		public Thing GetSameSpawned(IntVec3 at, Map map)
@@ -102,7 +104,7 @@ namespace RimWorld
 			{
 				return true;
 			}
-			if (!at.InBounds(map))
+			if (!GenAdj.OccupiedRect(at, rot, def.Size).InBounds(map))
 			{
 				return true;
 			}
@@ -123,20 +125,9 @@ namespace RimWorld
 			{
 				return true;
 			}
-			foreach (IntVec3 item in GenAdj.OccupiedRect(at, rot, def.Size))
+			if (FirstPermanentBlockerAt(at, map) != null)
 			{
-				if (!item.InBounds(map))
-				{
-					return true;
-				}
-				List<Thing> thingList = item.GetThingList(map);
-				for (int i = 0; i < thingList.Count; i++)
-				{
-					if (!thingList[i].def.destroyable && !GenConstruct.CanPlaceBlueprintOver(def, thingList[i].def))
-					{
-						return true;
-					}
-				}
+				return true;
 			}
 			return false;
 		}

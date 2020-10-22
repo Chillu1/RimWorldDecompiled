@@ -13,6 +13,7 @@ namespace Verse.AI.Group
 		FactionRelationsChanged,
 		DormancyWakeup,
 		Clamor,
-		MechClusterDefeated
+		MechClusterDefeated,
+		Signal
 	}
 }

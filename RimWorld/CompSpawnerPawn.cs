@@ -95,7 +95,7 @@ namespace RimWorld
 				}
 				if (spawnedPawnSelector == null)
 				{
-					spawnedPawnSelector = ((Thing s) => s.TryGetComp<CompSpawnerPawn>()?.spawnedPawns);
+					spawnedPawnSelector = (Thing s) => s.TryGetComp<CompSpawnerPawn>()?.spawnedPawns;
 				}
 				Predicate<Pawn> hasJob = delegate(Pawn x)
 				{
@@ -133,7 +133,7 @@ namespace RimWorld
 
 		public static Lord CreateNewLord(Thing byThing, bool aggressive, float defendRadius, Type lordJobType)
 		{
-			if (!CellFinder.TryFindRandomCellNear(byThing.Position, byThing.Map, 5, (IntVec3 c) => c.Standable(byThing.Map) && byThing.Map.reachability.CanReach(c, byThing, PathEndMode.Touch, TraverseParms.For(TraverseMode.PassDoors)), out IntVec3 result))
+			if (!CellFinder.TryFindRandomCellNear(byThing.Position, byThing.Map, 5, (IntVec3 c) => c.Standable(byThing.Map) && byThing.Map.reachability.CanReach(c, byThing, PathEndMode.Touch, TraverseParms.For(TraverseMode.PassDoors)), out var result))
 			{
 				Log.Error("Found no place for mechanoids to defend " + byThing);
 				result = IntVec3.Invalid;
@@ -151,7 +151,7 @@ namespace RimWorld
 		{
 			for (int i = 0; i < Props.initialPawnsCount; i++)
 			{
-				if (!TrySpawnPawn(out Pawn _))
+				if (!TrySpawnPawn(out var _))
 				{
 					break;
 				}
@@ -171,7 +171,7 @@ namespace RimWorld
 					Log.Error("Too many iterations.");
 					break;
 				}
-				if (!TrySpawnPawn(out Pawn _))
+				if (!TrySpawnPawn(out var _))
 				{
 					break;
 				}
@@ -187,7 +187,14 @@ namespace RimWorld
 		public void CalculateNextPawnSpawnTick(float delayTicks)
 		{
 			float num = GenMath.LerpDouble(0f, 5f, 1f, 0.5f, spawnedPawns.Count);
-			nextPawnSpawnTick = Find.TickManager.TicksGame + (int)(delayTicks / (num * Find.Storyteller.difficulty.enemyReproductionRateFactor));
+			if (Find.Storyteller.difficultyValues.enemyReproductionRateFactor > 0f)
+			{
+				nextPawnSpawnTick = Find.TickManager.TicksGame + (int)(delayTicks / (num * Find.Storyteller.difficultyValues.enemyReproductionRateFactor));
+			}
+			else
+			{
+				nextPawnSpawnTick = Find.TickManager.TicksGame + (int)delayTicks;
+			}
 		}
 
 		private void FilterOutUnspawnedPawns()
@@ -209,7 +216,7 @@ namespace RimWorld
 			{
 				source = source.Where((PawnKindDef x) => curPoints + x.combatPower <= Props.maxSpawnedPawnsPoints);
 			}
-			if (source.TryRandomElement(out PawnKindDef result))
+			if (source.TryRandomElement(out var result))
 			{
 				return result;
 			}
@@ -276,7 +283,7 @@ namespace RimWorld
 			FilterOutUnspawnedPawns();
 			if (Active && Find.TickManager.TicksGame >= nextPawnSpawnTick)
 			{
-				if ((Props.maxSpawnedPawnsPoints < 0f || SpawnedPawnsPoints < Props.maxSpawnedPawnsPoints) && TrySpawnPawn(out Pawn pawn) && pawn.caller != null)
+				if ((Props.maxSpawnedPawnsPoints < 0f || SpawnedPawnsPoints < Props.maxSpawnedPawnsPoints) && Find.Storyteller.difficultyValues.enemyReproductionRateFactor > 0f && TrySpawnPawn(out var pawn) && pawn.caller != null)
 				{
 					pawn.caller.DoCall();
 				}
@@ -301,7 +308,7 @@ namespace RimWorld
 				command_Action.icon = TexCommand.ReleaseAnimals;
 				command_Action.action = delegate
 				{
-					TrySpawnPawn(out Pawn _);
+					TrySpawnPawn(out var _);
 				};
 				yield return command_Action;
 			}

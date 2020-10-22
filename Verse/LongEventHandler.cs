@@ -1,9 +1,9 @@
-using RimWorld;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using RimWorld;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -190,7 +190,7 @@ namespace Verse
 			}
 			bool flag = Find.UIRoot != null && !currentEvent.UseStandardWindow && currentEvent.showExtraUIInfo;
 			bool flag2 = Find.UIRoot != null && Current.Game != null && !currentEvent.UseStandardWindow && currentEvent.showExtraUIInfo;
-			Vector2 vector = flag2 ? ModSummaryWindow.GetEffectiveSize() : Vector2.zero;
+			Vector2 vector = (flag2 ? ModSummaryWindow.GetEffectiveSize() : Vector2.zero);
 			float num2 = StatusRectSize.y;
 			if (flag2)
 			{
@@ -300,18 +300,19 @@ namespace Verse
 			try
 			{
 				float num = Time.realtimeSinceStartup + 0.1f;
-				while (currentEvent.eventActionEnumerator.MoveNext())
+				do
 				{
-					if (num <= Time.realtimeSinceStartup)
+					if (!currentEvent.eventActionEnumerator.MoveNext())
 					{
-						return;
+						(currentEvent.eventActionEnumerator as IDisposable)?.Dispose();
+						currentEvent = null;
+						eventThread = null;
+						levelLoadOp = null;
+						ExecuteToExecuteWhenFinished();
+						break;
 					}
 				}
-				(currentEvent.eventActionEnumerator as IDisposable)?.Dispose();
-				currentEvent = null;
-				eventThread = null;
-				levelLoadOp = null;
-				ExecuteToExecuteWhenFinished();
+				while (!(num <= Time.realtimeSinceStartup));
 			}
 			catch (Exception ex)
 			{

@@ -79,6 +79,11 @@ namespace RimWorld
 
 		public static Job TrashJob(Pawn pawn, Thing t, bool allowPunchingInert = false)
 		{
+			return TrashJob_NewTemp(pawn, t, allowPunchingInert);
+		}
+
+		public static Job TrashJob_NewTemp(Pawn pawn, Thing t, bool allowPunchingInert = false, bool killIncappedTarget = false)
+		{
 			if (t is Plant)
 			{
 				Job job = JobMaker.MakeJob(JobDefOf.Ignite, t);
@@ -111,6 +116,7 @@ namespace RimWorld
 				}
 				job3 = JobMaker.MakeJob(JobDefOf.AttackMelee, t);
 			}
+			job3.killIncappedTarget = killIncappedTarget;
 			FinalizeTrashJob(job3);
 			return job3;
 		}

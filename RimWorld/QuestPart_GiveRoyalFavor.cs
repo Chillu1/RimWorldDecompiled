@@ -37,7 +37,7 @@ namespace RimWorld
 			base.Notify_QuestSignalReceived(signal);
 			if (signal.tag == inSignal)
 			{
-				Pawn arg = giveToAccepter ? quest.AccepterPawn : giveTo;
+				Pawn arg = (giveToAccepter ? quest.AccepterPawn : giveTo);
 				if (arg == null)
 				{
 					signal.args.TryGetArg("CHOSEN", out arg);

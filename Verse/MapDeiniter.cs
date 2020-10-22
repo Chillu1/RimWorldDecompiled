@@ -1,9 +1,9 @@
-using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
+using RimWorld.Planet;
 
 namespace Verse
 {
@@ -153,7 +153,7 @@ namespace Verse
 				list.SortByDescending((Pawn x) => x.RaceProps.Humanlike);
 				for (int l = 0; l < list.Count; l++)
 				{
-					stringBuilder.AppendLine("  - " + list[l].NameShortColored.Resolve() + ": " + "capturedBy".Translate(map.ParentFaction.NameColored.Resolve()).CapitalizeFirst());
+					stringBuilder.AppendLineTagged("  - " + list[l].NameShortColored.CapitalizeFirst() + ": " + "capturedBy".Translate(map.ParentFaction.NameColored).CapitalizeFirst());
 				}
 			}
 			if (list2.Any())
@@ -161,7 +161,7 @@ namespace Verse
 				list2.SortByDescending((Pawn x) => x.RaceProps.Humanlike);
 				for (int m = 0; m < list2.Count; m++)
 				{
-					stringBuilder.AppendLine("  - " + list2[m].NameShortColored.Resolve());
+					stringBuilder.AppendLineTagged("  - " + list2[m].NameShortColored.CapitalizeFirst());
 				}
 			}
 			string str;

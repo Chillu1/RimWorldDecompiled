@@ -50,7 +50,7 @@ namespace RimWorld
 
 		public const int Goodwill_TraderRequested = -15;
 
-		public const int Goodwill_MemberStripped = -10;
+		public const int Goodwill_MemberStripped = -40;
 
 		public static readonly SimpleCurve Goodwill_PerQuadrumFromSettlementProximity = new SimpleCurve
 		{

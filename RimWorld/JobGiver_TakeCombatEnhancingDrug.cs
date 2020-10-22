@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using Verse;
 using Verse.AI;
@@ -28,7 +29,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			Thing thing = FindCombatEnhancingDrug(pawn);
+			Thing thing = pawn.inventory.FindCombatEnhancingDrug();
 			if (thing == null)
 			{
 				return null;
@@ -74,18 +75,10 @@ namespace RimWorld
 			return Find.TickManager.TicksGame - pawn.mindState.lastHarmTick < 2500;
 		}
 
+		[Obsolete("Will be removed in a future update, use pawn.inventory.FindCombatEnhancingDrug()")]
 		private Thing FindCombatEnhancingDrug(Pawn pawn)
 		{
-			for (int i = 0; i < pawn.inventory.innerContainer.Count; i++)
-			{
-				Thing thing = pawn.inventory.innerContainer[i];
-				CompDrug compDrug = thing.TryGetComp<CompDrug>();
-				if (compDrug != null && compDrug.Props.isCombatEnhancingDrug)
-				{
-					return thing;
-				}
-			}
-			return null;
+			return pawn.inventory.FindCombatEnhancingDrug();
 		}
 	}
 }

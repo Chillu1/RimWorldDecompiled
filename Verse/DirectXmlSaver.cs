@@ -41,7 +41,7 @@ namespace Verse
 
 		public static XElement XElementFromObject(object obj, Type expectedType, string nodeName, FieldInfo owningField = null, bool saveDefsAsRefs = false)
 		{
-			if (owningField != null && owningField.TryGetAttribute(out DefaultValueAttribute customAttribute) && customAttribute.ObjIsDefault(obj))
+			if (owningField != null && owningField.TryGetAttribute<DefaultValueAttribute>(out var customAttribute) && customAttribute.ObjIsDefault(obj))
 			{
 				return null;
 			}

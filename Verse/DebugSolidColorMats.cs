@@ -9,7 +9,7 @@ namespace Verse
 
 		public static Material MaterialOf(Color col)
 		{
-			if (colorMatDict.TryGetValue(col, out Material value))
+			if (colorMatDict.TryGetValue(col, out var value))
 			{
 				return value;
 			}

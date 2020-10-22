@@ -54,7 +54,7 @@ namespace RimWorld
 			bool flag = Rand.Chance(0.04f);
 			List<VerbEntry> updatedAvailableVerbsList = GetUpdatedAvailableVerbsList(flag);
 			bool flag2 = false;
-			if (updatedAvailableVerbsList.TryRandomElementByWeight((VerbEntry ve) => ve.GetSelectionWeight(target), out VerbEntry result))
+			if (updatedAvailableVerbsList.TryRandomElementByWeight((VerbEntry ve) => ve.GetSelectionWeight(target), out var result))
 			{
 				flag2 = true;
 			}
@@ -90,7 +90,7 @@ namespace RimWorld
 					return false;
 				}
 			}
-			Verb verb = (verbToUse == null) ? TryGetMeleeVerb(target) : verbToUse;
+			Verb verb = ((verbToUse == null) ? TryGetMeleeVerb(target) : verbToUse);
 			if (verb == null)
 			{
 				return false;

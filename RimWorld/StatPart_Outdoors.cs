@@ -17,7 +17,7 @@ namespace RimWorld
 		{
 			if (req.HasThing && req.Thing.GetRoom(RegionType.Set_All) != null)
 			{
-				string str = (!ConsideredOutdoors(req)) ? ((string)"Indoors".Translate()) : ((string)"Outdoors".Translate());
+				string str = ((!ConsideredOutdoors(req)) ? ((string)"Indoors".Translate()) : ((string)"Outdoors".Translate()));
 				return str + ": x" + OutdoorsFactor(req).ToStringPercent();
 			}
 			return null;

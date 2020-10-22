@@ -24,7 +24,7 @@ namespace RimWorld
 				int num = -1;
 				foreach (Building_MusicalInstrument item in enumerable)
 				{
-					if (GatheringsUtility.ValidateGatheringSpot(item.InteractionCell, def, organizer, enjoyableOutside) && InstrumentAccessible(item, organizer))
+					if (GatheringsUtility.ValidateGatheringSpot_NewTemp(item.InteractionCell, def, organizer, enjoyableOutside, ignoreRequiredColonistCount: false) && InstrumentAccessible(item, organizer))
 					{
 						float instrumentRange = item.def.building.instrumentRange;
 						if ((float)num < instrumentRange)
@@ -38,7 +38,7 @@ namespace RimWorld
 						tmpInstruments.Add(item);
 					}
 				}
-				if (!tmpInstruments.TryRandomElement(out Building_MusicalInstrument result))
+				if (!tmpInstruments.TryRandomElement(out var result))
 				{
 					spot = IntVec3.Invalid;
 					return false;

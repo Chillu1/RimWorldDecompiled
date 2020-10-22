@@ -97,19 +97,14 @@ namespace Verse
 
 		public virtual Material MatAt(Rot4 rot, Thing thing = null)
 		{
-			switch (rot.AsInt)
+			return rot.AsInt switch
 			{
-			case 0:
-				return MatNorth;
-			case 1:
-				return MatEast;
-			case 2:
-				return MatSouth;
-			case 3:
-				return MatWest;
-			default:
-				return BaseContent.BadMat;
-			}
+				0 => MatNorth, 
+				1 => MatEast, 
+				2 => MatSouth, 
+				3 => MatWest, 
+				_ => BaseContent.BadMat, 
+			};
 		}
 
 		public virtual Mesh MeshAt(Rot4 rot)
@@ -184,7 +179,7 @@ namespace Verse
 			else
 			{
 				size = (thing.Rotation.IsHorizontal ? drawSize.Rotated() : drawSize);
-				flag = ((thing.Rotation == Rot4.West && WestFlipped) || (thing.Rotation == Rot4.East && EastFlipped));
+				flag = (thing.Rotation == Rot4.West && WestFlipped) || (thing.Rotation == Rot4.East && EastFlipped);
 			}
 			float num = AngleFromRot(thing.Rotation);
 			if (flag && data != null)

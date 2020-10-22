@@ -15,7 +15,7 @@ namespace RimWorld
 
 		protected override bool Pass(SignalArgs args)
 		{
-			if (args.TryGetArg(name, out NamedArgument arg))
+			if (args.TryGetArg(name, out var arg))
 			{
 				return object.Equals(obj, arg.arg);
 			}

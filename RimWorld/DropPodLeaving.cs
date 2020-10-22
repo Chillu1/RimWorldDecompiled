@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 using Verse.AI.Group;
 
@@ -12,6 +12,10 @@ namespace RimWorld
 		public int destinationTile = -1;
 
 		public TransportPodsArrivalAction arrivalAction;
+
+		public bool createWorldObject = true;
+
+		public WorldObjectDef worldObjectDef;
 
 		private bool alreadyLeft;
 
@@ -36,11 +40,13 @@ namespace RimWorld
 			Scribe_Values.Look(ref destinationTile, "destinationTile", 0);
 			Scribe_Deep.Look(ref arrivalAction, "arrivalAction");
 			Scribe_Values.Look(ref alreadyLeft, "alreadyLeft", defaultValue: false);
+			Scribe_Values.Look(ref createWorldObject, "createWorldObject", defaultValue: true);
+			Scribe_Defs.Look(ref worldObjectDef, "worldObjectDef");
 		}
 
 		protected override void LeaveMap()
 		{
-			if (alreadyLeft)
+			if (alreadyLeft || !createWorldObject)
 			{
 				base.LeaveMap();
 				return;
@@ -62,7 +68,7 @@ namespace RimWorld
 			{
 				base.Map.lordManager.RemoveLord(lord);
 			}
-			TravelingTransportPods travelingTransportPods = (TravelingTransportPods)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.TravelingTransportPods);
+			TravelingTransportPods travelingTransportPods = (TravelingTransportPods)WorldObjectMaker.MakeWorldObject(worldObjectDef ?? WorldObjectDefOf.TravelingTransportPods);
 			travelingTransportPods.Tile = base.Map.Tile;
 			travelingTransportPods.SetFaction(Faction.OfPlayer);
 			travelingTransportPods.destinationTile = destinationTile;

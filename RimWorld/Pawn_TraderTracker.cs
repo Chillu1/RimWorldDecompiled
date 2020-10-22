@@ -21,9 +21,9 @@ namespace RimWorld
 				Lord lord = pawn.GetLord();
 				if (lord == null || !(lord.LordJob is LordJob_TradeWithColony))
 				{
-					for (int j = 0; j < pawn.inventory.innerContainer.Count; j++)
+					for (int i = 0; i < pawn.inventory.innerContainer.Count; i++)
 					{
-						Thing thing = pawn.inventory.innerContainer[j];
+						Thing thing = pawn.inventory.innerContainer[i];
 						if (!pawn.inventory.NotForSale(thing))
 						{
 							yield return thing;
@@ -34,9 +34,9 @@ namespace RimWorld
 				{
 					yield break;
 				}
-				for (int j = 0; j < lord.ownedPawns.Count; j++)
+				for (int i = 0; i < lord.ownedPawns.Count; i++)
 				{
-					Pawn p = lord.ownedPawns[j];
+					Pawn p = lord.ownedPawns[i];
 					switch (p.GetTraderCaravanRole())
 					{
 					case TraderCaravanRole.Carrier:

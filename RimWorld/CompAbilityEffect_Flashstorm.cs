@@ -31,7 +31,7 @@ namespace RimWorld
 			foreach (Thing item in GenRadial.RadialDistinctThingsAround(target.Cell, parent.pawn.Map, radius, useCenter: true))
 			{
 				Pawn pawn;
-				if ((pawn = (item as Pawn)) != null && item.Faction != null && item.Faction != parent.pawn.Faction && !item.Faction.HostileTo(parent.pawn.Faction) && !affectedFactionCache.Contains(item.Faction) && (base.Props.applyGoodwillImpactToLodgers || !pawn.IsQuestLodger()))
+				if ((pawn = item as Pawn) != null && item.Faction != null && item.Faction != parent.pawn.Faction && !item.Faction.HostileTo(parent.pawn.Faction) && !affectedFactionCache.Contains(item.Faction) && (base.Props.applyGoodwillImpactToLodgers || !pawn.IsQuestLodger()))
 				{
 					affectedFactionCache.Add(item.Faction);
 					item.Faction.TryAffectGoodwillWith(parent.pawn.Faction, base.Props.goodwillImpact, canSendMessage: true, canSendHostilityLetter: true, "GoodwillChangedReason_UsedAbility".Translate(parent.def.LabelCap, pawn.LabelShort), pawn);

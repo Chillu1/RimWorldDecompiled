@@ -33,7 +33,7 @@ namespace RimWorld.QuestGen
 			}
 			if (slate != null)
 			{
-				exists = slate.TryGet(str.Substring(1), out obj);
+				exists = slate.TryGet<object>(str.Substring(1), out obj);
 			}
 			else
 			{
@@ -53,7 +53,7 @@ namespace RimWorld.QuestGen
 			{
 				return false;
 			}
-			if (CheckSingleVariableSyntax(slateRef, null, out object _, out bool _))
+			if (CheckSingleVariableSyntax(slateRef, null, out var _, out var _))
 			{
 				return false;
 			}

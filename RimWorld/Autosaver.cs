@@ -42,7 +42,7 @@ namespace RimWorld
 
 		public void DoAutosave()
 		{
-			string fileName = (!Current.Game.Info.permadeathMode) ? NewAutosaveFileName() : Current.Game.Info.permadeathModeUniqueName;
+			string fileName = ((!Current.Game.Info.permadeathMode) ? NewAutosaveFileName() : Current.Game.Info.permadeathModeUniqueName);
 			GameDataSaveLoader.SaveGame(fileName);
 		}
 

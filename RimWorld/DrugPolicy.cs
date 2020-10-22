@@ -78,6 +78,10 @@ namespace RimWorld
 			Scribe_Values.Look(ref uniqueId, "uniqueId", 0);
 			Scribe_Values.Look(ref label, "label");
 			Scribe_Collections.Look(ref entriesInt, "drugs", LookMode.Deep);
+			if (Scribe.mode == LoadSaveMode.PostLoadInit && entriesInt != null && entriesInt.RemoveAll((DrugPolicyEntry x) => x == null || x.drug == null) != 0)
+			{
+				Log.Error("Some DrugPolicyEntries were null after loading.");
+			}
 		}
 
 		public string GetUniqueLoadID()

@@ -97,6 +97,8 @@ namespace RimWorld
 
 		public static KeyBindingDef Dev_ToggleDebugActionsMenu;
 
+		public static KeyBindingDef Dev_ChangeSelectedDebugAction;
+
 		public static KeyBindingDef Dev_ToggleDebugLogMenu;
 
 		public static KeyBindingDef Dev_ToggleDebugInspector;

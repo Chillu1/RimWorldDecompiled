@@ -23,7 +23,7 @@ namespace RimWorld
 				return 0f;
 			}
 			float curLevel = pawn.needs.joy.CurLevel;
-			TimeAssignmentDef timeAssignmentDef = (pawn.timetable == null) ? TimeAssignmentDefOf.Anything : pawn.timetable.CurrentAssignment;
+			TimeAssignmentDef timeAssignmentDef = ((pawn.timetable == null) ? TimeAssignmentDefOf.Anything : pawn.timetable.CurrentAssignment);
 			if (!timeAssignmentDef.allowJoy)
 			{
 				return 0f;

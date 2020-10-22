@@ -1,6 +1,6 @@
-using RimWorld;
 using System.Collections.Generic;
 using System.Text;
+using RimWorld;
 
 namespace Verse
 {
@@ -76,7 +76,7 @@ namespace Verse
 		public void DebugLogTemps()
 		{
 			StringBuilder stringBuilder = new StringBuilder();
-			float num = (Find.CurrentMap != null) ? Find.WorldGrid.LongLatOf(Find.CurrentMap.Tile).y : 0f;
+			float num = ((Find.CurrentMap != null) ? Find.WorldGrid.LongLatOf(Find.CurrentMap.Tile).y : 0f);
 			stringBuilder.AppendLine("Latitude " + num);
 			stringBuilder.AppendLine("-----Temperature for each hour this day------");
 			stringBuilder.AppendLine("Hour    Temp    SunEffect");

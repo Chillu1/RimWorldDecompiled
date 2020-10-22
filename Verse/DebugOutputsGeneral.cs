@@ -1,8 +1,8 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld;
 
 namespace Verse
 {
@@ -274,100 +274,9 @@ namespace Verse
 		}
 
 		[DebugOutput]
-		public static void ApparelByStuff()
-		{
-			List<FloatMenuOption> list = new List<FloatMenuOption>();
-			list.Add(new FloatMenuOption("Stuffless", delegate
-			{
-				DoTableInternalApparel(null);
-			}));
-			foreach (ThingDef item in DefDatabase<ThingDef>.AllDefs.Where((ThingDef td) => td.IsStuff))
-			{
-				ThingDef localStuff = item;
-				list.Add(new FloatMenuOption(localStuff.defName, delegate
-				{
-					DoTableInternalApparel(localStuff);
-				}));
-			}
-			Find.WindowStack.Add(new FloatMenu(list));
-		}
-
-		[DebugOutput]
-		public static void ApparelArmor()
-		{
-			List<TableDataGetter<ThingDef>> list = new List<TableDataGetter<ThingDef>>();
-			list.Add(new TableDataGetter<ThingDef>("label", (ThingDef x) => x.LabelCap));
-			list.Add(new TableDataGetter<ThingDef>("stuff", (ThingDef x) => x.MadeFromStuff.ToStringCheckBlank()));
-			list.Add(new TableDataGetter<ThingDef>("mass", (ThingDef x) => x.BaseMass));
-			list.Add(new TableDataGetter<ThingDef>("mrkt\nvalue", (ThingDef x) => x.BaseMarketValue.ToString("F0")));
-			list.Add(new TableDataGetter<ThingDef>("hp", (ThingDef x) => x.BaseMaxHitPoints));
-			list.Add(new TableDataGetter<ThingDef>("flama\nbility", (ThingDef x) => x.BaseFlammability));
-			list.Add(new TableDataGetter<ThingDef>("recipe\nmin\nskill", (ThingDef x) => (x.recipeMaker == null || x.recipeMaker.skillRequirements.NullOrEmpty()) ? "" : (x.recipeMaker.skillRequirements[0].skill.defName + " " + x.recipeMaker.skillRequirements[0].minLevel)));
-			list.Add(new TableDataGetter<ThingDef>("equip\ndelay", (ThingDef x) => x.GetStatValueAbstract(StatDefOf.EquipDelay)));
-			list.Add(new TableDataGetter<ThingDef>("none", (ThingDef x) => x.MadeFromStuff ? "" : (x.GetStatValueAbstract(StatDefOf.ArmorRating_Sharp).ToStringPercent() + " / " + x.GetStatValueAbstract(StatDefOf.ArmorRating_Blunt).ToStringPercent() + " / " + x.GetStatValueAbstract(StatDefOf.ArmorRating_Heat).ToStringPercent())));
-			foreach (ThingDef item in new List<ThingDef>
-			{
-				ThingDefOf.Steel,
-				ThingDefOf.Plasteel,
-				ThingDefOf.Cloth,
-				ThingDef.Named("Leather_Patch"),
-				ThingDefOf.Leather_Plain,
-				ThingDef.Named("Leather_Heavy"),
-				ThingDef.Named("Leather_Thrumbo"),
-				ThingDef.Named("Synthread"),
-				ThingDef.Named("Hyperweave"),
-				ThingDef.Named("DevilstrandCloth"),
-				ThingDef.Named("WoolSheep"),
-				ThingDef.Named("WoolMegasloth"),
-				ThingDefOf.BlocksGranite,
-				ThingDefOf.Silver,
-				ThingDefOf.Gold
-			})
-			{
-				ThingDef stuffLocal = item;
-				if (DefDatabase<ThingDef>.AllDefs.Any((ThingDef x) => x.IsApparel && stuffLocal.stuffProps.CanMake(x)))
-				{
-					list.Add(new TableDataGetter<ThingDef>(stuffLocal.label.Shorten(), (ThingDef x) => (!stuffLocal.stuffProps.CanMake(x)) ? "" : (x.GetStatValueAbstract(StatDefOf.ArmorRating_Sharp, stuffLocal).ToStringPercent() + " / " + x.GetStatValueAbstract(StatDefOf.ArmorRating_Blunt, stuffLocal).ToStringPercent() + " / " + x.GetStatValueAbstract(StatDefOf.ArmorRating_Heat, stuffLocal).ToStringPercent())));
-				}
-			}
-			DebugTables.MakeTablesDialog(from x in DefDatabase<ThingDef>.AllDefs
-				where x.IsApparel
-				orderby x.BaseMarketValue
-				select x, list.ToArray());
-		}
-
-		[DebugOutput]
-		public static void ApparelInsulation()
-		{
-			List<TableDataGetter<ThingDef>> list = new List<TableDataGetter<ThingDef>>();
-			list.Add(new TableDataGetter<ThingDef>("label", (ThingDef x) => x.LabelCap));
-			list.Add(new TableDataGetter<ThingDef>("none", (ThingDef x) => x.MadeFromStuff ? "" : (x.GetStatValueAbstract(StatDefOf.Insulation_Heat).ToStringTemperature() + " / " + x.GetStatValueAbstract(StatDefOf.Insulation_Cold).ToStringTemperature())));
-			foreach (ThingDef item in from x in DefDatabase<ThingDef>.AllDefs
-				where x.IsStuff
-				orderby x.BaseMarketValue
-				select x)
-			{
-				ThingDef stuffLocal = item;
-				if (DefDatabase<ThingDef>.AllDefs.Any((ThingDef x) => x.IsApparel && stuffLocal.stuffProps.CanMake(x)))
-				{
-					list.Add(new TableDataGetter<ThingDef>(stuffLocal.label.Shorten(), (ThingDef x) => (!stuffLocal.stuffProps.CanMake(x)) ? "" : (x.GetStatValueAbstract(StatDefOf.Insulation_Heat, stuffLocal).ToString("F1") + ", " + x.GetStatValueAbstract(StatDefOf.Insulation_Cold, stuffLocal).ToString("F1"))));
-				}
-			}
-			DebugTables.MakeTablesDialog(from x in DefDatabase<ThingDef>.AllDefs
-				where x.IsApparel
-				orderby x.BaseMarketValue
-				select x, list.ToArray());
-		}
-
-		private static void DoTableInternalApparel(ThingDef stuff)
-		{
-			DebugTables.MakeTablesDialog(DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.IsApparel && (stuff == null || (d.MadeFromStuff && stuff.stuffProps.CanMake(d)))), new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("bodyParts", (ThingDef d) => GenText.ToSpaceList(d.apparel.bodyPartGroups.Select((BodyPartGroupDef bp) => bp.defName))), new TableDataGetter<ThingDef>("layers", (ThingDef d) => GenText.ToSpaceList(d.apparel.layers.Select((ApparelLayerDef l) => l.ToString()))), new TableDataGetter<ThingDef>("tags", (ThingDef d) => GenText.ToSpaceList(d.apparel.tags.Select((string t) => t.ToString()))), new TableDataGetter<ThingDef>("work", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.WorkToMake, stuff).ToString("F0")), new TableDataGetter<ThingDef>("mktval", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.MarketValue, stuff).ToString("F0")), new TableDataGetter<ThingDef>("insCold", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.Insulation_Cold, stuff).ToString("F1")), new TableDataGetter<ThingDef>("insHeat", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.Insulation_Heat, stuff).ToString("F1")), new TableDataGetter<ThingDef>("blunt", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.ArmorRating_Blunt, stuff).ToString("F2")), new TableDataGetter<ThingDef>("sharp", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.ArmorRating_Sharp, stuff).ToString("F2")), new TableDataGetter<ThingDef>("SEMultArmor", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.StuffEffectMultiplierArmor, stuff).ToString("F2")), new TableDataGetter<ThingDef>("SEMultInsuCold", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.StuffEffectMultiplierInsulation_Cold, stuff).ToString("F2")), new TableDataGetter<ThingDef>("SEMultInsuHeat", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.StuffEffectMultiplierInsulation_Heat, stuff).ToString("F2")), new TableDataGetter<ThingDef>("equipTime", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.EquipDelay, stuff).ToString("F1")));
-		}
-
-		[DebugOutput]
 		public static void ResearchProjects()
 		{
-			DebugTables.MakeTablesDialog(DefDatabase<ResearchProjectDef>.AllDefs, new TableDataGetter<ResearchProjectDef>("defName", (ResearchProjectDef d) => d.defName), new TableDataGetter<ResearchProjectDef>("label", (ResearchProjectDef d) => d.label), new TableDataGetter<ResearchProjectDef>("baseCost", (ResearchProjectDef d) => d.baseCost), new TableDataGetter<ResearchProjectDef>("techLevel", (ResearchProjectDef d) => d.techLevel.ToString()), new TableDataGetter<ResearchProjectDef>("prerequisites", (ResearchProjectDef d) => (d.prerequisites != null && d.prerequisites.Count != 0) ? string.Join(",", d.prerequisites.Select((ResearchProjectDef p) => d.defName).ToArray()) : "NONE"), new TableDataGetter<ResearchProjectDef>("hiddenPrerequisites", (ResearchProjectDef d) => (d.hiddenPrerequisites != null && d.hiddenPrerequisites.Count != 0) ? string.Join(",", d.hiddenPrerequisites.Select((ResearchProjectDef p) => d.defName).ToArray()) : "NONE"), new TableDataGetter<ResearchProjectDef>("requiredResearchBuilding", (ResearchProjectDef d) => d.requiredResearchBuilding), new TableDataGetter<ResearchProjectDef>("techprintCount", (ResearchProjectDef d) => d.techprintCount), new TableDataGetter<ResearchProjectDef>("heldByFactionCategoryTags", (ResearchProjectDef d) => (d.heldByFactionCategoryTags != null) ? string.Join(",", d.heldByFactionCategoryTags.Select((string fc) => fc).ToArray()) : "NONE"));
+			DebugTables.MakeTablesDialog(DefDatabase<ResearchProjectDef>.AllDefs, new TableDataGetter<ResearchProjectDef>("defName", (ResearchProjectDef d) => d.defName), new TableDataGetter<ResearchProjectDef>("label", (ResearchProjectDef d) => d.label), new TableDataGetter<ResearchProjectDef>("baseCost", (ResearchProjectDef d) => d.baseCost), new TableDataGetter<ResearchProjectDef>("techLevel", (ResearchProjectDef d) => d.techLevel.ToString()), new TableDataGetter<ResearchProjectDef>("prerequisites", (ResearchProjectDef d) => (d.prerequisites != null && d.prerequisites.Count != 0) ? string.Join(",", d.prerequisites.Select((ResearchProjectDef p) => d.defName).ToArray()) : "NONE"), new TableDataGetter<ResearchProjectDef>("hiddenPrerequisites", (ResearchProjectDef d) => (d.hiddenPrerequisites != null && d.hiddenPrerequisites.Count != 0) ? string.Join(",", d.hiddenPrerequisites.Select((ResearchProjectDef p) => d.defName).ToArray()) : "NONE"), new TableDataGetter<ResearchProjectDef>("requiredResearchBuilding", (ResearchProjectDef d) => d.requiredResearchBuilding), new TableDataGetter<ResearchProjectDef>("techprintCount", (ResearchProjectDef d) => d.TechprintCount), new TableDataGetter<ResearchProjectDef>("heldByFactionCategoryTags", (ResearchProjectDef d) => (d.heldByFactionCategoryTags != null) ? string.Join(",", d.heldByFactionCategoryTags.Select((string fc) => fc).ToArray()) : "NONE"));
 		}
 
 		[DebugOutput]
@@ -410,6 +319,16 @@ namespace Verse
 				}
 			}
 			Log.Message(stringBuilder.ToString());
+		}
+
+		[DebugOutput]
+		public static void ThingPathCosts()
+		{
+			DebugTables.MakeTablesDialog(from x in DefDatabase<ThingDef>.AllDefs
+				where x.passability != Traversability.Impassable && x.pathCost > 0
+				select x into d
+				orderby d.category, d.pathCost, d.defName
+				select d, new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("category", (ThingDef d) => d.category.ToString()), new TableDataGetter<ThingDef>("path cost", (ThingDef d) => d.pathCost), new TableDataGetter<ThingDef>("passability", (ThingDef d) => d.passability.ToString()));
 		}
 
 		[DebugOutput]

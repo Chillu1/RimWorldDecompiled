@@ -92,6 +92,8 @@ namespace RimWorld
 
 		public float settlementGenerationWeight;
 
+		public bool generateNewLeaderFromMapMembersOnly;
+
 		public RulePackDef pawnNameMaker;
 
 		public RulePackDef pawnNameMakerFemale;
@@ -108,6 +110,10 @@ namespace RimWorld
 		public List<string> hairTags = new List<string>();
 
 		public ThingFilter apparelStuffFilter;
+
+		public ThingSetMakerDef raidLootMaker;
+
+		public SimpleCurve raidLootValueFromPointsCurve = DefaultRaidLootValueFromPointsCurve_NewTemp;
 
 		public List<TraderKindDef> caravanTraderKinds = new List<TraderKindDef>();
 
@@ -130,6 +136,8 @@ namespace RimWorld
 		public bool permanentEnemy;
 
 		public bool permanentEnemyToEveryoneExceptPlayer;
+
+		public List<FactionDef> permanentEnemyToEveryoneExcept;
 
 		[NoTranslate]
 		public string settlementTexturePath;
@@ -167,6 +175,16 @@ namespace RimWorld
 
 		[Unsaved(false)]
 		private RoyalTitleInheritanceWorker royalTitleInheritanceWorker;
+
+		[Obsolete]
+		private static readonly SimpleCurve DefaultRaidLootValueFromPointsCurve_NewTemp = new SimpleCurve
+		{
+			new CurvePoint(35f, 15f),
+			new CurvePoint(100f, 120f),
+			new CurvePoint(1000f, 500f),
+			new CurvePoint(2000f, 800f),
+			new CurvePoint(4000f, 1000f)
+		};
 
 		public List<RoyalTitleDef> RoyalTitlesAwardableInSeniorityOrderForReading
 		{

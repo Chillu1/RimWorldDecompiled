@@ -35,7 +35,7 @@ namespace RimWorld
 			{
 				DirectPawnRelation directPawnRelation = directRelations[i];
 				Pawn otherPawn = directPawnRelation.otherPawn;
-				if (directPawnRelation.def == PawnRelationDefOf.Bond && !otherPawn.Dead && otherPawn.Spawned && otherPawn.Faction == Faction.OfPlayer && otherPawn.training.HasLearned(TrainableDefOf.Obedience) && p.skills.GetSkill(SkillDefOf.Animals).Level >= TrainableUtility.MinimumHandlingSkill(otherPawn) && AnimalMasterCheck(p, otherPawn))
+				if (directPawnRelation.def == PawnRelationDefOf.Bond && !otherPawn.Dead && otherPawn.Spawned && otherPawn.Faction == Faction.OfPlayer && otherPawn.training.HasLearned(TrainableDefOf.Obedience) && AnimalMasterCheck(p, otherPawn))
 				{
 					outAnimals.Add(otherPawn.LabelShort);
 				}

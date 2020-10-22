@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System;
 using System.Reflection;
+using RimWorld.Planet;
 
 namespace Verse
 {
@@ -70,19 +70,12 @@ namespace Verse
 				type = typeof(string);
 				lookMode = LookMode.Value;
 			}
-			string name;
-			switch (lookMode)
+			string name = lookMode switch
 			{
-			case LookMode.Def:
-				name = "LookInternalDef";
-				break;
-			case LookMode.Reference:
-				name = "LookInternalReference";
-				break;
-			default:
-				name = "LookInternalMisc";
-				break;
-			}
+				LookMode.Def => "LookInternalDef", 
+				LookMode.Reference => "LookInternalReference", 
+				_ => "LookInternalMisc", 
+			};
 			object[] array = new object[3]
 			{
 				obj,
@@ -97,9 +90,6 @@ namespace Verse
 		{
 			switch (lookMode)
 			{
-			case LookMode.Reference:
-			case LookMode.Def:
-				break;
 			case LookMode.Value:
 				Scribe_Values.Look(ref obj, label);
 				break;
@@ -134,6 +124,9 @@ namespace Verse
 				obj = (T)(object)part;
 				break;
 			}
+			case LookMode.Reference:
+			case LookMode.Def:
+				break;
 			}
 		}
 

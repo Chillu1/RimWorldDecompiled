@@ -34,8 +34,8 @@ namespace Verse.AI
 
 		public override string ToString()
 		{
-			string text = (Job != null) ? Job.ToString() : "null";
-			string text2 = (SourceNode != null) ? SourceNode.ToString() : "null";
+			string text = ((Job != null) ? Job.ToString() : "null");
+			string text2 = ((SourceNode != null) ? SourceNode.ToString() : "null");
 			return "(job=" + text + " sourceNode=" + text2 + ")";
 		}
 

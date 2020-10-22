@@ -17,7 +17,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!TryFindGatherSpot(organizer, out IntVec3 _))
+			if (!TryFindGatherSpot(organizer, out var _))
 			{
 				return false;
 			}
@@ -38,7 +38,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!TryFindGatherSpot(organizer, out IntVec3 spot))
+			if (!TryFindGatherSpot(organizer, out var spot))
 			{
 				return false;
 			}

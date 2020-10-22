@@ -10,6 +10,8 @@ namespace RimWorld
 
 		public CompTransporter Transporter => job.GetTarget(TransporterInd).Thing?.TryGetComp<CompTransporter>();
 
+		public CompShuttle Shuttle => job.GetTarget(TransporterInd).Thing?.TryGetComp<CompShuttle>();
+
 		public override bool TryMakePreToilReservations(bool errorOnFailed)
 		{
 			return true;
@@ -19,6 +21,7 @@ namespace RimWorld
 		{
 			this.FailOnDespawnedOrNull(TransporterInd);
 			this.FailOn(() => !Transporter.LoadingInProgressOrReadyToLaunch);
+			this.FailOn(() => Shuttle != null && !Shuttle.IsAllowedNow(pawn));
 			yield return Toils_Goto.GotoThing(TransporterInd, PathEndMode.Touch);
 			Toil toil = new Toil();
 			toil.initAction = delegate

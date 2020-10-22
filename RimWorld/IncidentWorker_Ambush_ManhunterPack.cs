@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -20,7 +20,7 @@ namespace RimWorld
 
 		protected override List<Pawn> GeneratePawns(IncidentParms parms)
 		{
-			if (!ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(AdjustedPoints(parms.points), parms.target.Tile, out PawnKindDef animalKind) && !ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(AdjustedPoints(parms.points), -1, out animalKind))
+			if (!ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(AdjustedPoints(parms.points), parms.target.Tile, out var animalKind) && !ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(AdjustedPoints(parms.points), -1, out animalKind))
 			{
 				Log.Error(string.Concat("Could not find any valid animal kind for ", def, " incident."));
 				return new List<Pawn>();

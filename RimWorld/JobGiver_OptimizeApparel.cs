@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Verse;
@@ -10,6 +11,8 @@ namespace RimWorld
 		private static NeededWarmth neededWarmth;
 
 		private static StringBuilder debugSb;
+
+		private static List<float> wornApparelScores = new List<float>();
 
 		private const int ApparelOptimizeCheckIntervalMin = 6000;
 
@@ -93,12 +96,17 @@ namespace RimWorld
 				return null;
 			}
 			neededWarmth = PawnApparelGenerator.CalculateNeededWarmth(pawn, pawn.Map.Tile, GenLocalDate.Twelfth(pawn));
-			for (int i = 0; i < list.Count; i++)
+			wornApparelScores.Clear();
+			for (int i = 0; i < wornApparel.Count; i++)
 			{
-				Apparel apparel = (Apparel)list[i];
-				if (currentOutfit.filter.Allows(apparel) && apparel.IsInAnyStorage() && !apparel.IsForbidden(pawn) && !apparel.IsBurning() && (apparel.def.apparel.gender == Gender.None || apparel.def.apparel.gender == pawn.gender) && (!apparel.def.apparel.tags.Contains("Royal") || pawn.royalty.AllTitlesInEffectForReading.Count != 0))
+				wornApparelScores.Add(ApparelScoreRaw(pawn, wornApparel[i]));
+			}
+			for (int j = 0; j < list.Count; j++)
+			{
+				Apparel apparel = (Apparel)list[j];
+				if (currentOutfit.filter.Allows(apparel) && apparel.IsInAnyStorage() && !apparel.IsForbidden(pawn) && !apparel.IsBurning() && (apparel.def.apparel.gender == Gender.None || apparel.def.apparel.gender == pawn.gender))
 				{
-					float num3 = ApparelScoreGain(pawn, apparel);
+					float num3 = ApparelScoreGain_NewTmp(pawn, apparel, wornApparelScores);
 					if (DebugViewSettings.debugApparelOptimize)
 					{
 						debugSb.AppendLine(apparel.LabelCap + ": " + num3.ToString("F2"));
@@ -124,7 +132,7 @@ namespace RimWorld
 			return JobMaker.MakeJob(JobDefOf.Wear, thing);
 		}
 
-		public static float ApparelScoreGain(Pawn pawn, Apparel ap)
+		public static float ApparelScoreGain_NewTmp(Pawn pawn, Apparel ap, List<float> wornScoresCache)
 		{
 			if (ap is ShieldBelt && pawn.equipment.Primary != null && pawn.equipment.Primary.def.IsWeaponUsingProjectiles)
 			{
@@ -141,7 +149,7 @@ namespace RimWorld
 					{
 						return -1000f;
 					}
-					num -= ApparelScoreRaw(pawn, wornApparel[i]);
+					num -= wornScoresCache[i];
 					flag = true;
 				}
 			}
@@ -152,10 +160,21 @@ namespace RimWorld
 			return num;
 		}
 
+		[Obsolete("Only need this overload to not break mod compatibility.")]
+		public static float ApparelScoreGain(Pawn pawn, Apparel ap)
+		{
+			wornApparelScores.Clear();
+			for (int i = 0; i < pawn.apparel.WornApparel.Count; i++)
+			{
+				wornApparelScores.Add(ApparelScoreRaw(pawn, pawn.apparel.WornApparel[i]));
+			}
+			return ApparelScoreGain_NewTmp(pawn, ap, wornApparelScores);
+		}
+
 		public static float ApparelScoreRaw(Pawn pawn, Apparel ap)
 		{
-			float num = 0.1f;
-			float num2 = ap.GetStatValue(StatDefOf.ArmorRating_Sharp) + ap.GetStatValue(StatDefOf.ArmorRating_Blunt);
+			float num = 0.1f + ap.def.apparel.scoreOffset;
+			float num2 = ap.GetStatValue(StatDefOf.ArmorRating_Sharp) + ap.GetStatValue(StatDefOf.ArmorRating_Blunt) + ap.GetStatValue(StatDefOf.ArmorRating_Heat);
 			num += num2;
 			if (ap.def.useHitPoints)
 			{
@@ -220,7 +239,7 @@ namespace RimWorld
 					}
 				}
 				bool num4 = ap.def.apparel.bodyPartGroups.Any((BodyPartGroupDef bp) => tmpBodyPartGroupsWithRequirement.Contains(bp));
-				if (ap.TryGetQuality(out QualityCategory qc) && (int)qc < (int)qualityCategory)
+				if (ap.TryGetQuality(out var qc) && (int)qc < (int)qualityCategory)
 				{
 					num *= 0.25f;
 				}

@@ -7,26 +7,51 @@ namespace RimWorld
 	{
 		public List<Pawn> pawns;
 
+		public string inSignalRemovePawn;
+
+		private int PawnsAliveCount
+		{
+			get
+			{
+				if (pawns.NullOrEmpty())
+				{
+					return 0;
+				}
+				int num = 0;
+				for (int i = 0; i < pawns.Count; i++)
+				{
+					if (!pawns[i].Destroyed)
+					{
+						num++;
+					}
+				}
+				return num;
+			}
+		}
+
 		protected override bool Pass(SignalArgs args)
 		{
-			if (pawns.NullOrEmpty())
+			return PawnsAliveCount > 0;
+		}
+
+		public override void Notify_QuestSignalReceived(Signal signal)
+		{
+			if (signal.tag == inSignalRemovePawn && signal.args.TryGetArg("SUBJECT", out Pawn arg) && pawns.Contains(arg))
 			{
-				return false;
+				pawns.Remove(arg);
 			}
-			foreach (Pawn pawn in pawns)
+			if (signal.tag == inSignal)
 			{
-				if (!pawn.Destroyed)
-				{
-					return true;
-				}
+				signal.args.Add(PawnsAliveCount.Named("PAWNSALIVECOUNT"));
 			}
-			return false;
+			base.Notify_QuestSignalReceived(signal);
 		}
 
 		public override void ExposeData()
 		{
 			base.ExposeData();
 			Scribe_Collections.Look(ref pawns, "pawns", LookMode.Reference);
+			Scribe_Values.Look(ref inSignalRemovePawn, "inSignalRemovePawn");
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				pawns.RemoveAll((Pawn x) => x == null);

@@ -47,6 +47,8 @@ namespace RimWorld
 
 		public bool neverDisabled;
 
+		public bool showZeroBaseValue;
+
 		public int displayPriorityInCategory;
 
 		public ToStringNumberSense toStringNumberSense = ToStringNumberSense.Absolute;
@@ -60,6 +62,8 @@ namespace RimWorld
 
 		[MustTranslate]
 		public string formatStringUnfinalized;
+
+		public bool finalizeEquippedStatOffset = true;
 
 		public float defaultBaseValue = 1f;
 

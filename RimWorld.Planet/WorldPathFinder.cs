@@ -148,7 +148,7 @@ namespace RimWorld.Planet
 					Log.Warning(string.Concat(caravan, " pathing from ", startTile, " to ", destTile, " hit search limit of ", 500000, " tiles."));
 					return WorldPath.NotFound;
 				}
-				int num5 = (num + 1 < tileIDToNeighbors_offsets.Count) ? tileIDToNeighbors_offsets[num + 1] : tileIDToNeighbors_values.Count;
+				int num5 = ((num + 1 < tileIDToNeighbors_offsets.Count) ? tileIDToNeighbors_offsets[num + 1] : tileIDToNeighbors_values.Count);
 				for (int i = tileIDToNeighbors_offsets[num]; i < num5; i++)
 				{
 					int num6 = tileIDToNeighbors_values[i];
@@ -197,7 +197,7 @@ namespace RimWorld.Planet
 			List<int> tileIDToNeighbors_values = grid.tileIDToNeighbors_values;
 			if (impassable == null)
 			{
-				impassable = ((int tid) => world.Impassable(tid));
+				impassable = (int tid) => world.Impassable(tid);
 			}
 			statusOpenValue += 2;
 			statusClosedValue += 2;
@@ -226,7 +226,7 @@ namespace RimWorld.Planet
 				{
 					continue;
 				}
-				int num = (tile + 1 < tileIDToNeighbors_offsets.Count) ? tileIDToNeighbors_offsets[tile + 1] : tileIDToNeighbors_values.Count;
+				int num = ((tile + 1 < tileIDToNeighbors_offsets.Count) ? tileIDToNeighbors_offsets[tile + 1] : tileIDToNeighbors_values.Count);
 				for (int i = tileIDToNeighbors_offsets[tile]; i < num; i++)
 				{
 					int num2 = tileIDToNeighbors_values[i];

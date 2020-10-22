@@ -1,5 +1,5 @@
-using RimWorld;
 using System.Collections.Generic;
+using RimWorld;
 
 namespace Verse
 {
@@ -10,6 +10,8 @@ namespace Verse
 		public int targetCountAdjustment = 1;
 
 		public int bulkRecipeCount = -1;
+
+		public bool useIngredientsForColor = true;
 
 		public int workAmount = -1;
 

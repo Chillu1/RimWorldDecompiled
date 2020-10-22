@@ -49,7 +49,7 @@ namespace RimWorld.QuestGen
 		{
 			try
 			{
-				if (slate.TryGet("testRunCallback", out Action<QuestNode, Slate> var))
+				if (slate.TryGet<Action<QuestNode, Slate>>("testRunCallback", out var var))
 				{
 					var?.Invoke(this, slate);
 				}
@@ -59,6 +59,9 @@ namespace RimWorld.QuestGen
 			{
 				Log.Error(string.Concat("Exception test running ", GetType().Name, ": ", ex, "\n\nSlate vars:\n", slate.ToString()));
 				return false;
+			}
+			finally
+			{
 			}
 		}
 

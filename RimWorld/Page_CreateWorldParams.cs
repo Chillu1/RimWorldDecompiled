@@ -1,5 +1,5 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.Profile;
@@ -84,7 +84,7 @@ namespace RimWorld
 			if (Widgets.ButtonText(rect3, planetCoverage.ToStringPercent()))
 			{
 				List<FloatMenuOption> list = new List<FloatMenuOption>();
-				float[] array = Prefs.DevMode ? PlanetCoveragesDev : PlanetCoverages;
+				float[] array = (Prefs.DevMode ? PlanetCoveragesDev : PlanetCoverages);
 				foreach (float coverage in array)
 				{
 					string text = coverage.ToStringPercent();

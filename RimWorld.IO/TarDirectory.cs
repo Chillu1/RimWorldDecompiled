@@ -1,8 +1,8 @@
-using ICSharpCode.SharpZipLib.Tar;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using ICSharpCode.SharpZipLib.Tar;
 
 namespace RimWorld.IO
 {
@@ -40,7 +40,7 @@ namespace RimWorld.IO
 		public static TarDirectory ReadFromFileOrCache(string file)
 		{
 			string key = file.Replace('\\', '/');
-			if (!cache.TryGetValue(key, out TarDirectory value))
+			if (!cache.TryGetValue(key, out var value))
 			{
 				value = new TarDirectory(file, "");
 				value.lazyLoadArchive = file;
@@ -57,10 +57,8 @@ namespace RimWorld.IO
 			}
 			using (FileStream inputStream = File.OpenRead(lazyLoadArchive))
 			{
-				using (TarInputStream input = new TarInputStream(inputStream))
-				{
-					ParseTAR(this, input, lazyLoadArchive);
-				}
+				using TarInputStream input = new TarInputStream(inputStream);
+				ParseTAR(this, input, lazyLoadArchive);
 			}
 			lazyLoadArchive = null;
 		}
@@ -191,16 +189,16 @@ namespace RimWorld.IO
 			Func<string, bool> func = null;
 			if (searchPattern.Length == 1 && searchPattern[0] == '*')
 			{
-				func = ((string str) => true);
+				func = (string str) => true;
 			}
 			else if (searchPattern.Length > 2 && searchPattern[0] == '*' && searchPattern[1] == '.')
 			{
 				string extension = searchPattern.Substring(2);
-				func = ((string str) => str.Substring(str.Length - extension.Length) == extension);
+				func = (string str) => str.Substring(str.Length - extension.Length) == extension;
 			}
 			if (func == null)
 			{
-				func = ((string str) => false);
+				func = (string str) => false;
 			}
 			return func;
 		}

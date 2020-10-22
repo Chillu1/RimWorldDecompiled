@@ -45,14 +45,14 @@ namespace RimWorld.QuestGen
 			Slate slate = QuestGen.slate;
 			PawnsArrivalModeDef pawnsArrivalModeDef = arrivalMode.GetValue(slate) ?? PawnsArrivalModeDefOf.EdgeWalkIn;
 			QuestPart_PawnsArrive pawnsArrive = new QuestPart_PawnsArrive();
-			pawnsArrive.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			pawnsArrive.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			pawnsArrive.pawns.AddRange(pawns.GetValue(slate));
 			pawnsArrive.arrivalMode = pawnsArrivalModeDef;
 			pawnsArrive.joinPlayer = joinPlayer.GetValue(slate);
 			pawnsArrive.mapParent = QuestGen.slate.Get<Map>("map").Parent;
 			if (pawnsArrivalModeDef.walkIn)
 			{
-				pawnsArrive.spawnNear = (walkInSpot.GetValue(slate) ?? QuestGen.slate.Get<IntVec3?>("walkInSpot") ?? IntVec3.Invalid);
+				pawnsArrive.spawnNear = walkInSpot.GetValue(slate) ?? QuestGen.slate.Get<IntVec3?>("walkInSpot") ?? IntVec3.Invalid;
 			}
 			if (!customLetterLabel.GetValue(slate).NullOrEmpty() || customLetterLabelRules.GetValue(slate) != null)
 			{

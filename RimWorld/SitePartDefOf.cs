@@ -19,6 +19,8 @@ namespace RimWorld
 
 		public static SitePartDef PossibleUnknownThreatMarker;
 
+		public static SitePartDef BanditCamp;
+
 		static SitePartDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(SitePartDefOf));

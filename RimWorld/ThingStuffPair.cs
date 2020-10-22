@@ -92,7 +92,7 @@ namespace RimWorld
 			{
 				return "(null)";
 			}
-			string text = (stuff != null) ? (thing.label + " " + stuff.LabelAsStuff) : thing.label;
+			string text = ((stuff != null) ? (thing.label + " " + stuff.LabelAsStuff) : thing.label);
 			return text + " $" + Price.ToString("F0") + " c=" + Commonality.ToString("F4");
 		}
 

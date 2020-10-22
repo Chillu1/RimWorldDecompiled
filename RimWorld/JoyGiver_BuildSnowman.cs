@@ -34,7 +34,7 @@ namespace RimWorld
 
 		private static IntVec3 TryFindSnowmanBuildCell(Pawn pawn)
 		{
-			if (!CellFinder.TryFindClosestRegionWith(pawn.GetRegion(), TraverseParms.For(pawn), (Region r) => r.Room.PsychologicallyOutdoors, 100, out Region rootReg))
+			if (!CellFinder.TryFindClosestRegionWith(pawn.GetRegion(), TraverseParms.For(pawn), (Region r) => r.Room.PsychologicallyOutdoors, 100, out var rootReg))
 			{
 				return IntVec3.Invalid;
 			}

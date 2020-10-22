@@ -63,5 +63,14 @@ namespace RimWorld
 			result.failMessageInt = failMessage;
 			return result;
 		}
+
+		public static FloatMenuAcceptanceReport WithFailReasonAndMessage(string failReason, string failMessage)
+		{
+			FloatMenuAcceptanceReport result = default(FloatMenuAcceptanceReport);
+			result.acceptedInt = false;
+			result.failReasonInt = failReason;
+			result.failMessageInt = failMessage;
+			return result;
+		}
 	}
 }

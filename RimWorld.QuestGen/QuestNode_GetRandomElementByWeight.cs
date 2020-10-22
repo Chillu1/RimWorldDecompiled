@@ -30,7 +30,7 @@ namespace RimWorld.QuestGen
 
 		private void SetVars(Slate slate)
 		{
-			if (options.TryRandomElementByWeight((Option x) => x.weight, out Option result))
+			if (options.TryRandomElementByWeight((Option x) => x.weight, out var result))
 			{
 				slate.Set(storeAs.GetValue(slate), result.element.GetValue(slate));
 			}

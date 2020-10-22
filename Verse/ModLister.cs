@@ -1,9 +1,9 @@
-using RimWorld;
-using Steamworks;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using RimWorld;
+using Steamworks;
 using Verse.Steam;
 
 namespace Verse
@@ -248,7 +248,7 @@ namespace Verse
 				{
 					if (mod.OnSteamWorkshop != modWithIdentifier.OnSteamWorkshop)
 					{
-						ModMetaData modMetaData = mod.OnSteamWorkshop ? mod : modWithIdentifier;
+						ModMetaData modMetaData = (mod.OnSteamWorkshop ? mod : modWithIdentifier);
 						if (!modMetaData.appendPackageIdSteamPostfix)
 						{
 							modMetaData.appendPackageIdSteamPostfix = true;

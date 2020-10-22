@@ -25,12 +25,12 @@ namespace RimWorld.QuestGen
 			PawnGroupMakerParms pawnGroupMakerParms = new PawnGroupMakerParms();
 			pawnGroupMakerParms.groupKind = PawnGroupKindDefOf.Combat;
 			pawnGroupMakerParms.raidStrategy = RaidStrategyDefOf.ImmediateAttack;
-			pawnGroupMakerParms.faction = (faction.GetValue(slate) ?? (from x in Find.FactionManager.GetFactions(allowHidden: false, allowDefeated: false, allowNonHumanlike: true, TechLevel.Industrial)
+			pawnGroupMakerParms.faction = faction.GetValue(slate) ?? (from x in Find.FactionManager.GetFactions_NewTemp(allowHidden: false, allowDefeated: false, allowNonHumanlike: true, TechLevel.Industrial)
 				where x.HostileTo(Faction.OfPlayer)
-				select x).RandomElement());
+				select x).RandomElement();
 			pawnGroupMakerParms.points = IncidentWorker_Raid.AdjustedRaidPoints(points.GetValue(slate), PawnsArrivalModeDefOf.EdgeWalkIn, RaidStrategyDefOf.ImmediateAttack, pawnGroupMakerParms.faction, PawnGroupKindDefOf.Combat);
 			IEnumerable<PawnKindDef> pawnKinds = PawnGroupMakerUtility.GeneratePawnKindsExample(pawnGroupMakerParms);
-			slate.Set(storeAs.GetValue(slate), PawnUtility.PawnKindsToLineList(pawnKinds, "  - "));
+			slate.Set(storeAs.GetValue(slate), PawnUtility.PawnKindsToLineList(pawnKinds, "  - ", ColoredText.ThreatColor));
 		}
 	}
 }

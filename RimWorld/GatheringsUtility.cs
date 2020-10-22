@@ -74,10 +74,6 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (pawn.psychicEntropy != null && pawn.psychicEntropy.IsCurrentlyMeditating)
-			{
-				return false;
-			}
 			if (pawn.Spawned && !pawn.Downed)
 			{
 				return !pawn.InMentalState;
@@ -153,7 +149,7 @@ namespace RimWorld
 			return true;
 		}
 
-		public static bool ValidateGatheringSpot(IntVec3 cell, GatheringDef gatheringDef, Pawn organizer, bool enjoyableOutside)
+		public static bool ValidateGatheringSpot_NewTemp(IntVec3 cell, GatheringDef gatheringDef, Pawn organizer, bool enjoyableOutside, bool ignoreRequiredColonistCount)
 		{
 			Map map = organizer.Map;
 			if (!cell.Standable(map))
@@ -181,11 +177,17 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!EnoughPotentialGuestsToStartGathering(map, gatheringDef, cell))
+			if (!ignoreRequiredColonistCount && !EnoughPotentialGuestsToStartGathering(map, gatheringDef, cell))
 			{
 				return false;
 			}
 			return true;
+		}
+
+		[Obsolete("Will be removed in a future update")]
+		public static bool ValidateGatheringSpot(IntVec3 cell, GatheringDef gatheringDef, Pawn organizer, bool enjoyableOutside)
+		{
+			return ValidateGatheringSpot_NewTemp(cell, gatheringDef, organizer, enjoyableOutside, ignoreRequiredColonistCount: false);
 		}
 
 		public static bool EnoughPotentialGuestsToStartGathering(Map map, GatheringDef gatheringDef, IntVec3? gatherSpot = null)
@@ -208,7 +210,7 @@ namespace RimWorld
 			Predicate<Pawn> v = (Pawn x) => x.RaceProps.Humanlike && !x.InBed() && !x.InMentalState && x.GetLord() == null && ShouldPawnKeepGathering(x, gatheringDef) && !x.Drafted && (gatheringDef.requiredTitleAny == null || gatheringDef.requiredTitleAny.Count == 0 || (x.royalty != null && x.royalty.AllTitlesInEffectForReading.Any((RoyalTitle t) => gatheringDef.requiredTitleAny.Contains(t.def))));
 			if ((from x in map.mapPawns.SpawnedPawnsInFaction(faction)
 				where v(x)
-				select x).TryRandomElement(out Pawn result))
+				select x).TryRandomElement(out var result))
 			{
 				return result;
 			}

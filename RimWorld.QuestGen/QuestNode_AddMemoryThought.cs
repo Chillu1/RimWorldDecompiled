@@ -31,11 +31,11 @@ namespace RimWorld.QuestGen
 			foreach (Pawn item in pawns.GetValue(slate))
 			{
 				QuestPart_AddMemoryThought questPart_AddMemoryThought = new QuestPart_AddMemoryThought();
-				questPart_AddMemoryThought.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+				questPart_AddMemoryThought.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 				questPart_AddMemoryThought.def = def.GetValue(slate);
 				questPart_AddMemoryThought.pawn = item;
 				questPart_AddMemoryThought.otherPawn = otherPawn.GetValue(slate);
-				questPart_AddMemoryThought.addToLookTargets = (addToLookTargets.GetValue(slate) ?? true);
+				questPart_AddMemoryThought.addToLookTargets = addToLookTargets.GetValue(slate) ?? true;
 				QuestGen.quest.AddPart(questPart_AddMemoryThought);
 			}
 		}

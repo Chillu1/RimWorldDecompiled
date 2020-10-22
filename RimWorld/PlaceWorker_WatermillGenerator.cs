@@ -40,7 +40,7 @@ namespace RimWorld
 		public override void DrawGhost(ThingDef def, IntVec3 loc, Rot4 rot, Color ghostCol, Thing thing = null)
 		{
 			GenDraw.DrawFieldEdges(CompPowerPlantWater.GroundCells(loc, rot).ToList(), Color.white);
-			Color color = WaterCellsPresent(loc, rot, Find.CurrentMap) ? Designator_Place.CanPlaceColor.ToOpaque() : Designator_Place.CannotPlaceColor.ToOpaque();
+			Color color = (WaterCellsPresent(loc, rot, Find.CurrentMap) ? Designator_Place.CanPlaceColor.ToOpaque() : Designator_Place.CannotPlaceColor.ToOpaque());
 			GenDraw.DrawFieldEdges(CompPowerPlantWater.WaterCells(loc, rot).ToList(), color);
 			bool flag = false;
 			CellRect cellRect = CompPowerPlantWater.WaterUseRect(loc, rot);
@@ -60,7 +60,7 @@ namespace RimWorld
 				}
 			}
 			waterMills.Clear();
-			Color color2 = flag ? new Color(1f, 0.6f, 0f) : Designator_Place.CanPlaceColor.ToOpaque();
+			Color color2 = (flag ? new Color(1f, 0.6f, 0f) : Designator_Place.CanPlaceColor.ToOpaque());
 			if (!flag || Time.realtimeSinceStartup % 0.4f < 0.2f)
 			{
 				GenDraw.DrawFieldEdges(CompPowerPlantWater.WaterUseCells(loc, rot).ToList(), color2);

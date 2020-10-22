@@ -13,7 +13,7 @@ namespace Verse
 
 		public static bool MessageShowAllowed(string tag, float minSecondsSinceLastShow)
 		{
-			if (!lastShowTimes.TryGetValue(tag, out float value))
+			if (!lastShowTimes.TryGetValue(tag, out var value))
 			{
 				value = -99999f;
 			}

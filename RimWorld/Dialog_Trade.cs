@@ -1,8 +1,8 @@
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
@@ -233,7 +233,7 @@ namespace RimWorld
 				float level2 = playerNegotiator.health.capacities.GetLevel(PawnCapacityDefOf.Hearing);
 				if (level < 0.95f || level2 < 0.95f)
 				{
-					TaggedString text = (!(level < 0.95f)) ? "NegotiatorHearingImpaired".Translate(playerNegotiator.LabelShort, playerNegotiator) : "NegotiatorTalkingImpaired".Translate(playerNegotiator.LabelShort, playerNegotiator);
+					TaggedString text = ((!(level < 0.95f)) ? "NegotiatorHearingImpaired".Translate(playerNegotiator.LabelShort, playerNegotiator) : "NegotiatorTalkingImpaired".Translate(playerNegotiator.LabelShort, playerNegotiator));
 					text += "\n\n" + "NegotiatorCapacityImpaired".Translate();
 					Find.WindowStack.Add(new Dialog_MessageBox(text));
 				}
@@ -249,7 +249,7 @@ namespace RimWorld
 				orderby (!tr.TraderWillTrade) ? (-1) : 0 descending
 				select tr).ThenBy((Tradeable tr) => tr, sorter1.Comparer).ThenBy((Tradeable tr) => tr, sorter2.Comparer).ThenBy((Tradeable tr) => TransferableUIUtility.DefaultListOrderPriority(tr))
 				.ThenBy((Tradeable tr) => tr.ThingDef.label)
-				.ThenBy((Tradeable tr) => tr.AnyThing.TryGetQuality(out QualityCategory qc) ? ((int)qc) : (-1))
+				.ThenBy((Tradeable tr) => tr.AnyThing.TryGetQuality(out var qc) ? ((int)qc) : (-1))
 				.ThenBy((Tradeable tr) => tr.AnyThing.HitPoints)
 				.ToList();
 		}
@@ -324,7 +324,7 @@ namespace RimWorld
 			{
 				Action action = delegate
 				{
-					if (TradeSession.deal.TryExecute(out bool actuallyTraded))
+					if (TradeSession.deal.TryExecute(out var actuallyTraded))
 					{
 						if (actuallyTraded)
 						{

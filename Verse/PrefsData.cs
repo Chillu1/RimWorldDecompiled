@@ -1,5 +1,6 @@
-using RimWorld;
+using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -30,6 +31,7 @@ namespace Verse
 
 		public AnimalNameDisplayMode animalNameMode;
 
+		[Obsolete]
 		public bool extremeDifficultyUnlocked;
 
 		public bool adaptiveTrainingEnabled = true;

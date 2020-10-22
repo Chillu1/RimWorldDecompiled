@@ -15,8 +15,6 @@ namespace RimWorld
 
 		public string enoughPlantsLetterText;
 
-		public string enoughPlantsLetterLevelText;
-
 		public CompProperties_Psylinkable()
 		{
 			compClass = typeof(CompPsylinkable);

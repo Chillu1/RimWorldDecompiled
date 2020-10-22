@@ -24,7 +24,7 @@ namespace RimWorld
 				Find.DesignatorManager.SelectedDesignator.DoExtraGuiControls(0f, (float)(UI.screenHeight - 35) - ((MainTabWindow_Architect)MainButtonDefOf.Architect.TabWindow).WinHeight - 270f);
 			}
 			float startX = 210f;
-			GizmoGridDrawer.DrawGizmoGrid(def.ResolvedAllowedDesignators.Cast<Gizmo>(), startX, out Gizmo mouseoverGizmo);
+			GizmoGridDrawer.DrawGizmoGrid(def.ResolvedAllowedDesignators.Cast<Gizmo>(), startX, out var mouseoverGizmo);
 			if (mouseoverGizmo == null && Find.DesignatorManager.SelectedDesignator != null)
 			{
 				mouseoverGizmo = Find.DesignatorManager.SelectedDesignator;

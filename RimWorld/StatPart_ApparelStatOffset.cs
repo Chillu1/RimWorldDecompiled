@@ -11,6 +11,8 @@ namespace RimWorld
 
 		private bool subtract;
 
+		private bool includeWeapon;
+
 		public override void TransformValue(StatRequest req, ref float val)
 		{
 			if (!req.HasThing || req.Thing == null)
@@ -18,20 +20,37 @@ namespace RimWorld
 				return;
 			}
 			Pawn pawn = req.Thing as Pawn;
-			if (pawn == null || pawn.apparel == null)
+			if (pawn == null)
 			{
 				return;
 			}
-			for (int i = 0; i < pawn.apparel.WornApparel.Count; i++)
+			if (pawn.apparel != null)
 			{
-				float statValue = pawn.apparel.WornApparel[i].GetStatValue(apparelStat);
+				for (int i = 0; i < pawn.apparel.WornApparel.Count; i++)
+				{
+					float statValue = pawn.apparel.WornApparel[i].GetStatValue(apparelStat);
+					statValue += StatWorker.StatOffsetFromGear(pawn.apparel.WornApparel[i], apparelStat);
+					if (subtract)
+					{
+						val -= statValue;
+					}
+					else
+					{
+						val += statValue;
+					}
+				}
+			}
+			if (includeWeapon && pawn.equipment != null && pawn.equipment.Primary != null)
+			{
+				float statValue2 = pawn.equipment.Primary.GetStatValue(apparelStat);
+				statValue2 += StatWorker.StatOffsetFromGear(pawn.equipment.Primary, apparelStat);
 				if (subtract)
 				{
-					val -= statValue;
+					val -= statValue2;
 				}
 				else
 				{
-					val += statValue;
+					val += statValue2;
 				}
 			}
 		}
@@ -53,6 +72,10 @@ namespace RimWorld
 							stringBuilder.AppendLine(InfoTextLineFrom(gear));
 						}
 					}
+					if (includeWeapon && pawn.equipment != null && pawn.equipment.Primary != null)
+					{
+						stringBuilder.AppendLine(InfoTextLineFrom(pawn.equipment.Primary));
+					}
 					return stringBuilder.ToString();
 				}
 			}
@@ -61,12 +84,13 @@ namespace RimWorld
 
 		private string InfoTextLineFrom(Thing gear)
 		{
-			float num = gear.GetStatValue(apparelStat);
+			float statValue = gear.GetStatValue(apparelStat);
+			statValue += StatWorker.StatOffsetFromGear(gear, apparelStat);
 			if (subtract)
 			{
-				num = 0f - num;
+				statValue = 0f - statValue;
 			}
-			return "    " + gear.LabelCap + ": " + num.ToStringByStyle(parentStat.toStringStyle, ToStringNumberSense.Offset);
+			return "    " + gear.LabelCap + ": " + statValue.ToStringByStyle(parentStat.toStringStyle, ToStringNumberSense.Offset);
 		}
 
 		private bool PawnWearingRelevantGear(Pawn pawn)
@@ -75,11 +99,20 @@ namespace RimWorld
 			{
 				for (int i = 0; i < pawn.apparel.WornApparel.Count; i++)
 				{
-					if (pawn.apparel.WornApparel[i].GetStatValue(apparelStat) != 0f)
+					Apparel apparel = pawn.apparel.WornApparel[i];
+					if (apparel.GetStatValue(apparelStat) != 0f)
+					{
+						return true;
+					}
+					if (StatWorker.StatOffsetFromGear(apparel, apparelStat) != 0f)
 					{
 						return true;
 					}
 				}
+			}
+			if (includeWeapon && pawn.equipment != null && pawn.equipment.Primary != null && StatWorker.StatOffsetFromGear(pawn.equipment.Primary, apparelStat) != 0f)
+			{
+				return true;
 			}
 			return false;
 		}

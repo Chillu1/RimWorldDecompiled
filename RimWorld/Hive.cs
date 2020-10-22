@@ -94,7 +94,7 @@ namespace RimWorld
 				for (int i = 0; i < list.Count; i++)
 				{
 					Hive hive;
-					if ((hive = (list[i] as Hive)) != null && hive != this && hive.CompDormant.Awake && !hive.questTags.NullOrEmpty() && QuestUtility.AnyMatchingTags(hive.questTags, questTags))
+					if ((hive = list[i] as Hive) != null && hive != this && hive.CompDormant.Awake && !hive.questTags.NullOrEmpty() && QuestUtility.AnyMatchingTags(hive.questTags, questTags))
 					{
 						flag = true;
 						break;

@@ -145,26 +145,24 @@ namespace Verse
 			}
 			try
 			{
-				using (StringWriter stringWriter = new StringWriter())
+				using StringWriter stringWriter = new StringWriter();
+				XmlWriterSettings xmlWriterSettings = new XmlWriterSettings();
+				xmlWriterSettings.Indent = true;
+				xmlWriterSettings.IndentChars = "  ";
+				xmlWriterSettings.OmitXmlDeclaration = true;
+				try
 				{
-					XmlWriterSettings xmlWriterSettings = new XmlWriterSettings();
-					xmlWriterSettings.Indent = true;
-					xmlWriterSettings.IndentChars = "  ";
-					xmlWriterSettings.OmitXmlDeclaration = true;
-					try
+					using (writer = XmlWriter.Create(stringWriter, xmlWriterSettings))
 					{
-						using (writer = XmlWriter.Create(stringWriter, xmlWriterSettings))
-						{
-							Scribe.mode = LoadSaveMode.Saving;
-							savingForDebug = true;
-							Scribe_Deep.Look(ref saveable, "saveable");
-						}
-						return stringWriter.ToString();
+						Scribe.mode = LoadSaveMode.Saving;
+						savingForDebug = true;
+						Scribe_Deep.Look(ref saveable, "saveable");
 					}
-					finally
-					{
-						ForceStop();
-					}
+					return stringWriter.ToString();
+				}
+				finally
+				{
+					ForceStop();
 				}
 			}
 			catch (Exception arg)

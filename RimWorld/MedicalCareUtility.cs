@@ -72,21 +72,15 @@ namespace RimWorld
 
 		public static bool AllowsMedicine(this MedicalCareCategory cat, ThingDef meds)
 		{
-			switch (cat)
+			return cat switch
 			{
-			case MedicalCareCategory.NoCare:
-				return false;
-			case MedicalCareCategory.NoMeds:
-				return false;
-			case MedicalCareCategory.HerbalOrWorse:
-				return meds.GetStatValueAbstract(StatDefOf.MedicalPotency) <= ThingDefOf.MedicineHerbal.GetStatValueAbstract(StatDefOf.MedicalPotency);
-			case MedicalCareCategory.NormalOrWorse:
-				return meds.GetStatValueAbstract(StatDefOf.MedicalPotency) <= ThingDefOf.MedicineIndustrial.GetStatValueAbstract(StatDefOf.MedicalPotency);
-			case MedicalCareCategory.Best:
-				return true;
-			default:
-				throw new InvalidOperationException();
-			}
+				MedicalCareCategory.NoCare => false, 
+				MedicalCareCategory.NoMeds => false, 
+				MedicalCareCategory.HerbalOrWorse => meds.GetStatValueAbstract(StatDefOf.MedicalPotency) <= ThingDefOf.MedicineHerbal.GetStatValueAbstract(StatDefOf.MedicalPotency), 
+				MedicalCareCategory.NormalOrWorse => meds.GetStatValueAbstract(StatDefOf.MedicalPotency) <= ThingDefOf.MedicineIndustrial.GetStatValueAbstract(StatDefOf.MedicalPotency), 
+				MedicalCareCategory.Best => true, 
+				_ => throw new InvalidOperationException(), 
+			};
 		}
 
 		public static void MedicalCareSelectButton(Rect rect, Pawn pawn)
@@ -101,17 +95,14 @@ namespace RimWorld
 
 		private static IEnumerable<Widgets.DropdownMenuElement<MedicalCareCategory>> MedicalCareSelectButton_GenerateMenu(Pawn p)
 		{
-			_003C_003Ec__DisplayClass10_0 _003C_003Ec__DisplayClass10_ = new _003C_003Ec__DisplayClass10_0();
-			_003C_003Ec__DisplayClass10_.p = p;
 			for (int i = 0; i < 5; i++)
 			{
-				_003C_003Ec__DisplayClass10_0 _003C_003Ec__DisplayClass10_2 = _003C_003Ec__DisplayClass10_;
 				MedicalCareCategory mc = (MedicalCareCategory)i;
 				yield return new Widgets.DropdownMenuElement<MedicalCareCategory>
 				{
 					option = new FloatMenuOption(mc.GetLabel(), delegate
 					{
-						_003C_003Ec__DisplayClass10_2.p.playerSettings.medCare = mc;
+						p.playerSettings.medCare = mc;
 					}),
 					payload = mc
 				};

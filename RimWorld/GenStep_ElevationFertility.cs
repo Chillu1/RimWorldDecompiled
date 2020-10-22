@@ -69,13 +69,13 @@ namespace RimWorld
 				}
 				else
 				{
-					_ = (random == Rot4.West);
+					_ = random == Rot4.West;
 				}
 				NoiseDebugUI.StoreNoiseRender(input2, "mountain");
 				input = new Add(input, input2);
 				NoiseDebugUI.StoreNoiseRender(input, "elev + mountain");
 			}
-			float b = map.TileInfo.WaterCovered ? 0f : float.MaxValue;
+			float b = (map.TileInfo.WaterCovered ? 0f : float.MaxValue);
 			MapGenFloatGrid elevation = MapGenerator.Elevation;
 			foreach (IntVec3 allCell in map.AllCells)
 			{

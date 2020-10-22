@@ -10,7 +10,7 @@ namespace Verse.AI.Group
 			if (!lordToil_Travel.HasDestination())
 			{
 				Pawn pawn = lordToil_Travel.lord.ownedPawns.RandomElement();
-				if (!CellFinder.TryFindRandomPawnExitCell(pawn, out IntVec3 result))
+				if (!CellFinder.TryFindRandomPawnExitCell(pawn, out var result))
 				{
 					RCellFinder.TryFindRandomPawnEntryCell(out result, pawn.Map, 0f);
 				}

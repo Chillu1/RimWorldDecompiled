@@ -7,6 +7,8 @@ namespace RimWorld
 {
 	public class Trait : IExposable
 	{
+		public Pawn pawn;
+
 		public TraitDef def;
 
 		private int degree;
@@ -17,9 +19,9 @@ namespace RimWorld
 
 		public TraitDegreeData CurrentData => def.DataAtDegree(degree);
 
-		public string Label => CurrentData.label;
+		public string Label => CurrentData.GetLabelFor(pawn);
 
-		public string LabelCap => CurrentData.LabelCap;
+		public string LabelCap => CurrentData.GetLabelCapFor(pawn);
 
 		public bool ScenForced => scenForced;
 

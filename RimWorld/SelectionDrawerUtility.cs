@@ -16,7 +16,7 @@ namespace RimWorld
 		public static void CalculateSelectionBracketPositionsUI<T>(Vector2[] bracketLocs, T obj, Rect rect, Dictionary<T, float> selectTimes, Vector2 textureSize, float jumpDistanceFactor = 1f)
 		{
 			float value;
-			float num = selectTimes.TryGetValue(obj, out value) ? Mathf.Max(0f, 1f - (Time.realtimeSinceStartup - value) / 0.07f) : 1f;
+			float num = (selectTimes.TryGetValue(obj, out value) ? Mathf.Max(0f, 1f - (Time.realtimeSinceStartup - value) / 0.07f) : 1f);
 			float num2 = num * 0.2f * jumpDistanceFactor;
 			float num3 = 0.5f * (rect.width - textureSize.x) + num2;
 			float num4 = 0.5f * (rect.height - textureSize.y) + num2;
@@ -29,7 +29,7 @@ namespace RimWorld
 		public static void CalculateSelectionBracketPositionsWorld<T>(Vector3[] bracketLocs, T obj, Vector3 worldPos, Vector2 worldSize, Dictionary<T, float> selectTimes, Vector2 textureSize, float jumpDistanceFactor = 1f)
 		{
 			float value;
-			float num = selectTimes.TryGetValue(obj, out value) ? Mathf.Max(0f, 1f - (Time.realtimeSinceStartup - value) / 0.07f) : 1f;
+			float num = (selectTimes.TryGetValue(obj, out value) ? Mathf.Max(0f, 1f - (Time.realtimeSinceStartup - value) / 0.07f) : 1f);
 			float num2 = num * 0.2f * jumpDistanceFactor;
 			float num3 = 0.5f * (worldSize.x - textureSize.x) + num2;
 			float num4 = 0.5f * (worldSize.y - textureSize.y) + num2;

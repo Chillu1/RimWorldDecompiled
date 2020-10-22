@@ -7,35 +7,22 @@ namespace RimWorld
 	{
 		public static Quadrum GetQuadrum(this Twelfth twelfth)
 		{
-			switch (twelfth)
+			return twelfth switch
 			{
-			case Twelfth.First:
-				return Quadrum.Aprimay;
-			case Twelfth.Second:
-				return Quadrum.Aprimay;
-			case Twelfth.Third:
-				return Quadrum.Aprimay;
-			case Twelfth.Fourth:
-				return Quadrum.Jugust;
-			case Twelfth.Fifth:
-				return Quadrum.Jugust;
-			case Twelfth.Sixth:
-				return Quadrum.Jugust;
-			case Twelfth.Seventh:
-				return Quadrum.Septober;
-			case Twelfth.Eighth:
-				return Quadrum.Septober;
-			case Twelfth.Ninth:
-				return Quadrum.Septober;
-			case Twelfth.Tenth:
-				return Quadrum.Decembary;
-			case Twelfth.Eleventh:
-				return Quadrum.Decembary;
-			case Twelfth.Twelfth:
-				return Quadrum.Decembary;
-			default:
-				return Quadrum.Undefined;
-			}
+				Twelfth.First => Quadrum.Aprimay, 
+				Twelfth.Second => Quadrum.Aprimay, 
+				Twelfth.Third => Quadrum.Aprimay, 
+				Twelfth.Fourth => Quadrum.Jugust, 
+				Twelfth.Fifth => Quadrum.Jugust, 
+				Twelfth.Sixth => Quadrum.Jugust, 
+				Twelfth.Seventh => Quadrum.Septober, 
+				Twelfth.Eighth => Quadrum.Septober, 
+				Twelfth.Ninth => Quadrum.Septober, 
+				Twelfth.Tenth => Quadrum.Decembary, 
+				Twelfth.Eleventh => Quadrum.Decembary, 
+				Twelfth.Twelfth => Quadrum.Decembary, 
+				_ => Quadrum.Undefined, 
+			};
 		}
 
 		public static Twelfth PreviousTwelfth(this Twelfth twelfth)

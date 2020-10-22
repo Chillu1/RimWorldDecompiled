@@ -237,7 +237,7 @@ namespace RimWorld.Planet
 
 		private bool TryRecoverFromUnwalkablePosition()
 		{
-			if (GenWorldClosest.TryFindClosestTile(caravan.Tile, (int t) => IsPassable(t), out int foundTile))
+			if (GenWorldClosest.TryFindClosestTile(caravan.Tile, (int t) => IsPassable(t), out var foundTile))
 			{
 				Log.Warning(string.Concat(caravan, " on unwalkable tile ", caravan.Tile, ". Teleporting to ", foundTile));
 				caravan.Tile = foundTile;
@@ -334,8 +334,8 @@ namespace RimWorld.Planet
 				explanation.Append(caravanTicksPerMoveExplanation);
 				explanation.AppendLine();
 			}
-			StringBuilder stringBuilder = (explanation != null) ? new StringBuilder() : null;
-			float num = (!perceivedStatic || explanation != null) ? WorldPathGrid.CalculatedMovementDifficultyAt(end, perceivedStatic, ticksAbs, stringBuilder) : Find.WorldPathGrid.PerceivedMovementDifficultyAt(end);
+			StringBuilder stringBuilder = ((explanation != null) ? new StringBuilder() : null);
+			float num = ((!perceivedStatic || explanation != null) ? WorldPathGrid.CalculatedMovementDifficultyAt(end, perceivedStatic, ticksAbs, stringBuilder) : Find.WorldPathGrid.PerceivedMovementDifficultyAt(end));
 			float roadMovementDifficultyMultiplier = Find.WorldGrid.GetRoadMovementDifficultyMultiplier(start, end, stringBuilder);
 			if (explanation != null)
 			{
@@ -405,7 +405,7 @@ namespace RimWorld.Planet
 
 		private WorldPath GenerateNewPath()
 		{
-			int num = (moving && nextTile >= 0 && IsNextTilePassable()) ? nextTile : caravan.Tile;
+			int num = ((moving && nextTile >= 0 && IsNextTilePassable()) ? nextTile : caravan.Tile);
 			lastPathedTargetTile = destTile;
 			WorldPath worldPath = Find.WorldPathFinder.FindPath(num, destTile, caravan);
 			if (worldPath.Found && num != caravan.Tile)

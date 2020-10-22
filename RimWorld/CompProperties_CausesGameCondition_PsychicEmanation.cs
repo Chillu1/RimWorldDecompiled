@@ -2,7 +2,7 @@ namespace RimWorld
 {
 	public class CompProperties_CausesGameCondition_PsychicEmanation : CompProperties_CausesGameCondition
 	{
-		public PsychicDroneLevel droneLevel = PsychicDroneLevel.BadHigh;
+		public PsychicDroneLevel droneLevel = PsychicDroneLevel.BadMedium;
 
 		public int droneLevelIncreaseInterval = int.MinValue;
 

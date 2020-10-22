@@ -22,7 +22,7 @@ namespace RimWorld.QuestGen
 		{
 			Slate slate = QuestGen.slate;
 			QuestPart_ChangeNeed questPart_ChangeNeed = new QuestPart_ChangeNeed();
-			questPart_ChangeNeed.inSignal = (QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal"));
+			questPart_ChangeNeed.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			questPart_ChangeNeed.pawn = pawn.GetValue(slate);
 			questPart_ChangeNeed.need = need.GetValue(slate);
 			questPart_ChangeNeed.offset = offset.GetValue(slate);

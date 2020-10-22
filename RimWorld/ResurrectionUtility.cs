@@ -1,6 +1,6 @@
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 using Verse.AI.Group;
 
@@ -95,7 +95,7 @@ namespace RimWorld
 		public static void ResurrectWithSideEffects(Pawn pawn)
 		{
 			Corpse corpse = pawn.Corpse;
-			float x2 = (corpse == null) ? 0f : (corpse.GetComp<CompRottable>().RotProgress / 60000f);
+			float x2 = ((corpse == null) ? 0f : (corpse.GetComp<CompRottable>().RotProgress / 60000f));
 			Resurrect(pawn);
 			BodyPartRecord brain = pawn.health.hediffSet.GetBrain();
 			Hediff hediff = HediffMaker.MakeHediff(HediffDefOf.ResurrectionSickness, pawn);

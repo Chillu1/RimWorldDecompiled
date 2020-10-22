@@ -1,6 +1,6 @@
-using RimWorld;
 using System;
 using System.Collections.Generic;
+using RimWorld;
 
 namespace Verse
 {
@@ -37,6 +37,12 @@ namespace Verse
 		}
 
 		public bool Newborn
+		{
+			get;
+			set;
+		}
+
+		public BodyTypeDef ForceBodyType
 		{
 			get;
 			set;
@@ -217,6 +223,12 @@ namespace Verse
 		}
 
 		public RoyalTitleDef FixedTitle
+		{
+			get;
+			set;
+		}
+
+		public bool ForbidAnyTitle
 		{
 			get;
 			set;

@@ -4,6 +4,8 @@ namespace Verse
 	{
 		private int ticksUntilMote;
 
+		private int moteCount;
+
 		public SubEffecter_SprayerContinuous(SubEffecterDef def, Effecter parent)
 			: base(def, parent)
 		{
@@ -11,11 +13,15 @@ namespace Verse
 
 		public override void SubEffectTick(TargetInfo A, TargetInfo B)
 		{
-			ticksUntilMote--;
-			if (ticksUntilMote <= 0)
+			if (moteCount < def.maxMoteCount)
 			{
-				MakeMote(A, B);
-				ticksUntilMote = def.ticksBetweenMotes;
+				ticksUntilMote--;
+				if (ticksUntilMote <= 0)
+				{
+					MakeMote(A, B);
+					ticksUntilMote = def.ticksBetweenMotes;
+					moteCount++;
+				}
 			}
 		}
 	}
