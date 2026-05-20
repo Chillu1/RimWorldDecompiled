@@ -1,34 +1,33 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class SubEffecter_Random : SubEffecter
 {
-	public class SubEffecter_Random : SubEffecter
+	public SubEffecter child;
+
+	public SubEffecter_Random(SubEffecterDef subDef, Effecter parent)
+		: base(subDef, parent)
 	{
-		public SubEffecter child;
-
-		public SubEffecter_Random(SubEffecterDef subDef, Effecter parent)
-			: base(subDef, parent)
+		if (def.children == null)
 		{
-			if (def.children == null)
-			{
-				return;
-			}
-			List<float> list = new List<float>();
-			foreach (SubEffecterDef child in subDef.children)
-			{
-				list.Add(child.randomWeight);
-			}
-			this.child = subDef.children.RandomElementByWeight((SubEffecterDef p) => p.randomWeight).Spawn(parent);
+			return;
 		}
-
-		public override void SubEffectTick(TargetInfo A, TargetInfo B)
+		List<float> list = new List<float>();
+		foreach (SubEffecterDef child in subDef.children)
 		{
-			child?.SubEffectTick(A, B);
+			list.Add(child.randomWeight);
 		}
+		this.child = subDef.children.RandomElementByWeight((SubEffecterDef p) => p.randomWeight).Spawn(parent);
+	}
 
-		public override void SubTrigger(TargetInfo A, TargetInfo B, int overrideSpawnTick = -1, bool force = false)
-		{
-			child?.SubTrigger(A, B, overrideSpawnTick, force);
-		}
+	public override void SubEffectTick(TargetInfo A, TargetInfo B)
+	{
+		child?.SubEffectTick(A, B);
+	}
+
+	public override void SubTrigger(TargetInfo A, TargetInfo B, int overrideSpawnTick = -1, bool force = false)
+	{
+		child?.SubTrigger(A, B, overrideSpawnTick, force);
 	}
 }

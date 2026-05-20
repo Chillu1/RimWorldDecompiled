@@ -1,36 +1,35 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompTargetable_SingleCorpse : CompTargetable
 {
-	public class CompTargetable_SingleCorpse : CompTargetable
+	protected override bool PlayerChoosesTarget => true;
+
+	protected override TargetingParameters GetTargetingParameters()
 	{
-		protected override bool PlayerChoosesTarget => true;
-
-		protected override TargetingParameters GetTargetingParameters()
+		return new TargetingParameters
 		{
-			return new TargetingParameters
-			{
-				canTargetPawns = false,
-				canTargetBuildings = false,
-				canTargetItems = false,
-				canTargetCorpses = true,
-				mapObjectTargetsMustBeAutoAttackable = false
-			};
-		}
+			canTargetPawns = false,
+			canTargetBuildings = false,
+			canTargetItems = false,
+			canTargetCorpses = true,
+			mapObjectTargetsMustBeAutoAttackable = false
+		};
+	}
 
-		public override IEnumerable<Thing> GetTargets(Thing targetChosenByPlayer = null)
-		{
-			yield return targetChosenByPlayer;
-		}
+	public override IEnumerable<Thing> GetTargets(Thing targetChosenByPlayer = null)
+	{
+		yield return targetChosenByPlayer;
+	}
 
-		public override bool ValidateTarget(LocalTargetInfo target, bool showMessages = true)
+	public override bool ValidateTarget(LocalTargetInfo target, bool showMessages = true)
+	{
+		if (target.Thing is Corpse)
 		{
-			if (target.Thing is Corpse)
-			{
-				return base.ValidateTarget(target.Thing, showMessages);
-			}
-			return false;
+			return base.ValidateTarget(target.Thing, showMessages);
 		}
+		return false;
 	}
 }

@@ -1,9 +1,8 @@
 using System;
 
-namespace Verse
+namespace Verse;
+
+[AttributeUsage(AttributeTargets.Field)]
+public class MayTranslateAttribute : Attribute
 {
-	[AttributeUsage(AttributeTargets.Field)]
-	public class MayTranslateAttribute : Attribute
-	{
-	}
 }

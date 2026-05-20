@@ -2,123 +2,122 @@ using System;
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
-{
-	public class Recipe_RemoveBodyPart : Recipe_Surgery
-	{
-		protected virtual bool SpawnPartsWhenRemoved => true;
+namespace RimWorld;
 
-		public override IEnumerable<BodyPartRecord> GetPartsToApplyOn(Pawn pawn, RecipeDef recipe)
+public class Recipe_RemoveBodyPart : Recipe_Surgery
+{
+	protected virtual bool SpawnPartsWhenRemoved => true;
+
+	public override IEnumerable<BodyPartRecord> GetPartsToApplyOn(Pawn pawn, RecipeDef recipe)
+	{
+		IEnumerable<BodyPartRecord> notMissingParts = pawn.health.hediffSet.GetNotMissingParts();
+		foreach (BodyPartRecord part in notMissingParts)
 		{
-			IEnumerable<BodyPartRecord> notMissingParts = pawn.health.hediffSet.GetNotMissingParts();
-			foreach (BodyPartRecord part in notMissingParts)
+			if (pawn.health.hediffSet.HasDirectlyAddedPartFor(part))
 			{
-				if (pawn.health.hediffSet.HasDirectlyAddedPartFor(part))
-				{
-					yield return part;
-				}
-				else if (MedicalRecipesUtility.IsCleanAndDroppable(pawn, part))
-				{
-					yield return part;
-				}
-				else if (part != pawn.RaceProps.body.corePart && part.def.canSuggestAmputation && pawn.health.hediffSet.hediffs.Any((Hediff d) => (!(d is Hediff_Injury) || d.IsPermanent()) && d.def.isBad && d.Visible && d.Part == part))
-				{
-					yield return part;
-				}
-				else if (part.def.forceAlwaysRemovable)
-				{
-					yield return part;
-				}
+				yield return part;
+			}
+			else if (MedicalRecipesUtility.IsCleanAndDroppable(pawn, part))
+			{
+				yield return part;
+			}
+			else if (part != pawn.RaceProps.body.corePart && part.def.canSuggestAmputation && pawn.health.hediffSet.hediffs.Any((Hediff d) => (!(d is Hediff_Injury) || d.IsPermanent()) && d.def.isBad && d.Visible && d.Part == part))
+			{
+				yield return part;
+			}
+			else if (part.def.forceAlwaysRemovable)
+			{
+				yield return part;
 			}
 		}
+	}
 
-		public override bool IsViolationOnPawn(Pawn pawn, BodyPartRecord part, Faction billDoerFaction)
+	public override bool IsViolationOnPawn(Pawn pawn, BodyPartRecord part, Faction billDoerFaction)
+	{
+		if ((pawn.Faction == billDoerFaction || pawn.Faction == null) && !pawn.IsQuestLodger())
 		{
-			if ((pawn.Faction == billDoerFaction || pawn.Faction == null) && !pawn.IsQuestLodger())
-			{
-				return false;
-			}
-			if (HealthUtility.PartRemovalIntent(pawn, part) == BodyPartRemovalIntent.Harvest)
-			{
-				return true;
-			}
 			return false;
 		}
-
-		public override void ApplyOnPawn(Pawn pawn, BodyPartRecord part, Pawn billDoer, List<Thing> ingredients, Bill bill)
+		if (HealthUtility.PartRemovalIntent(pawn, part) == BodyPartRemovalIntent.Harvest)
 		{
-			bool flag = MedicalRecipesUtility.IsClean(pawn, part);
-			bool flag2 = IsViolationOnPawn(pawn, part, Faction.OfPlayer);
-			if (billDoer != null)
+			return true;
+		}
+		return false;
+	}
+
+	public override void ApplyOnPawn(Pawn pawn, BodyPartRecord part, Pawn billDoer, List<Thing> ingredients, Bill bill)
+	{
+		bool flag = MedicalRecipesUtility.IsClean(pawn, part);
+		bool flag2 = IsViolationOnPawn(pawn, part, Faction.OfPlayer);
+		if (billDoer != null)
+		{
+			if (CheckSurgeryFail(billDoer, pawn, ingredients, part, bill))
 			{
-				if (CheckSurgeryFail(billDoer, pawn, ingredients, part, bill))
-				{
-					return;
-				}
-				TaleRecorder.RecordTale(TaleDefOf.DidSurgery, billDoer, pawn);
-				pawn.health.hediffSet.GetDirectlyAddedPartFor(part)?.Notify_SurgicallyRemoved(billDoer);
-				if (SpawnPartsWhenRemoved)
-				{
-					MedicalRecipesUtility.SpawnNaturalPartIfClean(pawn, part, billDoer.Position, billDoer.Map);
-					MedicalRecipesUtility.SpawnThingsFromHediffs(pawn, part, billDoer.Position, billDoer.Map);
-				}
+				return;
 			}
-			DamagePart(pawn, part);
-			pawn.Drawer.renderer.SetAllGraphicsDirty();
-			if (flag)
+			TaleRecorder.RecordTale(TaleDefOf.DidSurgery, billDoer, pawn);
+			pawn.health.hediffSet.GetDirectlyAddedPartFor(part)?.Notify_SurgicallyRemoved(billDoer);
+			if (SpawnPartsWhenRemoved)
 			{
-				ApplyThoughts(pawn, billDoer);
-			}
-			if (flag2)
-			{
-				ReportViolation(pawn, billDoer, pawn.HomeFaction, -70);
+				MedicalRecipesUtility.SpawnNaturalPartIfClean(pawn, part, billDoer.Position, billDoer.Map);
+				MedicalRecipesUtility.SpawnThingsFromHediffs(pawn, part, billDoer.Position, billDoer.Map);
 			}
 		}
-
-		public virtual void DamagePart(Pawn pawn, BodyPartRecord part)
+		DamagePart(pawn, part);
+		pawn.Drawer.renderer.SetAllGraphicsDirty();
+		if (flag)
 		{
-			pawn.TakeDamage(new DamageInfo(DamageDefOf.SurgicalCut, 99999f, 999f, -1f, null, part));
+			ApplyThoughts(pawn, billDoer);
 		}
-
-		public virtual void ApplyThoughts(Pawn pawn, Pawn billDoer)
+		if (flag2)
 		{
-			if (pawn.Dead)
-			{
-				ThoughtUtility.GiveThoughtsForPawnExecuted(pawn, billDoer, PawnExecutionKind.OrganHarvesting);
-			}
-			else
-			{
-				ThoughtUtility.GiveThoughtsForPawnOrganHarvested(pawn, billDoer);
-			}
+			ReportViolation(pawn, billDoer, pawn.HomeFaction, -70);
 		}
+	}
 
-		public override string GetLabelWhenUsedOn(Pawn pawn, BodyPartRecord part)
+	public virtual void DamagePart(Pawn pawn, BodyPartRecord part)
+	{
+		pawn.TakeDamage(new DamageInfo(DamageDefOf.SurgicalCut, 99999f, 999f, -1f, null, part));
+	}
+
+	public virtual void ApplyThoughts(Pawn pawn, Pawn billDoer)
+	{
+		if (pawn.Dead)
 		{
-			if (!part.def.removeRecipeLabelOverride.NullOrEmpty())
+			ThoughtUtility.GiveThoughtsForPawnExecuted(pawn, billDoer, PawnExecutionKind.OrganHarvesting);
+		}
+		else
+		{
+			ThoughtUtility.GiveThoughtsForPawnOrganHarvested(pawn, billDoer);
+		}
+	}
+
+	public override string GetLabelWhenUsedOn(Pawn pawn, BodyPartRecord part)
+	{
+		if (!part.def.removeRecipeLabelOverride.NullOrEmpty())
+		{
+			return part.def.removeRecipeLabelOverride;
+		}
+		if (pawn.RaceProps.IsMechanoid || pawn.health.hediffSet.PartOrAnyAncestorHasDirectlyAddedParts(part))
+		{
+			if (pawn.health.hediffSet.TryGetDirectlyAddedPartFor(part, out var hediff))
 			{
-				return part.def.removeRecipeLabelOverride;
+				return "RemovePart".Translate(hediff.Label);
 			}
-			if (pawn.RaceProps.IsMechanoid || pawn.health.hediffSet.PartOrAnyAncestorHasDirectlyAddedParts(part))
+			return RecipeDefOf.RemoveBodyPart.label;
+		}
+		switch (HealthUtility.PartRemovalIntent(pawn, part))
+		{
+		case BodyPartRemovalIntent.Amputate:
+			if (part.depth == BodyPartDepth.Inside || part.def.socketed)
 			{
-				if (pawn.health.hediffSet.TryGetDirectlyAddedPartFor(part, out var hediff))
-				{
-					return "RemovePart".Translate(hediff.Label);
-				}
-				return RecipeDefOf.RemoveBodyPart.label;
+				return "RemoveOrgan".Translate();
 			}
-			switch (HealthUtility.PartRemovalIntent(pawn, part))
-			{
-			case BodyPartRemovalIntent.Amputate:
-				if (part.depth == BodyPartDepth.Inside || part.def.socketed)
-				{
-					return "RemoveOrgan".Translate();
-				}
-				return "Amputate".Translate();
-			case BodyPartRemovalIntent.Harvest:
-				return "HarvestOrgan".Translate();
-			default:
-				throw new InvalidOperationException();
-			}
+			return "Amputate".Translate();
+		case BodyPartRemovalIntent.Harvest:
+			return "HarvestOrgan".Translate();
+		default:
+			throw new InvalidOperationException();
 		}
 	}
 }

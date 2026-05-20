@@ -3,133 +3,132 @@ using System.Text;
 using Verse;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompPsychicRitualSpot : ThingComp
 {
-	public class CompPsychicRitualSpot : ThingComp
+	private List<Thing> obstructingThings = new List<Thing>();
+
+	private HashSet<IntVec3> occupiedCells;
+
+	private bool Obstructed => obstructingThings.Count > 0;
+
+	public HashSet<IntVec3> OccupiedCells => occupiedCells;
+
+	public Lord GetLord()
 	{
-		private List<Thing> obstructingThings = new List<Thing>();
-
-		private HashSet<IntVec3> occupiedCells;
-
-		private bool Obstructed => obstructingThings.Count > 0;
-
-		public HashSet<IntVec3> OccupiedCells => occupiedCells;
-
-		public Lord GetLord()
+		if (parent is Building b)
 		{
-			if (parent is Building b)
-			{
-				return b.GetLord();
-			}
-			if (parent is Pawn p)
-			{
-				return p.GetLord();
-			}
-			if (parent is Corpse c)
-			{
-				return c.GetLord();
-			}
-			return null;
+			return b.GetLord();
 		}
-
-		public PsychicRitual GetPsychicRitual()
+		if (parent is Pawn p)
 		{
-			return (GetLord()?.CurLordToil as LordToil_PsychicRitual)?.RitualData.psychicRitual;
+			return p.GetLord();
 		}
-
-		public override void PostSpawnSetup(bool respawningAfterLoad)
+		if (parent is Corpse c)
 		{
-			base.PostSpawnSetup(respawningAfterLoad);
-			occupiedCells = new HashSet<IntVec3>(GenRadial.RadialCellsAround(parent.Position, (float)parent.def.Size.x + 0.9f, useCenter: true));
+			return c.GetLord();
 		}
+		return null;
+	}
 
-		public override string CompInspectStringExtra()
+	public PsychicRitual GetPsychicRitual()
+	{
+		return (GetLord()?.CurLordToil as LordToil_PsychicRitual)?.RitualData.psychicRitual;
+	}
+
+	public override void PostSpawnSetup(bool respawningAfterLoad)
+	{
+		base.PostSpawnSetup(respawningAfterLoad);
+		occupiedCells = new HashSet<IntVec3>(GenRadial.RadialCellsAround(parent.Position, (float)parent.def.Size.x + 0.9f, useCenter: true));
+	}
+
+	public override string CompInspectStringExtra()
+	{
+		StringBuilder stringBuilder = new StringBuilder(base.CompInspectStringExtra());
+		if (Obstructed)
 		{
-			StringBuilder stringBuilder = new StringBuilder(base.CompInspectStringExtra());
-			if (Obstructed)
-			{
-				stringBuilder.AppendInNewLine("PsychicRitualSpotObstructed".Translate());
-			}
-			Lord lord = GetLord();
-			if (lord != null && lord.CurLordToil is LordToil_PsychicRitual lordToil_PsychicRitual)
-			{
-				PsychicRitual psychicRitual = lordToil_PsychicRitual.RitualData.psychicRitual;
-				PsychicRitualToil psychicRitualToil = lordToil_PsychicRitual.RitualData.psychicRitualToil;
-				stringBuilder.AppendInNewLine(string.Format("{0}: {1}", "PsychicRitual".Translate().CapitalizeFirst(), psychicRitual.def.LabelCap));
-				stringBuilder.AppendInNewLine(psychicRitualToil.GetReport(psychicRitual, null).CapitalizeFirst().EndWithPeriod());
-			}
-			return stringBuilder.ToString();
+			stringBuilder.AppendInNewLine("PsychicRitualSpotObstructed".Translate());
 		}
-
-		public override void PostDrawExtraSelectionOverlays()
+		Lord lord = GetLord();
+		if (lord != null && lord.CurLordToil is LordToil_PsychicRitual lordToil_PsychicRitual)
 		{
-			base.PostDrawExtraSelectionOverlays();
-			if (parent.Faction != Faction.OfPlayer)
-			{
-				return;
-			}
-			foreach (Thing obstructingThing in obstructingThings)
-			{
-				GenDraw.DrawLineBetween(parent.TrueCenter(), obstructingThing.TrueCenter(), SimpleColor.Red);
-			}
+			PsychicRitual psychicRitual = lordToil_PsychicRitual.RitualData.psychicRitual;
+			PsychicRitualToil psychicRitualToil = lordToil_PsychicRitual.RitualData.psychicRitualToil;
+			stringBuilder.AppendInNewLine(string.Format("{0}: {1}", "PsychicRitual".Translate().CapitalizeFirst(), psychicRitual.def.LabelCap));
+			stringBuilder.AppendInNewLine(psychicRitualToil.GetReport(psychicRitual, null).CapitalizeFirst().EndWithPeriod());
 		}
+		return stringBuilder.ToString();
+	}
 
-		public override void CompTick()
+	public override void PostDrawExtraSelectionOverlays()
+	{
+		base.PostDrawExtraSelectionOverlays();
+		if (parent.Faction != Faction.OfPlayer)
 		{
-			base.CompTick();
-			obstructingThings.Clear();
-			foreach (IntVec3 occupiedCell in occupiedCells)
+			return;
+		}
+		foreach (Thing obstructingThing in obstructingThings)
+		{
+			GenDraw.DrawLineBetween(parent.TrueCenter(), obstructingThing.TrueCenter(), SimpleColor.Red);
+		}
+	}
+
+	public override void CompTick()
+	{
+		base.CompTick();
+		obstructingThings.Clear();
+		foreach (IntVec3 occupiedCell in occupiedCells)
+		{
+			List<Thing> list = parent.Map.thingGrid.ThingsListAt(occupiedCell);
+			for (int i = 0; i < list.Count; i++)
 			{
-				List<Thing> list = parent.Map.thingGrid.ThingsListAt(occupiedCell);
-				for (int i = 0; i < list.Count; i++)
+				if (list[i].def.passability != Traversability.Standable)
 				{
-					if (list[i].def.passability != Traversability.Standable)
-					{
-						obstructingThings.Add(list[i]);
-					}
+					obstructingThings.Add(list[i]);
 				}
 			}
-			PsychicRitual psychicRitual = GetPsychicRitual();
-			if (psychicRitual != null && parent.Faction == Faction.OfPlayer && Obstructed)
+		}
+		PsychicRitual psychicRitual = GetPsychicRitual();
+		if (psychicRitual != null && parent.Faction == Faction.OfPlayer && Obstructed)
+		{
+			psychicRitual.CancelPsychicRitual("PsychicRitualAreaObstructed".Translate());
+		}
+	}
+
+	public override IEnumerable<Gizmo> CompGetGizmosExtra()
+	{
+		foreach (Gizmo item in base.CompGetGizmosExtra())
+		{
+			yield return item;
+		}
+		PsychicRitual psychicRitual = GetPsychicRitual();
+		if (psychicRitual != null)
+		{
+			yield return PsychicRitualGizmo.CancelGizmo(psychicRitual);
+		}
+		else
+		{
+			foreach (Gizmo gizmo in PsychicRitualGizmo.GetGizmos(parent))
 			{
-				psychicRitual.CancelPsychicRitual("PsychicRitualAreaObstructed".Translate());
+				if (Obstructed)
+				{
+					gizmo.Disabled = true;
+					gizmo.disabledReason = "PsychicRitualAreaObstructed".Translate().CapitalizeFirst();
+				}
+				yield return gizmo;
 			}
 		}
-
-		public override IEnumerable<Gizmo> CompGetGizmosExtra()
+		if (DebugSettings.ShowDevGizmos)
 		{
-			foreach (Gizmo item in base.CompGetGizmosExtra())
+			yield return new Command_Action
 			{
-				yield return item;
-			}
-			PsychicRitual psychicRitual = GetPsychicRitual();
-			if (psychicRitual != null)
-			{
-				yield return PsychicRitualGizmo.CancelGizmo(psychicRitual);
-			}
-			else
-			{
-				foreach (Gizmo gizmo in PsychicRitualGizmo.GetGizmos(parent))
+				defaultLabel = "DEV: Reset psychic ritual cooldowns",
+				action = delegate
 				{
-					if (Obstructed)
-					{
-						gizmo.Disabled = true;
-						gizmo.disabledReason = "PsychicRitualAreaObstructed".Translate().CapitalizeFirst();
-					}
-					yield return gizmo;
+					Find.PsychicRitualManager.ClearAllCooldowns();
 				}
-			}
-			if (DebugSettings.ShowDevGizmos)
-			{
-				yield return new Command_Action
-				{
-					defaultLabel = "DEV: Reset psychic ritual cooldowns",
-					action = delegate
-					{
-						Find.PsychicRitualManager.ClearAllCooldowns();
-					}
-				};
-			}
+			};
 		}
 	}
 }

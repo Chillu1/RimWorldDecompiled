@@ -1,50 +1,49 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobGiver_GetNeuralSupercharge : ThinkNode_JobGiver
 {
-	public class JobGiver_GetNeuralSupercharge : ThinkNode_JobGiver
+	public override float GetPriority(Pawn pawn)
 	{
-		public override float GetPriority(Pawn pawn)
+		if (!ModsConfig.IdeologyActive)
 		{
-			if (!ModsConfig.IdeologyActive)
-			{
-				return 0f;
-			}
-			int lastReceivedNeuralSuperchargeTick = pawn.health.lastReceivedNeuralSuperchargeTick;
-			if (lastReceivedNeuralSuperchargeTick != -1 && Find.TickManager.TicksGame - lastReceivedNeuralSuperchargeTick < 30000)
-			{
-				return 0f;
-			}
-			if (ClosestSupercharger(pawn) == null)
-			{
-				return 0f;
-			}
-			return 9.25f;
+			return 0f;
 		}
-
-		protected override Job TryGiveJob(Pawn pawn)
+		int lastReceivedNeuralSuperchargeTick = pawn.health.lastReceivedNeuralSuperchargeTick;
+		if (lastReceivedNeuralSuperchargeTick != -1 && Find.TickManager.TicksGame - lastReceivedNeuralSuperchargeTick < 30000)
 		{
-			Thing thing = ClosestSupercharger(pawn);
-			if (thing == null || !pawn.CanReserve(thing))
-			{
-				return null;
-			}
-			return JobMaker.MakeJob(JobDefOf.GetNeuralSupercharge, thing);
+			return 0f;
 		}
-
-		private Thing ClosestSupercharger(Pawn pawn)
+		if (ClosestSupercharger(pawn) == null)
 		{
-			return GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(ThingDefOf.NeuralSupercharger), PathEndMode.InteractionCell, TraverseParms.For(pawn), 9999f, Validator);
-			bool Validator(Thing x)
+			return 0f;
+		}
+		return 9.25f;
+	}
+
+	protected override Job TryGiveJob(Pawn pawn)
+	{
+		Thing thing = ClosestSupercharger(pawn);
+		if (thing == null || !pawn.CanReserve(thing))
+		{
+			return null;
+		}
+		return JobMaker.MakeJob(JobDefOf.GetNeuralSupercharge, thing);
+	}
+
+	private Thing ClosestSupercharger(Pawn pawn)
+	{
+		return GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(ThingDefOf.NeuralSupercharger), PathEndMode.InteractionCell, TraverseParms.For(pawn), 9999f, Validator);
+		bool Validator(Thing x)
+		{
+			CompNeuralSupercharger compNeuralSupercharger = x.TryGetComp<CompNeuralSupercharger>();
+			if (compNeuralSupercharger.Charged && !x.IsForbidden(pawn))
 			{
-				CompNeuralSupercharger compNeuralSupercharger = x.TryGetComp<CompNeuralSupercharger>();
-				if (compNeuralSupercharger.Charged && !x.IsForbidden(pawn))
-				{
-					return compNeuralSupercharger.CanAutoUse(pawn);
-				}
-				return false;
+				return compNeuralSupercharger.CanAutoUse(pawn);
 			}
+			return false;
 		}
 	}
 }

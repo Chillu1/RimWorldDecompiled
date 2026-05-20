@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_DeepDrill : CompProperties
 {
-	public class CompProperties_DeepDrill : CompProperties
+	public CompProperties_DeepDrill()
 	{
-		public CompProperties_DeepDrill()
-		{
-			compClass = typeof(CompDeepDrill);
-		}
+		compClass = typeof(CompDeepDrill);
 	}
 }

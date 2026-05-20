@@ -1,14 +1,13 @@
 using RimWorld;
 
-namespace Verse
-{
-	public class HediffCompProperties_RecoveryThought : HediffCompProperties
-	{
-		public ThoughtDef thought;
+namespace Verse;
 
-		public HediffCompProperties_RecoveryThought()
-		{
-			compClass = typeof(HediffComp_RecoveryThought);
-		}
+public class HediffCompProperties_RecoveryThought : HediffCompProperties
+{
+	public ThoughtDef thought;
+
+	public HediffCompProperties_RecoveryThought()
+	{
+		compClass = typeof(HediffComp_RecoveryThought);
 	}
 }

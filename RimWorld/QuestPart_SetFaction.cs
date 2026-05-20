@@ -1,70 +1,69 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class QuestPart_SetFaction : QuestPart
 {
-	public class QuestPart_SetFaction : QuestPart
+	public string inSignal;
+
+	public Faction faction;
+
+	public List<Thing> things = new List<Thing>();
+
+	public override IEnumerable<Faction> InvolvedFactions
 	{
-		public string inSignal;
-
-		public Faction faction;
-
-		public List<Thing> things = new List<Thing>();
-
-		public override IEnumerable<Faction> InvolvedFactions
+		get
 		{
-			get
+			foreach (Faction involvedFaction in base.InvolvedFactions)
 			{
-				foreach (Faction involvedFaction in base.InvolvedFactions)
-				{
-					yield return involvedFaction;
-				}
-				if (faction != null)
-				{
-					yield return faction;
-				}
+				yield return involvedFaction;
+			}
+			if (faction != null)
+			{
+				yield return faction;
 			}
 		}
+	}
 
-		public override void Notify_QuestSignalReceived(Signal signal)
+	public override void Notify_QuestSignalReceived(Signal signal)
+	{
+		base.Notify_QuestSignalReceived(signal);
+		if (!(signal.tag == inSignal))
 		{
-			base.Notify_QuestSignalReceived(signal);
-			if (!(signal.tag == inSignal))
+			return;
+		}
+		for (int i = 0; i < things.Count; i++)
+		{
+			if (things[i].Faction != faction)
 			{
-				return;
-			}
-			for (int i = 0; i < things.Count; i++)
-			{
-				if (things[i].Faction != faction)
-				{
-					things[i].SetFaction(faction);
-				}
+				things[i].SetFaction(faction);
 			}
 		}
+	}
 
-		public override void Notify_FactionRemoved(Faction f)
+	public override void Notify_FactionRemoved(Faction f)
+	{
+		if (f == faction)
 		{
-			if (f == faction)
-			{
-				faction = null;
-			}
+			faction = null;
 		}
+	}
 
-		public override bool QuestPartReserves(Faction f)
-		{
-			return f == faction;
-		}
+	public override bool QuestPartReserves(Faction f)
+	{
+		return f == faction;
+	}
 
-		public override void ExposeData()
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Values.Look(ref inSignal, "inSignal");
+		Scribe_References.Look(ref faction, "faction");
+		Scribe_Collections.Look(ref things, "things", LookMode.Reference);
+		if (Scribe.mode == LoadSaveMode.PostLoadInit)
 		{
-			base.ExposeData();
-			Scribe_Values.Look(ref inSignal, "inSignal");
-			Scribe_References.Look(ref faction, "faction");
-			Scribe_Collections.Look(ref things, "things", LookMode.Reference);
-			if (Scribe.mode == LoadSaveMode.PostLoadInit)
-			{
-				things.RemoveAll((Thing x) => x == null);
-			}
+			things.RemoveAll((Thing x) => x == null);
 		}
 	}
 }

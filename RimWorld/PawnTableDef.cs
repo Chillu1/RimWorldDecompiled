@@ -2,14 +2,13 @@ using System;
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class PawnTableDef : Def
 {
-	public class PawnTableDef : Def
-	{
-		public List<PawnColumnDef> columns;
+	public List<PawnColumnDef> columns;
 
-		public Type workerClass = typeof(PawnTable);
+	public Type workerClass = typeof(PawnTable);
 
-		public int minWidth = 998;
-	}
+	public int minWidth = 998;
 }

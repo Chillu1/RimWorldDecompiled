@@ -3,78 +3,77 @@ using System.Linq;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class WorkGiver_Scanner : WorkGiver
 {
-	public abstract class WorkGiver_Scanner : WorkGiver
+	public virtual ThingRequest PotentialWorkThingRequest => ThingRequest.ForGroup(ThingRequestGroup.Undefined);
+
+	public virtual int MaxRegionsToScanBeforeGlobalSearch => -1;
+
+	public virtual bool Prioritized => false;
+
+	public virtual bool AllowUnreachable => false;
+
+	public virtual PathEndMode PathEndMode => PathEndMode.Touch;
+
+	public virtual IEnumerable<IntVec3> PotentialWorkCellsGlobal(Pawn pawn)
 	{
-		public virtual ThingRequest PotentialWorkThingRequest => ThingRequest.ForGroup(ThingRequestGroup.Undefined);
+		return Enumerable.Empty<IntVec3>();
+	}
 
-		public virtual int MaxRegionsToScanBeforeGlobalSearch => -1;
+	public virtual IEnumerable<Thing> PotentialWorkThingsGlobal(Pawn pawn)
+	{
+		return null;
+	}
 
-		public virtual bool Prioritized => false;
+	public virtual Danger MaxPathDanger(Pawn pawn)
+	{
+		return pawn.NormalMaxDanger();
+	}
 
-		public virtual bool AllowUnreachable => false;
+	public virtual bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
+	{
+		return JobOnThing(pawn, t, forced) != null;
+	}
 
-		public virtual PathEndMode PathEndMode => PathEndMode.Touch;
+	public virtual string JobInfo(Pawn pawn, Job job)
+	{
+		return string.Empty;
+	}
 
-		public virtual IEnumerable<IntVec3> PotentialWorkCellsGlobal(Pawn pawn)
-		{
-			return Enumerable.Empty<IntVec3>();
-		}
+	public virtual Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
+	{
+		return null;
+	}
 
-		public virtual IEnumerable<Thing> PotentialWorkThingsGlobal(Pawn pawn)
-		{
-			return null;
-		}
+	public virtual bool HasJobOnCell(Pawn pawn, IntVec3 c, bool forced = false)
+	{
+		return JobOnCell(pawn, c, forced) != null;
+	}
 
-		public virtual Danger MaxPathDanger(Pawn pawn)
-		{
-			return pawn.NormalMaxDanger();
-		}
+	public virtual Job JobOnCell(Pawn pawn, IntVec3 cell, bool forced = false)
+	{
+		return null;
+	}
 
-		public virtual bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
-		{
-			return JobOnThing(pawn, t, forced) != null;
-		}
+	public virtual float GetPriority(Pawn pawn, TargetInfo t)
+	{
+		return 0f;
+	}
 
-		public virtual string JobInfo(Pawn pawn, Job job)
-		{
-			return string.Empty;
-		}
+	public virtual string PostProcessedGerund(Job job)
+	{
+		return def.gerund;
+	}
 
-		public virtual Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
-		{
-			return null;
-		}
+	public float GetPriority(Pawn pawn, IntVec3 cell)
+	{
+		return GetPriority(pawn, new TargetInfo(cell, pawn.Map));
+	}
 
-		public virtual bool HasJobOnCell(Pawn pawn, IntVec3 c, bool forced = false)
-		{
-			return JobOnCell(pawn, c, forced) != null;
-		}
-
-		public virtual Job JobOnCell(Pawn pawn, IntVec3 cell, bool forced = false)
-		{
-			return null;
-		}
-
-		public virtual float GetPriority(Pawn pawn, TargetInfo t)
-		{
-			return 0f;
-		}
-
-		public virtual string PostProcessedGerund(Job job)
-		{
-			return def.gerund;
-		}
-
-		public float GetPriority(Pawn pawn, IntVec3 cell)
-		{
-			return GetPriority(pawn, new TargetInfo(cell, pawn.Map));
-		}
-
-		public virtual ReservationLayerDef GetReservationLayer(Pawn pawn, LocalTargetInfo target)
-		{
-			return null;
-		}
+	public virtual ReservationLayerDef GetReservationLayer(Pawn pawn, LocalTargetInfo target)
+	{
+		return null;
 	}
 }

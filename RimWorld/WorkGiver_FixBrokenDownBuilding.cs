@@ -2,93 +2,92 @@ using System.Collections.Generic;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WorkGiver_FixBrokenDownBuilding : WorkGiver_Scanner
 {
-	public class WorkGiver_FixBrokenDownBuilding : WorkGiver_Scanner
+	public static string NotInHomeAreaTrans;
+
+	private static string NoComponentsToRepairTrans;
+
+	public override ThingRequest PotentialWorkThingRequest => ThingRequest.ForGroup(ThingRequestGroup.BuildingArtificial);
+
+	public override PathEndMode PathEndMode => PathEndMode.Touch;
+
+	public static void ResetStaticData()
 	{
-		public static string NotInHomeAreaTrans;
+		NotInHomeAreaTrans = "NotInHomeArea".Translate();
+		NoComponentsToRepairTrans = "NoComponentsToRepair".Translate();
+	}
 
-		private static string NoComponentsToRepairTrans;
+	public override IEnumerable<Thing> PotentialWorkThingsGlobal(Pawn pawn)
+	{
+		return pawn.Map.GetComponent<BreakdownManager>().brokenDownThings;
+	}
 
-		public override ThingRequest PotentialWorkThingRequest => ThingRequest.ForGroup(ThingRequestGroup.BuildingArtificial);
+	public override bool ShouldSkip(Pawn pawn, bool forced = false)
+	{
+		return pawn.Map.GetComponent<BreakdownManager>().brokenDownThings.Count == 0;
+	}
 
-		public override PathEndMode PathEndMode => PathEndMode.Touch;
+	public override Danger MaxPathDanger(Pawn pawn)
+	{
+		return Danger.Deadly;
+	}
 
-		public static void ResetStaticData()
+	public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
+	{
+		if (!(t is Building building))
 		{
-			NotInHomeAreaTrans = "NotInHomeArea".Translate();
-			NoComponentsToRepairTrans = "NoComponentsToRepair".Translate();
+			return false;
 		}
-
-		public override IEnumerable<Thing> PotentialWorkThingsGlobal(Pawn pawn)
+		if (!building.def.building.repairable)
 		{
-			return pawn.Map.GetComponent<BreakdownManager>().brokenDownThings;
+			return false;
 		}
-
-		public override bool ShouldSkip(Pawn pawn, bool forced = false)
+		if (t.Faction != pawn.Faction)
 		{
-			return pawn.Map.GetComponent<BreakdownManager>().brokenDownThings.Count == 0;
+			return false;
 		}
-
-		public override Danger MaxPathDanger(Pawn pawn)
+		if (!t.IsBrokenDown())
 		{
-			return Danger.Deadly;
+			return false;
 		}
-
-		public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
+		if (pawn.Faction == Faction.OfPlayer && !pawn.Map.areaManager.Home[t.Position])
 		{
-			if (!(t is Building building))
-			{
-				return false;
-			}
-			if (!building.def.building.repairable)
-			{
-				return false;
-			}
-			if (t.Faction != pawn.Faction)
-			{
-				return false;
-			}
-			if (!t.IsBrokenDown())
-			{
-				return false;
-			}
-			if (pawn.Faction == Faction.OfPlayer && !pawn.Map.areaManager.Home[t.Position])
-			{
-				JobFailReason.Is(NotInHomeAreaTrans);
-				return false;
-			}
-			if (!pawn.CanReserve(building, 1, -1, null, forced))
-			{
-				return false;
-			}
-			if (pawn.Map.designationManager.DesignationOn(building, DesignationDefOf.Deconstruct) != null)
-			{
-				return false;
-			}
-			if (building.IsBurning())
-			{
-				return false;
-			}
-			if (FindClosestComponent(pawn) == null)
-			{
-				JobFailReason.Is(NoComponentsToRepairTrans);
-				return false;
-			}
-			return true;
+			JobFailReason.Is(NotInHomeAreaTrans);
+			return false;
 		}
-
-		public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
+		if (!pawn.CanReserve(building, 1, -1, null, forced))
 		{
-			Thing thing = FindClosestComponent(pawn);
-			Job job = JobMaker.MakeJob(JobDefOf.FixBrokenDownBuilding, t, thing);
-			job.count = 1;
-			return job;
+			return false;
 		}
-
-		private Thing FindClosestComponent(Pawn pawn)
+		if (pawn.Map.designationManager.DesignationOn(building, DesignationDefOf.Deconstruct) != null)
 		{
-			return GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(ThingDefOf.ComponentIndustrial), PathEndMode.InteractionCell, TraverseParms.For(pawn, pawn.NormalMaxDanger()), 9999f, (Thing x) => !x.IsForbidden(pawn) && pawn.CanReserve(x));
+			return false;
 		}
+		if (building.IsBurning())
+		{
+			return false;
+		}
+		if (FindClosestComponent(pawn) == null)
+		{
+			JobFailReason.Is(NoComponentsToRepairTrans);
+			return false;
+		}
+		return true;
+	}
+
+	public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
+	{
+		Thing thing = FindClosestComponent(pawn);
+		Job job = JobMaker.MakeJob(JobDefOf.FixBrokenDownBuilding, t, thing);
+		job.count = 1;
+		return job;
+	}
+
+	private Thing FindClosestComponent(Pawn pawn)
+	{
+		return GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(ThingDefOf.ComponentIndustrial), PathEndMode.InteractionCell, TraverseParms.For(pawn, pawn.NormalMaxDanger()), 9999f, (Thing x) => !x.IsForbidden(pawn) && pawn.CanReserve(x));
 	}
 }

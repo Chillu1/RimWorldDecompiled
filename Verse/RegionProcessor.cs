@@ -1,4 +1,3 @@
-namespace Verse
-{
-	public delegate bool RegionProcessor(Region reg);
-}
+namespace Verse;
+
+public delegate bool RegionProcessor(Region reg);

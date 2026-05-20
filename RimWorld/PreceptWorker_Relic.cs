@@ -1,31 +1,30 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class PreceptWorker_Relic : PreceptWorker
 {
-	public class PreceptWorker_Relic : PreceptWorker
+	public override IEnumerable<PreceptThingChance> ThingDefs
 	{
-		public override IEnumerable<PreceptThingChance> ThingDefs
+		get
 		{
-			get
+			foreach (ThingDef item in DefDatabase<ThingDef>.AllDefsListForReading)
 			{
-				foreach (ThingDef item in DefDatabase<ThingDef>.AllDefsListForReading)
+				if (item.relicChance != 0f)
 				{
-					if (item.relicChance != 0f)
+					yield return new PreceptThingChance
 					{
-						yield return new PreceptThingChance
-						{
-							chance = item.relicChance,
-							def = item
-						};
-					}
+						chance = item.relicChance,
+						def = item
+					};
 				}
 			}
 		}
+	}
 
-		public override float GetThingOrder(PreceptThingChance thingChance)
-		{
-			return 0f - thingChance.chance;
-		}
+	public override float GetThingOrder(PreceptThingChance thingChance)
+	{
+		return 0f - thingChance.chance;
 	}
 }

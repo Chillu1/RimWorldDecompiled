@@ -1,8 +1,7 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class HibernatableStateDef : Def
 {
-	public class HibernatableStateDef : Def
-	{
-	}
 }

@@ -1,12 +1,11 @@
 using RimWorld;
 
-namespace Verse.AI
+namespace Verse.AI;
+
+public class MentalState_WanderConfused : MentalState
 {
-	public class MentalState_WanderConfused : MentalState
+	public override RandomSocialMode SocialModeMax()
 	{
-		public override RandomSocialMode SocialModeMax()
-		{
-			return RandomSocialMode.Off;
-		}
+		return RandomSocialMode.Off;
 	}
 }

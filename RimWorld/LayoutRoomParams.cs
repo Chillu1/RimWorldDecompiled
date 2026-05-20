@@ -1,9 +1,8 @@
-namespace RimWorld
-{
-	public struct LayoutRoomParams
-	{
-		public Sketch sketch;
+namespace RimWorld;
 
-		public LayoutRoom room;
-	}
+public struct LayoutRoomParams
+{
+	public Sketch sketch;
+
+	public LayoutRoom room;
 }

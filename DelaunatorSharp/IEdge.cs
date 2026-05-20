@@ -1,13 +1,12 @@
 using UnityEngine;
 
-namespace DelaunatorSharp
+namespace DelaunatorSharp;
+
+public interface IEdge
 {
-	public interface IEdge
-	{
-		Vector2 P { get; }
+	Vector2 P { get; }
 
-		Vector2 Q { get; }
+	Vector2 Q { get; }
 
-		int Index { get; }
-	}
+	int Index { get; }
 }

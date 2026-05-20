@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public interface ISearchableContents
 {
-	public interface ISearchableContents
-	{
-		ThingOwner SearchableContents { get; }
-	}
+	ThingOwner SearchableContents { get; }
 }

@@ -1,22 +1,21 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThinkNode_ConditionalBodySize : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalBodySize : ThinkNode_Conditional
+	public float min;
+
+	public float max = 99999f;
+
+	protected override bool Satisfied(Pawn pawn)
 	{
-		public float min;
-
-		public float max = 99999f;
-
-		protected override bool Satisfied(Pawn pawn)
+		float bodySize = pawn.BodySize;
+		if (bodySize >= min)
 		{
-			float bodySize = pawn.BodySize;
-			if (bodySize >= min)
-			{
-				return bodySize <= max;
-			}
-			return false;
+			return bodySize <= max;
 		}
+		return false;
 	}
 }

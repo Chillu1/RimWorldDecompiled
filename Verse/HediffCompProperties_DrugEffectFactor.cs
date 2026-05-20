@@ -1,14 +1,13 @@
 using RimWorld;
 
-namespace Verse
-{
-	public class HediffCompProperties_DrugEffectFactor : HediffCompProperties
-	{
-		public ChemicalDef chemical;
+namespace Verse;
 
-		public HediffCompProperties_DrugEffectFactor()
-		{
-			compClass = typeof(HediffComp_DrugEffectFactor);
-		}
+public class HediffCompProperties_DrugEffectFactor : HediffCompProperties
+{
+	public ChemicalDef chemical;
+
+	public HediffCompProperties_DrugEffectFactor()
+	{
+		compClass = typeof(HediffComp_DrugEffectFactor);
 	}
 }

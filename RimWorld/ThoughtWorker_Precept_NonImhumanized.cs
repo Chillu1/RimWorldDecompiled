@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_Precept_NonImhumanized : ThoughtWorker_Precept
 {
-	public class ThoughtWorker_Precept_NonImhumanized : ThoughtWorker_Precept
+	protected override ThoughtState ShouldHaveThought(Pawn p)
 	{
-		protected override ThoughtState ShouldHaveThought(Pawn p)
+		if (!ModsConfig.AnomalyActive)
 		{
-			if (!ModsConfig.AnomalyActive)
-			{
-				return ThoughtState.Inactive;
-			}
-			return !p.Inhumanized();
+			return ThoughtState.Inactive;
 		}
+		return !p.Inhumanized();
 	}
 }

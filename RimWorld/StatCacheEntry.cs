@@ -1,34 +1,33 @@
-namespace RimWorld
+namespace RimWorld;
+
+public struct StatCacheEntry
 {
-	public struct StatCacheEntry
+	public float statValue;
+
+	public int gameTick;
+
+	public StatCacheEntry(float statValue, int gameTick)
 	{
-		public float statValue;
+		this.statValue = statValue;
+		this.gameTick = gameTick;
+	}
 
-		public int gameTick;
+	public override string ToString()
+	{
+		return $"StatCacheEntry({statValue}, {gameTick})";
+	}
 
-		public StatCacheEntry(float statValue, int gameTick)
+	public override int GetHashCode()
+	{
+		return statValue.GetHashCode() ^ gameTick.GetHashCode();
+	}
+
+	public override bool Equals(object obj)
+	{
+		if (obj is StatCacheEntry statCacheEntry)
 		{
-			this.statValue = statValue;
-			this.gameTick = gameTick;
+			return Equals(statCacheEntry);
 		}
-
-		public override string ToString()
-		{
-			return $"StatCacheEntry({statValue}, {gameTick})";
-		}
-
-		public override int GetHashCode()
-		{
-			return statValue.GetHashCode() ^ gameTick.GetHashCode();
-		}
-
-		public override bool Equals(object obj)
-		{
-			if (obj is StatCacheEntry statCacheEntry)
-			{
-				return Equals(statCacheEntry);
-			}
-			return false;
-		}
+		return false;
 	}
 }

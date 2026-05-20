@@ -1,19 +1,18 @@
 using System;
 
-namespace RimWorld
-{
-	[AttributeUsage(AttributeTargets.Field)]
-	public class MayRequireAnyOfAttribute : Attribute
-	{
-		public string[] modIds;
+namespace RimWorld;
 
-		public MayRequireAnyOfAttribute(string modId)
+[AttributeUsage(AttributeTargets.Field)]
+public class MayRequireAnyOfAttribute : Attribute
+{
+	public string[] modIds;
+
+	public MayRequireAnyOfAttribute(string modId)
+	{
+		modIds = modId.Split(new char[1] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+		for (int i = 0; i < modIds.Length; i++)
 		{
-			modIds = modId.Split(new char[1] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-			for (int i = 0; i < modIds.Length; i++)
-			{
-				modIds[i] = modIds[i].Trim();
-			}
+			modIds[i] = modIds[i].Trim();
 		}
 	}
 }

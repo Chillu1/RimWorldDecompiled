@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class ExtraFactionTypeExt
 {
-	public static class ExtraFactionTypeExt
+	public static string GetLabel(this ExtraFactionType factionType)
 	{
-		public static string GetLabel(this ExtraFactionType factionType)
-		{
-			return ("ExtraFactionType_" + factionType).Translate();
-		}
+		return ("ExtraFactionType_" + factionType).Translate();
 	}
 }

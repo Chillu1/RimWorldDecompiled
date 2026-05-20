@@ -1,7 +1,6 @@
-namespace Unity.Collections
+namespace Unity.Collections;
+
+public struct NativeHeapIndex
 {
-	public struct NativeHeapIndex
-	{
-		internal int TableIndex;
-	}
+	internal int TableIndex;
 }

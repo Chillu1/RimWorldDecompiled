@@ -1,34 +1,33 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class DamageFlasher
 {
-	public class DamageFlasher
+	private int lastDamageTick = -9999;
+
+	private const int DamagedMatTicksTotal = 16;
+
+	private int DamageFlashTicksLeft => lastDamageTick + 16 - Find.TickManager.TicksGame;
+
+	public bool FlashingNowOrRecently => DamageFlashTicksLeft >= -1;
+
+	public Color CurColor => Color.Lerp(Color.white, DamagedMatPool.DamagedMatStartingColor, (float)DamageFlashTicksLeft / 16f);
+
+	public DamageFlasher(Pawn pawn)
 	{
-		private int lastDamageTick = -9999;
+	}
 
-		private const int DamagedMatTicksTotal = 16;
+	public Material GetDamagedMat(Material baseMat)
+	{
+		return DamagedMatPool.GetDamageFlashMat(baseMat, (float)DamageFlashTicksLeft / 16f);
+	}
 
-		private int DamageFlashTicksLeft => lastDamageTick + 16 - Find.TickManager.TicksGame;
-
-		public bool FlashingNowOrRecently => DamageFlashTicksLeft >= -1;
-
-		public Color CurColor => Color.Lerp(Color.white, DamagedMatPool.DamagedMatStartingColor, (float)DamageFlashTicksLeft / 16f);
-
-		public DamageFlasher(Pawn pawn)
+	public void Notify_DamageApplied(DamageInfo dinfo)
+	{
+		if (dinfo.Def.harmsHealth)
 		{
-		}
-
-		public Material GetDamagedMat(Material baseMat)
-		{
-			return DamagedMatPool.GetDamageFlashMat(baseMat, (float)DamageFlashTicksLeft / 16f);
-		}
-
-		public void Notify_DamageApplied(DamageInfo dinfo)
-		{
-			if (dinfo.Def.harmsHealth)
-			{
-				lastDamageTick = Find.TickManager.TicksGame;
-			}
+			lastDamageTick = Find.TickManager.TicksGame;
 		}
 	}
 }

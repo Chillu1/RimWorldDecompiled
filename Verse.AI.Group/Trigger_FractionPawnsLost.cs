@@ -1,21 +1,20 @@
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public class Trigger_FractionPawnsLost : Trigger
 {
-	public class Trigger_FractionPawnsLost : Trigger
+	private float fraction = 0.5f;
+
+	public Trigger_FractionPawnsLost(float fraction)
 	{
-		private float fraction = 0.5f;
+		this.fraction = fraction;
+	}
 
-		public Trigger_FractionPawnsLost(float fraction)
+	public override bool ActivateOn(Lord lord, TriggerSignal signal)
+	{
+		if (signal.type == TriggerSignalType.PawnLost)
 		{
-			this.fraction = fraction;
+			return (float)lord.numPawnsLostViolently >= (float)lord.numPawnsEverGained * fraction;
 		}
-
-		public override bool ActivateOn(Lord lord, TriggerSignal signal)
-		{
-			if (signal.type == TriggerSignalType.PawnLost)
-			{
-				return (float)lord.numPawnsLostViolently >= (float)lord.numPawnsEverGained * fraction;
-			}
-			return false;
-		}
+		return false;
 	}
 }

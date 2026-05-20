@@ -2,56 +2,55 @@ using System.Xml;
 using System.Xml.XPath;
 using System.Xml.Xsl;
 
-namespace Verse
+namespace Verse;
+
+public class MathEvaluatorCustomContext : XsltContext
 {
-	public class MathEvaluatorCustomContext : XsltContext
+	private XsltArgumentList argList;
+
+	public override bool Whitespace => true;
+
+	public XsltArgumentList ArgList => argList;
+
+	public MathEvaluatorCustomContext()
 	{
-		private XsltArgumentList argList;
+	}
 
-		public override bool Whitespace => true;
+	public MathEvaluatorCustomContext(NameTable nt, XsltArgumentList args)
+		: base(nt)
+	{
+		argList = args;
+	}
 
-		public XsltArgumentList ArgList => argList;
-
-		public MathEvaluatorCustomContext()
+	public override IXsltContextFunction ResolveFunction(string prefix, string name, XPathResultType[] argTypes)
+	{
+		MathEvaluatorCustomFunctions.FunctionType[] functionTypes = MathEvaluatorCustomFunctions.FunctionTypes;
+		for (int i = 0; i < functionTypes.Length; i++)
 		{
-		}
-
-		public MathEvaluatorCustomContext(NameTable nt, XsltArgumentList args)
-			: base(nt)
-		{
-			argList = args;
-		}
-
-		public override IXsltContextFunction ResolveFunction(string prefix, string name, XPathResultType[] argTypes)
-		{
-			MathEvaluatorCustomFunctions.FunctionType[] functionTypes = MathEvaluatorCustomFunctions.FunctionTypes;
-			for (int i = 0; i < functionTypes.Length; i++)
+			if (functionTypes[i].name == name)
 			{
-				if (functionTypes[i].name == name)
-				{
-					return new MathEvaluatorCustomFunction(functionTypes[i], argTypes);
-				}
+				return new MathEvaluatorCustomFunction(functionTypes[i], argTypes);
 			}
-			return null;
 		}
+		return null;
+	}
 
-		public override IXsltContextVariable ResolveVariable(string prefix, string name)
+	public override IXsltContextVariable ResolveVariable(string prefix, string name)
+	{
+		if (ArgList.GetParam(name, prefix) != null)
 		{
-			if (ArgList.GetParam(name, prefix) != null)
-			{
-				return new MathEvaluatorCustomVariable(prefix, name);
-			}
-			return null;
+			return new MathEvaluatorCustomVariable(prefix, name);
 		}
+		return null;
+	}
 
-		public override bool PreserveWhitespace(XPathNavigator node)
-		{
-			return false;
-		}
+	public override bool PreserveWhitespace(XPathNavigator node)
+	{
+		return false;
+	}
 
-		public override int CompareDocument(string baseUri, string nextbaseUri)
-		{
-			return 0;
-		}
+	public override int CompareDocument(string baseUri, string nextbaseUri)
+	{
+		return 0;
 	}
 }

@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum IncidentPopulationEffect : byte
 {
-	public enum IncidentPopulationEffect : byte
-	{
-		None,
-		IncreaseHard,
-		IncreaseMedium,
-		IncreaseEasy
-	}
+	None,
+	IncreaseHard,
+	IncreaseMedium,
+	IncreaseEasy
 }

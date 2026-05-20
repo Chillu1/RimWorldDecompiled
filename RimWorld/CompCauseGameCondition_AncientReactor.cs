@@ -1,11 +1,10 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompCauseGameCondition_AncientReactor : CompCauseGameCondition
 {
-	public class CompCauseGameCondition_AncientReactor : CompCauseGameCondition
-	{
-		private CompHackable hackableComp;
+	private CompHackable hackableComp;
 
-		public override bool Active => !HackableComp.IsHacked;
+	public override bool Active => !HackableComp.IsHacked;
 
-		public CompHackable HackableComp => hackableComp ?? (hackableComp = parent.GetComp<CompHackable>());
-	}
+	public CompHackable HackableComp => hackableComp ?? (hackableComp = parent.GetComp<CompHackable>());
 }

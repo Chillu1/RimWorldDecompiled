@@ -2,37 +2,36 @@ using System.Collections.Generic;
 using RimWorld.Planet;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Alert_ImmobileCaravan : Alert_Critical
 {
-	public class Alert_ImmobileCaravan : Alert_Critical
+	private List<Caravan> immobileCaravansResult = new List<Caravan>();
+
+	private List<Caravan> ImmobileCaravans
 	{
-		private List<Caravan> immobileCaravansResult = new List<Caravan>();
-
-		private List<Caravan> ImmobileCaravans
+		get
 		{
-			get
+			immobileCaravansResult.Clear();
+			foreach (Caravan caravan in Find.WorldObjects.Caravans)
 			{
-				immobileCaravansResult.Clear();
-				foreach (Caravan caravan in Find.WorldObjects.Caravans)
+				if (caravan.Shuttle == null && caravan.IsPlayerControlled && caravan.ImmobilizedByMass)
 				{
-					if (caravan.Shuttle == null && caravan.IsPlayerControlled && caravan.ImmobilizedByMass)
-					{
-						immobileCaravansResult.Add(caravan);
-					}
+					immobileCaravansResult.Add(caravan);
 				}
-				return immobileCaravansResult;
 			}
+			return immobileCaravansResult;
 		}
+	}
 
-		public Alert_ImmobileCaravan()
-		{
-			defaultLabel = "ImmobileCaravan".Translate();
-			defaultExplanation = "ImmobileCaravanDesc".Translate();
-		}
+	public Alert_ImmobileCaravan()
+	{
+		defaultLabel = "ImmobileCaravan".Translate();
+		defaultExplanation = "ImmobileCaravanDesc".Translate();
+	}
 
-		public override AlertReport GetReport()
-		{
-			return AlertReport.CulpritsAre(ImmobileCaravans);
-		}
+	public override AlertReport GetReport()
+	{
+		return AlertReport.CulpritsAre(ImmobileCaravans);
 	}
 }

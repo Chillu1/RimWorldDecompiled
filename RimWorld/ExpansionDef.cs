@@ -3,163 +3,162 @@ using System.Linq;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ExpansionDef : Def
 {
-	public class ExpansionDef : Def
+	[NoTranslate]
+	public string iconPath;
+
+	[NoTranslate]
+	public string notOwnedIconPath;
+
+	[NoTranslate]
+	public string backgroundPath;
+
+	[NoTranslate]
+	public string linkedMod;
+
+	[NoTranslate]
+	public string steamUrl;
+
+	[NoTranslate]
+	public string siteUrl;
+
+	[NoTranslate]
+	public string previewImagesFolderPath;
+
+	public bool isCore;
+
+	public Color primaryColor = Color.white;
+
+	private Texture2D cachedIcon;
+
+	private Texture2D cachedNotOwnedIcon;
+
+	private Texture2D cachedBG;
+
+	private List<Texture2D> cachedPreviewImages;
+
+	public Texture2D IconFromStatus
 	{
-		[NoTranslate]
-		public string iconPath;
-
-		[NoTranslate]
-		public string notOwnedIconPath;
-
-		[NoTranslate]
-		public string backgroundPath;
-
-		[NoTranslate]
-		public string linkedMod;
-
-		[NoTranslate]
-		public string steamUrl;
-
-		[NoTranslate]
-		public string siteUrl;
-
-		[NoTranslate]
-		public string previewImagesFolderPath;
-
-		public bool isCore;
-
-		public Color primaryColor = Color.white;
-
-		private Texture2D cachedIcon;
-
-		private Texture2D cachedNotOwnedIcon;
-
-		private Texture2D cachedBG;
-
-		private List<Texture2D> cachedPreviewImages;
-
-		public Texture2D IconFromStatus
+		get
 		{
-			get
+			if (Status != ExpansionStatus.NotInstalled)
 			{
-				if (Status != ExpansionStatus.NotInstalled)
-				{
-					return Icon;
-				}
-				return NotOwnedIcon;
+				return Icon;
 			}
+			return NotOwnedIcon;
 		}
+	}
 
-		public Texture2D Icon
+	public Texture2D Icon
+	{
+		get
 		{
-			get
+			if (cachedIcon == null)
 			{
-				if (cachedIcon == null)
-				{
-					cachedIcon = ContentFinder<Texture2D>.Get(iconPath);
-				}
-				return cachedIcon;
+				cachedIcon = ContentFinder<Texture2D>.Get(iconPath);
 			}
+			return cachedIcon;
 		}
+	}
 
-		private Texture2D NotOwnedIcon
+	private Texture2D NotOwnedIcon
+	{
+		get
 		{
-			get
+			if (notOwnedIconPath.NullOrEmpty())
 			{
-				if (notOwnedIconPath.NullOrEmpty())
-				{
-					return Icon;
-				}
-				if (cachedNotOwnedIcon == null)
-				{
-					cachedNotOwnedIcon = ContentFinder<Texture2D>.Get(notOwnedIconPath);
-				}
-				return cachedNotOwnedIcon;
+				return Icon;
 			}
+			if (cachedNotOwnedIcon == null)
+			{
+				cachedNotOwnedIcon = ContentFinder<Texture2D>.Get(notOwnedIconPath);
+			}
+			return cachedNotOwnedIcon;
 		}
+	}
 
-		public Texture2D BackgroundImage
+	public Texture2D BackgroundImage
+	{
+		get
 		{
-			get
+			if (cachedBG == null)
 			{
-				if (cachedBG == null)
-				{
-					cachedBG = ContentFinder<Texture2D>.Get(backgroundPath);
-				}
-				return cachedBG;
+				cachedBG = ContentFinder<Texture2D>.Get(backgroundPath);
 			}
+			return cachedBG;
 		}
+	}
 
-		public List<Texture2D> PreviewImages
+	public List<Texture2D> PreviewImages
+	{
+		get
 		{
-			get
+			if (cachedPreviewImages.NullOrEmpty())
 			{
-				if (cachedPreviewImages.NullOrEmpty())
+				if (previewImagesFolderPath.NullOrEmpty())
 				{
-					if (previewImagesFolderPath.NullOrEmpty())
-					{
-						return null;
-					}
-					cachedPreviewImages = new List<Texture2D>(ContentFinder<Texture2D>.GetAllInFolder(previewImagesFolderPath));
+					return null;
 				}
-				return cachedPreviewImages;
+				cachedPreviewImages = new List<Texture2D>(ContentFinder<Texture2D>.GetAllInFolder(previewImagesFolderPath));
 			}
+			return cachedPreviewImages;
 		}
+	}
 
-		public string StoreURL
+	public string StoreURL
+	{
+		get
 		{
-			get
+			if (!steamUrl.NullOrEmpty())
 			{
-				if (!steamUrl.NullOrEmpty())
-				{
-					return steamUrl;
-				}
-				return siteUrl;
+				return steamUrl;
 			}
+			return siteUrl;
 		}
+	}
 
-		public ExpansionStatus Status
+	public ExpansionStatus Status
+	{
+		get
 		{
-			get
+			if (ModsConfig.IsActive(linkedMod))
 			{
-				if (ModsConfig.IsActive(linkedMod))
-				{
-					return ExpansionStatus.Active;
-				}
-				if (ModLister.AllInstalledMods.Any((ModMetaData m) => m.SamePackageId(linkedMod)))
-				{
-					return ExpansionStatus.Installed;
-				}
-				return ExpansionStatus.NotInstalled;
+				return ExpansionStatus.Active;
 			}
+			if (ModLister.AllInstalledMods.Any((ModMetaData m) => m.SamePackageId(linkedMod)))
+			{
+				return ExpansionStatus.Installed;
+			}
+			return ExpansionStatus.NotInstalled;
 		}
+	}
 
-		public string StatusDescription => Status switch
-		{
-			ExpansionStatus.Active => "ContentActive".Translate(), 
-			ExpansionStatus.Installed => "ContentInstalledButNotActive".Translate(), 
-			_ => "ContentNotInstalled".Translate(), 
-		};
+	public string StatusDescription => Status switch
+	{
+		ExpansionStatus.Active => "ContentActive".Translate(), 
+		ExpansionStatus.Installed => "ContentInstalledButNotActive".Translate(), 
+		_ => "ContentNotInstalled".Translate(), 
+	};
 
-		public override void PostLoad()
+	public override void PostLoad()
+	{
+		base.PostLoad();
+		linkedMod = linkedMod.ToLower();
+	}
+
+	public override IEnumerable<string> ConfigErrors()
+	{
+		foreach (string item in base.ConfigErrors())
 		{
-			base.PostLoad();
-			linkedMod = linkedMod.ToLower();
+			yield return item;
 		}
-
-		public override IEnumerable<string> ConfigErrors()
+		ModMetaData modWithIdentifier = ModLister.GetModWithIdentifier(linkedMod);
+		if (modWithIdentifier != null && !modWithIdentifier.Official)
 		{
-			foreach (string item in base.ConfigErrors())
-			{
-				yield return item;
-			}
-			ModMetaData modWithIdentifier = ModLister.GetModWithIdentifier(linkedMod);
-			if (modWithIdentifier != null && !modWithIdentifier.Official)
-			{
-				yield return modWithIdentifier.Name + " - ExpansionDefs are used for official content. For mods, you should define ModMetaData in About.xml.";
-			}
+			yield return modWithIdentifier.Name + " - ExpansionDefs are used for official content. For mods, you should define ModMetaData in About.xml.";
 		}
 	}
 }

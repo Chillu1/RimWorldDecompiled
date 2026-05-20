@@ -1,10 +1,9 @@
-namespace Verse.AI
+namespace Verse.AI;
+
+public enum TargetIndex : byte
 {
-	public enum TargetIndex : byte
-	{
-		None,
-		A,
-		B,
-		C
-	}
+	None,
+	A,
+	B,
+	C
 }

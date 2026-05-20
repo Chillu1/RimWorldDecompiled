@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class SpecialThingFilterWorker_AllowFemales : SpecialThingFilterWorker_AllowGender
 {
-	public class SpecialThingFilterWorker_AllowFemales : SpecialThingFilterWorker_AllowGender
+	public SpecialThingFilterWorker_AllowFemales()
+		: base(Gender.Female)
 	{
-		public SpecialThingFilterWorker_AllowFemales()
-			: base(Gender.Female)
-		{
-		}
 	}
 }

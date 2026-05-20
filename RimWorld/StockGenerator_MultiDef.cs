@@ -2,38 +2,37 @@ using System.Collections.Generic;
 using RimWorld.Planet;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class StockGenerator_MultiDef : StockGenerator
 {
-	public class StockGenerator_MultiDef : StockGenerator
+	private List<ThingDef> thingDefs = new List<ThingDef>();
+
+	public override IEnumerable<Thing> GenerateThings(PlanetTile forTile, Faction faction = null)
 	{
-		private List<ThingDef> thingDefs = new List<ThingDef>();
-
-		public override IEnumerable<Thing> GenerateThings(PlanetTile forTile, Faction faction = null)
+		ThingDef thingDef = thingDefs.RandomElement();
+		foreach (Thing item in StockGeneratorUtility.TryMakeForStock(thingDef, RandomCountOf(thingDef), faction))
 		{
-			ThingDef thingDef = thingDefs.RandomElement();
-			foreach (Thing item in StockGeneratorUtility.TryMakeForStock(thingDef, RandomCountOf(thingDef), faction))
-			{
-				yield return item;
-			}
+			yield return item;
 		}
+	}
 
-		public override bool HandlesThingDef(ThingDef thingDef)
+	public override bool HandlesThingDef(ThingDef thingDef)
+	{
+		return thingDefs.Contains(thingDef);
+	}
+
+	public override IEnumerable<string> ConfigErrors(TraderKindDef parentDef)
+	{
+		foreach (string item in base.ConfigErrors(parentDef))
 		{
-			return thingDefs.Contains(thingDef);
+			yield return item;
 		}
-
-		public override IEnumerable<string> ConfigErrors(TraderKindDef parentDef)
+		for (int i = 0; i < thingDefs.Count; i++)
 		{
-			foreach (string item in base.ConfigErrors(parentDef))
+			if (!thingDefs[i].tradeability.TraderCanSell())
 			{
-				yield return item;
-			}
-			for (int i = 0; i < thingDefs.Count; i++)
-			{
-				if (!thingDefs[i].tradeability.TraderCanSell())
-				{
-					yield return thingDefs[i]?.ToString() + " tradeability doesn't allow traders to sell this thing";
-				}
+				yield return thingDefs[i]?.ToString() + " tradeability doesn't allow traders to sell this thing";
 			}
 		}
 	}

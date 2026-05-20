@@ -1,26 +1,25 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public struct CurveMark
 {
-	public struct CurveMark
+	private float x;
+
+	private string message;
+
+	private Color color;
+
+	public float X => x;
+
+	public string Message => message;
+
+	public Color Color => color;
+
+	public CurveMark(float x, string message, Color color)
 	{
-		private float x;
-
-		private string message;
-
-		private Color color;
-
-		public float X => x;
-
-		public string Message => message;
-
-		public Color Color => color;
-
-		public CurveMark(float x, string message, Color color)
-		{
-			this.x = x;
-			this.message = message;
-			this.color = color;
-		}
+		this.x = x;
+		this.message = message;
+		this.color = color;
 	}
 }

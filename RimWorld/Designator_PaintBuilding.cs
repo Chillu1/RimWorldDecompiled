@@ -2,118 +2,117 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+[StaticConstructorOnStartup]
+public class Designator_PaintBuilding : Designator_Paint
 {
-	[StaticConstructorOnStartup]
-	public class Designator_PaintBuilding : Designator_Paint
+	private static readonly HashSet<Thing> tmpPaintThings = new HashSet<Thing>();
+
+	protected override Texture2D IconTopTex => ContentFinder<Texture2D>.Get("UI/Designators/Paint_Top");
+
+	protected override DesignationDef Designation => DesignationDefOf.PaintBuilding;
+
+	public Designator_PaintBuilding()
 	{
-		private static readonly HashSet<Thing> tmpPaintThings = new HashSet<Thing>();
+		defaultLabel = "DesignatorPaintBuilding".Translate();
+		defaultDesc = "DesignatorPaintBuildingDesc".Translate();
+		icon = ContentFinder<Texture2D>.Get("UI/Designators/Paint_Bottom");
+		tutorTag = "PaintBuilding";
+	}
 
-		protected override Texture2D IconTopTex => ContentFinder<Texture2D>.Get("UI/Designators/Paint_Top");
-
-		protected override DesignationDef Designation => DesignationDefOf.PaintBuilding;
-
-		public Designator_PaintBuilding()
+	public override AcceptanceReport CanDesignateCell(IntVec3 c)
+	{
+		if (eyedropMode)
 		{
-			defaultLabel = "DesignatorPaintBuilding".Translate();
-			defaultDesc = "DesignatorPaintBuildingDesc".Translate();
-			icon = ContentFinder<Texture2D>.Get("UI/Designators/Paint_Bottom");
-			tutorTag = "PaintBuilding";
+			return eyedropper.CanDesignateCell(c);
 		}
-
-		public override AcceptanceReport CanDesignateCell(IntVec3 c)
+		if (!c.InBounds(base.Map) || c.Fogged(base.Map))
 		{
-			if (eyedropMode)
+			return false;
+		}
+		List<Thing> thingList = c.GetThingList(base.Map);
+		for (int i = 0; i < thingList.Count; i++)
+		{
+			if ((bool)CanDesignateThing(thingList[i]))
 			{
-				return eyedropper.CanDesignateCell(c);
+				return true;
 			}
-			if (!c.InBounds(base.Map) || c.Fogged(base.Map))
+		}
+		return "MessageMustDesignatePaintableBuildings".Translate(colorDef);
+	}
+
+	public override void DesignateSingleCell(IntVec3 c)
+	{
+		if (eyedropMode)
+		{
+			eyedropper.DesignateSingleCell(c);
+			return;
+		}
+		List<Thing> thingList = c.GetThingList(base.Map);
+		for (int i = 0; i < thingList.Count; i++)
+		{
+			if (CanDesignateThing(thingList[i]).Accepted)
 			{
-				return false;
+				DesignateThing(thingList[i]);
 			}
-			List<Thing> thingList = c.GetThingList(base.Map);
+		}
+	}
+
+	public override AcceptanceReport CanDesignateThing(Thing t)
+	{
+		if (t.def.building == null || !t.def.building.paintable)
+		{
+			return false;
+		}
+		if (t.Faction != Faction.OfPlayer)
+		{
+			return false;
+		}
+		if (t is Building building && building.PaintColorDef == colorDef)
+		{
+			return false;
+		}
+		if (base.Map.designationManager.DesignationOn(t, DesignationDefOf.Uninstall) != null)
+		{
+			return false;
+		}
+		return true;
+	}
+
+	public override void DesignateThing(Thing t)
+	{
+		base.Map.designationManager.TryRemoveDesignationOn(t, Designation);
+		base.Map.designationManager.TryRemoveDesignationOn(t, DesignationDefOf.RemovePaintBuilding);
+		if (DebugSettings.godMode)
+		{
+			((Building)t).ChangePaint(colorDef);
+		}
+		else
+		{
+			base.Map.designationManager.AddDesignation(new Designation(t, Designation, colorDef));
+		}
+	}
+
+	protected override int NumHighlightedCells()
+	{
+		tmpPaintThings.Clear();
+		Find.DesignatorManager.Dragger.UpdateCellBuffer();
+		foreach (IntVec3 item in Find.DesignatorManager.Dragger.CellBuffer)
+		{
+			if (!item.InBounds(base.Map) || item.Fogged(base.Map))
+			{
+				continue;
+			}
+			List<Thing> thingList = item.GetThingList(base.Map);
 			for (int i = 0; i < thingList.Count; i++)
 			{
-				if ((bool)CanDesignateThing(thingList[i]))
+				if (!tmpPaintThings.Contains(thingList[i]) && (bool)CanDesignateThing(thingList[i]))
 				{
-					return true;
-				}
-			}
-			return "MessageMustDesignatePaintableBuildings".Translate(colorDef);
-		}
-
-		public override void DesignateSingleCell(IntVec3 c)
-		{
-			if (eyedropMode)
-			{
-				eyedropper.DesignateSingleCell(c);
-				return;
-			}
-			List<Thing> thingList = c.GetThingList(base.Map);
-			for (int i = 0; i < thingList.Count; i++)
-			{
-				if (CanDesignateThing(thingList[i]).Accepted)
-				{
-					DesignateThing(thingList[i]);
+					tmpPaintThings.Add(thingList[i]);
 				}
 			}
 		}
-
-		public override AcceptanceReport CanDesignateThing(Thing t)
-		{
-			if (t.def.building == null || !t.def.building.paintable)
-			{
-				return false;
-			}
-			if (t.Faction != Faction.OfPlayer)
-			{
-				return false;
-			}
-			if (t is Building building && building.PaintColorDef == colorDef)
-			{
-				return false;
-			}
-			if (base.Map.designationManager.DesignationOn(t, DesignationDefOf.Uninstall) != null)
-			{
-				return false;
-			}
-			return true;
-		}
-
-		public override void DesignateThing(Thing t)
-		{
-			base.Map.designationManager.TryRemoveDesignationOn(t, Designation);
-			base.Map.designationManager.TryRemoveDesignationOn(t, DesignationDefOf.RemovePaintBuilding);
-			if (DebugSettings.godMode)
-			{
-				((Building)t).ChangePaint(colorDef);
-			}
-			else
-			{
-				base.Map.designationManager.AddDesignation(new Designation(t, Designation, colorDef));
-			}
-		}
-
-		protected override int NumHighlightedCells()
-		{
-			tmpPaintThings.Clear();
-			Find.DesignatorManager.Dragger.UpdateCellBuffer();
-			foreach (IntVec3 item in Find.DesignatorManager.Dragger.CellBuffer)
-			{
-				if (!item.InBounds(base.Map) || item.Fogged(base.Map))
-				{
-					continue;
-				}
-				List<Thing> thingList = item.GetThingList(base.Map);
-				for (int i = 0; i < thingList.Count; i++)
-				{
-					if (!tmpPaintThings.Contains(thingList[i]) && (bool)CanDesignateThing(thingList[i]))
-					{
-						tmpPaintThings.Add(thingList[i]);
-					}
-				}
-			}
-			return tmpPaintThings.Count;
-		}
+		return tmpPaintThings.Count;
 	}
 }

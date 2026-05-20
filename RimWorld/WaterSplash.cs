@@ -1,25 +1,24 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WaterSplash : Projectile
 {
-	public class WaterSplash : Projectile
+	protected override void Impact(Thing hitThing, bool blockedByShield = false)
 	{
-		protected override void Impact(Thing hitThing, bool blockedByShield = false)
+		base.Impact(hitThing, blockedByShield);
+		List<Thing> list = new List<Thing>();
+		foreach (Thing item in base.Map.thingGrid.ThingsAt(base.Position))
 		{
-			base.Impact(hitThing, blockedByShield);
-			List<Thing> list = new List<Thing>();
-			foreach (Thing item in base.Map.thingGrid.ThingsAt(base.Position))
+			if (item.def == ThingDefOf.Fire)
 			{
-				if (item.def == ThingDefOf.Fire)
-				{
-					list.Add(item);
-				}
+				list.Add(item);
 			}
-			foreach (Thing item2 in list)
-			{
-				item2.Destroy();
-			}
+		}
+		foreach (Thing item2 in list)
+		{
+			item2.Destroy();
 		}
 	}
 }

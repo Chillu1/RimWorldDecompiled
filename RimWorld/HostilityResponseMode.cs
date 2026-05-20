@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum HostilityResponseMode
 {
-	public enum HostilityResponseMode
-	{
-		Ignore,
-		Attack,
-		Flee
-	}
+	Ignore,
+	Attack,
+	Flee
 }

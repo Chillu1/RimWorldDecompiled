@@ -1,17 +1,16 @@
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_SetChallengeRating : QuestNode
 {
-	public class QuestNode_SetChallengeRating : QuestNode
+	public SlateRef<int> challengeRating;
+
+	protected override void RunInt()
 	{
-		public SlateRef<int> challengeRating;
+		QuestGen.quest.challengeRating = challengeRating.GetValue(QuestGen.slate);
+	}
 
-		protected override void RunInt()
-		{
-			QuestGen.quest.challengeRating = challengeRating.GetValue(QuestGen.slate);
-		}
-
-		protected override bool TestRunInt(Slate slate)
-		{
-			return true;
-		}
+	protected override bool TestRunInt(Slate slate)
+	{
+		return true;
 	}
 }

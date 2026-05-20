@@ -2,74 +2,73 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Building_JammedDoor : Building_Door
 {
-	public class Building_JammedDoor : Building_Door
+	private bool jammed = true;
+
+	public bool Jammed => jammed;
+
+	public void UnlockDoor()
 	{
-		private bool jammed = true;
+		jammed = false;
+	}
 
-		public bool Jammed => jammed;
+	public void UnlockAndOpenDoor()
+	{
+		jammed = false;
+		DoorOpen();
+	}
 
-		public void UnlockDoor()
+	protected override void DoorOpen(int ticksToClose = 110)
+	{
+		base.DoorOpen(ticksToClose);
+		holdOpenInt = true;
+	}
+
+	public override bool PawnCanOpen(Pawn p)
+	{
+		return !jammed;
+	}
+
+	protected override void DrawAt(Vector3 drawLoc, bool flip = false)
+	{
+		if (!jammed)
 		{
-			jammed = false;
+			base.DrawAt(drawLoc, flip);
+			return;
 		}
-
-		public void UnlockAndOpenDoor()
+		DoorPreDraw();
+		foreach (ThingComp allComp in base.AllComps)
 		{
-			jammed = false;
-			DoorOpen();
-		}
-
-		protected override void DoorOpen(int ticksToClose = 110)
-		{
-			base.DoorOpen(ticksToClose);
-			holdOpenInt = true;
-		}
-
-		public override bool PawnCanOpen(Pawn p)
-		{
-			return !jammed;
-		}
-
-		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
-		{
-			if (!jammed)
+			if (allComp is IJammedDoorDrawer jammedDoorDrawer)
 			{
-				base.DrawAt(drawLoc, flip);
-				return;
-			}
-			DoorPreDraw();
-			foreach (ThingComp allComp in base.AllComps)
-			{
-				if (allComp is IJammedDoorDrawer jammedDoorDrawer)
-				{
-					jammedDoorDrawer.DrawJammed(base.Rotation);
-					break;
-				}
+				jammedDoorDrawer.DrawJammed(base.Rotation);
+				break;
 			}
 		}
+	}
 
-		public override IEnumerable<Gizmo> GetGizmos()
+	public override IEnumerable<Gizmo> GetGizmos()
+	{
+		foreach (Gizmo gizmo in base.GetGizmos())
 		{
-			foreach (Gizmo gizmo in base.GetGizmos())
-			{
-				yield return gizmo;
-			}
-			if (DebugSettings.ShowDevGizmos && !holdOpenInt)
-			{
-				yield return new Command_Action
-				{
-					defaultLabel = "DEV: Unlock",
-					action = UnlockDoor
-				};
-			}
+			yield return gizmo;
 		}
+		if (DebugSettings.ShowDevGizmos && !holdOpenInt)
+		{
+			yield return new Command_Action
+			{
+				defaultLabel = "DEV: Unlock",
+				action = UnlockDoor
+			};
+		}
+	}
 
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_Values.Look(ref jammed, "jammed", defaultValue: false);
-		}
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Values.Look(ref jammed, "jammed", defaultValue: false);
 	}
 }

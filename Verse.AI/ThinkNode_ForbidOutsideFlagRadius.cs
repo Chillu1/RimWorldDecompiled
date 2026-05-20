@@ -1,34 +1,33 @@
-namespace Verse.AI
+namespace Verse.AI;
+
+public class ThinkNode_ForbidOutsideFlagRadius : ThinkNode_Priority
 {
-	public class ThinkNode_ForbidOutsideFlagRadius : ThinkNode_Priority
+	public float maxDistToSquadFlag = -1f;
+
+	public override ThinkNode DeepCopy(bool resolve = true)
 	{
-		public float maxDistToSquadFlag = -1f;
+		ThinkNode_ForbidOutsideFlagRadius obj = (ThinkNode_ForbidOutsideFlagRadius)base.DeepCopy(resolve);
+		obj.maxDistToSquadFlag = maxDistToSquadFlag;
+		return obj;
+	}
 
-		public override ThinkNode DeepCopy(bool resolve = true)
+	public override ThinkResult TryIssueJobPackage(Pawn pawn, JobIssueParams jobParams)
+	{
+		try
 		{
-			ThinkNode_ForbidOutsideFlagRadius obj = (ThinkNode_ForbidOutsideFlagRadius)base.DeepCopy(resolve);
-			obj.maxDistToSquadFlag = maxDistToSquadFlag;
-			return obj;
-		}
-
-		public override ThinkResult TryIssueJobPackage(Pawn pawn, JobIssueParams jobParams)
-		{
-			try
+			if (maxDistToSquadFlag > 0f)
 			{
-				if (maxDistToSquadFlag > 0f)
+				if (pawn.mindState.maxDistToSquadFlag > 0f)
 				{
-					if (pawn.mindState.maxDistToSquadFlag > 0f)
-					{
-						Log.Error("Squad flag was not reset properly; raiders may behave strangely");
-					}
-					pawn.mindState.maxDistToSquadFlag = maxDistToSquadFlag;
+					Log.Error("Squad flag was not reset properly; raiders may behave strangely");
 				}
-				return base.TryIssueJobPackage(pawn, jobParams);
+				pawn.mindState.maxDistToSquadFlag = maxDistToSquadFlag;
 			}
-			finally
-			{
-				pawn.mindState.maxDistToSquadFlag = -1f;
-			}
+			return base.TryIssueJobPackage(pawn, jobParams);
+		}
+		finally
+		{
+			pawn.mindState.maxDistToSquadFlag = -1f;
 		}
 	}
 }

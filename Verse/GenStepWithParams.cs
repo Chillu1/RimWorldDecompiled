@@ -1,36 +1,35 @@
 using System;
 
-namespace Verse
+namespace Verse;
+
+public struct GenStepWithParams : IEquatable<GenStepWithParams>
 {
-	public struct GenStepWithParams : IEquatable<GenStepWithParams>
+	public GenStepDef def;
+
+	public GenStepParams parms;
+
+	public GenStepWithParams(GenStepDef def, GenStepParams parms)
 	{
-		public GenStepDef def;
+		this.def = def;
+		this.parms = parms;
+	}
 
-		public GenStepParams parms;
+	public bool Equals(GenStepWithParams other)
+	{
+		return object.Equals(def, other.def);
+	}
 
-		public GenStepWithParams(GenStepDef def, GenStepParams parms)
+	public override bool Equals(object obj)
+	{
+		if (obj is GenStepWithParams other)
 		{
-			this.def = def;
-			this.parms = parms;
+			return Equals(other);
 		}
+		return false;
+	}
 
-		public bool Equals(GenStepWithParams other)
-		{
-			return object.Equals(def, other.def);
-		}
-
-		public override bool Equals(object obj)
-		{
-			if (obj is GenStepWithParams other)
-			{
-				return Equals(other);
-			}
-			return false;
-		}
-
-		public override int GetHashCode()
-		{
-			return HashCode.Combine(def, parms);
-		}
+	public override int GetHashCode()
+	{
+		return HashCode.Combine(def, parms);
 	}
 }

@@ -1,20 +1,19 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CorpseAttackTransition : MusicTransition
 {
-	public class CorpseAttackTransition : MusicTransition
+	public override bool IsTransitionSatisfied()
 	{
-		public override bool IsTransitionSatisfied()
+		if (!ModsConfig.AnomalyActive)
 		{
-			if (!ModsConfig.AnomalyActive)
-			{
-				return false;
-			}
-			if (!base.IsTransitionSatisfied())
-			{
-				return false;
-			}
-			return Find.Anomaly.HasActiveAwokenCorpse();
+			return false;
 		}
+		if (!base.IsTransitionSatisfied())
+		{
+			return false;
+		}
+		return Find.Anomaly.HasActiveAwokenCorpse();
 	}
 }

@@ -2,302 +2,301 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public class Settlement_TraderTracker : IThingHolderTickable, IThingHolder, IExposable
 {
-	public class Settlement_TraderTracker : IThingHolderTickable, IThingHolder, IExposable
+	public Settlement settlement;
+
+	private ThingOwner<Thing> stock;
+
+	private int lastStockGenerationTicks = -1;
+
+	private bool everGeneratedStock;
+
+	private const float DefaultTradePriceImprovement = 0.02f;
+
+	private List<Pawn> tmpSavedPawns = new List<Pawn>();
+
+	protected virtual int RegenerateStockEveryDays => 30;
+
+	public IThingHolder ParentHolder => settlement;
+
+	public bool ShouldTickContents => false;
+
+	public List<Thing> StockListForReading
 	{
-		public Settlement settlement;
-
-		private ThingOwner<Thing> stock;
-
-		private int lastStockGenerationTicks = -1;
-
-		private bool everGeneratedStock;
-
-		private const float DefaultTradePriceImprovement = 0.02f;
-
-		private List<Pawn> tmpSavedPawns = new List<Pawn>();
-
-		protected virtual int RegenerateStockEveryDays => 30;
-
-		public IThingHolder ParentHolder => settlement;
-
-		public bool ShouldTickContents => false;
-
-		public List<Thing> StockListForReading
+		get
 		{
-			get
-			{
-				if (stock == null || stock.InnerListForReading.Empty())
-				{
-					RegenerateStock();
-				}
-				return stock.InnerListForReading;
-			}
-		}
-
-		public TraderKindDef TraderKind
-		{
-			get
-			{
-				List<TraderKindDef> baseTraderKinds = settlement.Faction.def.baseTraderKinds;
-				if (baseTraderKinds.NullOrEmpty())
-				{
-					return null;
-				}
-				int index = Mathf.Abs(settlement.HashOffset()) % baseTraderKinds.Count;
-				return baseTraderKinds[index];
-			}
-		}
-
-		public int RandomPriceFactorSeed => Gen.HashCombineInt(settlement.ID, 1933327354);
-
-		public bool EverVisited => everGeneratedStock;
-
-		public bool RestockedSinceLastVisit
-		{
-			get
-			{
-				if (everGeneratedStock)
-				{
-					return stock == null;
-				}
-				return false;
-			}
-		}
-
-		public int NextRestockTick
-		{
-			get
-			{
-				if (stock == null || !everGeneratedStock)
-				{
-					return -1;
-				}
-				return ((lastStockGenerationTicks != -1) ? lastStockGenerationTicks : 0) + RegenerateStockEveryDays * 60000;
-			}
-		}
-
-		public virtual string TraderName
-		{
-			get
-			{
-				if (settlement.Faction == null)
-				{
-					return settlement.LabelCap;
-				}
-				return "SettlementTrader".Translate(settlement.LabelCap, settlement.Faction.Name);
-			}
-		}
-
-		public virtual bool CanTradeNow
-		{
-			get
-			{
-				if (TraderKind != null)
-				{
-					if (stock != null && !stock.InnerListForReading.Empty())
-					{
-						return stock.InnerListForReading.Any((Thing x) => TraderKind.WillTrade(x.def));
-					}
-					return true;
-				}
-				return false;
-			}
-		}
-
-		public virtual float TradePriceImprovementOffsetForPlayer => 0.02f;
-
-		public Settlement_TraderTracker(Settlement settlement)
-		{
-			this.settlement = settlement;
-		}
-
-		public virtual void ExposeData()
-		{
-			if (Scribe.mode == LoadSaveMode.Saving)
-			{
-				tmpSavedPawns.Clear();
-				if (stock != null)
-				{
-					for (int num = stock.Count - 1; num >= 0; num--)
-					{
-						if (stock[num] is Pawn item)
-						{
-							stock.Remove(item);
-							tmpSavedPawns.Add(item);
-						}
-					}
-				}
-			}
-			Scribe_Collections.Look(ref tmpSavedPawns, "tmpSavedPawns", LookMode.Reference);
-			Scribe_Deep.Look(ref stock, "stock");
-			Scribe_Values.Look(ref lastStockGenerationTicks, "lastStockGenerationTicks", 0);
-			Scribe_Values.Look(ref everGeneratedStock, "wasStockGeneratedYet", defaultValue: false);
-			if (Scribe.mode == LoadSaveMode.PostLoadInit || Scribe.mode == LoadSaveMode.Saving)
-			{
-				for (int i = 0; i < tmpSavedPawns.Count; i++)
-				{
-					stock.TryAdd(tmpSavedPawns[i], canMergeWithExistingStacks: false);
-				}
-				tmpSavedPawns.Clear();
-			}
-		}
-
-		public virtual IEnumerable<Thing> ColonyThingsWillingToBuy(Pawn playerNegotiator)
-		{
-			Caravan caravan = playerNegotiator.GetCaravan();
-			foreach (Thing item in CaravanInventoryUtility.AllInventoryItems(caravan))
-			{
-				yield return item;
-			}
-			List<Pawn> pawns = caravan.PawnsListForReading;
-			for (int i = 0; i < pawns.Count; i++)
-			{
-				if (!caravan.IsOwner(pawns[i]))
-				{
-					yield return pawns[i];
-				}
-			}
-		}
-
-		public virtual void GiveSoldThingToTrader(Thing toGive, int countToGive, Pawn playerNegotiator)
-		{
-			if (stock == null)
+			if (stock == null || stock.InnerListForReading.Empty())
 			{
 				RegenerateStock();
 			}
-			Caravan caravan = playerNegotiator.GetCaravan();
-			Thing thing = toGive.SplitOff(countToGive);
-			thing.PreTraded(TradeAction.PlayerSells, playerNegotiator, settlement);
-			if (toGive is Pawn pawn)
-			{
-				CaravanInventoryUtility.MoveAllInventoryToSomeoneElse(pawn, caravan.PawnsListForReading);
-				if (!pawn.RaceProps.Humanlike && !stock.TryAdd(pawn, canMergeWithExistingStacks: false))
-				{
-					pawn.Destroy();
-				}
-			}
-			else if (!stock.TryAdd(thing, canMergeWithExistingStacks: false))
-			{
-				thing.Destroy();
-			}
+			return stock.InnerListForReading;
 		}
+	}
 
-		public virtual void GiveSoldThingToPlayer(Thing toGive, int countToGive, Pawn playerNegotiator)
+	public TraderKindDef TraderKind
+	{
+		get
 		{
-			Caravan caravan = playerNegotiator.GetCaravan();
-			Thing thing = toGive.SplitOff(countToGive);
-			thing.PreTraded(TradeAction.PlayerBuys, playerNegotiator, settlement);
-			if (thing is Pawn p)
+			List<TraderKindDef> baseTraderKinds = settlement.Faction.def.baseTraderKinds;
+			if (baseTraderKinds.NullOrEmpty())
 			{
-				caravan.AddPawn(p, addCarriedPawnToWorldPawnsIfAny: true);
-				return;
+				return null;
 			}
-			Pawn pawn = CaravanInventoryUtility.FindPawnToMoveInventoryTo(thing, caravan.PawnsListForReading, null);
-			if (pawn == null)
-			{
-				Log.Error("Could not find any pawn to give sold thing to.");
-				thing.Destroy();
-			}
-			else if (!pawn.inventory.innerContainer.TryAdd(thing))
-			{
-				Log.Error("Could not add sold thing to inventory.");
-				thing.Destroy();
-			}
+			int index = Mathf.Abs(settlement.HashOffset()) % baseTraderKinds.Count;
+			return baseTraderKinds[index];
 		}
+	}
 
-		public virtual void TraderTrackerTick()
-		{
-			if (stock == null)
-			{
-				return;
-			}
-			if (Find.TickManager.TicksGame - lastStockGenerationTicks > RegenerateStockEveryDays * 60000)
-			{
-				TryDestroyStock();
-				return;
-			}
-			for (int num = stock.Count - 1; num >= 0; num--)
-			{
-				if (stock[num] is Pawn { Destroyed: not false } pawn)
-				{
-					stock.Remove(pawn);
-				}
-			}
-			for (int num2 = stock.Count - 1; num2 >= 0; num2--)
-			{
-				if (stock[num2] is Pawn pawn2 && !pawn2.IsWorldPawn())
-				{
-					Log.Error("Faction base has non-world-pawns in its stock. Removing...");
-					stock.Remove(pawn2);
-				}
-			}
-		}
+	public int RandomPriceFactorSeed => Gen.HashCombineInt(settlement.ID, 1933327354);
 
-		public void TryDestroyStock()
-		{
-			if (stock == null)
-			{
-				return;
-			}
-			for (int num = stock.Count - 1; num >= 0; num--)
-			{
-				Thing thing = stock[num];
-				stock.Remove(thing);
-				if (!(thing is Pawn) && !thing.Destroyed)
-				{
-					thing.Destroy();
-				}
-			}
-			stock = null;
-		}
+	public bool EverVisited => everGeneratedStock;
 
-		public bool ContainsPawn(Pawn p)
+	public bool RestockedSinceLastVisit
+	{
+		get
 		{
-			if (stock != null)
+			if (everGeneratedStock)
 			{
-				return stock.Contains(p);
+				return stock == null;
 			}
 			return false;
 		}
+	}
 
-		protected virtual void RegenerateStock()
+	public int NextRestockTick
+	{
+		get
 		{
-			TryDestroyStock();
-			stock = new ThingOwner<Thing>(this)
+			if (stock == null || !everGeneratedStock)
 			{
-				dontTickContents = true
-			};
-			everGeneratedStock = true;
-			if (settlement.Faction == null || !settlement.Faction.IsPlayer)
-			{
-				ThingSetMakerParams parms = new ThingSetMakerParams
-				{
-					traderDef = TraderKind,
-					tile = settlement.Tile,
-					makingFaction = settlement.Faction
-				};
-				stock.TryAddRangeOrTransfer(ThingSetMakerDefOf.TraderStock.root.Generate(parms));
+				return -1;
 			}
-			for (int i = 0; i < stock.Count; i++)
+			return ((lastStockGenerationTicks != -1) ? lastStockGenerationTicks : 0) + RegenerateStockEveryDays * 60000;
+		}
+	}
+
+	public virtual string TraderName
+	{
+		get
+		{
+			if (settlement.Faction == null)
 			{
-				if (stock[i] is Pawn pawn)
+				return settlement.LabelCap;
+			}
+			return "SettlementTrader".Translate(settlement.LabelCap, settlement.Faction.Name);
+		}
+	}
+
+	public virtual bool CanTradeNow
+	{
+		get
+		{
+			if (TraderKind != null)
+			{
+				if (stock != null && !stock.InnerListForReading.Empty())
 				{
-					Find.WorldPawns.PassToWorld(pawn);
+					return stock.InnerListForReading.Any((Thing x) => TraderKind.WillTrade(x.def));
+				}
+				return true;
+			}
+			return false;
+		}
+	}
+
+	public virtual float TradePriceImprovementOffsetForPlayer => 0.02f;
+
+	public Settlement_TraderTracker(Settlement settlement)
+	{
+		this.settlement = settlement;
+	}
+
+	public virtual void ExposeData()
+	{
+		if (Scribe.mode == LoadSaveMode.Saving)
+		{
+			tmpSavedPawns.Clear();
+			if (stock != null)
+			{
+				for (int num = stock.Count - 1; num >= 0; num--)
+				{
+					if (stock[num] is Pawn item)
+					{
+						stock.Remove(item);
+						tmpSavedPawns.Add(item);
+					}
 				}
 			}
-			lastStockGenerationTicks = Find.TickManager.TicksGame;
 		}
-
-		public ThingOwner GetDirectlyHeldThings()
+		Scribe_Collections.Look(ref tmpSavedPawns, "tmpSavedPawns", LookMode.Reference);
+		Scribe_Deep.Look(ref stock, "stock");
+		Scribe_Values.Look(ref lastStockGenerationTicks, "lastStockGenerationTicks", 0);
+		Scribe_Values.Look(ref everGeneratedStock, "wasStockGeneratedYet", defaultValue: false);
+		if (Scribe.mode == LoadSaveMode.PostLoadInit || Scribe.mode == LoadSaveMode.Saving)
 		{
-			return stock;
+			for (int i = 0; i < tmpSavedPawns.Count; i++)
+			{
+				stock.TryAdd(tmpSavedPawns[i], canMergeWithExistingStacks: false);
+			}
+			tmpSavedPawns.Clear();
 		}
+	}
 
-		public void GetChildHolders(List<IThingHolder> outChildren)
+	public virtual IEnumerable<Thing> ColonyThingsWillingToBuy(Pawn playerNegotiator)
+	{
+		Caravan caravan = playerNegotiator.GetCaravan();
+		foreach (Thing item in CaravanInventoryUtility.AllInventoryItems(caravan))
 		{
-			ThingOwnerUtility.AppendThingHoldersFromThings(outChildren, GetDirectlyHeldThings());
+			yield return item;
 		}
+		List<Pawn> pawns = caravan.PawnsListForReading;
+		for (int i = 0; i < pawns.Count; i++)
+		{
+			if (!caravan.IsOwner(pawns[i]))
+			{
+				yield return pawns[i];
+			}
+		}
+	}
+
+	public virtual void GiveSoldThingToTrader(Thing toGive, int countToGive, Pawn playerNegotiator)
+	{
+		if (stock == null)
+		{
+			RegenerateStock();
+		}
+		Caravan caravan = playerNegotiator.GetCaravan();
+		Thing thing = toGive.SplitOff(countToGive);
+		thing.PreTraded(TradeAction.PlayerSells, playerNegotiator, settlement);
+		if (toGive is Pawn pawn)
+		{
+			CaravanInventoryUtility.MoveAllInventoryToSomeoneElse(pawn, caravan.PawnsListForReading);
+			if (!pawn.RaceProps.Humanlike && !stock.TryAdd(pawn, canMergeWithExistingStacks: false))
+			{
+				pawn.Destroy();
+			}
+		}
+		else if (!stock.TryAdd(thing, canMergeWithExistingStacks: false))
+		{
+			thing.Destroy();
+		}
+	}
+
+	public virtual void GiveSoldThingToPlayer(Thing toGive, int countToGive, Pawn playerNegotiator)
+	{
+		Caravan caravan = playerNegotiator.GetCaravan();
+		Thing thing = toGive.SplitOff(countToGive);
+		thing.PreTraded(TradeAction.PlayerBuys, playerNegotiator, settlement);
+		if (thing is Pawn p)
+		{
+			caravan.AddPawn(p, addCarriedPawnToWorldPawnsIfAny: true);
+			return;
+		}
+		Pawn pawn = CaravanInventoryUtility.FindPawnToMoveInventoryTo(thing, caravan.PawnsListForReading, null);
+		if (pawn == null)
+		{
+			Log.Error("Could not find any pawn to give sold thing to.");
+			thing.Destroy();
+		}
+		else if (!pawn.inventory.innerContainer.TryAdd(thing))
+		{
+			Log.Error("Could not add sold thing to inventory.");
+			thing.Destroy();
+		}
+	}
+
+	public virtual void TraderTrackerTick()
+	{
+		if (stock == null)
+		{
+			return;
+		}
+		if (Find.TickManager.TicksGame - lastStockGenerationTicks > RegenerateStockEveryDays * 60000)
+		{
+			TryDestroyStock();
+			return;
+		}
+		for (int num = stock.Count - 1; num >= 0; num--)
+		{
+			if (stock[num] is Pawn { Destroyed: not false } pawn)
+			{
+				stock.Remove(pawn);
+			}
+		}
+		for (int num2 = stock.Count - 1; num2 >= 0; num2--)
+		{
+			if (stock[num2] is Pawn pawn2 && !pawn2.IsWorldPawn())
+			{
+				Log.Error("Faction base has non-world-pawns in its stock. Removing...");
+				stock.Remove(pawn2);
+			}
+		}
+	}
+
+	public void TryDestroyStock()
+	{
+		if (stock == null)
+		{
+			return;
+		}
+		for (int num = stock.Count - 1; num >= 0; num--)
+		{
+			Thing thing = stock[num];
+			stock.Remove(thing);
+			if (!(thing is Pawn) && !thing.Destroyed)
+			{
+				thing.Destroy();
+			}
+		}
+		stock = null;
+	}
+
+	public bool ContainsPawn(Pawn p)
+	{
+		if (stock != null)
+		{
+			return stock.Contains(p);
+		}
+		return false;
+	}
+
+	protected virtual void RegenerateStock()
+	{
+		TryDestroyStock();
+		stock = new ThingOwner<Thing>(this)
+		{
+			dontTickContents = true
+		};
+		everGeneratedStock = true;
+		if (settlement.Faction == null || !settlement.Faction.IsPlayer)
+		{
+			ThingSetMakerParams parms = new ThingSetMakerParams
+			{
+				traderDef = TraderKind,
+				tile = settlement.Tile,
+				makingFaction = settlement.Faction
+			};
+			stock.TryAddRangeOrTransfer(ThingSetMakerDefOf.TraderStock.root.Generate(parms));
+		}
+		for (int i = 0; i < stock.Count; i++)
+		{
+			if (stock[i] is Pawn pawn)
+			{
+				Find.WorldPawns.PassToWorld(pawn);
+			}
+		}
+		lastStockGenerationTicks = Find.TickManager.TicksGame;
+	}
+
+	public ThingOwner GetDirectlyHeldThings()
+	{
+		return stock;
+	}
+
+	public void GetChildHolders(List<IThingHolder> outChildren)
+	{
+		ThingOwnerUtility.AppendThingHoldersFromThings(outChildren, GetDirectlyHeldThings());
 	}
 }

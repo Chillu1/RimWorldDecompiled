@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum PlantPurpose
 {
-	public enum PlantPurpose
-	{
-		Food,
-		Health,
-		Beauty,
-		Misc
-	}
+	Food,
+	Health,
+	Beauty,
+	Misc
 }

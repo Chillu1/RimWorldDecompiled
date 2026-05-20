@@ -1,13 +1,12 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class IncidentCategoryDef : Def
 {
-	public class IncidentCategoryDef : Def
-	{
-		public bool needsParmsPoints;
+	public bool needsParmsPoints;
 
-		public TaleDef tale;
+	public TaleDef tale;
 
-		public bool canUseAnomalyChance;
-	}
+	public bool canUseAnomalyChance;
 }

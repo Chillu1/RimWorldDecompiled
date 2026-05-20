@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public interface IThingStudied
 {
-	public interface IThingStudied
-	{
-		void OnStudied(Pawn studier, float amount, KnowledgeCategoryDef category = null);
-	}
+	void OnStudied(Pawn studier, float amount, KnowledgeCategoryDef category = null);
 }

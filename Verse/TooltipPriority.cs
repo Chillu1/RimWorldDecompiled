@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum TooltipPriority : byte
 {
-	public enum TooltipPriority : byte
-	{
-		Default,
-		Pawn,
-		Ideo
-	}
+	Default,
+	Pawn,
+	Ideo
 }

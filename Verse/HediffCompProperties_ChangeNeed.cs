@@ -1,16 +1,15 @@
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_ChangeNeed : HediffCompProperties
 {
-	public class HediffCompProperties_ChangeNeed : HediffCompProperties
+	public NeedDef needDef;
+
+	public float percentPerDay;
+
+	public HediffCompProperties_ChangeNeed()
 	{
-		public NeedDef needDef;
-
-		public float percentPerDay;
-
-		public HediffCompProperties_ChangeNeed()
-		{
-			compClass = typeof(HediffComp_ChangeNeed);
-		}
+		compClass = typeof(HediffComp_ChangeNeed);
 	}
 }

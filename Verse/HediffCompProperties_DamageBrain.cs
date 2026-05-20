@@ -1,36 +1,35 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_DamageBrain : HediffCompProperties
 {
-	public class HediffCompProperties_DamageBrain : HediffCompProperties
+	public IntRange damageAmount = IntRange.Zero;
+
+	public List<float> mtbDaysPerStage;
+
+	public HediffCompProperties_DamageBrain()
 	{
-		public IntRange damageAmount = IntRange.Zero;
+		compClass = typeof(HediffComp_DamageBrain);
+	}
 
-		public List<float> mtbDaysPerStage;
-
-		public HediffCompProperties_DamageBrain()
+	public override IEnumerable<string> ConfigErrors(HediffDef parentDef)
+	{
+		foreach (string item in base.ConfigErrors(parentDef))
 		{
-			compClass = typeof(HediffComp_DamageBrain);
+			yield return item;
 		}
-
-		public override IEnumerable<string> ConfigErrors(HediffDef parentDef)
+		if (damageAmount == IntRange.Zero)
 		{
-			foreach (string item in base.ConfigErrors(parentDef))
-			{
-				yield return item;
-			}
-			if (damageAmount == IntRange.Zero)
-			{
-				yield return "damageAmount is not defined";
-			}
-			if (mtbDaysPerStage == null)
-			{
-				yield return "mtbDaysPerStage is not defined";
-			}
-			else if (mtbDaysPerStage.Count != parentDef.stages.Count)
-			{
-				yield return "mtbDaysPerStage count doesn't match Hediffs number of stages";
-			}
+			yield return "damageAmount is not defined";
+		}
+		if (mtbDaysPerStage == null)
+		{
+			yield return "mtbDaysPerStage is not defined";
+		}
+		else if (mtbDaysPerStage.Count != parentDef.stages.Count)
+		{
+			yield return "mtbDaysPerStage count doesn't match Hediffs number of stages";
 		}
 	}
 }

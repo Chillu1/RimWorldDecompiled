@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_SpawnsRevenant : CompProperties
 {
-	public class CompProperties_SpawnsRevenant : CompProperties
+	public CompProperties_SpawnsRevenant()
 	{
-		public CompProperties_SpawnsRevenant()
-		{
-			compClass = typeof(CompSpawnsRevenant);
-		}
+		compClass = typeof(CompSpawnsRevenant);
 	}
 }

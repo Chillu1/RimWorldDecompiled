@@ -1,25 +1,24 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class SimpleLinearPool<T> where T : new()
 {
-	public class SimpleLinearPool<T> where T : new()
+	private readonly List<T> items = new List<T>();
+
+	private int readIndex;
+
+	public T Get()
 	{
-		private readonly List<T> items = new List<T>();
-
-		private int readIndex;
-
-		public T Get()
+		if (readIndex >= items.Count)
 		{
-			if (readIndex >= items.Count)
-			{
-				items.Add(new T());
-			}
-			return items[readIndex++];
+			items.Add(new T());
 		}
+		return items[readIndex++];
+	}
 
-		public void Clear()
-		{
-			readIndex = 0;
-		}
+	public void Clear()
+	{
+		readIndex = 0;
 	}
 }

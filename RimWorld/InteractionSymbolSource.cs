@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum InteractionSymbolSource
 {
-	public enum InteractionSymbolSource
-	{
-		Def,
-		InitiatorIdeo,
-		InitiatorFaction
-	}
+	Def,
+	InitiatorIdeo,
+	InitiatorFaction
 }

@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum ShowWeaponsUnderPortraitMode : byte
 {
-	public enum ShowWeaponsUnderPortraitMode : byte
-	{
-		Never,
-		WhileDrafted,
-		Always
-	}
+	Never,
+	WhileDrafted,
+	Always
 }

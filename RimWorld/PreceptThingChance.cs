@@ -1,20 +1,19 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public struct PreceptThingChance
 {
-	public struct PreceptThingChance
+	public ThingDef def;
+
+	public float chance;
+
+	public static implicit operator PreceptThingChance(PreceptThingChanceClass c)
 	{
-		public ThingDef def;
-
-		public float chance;
-
-		public static implicit operator PreceptThingChance(PreceptThingChanceClass c)
+		return new PreceptThingChance
 		{
-			return new PreceptThingChance
-			{
-				chance = c.chance,
-				def = c.def
-			};
-		}
+			chance = c.chance,
+			def = c.def
+		};
 	}
 }

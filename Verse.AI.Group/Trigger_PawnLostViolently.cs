@@ -1,42 +1,41 @@
 using RimWorld;
 
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public class Trigger_PawnLostViolently : Trigger
 {
-	public class Trigger_PawnLostViolently : Trigger
+	public bool allowRoofCollapse;
+
+	public Faction ignoreDamageFromFaction;
+
+	public Trigger_PawnLostViolently(bool allowRoofCollapse = true)
 	{
-		public bool allowRoofCollapse;
+		this.allowRoofCollapse = allowRoofCollapse;
+	}
 
-		public Faction ignoreDamageFromFaction;
+	public Trigger_PawnLostViolently(bool allowRoofCollapse, Faction ignoreDamageFromFaction)
+	{
+		this.allowRoofCollapse = allowRoofCollapse;
+		this.ignoreDamageFromFaction = ignoreDamageFromFaction;
+	}
 
-		public Trigger_PawnLostViolently(bool allowRoofCollapse = true)
+	public override bool ActivateOn(Lord lord, TriggerSignal signal)
+	{
+		if (signal.type == TriggerSignalType.PawnLost)
 		{
-			this.allowRoofCollapse = allowRoofCollapse;
-		}
-
-		public Trigger_PawnLostViolently(bool allowRoofCollapse, Faction ignoreDamageFromFaction)
-		{
-			this.allowRoofCollapse = allowRoofCollapse;
-			this.ignoreDamageFromFaction = ignoreDamageFromFaction;
-		}
-
-		public override bool ActivateOn(Lord lord, TriggerSignal signal)
-		{
-			if (signal.type == TriggerSignalType.PawnLost)
+			if (signal.dinfo.Instigator != null && ignoreDamageFromFaction != null && signal.dinfo.Instigator.Faction == ignoreDamageFromFaction)
 			{
-				if (signal.dinfo.Instigator != null && ignoreDamageFromFaction != null && signal.dinfo.Instigator.Faction == ignoreDamageFromFaction)
-				{
-					return false;
-				}
-				if (signal.condition == PawnLostCondition.MadePrisoner)
-				{
-					return true;
-				}
-				if ((signal.condition == PawnLostCondition.Incapped || signal.condition == PawnLostCondition.Killed) && (signal.dinfo.Category != DamageInfo.SourceCategory.Collapse || allowRoofCollapse))
-				{
-					return true;
-				}
+				return false;
 			}
-			return false;
+			if (signal.condition == PawnLostCondition.MadePrisoner)
+			{
+				return true;
+			}
+			if ((signal.condition == PawnLostCondition.Incapped || signal.condition == PawnLostCondition.Killed) && (signal.dinfo.Category != DamageInfo.SourceCategory.Collapse || allowRoofCollapse))
+			{
+				return true;
+			}
 		}
+		return false;
 	}
 }

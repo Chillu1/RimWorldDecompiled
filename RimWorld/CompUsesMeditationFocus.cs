@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompUsesMeditationFocus : ThingComp
 {
-	public class CompUsesMeditationFocus : ThingComp
+	public override void PostDrawExtraSelectionOverlays()
 	{
-		public override void PostDrawExtraSelectionOverlays()
-		{
-			MeditationUtility.DrawMeditationSpotOverlay(parent.Position, parent.Map);
-		}
+		MeditationUtility.DrawMeditationSpotOverlay(parent.Position, parent.Map);
 	}
 }

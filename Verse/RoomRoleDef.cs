@@ -1,44 +1,43 @@
 using System;
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class RoomRoleDef : Def
 {
-	public class RoomRoleDef : Def
+	public Type workerClass;
+
+	public bool avoidViewingArtIfUnowned;
+
+	private List<RoomStatDef> relatedStats;
+
+	private RoomRoleWorker workerInt;
+
+	public RoomRoleWorker Worker => workerInt ?? (workerInt = (RoomRoleWorker)Activator.CreateInstance(workerClass));
+
+	public string PostProcessedLabel(Room room)
 	{
-		public Type workerClass;
+		return Worker.PostProcessedLabel(label, room);
+	}
 
-		public bool avoidViewingArtIfUnowned;
+	public string PostProcessedLabelCap(Room room)
+	{
+		return PostProcessedLabel(room).CapitalizeFirst();
+	}
 
-		private List<RoomStatDef> relatedStats;
-
-		private RoomRoleWorker workerInt;
-
-		public RoomRoleWorker Worker => workerInt ?? (workerInt = (RoomRoleWorker)Activator.CreateInstance(workerClass));
-
-		public string PostProcessedLabel(Room room)
+	public bool IsStatRelated(RoomStatDef def)
+	{
+		if (relatedStats == null)
 		{
-			return Worker.PostProcessedLabel(label, room);
-		}
-
-		public string PostProcessedLabelCap(Room room)
-		{
-			return PostProcessedLabel(room).CapitalizeFirst();
-		}
-
-		public bool IsStatRelated(RoomStatDef def)
-		{
-			if (relatedStats == null)
-			{
-				return false;
-			}
-			for (int i = 0; i < relatedStats.Count; i++)
-			{
-				if (relatedStats[i] == def)
-				{
-					return true;
-				}
-			}
 			return false;
 		}
+		for (int i = 0; i < relatedStats.Count; i++)
+		{
+			if (relatedStats[i] == def)
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 }

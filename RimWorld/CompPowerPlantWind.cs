@@ -6,234 +6,233 @@ using UnityEngine;
 using Verse;
 using Verse.Sound;
 
-namespace RimWorld
+namespace RimWorld;
+
+[StaticConstructorOnStartup]
+public class CompPowerPlantWind : CompPowerPlant
 {
-	[StaticConstructorOnStartup]
-	public class CompPowerPlantWind : CompPowerPlant
+	public int updateWeatherEveryXTicks = 250;
+
+	private int ticksSinceWeatherUpdate;
+
+	private float cachedPowerOutput;
+
+	private List<IntVec3> windPathCells = new List<IntVec3>();
+
+	private List<Thing> windPathBlockedByThings = new List<Thing>();
+
+	private List<IntVec3> windPathBlockedCells = new List<IntVec3>();
+
+	private bool blockedDueToInOrbit;
+
+	private float spinPosition;
+
+	private Sustainer sustainer;
+
+	private const float MaxUsableWindIntensity = 1.5f;
+
+	[TweakValue("Graphics", 0f, 0.1f)]
+	private static float SpinRateFactor = 0.035f;
+
+	[TweakValue("Graphics", -1f, 1f)]
+	private static float HorizontalBladeOffset = -0.02f;
+
+	[TweakValue("Graphics", 0f, 1f)]
+	private static float VerticalBladeOffset = 0.7f;
+
+	[TweakValue("Graphics", 4f, 8f)]
+	private static float BladeWidth = 6.6f;
+
+	private const float PowerReductionPercentPerObstacle = 0.2f;
+
+	private const string TranslateWindPathIsBlockedBy = "WindTurbine_WindPathIsBlockedBy";
+
+	private const string TranslateWindPathIsBlockedByRoof = "WindTurbine_WindPathIsBlockedByRoof";
+
+	private static Vector2 BarSize;
+
+	private static readonly Material WindTurbineBarFilledMat = SolidColorMaterials.SimpleSolidColorMaterial(new Color(0.5f, 0.475f, 0.1f));
+
+	private static readonly Material WindTurbineBarUnfilledMat = SolidColorMaterials.SimpleSolidColorMaterial(new Color(0.15f, 0.15f, 0.15f));
+
+	private static readonly Material WindTurbineBladesMat = MaterialPool.MatFrom("Things/Building/Power/WindTurbine/WindTurbineBlades");
+
+	protected override float DesiredPowerOutput => cachedPowerOutput;
+
+	private float PowerPercent => base.PowerOutput / ((0f - base.Props.PowerConsumption) * 1.5f);
+
+	public override void PostSpawnSetup(bool respawningAfterLoad)
 	{
-		public int updateWeatherEveryXTicks = 250;
+		base.PostSpawnSetup(respawningAfterLoad);
+		BarSize = new Vector2((float)parent.def.size.z - 0.95f, 0.14f);
+		RecalculateBlockages();
+		spinPosition = Rand.Range(0f, 15f);
+	}
 
-		private int ticksSinceWeatherUpdate;
-
-		private float cachedPowerOutput;
-
-		private List<IntVec3> windPathCells = new List<IntVec3>();
-
-		private List<Thing> windPathBlockedByThings = new List<Thing>();
-
-		private List<IntVec3> windPathBlockedCells = new List<IntVec3>();
-
-		private bool blockedDueToInOrbit;
-
-		private float spinPosition;
-
-		private Sustainer sustainer;
-
-		private const float MaxUsableWindIntensity = 1.5f;
-
-		[TweakValue("Graphics", 0f, 0.1f)]
-		private static float SpinRateFactor = 0.035f;
-
-		[TweakValue("Graphics", -1f, 1f)]
-		private static float HorizontalBladeOffset = -0.02f;
-
-		[TweakValue("Graphics", 0f, 1f)]
-		private static float VerticalBladeOffset = 0.7f;
-
-		[TweakValue("Graphics", 4f, 8f)]
-		private static float BladeWidth = 6.6f;
-
-		private const float PowerReductionPercentPerObstacle = 0.2f;
-
-		private const string TranslateWindPathIsBlockedBy = "WindTurbine_WindPathIsBlockedBy";
-
-		private const string TranslateWindPathIsBlockedByRoof = "WindTurbine_WindPathIsBlockedByRoof";
-
-		private static Vector2 BarSize;
-
-		private static readonly Material WindTurbineBarFilledMat = SolidColorMaterials.SimpleSolidColorMaterial(new Color(0.5f, 0.475f, 0.1f));
-
-		private static readonly Material WindTurbineBarUnfilledMat = SolidColorMaterials.SimpleSolidColorMaterial(new Color(0.15f, 0.15f, 0.15f));
-
-		private static readonly Material WindTurbineBladesMat = MaterialPool.MatFrom("Things/Building/Power/WindTurbine/WindTurbineBlades");
-
-		protected override float DesiredPowerOutput => cachedPowerOutput;
-
-		private float PowerPercent => base.PowerOutput / ((0f - base.Props.PowerConsumption) * 1.5f);
-
-		public override void PostSpawnSetup(bool respawningAfterLoad)
+	public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
+	{
+		base.PostDeSpawn(map, mode);
+		windPathCells.Clear();
+		Sustainer sustainer = this.sustainer;
+		if (sustainer != null && !sustainer.Ended)
 		{
-			base.PostSpawnSetup(respawningAfterLoad);
-			BarSize = new Vector2((float)parent.def.size.z - 0.95f, 0.14f);
+			this.sustainer.End();
+		}
+	}
+
+	public override void PostSwapMap()
+	{
+		RecalculateBlockages();
+	}
+
+	public override void PostExposeData()
+	{
+		base.PostExposeData();
+		Scribe_Values.Look(ref ticksSinceWeatherUpdate, "updateCounter", 0);
+		Scribe_Values.Look(ref cachedPowerOutput, "cachedPowerOutput", 0f);
+	}
+
+	public override void CompTick()
+	{
+		base.CompTick();
+		if (!base.PowerOn)
+		{
+			cachedPowerOutput = 0f;
+			return;
+		}
+		ticksSinceWeatherUpdate++;
+		if (ticksSinceWeatherUpdate >= updateWeatherEveryXTicks)
+		{
+			float num = Mathf.Min(parent.Map.windManager.WindSpeed, 1.5f);
+			ticksSinceWeatherUpdate = 0;
+			cachedPowerOutput = 0f - base.Props.PowerConsumption * num;
 			RecalculateBlockages();
-			spinPosition = Rand.Range(0f, 15f);
-		}
-
-		public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
-		{
-			base.PostDeSpawn(map, mode);
-			windPathCells.Clear();
-			Sustainer sustainer = this.sustainer;
-			if (sustainer != null && !sustainer.Ended)
-			{
-				this.sustainer.End();
-			}
-		}
-
-		public override void PostSwapMap()
-		{
-			RecalculateBlockages();
-		}
-
-		public override void PostExposeData()
-		{
-			base.PostExposeData();
-			Scribe_Values.Look(ref ticksSinceWeatherUpdate, "updateCounter", 0);
-			Scribe_Values.Look(ref cachedPowerOutput, "cachedPowerOutput", 0f);
-		}
-
-		public override void CompTick()
-		{
-			base.CompTick();
-			if (!base.PowerOn)
+			if (blockedDueToInOrbit)
 			{
 				cachedPowerOutput = 0f;
-				return;
 			}
-			ticksSinceWeatherUpdate++;
-			if (ticksSinceWeatherUpdate >= updateWeatherEveryXTicks)
+			else if (windPathBlockedCells.Count > 0)
 			{
-				float num = Mathf.Min(parent.Map.windManager.WindSpeed, 1.5f);
-				ticksSinceWeatherUpdate = 0;
-				cachedPowerOutput = 0f - base.Props.PowerConsumption * num;
-				RecalculateBlockages();
-				if (blockedDueToInOrbit)
+				float num2 = 0f;
+				for (int i = 0; i < windPathBlockedCells.Count; i++)
+				{
+					num2 += cachedPowerOutput * 0.2f;
+				}
+				cachedPowerOutput -= num2;
+				if (cachedPowerOutput < 0f)
 				{
 					cachedPowerOutput = 0f;
 				}
-				else if (windPathBlockedCells.Count > 0)
-				{
-					float num2 = 0f;
-					for (int i = 0; i < windPathBlockedCells.Count; i++)
-					{
-						num2 += cachedPowerOutput * 0.2f;
-					}
-					cachedPowerOutput -= num2;
-					if (cachedPowerOutput < 0f)
-					{
-						cachedPowerOutput = 0f;
-					}
-				}
 			}
-			if (cachedPowerOutput > 0.01f)
-			{
-				spinPosition += PowerPercent * SpinRateFactor;
-			}
-			if (sustainer == null || sustainer.Ended)
-			{
-				sustainer = SoundDefOf.WindTurbine_Ambience.TrySpawnSustainer(SoundInfo.InMap(parent));
-			}
-			sustainer.Maintain();
-			sustainer.externalParams["PowerOutput"] = PowerPercent;
 		}
-
-		public override void PostDraw()
+		if (cachedPowerOutput > 0.01f)
 		{
-			base.PostDraw();
-			GenDraw.FillableBarRequest r = new GenDraw.FillableBarRequest
-			{
-				center = parent.DrawPos + Vector3.up * 0.1f,
-				size = BarSize,
-				fillPercent = PowerPercent,
-				filledMat = WindTurbineBarFilledMat,
-				unfilledMat = WindTurbineBarUnfilledMat,
-				margin = 0.15f
-			};
-			Rot4 rotation = parent.Rotation;
-			rotation.Rotate(RotationDirection.Clockwise);
-			r.rotation = rotation;
-			GenDraw.DrawFillableBar(r);
-			Vector3 pos = parent.TrueCenter();
-			pos += parent.Rotation.FacingCell.ToVector3() * VerticalBladeOffset;
-			pos += parent.Rotation.RighthandCell.ToVector3() * HorizontalBladeOffset;
-			pos.y += 0.03658537f;
-			float num = BladeWidth * Mathf.Sin(spinPosition);
-			if (num < 0f)
-			{
-				num *= -1f;
-			}
-			bool num2 = spinPosition % MathF.PI * 2f < MathF.PI;
-			Vector2 vector = new Vector2(num, 1f);
-			Vector3 s = new Vector3(vector.x, 1f, vector.y);
-			Matrix4x4 matrix = default(Matrix4x4);
-			matrix.SetTRS(pos, parent.Rotation.AsQuat, s);
-			Graphics.DrawMesh(num2 ? MeshPool.plane10 : MeshPool.plane10Flip, matrix, WindTurbineBladesMat, 0);
-			pos.y -= 0.07317074f;
-			matrix.SetTRS(pos, parent.Rotation.AsQuat, s);
-			Graphics.DrawMesh(num2 ? MeshPool.plane10Flip : MeshPool.plane10, matrix, WindTurbineBladesMat, 0);
+			spinPosition += PowerPercent * SpinRateFactor;
 		}
-
-		public override string CompInspectStringExtra()
+		if (sustainer == null || sustainer.Ended)
 		{
-			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.Append(base.CompInspectStringExtra());
-			if (windPathBlockedCells.Count > 0)
+			sustainer = SoundDefOf.WindTurbine_Ambience.TrySpawnSustainer(SoundInfo.InMap(parent));
+		}
+		sustainer.Maintain();
+		sustainer.externalParams["PowerOutput"] = PowerPercent;
+	}
+
+	public override void PostDraw()
+	{
+		base.PostDraw();
+		GenDraw.FillableBarRequest r = new GenDraw.FillableBarRequest
+		{
+			center = parent.DrawPos + Vector3.up * 0.1f,
+			size = BarSize,
+			fillPercent = PowerPercent,
+			filledMat = WindTurbineBarFilledMat,
+			unfilledMat = WindTurbineBarUnfilledMat,
+			margin = 0.15f
+		};
+		Rot4 rotation = parent.Rotation;
+		rotation.Rotate(RotationDirection.Clockwise);
+		r.rotation = rotation;
+		GenDraw.DrawFillableBar(r);
+		Vector3 pos = parent.TrueCenter();
+		pos += parent.Rotation.FacingCell.ToVector3() * VerticalBladeOffset;
+		pos += parent.Rotation.RighthandCell.ToVector3() * HorizontalBladeOffset;
+		pos.y += 0.03658537f;
+		float num = BladeWidth * Mathf.Sin(spinPosition);
+		if (num < 0f)
+		{
+			num *= -1f;
+		}
+		bool num2 = spinPosition % MathF.PI * 2f < MathF.PI;
+		Vector2 vector = new Vector2(num, 1f);
+		Vector3 s = new Vector3(vector.x, 1f, vector.y);
+		Matrix4x4 matrix = default(Matrix4x4);
+		matrix.SetTRS(pos, parent.Rotation.AsQuat, s);
+		Graphics.DrawMesh(num2 ? MeshPool.plane10 : MeshPool.plane10Flip, matrix, WindTurbineBladesMat, 0);
+		pos.y -= 0.07317074f;
+		matrix.SetTRS(pos, parent.Rotation.AsQuat, s);
+		Graphics.DrawMesh(num2 ? MeshPool.plane10Flip : MeshPool.plane10, matrix, WindTurbineBladesMat, 0);
+	}
+
+	public override string CompInspectStringExtra()
+	{
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.Append(base.CompInspectStringExtra());
+		if (windPathBlockedCells.Count > 0)
+		{
+			stringBuilder.AppendLine();
+			Thing thing = null;
+			if (windPathBlockedByThings != null)
+			{
+				thing = windPathBlockedByThings[0];
+			}
+			if (thing != null)
+			{
+				stringBuilder.Append("WindTurbine_WindPathIsBlockedBy".Translate() + " " + thing.Label);
+			}
+			else
+			{
+				stringBuilder.Append("WindTurbine_WindPathIsBlockedByRoof".Translate());
+			}
+		}
+		if (blockedDueToInOrbit)
+		{
+			if (stringBuilder.Length > 0)
 			{
 				stringBuilder.AppendLine();
-				Thing thing = null;
-				if (windPathBlockedByThings != null)
-				{
-					thing = windPathBlockedByThings[0];
-				}
-				if (thing != null)
-				{
-					stringBuilder.Append("WindTurbine_WindPathIsBlockedBy".Translate() + " " + thing.Label);
-				}
-				else
-				{
-					stringBuilder.Append("WindTurbine_WindPathIsBlockedByRoof".Translate());
-				}
 			}
-			if (blockedDueToInOrbit)
-			{
-				if (stringBuilder.Length > 0)
-				{
-					stringBuilder.AppendLine();
-				}
-				stringBuilder.Append("CannotFunctionOnLayer".Translate(parent.Map.Tile.LayerDef.label).CapitalizeFirst().Colorize(ColoredText.WarningColor));
-			}
-			return stringBuilder.ToString();
+			stringBuilder.Append("CannotFunctionOnLayer".Translate(parent.Map.Tile.LayerDef.label).CapitalizeFirst().Colorize(ColoredText.WarningColor));
 		}
+		return stringBuilder.ToString();
+	}
 
-		private void RecalculateBlockages()
+	private void RecalculateBlockages()
+	{
+		if (windPathCells.Count == 0)
 		{
-			if (windPathCells.Count == 0)
+			IEnumerable<IntVec3> collection = WindTurbineUtility.CalculateWindCells(parent.Position, parent.Rotation, parent.def.size);
+			windPathCells.AddRange(collection);
+		}
+		windPathBlockedCells.Clear();
+		windPathBlockedByThings.Clear();
+		blockedDueToInOrbit = parent.Map.Biome.inVacuum;
+		for (int i = 0; i < windPathCells.Count; i++)
+		{
+			IntVec3 intVec = windPathCells[i];
+			if (parent.Map.roofGrid.Roofed(intVec))
 			{
-				IEnumerable<IntVec3> collection = WindTurbineUtility.CalculateWindCells(parent.Position, parent.Rotation, parent.def.size);
-				windPathCells.AddRange(collection);
+				windPathBlockedByThings.Add(null);
+				windPathBlockedCells.Add(intVec);
+				continue;
 			}
-			windPathBlockedCells.Clear();
-			windPathBlockedByThings.Clear();
-			blockedDueToInOrbit = parent.Map.Biome.inVacuum;
-			for (int i = 0; i < windPathCells.Count; i++)
+			List<Thing> list = parent.Map.thingGrid.ThingsListAt(intVec);
+			for (int j = 0; j < list.Count; j++)
 			{
-				IntVec3 intVec = windPathCells[i];
-				if (parent.Map.roofGrid.Roofed(intVec))
+				Thing thing = list[j];
+				if (thing.def.blockWind)
 				{
-					windPathBlockedByThings.Add(null);
+					windPathBlockedByThings.Add(thing);
 					windPathBlockedCells.Add(intVec);
-					continue;
-				}
-				List<Thing> list = parent.Map.thingGrid.ThingsListAt(intVec);
-				for (int j = 0; j < list.Count; j++)
-				{
-					Thing thing = list[j];
-					if (thing.def.blockWind)
-					{
-						windPathBlockedByThings.Add(thing);
-						windPathBlockedCells.Add(intVec);
-						break;
-					}
+					break;
 				}
 			}
 		}

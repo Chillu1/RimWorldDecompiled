@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public interface INotifyHauledTo
 {
-	public interface INotifyHauledTo
-	{
-		void Notify_HauledTo(Pawn hauler, Thing thing, int count);
-	}
+	void Notify_HauledTo(Pawn hauler, Thing thing, int count);
 }

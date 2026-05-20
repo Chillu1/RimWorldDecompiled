@@ -1,23 +1,22 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompUseEffect_AddHediff : CompUseEffect
 {
-	public class CompUseEffect_AddHediff : CompUseEffect
+	public CompProperties_UseEffectAddHediff Props => (CompProperties_UseEffectAddHediff)props;
+
+	public override void DoEffect(Pawn user)
 	{
-		public CompProperties_UseEffectAddHediff Props => (CompProperties_UseEffectAddHediff)props;
+		user.health.AddHediff(Props.hediffDef);
+	}
 
-		public override void DoEffect(Pawn user)
+	public override AcceptanceReport CanBeUsedBy(Pawn p)
+	{
+		if (!Props.allowRepeatedUse && p.health.hediffSet.HasHediff(Props.hediffDef))
 		{
-			user.health.AddHediff(Props.hediffDef);
+			return "AlreadyHasHediff".Translate(Props.hediffDef.label);
 		}
-
-		public override AcceptanceReport CanBeUsedBy(Pawn p)
-		{
-			if (!Props.allowRepeatedUse && p.health.hediffSet.HasHediff(Props.hediffDef))
-			{
-				return "AlreadyHasHediff".Translate(Props.hediffDef.label);
-			}
-			return true;
-		}
+		return true;
 	}
 }

@@ -1,212 +1,211 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class Pawn_RotationTracker : IExposable
 {
-	public class Pawn_RotationTracker : IExposable
+	private Pawn pawn;
+
+	public Pawn_RotationTracker(Pawn pawn)
 	{
-		private Pawn pawn;
+		this.pawn = pawn;
+	}
 
-		public Pawn_RotationTracker(Pawn pawn)
+	public void Notify_Spawned()
+	{
+		UpdateRotation();
+	}
+
+	public void UpdateRotation()
+	{
+		if (pawn.Destroyed)
 		{
-			this.pawn = pawn;
+			return;
 		}
-
-		public void Notify_Spawned()
+		if (pawn.kindDef.useFixedRotation)
 		{
-			UpdateRotation();
+			pawn.Rotation = pawn.kindDef.fixedRotation;
 		}
-
-		public void UpdateRotation()
+		else
 		{
-			if (pawn.Destroyed)
+			if (pawn.jobs.HandlingFacing || (pawn.stances.stunner.Stunned && pawn.stances.stunner.DisableRotation))
 			{
 				return;
 			}
-			if (pawn.kindDef.useFixedRotation)
+			if (pawn.stances.curStance is Stance_Busy stance_Busy && stance_Busy.focusTarg.IsValid)
 			{
-				pawn.Rotation = pawn.kindDef.fixedRotation;
+				if (stance_Busy.focusTarg.HasThing)
+				{
+					Face(stance_Busy.focusTarg.Thing.DrawPos);
+				}
+				else
+				{
+					FaceCell(stance_Busy.focusTarg.Cell);
+				}
+				return;
+			}
+			if (pawn.pather.Moving)
+			{
+				if (pawn.pather.curPath != null && pawn.pather.curPath.NodesLeftCount >= 1)
+				{
+					FaceAdjacentCell(pawn.pather.nextCell);
+				}
+				return;
+			}
+			if (pawn.jobs.curJob != null)
+			{
+				LocalTargetInfo target = pawn.CurJob.GetTarget(pawn.jobs.curDriver.rotateToFace);
+				FaceTarget(target);
+			}
+			if (pawn.Drafted)
+			{
+				pawn.Rotation = Rot4.South;
+			}
+		}
+	}
+
+	public void ProcessPostTickVisuals(int ticksPassed)
+	{
+		UpdateRotation();
+	}
+
+	private void FaceAdjacentCell(IntVec3 c)
+	{
+		if (!(c == pawn.Position))
+		{
+			IntVec3 intVec = c - pawn.Position;
+			if (intVec.x > 0)
+			{
+				pawn.Rotation = Rot4.East;
+			}
+			else if (intVec.x < 0)
+			{
+				pawn.Rotation = Rot4.West;
+			}
+			else if (intVec.z > 0)
+			{
+				pawn.Rotation = Rot4.North;
 			}
 			else
 			{
-				if (pawn.jobs.HandlingFacing || (pawn.stances.stunner.Stunned && pawn.stances.stunner.DisableRotation))
-				{
-					return;
-				}
-				if (pawn.stances.curStance is Stance_Busy stance_Busy && stance_Busy.focusTarg.IsValid)
-				{
-					if (stance_Busy.focusTarg.HasThing)
-					{
-						Face(stance_Busy.focusTarg.Thing.DrawPos);
-					}
-					else
-					{
-						FaceCell(stance_Busy.focusTarg.Cell);
-					}
-					return;
-				}
-				if (pawn.pather.Moving)
-				{
-					if (pawn.pather.curPath != null && pawn.pather.curPath.NodesLeftCount >= 1)
-					{
-						FaceAdjacentCell(pawn.pather.nextCell);
-					}
-					return;
-				}
-				if (pawn.jobs.curJob != null)
-				{
-					LocalTargetInfo target = pawn.CurJob.GetTarget(pawn.jobs.curDriver.rotateToFace);
-					FaceTarget(target);
-				}
-				if (pawn.Drafted)
-				{
-					pawn.Rotation = Rot4.South;
-				}
+				pawn.Rotation = Rot4.South;
 			}
 		}
+	}
 
-		public void ProcessPostTickVisuals(int ticksPassed)
+	public void FaceCell(IntVec3 c)
+	{
+		if (!(c == pawn.Position))
 		{
-			UpdateRotation();
+			float angle = (c - pawn.Position).ToVector3().AngleFlat();
+			pawn.Rotation = RotFromAngleBiased(angle);
 		}
+	}
 
-		private void FaceAdjacentCell(IntVec3 c)
+	public void Face(Vector3 p)
+	{
+		if (!(p == pawn.DrawPos))
 		{
-			if (!(c == pawn.Position))
-			{
-				IntVec3 intVec = c - pawn.Position;
-				if (intVec.x > 0)
-				{
-					pawn.Rotation = Rot4.East;
-				}
-				else if (intVec.x < 0)
-				{
-					pawn.Rotation = Rot4.West;
-				}
-				else if (intVec.z > 0)
-				{
-					pawn.Rotation = Rot4.North;
-				}
-				else
-				{
-					pawn.Rotation = Rot4.South;
-				}
-			}
+			float angle = (p - pawn.DrawPos).AngleFlat();
+			pawn.Rotation = RotFromAngleBiased(angle);
 		}
+	}
 
-		public void FaceCell(IntVec3 c)
+	public void FaceTarget(LocalTargetInfo target)
+	{
+		if (!target.IsValid)
 		{
-			if (!(c == pawn.Position))
-			{
-				float angle = (c - pawn.Position).ToVector3().AngleFlat();
-				pawn.Rotation = RotFromAngleBiased(angle);
-			}
+			return;
 		}
-
-		public void Face(Vector3 p)
+		if (target.HasThing)
 		{
-			if (!(p == pawn.DrawPos))
-			{
-				float angle = (p - pawn.DrawPos).AngleFlat();
-				pawn.Rotation = RotFromAngleBiased(angle);
-			}
-		}
-
-		public void FaceTarget(LocalTargetInfo target)
-		{
-			if (!target.IsValid)
+			Thing thing = (target.Thing.Spawned ? target.Thing : ThingOwnerUtility.GetFirstSpawnedParentThing(target.Thing));
+			if (thing == null || !thing.Spawned)
 			{
 				return;
 			}
-			if (target.HasThing)
+			bool flag = false;
+			IntVec3 c = default(IntVec3);
+			CellRect cellRect = thing.OccupiedRect();
+			for (int i = cellRect.minZ; i <= cellRect.maxZ; i++)
 			{
-				Thing thing = (target.Thing.Spawned ? target.Thing : ThingOwnerUtility.GetFirstSpawnedParentThing(target.Thing));
-				if (thing == null || !thing.Spawned)
+				for (int j = cellRect.minX; j <= cellRect.maxX; j++)
 				{
-					return;
-				}
-				bool flag = false;
-				IntVec3 c = default(IntVec3);
-				CellRect cellRect = thing.OccupiedRect();
-				for (int i = cellRect.minZ; i <= cellRect.maxZ; i++)
-				{
-					for (int j = cellRect.minX; j <= cellRect.maxX; j++)
+					if (pawn.Position == new IntVec3(j, 0, i))
 					{
-						if (pawn.Position == new IntVec3(j, 0, i))
-						{
-							Face(thing.DrawPos);
-							return;
-						}
+						Face(thing.DrawPos);
+						return;
 					}
-				}
-				for (int k = cellRect.minZ; k <= cellRect.maxZ; k++)
-				{
-					for (int l = cellRect.minX; l <= cellRect.maxX; l++)
-					{
-						IntVec3 intVec = new IntVec3(l, 0, k);
-						if (intVec.AdjacentToCardinal(pawn.Position))
-						{
-							FaceAdjacentCell(intVec);
-							return;
-						}
-						if (intVec.AdjacentTo8Way(pawn.Position))
-						{
-							flag = true;
-							c = intVec;
-						}
-					}
-				}
-				if (flag)
-				{
-					if (DebugViewSettings.drawPawnRotatorTarget)
-					{
-						pawn.Map.debugDrawer.FlashCell(pawn.Position, 0.6f, "jbthing");
-						GenDraw.DrawLineBetween(pawn.Position.ToVector3Shifted(), c.ToVector3Shifted());
-					}
-					FaceAdjacentCell(c);
-				}
-				else
-				{
-					Face(thing.DrawPos);
 				}
 			}
-			else if (pawn.Position.AdjacentTo8Way(target.Cell))
+			for (int k = cellRect.minZ; k <= cellRect.maxZ; k++)
+			{
+				for (int l = cellRect.minX; l <= cellRect.maxX; l++)
+				{
+					IntVec3 intVec = new IntVec3(l, 0, k);
+					if (intVec.AdjacentToCardinal(pawn.Position))
+					{
+						FaceAdjacentCell(intVec);
+						return;
+					}
+					if (intVec.AdjacentTo8Way(pawn.Position))
+					{
+						flag = true;
+						c = intVec;
+					}
+				}
+			}
+			if (flag)
 			{
 				if (DebugViewSettings.drawPawnRotatorTarget)
 				{
-					pawn.Map.debugDrawer.FlashCell(pawn.Position, 0.2f, "jbloc");
-					GenDraw.DrawLineBetween(pawn.Position.ToVector3Shifted(), target.Cell.ToVector3Shifted());
+					pawn.Map.debugDrawer.FlashCell(pawn.Position, 0.6f, "jbthing");
+					GenDraw.DrawLineBetween(pawn.Position.ToVector3Shifted(), c.ToVector3Shifted());
 				}
-				FaceAdjacentCell(target.Cell);
+				FaceAdjacentCell(c);
 			}
-			else if (target.Cell.IsValid && target.Cell != pawn.Position)
+			else
 			{
-				Face(target.Cell.ToVector3());
+				Face(thing.DrawPos);
 			}
 		}
-
-		public static Rot4 RotFromAngleBiased(float angle)
+		else if (pawn.Position.AdjacentTo8Way(target.Cell))
 		{
-			if (angle < 30f)
+			if (DebugViewSettings.drawPawnRotatorTarget)
 			{
-				return Rot4.North;
+				pawn.Map.debugDrawer.FlashCell(pawn.Position, 0.2f, "jbloc");
+				GenDraw.DrawLineBetween(pawn.Position.ToVector3Shifted(), target.Cell.ToVector3Shifted());
 			}
-			if (angle < 150f)
-			{
-				return Rot4.East;
-			}
-			if (angle < 210f)
-			{
-				return Rot4.South;
-			}
-			if (angle < 330f)
-			{
-				return Rot4.West;
-			}
+			FaceAdjacentCell(target.Cell);
+		}
+		else if (target.Cell.IsValid && target.Cell != pawn.Position)
+		{
+			Face(target.Cell.ToVector3());
+		}
+	}
+
+	public static Rot4 RotFromAngleBiased(float angle)
+	{
+		if (angle < 30f)
+		{
 			return Rot4.North;
 		}
-
-		public void ExposeData()
+		if (angle < 150f)
 		{
+			return Rot4.East;
 		}
+		if (angle < 210f)
+		{
+			return Rot4.South;
+		}
+		if (angle < 330f)
+		{
+			return Rot4.West;
+		}
+		return Rot4.North;
+	}
+
+	public void ExposeData()
+	{
 	}
 }

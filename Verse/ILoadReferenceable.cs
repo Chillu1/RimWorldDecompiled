@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public interface ILoadReferenceable
 {
-	public interface ILoadReferenceable
-	{
-		string GetUniqueLoadID();
-	}
+	string GetUniqueLoadID();
 }

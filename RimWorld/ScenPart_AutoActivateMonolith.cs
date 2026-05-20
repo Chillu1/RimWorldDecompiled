@@ -1,32 +1,31 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ScenPart_AutoActivateMonolith : ScenPart
 {
-	public class ScenPart_AutoActivateMonolith : ScenPart
+	public int delayTicks;
+
+	private string delayTicksBuf;
+
+	public override void ExposeData()
 	{
-		public int delayTicks;
+		base.ExposeData();
+		Scribe_Values.Look(ref delayTicks, "delayTicks", 0);
+	}
 
-		private string delayTicksBuf;
+	public override void DoEditInterface(Listing_ScenEdit listing)
+	{
+		float val = (float)delayTicks / 60000f;
+		Widgets.TextFieldNumericLabeled(listing.GetScenPartRect(this, ScenPart.RowHeight), "delayDays".Translate().CapitalizeFirst(), ref val, ref delayTicksBuf);
+		delayTicks = (int)(val * 60000f);
+	}
 
-		public override void ExposeData()
+	public override void PostGameStart()
+	{
+		if (ModsConfig.AnomalyActive && Find.Anomaly.GenerateMonolith && Find.Anomaly.monolith != null)
 		{
-			base.ExposeData();
-			Scribe_Values.Look(ref delayTicks, "delayTicks", 0);
-		}
-
-		public override void DoEditInterface(Listing_ScenEdit listing)
-		{
-			float val = (float)delayTicks / 60000f;
-			Widgets.TextFieldNumericLabeled(listing.GetScenPartRect(this, ScenPart.RowHeight), "delayDays".Translate().CapitalizeFirst(), ref val, ref delayTicksBuf);
-			delayTicks = (int)(val * 60000f);
-		}
-
-		public override void PostGameStart()
-		{
-			if (ModsConfig.AnomalyActive && Find.Anomaly.GenerateMonolith && Find.Anomaly.monolith != null)
-			{
-				Find.Anomaly.monolith.AutoActivate(Find.TickManager.TicksGame + delayTicks);
-			}
+			Find.Anomaly.monolith.AutoActivate(Find.TickManager.TicksGame + delayTicks);
 		}
 	}
 }

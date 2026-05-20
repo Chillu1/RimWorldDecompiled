@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_HealPermanentWounds : HediffCompProperties
 {
-	public class HediffCompProperties_HealPermanentWounds : HediffCompProperties
+	public HediffCompProperties_HealPermanentWounds()
 	{
-		public HediffCompProperties_HealPermanentWounds()
-		{
-			compClass = typeof(HediffComp_HealPermanentWounds);
-		}
+		compClass = typeof(HediffComp_HealPermanentWounds);
 	}
 }

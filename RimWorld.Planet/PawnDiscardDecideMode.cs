@@ -1,9 +1,8 @@
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public enum PawnDiscardDecideMode
 {
-	public enum PawnDiscardDecideMode
-	{
-		Decide,
-		KeepForever,
-		Discard
-	}
+	Decide,
+	KeepForever,
+	Discard
 }

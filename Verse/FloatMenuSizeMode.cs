@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum FloatMenuSizeMode
 {
-	public enum FloatMenuSizeMode
-	{
-		Undefined,
-		Normal,
-		Tiny
-	}
+	Undefined,
+	Normal,
+	Tiny
 }

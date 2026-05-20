@@ -2,30 +2,29 @@ using Verse;
 using Verse.AI;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class LordToil_Stage : LordToil
 {
-	public class LordToil_Stage : LordToil
+	public override IntVec3 FlagLoc => Data.stagingPoint;
+
+	private LordToilData_Stage Data => (LordToilData_Stage)data;
+
+	public override bool ForceHighStoryDanger => true;
+
+	public LordToil_Stage(IntVec3 stagingLoc)
 	{
-		public override IntVec3 FlagLoc => Data.stagingPoint;
+		data = new LordToilData_Stage();
+		Data.stagingPoint = stagingLoc;
+	}
 
-		private LordToilData_Stage Data => (LordToilData_Stage)data;
-
-		public override bool ForceHighStoryDanger => true;
-
-		public LordToil_Stage(IntVec3 stagingLoc)
+	public override void UpdateAllDuties()
+	{
+		LordToilData_Stage lordToilData_Stage = Data;
+		for (int i = 0; i < lord.ownedPawns.Count; i++)
 		{
-			data = new LordToilData_Stage();
-			Data.stagingPoint = stagingLoc;
-		}
-
-		public override void UpdateAllDuties()
-		{
-			LordToilData_Stage lordToilData_Stage = Data;
-			for (int i = 0; i < lord.ownedPawns.Count; i++)
-			{
-				lord.ownedPawns[i].mindState.duty = new PawnDuty(DutyDefOf.Defend, lordToilData_Stage.stagingPoint);
-				lord.ownedPawns[i].mindState.duty.radius = 28f;
-			}
+			lord.ownedPawns[i].mindState.duty = new PawnDuty(DutyDefOf.Defend, lordToilData_Stage.stagingPoint);
+			lord.ownedPawns[i].mindState.duty.radius = 28f;
 		}
 	}
 }

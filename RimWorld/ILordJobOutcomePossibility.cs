@@ -1,13 +1,12 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public interface ILordJobOutcomePossibility
 {
-	public interface ILordJobOutcomePossibility
-	{
-		TaggedString Label { get; }
+	TaggedString Label { get; }
 
-		TaggedString ToolTip { get; }
+	TaggedString ToolTip { get; }
 
-		float Weight(FloatRange qualityRange);
-	}
+	float Weight(FloatRange qualityRange);
 }

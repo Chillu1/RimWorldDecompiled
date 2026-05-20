@@ -1,33 +1,32 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_AbilityConvert : CompProperties_AbilityEffect
 {
-	public class CompProperties_AbilityConvert : CompProperties_AbilityEffect
+	[MustTranslate]
+	public string successMessage;
+
+	[MustTranslate]
+	public string failMessage;
+
+	public ThoughtDef failedThoughtInitiator;
+
+	public ThoughtDef failedThoughtRecipient;
+
+	public float convertPowerFactor = -1f;
+
+	public CompProperties_AbilityConvert()
 	{
-		[MustTranslate]
-		public string successMessage;
+		compClass = typeof(CompAbilityEffect_Convert);
+	}
 
-		[MustTranslate]
-		public string failMessage;
-
-		public ThoughtDef failedThoughtInitiator;
-
-		public ThoughtDef failedThoughtRecipient;
-
-		public float convertPowerFactor = -1f;
-
-		public CompProperties_AbilityConvert()
+	public override IEnumerable<string> ConfigErrors(AbilityDef parentDef)
+	{
+		if (convertPowerFactor < 0f)
 		{
-			compClass = typeof(CompAbilityEffect_Convert);
-		}
-
-		public override IEnumerable<string> ConfigErrors(AbilityDef parentDef)
-		{
-			if (convertPowerFactor < 0f)
-			{
-				yield return "convertPowerFactor not set";
-			}
+			yield return "convertPowerFactor not set";
 		}
 	}
 }

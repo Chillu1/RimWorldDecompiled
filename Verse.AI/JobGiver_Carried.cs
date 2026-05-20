@@ -1,16 +1,15 @@
 using RimWorld;
 
-namespace Verse.AI
+namespace Verse.AI;
+
+public class JobGiver_Carried : ThinkNode_JobGiver
 {
-	public class JobGiver_Carried : ThinkNode_JobGiver
+	protected override Job TryGiveJob(Pawn pawn)
 	{
-		protected override Job TryGiveJob(Pawn pawn)
+		if (!pawn.Awake() && pawn.CurJob != null)
 		{
-			if (!pawn.Awake() && pawn.CurJob != null)
-			{
-				return pawn.CurJob;
-			}
-			return JobMaker.MakeJob(JobDefOf.Carried);
+			return pawn.CurJob;
 		}
+		return JobMaker.MakeJob(JobDefOf.Carried);
 	}
 }

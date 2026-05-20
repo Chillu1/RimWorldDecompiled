@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_AbilityWordOfLove : CompProperties_EffectWithDest
 {
-	public class CompProperties_AbilityWordOfLove : CompProperties_EffectWithDest
+	public CompProperties_AbilityWordOfLove()
 	{
-		public CompProperties_AbilityWordOfLove()
-		{
-			compClass = typeof(CompAbilityEffect_WordOfLove);
-		}
+		compClass = typeof(CompAbilityEffect_WordOfLove);
 	}
 }

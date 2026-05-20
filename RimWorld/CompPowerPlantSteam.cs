@@ -1,40 +1,39 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompPowerPlantSteam : CompPowerPlant
 {
-	public class CompPowerPlantSteam : CompPowerPlant
+	private IntermittentSteamSprayer steamSprayer;
+
+	private Building_SteamGeyser geyser;
+
+	public override void PostSpawnSetup(bool respawningAfterLoad)
 	{
-		private IntermittentSteamSprayer steamSprayer;
+		base.PostSpawnSetup(respawningAfterLoad);
+		steamSprayer = new IntermittentSteamSprayer(parent);
+	}
 
-		private Building_SteamGeyser geyser;
-
-		public override void PostSpawnSetup(bool respawningAfterLoad)
+	public override void CompTick()
+	{
+		base.CompTick();
+		if (geyser == null)
 		{
-			base.PostSpawnSetup(respawningAfterLoad);
-			steamSprayer = new IntermittentSteamSprayer(parent);
+			geyser = (Building_SteamGeyser)parent.Map.thingGrid.ThingAt(parent.Position, ThingDefOf.SteamGeyser);
 		}
-
-		public override void CompTick()
+		if (geyser != null)
 		{
-			base.CompTick();
-			if (geyser == null)
-			{
-				geyser = (Building_SteamGeyser)parent.Map.thingGrid.ThingAt(parent.Position, ThingDefOf.SteamGeyser);
-			}
-			if (geyser != null)
-			{
-				geyser.harvester = (Building)parent;
-				steamSprayer.SteamSprayerTick();
-			}
+			geyser.harvester = (Building)parent;
+			steamSprayer.SteamSprayerTick();
 		}
+	}
 
-		public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
+	public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
+	{
+		base.PostDeSpawn(map, mode);
+		if (geyser != null)
 		{
-			base.PostDeSpawn(map, mode);
-			if (geyser != null)
-			{
-				geyser.harvester = null;
-			}
+			geyser.harvester = null;
 		}
 	}
 }

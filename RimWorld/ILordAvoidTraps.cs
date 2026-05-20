@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public interface ILordAvoidTraps
 {
-	public interface ILordAvoidTraps
-	{
-		float AvoidTrapRatio { get; }
-	}
+	float AvoidTrapRatio { get; }
 }

@@ -1,16 +1,15 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public class WorldDrawLayer_SelectedTile : WorldDrawLayer_SingleTile
 {
-	public class WorldDrawLayer_SelectedTile : WorldDrawLayer_SingleTile
-	{
-		protected override PlanetTile Tile => Find.WorldSelector.SelectedTile;
+	protected override PlanetTile Tile => Find.WorldSelector.SelectedTile;
 
-		protected override Material Material => WorldMaterials.SelectedTile;
+	protected override Material Material => WorldMaterials.SelectedTile;
 
-		public override bool VisibleWhenLayerNotSelected => false;
+	public override bool VisibleWhenLayerNotSelected => false;
 
-		public override bool VisibleInBackground => false;
-	}
+	public override bool VisibleInBackground => false;
 }

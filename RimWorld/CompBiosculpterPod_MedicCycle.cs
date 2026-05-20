@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompBiosculpterPod_MedicCycle : CompBiosculpterPod_HealingCycle
 {
-	public class CompBiosculpterPod_MedicCycle : CompBiosculpterPod_HealingCycle
-	{
-		public override bool Regenerate => false;
-	}
+	public override bool Regenerate => false;
 }

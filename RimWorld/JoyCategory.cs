@@ -1,12 +1,11 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum JoyCategory : byte
 {
-	public enum JoyCategory : byte
-	{
-		Empty,
-		VeryLow,
-		Low,
-		Satisfied,
-		High,
-		Extreme
-	}
+	Empty,
+	VeryLow,
+	Low,
+	Satisfied,
+	High,
+	Extreme
 }

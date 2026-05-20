@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_StunOnDamage : CompProperties
 {
-	public class CompProperties_StunOnDamage : CompProperties
+	public int delayTicks;
+
+	public DamageDef damage;
+
+	public CompProperties_StunOnDamage()
 	{
-		public int delayTicks;
-
-		public DamageDef damage;
-
-		public CompProperties_StunOnDamage()
-		{
-			compClass = typeof(CompStunOnDamage);
-		}
+		compClass = typeof(CompStunOnDamage);
 	}
 }

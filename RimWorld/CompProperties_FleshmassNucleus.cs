@@ -1,20 +1,19 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_FleshmassNucleus : CompProperties
 {
-	public class CompProperties_FleshmassNucleus : CompProperties
+	public float activityOnRoofCollapsed = 0.3f;
+
+	public SimpleCurve activityMeatPerDayCurve = new SimpleCurve
 	{
-		public float activityOnRoofCollapsed = 0.3f;
+		new CurvePoint(0.1f, 20f),
+		new CurvePoint(0.9f, 120f)
+	};
 
-		public SimpleCurve activityMeatPerDayCurve = new SimpleCurve
-		{
-			new CurvePoint(0.1f, 20f),
-			new CurvePoint(0.9f, 120f)
-		};
-
-		public CompProperties_FleshmassNucleus()
-		{
-			compClass = typeof(CompFleshmassNucleus);
-		}
+	public CompProperties_FleshmassNucleus()
+	{
+		compClass = typeof(CompFleshmassNucleus);
 	}
 }

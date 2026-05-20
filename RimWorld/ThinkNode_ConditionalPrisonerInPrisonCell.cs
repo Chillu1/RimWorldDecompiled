@@ -1,17 +1,16 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThinkNode_ConditionalPrisonerInPrisonCell : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalPrisonerInPrisonCell : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
+		if (!pawn.IsPrisoner)
 		{
-			if (!pawn.IsPrisoner)
-			{
-				return false;
-			}
-			return pawn.GetRoom()?.IsPrisonCell ?? false;
+			return false;
 		}
+		return pawn.GetRoom()?.IsPrisonCell ?? false;
 	}
 }

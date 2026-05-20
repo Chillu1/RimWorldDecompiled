@@ -1,21 +1,20 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class GeneSymbolPack
 {
-	public class GeneSymbolPack
+	public class WeightedSymbol
 	{
-		public class WeightedSymbol
-		{
-			[MustTranslate]
-			public string symbol;
+		[MustTranslate]
+		public string symbol;
 
-			public float weight = 1f;
-		}
-
-		public List<WeightedSymbol> prefixSymbols;
-
-		public List<WeightedSymbol> suffixSymbols;
-
-		public List<WeightedSymbol> wholeNameSymbols;
+		public float weight = 1f;
 	}
+
+	public List<WeightedSymbol> prefixSymbols;
+
+	public List<WeightedSymbol> suffixSymbols;
+
+	public List<WeightedSymbol> wholeNameSymbols;
 }

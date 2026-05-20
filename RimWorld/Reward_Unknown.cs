@@ -4,34 +4,33 @@ using UnityEngine;
 using Verse;
 using Verse.Grammar;
 
-namespace RimWorld
+namespace RimWorld;
+
+[StaticConstructorOnStartup]
+public class Reward_Unknown : Reward
 {
-	[StaticConstructorOnStartup]
-	public class Reward_Unknown : Reward
+	private static readonly Texture2D Icon = ContentFinder<Texture2D>.Get("UI/Overlays/QuestionMark");
+
+	public override IEnumerable<GenUI.AnonymousStackElement> StackElements
 	{
-		private static readonly Texture2D Icon = ContentFinder<Texture2D>.Get("UI/Overlays/QuestionMark");
-
-		public override IEnumerable<GenUI.AnonymousStackElement> StackElements
+		get
 		{
-			get
-			{
-				yield return QuestPartUtility.GetStandardRewardStackElement("Reward_Unknown_Label".Translate(), Icon, () => GetDescription(default(RewardsGeneratorParams)).CapitalizeFirst() + ".");
-			}
+			yield return QuestPartUtility.GetStandardRewardStackElement("Reward_Unknown_Label".Translate(), Icon, () => GetDescription(default(RewardsGeneratorParams)).CapitalizeFirst() + ".");
 		}
+	}
 
-		public override void InitFromValue(float rewardValue, RewardsGeneratorParams parms, out float valueActuallyUsed)
-		{
-			throw new NotImplementedException();
-		}
+	public override void InitFromValue(float rewardValue, RewardsGeneratorParams parms, out float valueActuallyUsed)
+	{
+		throw new NotImplementedException();
+	}
 
-		public override IEnumerable<QuestPart> GenerateQuestParts(int index, RewardsGeneratorParams parms, string customLetterLabel, string customLetterText, RulePack customLetterLabelRules, RulePack customLetterTextRules)
-		{
-			throw new NotImplementedException();
-		}
+	public override IEnumerable<QuestPart> GenerateQuestParts(int index, RewardsGeneratorParams parms, string customLetterLabel, string customLetterText, RulePack customLetterLabelRules, RulePack customLetterTextRules)
+	{
+		throw new NotImplementedException();
+	}
 
-		public override string GetDescription(RewardsGeneratorParams parms)
-		{
-			return "Reward_Unknown".Translate().Resolve();
-		}
+	public override string GetDescription(RewardsGeneratorParams parms)
+	{
+		return "Reward_Unknown".Translate().Resolve();
 	}
 }

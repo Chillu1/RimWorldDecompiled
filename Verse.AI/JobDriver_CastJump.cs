@@ -1,11 +1,10 @@
-namespace Verse.AI
+namespace Verse.AI;
+
+public class JobDriver_CastJump : JobDriver_CastVerbOnceStatic
 {
-	public class JobDriver_CastJump : JobDriver_CastVerbOnceStatic
+	public override bool TryMakePreToilReservations(bool errorOnFailed)
 	{
-		public override bool TryMakePreToilReservations(bool errorOnFailed)
-		{
-			pawn.Map.pawnDestinationReservationManager.Reserve(pawn, job, job.targetA.Cell);
-			return true;
-		}
+		pawn.Map.pawnDestinationReservationManager.Reserve(pawn, job, job.targetA.Cell);
+		return true;
 	}
 }

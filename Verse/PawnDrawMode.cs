@@ -1,8 +1,7 @@
-namespace Verse
+namespace Verse;
+
+public enum PawnDrawMode
 {
-	public enum PawnDrawMode
-	{
-		BodyAndHead,
-		HeadOnly
-	}
+	BodyAndHead,
+	HeadOnly
 }

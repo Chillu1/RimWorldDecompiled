@@ -1,31 +1,30 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class ResurrectionParams
 {
-	public class ResurrectionParams
-	{
-		public float gettingScarsChance;
+	public float gettingScarsChance;
 
-		public bool canKidnap = true;
+	public bool canKidnap = true;
 
-		public bool canTimeoutOrFlee = true;
+	public bool canTimeoutOrFlee = true;
 
-		public bool sappers;
+	public bool sappers;
 
-		public bool useAvoidGridSmart;
+	public bool useAvoidGridSmart;
 
-		public bool canSteal = true;
+	public bool canSteal = true;
 
-		public bool breachers;
+	public bool breachers;
 
-		public bool canPickUpOpportunisticWeapons;
+	public bool canPickUpOpportunisticWeapons;
 
-		public bool restoreMissingParts = true;
+	public bool restoreMissingParts = true;
 
-		public bool noLord;
+	public bool noLord;
 
-		public bool dontSpawn;
+	public bool dontSpawn;
 
-		public bool invisibleStun;
+	public bool invisibleStun;
 
-		public bool removeDiedThoughts = true;
-	}
+	public bool removeDiedThoughts = true;
 }

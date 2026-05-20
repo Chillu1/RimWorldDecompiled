@@ -1,8 +1,7 @@
-namespace UnityStandardAssets.ImageEffects
+namespace UnityStandardAssets.ImageEffects;
+
+public enum TweakMode34
 {
-	public enum TweakMode34
-	{
-		Basic,
-		Complex
-	}
+	Basic,
+	Complex
 }

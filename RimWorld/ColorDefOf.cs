@@ -1,13 +1,12 @@
-namespace RimWorld
-{
-	[DefOf]
-	public static class ColorDefOf
-	{
-		public static ColorDef PlanGray;
+namespace RimWorld;
 
-		static ColorDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(ColorDefOf));
-		}
+[DefOf]
+public static class ColorDefOf
+{
+	public static ColorDef PlanGray;
+
+	static ColorDefOf()
+	{
+		DefOfHelper.EnsureInitializedInCtor(typeof(ColorDefOf));
 	}
 }

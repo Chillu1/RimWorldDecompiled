@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class StuffCategoryDef : Def
 {
-	public class StuffCategoryDef : Def
-	{
-		[MustTranslate]
-		public string noun;
+	[MustTranslate]
+	public string noun;
 
-		public SoundDef destroySoundSmall;
+	public SoundDef destroySoundSmall;
 
-		public SoundDef destroySoundMedium;
+	public SoundDef destroySoundMedium;
 
-		public SoundDef destroySoundLarge;
-	}
+	public SoundDef destroySoundLarge;
 }

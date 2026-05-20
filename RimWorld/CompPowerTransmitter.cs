@@ -1,6 +1,5 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompPowerTransmitter : CompPower
 {
-	public class CompPowerTransmitter : CompPower
-	{
-	}
 }

@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public class CompProperties_AIUSablePack : CompProperties
 {
-	public class CompProperties_AIUSablePack : CompProperties
-	{
-		public int checkInterval = 60;
-	}
+	public int checkInterval = 60;
 }

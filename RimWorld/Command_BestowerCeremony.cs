@@ -5,79 +5,78 @@ using UnityEngine;
 using Verse;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Command_BestowerCeremony : Command
 {
-	public class Command_BestowerCeremony : Command
+	private Pawn bestower;
+
+	private Pawn forPawn;
+
+	private Action<List<Pawn>> action;
+
+	private LordJob_BestowingCeremony job;
+
+	public Command_BestowerCeremony(LordJob_BestowingCeremony job, Pawn bestower, Pawn forPawn, Action<List<Pawn>> action)
 	{
-		private Pawn bestower;
+		this.bestower = bestower;
+		this.forPawn = forPawn;
+		this.action = action;
+		this.job = job;
+		defaultLabel = "BeginCeremony".Translate(this.forPawn);
+		icon = ContentFinder<Texture2D>.Get("UI/Icons/Rituals/BestowCeremony");
+	}
 
-		private Pawn forPawn;
-
-		private Action<List<Pawn>> action;
-
-		private LordJob_BestowingCeremony job;
-
-		public Command_BestowerCeremony(LordJob_BestowingCeremony job, Pawn bestower, Pawn forPawn, Action<List<Pawn>> action)
+	public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth, GizmoRenderParms parms)
+	{
+		if (!JobDriver_BestowingCeremony.AnalyzeThroneRoom(bestower, forPawn))
 		{
-			this.bestower = bestower;
-			this.forPawn = forPawn;
-			this.action = action;
-			this.job = job;
-			defaultLabel = "BeginCeremony".Translate(this.forPawn);
-			icon = ContentFinder<Texture2D>.Get("UI/Icons/Rituals/BestowCeremony");
+			disabledReason = "BestowingCeremonyThroneroomRequirementsNotSatisfiedShort".Translate(forPawn.Named("PAWN"), forPawn.royalty.GetTitleAwardedWhenUpdating(bestower.Faction, forPawn.royalty.GetFavor(bestower.Faction)).label.Named("TITLE"));
+			disabled = true;
 		}
-
-		public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth, GizmoRenderParms parms)
+		else if (!job.GetSpot().IsValid)
 		{
-			if (!JobDriver_BestowingCeremony.AnalyzeThroneRoom(bestower, forPawn))
+			disabledReason = "MessageBestowerUnreachable".Translate();
+			disabled = true;
+		}
+		else
+		{
+			Lord lord = forPawn.GetLord();
+			if (lord != null)
 			{
-				disabledReason = "BestowingCeremonyThroneroomRequirementsNotSatisfiedShort".Translate(forPawn.Named("PAWN"), forPawn.royalty.GetTitleAwardedWhenUpdating(bestower.Faction, forPawn.royalty.GetFavor(bestower.Faction)).label.Named("TITLE"));
-				disabled = true;
-			}
-			else if (!job.GetSpot().IsValid)
-			{
-				disabledReason = "MessageBestowerUnreachable".Translate();
-				disabled = true;
-			}
-			else
-			{
-				Lord lord = forPawn.GetLord();
-				if (lord != null)
+				if (lord.LordJob is LordJob_Ritual)
 				{
-					if (lord.LordJob is LordJob_Ritual)
-					{
-						disabledReason = "CantStartRitualTargetIsAlreadyInRitual".Translate(forPawn.LabelShort);
-						disabled = true;
-					}
-					else
-					{
-						disabledReason = "MessageBestowingTargetIsBusy".Translate(forPawn.LabelShort);
-						disabled = true;
-					}
+					disabledReason = "CantStartRitualTargetIsAlreadyInRitual".Translate(forPawn.LabelShort);
+					disabled = true;
+				}
+				else
+				{
+					disabledReason = "MessageBestowingTargetIsBusy".Translate(forPawn.LabelShort);
+					disabled = true;
 				}
 			}
-			return base.GizmoOnGUI(topLeft, maxWidth, parms);
 		}
+		return base.GizmoOnGUI(topLeft, maxWidth, parms);
+	}
 
-		public override void ProcessInput(Event ev)
+	public override void ProcessInput(Event ev)
+	{
+		base.ProcessInput(ev);
+		Find.WindowStack.Add(new Dialog_BeginRitual("RitualBestowingCeremony".Translate(), null, job.targetSpot.ToTargetInfo(bestower.Map), bestower.Map, delegate(RitualRoleAssignments assignments)
 		{
-			base.ProcessInput(ev);
-			Find.WindowStack.Add(new Dialog_BeginRitual("RitualBestowingCeremony".Translate(), null, job.targetSpot.ToTargetInfo(bestower.Map), bestower.Map, delegate(RitualRoleAssignments assignments)
+			action(assignments.Participants.Where((Pawn p) => p != bestower).ToList());
+			return true;
+		}, bestower, null, delegate(Pawn pawn, bool voluntary, bool allowOtherIdeos)
+		{
+			if (pawn.GetLord()?.LordJob is LordJob_Ritual)
 			{
-				action(assignments.Participants.Where((Pawn p) => p != bestower).ToList());
-				return true;
-			}, bestower, null, delegate(Pawn pawn, bool voluntary, bool allowOtherIdeos)
+				return false;
+			}
+			if (pawn.IsSubhuman)
 			{
-				if (pawn.GetLord()?.LordJob is LordJob_Ritual)
-				{
-					return false;
-				}
-				if (pawn.IsSubhuman)
-				{
-					return false;
-				}
-				return !pawn.IsPrisonerOfColony && !pawn.RaceProps.Animal;
-			}, "Begin".Translate(), new List<Pawn> { bestower, forPawn }, null, RitualOutcomeEffectDefOf.BestowingCeremony));
-		}
+				return false;
+			}
+			return !pawn.IsPrisonerOfColony && !pawn.RaceProps.Animal;
+		}, "Begin".Translate(), new List<Pawn> { bestower, forPawn }, null, RitualOutcomeEffectDefOf.BestowingCeremony));
 	}
 }

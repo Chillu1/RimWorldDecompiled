@@ -1,7 +1,6 @@
-namespace Verse.Sound
+namespace Verse.Sound;
+
+public interface ISizeReporter
 {
-	public interface ISizeReporter
-	{
-		float CurrentSize();
-	}
+	float CurrentSize();
 }

@@ -1,75 +1,74 @@
 using Verse;
 using Verse.Sound;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompTerrainPumpDry : CompTerrainPump
 {
-	public class CompTerrainPumpDry : CompTerrainPump
+	private Sustainer sustainer;
+
+	private CompProperties_TerrainPumpDry Props => (CompProperties_TerrainPumpDry)props;
+
+	protected override void AffectCell(IntVec3 c)
 	{
-		private Sustainer sustainer;
+		AffectCell(parent.Map, c);
+	}
 
-		private CompProperties_TerrainPumpDry Props => (CompProperties_TerrainPumpDry)props;
-
-		protected override void AffectCell(IntVec3 c)
+	public static void AffectCell(Map map, IntVec3 c)
+	{
+		TerrainDef terrainDef = map.terrainGrid.TopTerrainAt(c);
+		TerrainDef terrainToDryTo = GetTerrainToDryTo(map, terrainDef);
+		if (terrainToDryTo != null)
 		{
-			AffectCell(parent.Map, c);
+			map.terrainGrid.SetTerrain(c, terrainToDryTo);
 		}
-
-		public static void AffectCell(Map map, IntVec3 c)
+		TerrainDef terrainDef2 = map.terrainGrid.UnderTerrainAt(c);
+		if (terrainDef2 != null)
 		{
-			TerrainDef terrainDef = map.terrainGrid.TopTerrainAt(c);
-			TerrainDef terrainToDryTo = GetTerrainToDryTo(map, terrainDef);
-			if (terrainToDryTo != null)
+			TerrainDef terrainToDryTo2 = GetTerrainToDryTo(map, terrainDef2);
+			if (terrainToDryTo2 != null)
 			{
-				map.terrainGrid.SetTerrain(c, terrainToDryTo);
-			}
-			TerrainDef terrainDef2 = map.terrainGrid.UnderTerrainAt(c);
-			if (terrainDef2 != null)
-			{
-				TerrainDef terrainToDryTo2 = GetTerrainToDryTo(map, terrainDef2);
-				if (terrainToDryTo2 != null)
-				{
-					map.terrainGrid.SetUnderTerrain(c, terrainToDryTo2);
-				}
+				map.terrainGrid.SetUnderTerrain(c, terrainToDryTo2);
 			}
 		}
+	}
 
-		public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
+	public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
+	{
+		base.PostDeSpawn(map, mode);
+		if (sustainer != null && !sustainer.Ended)
 		{
-			base.PostDeSpawn(map, mode);
-			if (sustainer != null && !sustainer.Ended)
-			{
-				sustainer.End();
-			}
+			sustainer.End();
 		}
+	}
 
-		public override void CompTickRare()
+	public override void CompTickRare()
+	{
+		base.CompTickRare();
+		if (!Props.soundWorking.NullOrUndefined() && base.Working && base.CurrentRadius < Props.radius - 0.0001f)
 		{
-			base.CompTickRare();
-			if (!Props.soundWorking.NullOrUndefined() && base.Working && base.CurrentRadius < Props.radius - 0.0001f)
+			if (sustainer == null || sustainer.Ended)
 			{
-				if (sustainer == null || sustainer.Ended)
-				{
-					sustainer = Props.soundWorking.TrySpawnSustainer(SoundInfo.InMap(parent));
-				}
-				sustainer.Maintain();
+				sustainer = Props.soundWorking.TrySpawnSustainer(SoundInfo.InMap(parent));
 			}
-			else if (sustainer != null && !sustainer.Ended)
-			{
-				sustainer.End();
-			}
+			sustainer.Maintain();
 		}
+		else if (sustainer != null && !sustainer.Ended)
+		{
+			sustainer.End();
+		}
+	}
 
-		private static TerrainDef GetTerrainToDryTo(Map map, TerrainDef terrainDef)
+	private static TerrainDef GetTerrainToDryTo(Map map, TerrainDef terrainDef)
+	{
+		if (terrainDef.driesTo == null)
 		{
-			if (terrainDef.driesTo == null)
-			{
-				return null;
-			}
-			if (map.Biome == BiomeDefOf.SeaIce)
-			{
-				return TerrainDefOf.Ice;
-			}
-			return terrainDef.driesTo;
+			return null;
 		}
+		if (map.Biome == BiomeDefOf.SeaIce)
+		{
+			return TerrainDefOf.Ice;
+		}
+		return terrainDef.driesTo;
 	}
 }

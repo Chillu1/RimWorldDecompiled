@@ -1,39 +1,38 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class IngestionOutcomeDoer_GiveHediff : IngestionOutcomeDoer
 {
-	public class IngestionOutcomeDoer_GiveHediff : IngestionOutcomeDoer
+	public HediffDef hediffDef;
+
+	public float severity = -1f;
+
+	public ChemicalDef toleranceChemical;
+
+	private bool divideByBodySize;
+
+	public bool multiplyByGeneToleranceFactors;
+
+	protected override void DoIngestionOutcomeSpecial(Pawn pawn, Thing ingested, int ingestedCount)
 	{
-		public HediffDef hediffDef;
+		Hediff hediff = HediffMaker.MakeHediff(hediffDef, pawn);
+		float effect = ((!(severity > 0f)) ? hediffDef.initialSeverity : severity);
+		AddictionUtility.ModifyChemicalEffectForToleranceAndBodySize(pawn, toleranceChemical, ref effect, multiplyByGeneToleranceFactors, divideByBodySize);
+		hediff.Severity = effect;
+		pawn.health.AddHediff(hediff);
+	}
 
-		public float severity = -1f;
-
-		public ChemicalDef toleranceChemical;
-
-		private bool divideByBodySize;
-
-		public bool multiplyByGeneToleranceFactors;
-
-		protected override void DoIngestionOutcomeSpecial(Pawn pawn, Thing ingested, int ingestedCount)
+	public override IEnumerable<StatDrawEntry> SpecialDisplayStats(ThingDef parentDef)
+	{
+		if (!parentDef.IsDrug || !(chance >= 1f))
 		{
-			Hediff hediff = HediffMaker.MakeHediff(hediffDef, pawn);
-			float effect = ((!(severity > 0f)) ? hediffDef.initialSeverity : severity);
-			AddictionUtility.ModifyChemicalEffectForToleranceAndBodySize(pawn, toleranceChemical, ref effect, multiplyByGeneToleranceFactors, divideByBodySize);
-			hediff.Severity = effect;
-			pawn.health.AddHediff(hediff);
+			yield break;
 		}
-
-		public override IEnumerable<StatDrawEntry> SpecialDisplayStats(ThingDef parentDef)
+		foreach (StatDrawEntry item in hediffDef.SpecialDisplayStats(StatRequest.ForEmpty()))
 		{
-			if (!parentDef.IsDrug || !(chance >= 1f))
-			{
-				yield break;
-			}
-			foreach (StatDrawEntry item in hediffDef.SpecialDisplayStats(StatRequest.ForEmpty()))
-			{
-				yield return item;
-			}
+			yield return item;
 		}
 	}
 }

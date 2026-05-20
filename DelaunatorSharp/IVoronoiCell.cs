@@ -1,11 +1,10 @@
 using UnityEngine;
 
-namespace DelaunatorSharp
-{
-	public interface IVoronoiCell
-	{
-		Vector2[] Points { get; }
+namespace DelaunatorSharp;
 
-		int Index { get; }
-	}
+public interface IVoronoiCell
+{
+	Vector2[] Points { get; }
+
+	int Index { get; }
 }

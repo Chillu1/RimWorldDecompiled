@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_GiveNeurocharge : HediffCompProperties
 {
-	public class HediffCompProperties_GiveNeurocharge : HediffCompProperties
+	public HediffCompProperties_GiveNeurocharge()
 	{
-		public HediffCompProperties_GiveNeurocharge()
-		{
-			compClass = typeof(HediffComp_GiveNeurocharge);
-		}
+		compClass = typeof(HediffComp_GiveNeurocharge);
 	}
 }

@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum RoomLayoutCellType
 {
-	public enum RoomLayoutCellType
-	{
-		Empty,
-		Floor,
-		Wall,
-		Door
-	}
+	Empty,
+	Floor,
+	Wall,
+	Door
 }

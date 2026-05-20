@@ -1,17 +1,16 @@
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public class SiteCoreBackCompat : IExposable
 {
-	public class SiteCoreBackCompat : IExposable
+	public SitePartDef def;
+
+	public SitePartParams parms;
+
+	public void ExposeData()
 	{
-		public SitePartDef def;
-
-		public SitePartParams parms;
-
-		public void ExposeData()
-		{
-			Scribe_Defs.Look(ref def, "def");
-			Scribe_Deep.Look(ref parms, "parms");
-		}
+		Scribe_Defs.Look(ref def, "def");
+		Scribe_Deep.Look(ref parms, "parms");
 	}
 }

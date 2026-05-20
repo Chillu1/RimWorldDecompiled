@@ -1,9 +1,8 @@
-namespace RimWorld
-{
-	public class CacheAnyPawnEligibleCycle
-	{
-		public bool anyEligible;
+namespace RimWorld;
 
-		public float gameTime;
-	}
+public class CacheAnyPawnEligibleCycle
+{
+	public bool anyEligible;
+
+	public float gameTime;
 }

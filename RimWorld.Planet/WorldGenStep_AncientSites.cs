@@ -1,31 +1,30 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public class WorldGenStep_AncientSites : WorldGenStep
 {
-	public class WorldGenStep_AncientSites : WorldGenStep
+	public FloatRange ancientSitesPer100kTiles;
+
+	public override int SeedPart => 976238715;
+
+	public override void GenerateFresh(string seed, PlanetLayer layer)
 	{
-		public FloatRange ancientSitesPer100kTiles;
+		GenerateAncientSites(layer);
+	}
 
-		public override int SeedPart => 976238715;
-
-		public override void GenerateFresh(string seed, PlanetLayer layer)
+	private void GenerateAncientSites(PlanetLayer layer)
+	{
+		int num = GenMath.RoundRandom((float)layer.TilesCount / 100000f * ancientSitesPer100kTiles.RandomInRange);
+		Dictionary<PlanetLayer, List<PlanetTile>> ancientSites = Find.World.genData.ancientSites;
+		if (!ancientSites.TryGetValue(layer, out var value))
 		{
-			GenerateAncientSites(layer);
+			value = (ancientSites[layer] = new List<PlanetTile>());
 		}
-
-		private void GenerateAncientSites(PlanetLayer layer)
+		for (int i = 0; i < num; i++)
 		{
-			int num = GenMath.RoundRandom((float)layer.TilesCount / 100000f * ancientSitesPer100kTiles.RandomInRange);
-			Dictionary<PlanetLayer, List<PlanetTile>> ancientSites = Find.World.genData.ancientSites;
-			if (!ancientSites.TryGetValue(layer, out var value))
-			{
-				value = (ancientSites[layer] = new List<PlanetTile>());
-			}
-			for (int i = 0; i < num; i++)
-			{
-				value.Add(TileFinder.RandomSettlementTileFor(layer, null));
-			}
+			value.Add(TileFinder.RandomSettlementTileFor(layer, null));
 		}
 	}
 }

@@ -1,27 +1,26 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_RemoveFoundation : JobDriver_AffectFloor
 {
-	public class JobDriver_RemoveFoundation : JobDriver_AffectFloor
+	protected override int BaseWorkAmount => 300;
+
+	protected override DesignationDef DesDef => DesignationDefOf.RemoveFoundation;
+
+	protected override StatDef SpeedStat => StatDefOf.ConstructionSpeed;
+
+	public JobDriver_RemoveFoundation()
 	{
-		protected override int BaseWorkAmount => 300;
+		clearSnow = true;
+	}
 
-		protected override DesignationDef DesDef => DesignationDefOf.RemoveFoundation;
-
-		protected override StatDef SpeedStat => StatDefOf.ConstructionSpeed;
-
-		public JobDriver_RemoveFoundation()
+	protected override void DoEffect(IntVec3 c)
+	{
+		if (base.Map.terrainGrid.CanRemoveFoundationAt(c))
 		{
-			clearSnow = true;
-		}
-
-		protected override void DoEffect(IntVec3 c)
-		{
-			if (base.Map.terrainGrid.CanRemoveFoundationAt(c))
-			{
-				base.Map.terrainGrid.RemoveFoundation(base.TargetLocA);
-				FilthMaker.RemoveAllFilth(c, base.Map);
-			}
+			base.Map.terrainGrid.RemoveFoundation(base.TargetLocA);
+			FilthMaker.RemoveAllFilth(c, base.Map);
 		}
 	}
 }

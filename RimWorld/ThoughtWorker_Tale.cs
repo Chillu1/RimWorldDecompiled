@@ -1,24 +1,23 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_Tale : ThoughtWorker
 {
-	public class ThoughtWorker_Tale : ThoughtWorker
+	protected override ThoughtState CurrentSocialStateInternal(Pawn p, Pawn other)
 	{
-		protected override ThoughtState CurrentSocialStateInternal(Pawn p, Pawn other)
+		if (!other.RaceProps.Humanlike)
 		{
-			if (!other.RaceProps.Humanlike)
-			{
-				return false;
-			}
-			if (!RelationsUtility.PawnsKnowEachOther(p, other))
-			{
-				return false;
-			}
-			if (Find.TaleManager.GetLatestTale(def.taleDef, other) == null)
-			{
-				return false;
-			}
-			return true;
+			return false;
 		}
+		if (!RelationsUtility.PawnsKnowEachOther(p, other))
+		{
+			return false;
+		}
+		if (Find.TaleManager.GetLatestTale(def.taleDef, other) == null)
+		{
+			return false;
+		}
+		return true;
 	}
 }

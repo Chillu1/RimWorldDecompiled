@@ -1,46 +1,45 @@
 using System.Collections.Generic;
 
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public static class LordUtility
 {
-	public static class LordUtility
+	public static Lord GetLord(this Pawn p)
 	{
-		public static Lord GetLord(this Pawn p)
-		{
-			return p.lord;
-		}
+		return p.lord;
+	}
 
-		public static bool TryGetLord(this Pawn p, out Lord lord)
-		{
-			lord = p.GetLord();
-			return lord != null;
-		}
+	public static bool TryGetLord(this Pawn p, out Lord lord)
+	{
+		lord = p.GetLord();
+		return lord != null;
+	}
 
-		public static Lord GetLord(this Building b)
+	public static Lord GetLord(this Building b)
+	{
+		List<Map> maps = Find.Maps;
+		for (int i = 0; i < maps.Count; i++)
 		{
-			List<Map> maps = Find.Maps;
-			for (int i = 0; i < maps.Count; i++)
+			Lord lord = maps[i].lordManager.LordOf(b);
+			if (lord != null)
 			{
-				Lord lord = maps[i].lordManager.LordOf(b);
-				if (lord != null)
-				{
-					return lord;
-				}
+				return lord;
 			}
-			return null;
 		}
+		return null;
+	}
 
-		public static Lord GetLord(this Corpse c)
+	public static Lord GetLord(this Corpse c)
+	{
+		List<Map> maps = Find.Maps;
+		for (int i = 0; i < maps.Count; i++)
 		{
-			List<Map> maps = Find.Maps;
-			for (int i = 0; i < maps.Count; i++)
+			Lord lord = maps[i].lordManager.LordOf(c);
+			if (lord != null)
 			{
-				Lord lord = maps[i].lordManager.LordOf(c);
-				if (lord != null)
-				{
-					return lord;
-				}
+				return lord;
 			}
-			return null;
 		}
+		return null;
 	}
 }

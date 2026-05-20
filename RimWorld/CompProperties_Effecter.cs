@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_Effecter : CompProperties_EffecterBase
 {
-	public class CompProperties_Effecter : CompProperties_EffecterBase
+	public CompProperties_Effecter()
 	{
-		public CompProperties_Effecter()
-		{
-			compClass = typeof(CompEffecter);
-		}
+		compClass = typeof(CompEffecter);
 	}
 }

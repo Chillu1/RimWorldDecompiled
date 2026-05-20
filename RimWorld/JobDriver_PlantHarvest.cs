@@ -1,19 +1,18 @@
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_PlantHarvest : JobDriver_PlantWork
 {
-	public class JobDriver_PlantHarvest : JobDriver_PlantWork
+	protected override PlantDestructionMode PlantDestructionMode => PlantDestructionMode.Chop;
+
+	protected override void Init()
 	{
-		protected override PlantDestructionMode PlantDestructionMode => PlantDestructionMode.Chop;
+		xpPerTick = 0.085f;
+	}
 
-		protected override void Init()
-		{
-			xpPerTick = 0.085f;
-		}
-
-		protected override Toil PlantWorkDoneToil()
-		{
-			return Toils_General.RemoveDesignationsOnThing(TargetIndex.A, DesignationDefOf.HarvestPlant);
-		}
+	protected override Toil PlantWorkDoneToil()
+	{
+		return Toils_General.RemoveDesignationsOnThing(TargetIndex.A, DesignationDefOf.HarvestPlant);
 	}
 }

@@ -1,12 +1,11 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum EfficiencyEstimate
 {
-	public enum EfficiencyEstimate
-	{
-		None,
-		VeryPoor,
-		Poor,
-		Weakened,
-		GoodCondition,
-		Enhanced
-	}
+	None,
+	VeryPoor,
+	Poor,
+	Weakened,
+	GoodCondition,
+	Enhanced
 }

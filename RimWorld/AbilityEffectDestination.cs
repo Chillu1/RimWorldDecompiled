@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum AbilityEffectDestination
 {
-	public enum AbilityEffectDestination
-	{
-		Caster,
-		RandomInRange,
-		Selected
-	}
+	Caster,
+	RandomInRange,
+	Selected
 }

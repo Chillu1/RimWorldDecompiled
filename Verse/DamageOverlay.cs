@@ -1,15 +1,14 @@
-namespace Verse
+namespace Verse;
+
+public enum DamageOverlay
 {
-	public enum DamageOverlay
-	{
-		Scratch,
-		TopLeftCorner,
-		TopRightCorner,
-		BotLeftCorner,
-		BotRightCorner,
-		LeftEdge,
-		RightEdge,
-		TopEdge,
-		BotEdge
-	}
+	Scratch,
+	TopLeftCorner,
+	TopRightCorner,
+	BotLeftCorner,
+	BotRightCorner,
+	LeftEdge,
+	RightEdge,
+	TopEdge,
+	BotEdge
 }

@@ -1,19 +1,18 @@
 using System;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class PlayerPawnsArriveMethodExtension
 {
-	public static class PlayerPawnsArriveMethodExtension
+	public static string ToStringHuman(this PlayerPawnsArriveMethod method)
 	{
-		public static string ToStringHuman(this PlayerPawnsArriveMethod method)
+		return method switch
 		{
-			return method switch
-			{
-				PlayerPawnsArriveMethod.Standing => "PlayerPawnsArriveMethod_Standing".Translate(), 
-				PlayerPawnsArriveMethod.DropPods => "PlayerPawnsArriveMethod_DropPods".Translate(), 
-				PlayerPawnsArriveMethod.Gravship => "PlayerPawnsArriveMethod_Gravship".Translate(), 
-				_ => throw new NotImplementedException(), 
-			};
-		}
+			PlayerPawnsArriveMethod.Standing => "PlayerPawnsArriveMethod_Standing".Translate(), 
+			PlayerPawnsArriveMethod.DropPods => "PlayerPawnsArriveMethod_DropPods".Translate(), 
+			PlayerPawnsArriveMethod.Gravship => "PlayerPawnsArriveMethod_Gravship".Translate(), 
+			_ => throw new NotImplementedException(), 
+		};
 	}
 }

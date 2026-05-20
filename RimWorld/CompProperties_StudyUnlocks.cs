@@ -1,44 +1,43 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_StudyUnlocks : CompProperties
 {
-	public class CompProperties_StudyUnlocks : CompProperties
+	public List<StudyNote> studyNotes = new List<StudyNote>();
+
+	public float? defaultStudyAmount;
+
+	public KnowledgeCategoryDef defaultCategoryOverride;
+
+	public CompProperties_StudyUnlocks()
 	{
-		public List<StudyNote> studyNotes = new List<StudyNote>();
+		compClass = typeof(CompStudyUnlocks);
+	}
 
-		public float? defaultStudyAmount;
-
-		public KnowledgeCategoryDef defaultCategoryOverride;
-
-		public CompProperties_StudyUnlocks()
+	public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+	{
+		foreach (string item in base.ConfigErrors(parentDef))
 		{
-			compClass = typeof(CompStudyUnlocks);
+			yield return item;
 		}
-
-		public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+		float num = 0f;
+		for (int i = 0; i < studyNotes.Count; i++)
 		{
-			foreach (string item in base.ConfigErrors(parentDef))
+			StudyNote note = studyNotes[i];
+			if (num != 0f)
 			{
-				yield return item;
-			}
-			float num = 0f;
-			for (int i = 0; i < studyNotes.Count; i++)
-			{
-				StudyNote note = studyNotes[i];
-				if (num != 0f)
+				if (note.threshold != 0f && note.threshold <= num)
 				{
-					if (note.threshold != 0f && note.threshold <= num)
-					{
-						yield return $"Threshold for note at index {i} had a threshold value ({note.threshold}) lower than the previous maximum ({num})";
-					}
-					else if (note.threshold == 0f && note.thresholdRange.min <= num)
-					{
-						yield return $"Threshold for note at index {i} had a min threshold value ({note.thresholdRange.min}) lower than the previous maximum ({num})";
-					}
+					yield return $"Threshold for note at index {i} had a threshold value ({note.threshold}) lower than the previous maximum ({num})";
 				}
-				num = ((note.threshold != 0f) ? note.threshold : note.thresholdRange.max);
+				else if (note.threshold == 0f && note.thresholdRange.min <= num)
+				{
+					yield return $"Threshold for note at index {i} had a min threshold value ({note.thresholdRange.min}) lower than the previous maximum ({num})";
+				}
 			}
+			num = ((note.threshold != 0f) ? note.threshold : note.thresholdRange.max);
 		}
 	}
 }

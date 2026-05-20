@@ -1,45 +1,44 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RoomRoleWorker_ThroneRoom : RoomRoleWorker
 {
-	public class RoomRoleWorker_ThroneRoom : RoomRoleWorker
+	public static string Validate(Room room)
 	{
-		public static string Validate(Room room)
+		if (room == null || room.OutdoorsForWork)
 		{
-			if (room == null || room.OutdoorsForWork)
-			{
-				return "ThroneMustBePlacedInside".Translate();
-			}
-			return null;
+			return "ThroneMustBePlacedInside".Translate();
 		}
+		return null;
+	}
 
-		public override float GetScore(Room room)
+	public override float GetScore(Room room)
+	{
+		List<Thing> containedAndAdjacentThings = room.ContainedAndAdjacentThings;
+		bool flag = false;
+		for (int i = 0; i < containedAndAdjacentThings.Count; i++)
 		{
-			List<Thing> containedAndAdjacentThings = room.ContainedAndAdjacentThings;
-			bool flag = false;
-			for (int i = 0; i < containedAndAdjacentThings.Count; i++)
+			if (containedAndAdjacentThings[i] is Building_Throne)
 			{
-				if (containedAndAdjacentThings[i] is Building_Throne)
-				{
-					flag = true;
-					break;
-				}
+				flag = true;
+				break;
 			}
-			return (flag && Validate(room) == null) ? 10000 : 0;
 		}
+		return (flag && Validate(room) == null) ? 10000 : 0;
+	}
 
-		public override float GetScoreDeltaIfBuildingPlaced(Room room, ThingDef buildingDef)
+	public override float GetScoreDeltaIfBuildingPlaced(Room room, ThingDef buildingDef)
+	{
+		if (room.Role == RoomRoleDefOf.ThroneRoom)
 		{
-			if (room.Role == RoomRoleDefOf.ThroneRoom)
-			{
-				return 0f;
-			}
-			if (buildingDef != ThingDefOf.Throne)
-			{
-				return 0f;
-			}
-			return (Validate(room) == null) ? 10000 : 0;
+			return 0f;
 		}
+		if (buildingDef != ThingDefOf.Throne)
+		{
+			return 0f;
+		}
+		return (Validate(room) == null) ? 10000 : 0;
 	}
 }

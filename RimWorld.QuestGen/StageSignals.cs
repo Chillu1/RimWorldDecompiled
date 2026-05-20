@@ -1,15 +1,14 @@
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+internal class StageSignals
 {
-	internal class StageSignals
-	{
-		public string structureTag;
+	public string structureTag;
 
-		public string beganSignal;
+	public string beganSignal;
 
-		public string structureActivatedSignal;
+	public string structureActivatedSignal;
 
-		public string structureDestroyedSignal;
+	public string structureDestroyedSignal;
 
-		public string allStructuresActivatedSignal;
-	}
+	public string allStructuresActivatedSignal;
 }

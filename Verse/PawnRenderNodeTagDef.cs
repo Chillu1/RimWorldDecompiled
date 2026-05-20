@@ -1,6 +1,5 @@
-namespace Verse
+namespace Verse;
+
+public class PawnRenderNodeTagDef : Def
 {
-	public class PawnRenderNodeTagDef : Def
-	{
-	}
 }

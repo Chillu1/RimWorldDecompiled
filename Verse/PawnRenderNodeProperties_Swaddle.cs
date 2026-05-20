@@ -1,9 +1,8 @@
-namespace Verse
-{
-	public class PawnRenderNodeProperties_Swaddle : PawnRenderNodeProperties
-	{
-		public FloatRange brightnessRange;
+namespace Verse;
 
-		public float swaddleColorOffset;
-	}
+public class PawnRenderNodeProperties_Swaddle : PawnRenderNodeProperties
+{
+	public FloatRange brightnessRange;
+
+	public float swaddleColorOffset;
 }

@@ -1,28 +1,27 @@
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public class Trigger_ThingDamageTaken : Trigger
 {
-	public class Trigger_ThingDamageTaken : Trigger
+	private Thing thing;
+
+	private float damageFraction = 0.5f;
+
+	public Trigger_ThingDamageTaken(Thing thing, float damageFraction)
 	{
-		private Thing thing;
+		this.thing = thing;
+		this.damageFraction = damageFraction;
+	}
 
-		private float damageFraction = 0.5f;
-
-		public Trigger_ThingDamageTaken(Thing thing, float damageFraction)
+	public override bool ActivateOn(Lord lord, TriggerSignal signal)
+	{
+		if (signal.type == TriggerSignalType.Tick)
 		{
-			this.thing = thing;
-			this.damageFraction = damageFraction;
-		}
-
-		public override bool ActivateOn(Lord lord, TriggerSignal signal)
-		{
-			if (signal.type == TriggerSignalType.Tick)
+			if (!thing.DestroyedOrNull())
 			{
-				if (!thing.DestroyedOrNull())
-				{
-					return (float)thing.HitPoints < (1f - damageFraction) * (float)thing.MaxHitPoints;
-				}
-				return true;
+				return (float)thing.HitPoints < (1f - damageFraction) * (float)thing.MaxHitPoints;
 			}
-			return false;
+			return true;
 		}
+		return false;
 	}
 }

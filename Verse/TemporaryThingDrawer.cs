@@ -1,49 +1,48 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class TemporaryThingDrawer : IExposable
 {
-	public class TemporaryThingDrawer : IExposable
+	private List<TemporaryThingDrawable> drawables = new List<TemporaryThingDrawable>();
+
+	public void Tick()
 	{
-		private List<TemporaryThingDrawable> drawables = new List<TemporaryThingDrawable>();
-
-		public void Tick()
+		for (int num = drawables.Count - 1; num >= 0; num--)
 		{
-			for (int num = drawables.Count - 1; num >= 0; num--)
+			TemporaryThingDrawable temporaryThingDrawable = drawables[num];
+			if (temporaryThingDrawable.ticksLeft >= 0 && temporaryThingDrawable.thing != null)
 			{
-				TemporaryThingDrawable temporaryThingDrawable = drawables[num];
-				if (temporaryThingDrawable.ticksLeft >= 0 && temporaryThingDrawable.thing != null)
-				{
-					temporaryThingDrawable.ticksLeft--;
-				}
-				else
-				{
-					drawables.RemoveAt(num);
-				}
+				temporaryThingDrawable.ticksLeft--;
+			}
+			else
+			{
+				drawables.RemoveAt(num);
 			}
 		}
+	}
 
-		public void Draw()
+	public void Draw()
+	{
+		foreach (TemporaryThingDrawable drawable in drawables)
 		{
-			foreach (TemporaryThingDrawable drawable in drawables)
-			{
-				drawable.thing.DrawNowAt(drawable.position);
-			}
+			drawable.thing.DrawNowAt(drawable.position);
 		}
+	}
 
-		public void AddThing(Thing t, Vector3 position, int ticks)
+	public void AddThing(Thing t, Vector3 position, int ticks)
+	{
+		drawables.Add(new TemporaryThingDrawable
 		{
-			drawables.Add(new TemporaryThingDrawable
-			{
-				thing = t,
-				position = position,
-				ticksLeft = ticks
-			});
-		}
+			thing = t,
+			position = position,
+			ticksLeft = ticks
+		});
+	}
 
-		public void ExposeData()
-		{
-			Scribe_Collections.Look(ref drawables, "drawables", LookMode.Undefined);
-		}
+	public void ExposeData()
+	{
+		Scribe_Collections.Look(ref drawables, "drawables", LookMode.Undefined);
 	}
 }

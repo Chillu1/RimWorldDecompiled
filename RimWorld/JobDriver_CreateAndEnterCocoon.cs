@@ -1,16 +1,15 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_CreateAndEnterCocoon : JobDriver_CreateAndEnterDryadHolder
 {
-	public class JobDriver_CreateAndEnterCocoon : JobDriver_CreateAndEnterDryadHolder
+	public override Toil EnterToil()
 	{
-		public override Toil EnterToil()
+		return Toils_General.Do(delegate
 		{
-			return Toils_General.Do(delegate
-			{
-				GenSpawn.Spawn(ThingDefOf.DryadCocoon, job.targetB.Cell, pawn.Map).TryGetComp<CompDryadCocoon>().TryAcceptPawn(pawn);
-			});
-		}
+			GenSpawn.Spawn(ThingDefOf.DryadCocoon, job.targetB.Cell, pawn.Map).TryGetComp<CompDryadCocoon>().TryAcceptPawn(pawn);
+		});
 	}
 }

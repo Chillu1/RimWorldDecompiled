@@ -3,158 +3,157 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RitualOutcomeEffectDef : Def
 {
-	public class RitualOutcomeEffectDef : Def
+	public class ExtraOutcomeChanceDescription
 	{
-		public class ExtraOutcomeChanceDescription
-		{
-			[MustTranslate]
-			public string description;
-
-			public Func<float, float> qualityToValue;
-		}
-
-		public Type workerClass;
-
-		public float startingQuality;
-
-		public float minQuality;
-
-		public float maxQuality = 1f;
-
-		public bool givesDevelopmentPoints = true;
-
-		public ThoughtDef memoryDef;
-
-		public List<RitualOutcomePossibility> outcomeChances = new List<RitualOutcomePossibility>();
-
-		public SimpleCurve honorFromQuality;
-
 		[MustTranslate]
-		public List<string> extraPredictedOutcomeDescriptions;
+		public string description;
 
-		[MustTranslate]
-		public List<string> extraInfoLines;
+		public Func<float, float> qualityToValue;
+	}
 
-		public List<ExtraOutcomeChanceDescription> extraOutcomeDescriptions;
+	public Type workerClass;
 
-		public EffecterDef effecter;
+	public float startingQuality;
 
-		public FleckDef fleckDef;
+	public float minQuality;
 
-		public int flecksPerCell;
+	public float maxQuality = 1f;
 
-		public FloatRange fleckRotationRange = new FloatRange(0f, 360f);
+	public bool givesDevelopmentPoints = true;
 
-		public FloatRange fleckScaleRange = FloatRange.One;
+	public ThoughtDef memoryDef;
 
-		public FloatRange fleckVelocityAngle = FloatRange.Zero;
+	public List<RitualOutcomePossibility> outcomeChances = new List<RitualOutcomePossibility>();
 
-		public FloatRange fleckVelocitySpeed = FloatRange.Zero;
+	public SimpleCurve honorFromQuality;
 
-		public ThingDef filthDefToSpawn;
+	[MustTranslate]
+	public List<string> extraPredictedOutcomeDescriptions;
 
-		public IntRange filthCountToSpawn = IntRange.Zero;
+	[MustTranslate]
+	public List<string> extraInfoLines;
 
-		public List<RitualOutcomeComp> comps;
+	public List<ExtraOutcomeChanceDescription> extraOutcomeDescriptions;
 
-		public bool warnOnLowQuality = true;
+	public EffecterDef effecter;
 
-		public bool allowAttachableOutcome = true;
+	public FleckDef fleckDef;
 
-		public bool allowOutcomeWithNoAttendance;
+	public int flecksPerCell;
 
-		private float minMoodCached = float.MaxValue;
+	public FloatRange fleckRotationRange = new FloatRange(0f, 360f);
 
-		private float maxMoodCached = float.MinValue;
+	public FloatRange fleckScaleRange = FloatRange.One;
 
-		private float moodDurationCached = -1f;
+	public FloatRange fleckVelocityAngle = FloatRange.Zero;
 
-		private RitualOutcomePossibility bestOutcomeCached;
+	public FloatRange fleckVelocitySpeed = FloatRange.Zero;
 
-		private RitualOutcomePossibility worstOutcomeCached;
+	public ThingDef filthDefToSpawn;
 
-		public string Description
+	public IntRange filthCountToSpawn = IntRange.Zero;
+
+	public List<RitualOutcomeComp> comps;
+
+	public bool warnOnLowQuality = true;
+
+	public bool allowAttachableOutcome = true;
+
+	public bool allowOutcomeWithNoAttendance;
+
+	private float minMoodCached = float.MaxValue;
+
+	private float maxMoodCached = float.MinValue;
+
+	private float moodDurationCached = -1f;
+
+	private RitualOutcomePossibility bestOutcomeCached;
+
+	private RitualOutcomePossibility worstOutcomeCached;
+
+	public string Description
+	{
+		get
 		{
-			get
+			if (minMoodCached == float.MaxValue && !outcomeChances.NullOrEmpty())
 			{
-				if (minMoodCached == float.MaxValue && !outcomeChances.NullOrEmpty())
+				foreach (RitualOutcomePossibility outcomeChance in outcomeChances)
 				{
-					foreach (RitualOutcomePossibility outcomeChance in outcomeChances)
+					if (outcomeChance.memory != null)
 					{
-						if (outcomeChance.memory != null)
+						float baseMoodEffect = outcomeChance.memory.stages[0].baseMoodEffect;
+						if (baseMoodEffect > maxMoodCached)
 						{
-							float baseMoodEffect = outcomeChance.memory.stages[0].baseMoodEffect;
-							if (baseMoodEffect > maxMoodCached)
-							{
-								maxMoodCached = baseMoodEffect;
-							}
-							if (baseMoodEffect < minMoodCached)
-							{
-								minMoodCached = baseMoodEffect;
-							}
-							moodDurationCached = outcomeChance.memory.durationDays;
+							maxMoodCached = baseMoodEffect;
 						}
+						if (baseMoodEffect < minMoodCached)
+						{
+							minMoodCached = baseMoodEffect;
+						}
+						moodDurationCached = outcomeChance.memory.durationDays;
 					}
 				}
-				return description.Formatted(minMoodCached.Named("MINMOOD"), maxMoodCached.ToStringWithSign().Named("MAXMOOD"), moodDurationCached.Named("MOODDAYS"));
 			}
+			return description.Formatted(minMoodCached.Named("MINMOOD"), maxMoodCached.ToStringWithSign().Named("MAXMOOD"), moodDurationCached.Named("MOODDAYS"));
 		}
+	}
 
-		public RitualOutcomePossibility BestOutcome
+	public RitualOutcomePossibility BestOutcome
+	{
+		get
 		{
-			get
+			if (bestOutcomeCached == null)
 			{
-				if (bestOutcomeCached == null)
-				{
-					bestOutcomeCached = outcomeChances.MaxBy((RitualOutcomePossibility o) => o.positivityIndex);
-				}
-				return bestOutcomeCached;
+				bestOutcomeCached = outcomeChances.MaxBy((RitualOutcomePossibility o) => o.positivityIndex);
 			}
+			return bestOutcomeCached;
 		}
+	}
 
-		public RitualOutcomePossibility WorstOutcome
+	public RitualOutcomePossibility WorstOutcome
+	{
+		get
 		{
-			get
+			if (worstOutcomeCached == null)
 			{
-				if (worstOutcomeCached == null)
-				{
-					worstOutcomeCached = outcomeChances.MinBy((RitualOutcomePossibility o) => o.positivityIndex);
-				}
-				return worstOutcomeCached;
+				worstOutcomeCached = outcomeChances.MinBy((RitualOutcomePossibility o) => o.positivityIndex);
 			}
+			return worstOutcomeCached;
 		}
+	}
 
-		public RitualOutcomeEffectWorker GetInstance()
+	public RitualOutcomeEffectWorker GetInstance()
+	{
+		return (RitualOutcomeEffectWorker)Activator.CreateInstance(workerClass, this);
+	}
+
+	public string OutcomeMoodBreakdown(RitualOutcomePossibility outcome)
+	{
+		if (outcome.memory != null && outcome.memory.stages[0].baseMoodEffect != 0f)
 		{
-			return (RitualOutcomeEffectWorker)Activator.CreateInstance(workerClass, this);
+			return "RitualOutcomeExtraDesc_Mood".Translate(outcome.memory.stages[0].baseMoodEffect.ToStringWithSign(), outcome.memory.durationDays);
 		}
+		return "";
+	}
 
-		public string OutcomeMoodBreakdown(RitualOutcomePossibility outcome)
+	public override IEnumerable<string> ConfigErrors()
+	{
+		foreach (string item in base.ConfigErrors())
 		{
-			if (outcome.memory != null && outcome.memory.stages[0].baseMoodEffect != 0f)
-			{
-				return "RitualOutcomeExtraDesc_Mood".Translate(outcome.memory.stages[0].baseMoodEffect.ToStringWithSign(), outcome.memory.durationDays);
-			}
-			return "";
+			yield return item;
 		}
-
-		public override IEnumerable<string> ConfigErrors()
+		float num = 0f;
+		foreach (RitualOutcomePossibility outcomeChance in outcomeChances)
 		{
-			foreach (string item in base.ConfigErrors())
-			{
-				yield return item;
-			}
-			float num = 0f;
-			foreach (RitualOutcomePossibility outcomeChance in outcomeChances)
-			{
-				num += outcomeChance.chance;
-			}
-			if (outcomeChances.Any() && Mathf.Abs(num - 1f) > 0.0001f)
-			{
-				yield return "Sum of outcome chances doesn't add up to 1.0. total=" + num;
-			}
+			num += outcomeChance.chance;
+		}
+		if (outcomeChances.Any() && Mathf.Abs(num - 1f) > 0.0001f)
+		{
+			yield return "Sum of outcome chances doesn't add up to 1.0. total=" + num;
 		}
 	}
 }

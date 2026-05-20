@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class PreceptComp_GoodwillSituation : PreceptComp
 {
-	public class PreceptComp_GoodwillSituation : PreceptComp
-	{
-		public GoodwillSituationDef goodwillSituation;
-	}
+	public GoodwillSituationDef goodwillSituation;
 }

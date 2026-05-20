@@ -1,12 +1,11 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
-{
-	public class RoadWorldLayerDef : Def
-	{
-		public int order;
+namespace RimWorld;
 
-		public Color color;
-	}
+public class RoadWorldLayerDef : Def
+{
+	public int order;
+
+	public Color color;
 }

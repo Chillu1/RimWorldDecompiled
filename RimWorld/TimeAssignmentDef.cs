@@ -1,37 +1,36 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class TimeAssignmentDef : Def
 {
-	public class TimeAssignmentDef : Def
+	public Color color;
+
+	public bool allowRest = true;
+
+	public bool allowJoy = true;
+
+	[Unsaved(false)]
+	public string cachedHighlightNotSelectedTag;
+
+	private Texture2D colorTextureInt;
+
+	public Texture2D ColorTexture
 	{
-		public Color color;
-
-		public bool allowRest = true;
-
-		public bool allowJoy = true;
-
-		[Unsaved(false)]
-		public string cachedHighlightNotSelectedTag;
-
-		private Texture2D colorTextureInt;
-
-		public Texture2D ColorTexture
+		get
 		{
-			get
+			if (colorTextureInt == null)
 			{
-				if (colorTextureInt == null)
-				{
-					colorTextureInt = SolidColorMaterials.NewSolidColorTexture(color);
-				}
-				return colorTextureInt;
+				colorTextureInt = SolidColorMaterials.NewSolidColorTexture(color);
 			}
+			return colorTextureInt;
 		}
+	}
 
-		public override void PostLoad()
-		{
-			base.PostLoad();
-			cachedHighlightNotSelectedTag = "TimeAssignmentButton-" + defName + "-NotSelected";
-		}
+	public override void PostLoad()
+	{
+		base.PostLoad();
+		cachedHighlightNotSelectedTag = "TimeAssignmentButton-" + defName + "-NotSelected";
 	}
 }

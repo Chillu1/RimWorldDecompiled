@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum BandNodeState
 {
-	public enum BandNodeState
-	{
-		Untuned,
-		Tuning,
-		Retuning,
-		Tuned
-	}
+	Untuned,
+	Tuning,
+	Retuning,
+	Tuned
 }

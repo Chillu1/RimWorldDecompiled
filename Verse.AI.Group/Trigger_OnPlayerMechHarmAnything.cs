@@ -1,23 +1,22 @@
 using System.Collections.Generic;
 
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public class Trigger_OnPlayerMechHarmAnything : Trigger
 {
-	public class Trigger_OnPlayerMechHarmAnything : Trigger
+	private List<Thing> things;
+
+	public Trigger_OnPlayerMechHarmAnything(List<Thing> things)
 	{
-		private List<Thing> things;
+		this.things = things;
+	}
 
-		public Trigger_OnPlayerMechHarmAnything(List<Thing> things)
+	public override bool ActivateOn(Lord lord, TriggerSignal signal)
+	{
+		if (ModsConfig.BiotechActive && signal.dinfo.Def != null && signal.dinfo.Def.ExternalViolenceFor(signal.thing) && signal.dinfo.Instigator != null && signal.dinfo.Instigator is Pawn { IsColonyMech: not false } && things.Contains(signal.thing))
 		{
-			this.things = things;
+			return true;
 		}
-
-		public override bool ActivateOn(Lord lord, TriggerSignal signal)
-		{
-			if (ModsConfig.BiotechActive && signal.dinfo.Def != null && signal.dinfo.Def.ExternalViolenceFor(signal.thing) && signal.dinfo.Instigator != null && signal.dinfo.Instigator is Pawn { IsColonyMech: not false } && things.Contains(signal.thing))
-			{
-				return true;
-			}
-			return false;
-		}
+		return false;
 	}
 }

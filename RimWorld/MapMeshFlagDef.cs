@@ -1,24 +1,23 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class MapMeshFlagDef : Def
 {
-	public class MapMeshFlagDef : Def
+	private ulong mask;
+
+	public override void PostSetIndices()
 	{
-		private ulong mask;
+		FlagDefUtility.SetMaskFromIndex(this, ref mask);
+	}
 
-		public override void PostSetIndices()
-		{
-			FlagDefUtility.SetMaskFromIndex(this, ref mask);
-		}
+	public static implicit operator ulong(MapMeshFlagDef def)
+	{
+		return def?.mask ?? 0;
+	}
 
-		public static implicit operator ulong(MapMeshFlagDef def)
-		{
-			return def?.mask ?? 0;
-		}
-
-		public override string ToString()
-		{
-			return base.ToString() + $" ({mask})";
-		}
+	public override string ToString()
+	{
+		return base.ToString() + $" ({mask})";
 	}
 }

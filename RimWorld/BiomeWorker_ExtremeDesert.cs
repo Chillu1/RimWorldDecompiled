@@ -1,20 +1,19 @@
 using RimWorld.Planet;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class BiomeWorker_ExtremeDesert : BiomeWorker
 {
-	public class BiomeWorker_ExtremeDesert : BiomeWorker
+	public override float GetScore(BiomeDef biome, Tile tile, PlanetTile planetTile)
 	{
-		public override float GetScore(BiomeDef biome, Tile tile, PlanetTile planetTile)
+		if (tile.WaterCovered)
 		{
-			if (tile.WaterCovered)
-			{
-				return -100f;
-			}
-			if (tile.rainfall >= 340f)
-			{
-				return 0f;
-			}
-			return tile.temperature * 2.7f - 13f - tile.rainfall * 0.14f;
+			return -100f;
 		}
+		if (tile.rainfall >= 340f)
+		{
+			return 0f;
+		}
+		return tile.temperature * 2.7f - 13f - tile.rainfall * 0.14f;
 	}
 }

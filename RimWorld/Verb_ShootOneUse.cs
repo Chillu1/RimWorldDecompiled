@@ -1,41 +1,40 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Verb_ShootOneUse : Verb_Shoot
 {
-	public class Verb_ShootOneUse : Verb_Shoot
+	protected override bool TryCastShot()
 	{
-		protected override bool TryCastShot()
+		if (base.TryCastShot())
 		{
-			if (base.TryCastShot())
-			{
-				if (burstShotsLeft <= 1)
-				{
-					SelfConsume();
-				}
-				return true;
-			}
-			if (burstShotsLeft < base.BurstShotCount)
+			if (burstShotsLeft <= 1)
 			{
 				SelfConsume();
 			}
-			return false;
+			return true;
 		}
-
-		public override void Notify_EquipmentLost()
+		if (burstShotsLeft < base.BurstShotCount)
 		{
-			base.Notify_EquipmentLost();
-			if (state == VerbState.Bursting && burstShotsLeft < base.BurstShotCount)
-			{
-				SelfConsume();
-			}
+			SelfConsume();
 		}
+		return false;
+	}
 
-		private void SelfConsume()
+	public override void Notify_EquipmentLost()
+	{
+		base.Notify_EquipmentLost();
+		if (state == VerbState.Bursting && burstShotsLeft < base.BurstShotCount)
 		{
-			if (base.EquipmentSource != null && !base.EquipmentSource.Destroyed)
-			{
-				base.EquipmentSource.Destroy();
-			}
+			SelfConsume();
+		}
+	}
+
+	private void SelfConsume()
+	{
+		if (base.EquipmentSource != null && !base.EquipmentSource.Destroyed)
+		{
+			base.EquipmentSource.Destroy();
 		}
 	}
 }

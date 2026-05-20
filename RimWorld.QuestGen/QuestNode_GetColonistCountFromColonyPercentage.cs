@@ -1,56 +1,55 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_GetColonistCountFromColonyPercentage : QuestNode
 {
-	public class QuestNode_GetColonistCountFromColonyPercentage : QuestNode
+	[NoTranslate]
+	public SlateRef<string> storeAs;
+
+	public SlateRef<float> colonyPercentage;
+
+	public SlateRef<int> mustHaveFreeColonistsAvailableCount;
+
+	public SlateRef<float?> minAge;
+
+	protected override void RunInt()
 	{
-		[NoTranslate]
-		public SlateRef<string> storeAs;
+		SetVars(QuestGen.slate);
+	}
 
-		public SlateRef<float> colonyPercentage;
+	private void SetVars(Slate slate)
+	{
+		string value = storeAs.GetValue(slate);
+		float minAgeResolved = minAge.GetValue(slate).GetValueOrDefault();
+		int num = PawnsFinder.AllMaps_FreeColonistsSpawned.Count((Pawn c) => ColonistCounts(c, minAgeResolved));
+		int var = Mathf.Clamp((int)((float)num * colonyPercentage.GetValue(slate)), 1, num - 1);
+		slate.Set(value, var);
+	}
 
-		public SlateRef<int> mustHaveFreeColonistsAvailableCount;
-
-		public SlateRef<float?> minAge;
-
-		protected override void RunInt()
+	protected override bool TestRunInt(Slate slate)
+	{
+		SetVars(slate);
+		float num = mustHaveFreeColonistsAvailableCount.GetValue(slate);
+		if (num > 0f)
 		{
-			SetVars(QuestGen.slate);
-		}
-
-		private void SetVars(Slate slate)
-		{
-			string value = storeAs.GetValue(slate);
 			float minAgeResolved = minAge.GetValue(slate).GetValueOrDefault();
-			int num = PawnsFinder.AllMaps_FreeColonistsSpawned.Count((Pawn c) => ColonistCounts(c, minAgeResolved));
-			int var = Mathf.Clamp((int)((float)num * colonyPercentage.GetValue(slate)), 1, num - 1);
-			slate.Set(value, var);
+			return (float)PawnsFinder.AllMaps_FreeColonistsSpawned.Count((Pawn c) => ColonistCounts(c, minAgeResolved)) >= num;
 		}
+		return true;
+	}
 
-		protected override bool TestRunInt(Slate slate)
+	private bool ColonistCounts(Pawn pawn, float minAge)
+	{
+		if (pawn.IsQuestLodger())
 		{
-			SetVars(slate);
-			float num = mustHaveFreeColonistsAvailableCount.GetValue(slate);
-			if (num > 0f)
-			{
-				float minAgeResolved = minAge.GetValue(slate).GetValueOrDefault();
-				return (float)PawnsFinder.AllMaps_FreeColonistsSpawned.Count((Pawn c) => ColonistCounts(c, minAgeResolved)) >= num;
-			}
-			return true;
+			return false;
 		}
-
-		private bool ColonistCounts(Pawn pawn, float minAge)
+		if (pawn.ageTracker.AgeBiologicalYearsFloat < minAge)
 		{
-			if (pawn.IsQuestLodger())
-			{
-				return false;
-			}
-			if (pawn.ageTracker.AgeBiologicalYearsFloat < minAge)
-			{
-				return false;
-			}
-			return true;
+			return false;
 		}
+		return true;
 	}
 }

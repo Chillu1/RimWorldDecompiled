@@ -3,83 +3,82 @@ using UnityEngine;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_SocialRelax : JobDriver
 {
-	public class JobDriver_SocialRelax : JobDriver
+	private const TargetIndex GatherSpotParentInd = TargetIndex.A;
+
+	private const TargetIndex ChairOrSpotInd = TargetIndex.B;
+
+	private const TargetIndex OptionalIngestibleInd = TargetIndex.C;
+
+	private Thing GatherSpotParent => job.GetTarget(TargetIndex.A).Thing;
+
+	private bool HasChair => job.GetTarget(TargetIndex.B).HasThing;
+
+	private bool HasDrink => job.GetTarget(TargetIndex.C).HasThing;
+
+	private IntVec3 ClosestGatherSpotParentCell => GatherSpotParent.OccupiedRect().ClosestCellTo(pawn.Position);
+
+	public override bool TryMakePreToilReservations(bool errorOnFailed)
 	{
-		private const TargetIndex GatherSpotParentInd = TargetIndex.A;
-
-		private const TargetIndex ChairOrSpotInd = TargetIndex.B;
-
-		private const TargetIndex OptionalIngestibleInd = TargetIndex.C;
-
-		private Thing GatherSpotParent => job.GetTarget(TargetIndex.A).Thing;
-
-		private bool HasChair => job.GetTarget(TargetIndex.B).HasThing;
-
-		private bool HasDrink => job.GetTarget(TargetIndex.C).HasThing;
-
-		private IntVec3 ClosestGatherSpotParentCell => GatherSpotParent.OccupiedRect().ClosestCellTo(pawn.Position);
-
-		public override bool TryMakePreToilReservations(bool errorOnFailed)
+		if (!HasChair || !Toils_Ingest.TryFindFreeSittingSpotOnThing(job.GetTarget(TargetIndex.B).Thing, pawn, out var cell))
 		{
-			if (!HasChair || !Toils_Ingest.TryFindFreeSittingSpotOnThing(job.GetTarget(TargetIndex.B).Thing, pawn, out var cell))
-			{
-				cell = job.GetTarget(TargetIndex.B).Cell;
-			}
-			if (!pawn.ReserveSittableOrSpot(cell, pawn.CurJob))
-			{
-				return false;
-			}
-			job.SetTarget(TargetIndex.B, cell);
-			if (HasDrink && !pawn.Reserve(job.GetTarget(TargetIndex.C), job, 1, -1, null, errorOnFailed))
-			{
-				return false;
-			}
-			return true;
+			cell = job.GetTarget(TargetIndex.B).Cell;
 		}
-
-		protected override IEnumerable<Toil> MakeNewToils()
+		if (!pawn.ReserveSittableOrSpot(cell, pawn.CurJob))
 		{
-			this.EndOnDespawnedOrNull(TargetIndex.A);
-			if (HasChair)
-			{
-				this.EndOnDespawnedOrNull(TargetIndex.B);
-			}
-			if (HasDrink)
-			{
-				this.FailOnDestroyedNullOrForbidden(TargetIndex.C);
-				yield return Toils_Goto.GotoThing(TargetIndex.C, PathEndMode.OnCell).FailOnSomeonePhysicallyInteracting(TargetIndex.C);
-				yield return Toils_Haul.StartCarryThing(TargetIndex.C);
-			}
-			yield return Toils_Goto.GotoCell(TargetIndex.B, PathEndMode.OnCell);
-			Toil toil = ToilMaker.MakeToil("MakeNewToils");
-			toil.tickIntervalAction = delegate(int delta)
-			{
-				pawn.rotationTracker.FaceCell(ClosestGatherSpotParentCell);
-				pawn.GainComfortFromCellIfPossible(delta);
-				JoyUtility.JoyTickCheckEnd(pawn, delta, JoyTickFullJoyAction.GoToNextToil);
-			};
-			toil.handlingFacing = true;
-			toil.defaultCompleteMode = ToilCompleteMode.Delay;
-			toil.defaultDuration = job.def.joyDuration;
-			toil.AddFinishAction(delegate
-			{
-				JoyUtility.TryGainRecRoomThought(pawn);
-			});
-			toil.socialMode = RandomSocialMode.SuperActive;
-			Toils_Ingest.AddIngestionEffects(toil, pawn, TargetIndex.C, TargetIndex.None);
-			yield return toil;
-			if (HasDrink)
-			{
-				yield return Toils_Ingest.FinalizeIngest(pawn, TargetIndex.C);
-			}
+			return false;
 		}
-
-		public override bool ModifyCarriedThingDrawPos(ref Vector3 drawPos, ref bool flip)
+		job.SetTarget(TargetIndex.B, cell);
+		if (HasDrink && !pawn.Reserve(job.GetTarget(TargetIndex.C), job, 1, -1, null, errorOnFailed))
 		{
-			IntVec3 closestGatherSpotParentCell = ClosestGatherSpotParentCell;
-			return JobDriver_Ingest.ModifyCarriedThingDrawPosWorker(ref drawPos, ref flip, closestGatherSpotParentCell, pawn);
+			return false;
 		}
+		return true;
+	}
+
+	protected override IEnumerable<Toil> MakeNewToils()
+	{
+		this.EndOnDespawnedOrNull(TargetIndex.A);
+		if (HasChair)
+		{
+			this.EndOnDespawnedOrNull(TargetIndex.B);
+		}
+		if (HasDrink)
+		{
+			this.FailOnDestroyedNullOrForbidden(TargetIndex.C);
+			yield return Toils_Goto.GotoThing(TargetIndex.C, PathEndMode.OnCell).FailOnSomeonePhysicallyInteracting(TargetIndex.C);
+			yield return Toils_Haul.StartCarryThing(TargetIndex.C);
+		}
+		yield return Toils_Goto.GotoCell(TargetIndex.B, PathEndMode.OnCell);
+		Toil toil = ToilMaker.MakeToil("MakeNewToils");
+		toil.tickIntervalAction = delegate(int delta)
+		{
+			pawn.rotationTracker.FaceCell(ClosestGatherSpotParentCell);
+			pawn.GainComfortFromCellIfPossible(delta);
+			JoyUtility.JoyTickCheckEnd(pawn, delta, JoyTickFullJoyAction.GoToNextToil);
+		};
+		toil.handlingFacing = true;
+		toil.defaultCompleteMode = ToilCompleteMode.Delay;
+		toil.defaultDuration = job.def.joyDuration;
+		toil.AddFinishAction(delegate
+		{
+			JoyUtility.TryGainRecRoomThought(pawn);
+		});
+		toil.socialMode = RandomSocialMode.SuperActive;
+		Toils_Ingest.AddIngestionEffects(toil, pawn, TargetIndex.C, TargetIndex.None);
+		yield return toil;
+		if (HasDrink)
+		{
+			yield return Toils_Ingest.FinalizeIngest(pawn, TargetIndex.C);
+		}
+	}
+
+	public override bool ModifyCarriedThingDrawPos(ref Vector3 drawPos, ref bool flip)
+	{
+		IntVec3 closestGatherSpotParentCell = ClosestGatherSpotParentCell;
+		return JobDriver_Ingest.ModifyCarriedThingDrawPosWorker(ref drawPos, ref flip, closestGatherSpotParentCell, pawn);
 	}
 }

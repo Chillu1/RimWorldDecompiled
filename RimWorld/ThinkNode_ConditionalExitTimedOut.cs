@@ -1,17 +1,16 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThinkNode_ConditionalExitTimedOut : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalExitTimedOut : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
+		if (pawn.mindState.exitMapAfterTick >= 0)
 		{
-			if (pawn.mindState.exitMapAfterTick >= 0)
-			{
-				return Find.TickManager.TicksGame > pawn.mindState.exitMapAfterTick;
-			}
-			return false;
+			return Find.TickManager.TicksGame > pawn.mindState.exitMapAfterTick;
 		}
+		return false;
 	}
 }

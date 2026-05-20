@@ -1,19 +1,18 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Hediff_High : HediffWithComps
 {
-	public class Hediff_High : HediffWithComps
+	public override string SeverityLabel
 	{
-		public override string SeverityLabel
+		get
 		{
-			get
+			if (Severity <= 0f)
 			{
-				if (Severity <= 0f)
-				{
-					return null;
-				}
-				return Severity.ToStringPercent("F0");
+				return null;
 			}
+			return Severity.ToStringPercent("F0");
 		}
 	}
 }

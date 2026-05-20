@@ -1,10 +1,9 @@
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public enum WorldCameraZoomRange : byte
 {
-	public enum WorldCameraZoomRange : byte
-	{
-		VeryClose,
-		Close,
-		Far,
-		VeryFar
-	}
+	VeryClose,
+	Close,
+	Far,
+	VeryFar
 }

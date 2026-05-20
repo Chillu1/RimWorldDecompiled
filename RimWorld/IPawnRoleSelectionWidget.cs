@@ -1,11 +1,10 @@
 using UnityEngine;
 
-namespace RimWorld
-{
-	public interface IPawnRoleSelectionWidget
-	{
-		void DrawPawnList(Rect listRectPawns);
+namespace RimWorld;
 
-		void WindowUpdate();
-	}
+public interface IPawnRoleSelectionWidget
+{
+	void DrawPawnList(Rect listRectPawns);
+
+	void WindowUpdate();
 }

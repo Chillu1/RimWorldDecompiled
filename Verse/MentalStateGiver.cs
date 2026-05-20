@@ -1,9 +1,8 @@
-namespace Verse
-{
-	public class MentalStateGiver
-	{
-		public MentalStateDef mentalState;
+namespace Verse;
 
-		public float mtbDays;
-	}
+public class MentalStateGiver
+{
+	public MentalStateDef mentalState;
+
+	public float mtbDays;
 }

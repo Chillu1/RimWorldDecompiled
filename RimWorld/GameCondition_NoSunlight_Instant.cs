@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class GameCondition_NoSunlight_Instant : GameCondition_NoSunlight
 {
-	public class GameCondition_NoSunlight_Instant : GameCondition_NoSunlight
-	{
-		public override int TransitionTicks => 0;
-	}
+	public override int TransitionTicks => 0;
 }

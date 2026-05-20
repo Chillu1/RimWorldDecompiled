@@ -1,53 +1,52 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class RenameUIUtility
 {
-	public static class RenameUIUtility
+	public static void DrawRenameButton(Rect rect, Pawn pawn)
 	{
-		public static void DrawRenameButton(Rect rect, Pawn pawn)
+		TooltipHandler.TipRegionByKey(rect, pawn.RaceProps.IsMechanoid ? "RenameMech" : "RenameAnimal");
+		if (Widgets.ButtonImage(rect, TexButton.Rename))
 		{
-			TooltipHandler.TipRegionByKey(rect, pawn.RaceProps.IsMechanoid ? "RenameMech" : "RenameAnimal");
-			if (Widgets.ButtonImage(rect, TexButton.Rename))
-			{
-				Find.WindowStack.Add(pawn.NamePawnDialog());
-			}
+			Find.WindowStack.Add(pawn.NamePawnDialog());
 		}
+	}
 
-		public static void DrawRenameButton(Rect rect, IRenameable renamable)
+	public static void DrawRenameButton(Rect rect, IRenameable renamable)
+	{
+		TooltipHandler.TipRegionByKey(rect, "Rename");
+		if (Widgets.ButtonImage(rect, TexButton.Rename))
 		{
-			TooltipHandler.TipRegionByKey(rect, "Rename");
-			if (Widgets.ButtonImage(rect, TexButton.Rename))
-			{
-				Find.WindowStack.Add(new Dialog_RenameBuildingStorage(renamable));
-			}
+			Find.WindowStack.Add(new Dialog_RenameBuildingStorage(renamable));
 		}
+	}
 
-		public static void DrawRenameButton(Rect rect, IStorageGroupMember building)
+	public static void DrawRenameButton(Rect rect, IStorageGroupMember building)
+	{
+		TooltipHandler.TipRegionByKey(rect, "Rename");
+		if (Widgets.ButtonImage(rect, TexButton.Rename))
 		{
-			TooltipHandler.TipRegionByKey(rect, "Rename");
-			if (Widgets.ButtonImage(rect, TexButton.Rename))
-			{
-				Find.WindowStack.Add(new Dialog_RenameBuildingStorage_CreateNew(building));
-			}
+			Find.WindowStack.Add(new Dialog_RenameBuildingStorage_CreateNew(building));
 		}
+	}
 
-		public static void DrawRenameButton(Rect rect, CompAnimalPenMarker marker)
+	public static void DrawRenameButton(Rect rect, CompAnimalPenMarker marker)
+	{
+		TooltipHandler.TipRegionByKey(rect, "Rename");
+		if (Widgets.ButtonImage(rect, TexButton.Rename))
 		{
-			TooltipHandler.TipRegionByKey(rect, "Rename");
-			if (Widgets.ButtonImage(rect, TexButton.Rename))
-			{
-				Find.WindowStack.Add(new Dialog_RenameAnimalPen(marker.parent.Map, marker));
-			}
+			Find.WindowStack.Add(new Dialog_RenameAnimalPen(marker.parent.Map, marker));
 		}
+	}
 
-		public static void DrawRenameButton(Rect rect, Building_GravEngine engine)
+	public static void DrawRenameButton(Rect rect, Building_GravEngine engine)
+	{
+		TooltipHandler.TipRegionByKey(rect, "Rename");
+		if (Widgets.ButtonImage(rect, TexButton.Rename))
 		{
-			TooltipHandler.TipRegionByKey(rect, "Rename");
-			if (Widgets.ButtonImage(rect, TexButton.Rename))
-			{
-				Find.WindowStack.Add(new Dialog_RenameGravship(engine));
-			}
+			Find.WindowStack.Add(new Dialog_RenameGravship(engine));
 		}
 	}
 }

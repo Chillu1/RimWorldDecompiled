@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public interface IEatingDriver
 {
-	public interface IEatingDriver
-	{
-		bool GainingNutritionNow { get; }
-	}
+	bool GainingNutritionNow { get; }
 }

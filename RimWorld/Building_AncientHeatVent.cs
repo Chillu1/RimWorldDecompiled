@@ -1,6 +1,5 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class Building_AncientHeatVent : Building_AncientVent
 {
-	public class Building_AncientHeatVent : Building_AncientVent
-	{
-	}
 }

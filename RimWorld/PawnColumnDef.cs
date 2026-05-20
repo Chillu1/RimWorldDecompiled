@@ -2,107 +2,106 @@ using System;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class PawnColumnDef : Def
 {
-	public class PawnColumnDef : Def
+	public Type workerClass = typeof(PawnColumnWorker);
+
+	public bool sortable;
+
+	public bool ignoreWhenCalculatingOptimalTableSize;
+
+	[NoTranslate]
+	public string headerIcon;
+
+	public Vector2 headerIconSize;
+
+	[MustTranslate]
+	public string headerTip;
+
+	public bool headerAlwaysInteractable;
+
+	public bool paintable;
+
+	public bool groupable;
+
+	public TrainableDef trainable;
+
+	public int gap;
+
+	public WorkTypeDef workType;
+
+	public bool moveWorkTypeLabelDown;
+
+	public bool showIcon;
+
+	public bool useLabelShort;
+
+	public int widthPriority;
+
+	public int width = -1;
+
+	[Unsaved(false)]
+	private PawnColumnWorker workerInt;
+
+	[Unsaved(false)]
+	private Texture2D headerIconTex;
+
+	private const int IconWidth = 26;
+
+	private static readonly Vector2 IconSize = new Vector2(26f, 26f);
+
+	public PawnColumnWorker Worker
 	{
-		public Type workerClass = typeof(PawnColumnWorker);
-
-		public bool sortable;
-
-		public bool ignoreWhenCalculatingOptimalTableSize;
-
-		[NoTranslate]
-		public string headerIcon;
-
-		public Vector2 headerIconSize;
-
-		[MustTranslate]
-		public string headerTip;
-
-		public bool headerAlwaysInteractable;
-
-		public bool paintable;
-
-		public bool groupable;
-
-		public TrainableDef trainable;
-
-		public int gap;
-
-		public WorkTypeDef workType;
-
-		public bool moveWorkTypeLabelDown;
-
-		public bool showIcon;
-
-		public bool useLabelShort;
-
-		public int widthPriority;
-
-		public int width = -1;
-
-		[Unsaved(false)]
-		private PawnColumnWorker workerInt;
-
-		[Unsaved(false)]
-		private Texture2D headerIconTex;
-
-		private const int IconWidth = 26;
-
-		private static readonly Vector2 IconSize = new Vector2(26f, 26f);
-
-		public PawnColumnWorker Worker
+		get
 		{
-			get
+			if (workerInt == null)
 			{
-				if (workerInt == null)
-				{
-					workerInt = (PawnColumnWorker)Activator.CreateInstance(workerClass);
-					workerInt.def = this;
-				}
-				return workerInt;
+				workerInt = (PawnColumnWorker)Activator.CreateInstance(workerClass);
+				workerInt.def = this;
 			}
+			return workerInt;
 		}
+	}
 
-		public Texture2D HeaderIcon
+	public Texture2D HeaderIcon
+	{
+		get
 		{
-			get
+			if (headerIconTex == null && !headerIcon.NullOrEmpty())
 			{
-				if (headerIconTex == null && !headerIcon.NullOrEmpty())
-				{
-					headerIconTex = ContentFinder<Texture2D>.Get(headerIcon);
-				}
-				return headerIconTex;
+				headerIconTex = ContentFinder<Texture2D>.Get(headerIcon);
 			}
+			return headerIconTex;
 		}
+	}
 
-		public Vector2 HeaderIconSize
+	public Vector2 HeaderIconSize
+	{
+		get
 		{
-			get
+			if (headerIconSize != default(Vector2))
 			{
-				if (headerIconSize != default(Vector2))
-				{
-					return headerIconSize;
-				}
-				if (HeaderIcon != null)
-				{
-					return IconSize;
-				}
-				return Vector2.zero;
+				return headerIconSize;
 			}
+			if (HeaderIcon != null)
+			{
+				return IconSize;
+			}
+			return Vector2.zero;
 		}
+	}
 
-		public bool HeaderInteractable
+	public bool HeaderInteractable
+	{
+		get
 		{
-			get
+			if (!sortable && headerTip.NullOrEmpty())
 			{
-				if (!sortable && headerTip.NullOrEmpty())
-				{
-					return headerAlwaysInteractable;
-				}
-				return true;
+				return headerAlwaysInteractable;
 			}
+			return true;
 		}
 	}
 }

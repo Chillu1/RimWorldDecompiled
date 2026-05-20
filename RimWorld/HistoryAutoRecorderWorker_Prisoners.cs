@@ -1,12 +1,11 @@
 using System.Linq;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class HistoryAutoRecorderWorker_Prisoners : HistoryAutoRecorderWorker
 {
-	public class HistoryAutoRecorderWorker_Prisoners : HistoryAutoRecorderWorker
+	public override float PullRecord()
 	{
-		public override float PullRecord()
-		{
-			return PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_PrisonersOfColony.Count();
-		}
+		return PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_PrisonersOfColony.Count();
 	}
 }

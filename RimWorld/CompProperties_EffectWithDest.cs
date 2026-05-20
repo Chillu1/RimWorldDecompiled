@@ -1,19 +1,18 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_EffectWithDest : CompProperties_AbilityEffect
 {
-	public class CompProperties_EffectWithDest : CompProperties_AbilityEffect
-	{
-		public AbilityEffectDestination destination;
+	public AbilityEffectDestination destination;
 
-		public bool requiresLineOfSight;
+	public bool requiresLineOfSight;
 
-		public float range;
+	public float range;
 
-		public FloatRange randomRange;
+	public FloatRange randomRange;
 
-		public ClamorDef destClamorType;
+	public ClamorDef destClamorType;
 
-		public int destClamorRadius;
-	}
+	public int destClamorRadius;
 }

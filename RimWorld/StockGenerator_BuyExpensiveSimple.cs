@@ -3,37 +3,36 @@ using System.Linq;
 using RimWorld.Planet;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class StockGenerator_BuyExpensiveSimple : StockGenerator
 {
-	public class StockGenerator_BuyExpensiveSimple : StockGenerator
+	public float minValuePerUnit = 15f;
+
+	public override IEnumerable<Thing> GenerateThings(PlanetTile forTile, Faction faction = null)
 	{
-		public float minValuePerUnit = 15f;
+		return Enumerable.Empty<Thing>();
+	}
 
-		public override IEnumerable<Thing> GenerateThings(PlanetTile forTile, Faction faction = null)
+	public override bool HandlesThingDef(ThingDef thingDef)
+	{
+		if (thingDef.category != ThingCategory.Item || thingDef.IsApparel || thingDef.IsWeapon || thingDef.IsMedicine || thingDef.IsDrug || !thingDef.genericMarketSellable)
 		{
-			return Enumerable.Empty<Thing>();
+			return false;
 		}
+		if (thingDef == ThingDefOf.InsectJelly)
+		{
+			return true;
+		}
+		return thingDef.BaseMarketValue / thingDef.VolumePerUnit >= minValuePerUnit;
+	}
 
-		public override bool HandlesThingDef(ThingDef thingDef)
+	public override Tradeability TradeabilityFor(ThingDef thingDef)
+	{
+		if (thingDef.tradeability == Tradeability.None || !HandlesThingDef(thingDef))
 		{
-			if (thingDef.category != ThingCategory.Item || thingDef.IsApparel || thingDef.IsWeapon || thingDef.IsMedicine || thingDef.IsDrug || !thingDef.genericMarketSellable)
-			{
-				return false;
-			}
-			if (thingDef == ThingDefOf.InsectJelly)
-			{
-				return true;
-			}
-			return thingDef.BaseMarketValue / thingDef.VolumePerUnit >= minValuePerUnit;
+			return Tradeability.None;
 		}
-
-		public override Tradeability TradeabilityFor(ThingDef thingDef)
-		{
-			if (thingDef.tradeability == Tradeability.None || !HandlesThingDef(thingDef))
-			{
-				return Tradeability.None;
-			}
-			return Tradeability.Sellable;
-		}
+		return Tradeability.Sellable;
 	}
 }

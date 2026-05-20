@@ -1,14 +1,13 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class CompProperties_DropMechPods : CompProperties_EffectWithDest
-	{
-		public IntRange numPods;
+namespace RimWorld;
 
-		public CompProperties_DropMechPods()
-		{
-			compClass = typeof(CompAbilityEffect_DropMechPods);
-		}
+public class CompProperties_DropMechPods : CompProperties_EffectWithDest
+{
+	public IntRange numPods;
+
+	public CompProperties_DropMechPods()
+	{
+		compClass = typeof(CompAbilityEffect_DropMechPods);
 	}
 }

@@ -1,7 +1,6 @@
-namespace Verse.Sound
+namespace Verse.Sound;
+
+public class ResolvedGrain
 {
-	public class ResolvedGrain
-	{
-		public float duration;
-	}
+	public float duration;
 }

@@ -1,30 +1,29 @@
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class HediffComp_DisappearsAndKills_Shambler : HediffComp_DisappearsAndKills
 {
-	public class HediffComp_DisappearsAndKills_Shambler : HediffComp_DisappearsAndKills
+	private CompHoldingPlatformTarget compHoldingPlatformTarget => base.Pawn.TryGetComp<CompHoldingPlatformTarget>();
+
+	protected override bool Paused
 	{
-		private CompHoldingPlatformTarget compHoldingPlatformTarget => base.Pawn.TryGetComp<CompHoldingPlatformTarget>();
-
-		protected override bool Paused
+		get
 		{
-			get
+			if (!disabled)
 			{
-				if (!disabled)
-				{
-					return compHoldingPlatformTarget?.CurrentlyHeldOnPlatform ?? false;
-				}
-				return true;
+				return compHoldingPlatformTarget?.CurrentlyHeldOnPlatform ?? false;
 			}
+			return true;
 		}
+	}
 
-		public override void CompPostPostRemoved()
+	public override void CompPostPostRemoved()
+	{
+		base.CompPostPostRemoved();
+		if (!disabled && !base.Pawn.Dead)
 		{
-			base.CompPostPostRemoved();
-			if (!disabled && !base.Pawn.Dead)
-			{
-				base.Pawn.Kill(null, null);
-			}
+			base.Pawn.Kill(null, null);
 		}
 	}
 }

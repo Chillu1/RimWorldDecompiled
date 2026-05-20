@@ -4,66 +4,65 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class Dialog_SaveFileList : Dialog_FileList
 {
-	public abstract class Dialog_SaveFileList : Dialog_FileList
+	private static readonly Color AutosaveTextColor = new Color(0.75f, 0.75f, 0.75f);
+
+	private Task loadSavesTask;
+
+	protected override Color FileNameColor(SaveFileInfo sfi)
 	{
-		private static readonly Color AutosaveTextColor = new Color(0.75f, 0.75f, 0.75f);
-
-		private Task loadSavesTask;
-
-		protected override Color FileNameColor(SaveFileInfo sfi)
+		if (SaveGameFilesUtility.IsAutoSave(Path.GetFileNameWithoutExtension(sfi.FileName)))
 		{
-			if (SaveGameFilesUtility.IsAutoSave(Path.GetFileNameWithoutExtension(sfi.FileName)))
-			{
-				GUI.color = AutosaveTextColor;
-			}
-			return base.FileNameColor(sfi);
+			GUI.color = AutosaveTextColor;
 		}
+		return base.FileNameColor(sfi);
+	}
 
-		private void ReloadFilesTask()
+	private void ReloadFilesTask()
+	{
+		Parallel.ForEach(files, delegate(SaveFileInfo file)
 		{
-			Parallel.ForEach(files, delegate(SaveFileInfo file)
+			try
 			{
-				try
-				{
-					file.LoadData();
-				}
-				catch (Exception arg)
-				{
-					Log.Error($"Exception loading {file.FileInfo.Name}: {arg}");
-				}
-			});
+				file.LoadData();
+			}
+			catch (Exception arg)
+			{
+				Log.Error($"Exception loading {file.FileInfo.Name}: {arg}");
+			}
+		});
+	}
+
+	protected override void ReloadFiles()
+	{
+		if (loadSavesTask != null && loadSavesTask.Status != TaskStatus.RanToCompletion)
+		{
+			loadSavesTask.Wait();
 		}
-
-		protected override void ReloadFiles()
+		files.Clear();
+		foreach (FileInfo allSavedGameFile in GenFilePaths.AllSavedGameFiles)
 		{
-			if (loadSavesTask != null && loadSavesTask.Status != TaskStatus.RanToCompletion)
+			try
 			{
-				loadSavesTask.Wait();
+				SaveFileInfo item = new SaveFileInfo(allSavedGameFile);
+				files.Add(item);
 			}
-			files.Clear();
-			foreach (FileInfo allSavedGameFile in GenFilePaths.AllSavedGameFiles)
+			catch (Exception arg)
 			{
-				try
-				{
-					SaveFileInfo item = new SaveFileInfo(allSavedGameFile);
-					files.Add(item);
-				}
-				catch (Exception arg)
-				{
-					Log.Error($"Exception loading {allSavedGameFile.Name}: {arg}");
-				}
+				Log.Error($"Exception loading {allSavedGameFile.Name}: {arg}");
 			}
-			loadSavesTask = Task.Run((Action)ReloadFilesTask);
 		}
+		loadSavesTask = Task.Run((Action)ReloadFilesTask);
+	}
 
-		public override void PostClose()
+	public override void PostClose()
+	{
+		if (Current.ProgramState == ProgramState.Playing)
 		{
-			if (Current.ProgramState == ProgramState.Playing)
-			{
-				Find.MainTabsRoot.SetCurrentTab(MainButtonDefOf.Menu);
-			}
+			Find.MainTabsRoot.SetCurrentTab(MainButtonDefOf.Menu);
 		}
 	}
 }

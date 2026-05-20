@@ -1,23 +1,22 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_AbilityGiveHediff : CompProperties_AbilityEffectWithDuration
 {
-	public class CompProperties_AbilityGiveHediff : CompProperties_AbilityEffectWithDuration
-	{
-		public HediffDef hediffDef;
+	public HediffDef hediffDef;
 
-		public bool onlyBrain;
+	public bool onlyBrain;
 
-		public bool applyToSelf;
+	public bool applyToSelf;
 
-		public bool onlyApplyToSelf;
+	public bool onlyApplyToSelf;
 
-		public bool applyToTarget = true;
+	public bool applyToTarget = true;
 
-		public bool replaceExisting;
+	public bool replaceExisting;
 
-		public float severity = -1f;
+	public float severity = -1f;
 
-		public bool ignoreSelf;
-	}
+	public bool ignoreSelf;
 }

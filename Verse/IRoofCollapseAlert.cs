@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public interface IRoofCollapseAlert
 {
-	public interface IRoofCollapseAlert
-	{
-		RoofCollapseResponse Notify_OnBeforeRoofCollapse();
-	}
+	RoofCollapseResponse Notify_OnBeforeRoofCollapse();
 }

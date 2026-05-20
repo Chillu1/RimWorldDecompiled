@@ -1,8 +1,7 @@
-namespace Verse
+namespace Verse;
+
+public enum VerticalJustification
 {
-	public enum VerticalJustification
-	{
-		Top,
-		Bottom
-	}
+	Top,
+	Bottom
 }

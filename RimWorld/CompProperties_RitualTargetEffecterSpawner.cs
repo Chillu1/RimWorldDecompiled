@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_RitualTargetEffecterSpawner : CompProperties
 {
-	public class CompProperties_RitualTargetEffecterSpawner : CompProperties
+	public EffecterDef effecter;
+
+	public float minRitualProgress;
+
+	public CompProperties_RitualTargetEffecterSpawner()
 	{
-		public EffecterDef effecter;
-
-		public float minRitualProgress;
-
-		public CompProperties_RitualTargetEffecterSpawner()
-		{
-			compClass = typeof(CompRitualTargetEffecterSpawner);
-		}
+		compClass = typeof(CompRitualTargetEffecterSpawner);
 	}
 }

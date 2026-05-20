@@ -3,109 +3,108 @@ using System.Collections.Generic;
 using System.Linq;
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public class SpaceMapParent : MapParent, INameableWorldObject, IResourceWorldObject
 {
-	public class SpaceMapParent : MapParent, INameableWorldObject, IResourceWorldObject
+	public ThingDef preciousResource;
+
+	public string nameInt;
+
+	public override bool GravShipCanLandOn => !base.HasMap;
+
+	public override string Label
 	{
-		public ThingDef preciousResource;
-
-		public string nameInt;
-
-		public override bool GravShipCanLandOn => !base.HasMap;
-
-		public override string Label
+		get
 		{
-			get
-			{
-				if (!string.IsNullOrEmpty(nameInt))
-				{
-					return nameInt;
-				}
-				return base.Label;
-			}
-		}
-
-		public string Name
-		{
-			get
+			if (!string.IsNullOrEmpty(nameInt))
 			{
 				return nameInt;
 			}
-			set
-			{
-				nameInt = value;
-			}
+			return base.Label;
 		}
+	}
 
-		public ThingDef PreciousResource
+	public string Name
+	{
+		get
 		{
-			get
-			{
-				return preciousResource;
-			}
-			set
-			{
-				preciousResource = value;
-			}
+			return nameInt;
 		}
-
-		public override MapGeneratorDef MapGeneratorDef => def.mapGenerator ?? MapGeneratorDefOf.Space;
-
-		public override IEnumerable<FloatMenuOption> GetTransportersFloatMenuOptions(IEnumerable<IThingHolder> pods, Action<PlanetTile, TransportersArrivalAction> launchAction)
+		set
 		{
-			foreach (FloatMenuOption transportersFloatMenuOption in base.GetTransportersFloatMenuOptions(pods, launchAction))
-			{
-				yield return transportersFloatMenuOption;
-			}
-			foreach (FloatMenuOption floatMenuOption in TransportersArrivalAction_VisitSpace.GetFloatMenuOptions(launchAction, pods, this))
-			{
-				yield return floatMenuOption;
-			}
+			nameInt = value;
 		}
+	}
 
-		public override IEnumerable<FloatMenuOption> GetShuttleFloatMenuOptions(IEnumerable<IThingHolder> pods, Action<PlanetTile, TransportersArrivalAction> launchAction)
+	public ThingDef PreciousResource
+	{
+		get
 		{
-			foreach (FloatMenuOption shuttleFloatMenuOption in base.GetShuttleFloatMenuOptions(pods, launchAction))
-			{
-				yield return shuttleFloatMenuOption;
-			}
-			foreach (FloatMenuOption floatMenuOption in TransportersArrivalAction_VisitSpace.GetFloatMenuOptions(launchAction, pods, this))
-			{
-				yield return floatMenuOption;
-			}
+			return preciousResource;
 		}
-
-		public override bool ShouldRemoveMapNow(out bool alsoRemoveWorldObject)
+		set
 		{
-			alsoRemoveWorldObject = false;
-			if (base.Map.mapPawns.AnyPawnBlockingMapRemoval)
+			preciousResource = value;
+		}
+	}
+
+	public override MapGeneratorDef MapGeneratorDef => def.mapGenerator ?? MapGeneratorDefOf.Space;
+
+	public override IEnumerable<FloatMenuOption> GetTransportersFloatMenuOptions(IEnumerable<IThingHolder> pods, Action<PlanetTile, TransportersArrivalAction> launchAction)
+	{
+		foreach (FloatMenuOption transportersFloatMenuOption in base.GetTransportersFloatMenuOptions(pods, launchAction))
+		{
+			yield return transportersFloatMenuOption;
+		}
+		foreach (FloatMenuOption floatMenuOption in TransportersArrivalAction_VisitSpace.GetFloatMenuOptions(launchAction, pods, this))
+		{
+			yield return floatMenuOption;
+		}
+	}
+
+	public override IEnumerable<FloatMenuOption> GetShuttleFloatMenuOptions(IEnumerable<IThingHolder> pods, Action<PlanetTile, TransportersArrivalAction> launchAction)
+	{
+		foreach (FloatMenuOption shuttleFloatMenuOption in base.GetShuttleFloatMenuOptions(pods, launchAction))
+		{
+			yield return shuttleFloatMenuOption;
+		}
+		foreach (FloatMenuOption floatMenuOption in TransportersArrivalAction_VisitSpace.GetFloatMenuOptions(launchAction, pods, this))
+		{
+			yield return floatMenuOption;
+		}
+	}
+
+	public override bool ShouldRemoveMapNow(out bool alsoRemoveWorldObject)
+	{
+		alsoRemoveWorldObject = false;
+		if (base.Map.mapPawns.AnyPawnBlockingMapRemoval)
+		{
+			return false;
+		}
+		foreach (PocketMapParent item in Find.World.pocketMaps.ToList())
+		{
+			if (item.sourceMap == base.Map && item.Map.mapPawns.AnyPawnBlockingMapRemoval)
 			{
 				return false;
 			}
-			foreach (PocketMapParent item in Find.World.pocketMaps.ToList())
-			{
-				if (item.sourceMap == base.Map && item.Map.mapPawns.AnyPawnBlockingMapRemoval)
-				{
-					return false;
-				}
-			}
-			if (base.Map.AnyBuildingBlockingMapRemoval)
-			{
-				return false;
-			}
-			if (TransporterUtility.IncomingTransporterPreventingMapRemoval(base.Map))
-			{
-				return false;
-			}
-			alsoRemoveWorldObject = true;
-			return true;
 		}
-
-		public override void ExposeData()
+		if (base.Map.AnyBuildingBlockingMapRemoval)
 		{
-			base.ExposeData();
-			Scribe_Values.Look(ref nameInt, "nameInt");
-			Scribe_Defs.Look(ref preciousResource, "preciousResource");
+			return false;
 		}
+		if (TransporterUtility.IncomingTransporterPreventingMapRemoval(base.Map))
+		{
+			return false;
+		}
+		alsoRemoveWorldObject = true;
+		return true;
+	}
+
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Values.Look(ref nameInt, "nameInt");
+		Scribe_Defs.Look(ref preciousResource, "preciousResource");
 	}
 }

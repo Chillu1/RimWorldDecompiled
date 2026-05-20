@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum WaterBodyType
 {
-	public enum WaterBodyType
-	{
-		None,
-		Freshwater,
-		Saltwater,
-		Other
-	}
+	None,
+	Freshwater,
+	Saltwater,
+	Other
 }

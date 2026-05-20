@@ -1,37 +1,36 @@
 using RimWorld.Planet;
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_GenerateWorldObject : QuestNode
 {
-	public class QuestNode_GenerateWorldObject : QuestNode
+	public SlateRef<WorldObjectDef> def;
+
+	public SlateRef<PlanetTile> tile;
+
+	public SlateRef<Faction> faction;
+
+	[NoTranslate]
+	public SlateRef<string> storeAs;
+
+	protected override void RunInt()
 	{
-		public SlateRef<WorldObjectDef> def;
-
-		public SlateRef<PlanetTile> tile;
-
-		public SlateRef<Faction> faction;
-
-		[NoTranslate]
-		public SlateRef<string> storeAs;
-
-		protected override void RunInt()
+		Slate slate = QuestGen.slate;
+		WorldObject worldObject = WorldObjectMaker.MakeWorldObject(def.GetValue(slate));
+		worldObject.Tile = tile.GetValue(slate);
+		if (faction.GetValue(slate) != null)
 		{
-			Slate slate = QuestGen.slate;
-			WorldObject worldObject = WorldObjectMaker.MakeWorldObject(def.GetValue(slate));
-			worldObject.Tile = tile.GetValue(slate);
-			if (faction.GetValue(slate) != null)
-			{
-				worldObject.SetFaction(faction.GetValue(slate));
-			}
-			if (storeAs.GetValue(slate) != null)
-			{
-				QuestGen.slate.Set(storeAs.GetValue(slate), worldObject);
-			}
+			worldObject.SetFaction(faction.GetValue(slate));
 		}
-
-		protected override bool TestRunInt(Slate slate)
+		if (storeAs.GetValue(slate) != null)
 		{
-			return true;
+			QuestGen.slate.Set(storeAs.GetValue(slate), worldObject);
 		}
+	}
+
+	protected override bool TestRunInt(Slate slate)
+	{
+		return true;
 	}
 }

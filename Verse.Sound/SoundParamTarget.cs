@@ -1,14 +1,13 @@
 using System;
 
-namespace Verse.Sound
+namespace Verse.Sound;
+
+[EditorShowClassName]
+public abstract class SoundParamTarget
 {
-	[EditorShowClassName]
-	public abstract class SoundParamTarget
-	{
-		public abstract string Label { get; }
+	public abstract string Label { get; }
 
-		public virtual Type NeededFilterType => null;
+	public virtual Type NeededFilterType => null;
 
-		public abstract void SetOn(Sample sample, float value);
-	}
+	public abstract void SetOn(Sample sample, float value);
 }

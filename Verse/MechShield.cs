@@ -1,51 +1,50 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class MechShield : ThingWithComps
 {
-	public class MechShield : ThingWithComps
+	private Thing target;
+
+	public override Vector3 DrawPos
 	{
-		private Thing target;
-
-		public override Vector3 DrawPos
+		get
 		{
-			get
+			if (target == null)
 			{
-				if (target == null)
-				{
-					return base.DrawPos;
-				}
-				return target.DrawPos;
+				return base.DrawPos;
 			}
+			return target.DrawPos;
 		}
+	}
 
-		public void SetTarget(Thing target)
-		{
-			this.target = target;
-		}
+	public void SetTarget(Thing target)
+	{
+		this.target = target;
+	}
 
-		public bool IsTargeting(Thing target)
-		{
-			return this.target == target;
-		}
+	public bool IsTargeting(Thing target)
+	{
+		return this.target == target;
+	}
 
-		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
-		{
-			Comps_PostDraw();
-		}
+	protected override void DrawAt(Vector3 drawLoc, bool flip = false)
+	{
+		Comps_PostDraw();
+	}
 
-		protected override void Tick()
+	protected override void Tick()
+	{
+		base.Tick();
+		if (target != null)
 		{
-			base.Tick();
-			if (target != null)
-			{
-				base.Position = target.Position;
-			}
+			base.Position = target.Position;
 		}
+	}
 
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_References.Look(ref target, "target");
-		}
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_References.Look(ref target, "target");
 	}
 }

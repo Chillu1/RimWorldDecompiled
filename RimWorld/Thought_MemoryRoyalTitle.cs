@@ -1,25 +1,24 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Thought_MemoryRoyalTitle : Thought_Memory
 {
-	public class Thought_MemoryRoyalTitle : Thought_Memory
+	public RoyalTitleDef titleDef;
+
+	public override string LabelCap => base.CurStage.label.Formatted(titleDef.GetLabelCapFor(pawn).Named("TITLE"), pawn.Named("PAWN"));
+
+	public override string Description => base.CurStage.description.Formatted(titleDef.GetLabelCapFor(pawn).Named("TITLE"), pawn.Named("PAWN"));
+
+	public override void ExposeData()
 	{
-		public RoyalTitleDef titleDef;
+		base.ExposeData();
+		Scribe_Defs.Look(ref titleDef, "titleDef");
+	}
 
-		public override string LabelCap => base.CurStage.label.Formatted(titleDef.GetLabelCapFor(pawn).Named("TITLE"), pawn.Named("PAWN"));
-
-		public override string Description => base.CurStage.description.Formatted(titleDef.GetLabelCapFor(pawn).Named("TITLE"), pawn.Named("PAWN"));
-
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_Defs.Look(ref titleDef, "titleDef");
-		}
-
-		public override void CopyFrom(Thought_Memory m)
-		{
-			titleDef = ((Thought_MemoryRoyalTitle)m).titleDef;
-			base.CopyFrom(m);
-		}
+	public override void CopyFrom(Thought_Memory m)
+	{
+		titleDef = ((Thought_MemoryRoyalTitle)m).titleDef;
+		base.CopyFrom(m);
 	}
 }

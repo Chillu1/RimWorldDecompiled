@@ -1,8 +1,7 @@
-namespace Ionic.Zlib
+namespace Ionic.Zlib;
+
+public enum CompressionMode
 {
-	public enum CompressionMode
-	{
-		Compress,
-		Decompress
-	}
+	Compress,
+	Decompress
 }

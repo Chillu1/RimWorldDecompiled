@@ -1,43 +1,42 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ReadingOutcomeDoerGainAnomalyResearch : ReadingOutcomeDoerGainResearch
 {
-	public class ReadingOutcomeDoerGainAnomalyResearch : ReadingOutcomeDoerGainResearch
+	public new BookOutcomeProperties_GainAnomalyResearch Props => (BookOutcomeProperties_GainAnomalyResearch)props;
+
+	public override int RoundTo { get; }
+
+	protected override float GetBaseValue()
 	{
-		public new BookOutcomeProperties_GainAnomalyResearch Props => (BookOutcomeProperties_GainAnomalyResearch)props;
+		return BookUtility.GetAnomalyExpForQuality(base.Quality);
+	}
 
-		public override int RoundTo { get; }
-
-		protected override float GetBaseValue()
+	public override bool DoesProvidesOutcome(Pawn reader)
+	{
+		foreach (KeyValuePair<ResearchProjectDef, float> value2 in values)
 		{
-			return BookUtility.GetAnomalyExpForQuality(base.Quality);
-		}
-
-		public override bool DoesProvidesOutcome(Pawn reader)
-		{
-			foreach (KeyValuePair<ResearchProjectDef, float> value2 in values)
+			value2.Deconstruct(out var key, out var _);
+			if (key.CanStartNow)
 			{
-				value2.Deconstruct(out var key, out var _);
-				if (key.CanStartNow)
-				{
-					return true;
-				}
+				return true;
 			}
-			return false;
 		}
+		return false;
+	}
 
-		public override void OnReadingTick(Pawn reader, float factor)
+	public override void OnReadingTick(Pawn reader, float factor)
+	{
+		foreach (KeyValuePair<ResearchProjectDef, float> value2 in values)
 		{
-			foreach (KeyValuePair<ResearchProjectDef, float> value2 in values)
+			value2.Deconstruct(out var key, out var value);
+			ResearchProjectDef researchProjectDef = key;
+			float num = value;
+			if (researchProjectDef.CanStartNow)
 			{
-				value2.Deconstruct(out var key, out var value);
-				ResearchProjectDef researchProjectDef = key;
-				float num = value;
-				if (researchProjectDef.CanStartNow)
-				{
-					Find.ResearchManager.ApplyKnowledge(researchProjectDef, num * factor, out value);
-				}
+				Find.ResearchManager.ApplyKnowledge(researchProjectDef, num * factor, out value);
 			}
 		}
 	}

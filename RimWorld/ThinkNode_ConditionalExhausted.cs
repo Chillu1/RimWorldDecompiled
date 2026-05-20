@@ -1,17 +1,16 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThinkNode_ConditionalExhausted : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalExhausted : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
+		if (pawn.needs.rest != null)
 		{
-			if (pawn.needs.rest != null)
-			{
-				return (int)pawn.needs.rest.CurCategory >= 3;
-			}
-			return false;
+			return (int)pawn.needs.rest.CurCategory >= 3;
 		}
+		return false;
 	}
 }

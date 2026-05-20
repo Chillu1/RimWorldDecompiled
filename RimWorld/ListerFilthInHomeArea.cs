@@ -2,82 +2,81 @@ using System.Collections.Generic;
 using System.Text;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ListerFilthInHomeArea
 {
-	public class ListerFilthInHomeArea
+	private Map map;
+
+	private List<Thing> filthInHomeArea = new List<Thing>();
+
+	public List<Thing> FilthInHomeArea => filthInHomeArea;
+
+	public ListerFilthInHomeArea(Map map)
 	{
-		private Map map;
+		this.map = map;
+	}
 
-		private List<Thing> filthInHomeArea = new List<Thing>();
-
-		public List<Thing> FilthInHomeArea => filthInHomeArea;
-
-		public ListerFilthInHomeArea(Map map)
+	public void RebuildAll()
+	{
+		filthInHomeArea.Clear();
+		foreach (IntVec3 allCell in map.AllCells)
 		{
-			this.map = map;
+			Notify_HomeAreaChanged(allCell);
 		}
+	}
 
-		public void RebuildAll()
+	public void Notify_FilthSpawned(Filth f)
+	{
+		if (map.areaManager.Home[f.Position])
 		{
-			filthInHomeArea.Clear();
-			foreach (IntVec3 allCell in map.AllCells)
+			filthInHomeArea.Add(f);
+		}
+	}
+
+	public void Notify_FilthDespawned(Filth f)
+	{
+		for (int i = 0; i < filthInHomeArea.Count; i++)
+		{
+			if (filthInHomeArea[i] == f)
 			{
-				Notify_HomeAreaChanged(allCell);
+				filthInHomeArea.RemoveAt(i);
+				break;
 			}
 		}
+	}
 
-		public void Notify_FilthSpawned(Filth f)
+	public void Notify_HomeAreaChanged(IntVec3 c)
+	{
+		if (map.areaManager.Home[c])
 		{
-			if (map.areaManager.Home[f.Position])
+			List<Thing> thingList = c.GetThingList(map);
+			for (int i = 0; i < thingList.Count; i++)
 			{
-				filthInHomeArea.Add(f);
-			}
-		}
-
-		public void Notify_FilthDespawned(Filth f)
-		{
-			for (int i = 0; i < filthInHomeArea.Count; i++)
-			{
-				if (filthInHomeArea[i] == f)
+				if (thingList[i] is Filth item)
 				{
-					filthInHomeArea.RemoveAt(i);
-					break;
+					filthInHomeArea.Add(item);
 				}
 			}
+			return;
 		}
-
-		public void Notify_HomeAreaChanged(IntVec3 c)
+		for (int num = filthInHomeArea.Count - 1; num >= 0; num--)
 		{
-			if (map.areaManager.Home[c])
+			if (filthInHomeArea[num].Position == c)
 			{
-				List<Thing> thingList = c.GetThingList(map);
-				for (int i = 0; i < thingList.Count; i++)
-				{
-					if (thingList[i] is Filth item)
-					{
-						filthInHomeArea.Add(item);
-					}
-				}
-				return;
-			}
-			for (int num = filthInHomeArea.Count - 1; num >= 0; num--)
-			{
-				if (filthInHomeArea[num].Position == c)
-				{
-					filthInHomeArea.RemoveAt(num);
-				}
+				filthInHomeArea.RemoveAt(num);
 			}
 		}
+	}
 
-		internal string DebugString()
+	internal string DebugString()
+	{
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.AppendLine("======= Filth in home area");
+		foreach (Thing item in filthInHomeArea)
 		{
-			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.AppendLine("======= Filth in home area");
-			foreach (Thing item in filthInHomeArea)
-			{
-				stringBuilder.AppendLine(item.ThingID + " " + item.Position.ToString());
-			}
-			return stringBuilder.ToString();
+			stringBuilder.AppendLine(item.ThingID + " " + item.Position.ToString());
 		}
+		return stringBuilder.ToString();
 	}
 }

@@ -1,22 +1,21 @@
-namespace Verse
-{
-	public class Hediff_Inhumanized : Hediff
-	{
-		public override void PostAdd(DamageInfo? dinfo)
-		{
-			if (!ModsConfig.AnomalyActive)
-			{
-				pawn.health.RemoveHediff(this);
-				return;
-			}
-			base.PostAdd(dinfo);
-			Find.StudyManager.UpdateStudiableCache(pawn, pawn.MapHeld);
-		}
+namespace Verse;
 
-		public override void PostRemoved()
+public class Hediff_Inhumanized : Hediff
+{
+	public override void PostAdd(DamageInfo? dinfo)
+	{
+		if (!ModsConfig.AnomalyActive)
 		{
-			base.PostRemoved();
-			Find.StudyManager.UpdateStudiableCache(pawn, pawn.MapHeld);
+			pawn.health.RemoveHediff(this);
+			return;
 		}
+		base.PostAdd(dinfo);
+		Find.StudyManager.UpdateStudiableCache(pawn, pawn.MapHeld);
+	}
+
+	public override void PostRemoved()
+	{
+		base.PostRemoved();
+		Find.StudyManager.UpdateStudiableCache(pawn, pawn.MapHeld);
 	}
 }

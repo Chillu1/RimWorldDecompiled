@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum PlantLifeStage : byte
 {
-	public enum PlantLifeStage : byte
-	{
-		Sowing,
-		Growing,
-		Mature
-	}
+	Sowing,
+	Growing,
+	Mature
 }

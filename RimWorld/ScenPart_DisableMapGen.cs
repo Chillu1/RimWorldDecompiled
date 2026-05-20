@@ -1,6 +1,5 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class ScenPart_DisableMapGen : ScenPart
 {
-	public class ScenPart_DisableMapGen : ScenPart
-	{
-	}
 }

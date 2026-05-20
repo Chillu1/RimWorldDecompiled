@@ -1,14 +1,13 @@
-namespace Verse
+namespace Verse;
+
+internal static class DraggableResultUtility
 {
-	internal static class DraggableResultUtility
+	public static bool AnyPressed(this Widgets.DraggableResult result)
 	{
-		public static bool AnyPressed(this Widgets.DraggableResult result)
+		if (result != Widgets.DraggableResult.Pressed)
 		{
-			if (result != Widgets.DraggableResult.Pressed)
-			{
-				return result == Widgets.DraggableResult.DraggedThenPressed;
-			}
-			return true;
+			return result == Widgets.DraggableResult.DraggedThenPressed;
 		}
+		return true;
 	}
 }

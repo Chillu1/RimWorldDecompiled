@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class IncidentWorker_DeathPall : IncidentWorker_MakeGameCondition
 {
-	public class IncidentWorker_DeathPall : IncidentWorker_MakeGameCondition
+	public override GameConditionDef GetGameConditionDef(IncidentParms parms)
 	{
-		public override GameConditionDef GetGameConditionDef(IncidentParms parms)
-		{
-			return GameConditionDefOf.DeathPall;
-		}
+		return GameConditionDefOf.DeathPall;
 	}
 }

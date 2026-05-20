@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum ListerThingsUse : byte
 {
-	public enum ListerThingsUse : byte
-	{
-		Undefined,
-		Global,
-		Region
-	}
+	Undefined,
+	Global,
+	Region
 }

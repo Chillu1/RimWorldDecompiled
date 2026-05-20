@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompSpawnLarva : CompSpawnPawnOnDestroyed
 {
-	public class CompSpawnLarva : CompSpawnPawnOnDestroyed
-	{
-		protected override bool JoinLord => parent.Faction != Faction.OfPlayer;
-	}
+	protected override bool JoinLord => parent.Faction != Faction.OfPlayer;
 }

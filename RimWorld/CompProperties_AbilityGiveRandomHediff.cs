@@ -1,16 +1,15 @@
 using System.Collections.Generic;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_AbilityGiveRandomHediff : CompProperties_AbilityEffect
 {
-	public class CompProperties_AbilityGiveRandomHediff : CompProperties_AbilityEffect
+	public List<HediffOption> options;
+
+	public bool allowDuplicates;
+
+	public CompProperties_AbilityGiveRandomHediff()
 	{
-		public List<HediffOption> options;
-
-		public bool allowDuplicates;
-
-		public CompProperties_AbilityGiveRandomHediff()
-		{
-			compClass = typeof(CompAbilityEffect_GiveRandomHediff);
-		}
+		compClass = typeof(CompAbilityEffect_GiveRandomHediff);
 	}
 }

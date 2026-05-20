@@ -1,9 +1,8 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class TipSetDef : Def
 {
-	public class TipSetDef : Def
-	{
-		public List<string> tips;
-	}
+	public List<string> tips;
 }

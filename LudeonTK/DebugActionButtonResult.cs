@@ -1,9 +1,8 @@
-namespace LudeonTK
+namespace LudeonTK;
+
+public enum DebugActionButtonResult
 {
-	public enum DebugActionButtonResult
-	{
-		None,
-		ButtonPressed,
-		PinPressed
-	}
+	None,
+	ButtonPressed,
+	PinPressed
 }

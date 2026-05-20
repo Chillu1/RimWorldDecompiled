@@ -1,9 +1,8 @@
-namespace Verse.AI
-{
-	public struct JobIssueParams
-	{
-		public float maxDistToSquadFlag;
+namespace Verse.AI;
 
-		public bool ignoreQueue;
-	}
+public struct JobIssueParams
+{
+	public float maxDistToSquadFlag;
+
+	public bool ignoreQueue;
 }

@@ -2,68 +2,67 @@ using System.Collections.Generic;
 using Verse;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class StageEndTrigger_RoleTagSet : StageEndTrigger
 {
-	public class StageEndTrigger_RoleTagSet : StageEndTrigger
+	public List<string> roleIds;
+
+	public bool clearTag;
+
+	[NoTranslate]
+	public string tag;
+
+	public override Trigger MakeTrigger(LordJob_Ritual ritual, TargetInfo spot, IEnumerable<TargetInfo> foci, RitualStage stage)
 	{
-		public List<string> roleIds;
-
-		public bool clearTag;
-
-		[NoTranslate]
-		public string tag;
-
-		public override Trigger MakeTrigger(LordJob_Ritual ritual, TargetInfo spot, IEnumerable<TargetInfo> foci, RitualStage stage)
+		return new Trigger_TickCondition(delegate
 		{
-			return new Trigger_TickCondition(delegate
+			foreach (string roleId in roleIds)
 			{
-				foreach (string roleId in roleIds)
+				if (!ArrivedCheck(roleId, ritual))
 				{
-					if (!ArrivedCheck(roleId, ritual))
-					{
-						return false;
-					}
+					return false;
 				}
-				if (clearTag)
+			}
+			if (clearTag)
+			{
+				foreach (string roleId2 in roleIds)
 				{
-					foreach (string roleId2 in roleIds)
+					foreach (KeyValuePair<Pawn, PawnTags> perPawnTag in ritual.perPawnTags)
 					{
-						foreach (KeyValuePair<Pawn, PawnTags> perPawnTag in ritual.perPawnTags)
+						RitualRole ritualRole = ritual.RoleFor(perPawnTag.Key, includeForced: true);
+						if (ritualRole != null && ritualRole.id == roleId2 && perPawnTag.Value.Contains(tag))
 						{
-							RitualRole ritualRole = ritual.RoleFor(perPawnTag.Key, includeForced: true);
-							if (ritualRole != null && ritualRole.id == roleId2 && perPawnTag.Value.Contains(tag))
-							{
-								perPawnTag.Value.tags.Remove(tag);
-							}
+							perPawnTag.Value.tags.Remove(tag);
 						}
 					}
 				}
-				return true;
-			});
-		}
+			}
+			return true;
+		});
+	}
 
-		protected virtual bool ArrivedCheck(string r, LordJob_Ritual ritual)
+	protected virtual bool ArrivedCheck(string r, LordJob_Ritual ritual)
+	{
+		if (!ritual.RoleFilled(r))
 		{
-			if (!ritual.RoleFilled(r))
+			return true;
+		}
+		foreach (KeyValuePair<Pawn, PawnTags> perPawnTag in ritual.perPawnTags)
+		{
+			RitualRole ritualRole = ritual.RoleFor(perPawnTag.Key, includeForced: true);
+			if (ritualRole != null && ritualRole.id == r && perPawnTag.Value.Contains(tag))
 			{
 				return true;
 			}
-			foreach (KeyValuePair<Pawn, PawnTags> perPawnTag in ritual.perPawnTags)
-			{
-				RitualRole ritualRole = ritual.RoleFor(perPawnTag.Key, includeForced: true);
-				if (ritualRole != null && ritualRole.id == r && perPawnTag.Value.Contains(tag))
-				{
-					return true;
-				}
-			}
-			return false;
 		}
+		return false;
+	}
 
-		public override void ExposeData()
-		{
-			Scribe_Collections.Look(ref roleIds, "roleIds", LookMode.Undefined);
-			Scribe_Values.Look(ref clearTag, "clearTag", defaultValue: false);
-			Scribe_Values.Look(ref tag, "tag");
-		}
+	public override void ExposeData()
+	{
+		Scribe_Collections.Look(ref roleIds, "roleIds", LookMode.Undefined);
+		Scribe_Values.Look(ref clearTag, "clearTag", defaultValue: false);
+		Scribe_Values.Look(ref tag, "tag");
 	}
 }

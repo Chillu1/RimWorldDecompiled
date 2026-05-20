@@ -1,27 +1,26 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class GameCondition_GrayPall : GameCondition_ForceWeather
 {
-	public class GameCondition_GrayPall : GameCondition_ForceWeather
+	public override int TransitionTicks => 180;
+
+	public override void Init()
 	{
-		public override int TransitionTicks => 180;
-
-		public override void Init()
+		if (!ModLister.CheckAnomaly("Grey pall"))
 		{
-			if (!ModLister.CheckAnomaly("Grey pall"))
-			{
-				End();
-			}
-			else
-			{
-				base.Init();
-			}
+			End();
 		}
-
-		public override void End()
+		else
 		{
-			base.End();
-			base.SingleMap.weatherDecider.StartNextWeather();
+			base.Init();
 		}
+	}
+
+	public override void End()
+	{
+		base.End();
+		base.SingleMap.weatherDecider.StartNextWeather();
 	}
 }

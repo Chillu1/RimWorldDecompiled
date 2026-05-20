@@ -1,15 +1,14 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class ScatteredPrefabs
 {
-	public class ScatteredPrefabs
-	{
-		public List<GenStep_ScatterGroupPrefabs.ScatterGroup> prefabs = new List<GenStep_ScatterGroupPrefabs.ScatterGroup>();
+	public List<GenStep_ScatterGroupPrefabs.ScatterGroup> prefabs = new List<GenStep_ScatterGroupPrefabs.ScatterGroup>();
 
-		public FloatRange countPer10kCellsRange = FloatRange.Zero;
+	public FloatRange countPer10kCellsRange = FloatRange.Zero;
 
-		public int minSpacing;
+	public int minSpacing;
 
-		public float maxDistFromStructure;
-	}
+	public float maxDistFromStructure;
 }

@@ -1,12 +1,11 @@
 using RimWorld.Planet;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WorldObjectCompProperties_ItemStashContents : WorldObjectCompProperties
 {
-	public class WorldObjectCompProperties_ItemStashContents : WorldObjectCompProperties
+	public WorldObjectCompProperties_ItemStashContents()
 	{
-		public WorldObjectCompProperties_ItemStashContents()
-		{
-			compClass = typeof(ItemStashContentsComp);
-		}
+		compClass = typeof(ItemStashContentsComp);
 	}
 }

@@ -1,50 +1,49 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public struct RitualTargetUseReport
 {
-	public struct RitualTargetUseReport
+	public bool canUse;
+
+	public string failReason;
+
+	public bool ShouldShowGizmo
 	{
-		public bool canUse;
-
-		public string failReason;
-
-		public bool ShouldShowGizmo
+		get
 		{
-			get
+			if (!canUse)
 			{
-				if (!canUse)
-				{
-					return !failReason.NullOrEmpty();
-				}
-				return true;
+				return !failReason.NullOrEmpty();
 			}
+			return true;
 		}
+	}
 
-		public static implicit operator RitualTargetUseReport(bool canUse)
+	public static implicit operator RitualTargetUseReport(bool canUse)
+	{
+		return new RitualTargetUseReport
 		{
-			return new RitualTargetUseReport
-			{
-				canUse = canUse,
-				failReason = null
-			};
-		}
+			canUse = canUse,
+			failReason = null
+		};
+	}
 
-		public static implicit operator RitualTargetUseReport(string failReason)
+	public static implicit operator RitualTargetUseReport(string failReason)
+	{
+		return new RitualTargetUseReport
 		{
-			return new RitualTargetUseReport
-			{
-				canUse = false,
-				failReason = failReason
-			};
-		}
+			canUse = false,
+			failReason = failReason
+		};
+	}
 
-		public static implicit operator RitualTargetUseReport(TaggedString failReason)
+	public static implicit operator RitualTargetUseReport(TaggedString failReason)
+	{
+		return new RitualTargetUseReport
 		{
-			return new RitualTargetUseReport
-			{
-				canUse = false,
-				failReason = failReason
-			};
-		}
+			canUse = false,
+			failReason = failReason
+		};
 	}
 }

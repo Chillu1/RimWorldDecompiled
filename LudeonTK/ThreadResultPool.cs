@@ -1,53 +1,52 @@
 using Unity.Collections;
 using Verse;
 
-namespace LudeonTK
+namespace LudeonTK;
+
+public static class ThreadResultPool
 {
-	public static class ThreadResultPool
+	public static NativeArray<int> closestResults;
+
+	public static NativeArray<float> closestSqrDists;
+
+	private static bool allocated;
+
+	public static void EnsureReady()
 	{
-		public static NativeArray<int> closestResults;
+		EnsureAllocated();
+		Reset();
+	}
 
-		public static NativeArray<float> closestSqrDists;
-
-		private static bool allocated;
-
-		public static void EnsureReady()
+	private static void EnsureAllocated()
+	{
+		if (!allocated)
 		{
-			EnsureAllocated();
-			Reset();
+			allocated = true;
+			UnityData.DisposeStatic += Dispose;
+			closestResults = new NativeArray<int>(128, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+			closestSqrDists = new NativeArray<float>(128, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
 		}
+	}
 
-		private static void EnsureAllocated()
+	private static void Reset()
+	{
+		if (closestResults.IsCreated)
 		{
-			if (!allocated)
+			for (int i = 0; i < closestResults.Length; i++)
 			{
-				allocated = true;
-				UnityData.DisposeStatic += Dispose;
-				closestResults = new NativeArray<int>(128, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-				closestSqrDists = new NativeArray<float>(128, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+				closestResults[i] = -1;
+				closestSqrDists[i] = float.MaxValue;
 			}
 		}
+	}
 
-		private static void Reset()
+	private static void Dispose()
+	{
+		if (allocated)
 		{
-			if (closestResults.IsCreated)
-			{
-				for (int i = 0; i < closestResults.Length; i++)
-				{
-					closestResults[i] = -1;
-					closestSqrDists[i] = float.MaxValue;
-				}
-			}
-		}
-
-		private static void Dispose()
-		{
-			if (allocated)
-			{
-				closestResults.Dispose();
-				closestSqrDists.Dispose();
-				allocated = false;
-			}
+			closestResults.Dispose();
+			closestSqrDists.Dispose();
+			allocated = false;
 		}
 	}
 }

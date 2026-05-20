@@ -1,21 +1,20 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThinkNode_ConditionalWantsLookChange : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalWantsLookChange : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
+		if (!ModsConfig.IdeologyActive)
 		{
-			if (!ModsConfig.IdeologyActive)
-			{
-				return false;
-			}
-			if (pawn.style != null)
-			{
-				return pawn.style.LookChangeDesired;
-			}
 			return false;
 		}
+		if (pawn.style != null)
+		{
+			return pawn.style.LookChangeDesired;
+		}
+		return false;
 	}
 }

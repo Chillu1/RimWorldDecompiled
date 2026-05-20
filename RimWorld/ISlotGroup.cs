@@ -1,20 +1,19 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public interface ISlotGroup
 {
-	public interface ISlotGroup
-	{
-		StorageSettings Settings { get; }
+	StorageSettings Settings { get; }
 
-		IEnumerable<Thing> HeldThings { get; }
+	IEnumerable<Thing> HeldThings { get; }
 
-		StorageGroup StorageGroup { get; }
+	StorageGroup StorageGroup { get; }
 
-		List<IntVec3> CellsList { get; }
+	List<IntVec3> CellsList { get; }
 
-		string GroupingLabel { get; }
+	string GroupingLabel { get; }
 
-		int GroupingOrder { get; }
-	}
+	int GroupingOrder { get; }
 }

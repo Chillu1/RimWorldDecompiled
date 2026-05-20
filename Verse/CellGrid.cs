@@ -1,93 +1,92 @@
-namespace Verse
+namespace Verse;
+
+public class CellGrid
 {
-	public class CellGrid
+	private int[] grid;
+
+	private int mapSizeX;
+
+	private int mapSizeZ;
+
+	public IntVec3 this[IntVec3 c]
 	{
-		private int[] grid;
-
-		private int mapSizeX;
-
-		private int mapSizeZ;
-
-		public IntVec3 this[IntVec3 c]
+		get
 		{
-			get
-			{
-				int num = CellIndicesUtility.CellToIndex(c, mapSizeX);
-				return CellIndicesUtility.IndexToCell(grid[num], mapSizeX);
-			}
-			set
-			{
-				int num = CellIndicesUtility.CellToIndex(c, mapSizeX);
-				grid[num] = CellIndicesUtility.CellToIndex(value, mapSizeX);
-			}
+			int num = CellIndicesUtility.CellToIndex(c, mapSizeX);
+			return CellIndicesUtility.IndexToCell(grid[num], mapSizeX);
 		}
-
-		public IntVec3 this[int index]
+		set
 		{
-			get
-			{
-				return CellIndicesUtility.IndexToCell(grid[index], mapSizeX);
-			}
-			set
-			{
-				grid[index] = CellIndicesUtility.CellToIndex(value, mapSizeX);
-			}
+			int num = CellIndicesUtility.CellToIndex(c, mapSizeX);
+			grid[num] = CellIndicesUtility.CellToIndex(value, mapSizeX);
 		}
+	}
 
-		public IntVec3 this[int x, int z]
+	public IntVec3 this[int index]
+	{
+		get
 		{
-			get
-			{
-				int num = CellIndicesUtility.CellToIndex(x, z, mapSizeX);
-				return CellIndicesUtility.IndexToCell(grid[num], mapSizeX);
-			}
-			set
-			{
-				int num = CellIndicesUtility.CellToIndex(x, z, mapSizeX);
-				grid[num] = CellIndicesUtility.CellToIndex(x, z, mapSizeX);
-			}
+			return CellIndicesUtility.IndexToCell(grid[index], mapSizeX);
 		}
-
-		public int CellsCount => grid.Length;
-
-		public CellGrid()
+		set
 		{
+			grid[index] = CellIndicesUtility.CellToIndex(value, mapSizeX);
 		}
+	}
 
-		public CellGrid(Map map)
+	public IntVec3 this[int x, int z]
+	{
+		get
 		{
-			ClearAndResizeTo(map);
+			int num = CellIndicesUtility.CellToIndex(x, z, mapSizeX);
+			return CellIndicesUtility.IndexToCell(grid[num], mapSizeX);
 		}
-
-		public bool MapSizeMatches(Map map)
+		set
 		{
-			if (mapSizeX == map.Size.x)
-			{
-				return mapSizeZ == map.Size.z;
-			}
-			return false;
+			int num = CellIndicesUtility.CellToIndex(x, z, mapSizeX);
+			grid[num] = CellIndicesUtility.CellToIndex(x, z, mapSizeX);
 		}
+	}
 
-		public void ClearAndResizeTo(Map map)
+	public int CellsCount => grid.Length;
+
+	public CellGrid()
+	{
+	}
+
+	public CellGrid(Map map)
+	{
+		ClearAndResizeTo(map);
+	}
+
+	public bool MapSizeMatches(Map map)
+	{
+		if (mapSizeX == map.Size.x)
 		{
-			if (MapSizeMatches(map) && grid != null)
-			{
-				Clear();
-				return;
-			}
-			mapSizeX = map.Size.x;
-			mapSizeZ = map.Size.z;
-			grid = new int[mapSizeX * mapSizeZ];
+			return mapSizeZ == map.Size.z;
+		}
+		return false;
+	}
+
+	public void ClearAndResizeTo(Map map)
+	{
+		if (MapSizeMatches(map) && grid != null)
+		{
 			Clear();
+			return;
 		}
+		mapSizeX = map.Size.x;
+		mapSizeZ = map.Size.z;
+		grid = new int[mapSizeX * mapSizeZ];
+		Clear();
+	}
 
-		public void Clear()
+	public void Clear()
+	{
+		int num = CellIndicesUtility.CellToIndex(IntVec3.Invalid, mapSizeX);
+		for (int i = 0; i < grid.Length; i++)
 		{
-			int num = CellIndicesUtility.CellToIndex(IntVec3.Invalid, mapSizeX);
-			for (int i = 0; i < grid.Length; i++)
-			{
-				grid[i] = num;
-			}
+			grid[i] = num;
 		}
 	}
 }

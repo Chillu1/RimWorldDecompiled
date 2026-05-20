@@ -1,17 +1,16 @@
-namespace Verse
+namespace Verse;
+
+public enum EndogeneCategory
 {
-	public enum EndogeneCategory
-	{
-		None,
-		Melanin,
-		HairColor,
-		Ears,
-		Nose,
-		Jaw,
-		Hands,
-		Headbone,
-		Head,
-		BodyType,
-		Voice
-	}
+	None,
+	Melanin,
+	HairColor,
+	Ears,
+	Nose,
+	Jaw,
+	Hands,
+	Headbone,
+	Head,
+	BodyType,
+	Voice
 }

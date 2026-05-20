@@ -1,21 +1,20 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public static class OriginalEventUtility
 {
-	public static class OriginalEventUtility
+	private static EventType? originalType;
+
+	public static EventType EventType => originalType ?? Event.current.rawType;
+
+	public static void RecordOriginalEvent(Event e)
 	{
-		private static EventType? originalType;
+		originalType = e.type;
+	}
 
-		public static EventType EventType => originalType ?? Event.current.rawType;
-
-		public static void RecordOriginalEvent(Event e)
-		{
-			originalType = e.type;
-		}
-
-		public static void Reset()
-		{
-			originalType = null;
-		}
+	public static void Reset()
+	{
+		originalType = null;
 	}
 }

@@ -1,44 +1,43 @@
 using System;
 
-namespace Verse
+namespace Verse;
+
+public struct TextureAtlasGroupKey : IEquatable<TextureAtlasGroupKey>
 {
-	public struct TextureAtlasGroupKey : IEquatable<TextureAtlasGroupKey>
+	public TextureAtlasGroup group;
+
+	public bool hasMask;
+
+	public bool Equals(TextureAtlasGroupKey other)
 	{
-		public TextureAtlasGroup group;
-
-		public bool hasMask;
-
-		public bool Equals(TextureAtlasGroupKey other)
+		if (other.group == group)
 		{
-			if (other.group == group)
-			{
-				return other.hasMask == hasMask;
-			}
-			return false;
+			return other.hasMask == hasMask;
 		}
+		return false;
+	}
 
-		public override bool Equals(object obj)
+	public override bool Equals(object obj)
+	{
+		if (obj is TextureAtlasGroupKey other)
 		{
-			if (obj is TextureAtlasGroupKey other)
-			{
-				return Equals(other);
-			}
-			return false;
+			return Equals(other);
 		}
+		return false;
+	}
 
-		public override int GetHashCode()
+	public override int GetHashCode()
+	{
+		int num = group.GetHashCode();
+		if (hasMask)
 		{
-			int num = group.GetHashCode();
-			if (hasMask)
-			{
-				num *= -1;
-			}
-			return num;
+			num *= -1;
 		}
+		return num;
+	}
 
-		public override string ToString()
-		{
-			return group.ToString() + "_" + hasMask;
-		}
+	public override string ToString()
+	{
+		return group.ToString() + "_" + hasMask;
 	}
 }

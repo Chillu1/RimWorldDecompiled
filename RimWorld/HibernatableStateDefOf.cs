@@ -1,17 +1,16 @@
-namespace RimWorld
+namespace RimWorld;
+
+[DefOf]
+public static class HibernatableStateDefOf
 {
-	[DefOf]
-	public static class HibernatableStateDefOf
+	public static HibernatableStateDef Running;
+
+	public static HibernatableStateDef Starting;
+
+	public static HibernatableStateDef Hibernating;
+
+	static HibernatableStateDefOf()
 	{
-		public static HibernatableStateDef Running;
-
-		public static HibernatableStateDef Starting;
-
-		public static HibernatableStateDef Hibernating;
-
-		static HibernatableStateDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(HibernatableStateDefOf));
-		}
+		DefOfHelper.EnsureInitializedInCtor(typeof(HibernatableStateDefOf));
 	}
 }

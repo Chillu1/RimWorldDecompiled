@@ -1,24 +1,23 @@
 using RimWorld.Planet;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class BiomeWorker_BorealForest : BiomeWorker
 {
-	public class BiomeWorker_BorealForest : BiomeWorker
+	public override float GetScore(BiomeDef biome, Tile tile, PlanetTile planetTile)
 	{
-		public override float GetScore(BiomeDef biome, Tile tile, PlanetTile planetTile)
+		if (tile.WaterCovered)
 		{
-			if (tile.WaterCovered)
-			{
-				return -100f;
-			}
-			if (tile.temperature < -10f)
-			{
-				return 0f;
-			}
-			if (tile.rainfall < 600f)
-			{
-				return 0f;
-			}
-			return 15f;
+			return -100f;
 		}
+		if (tile.temperature < -10f)
+		{
+			return 0f;
+		}
+		if (tile.rainfall < 600f)
+		{
+			return 0f;
+		}
+		return 15f;
 	}
 }

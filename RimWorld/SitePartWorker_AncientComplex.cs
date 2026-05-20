@@ -1,16 +1,15 @@
 using RimWorld.Planet;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class SitePartWorker_AncientComplex : SitePartWorker
 {
-	public class SitePartWorker_AncientComplex : SitePartWorker
+	public override string GetPostProcessedThreatLabel(Site site, SitePart sitePart)
 	{
-		public override string GetPostProcessedThreatLabel(Site site, SitePart sitePart)
+		if (site.MainSitePartDef == def)
 		{
-			if (site.MainSitePartDef == def)
-			{
-				return null;
-			}
-			return base.GetPostProcessedThreatLabel(site, sitePart);
+			return null;
 		}
+		return base.GetPostProcessedThreatLabel(site, sitePart);
 	}
 }

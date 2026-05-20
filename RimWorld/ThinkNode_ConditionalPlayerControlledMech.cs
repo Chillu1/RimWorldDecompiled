@@ -1,13 +1,12 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThinkNode_ConditionalPlayerControlledMech : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalPlayerControlledMech : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
-		{
-			return pawn.IsColonyMechPlayerControlled;
-		}
+		return pawn.IsColonyMechPlayerControlled;
 	}
 }

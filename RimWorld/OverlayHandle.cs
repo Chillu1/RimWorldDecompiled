@@ -1,18 +1,17 @@
-namespace RimWorld
+namespace RimWorld;
+
+public struct OverlayHandle
 {
-	public struct OverlayHandle
+	public readonly ThingOverlaysHandle thingOverlayHandle;
+
+	public readonly OverlayTypes overlayType;
+
+	public int handleId;
+
+	public OverlayHandle(ThingOverlaysHandle thingOverlayHandle, OverlayTypes overlayType, int handleId)
 	{
-		public readonly ThingOverlaysHandle thingOverlayHandle;
-
-		public readonly OverlayTypes overlayType;
-
-		public int handleId;
-
-		public OverlayHandle(ThingOverlaysHandle thingOverlayHandle, OverlayTypes overlayType, int handleId)
-		{
-			this.thingOverlayHandle = thingOverlayHandle;
-			this.overlayType = overlayType;
-			this.handleId = handleId;
-		}
+		this.thingOverlayHandle = thingOverlayHandle;
+		this.overlayType = overlayType;
+		this.handleId = handleId;
 	}
 }

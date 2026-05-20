@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_EmptyStateGraphic : CompProperties
 {
-	public class CompProperties_EmptyStateGraphic : CompProperties
+	public GraphicData graphicData;
+
+	public bool alwaysDrawParent;
+
+	public CompProperties_EmptyStateGraphic()
 	{
-		public GraphicData graphicData;
-
-		public bool alwaysDrawParent;
-
-		public CompProperties_EmptyStateGraphic()
-		{
-			compClass = typeof(CompEmptyStateGraphic);
-		}
+		compClass = typeof(CompEmptyStateGraphic);
 	}
 }

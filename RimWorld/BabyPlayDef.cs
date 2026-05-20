@@ -1,27 +1,26 @@
 using System;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class BabyPlayDef : Def
 {
-	public class BabyPlayDef : Def
+	public Type workerClass;
+
+	public JobDef jobDef;
+
+	private BabyPlayGiver workerInt;
+
+	public BabyPlayGiver Worker
 	{
-		public Type workerClass;
-
-		public JobDef jobDef;
-
-		private BabyPlayGiver workerInt;
-
-		public BabyPlayGiver Worker
+		get
 		{
-			get
+			if (workerInt == null)
 			{
-				if (workerInt == null)
-				{
-					workerInt = (BabyPlayGiver)Activator.CreateInstance(workerClass);
-					workerInt.def = this;
-				}
-				return workerInt;
+				workerInt = (BabyPlayGiver)Activator.CreateInstance(workerClass);
+				workerInt.def = this;
 			}
+			return workerInt;
 		}
 	}
 }

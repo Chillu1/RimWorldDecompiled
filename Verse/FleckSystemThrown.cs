@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public class FleckSystemThrown : FleckSystemBase<FleckThrown>
 {
-	public class FleckSystemThrown : FleckSystemBase<FleckThrown>
+	public FleckSystemThrown(FleckManager parent)
+		: base(parent)
 	{
-		public FleckSystemThrown(FleckManager parent)
-			: base(parent)
-		{
-		}
 	}
 }

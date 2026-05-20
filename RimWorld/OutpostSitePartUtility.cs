@@ -1,12 +1,11 @@
 using RimWorld.Planet;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class OutpostSitePartUtility
 {
-	public static class OutpostSitePartUtility
+	public static int GetPawnGroupMakerSeed(SitePartParams parms)
 	{
-		public static int GetPawnGroupMakerSeed(SitePartParams parms)
-		{
-			return parms.randomValue;
-		}
+		return parms.randomValue;
 	}
 }

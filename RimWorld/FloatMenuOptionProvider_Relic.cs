@@ -4,114 +4,113 @@ using RimWorld.Planet;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class FloatMenuOptionProvider_Relic : FloatMenuOptionProvider
 {
-	public class FloatMenuOptionProvider_Relic : FloatMenuOptionProvider
+	protected override bool Drafted => true;
+
+	protected override bool Undrafted => true;
+
+	protected override bool Multiselect => false;
+
+	protected override bool RequiresManipulation => true;
+
+	protected override bool AppliesInt(FloatMenuContext context)
 	{
-		protected override bool Drafted => true;
+		return ModsConfig.IdeologyActive;
+	}
 
-		protected override bool Undrafted => true;
-
-		protected override bool Multiselect => false;
-
-		protected override bool RequiresManipulation => true;
-
-		protected override bool AppliesInt(FloatMenuContext context)
+	public override IEnumerable<FloatMenuOption> GetOptionsFor(Thing clickedThing, FloatMenuContext context)
+	{
+		if (clickedThing.TryGetComp(out CompRelicContainer container))
 		{
-			return ModsConfig.IdeologyActive;
-		}
-
-		public override IEnumerable<FloatMenuOption> GetOptionsFor(Thing clickedThing, FloatMenuContext context)
-		{
-			if (clickedThing.TryGetComp(out CompRelicContainer container))
+			FloatMenuOption option;
+			if (container.Full)
 			{
-				FloatMenuOption option;
-				if (container.Full)
+				yield return ExtractRelic(container, context.FirstSelectedPawn);
+				if (!context.FirstSelectedPawn.Map.IsPlayerHome && !context.FirstSelectedPawn.IsFormingCaravan())
 				{
-					yield return ExtractRelic(container, context.FirstSelectedPawn);
-					if (!context.FirstSelectedPawn.Map.IsPlayerHome && !context.FirstSelectedPawn.IsFormingCaravan())
-					{
-						yield return ExtractToInventory(container, context.FirstSelectedPawn);
-					}
-				}
-				else if (InstallRelicFromContainer(container.parent, context.FirstSelectedPawn, out option))
-				{
-					yield return option;
+					yield return ExtractToInventory(container, context.FirstSelectedPawn);
 				}
 			}
-			if (CompRelicContainer.IsRelic(clickedThing) && clickedThing.Spawned)
+			else if (InstallRelicFromContainer(container.parent, context.FirstSelectedPawn, out option))
 			{
-				yield return InstallRelic(clickedThing, context.FirstSelectedPawn);
+				yield return option;
 			}
 		}
-
-		private FloatMenuOption InstallRelic(Thing containerThing, Pawn pawn)
+		if (CompRelicContainer.IsRelic(clickedThing) && clickedThing.Spawned)
 		{
-			IEnumerable<Thing> searchSet = from x in containerThing.Map.listerThings.ThingsOfDef(ThingDefOf.Reliquary)
-				where x.TryGetComp<CompRelicContainer>().ContainedThing == null
-				select x;
-			Thing thing = GenClosest.ClosestThing_Global_Reachable(containerThing.Position, containerThing.Map, searchSet, PathEndMode.Touch, TraverseParms.For(pawn), 9999f, (Thing t) => pawn.CanReserve(t));
-			if (thing == null)
-			{
-				return new FloatMenuOption("InstallInReliquary".Translate() + " (" + "NoEmptyReliquary".Translate() + ")", null);
-			}
-			Job job = JobMaker.MakeJob(JobDefOf.InstallRelic, containerThing, thing, thing.InteractionCell);
-			job.count = 1;
-			return FloatMenuUtility.DecoratePrioritizedTask(new FloatMenuOption("InstallInReliquary".Translate(), delegate
-			{
-				pawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
-			}), pawn, new LocalTargetInfo(containerThing));
+			yield return InstallRelic(clickedThing, context.FirstSelectedPawn);
 		}
+	}
 
-		private FloatMenuOption ExtractRelic(CompRelicContainer container, Pawn pawn)
+	private FloatMenuOption InstallRelic(Thing containerThing, Pawn pawn)
+	{
+		IEnumerable<Thing> searchSet = from x in containerThing.Map.listerThings.ThingsOfDef(ThingDefOf.Reliquary)
+			where x.TryGetComp<CompRelicContainer>().ContainedThing == null
+			select x;
+		Thing thing = GenClosest.ClosestThing_Global_Reachable(containerThing.Position, containerThing.Map, searchSet, PathEndMode.Touch, TraverseParms.For(pawn), 9999f, (Thing t) => pawn.CanReserve(t));
+		if (thing == null)
 		{
-			TaggedString taggedString = "ExtractRelic".Translate(container.ContainedThing.Label);
-			if (!StoreUtility.TryFindBestBetterStorageFor(container.ContainedThing, pawn, pawn.Map, StoragePriority.Unstored, pawn.Faction, out var foundCell, out var _))
-			{
-				return new FloatMenuOption(taggedString + " (" + HaulAIUtility.NoEmptyPlaceLowerTrans + ")", null);
-			}
-			Job job = JobMaker.MakeJob(JobDefOf.ExtractRelic, container.parent, container.ContainedThing, foundCell);
-			job.count = 1;
-			return FloatMenuUtility.DecoratePrioritizedTask(new FloatMenuOption(taggedString, delegate
-			{
-				pawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
-			}), pawn, new LocalTargetInfo(container.parent));
+			return new FloatMenuOption("InstallInReliquary".Translate() + " (" + "NoEmptyReliquary".Translate() + ")", null);
 		}
-
-		private bool InstallRelicFromContainer(Thing containerThing, Pawn pawn, out FloatMenuOption option)
+		Job job = JobMaker.MakeJob(JobDefOf.InstallRelic, containerThing, thing, thing.InteractionCell);
+		job.count = 1;
+		return FloatMenuUtility.DecoratePrioritizedTask(new FloatMenuOption("InstallInReliquary".Translate(), delegate
 		{
-			option = null;
-			IEnumerable<Thing> enumerable = pawn.Map.listerThings.AllThings.Where((Thing x) => CompRelicContainer.IsRelic(x) && pawn.CanReach(x, PathEndMode.ClosestTouch, Danger.Deadly));
-			if (!enumerable.Any())
+			pawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
+		}), pawn, new LocalTargetInfo(containerThing));
+	}
+
+	private FloatMenuOption ExtractRelic(CompRelicContainer container, Pawn pawn)
+	{
+		TaggedString taggedString = "ExtractRelic".Translate(container.ContainedThing.Label);
+		if (!StoreUtility.TryFindBestBetterStorageFor(container.ContainedThing, pawn, pawn.Map, StoragePriority.Unstored, pawn.Faction, out var foundCell, out var _))
+		{
+			return new FloatMenuOption(taggedString + " (" + HaulAIUtility.NoEmptyPlaceLowerTrans + ")", null);
+		}
+		Job job = JobMaker.MakeJob(JobDefOf.ExtractRelic, container.parent, container.ContainedThing, foundCell);
+		job.count = 1;
+		return FloatMenuUtility.DecoratePrioritizedTask(new FloatMenuOption(taggedString, delegate
+		{
+			pawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
+		}), pawn, new LocalTargetInfo(container.parent));
+	}
+
+	private bool InstallRelicFromContainer(Thing containerThing, Pawn pawn, out FloatMenuOption option)
+	{
+		option = null;
+		IEnumerable<Thing> enumerable = pawn.Map.listerThings.AllThings.Where((Thing x) => CompRelicContainer.IsRelic(x) && pawn.CanReach(x, PathEndMode.ClosestTouch, Danger.Deadly));
+		if (!enumerable.Any())
+		{
+			option = new FloatMenuOption("NoRelicToInstall".Translate(), null);
+			return true;
+		}
+		using (IEnumerator<Thing> enumerator = enumerable.GetEnumerator())
+		{
+			if (enumerator.MoveNext())
 			{
-				option = new FloatMenuOption("NoRelicToInstall".Translate(), null);
+				Thing current = enumerator.Current;
+				Job job = JobMaker.MakeJob(JobDefOf.InstallRelic, current, containerThing, containerThing.InteractionCell);
+				job.count = 1;
+				option = FloatMenuUtility.DecoratePrioritizedTask(new FloatMenuOption("InstallRelic".Translate(current.Label), delegate
+				{
+					pawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
+				}), pawn, new LocalTargetInfo(containerThing));
 				return true;
 			}
-			using (IEnumerator<Thing> enumerator = enumerable.GetEnumerator())
-			{
-				if (enumerator.MoveNext())
-				{
-					Thing current = enumerator.Current;
-					Job job = JobMaker.MakeJob(JobDefOf.InstallRelic, current, containerThing, containerThing.InteractionCell);
-					job.count = 1;
-					option = FloatMenuUtility.DecoratePrioritizedTask(new FloatMenuOption("InstallRelic".Translate(current.Label), delegate
-					{
-						pawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
-					}), pawn, new LocalTargetInfo(containerThing));
-					return true;
-				}
-			}
-			return false;
 		}
+		return false;
+	}
 
-		private FloatMenuOption ExtractToInventory(CompRelicContainer container, Pawn pawn)
+	private FloatMenuOption ExtractToInventory(CompRelicContainer container, Pawn pawn)
+	{
+		return FloatMenuUtility.DecoratePrioritizedTask(new FloatMenuOption("ExtractRelicToInventory".Translate(container.ContainedThing.Label, 300.ToStringTicksToPeriod()), delegate
 		{
-			return FloatMenuUtility.DecoratePrioritizedTask(new FloatMenuOption("ExtractRelicToInventory".Translate(container.ContainedThing.Label, 300.ToStringTicksToPeriod()), delegate
-			{
-				Job job = JobMaker.MakeJob(JobDefOf.ExtractToInventory, container.parent, container.ContainedThing, container.parent.InteractionCell);
-				job.count = 1;
-				pawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
-			}), pawn, new LocalTargetInfo(container.parent));
-		}
+			Job job = JobMaker.MakeJob(JobDefOf.ExtractToInventory, container.parent, container.ContainedThing, container.parent.InteractionCell);
+			job.count = 1;
+			pawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
+		}), pawn, new LocalTargetInfo(container.parent));
 	}
 }

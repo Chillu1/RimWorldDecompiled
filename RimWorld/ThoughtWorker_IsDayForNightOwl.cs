@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_IsDayForNightOwl : ThoughtWorker
 {
-	public class ThoughtWorker_IsDayForNightOwl : ThoughtWorker
+	protected override ThoughtState CurrentStateInternal(Pawn p)
 	{
-		protected override ThoughtState CurrentStateInternal(Pawn p)
-		{
-			return p.Awake() && GenLocalDate.HourInteger(p) >= 11 && GenLocalDate.HourInteger(p) <= 17;
-		}
+		return p.Awake() && GenLocalDate.HourInteger(p) >= 11 && GenLocalDate.HourInteger(p) <= 17;
 	}
 }

@@ -1,25 +1,24 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public interface IStorageGroupMember
 {
-	public interface IStorageGroupMember
-	{
-		StorageGroup Group { get; set; }
+	StorageGroup Group { get; set; }
 
-		Map Map { get; }
+	Map Map { get; }
 
-		StorageSettings StoreSettings { get; }
+	StorageSettings StoreSettings { get; }
 
-		StorageSettings ParentStoreSettings { get; }
+	StorageSettings ParentStoreSettings { get; }
 
-		StorageSettings ThingStoreSettings { get; }
+	StorageSettings ThingStoreSettings { get; }
 
-		string StorageGroupTag { get; }
+	string StorageGroupTag { get; }
 
-		bool DrawConnectionOverlay { get; }
+	bool DrawConnectionOverlay { get; }
 
-		bool DrawStorageTab { get; }
+	bool DrawStorageTab { get; }
 
-		bool ShowRenameButton { get; }
-	}
+	bool ShowRenameButton { get; }
 }

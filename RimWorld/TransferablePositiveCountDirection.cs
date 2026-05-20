@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum TransferablePositiveCountDirection
 {
-	public enum TransferablePositiveCountDirection
-	{
-		Source,
-		Destination
-	}
+	Source,
+	Destination
 }

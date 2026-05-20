@@ -1,69 +1,68 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class Building_CorpseCasket : Building_Casket, IHaulDestination, IStoreSettingsParent, IHaulEnroute, ILoadReferenceable
 {
-	public abstract class Building_CorpseCasket : Building_Casket, IHaulDestination, IStoreSettingsParent, IHaulEnroute, ILoadReferenceable
+	protected StorageSettings storageSettings;
+
+	public virtual bool StorageTabVisible => !HasCorpse;
+
+	public bool HasCorpse => Corpse != null;
+
+	public bool HaulDestinationEnabled => true;
+
+	public Corpse Corpse
 	{
-		protected StorageSettings storageSettings;
-
-		public virtual bool StorageTabVisible => !HasCorpse;
-
-		public bool HasCorpse => Corpse != null;
-
-		public bool HaulDestinationEnabled => true;
-
-		public Corpse Corpse
+		get
 		{
-			get
+			for (int i = 0; i < innerContainer.Count; i++)
 			{
-				for (int i = 0; i < innerContainer.Count; i++)
+				if (innerContainer[i] is Corpse result)
 				{
-					if (innerContainer[i] is Corpse result)
-					{
-						return result;
-					}
+					return result;
 				}
-				return null;
 			}
+			return null;
 		}
+	}
 
-		public StorageSettings GetStoreSettings()
-		{
-			return storageSettings;
-		}
+	public StorageSettings GetStoreSettings()
+	{
+		return storageSettings;
+	}
 
-		public StorageSettings GetParentStoreSettings()
-		{
-			return def.building.fixedStorageSettings;
-		}
+	public StorageSettings GetParentStoreSettings()
+	{
+		return def.building.fixedStorageSettings;
+	}
 
-		public void Notify_SettingsChanged()
-		{
-		}
+	public void Notify_SettingsChanged()
+	{
+	}
 
-		public int SpaceRemainingFor(ThingDef _)
+	public int SpaceRemainingFor(ThingDef _)
+	{
+		if (!HasCorpse)
 		{
-			if (!HasCorpse)
-			{
-				return 1;
-			}
-			return 0;
+			return 1;
 		}
+		return 0;
+	}
 
-		public override void PostMake()
+	public override void PostMake()
+	{
+		base.PostMake();
+		storageSettings = new StorageSettings(this);
+		if (def.building.defaultStorageSettings != null)
 		{
-			base.PostMake();
-			storageSettings = new StorageSettings(this);
-			if (def.building.defaultStorageSettings != null)
-			{
-				storageSettings.CopyFrom(def.building.defaultStorageSettings);
-			}
+			storageSettings.CopyFrom(def.building.defaultStorageSettings);
 		}
+	}
 
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_Deep.Look(ref storageSettings, "storageSettings", this);
-		}
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Deep.Look(ref storageSettings, "storageSettings", this);
 	}
 }

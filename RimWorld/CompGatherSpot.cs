@@ -1,86 +1,85 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompGatherSpot : ThingComp
 {
-	public class CompGatherSpot : ThingComp
+	private bool active = true;
+
+	public bool Active
 	{
-		private bool active = true;
-
-		public bool Active
+		get
 		{
-			get
+			return active;
+		}
+		set
+		{
+			if (value == active)
 			{
-				return active;
+				return;
 			}
-			set
+			active = value;
+			if (parent.Spawned)
 			{
-				if (value == active)
+				if (active)
 				{
-					return;
+					parent.Map.gatherSpotLister.RegisterActivated(this);
 				}
-				active = value;
-				if (parent.Spawned)
+				else
 				{
-					if (active)
-					{
-						parent.Map.gatherSpotLister.RegisterActivated(this);
-					}
-					else
-					{
-						parent.Map.gatherSpotLister.RegisterDeactivated(this);
-					}
+					parent.Map.gatherSpotLister.RegisterDeactivated(this);
 				}
 			}
 		}
+	}
 
-		public override void PostExposeData()
-		{
-			Scribe_Values.Look(ref active, "active", defaultValue: false);
-		}
+	public override void PostExposeData()
+	{
+		Scribe_Values.Look(ref active, "active", defaultValue: false);
+	}
 
-		public override void PostSpawnSetup(bool respawningAfterLoad)
+	public override void PostSpawnSetup(bool respawningAfterLoad)
+	{
+		base.PostSpawnSetup(respawningAfterLoad);
+		if (parent.Faction != Faction.OfPlayer && !respawningAfterLoad)
 		{
-			base.PostSpawnSetup(respawningAfterLoad);
-			if (parent.Faction != Faction.OfPlayer && !respawningAfterLoad)
-			{
-				active = false;
-			}
-			if (Active)
-			{
-				parent.Map.gatherSpotLister.RegisterActivated(this);
-			}
+			active = false;
 		}
+		if (Active)
+		{
+			parent.Map.gatherSpotLister.RegisterActivated(this);
+		}
+	}
 
-		public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
+	public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
+	{
+		base.PostDeSpawn(map, mode);
+		if (Active)
 		{
-			base.PostDeSpawn(map, mode);
-			if (Active)
-			{
-				map.gatherSpotLister.RegisterDeactivated(this);
-			}
+			map.gatherSpotLister.RegisterDeactivated(this);
 		}
+	}
 
-		public override IEnumerable<Gizmo> CompGetGizmosExtra()
+	public override IEnumerable<Gizmo> CompGetGizmosExtra()
+	{
+		Command_Toggle command_Toggle = new Command_Toggle();
+		command_Toggle.hotKey = KeyBindingDefOf.Command_TogglePower;
+		command_Toggle.defaultLabel = "CommandGatherSpotToggleLabel".Translate();
+		command_Toggle.icon = TexCommand.GatherSpotActive;
+		command_Toggle.isActive = () => Active;
+		command_Toggle.toggleAction = delegate
 		{
-			Command_Toggle command_Toggle = new Command_Toggle();
-			command_Toggle.hotKey = KeyBindingDefOf.Command_TogglePower;
-			command_Toggle.defaultLabel = "CommandGatherSpotToggleLabel".Translate();
-			command_Toggle.icon = TexCommand.GatherSpotActive;
-			command_Toggle.isActive = () => Active;
-			command_Toggle.toggleAction = delegate
-			{
-				Active = !Active;
-			};
-			if (Active)
-			{
-				command_Toggle.defaultDesc = "CommandGatherSpotToggleDescActive".Translate();
-			}
-			else
-			{
-				command_Toggle.defaultDesc = "CommandGatherSpotToggleDescInactive".Translate();
-			}
-			yield return command_Toggle;
+			Active = !Active;
+		};
+		if (Active)
+		{
+			command_Toggle.defaultDesc = "CommandGatherSpotToggleDescActive".Translate();
 		}
+		else
+		{
+			command_Toggle.defaultDesc = "CommandGatherSpotToggleDescInactive".Translate();
+		}
+		yield return command_Toggle;
 	}
 }

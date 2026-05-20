@@ -1,8 +1,7 @@
-namespace Verse
+namespace Verse;
+
+public enum ReorderDirection
 {
-	public enum ReorderDirection
-	{
-		Up,
-		Down
-	}
+	Up,
+	Down
 }

@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public interface IJammedDoorDrawer
 {
-	public interface IJammedDoorDrawer
-	{
-		void DrawJammed(Rot4 rotation);
-	}
+	void DrawJammed(Rot4 rotation);
 }

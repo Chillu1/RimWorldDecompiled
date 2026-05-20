@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class SpecialThingFilterWorker_AllowBookPlants : SpecialThingFilterWorker_AllowBookSkill
 {
-	public class SpecialThingFilterWorker_AllowBookPlants : SpecialThingFilterWorker_AllowBookSkill
+	public SpecialThingFilterWorker_AllowBookPlants()
+		: base(SkillDefOf.Plants)
 	{
-		public SpecialThingFilterWorker_AllowBookPlants()
-			: base(SkillDefOf.Plants)
-		{
-		}
 	}
 }

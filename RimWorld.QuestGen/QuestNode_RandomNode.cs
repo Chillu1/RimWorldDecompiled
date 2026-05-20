@@ -2,39 +2,38 @@ using System.Collections.Generic;
 using System.Linq;
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_RandomNode : QuestNode
 {
-	public class QuestNode_RandomNode : QuestNode
+	public List<QuestNode> nodes = new List<QuestNode>();
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		public List<QuestNode> nodes = new List<QuestNode>();
-
-		protected override bool TestRunInt(Slate slate)
+		QuestNode questNode = GetNodesCanRun(slate).FirstOrDefault();
+		if (questNode == null)
 		{
-			QuestNode questNode = GetNodesCanRun(slate).FirstOrDefault();
-			if (questNode == null)
-			{
-				return false;
-			}
-			questNode.TestRun(slate);
-			return true;
+			return false;
 		}
+		questNode.TestRun(slate);
+		return true;
+	}
 
-		protected override void RunInt()
+	protected override void RunInt()
+	{
+		if (GetNodesCanRun(QuestGen.slate).TryRandomElementByWeight((QuestNode e) => e.SelectionWeight(QuestGen.slate), out var result))
 		{
-			if (GetNodesCanRun(QuestGen.slate).TryRandomElementByWeight((QuestNode e) => e.SelectionWeight(QuestGen.slate), out var result))
-			{
-				result.Run();
-			}
+			result.Run();
 		}
+	}
 
-		private IEnumerable<QuestNode> GetNodesCanRun(Slate slate)
+	private IEnumerable<QuestNode> GetNodesCanRun(Slate slate)
+	{
+		for (int i = 0; i < nodes.Count; i++)
 		{
-			for (int i = 0; i < nodes.Count; i++)
+			if (nodes[i].SelectionWeight(slate) > 0f && nodes[i].TestRun(slate.DeepCopy()))
 			{
-				if (nodes[i].SelectionWeight(slate) > 0f && nodes[i].TestRun(slate.DeepCopy()))
-				{
-					yield return nodes[i];
-				}
+				yield return nodes[i];
 			}
 		}
 	}

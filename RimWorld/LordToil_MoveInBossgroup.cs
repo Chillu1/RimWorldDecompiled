@@ -3,35 +3,34 @@ using Verse;
 using Verse.AI;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class LordToil_MoveInBossgroup : LordToil
 {
-	public class LordToil_MoveInBossgroup : LordToil
+	private static readonly FloatRange EscortRadiusRanged = new FloatRange(5f, 10f);
+
+	private List<Pawn> bosses = new List<Pawn>();
+
+	public override bool AllowSatisfyLongNeeds => false;
+
+	public override bool ForceHighStoryDanger => true;
+
+	public LordToil_MoveInBossgroup(IEnumerable<Pawn> bosses)
 	{
-		private static readonly FloatRange EscortRadiusRanged = new FloatRange(5f, 10f);
+		this.bosses.AddRange(bosses);
+	}
 
-		private List<Pawn> bosses = new List<Pawn>();
-
-		public override bool AllowSatisfyLongNeeds => false;
-
-		public override bool ForceHighStoryDanger => true;
-
-		public LordToil_MoveInBossgroup(IEnumerable<Pawn> bosses)
+	public override void UpdateAllDuties()
+	{
+		for (int i = 0; i < lord.ownedPawns.Count; i++)
 		{
-			this.bosses.AddRange(bosses);
-		}
-
-		public override void UpdateAllDuties()
-		{
-			for (int i = 0; i < lord.ownedPawns.Count; i++)
+			if (bosses.Contains(lord.ownedPawns[i]))
 			{
-				if (bosses.Contains(lord.ownedPawns[i]))
-				{
-					bosses[i].mindState.duty = new PawnDuty(bosses[i].RaceProps.dutyBoss ?? DutyDefOf.AssaultColony);
-				}
-				else
-				{
-					lord.ownedPawns[i].mindState.duty = new PawnDuty(DutyDefOf.Escort, bosses.RandomElement(), EscortRadiusRanged.RandomInRange);
-				}
+				bosses[i].mindState.duty = new PawnDuty(bosses[i].RaceProps.dutyBoss ?? DutyDefOf.AssaultColony);
+			}
+			else
+			{
+				lord.ownedPawns[i].mindState.duty = new PawnDuty(DutyDefOf.Escort, bosses.RandomElement(), EscortRadiusRanged.RandomInRange);
 			}
 		}
 	}

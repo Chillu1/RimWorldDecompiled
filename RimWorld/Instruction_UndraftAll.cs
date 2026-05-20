@@ -2,27 +2,26 @@ using System.Collections.Generic;
 using System.Linq;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Instruction_UndraftAll : Lesson_Instruction
 {
-	public class Instruction_UndraftAll : Lesson_Instruction
+	protected override float ProgressPercent => 1f - (float)DraftedPawns().Count() / (float)base.Map.mapPawns.FreeColonistsSpawnedCount;
+
+	private IEnumerable<Pawn> DraftedPawns()
 	{
-		protected override float ProgressPercent => 1f - (float)DraftedPawns().Count() / (float)base.Map.mapPawns.FreeColonistsSpawnedCount;
+		return base.Map.mapPawns.FreeColonistsSpawned.Where((Pawn p) => p.Drafted);
+	}
 
-		private IEnumerable<Pawn> DraftedPawns()
+	public override void LessonUpdate()
+	{
+		foreach (Pawn item in DraftedPawns())
 		{
-			return base.Map.mapPawns.FreeColonistsSpawned.Where((Pawn p) => p.Drafted);
+			GenDraw.DrawArrowPointingAt(item.DrawPos);
 		}
-
-		public override void LessonUpdate()
+		if (ProgressPercent > 0.9999f)
 		{
-			foreach (Pawn item in DraftedPawns())
-			{
-				GenDraw.DrawArrowPointingAt(item.DrawPos);
-			}
-			if (ProgressPercent > 0.9999f)
-			{
-				Find.ActiveLesson.Deactivate();
-			}
+			Find.ActiveLesson.Deactivate();
 		}
 	}
 }

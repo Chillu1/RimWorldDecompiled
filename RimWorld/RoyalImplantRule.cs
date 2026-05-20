@@ -1,13 +1,12 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RoyalImplantRule
 {
-	public class RoyalImplantRule
-	{
-		public HediffDef implantHediff;
+	public HediffDef implantHediff;
 
-		public RoyalTitleDef minTitle;
+	public RoyalTitleDef minTitle;
 
-		public int maxLevel;
-	}
+	public int maxLevel;
 }

@@ -1,11 +1,10 @@
-namespace Verse.AI
+namespace Verse.AI;
+
+public enum PathEndMode : byte
 {
-	public enum PathEndMode : byte
-	{
-		None,
-		OnCell,
-		Touch,
-		ClosestTouch,
-		InteractionCell
-	}
+	None,
+	OnCell,
+	Touch,
+	ClosestTouch,
+	InteractionCell
 }

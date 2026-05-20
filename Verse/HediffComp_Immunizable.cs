@@ -2,139 +2,138 @@ using System.Text;
 using RimWorld;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+[StaticConstructorOnStartup]
+public class HediffComp_Immunizable : HediffComp_SeverityModifierBase
 {
-	[StaticConstructorOnStartup]
-	public class HediffComp_Immunizable : HediffComp_SeverityModifierBase
+	private float severityPerDayNotImmuneRandomFactor = 1f;
+
+	private static readonly Texture2D IconImmune = ContentFinder<Texture2D>.Get("UI/Icons/Medical/IconImmune");
+
+	public HediffCompProperties_Immunizable Props => (HediffCompProperties_Immunizable)props;
+
+	public override string CompLabelInBracketsExtra
 	{
-		private float severityPerDayNotImmuneRandomFactor = 1f;
-
-		private static readonly Texture2D IconImmune = ContentFinder<Texture2D>.Get("UI/Icons/Medical/IconImmune");
-
-		public HediffCompProperties_Immunizable Props => (HediffCompProperties_Immunizable)props;
-
-		public override string CompLabelInBracketsExtra
+		get
 		{
-			get
+			if (!Hidden && FullyImmune)
 			{
-				if (!Hidden && FullyImmune)
-				{
-					return "DevelopedImmunityLower".Translate();
-				}
-				return null;
+				return "DevelopedImmunityLower".Translate();
 			}
+			return null;
 		}
+	}
 
-		public override string CompTipStringExtra
+	public override string CompTipStringExtra
+	{
+		get
 		{
-			get
+			if (!Hidden && base.Def.PossibleToDevelopImmunityNaturally() && !FullyImmune)
 			{
-				if (!Hidden && base.Def.PossibleToDevelopImmunityNaturally() && !FullyImmune)
-				{
-					return "Immunity".Translate() + ": " + NaturalImmunity.ToStringPercent("0.#");
-				}
-				return null;
+				return "Immunity".Translate() + ": " + NaturalImmunity.ToStringPercent("0.#");
 			}
+			return null;
 		}
+	}
 
-		public float NaturalImmunity => base.Pawn.health.immunity.GetImmunity(base.Def, naturalImmunityOnly: true);
+	public float NaturalImmunity => base.Pawn.health.immunity.GetImmunity(base.Def, naturalImmunityOnly: true);
 
-		public float Immunity => base.Pawn.health.immunity.GetImmunity(base.Def);
+	public float Immunity => base.Pawn.health.immunity.GetImmunity(base.Def);
 
-		public bool FullyImmune => Immunity >= 1f;
+	public bool FullyImmune => Immunity >= 1f;
 
-		public override TextureAndColor CompStateIcon
+	public override TextureAndColor CompStateIcon
+	{
+		get
 		{
-			get
+			if (FullyImmune)
 			{
-				if (FullyImmune)
-				{
-					return IconImmune;
-				}
-				return TextureAndColor.None;
+				return IconImmune;
 			}
+			return TextureAndColor.None;
 		}
+	}
 
-		private bool Hidden
+	private bool Hidden
+	{
+		get
 		{
-			get
+			if (!Prefs.DevMode || !DebugSettings.godMode)
 			{
-				if (!Prefs.DevMode || !DebugSettings.godMode)
-				{
-					return Props.hidden;
-				}
-				return false;
+				return Props.hidden;
 			}
+			return false;
 		}
+	}
 
-		private float SeverityFactorFromHediffs
+	private float SeverityFactorFromHediffs
+	{
+		get
 		{
-			get
+			float num = 1f;
+			if (!Props.severityFactorsFromHediffs.NullOrEmpty())
 			{
-				float num = 1f;
-				if (!Props.severityFactorsFromHediffs.NullOrEmpty())
+				for (int i = 0; i < Props.severityFactorsFromHediffs.Count; i++)
 				{
-					for (int i = 0; i < Props.severityFactorsFromHediffs.Count; i++)
+					if (base.Pawn.health.hediffSet.GetFirstHediffOfDef(Props.severityFactorsFromHediffs[i].HediffDef) != null)
 					{
-						if (base.Pawn.health.hediffSet.GetFirstHediffOfDef(Props.severityFactorsFromHediffs[i].HediffDef) != null)
-						{
-							num *= Props.severityFactorsFromHediffs[i].Factor;
-						}
+						num *= Props.severityFactorsFromHediffs[i].Factor;
 					}
 				}
-				return num;
 			}
+			return num;
 		}
+	}
 
-		public override void CopyFrom(HediffComp other)
+	public override void CopyFrom(HediffComp other)
+	{
+		if (other is HediffComp_Immunizable hediffComp_Immunizable)
 		{
-			if (other is HediffComp_Immunizable hediffComp_Immunizable)
+			Pawn pawn = parent.pawn;
+			pawn.health.immunity.TryAddImmunityRecord(parent.def, parent.def);
+			ImmunityRecord immunityRecord = pawn.health.immunity.GetImmunityRecord(parent.def);
+			if (immunityRecord != null)
 			{
-				Pawn pawn = parent.pawn;
-				pawn.health.immunity.TryAddImmunityRecord(parent.def, parent.def);
-				ImmunityRecord immunityRecord = pawn.health.immunity.GetImmunityRecord(parent.def);
-				if (immunityRecord != null)
-				{
-					immunityRecord.immunity = hediffComp_Immunizable.Immunity;
-				}
+				immunityRecord.immunity = hediffComp_Immunizable.Immunity;
 			}
 		}
+	}
 
-		public override void CompPostPostAdd(DamageInfo? dinfo)
+	public override void CompPostPostAdd(DamageInfo? dinfo)
+	{
+		base.CompPostPostAdd(dinfo);
+		severityPerDayNotImmuneRandomFactor = Props.severityPerDayNotImmuneRandomFactor.RandomInRange;
+	}
+
+	public override void CompExposeData()
+	{
+		base.CompExposeData();
+		Scribe_Values.Look(ref severityPerDayNotImmuneRandomFactor, "severityPerDayNotImmuneRandomFactor", 1f);
+	}
+
+	public override float SeverityChangePerDay()
+	{
+		return (FullyImmune ? Props.severityPerDayImmune : (Props.severityPerDayNotImmune * severityPerDayNotImmuneRandomFactor)) * SeverityFactorFromHediffs;
+	}
+
+	public override string CompDebugString()
+	{
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.AppendLine(base.CompDebugString());
+		if (severityPerDayNotImmuneRandomFactor != 1f)
 		{
-			base.CompPostPostAdd(dinfo);
-			severityPerDayNotImmuneRandomFactor = Props.severityPerDayNotImmuneRandomFactor.RandomInRange;
+			stringBuilder.AppendLine("severityPerDayNotImmuneRandomFactor: " + severityPerDayNotImmuneRandomFactor.ToString("0.##"));
 		}
-
-		public override void CompExposeData()
+		if (!base.Pawn.Dead)
 		{
-			base.CompExposeData();
-			Scribe_Values.Look(ref severityPerDayNotImmuneRandomFactor, "severityPerDayNotImmuneRandomFactor", 1f);
-		}
-
-		public override float SeverityChangePerDay()
-		{
-			return (FullyImmune ? Props.severityPerDayImmune : (Props.severityPerDayNotImmune * severityPerDayNotImmuneRandomFactor)) * SeverityFactorFromHediffs;
-		}
-
-		public override string CompDebugString()
-		{
-			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.AppendLine(base.CompDebugString());
-			if (severityPerDayNotImmuneRandomFactor != 1f)
+			ImmunityRecord immunityRecord = base.Pawn.health.immunity.GetImmunityRecord(base.Def);
+			if (immunityRecord != null)
 			{
-				stringBuilder.AppendLine("severityPerDayNotImmuneRandomFactor: " + severityPerDayNotImmuneRandomFactor.ToString("0.##"));
+				stringBuilder.AppendLine("immunity change per day: " + (immunityRecord.ImmunityChangePerTick(base.Pawn, sick: true, parent) * 60000f).ToString("F3"));
+				stringBuilder.AppendLine("pawn immunity gain speed: " + StatDefOf.ImmunityGainSpeed.ValueToString(base.Pawn.GetStatValue(StatDefOf.ImmunityGainSpeed)));
 			}
-			if (!base.Pawn.Dead)
-			{
-				ImmunityRecord immunityRecord = base.Pawn.health.immunity.GetImmunityRecord(base.Def);
-				if (immunityRecord != null)
-				{
-					stringBuilder.AppendLine("immunity change per day: " + (immunityRecord.ImmunityChangePerTick(base.Pawn, sick: true, parent) * 60000f).ToString("F3"));
-					stringBuilder.AppendLine("pawn immunity gain speed: " + StatDefOf.ImmunityGainSpeed.ValueToString(base.Pawn.GetStatValue(StatDefOf.ImmunityGainSpeed)));
-				}
-			}
-			return stringBuilder.ToString();
 		}
+		return stringBuilder.ToString();
 	}
 }

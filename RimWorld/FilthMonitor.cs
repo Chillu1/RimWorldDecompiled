@@ -1,79 +1,78 @@
 using System.Linq;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+internal static class FilthMonitor
 {
-	internal static class FilthMonitor
+	private static int lastUpdate;
+
+	private static int filthAccumulated;
+
+	private static int filthDropped;
+
+	private static int filthAnimalGenerated;
+
+	private static int filthHumanGenerated;
+
+	private static int filthSpawned;
+
+	private const int SampleDuration = 2500;
+
+	public static void FilthMonitorTick()
 	{
-		private static int lastUpdate;
-
-		private static int filthAccumulated;
-
-		private static int filthDropped;
-
-		private static int filthAnimalGenerated;
-
-		private static int filthHumanGenerated;
-
-		private static int filthSpawned;
-
-		private const int SampleDuration = 2500;
-
-		public static void FilthMonitorTick()
+		if (DebugViewSettings.logFilthSummary && lastUpdate + 2500 <= Find.TickManager.TicksAbs)
 		{
-			if (DebugViewSettings.logFilthSummary && lastUpdate + 2500 <= Find.TickManager.TicksAbs)
-			{
-				int num = PawnsFinder.AllMaps_Spawned.Count((Pawn pawn) => pawn.Faction == Faction.OfPlayer);
-				int num2 = PawnsFinder.AllMaps_Spawned.Count((Pawn pawn) => pawn.Faction == Faction.OfPlayer && pawn.RaceProps.Humanlike);
-				int num3 = PawnsFinder.AllMaps_Spawned.Count((Pawn pawn) => pawn.Faction == Faction.OfPlayer && !pawn.RaceProps.Humanlike);
-				Log.Message($"Filth data, per day:\n  {(float)filthSpawned / (float)num / 2500f * 60000f} filth spawned per pawn\n  {(float)filthHumanGenerated / (float)num2 / 2500f * 60000f} filth human-generated per human\n  {(float)filthAnimalGenerated / (float)num3 / 2500f * 60000f} filth animal-generated per animal\n  {(float)filthAccumulated / (float)num / 2500f * 60000f} filth accumulated per pawn\n  {(float)filthDropped / (float)num / 2500f * 60000f} filth dropped per pawn");
-				filthSpawned = 0;
-				filthAnimalGenerated = 0;
-				filthHumanGenerated = 0;
-				filthAccumulated = 0;
-				filthDropped = 0;
-				lastUpdate = Find.TickManager.TicksAbs;
-			}
+			int num = PawnsFinder.AllMaps_Spawned.Count((Pawn pawn) => pawn.Faction == Faction.OfPlayer);
+			int num2 = PawnsFinder.AllMaps_Spawned.Count((Pawn pawn) => pawn.Faction == Faction.OfPlayer && pawn.RaceProps.Humanlike);
+			int num3 = PawnsFinder.AllMaps_Spawned.Count((Pawn pawn) => pawn.Faction == Faction.OfPlayer && !pawn.RaceProps.Humanlike);
+			Log.Message($"Filth data, per day:\n  {(float)filthSpawned / (float)num / 2500f * 60000f} filth spawned per pawn\n  {(float)filthHumanGenerated / (float)num2 / 2500f * 60000f} filth human-generated per human\n  {(float)filthAnimalGenerated / (float)num3 / 2500f * 60000f} filth animal-generated per animal\n  {(float)filthAccumulated / (float)num / 2500f * 60000f} filth accumulated per pawn\n  {(float)filthDropped / (float)num / 2500f * 60000f} filth dropped per pawn");
+			filthSpawned = 0;
+			filthAnimalGenerated = 0;
+			filthHumanGenerated = 0;
+			filthAccumulated = 0;
+			filthDropped = 0;
+			lastUpdate = Find.TickManager.TicksAbs;
 		}
+	}
 
-		public static void Notify_FilthAccumulated()
+	public static void Notify_FilthAccumulated()
+	{
+		if (DebugViewSettings.logFilthSummary)
 		{
-			if (DebugViewSettings.logFilthSummary)
-			{
-				filthAccumulated++;
-			}
+			filthAccumulated++;
 		}
+	}
 
-		public static void Notify_FilthDropped()
+	public static void Notify_FilthDropped()
+	{
+		if (DebugViewSettings.logFilthSummary)
 		{
-			if (DebugViewSettings.logFilthSummary)
-			{
-				filthDropped++;
-			}
+			filthDropped++;
 		}
+	}
 
-		public static void Notify_FilthAnimalGenerated()
+	public static void Notify_FilthAnimalGenerated()
+	{
+		if (DebugViewSettings.logFilthSummary)
 		{
-			if (DebugViewSettings.logFilthSummary)
-			{
-				filthAnimalGenerated++;
-			}
+			filthAnimalGenerated++;
 		}
+	}
 
-		public static void Notify_FilthHumanGenerated()
+	public static void Notify_FilthHumanGenerated()
+	{
+		if (DebugViewSettings.logFilthSummary)
 		{
-			if (DebugViewSettings.logFilthSummary)
-			{
-				filthHumanGenerated++;
-			}
+			filthHumanGenerated++;
 		}
+	}
 
-		public static void Notify_FilthSpawned()
+	public static void Notify_FilthSpawned()
+	{
+		if (DebugViewSettings.logFilthSummary)
 		{
-			if (DebugViewSettings.logFilthSummary)
-			{
-				filthSpawned++;
-			}
+			filthSpawned++;
 		}
 	}
 }

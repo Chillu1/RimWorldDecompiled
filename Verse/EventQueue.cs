@@ -1,50 +1,49 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class EventQueue
 {
-	public class EventQueue
+	public float Queued { get; private set; }
+
+	public float Threshold { get; private set; }
+
+	public EventQueue(float threshold)
 	{
-		public float Queued { get; private set; }
+		Threshold = threshold;
+	}
 
-		public float Threshold { get; private set; }
+	public void Push(float amount)
+	{
+		Queued += amount;
+	}
 
-		public EventQueue(float threshold)
+	public bool Peek()
+	{
+		return Queued >= Threshold;
+	}
+
+	public bool Pop()
+	{
+		if (Queued >= Threshold)
 		{
-			Threshold = threshold;
+			Queued -= Threshold;
+			return true;
 		}
+		return false;
+	}
 
-		public void Push(float amount)
-		{
-			Queued += amount;
-		}
+	public int PopAll()
+	{
+		int result = Mathf.FloorToInt(Queued / Threshold);
+		Queued %= Threshold;
+		return result;
+	}
 
-		public bool Peek()
-		{
-			return Queued >= Threshold;
-		}
-
-		public bool Pop()
-		{
-			if (Queued >= Threshold)
-			{
-				Queued -= Threshold;
-				return true;
-			}
-			return false;
-		}
-
-		public int PopAll()
-		{
-			int result = Mathf.FloorToInt(Queued / Threshold);
-			Queued %= Threshold;
-			return result;
-		}
-
-		public int Clear()
-		{
-			int result = Mathf.FloorToInt(Queued / Threshold);
-			Queued = 0f;
-			return result;
-		}
+	public int Clear()
+	{
+		int result = Mathf.FloorToInt(Queued / Threshold);
+		Queued = 0f;
+		return result;
 	}
 }

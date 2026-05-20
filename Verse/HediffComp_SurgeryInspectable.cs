@@ -1,18 +1,17 @@
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class HediffComp_SurgeryInspectable : HediffComp
 {
-	public class HediffComp_SurgeryInspectable : HediffComp
+	public HediffCompProperties_SurgeryInspectable Props => (HediffCompProperties_SurgeryInspectable)props;
+
+	public virtual SurgicalInspectionOutcome DoSurgicalInspection(Pawn surgeon)
 	{
-		public HediffCompProperties_SurgeryInspectable Props => (HediffCompProperties_SurgeryInspectable)props;
+		return SurgicalInspectionOutcome.Detected;
+	}
 
-		public virtual SurgicalInspectionOutcome DoSurgicalInspection(Pawn surgeon)
-		{
-			return SurgicalInspectionOutcome.Detected;
-		}
-
-		public virtual void DoSurgicalInspectionVisible(Pawn surgeon)
-		{
-		}
+	public virtual void DoSurgicalInspectionVisible(Pawn surgeon)
+	{
 	}
 }

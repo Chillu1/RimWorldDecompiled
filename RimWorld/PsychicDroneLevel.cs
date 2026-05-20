@@ -1,12 +1,11 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum PsychicDroneLevel : byte
 {
-	public enum PsychicDroneLevel : byte
-	{
-		None,
-		GoodMedium,
-		BadLow,
-		BadMedium,
-		BadHigh,
-		BadExtreme
-	}
+	None,
+	GoodMedium,
+	BadLow,
+	BadMedium,
+	BadHigh,
+	BadExtreme
 }

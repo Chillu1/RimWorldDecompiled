@@ -1,47 +1,46 @@
 using System.Collections.Generic;
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class Hediff_DisruptorFlash : HediffWithComps
 {
-	public class Hediff_DisruptorFlash : HediffWithComps
+	private HediffStage stage;
+
+	public override HediffStage CurStage => stage;
+
+	public override void PostAdd(DamageInfo? dinfo)
 	{
-		private HediffStage stage;
+		base.PostAdd(dinfo);
+		SetupStage();
+	}
 
-		public override HediffStage CurStage => stage;
-
-		public override void PostAdd(DamageInfo? dinfo)
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		if (Scribe.mode == LoadSaveMode.PostLoadInit)
 		{
-			base.PostAdd(dinfo);
 			SetupStage();
 		}
+	}
 
-		public override void ExposeData()
+	public void SetupStage()
+	{
+		stage = new HediffStage
 		{
-			base.ExposeData();
-			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			capMods = new List<PawnCapacityModifier>
 			{
-				SetupStage();
-			}
-		}
-
-		public void SetupStage()
-		{
-			stage = new HediffStage
-			{
-				capMods = new List<PawnCapacityModifier>
+				new PawnCapacityModifier
 				{
-					new PawnCapacityModifier
-					{
-						capacity = PawnCapacityDefOf.Consciousness,
-						postFactor = 1f - pawn.GetStatValue(StatDefOf.PsychicSensitivity) * 0.1f
-					},
-					new PawnCapacityModifier
-					{
-						capacity = PawnCapacityDefOf.Moving,
-						postFactor = 1f - pawn.GetStatValue(StatDefOf.PsychicSensitivity) * 0.2f
-					}
+					capacity = PawnCapacityDefOf.Consciousness,
+					postFactor = 1f - pawn.GetStatValue(StatDefOf.PsychicSensitivity) * 0.1f
+				},
+				new PawnCapacityModifier
+				{
+					capacity = PawnCapacityDefOf.Moving,
+					postFactor = 1f - pawn.GetStatValue(StatDefOf.PsychicSensitivity) * 0.2f
 				}
-			};
-		}
+			}
+		};
 	}
 }

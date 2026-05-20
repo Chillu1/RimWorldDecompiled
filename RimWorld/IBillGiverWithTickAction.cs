@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public interface IBillGiverWithTickAction : IBillGiver
 {
-	public interface IBillGiverWithTickAction : IBillGiver
-	{
-		void UsedThisTick();
-	}
+	void UsedThisTick();
 }

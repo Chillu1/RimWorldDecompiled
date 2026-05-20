@@ -1,11 +1,10 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum MedicalCareCategory : byte
 {
-	public enum MedicalCareCategory : byte
-	{
-		NoCare,
-		NoMeds,
-		HerbalOrWorse,
-		NormalOrWorse,
-		Best
-	}
+	NoCare,
+	NoMeds,
+	HerbalOrWorse,
+	NormalOrWorse,
+	Best
 }

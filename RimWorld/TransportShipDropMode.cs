@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum TransportShipDropMode
 {
-	public enum TransportShipDropMode
-	{
-		None,
-		All,
-		NonRequired,
-		PawnsOnly
-	}
+	None,
+	All,
+	NonRequired,
+	PawnsOnly
 }

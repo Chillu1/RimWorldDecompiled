@@ -3,50 +3,49 @@ using System.Collections.Generic;
 using Verse;
 using Verse.Grammar;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_ResolveTextRequests : QuestNode
 {
-	public class QuestNode_ResolveTextRequests : QuestNode
+	public SlateRef<RulePack> rules;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		public SlateRef<RulePack> rules;
+		return true;
+	}
 
-		protected override bool TestRunInt(Slate slate)
+	protected override void RunInt()
+	{
+		if (rules.GetValue(QuestGen.slate) != null)
 		{
-			return true;
+			QuestGen.AddQuestDescriptionRules(rules.GetValue(QuestGen.slate));
+			QuestGen.AddQuestContentRules(rules.GetValue(QuestGen.slate));
 		}
+		Resolve();
+	}
 
-		protected override void RunInt()
+	public static void Resolve()
+	{
+		List<QuestTextRequest> textRequestsReadOnly = QuestGen.TextRequestsReadOnly;
+		for (int i = 0; i < textRequestsReadOnly.Count; i++)
 		{
-			if (rules.GetValue(QuestGen.slate) != null)
+			try
 			{
-				QuestGen.AddQuestDescriptionRules(rules.GetValue(QuestGen.slate));
-				QuestGen.AddQuestContentRules(rules.GetValue(QuestGen.slate));
+				List<Rule> list = new List<Rule>();
+				list.AddRange(QuestGen.QuestDescriptionRulesReadOnly);
+				list.AddRange(QuestGen.QuestContentRulesReadOnly);
+				if (textRequestsReadOnly[i].extraRules != null)
+				{
+					list.AddRange(textRequestsReadOnly[i].extraRules);
+				}
+				string obj = QuestGenUtility.ResolveAbsoluteText(list, QuestGen.QuestDescriptionConstantsReadOnly, textRequestsReadOnly[i].keyword);
+				textRequestsReadOnly[i].setter(obj);
 			}
-			Resolve();
-		}
-
-		public static void Resolve()
-		{
-			List<QuestTextRequest> textRequestsReadOnly = QuestGen.TextRequestsReadOnly;
-			for (int i = 0; i < textRequestsReadOnly.Count; i++)
+			catch (Exception ex)
 			{
-				try
-				{
-					List<Rule> list = new List<Rule>();
-					list.AddRange(QuestGen.QuestDescriptionRulesReadOnly);
-					list.AddRange(QuestGen.QuestContentRulesReadOnly);
-					if (textRequestsReadOnly[i].extraRules != null)
-					{
-						list.AddRange(textRequestsReadOnly[i].extraRules);
-					}
-					string obj = QuestGenUtility.ResolveAbsoluteText(list, QuestGen.QuestDescriptionConstantsReadOnly, textRequestsReadOnly[i].keyword);
-					textRequestsReadOnly[i].setter(obj);
-				}
-				catch (Exception ex)
-				{
-					Log.Error("Error while resolving text request: " + ex);
-				}
+				Log.Error("Error while resolving text request: " + ex);
 			}
-			textRequestsReadOnly.Clear();
 		}
+		textRequestsReadOnly.Clear();
 	}
 }

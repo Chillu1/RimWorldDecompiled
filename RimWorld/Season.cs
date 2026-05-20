@@ -1,13 +1,12 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum Season : byte
 {
-	public enum Season : byte
-	{
-		Undefined,
-		Spring,
-		Summer,
-		Fall,
-		Winter,
-		PermanentSummer,
-		PermanentWinter
-	}
+	Undefined,
+	Spring,
+	Summer,
+	Fall,
+	Winter,
+	PermanentSummer,
+	PermanentWinter
 }

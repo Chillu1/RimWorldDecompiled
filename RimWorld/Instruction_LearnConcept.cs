@@ -1,24 +1,23 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Instruction_LearnConcept : Lesson_Instruction
 {
-	public class Instruction_LearnConcept : Lesson_Instruction
+	protected override float ProgressPercent => PlayerKnowledgeDatabase.GetKnowledge(def.concept);
+
+	public override void OnActivated()
 	{
-		protected override float ProgressPercent => PlayerKnowledgeDatabase.GetKnowledge(def.concept);
+		PlayerKnowledgeDatabase.SetKnowledge(def.concept, 0f);
+		base.OnActivated();
+	}
 
-		public override void OnActivated()
+	public override void LessonUpdate()
+	{
+		base.LessonUpdate();
+		if (PlayerKnowledgeDatabase.IsComplete(def.concept))
 		{
-			PlayerKnowledgeDatabase.SetKnowledge(def.concept, 0f);
-			base.OnActivated();
-		}
-
-		public override void LessonUpdate()
-		{
-			base.LessonUpdate();
-			if (PlayerKnowledgeDatabase.IsComplete(def.concept))
-			{
-				Find.ActiveLesson.Deactivate();
-			}
+			Find.ActiveLesson.Deactivate();
 		}
 	}
 }

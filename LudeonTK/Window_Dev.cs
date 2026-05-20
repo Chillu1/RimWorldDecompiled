@@ -1,12 +1,11 @@
 using Verse;
 
-namespace LudeonTK
+namespace LudeonTK;
+
+public abstract class Window_Dev : Window
 {
-	public abstract class Window_Dev : Window
+	public Window_Dev()
+		: base(new DevWindowDrawing())
 	{
-		public Window_Dev()
-			: base(new DevWindowDrawing())
-		{
-		}
 	}
 }

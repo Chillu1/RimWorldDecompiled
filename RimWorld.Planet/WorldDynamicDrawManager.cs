@@ -2,67 +2,66 @@ using System;
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public class WorldDynamicDrawManager
 {
-	public class WorldDynamicDrawManager
+	private readonly HashSet<WorldObject> drawObjects = new HashSet<WorldObject>();
+
+	private bool drawingNow;
+
+	public void RegisterDrawable(WorldObject o)
 	{
-		private readonly HashSet<WorldObject> drawObjects = new HashSet<WorldObject>();
-
-		private bool drawingNow;
-
-		public void RegisterDrawable(WorldObject o)
+		if (o.def.useDynamicDrawer)
 		{
-			if (o.def.useDynamicDrawer)
+			if (drawingNow)
 			{
-				if (drawingNow)
-				{
-					Log.Warning("Cannot register drawable " + o?.ToString() + " while drawing is in progress. WorldObjects shouldn't be spawned in Draw methods.");
-				}
-				drawObjects.Add(o);
+				Log.Warning("Cannot register drawable " + o?.ToString() + " while drawing is in progress. WorldObjects shouldn't be spawned in Draw methods.");
 			}
+			drawObjects.Add(o);
 		}
+	}
 
-		public void DeRegisterDrawable(WorldObject o)
+	public void DeRegisterDrawable(WorldObject o)
+	{
+		if (o.def.useDynamicDrawer)
 		{
-			if (o.def.useDynamicDrawer)
+			if (drawingNow)
 			{
-				if (drawingNow)
-				{
-					Log.Warning("Cannot deregister drawable " + o?.ToString() + " while drawing is in progress. WorldObjects shouldn't be despawned in Draw methods.");
-				}
-				drawObjects.Remove(o);
+				Log.Warning("Cannot deregister drawable " + o?.ToString() + " while drawing is in progress. WorldObjects shouldn't be despawned in Draw methods.");
 			}
+			drawObjects.Remove(o);
 		}
+	}
 
-		public void DrawDynamicWorldObjects()
+	public void DrawDynamicWorldObjects()
+	{
+		if (WorldRendererUtility.WorldBackgroundNow || !DebugViewSettings.drawWorldObjects)
 		{
-			if (WorldRendererUtility.WorldBackgroundNow || !DebugViewSettings.drawWorldObjects)
+			return;
+		}
+		drawingNow = true;
+		try
+		{
+			foreach (WorldObject drawObject in drawObjects)
 			{
-				return;
-			}
-			drawingNow = true;
-			try
-			{
-				foreach (WorldObject drawObject in drawObjects)
+				try
 				{
-					try
+					if ((!drawObject.def.expandingIcon || !(ExpandableWorldObjectsUtility.TransitionPct(drawObject) >= 1f)) && (!WorldRendererUtility.WorldBackgroundNow || drawObject.VisibleInBackground))
 					{
-						if ((!drawObject.def.expandingIcon || !(ExpandableWorldObjectsUtility.TransitionPct(drawObject) >= 1f)) && (!WorldRendererUtility.WorldBackgroundNow || drawObject.VisibleInBackground))
-						{
-							drawObject.Draw();
-						}
-					}
-					catch (Exception ex)
-					{
-						Log.Error("Exception drawing " + drawObject?.ToString() + ": " + ex);
+						drawObject.Draw();
 					}
 				}
+				catch (Exception ex)
+				{
+					Log.Error("Exception drawing " + drawObject?.ToString() + ": " + ex);
+				}
 			}
-			catch (Exception ex2)
-			{
-				Log.Error("Exception drawing dynamic world objects: " + ex2);
-			}
-			drawingNow = false;
 		}
+		catch (Exception ex2)
+		{
+			Log.Error("Exception drawing dynamic world objects: " + ex2);
+		}
+		drawingNow = false;
 	}
 }

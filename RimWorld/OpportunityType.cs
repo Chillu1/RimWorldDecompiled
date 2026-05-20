@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum OpportunityType : byte
 {
-	public enum OpportunityType : byte
-	{
-		GoodToKnow,
-		Important,
-		Critical
-	}
+	GoodToKnow,
+	Important,
+	Critical
 }

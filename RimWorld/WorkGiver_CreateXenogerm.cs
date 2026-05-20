@@ -2,65 +2,64 @@ using UnityEngine;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WorkGiver_CreateXenogerm : WorkGiver_Scanner
 {
-	public class WorkGiver_CreateXenogerm : WorkGiver_Scanner
+	public override ThingRequest PotentialWorkThingRequest => ThingRequest.ForDef(ThingDefOf.GeneAssembler);
+
+	public override bool ShouldSkip(Pawn pawn, bool forced = false)
 	{
-		public override ThingRequest PotentialWorkThingRequest => ThingRequest.ForDef(ThingDefOf.GeneAssembler);
+		return !ModsConfig.BiotechActive;
+	}
 
-		public override bool ShouldSkip(Pawn pawn, bool forced = false)
+	public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
+	{
+		if (!(t is Building_GeneAssembler building_GeneAssembler))
 		{
-			return !ModsConfig.BiotechActive;
+			return false;
 		}
-
-		public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
+		if (!pawn.CanReserve(t, 1, -1, null, forced) || !pawn.CanReserveSittableOrSpot(t.InteractionCell, forced))
 		{
-			if (!(t is Building_GeneAssembler building_GeneAssembler))
+			return false;
+		}
+		if (building_GeneAssembler.ArchitesRequiredNow > 0)
+		{
+			if (FindArchiteCapsule(pawn) == null)
 			{
-				return false;
-			}
-			if (!pawn.CanReserve(t, 1, -1, null, forced) || !pawn.CanReserveSittableOrSpot(t.InteractionCell, forced))
-			{
-				return false;
-			}
-			if (building_GeneAssembler.ArchitesRequiredNow > 0)
-			{
-				if (FindArchiteCapsule(pawn) == null)
-				{
-					JobFailReason.Is("NoIngredient".Translate(ThingDefOf.ArchiteCapsule));
-					return false;
-				}
-				return true;
-			}
-			if (!building_GeneAssembler.CanBeWorkedOnNow.Accepted)
-			{
+				JobFailReason.Is("NoIngredient".Translate(ThingDefOf.ArchiteCapsule));
 				return false;
 			}
 			return true;
 		}
-
-		public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
+		if (!building_GeneAssembler.CanBeWorkedOnNow.Accepted)
 		{
-			if (!(t is Building_GeneAssembler building_GeneAssembler))
-			{
-				return null;
-			}
-			if (building_GeneAssembler.ArchitesRequiredNow > 0)
-			{
-				Thing thing = FindArchiteCapsule(pawn);
-				if (thing != null)
-				{
-					Job job = JobMaker.MakeJob(JobDefOf.HaulToContainer, thing, t);
-					job.count = Mathf.Min(building_GeneAssembler.ArchitesRequiredNow, thing.stackCount);
-					return job;
-				}
-			}
-			return JobMaker.MakeJob(JobDefOf.CreateXenogerm, t, 1200, checkOverrideOnExpiry: true);
+			return false;
 		}
+		return true;
+	}
 
-		private Thing FindArchiteCapsule(Pawn pawn)
+	public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
+	{
+		if (!(t is Building_GeneAssembler building_GeneAssembler))
 		{
-			return GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(ThingDefOf.ArchiteCapsule), PathEndMode.ClosestTouch, TraverseParms.For(pawn), 9999f, (Thing x) => !x.IsForbidden(pawn) && pawn.CanReserve(x));
+			return null;
 		}
+		if (building_GeneAssembler.ArchitesRequiredNow > 0)
+		{
+			Thing thing = FindArchiteCapsule(pawn);
+			if (thing != null)
+			{
+				Job job = JobMaker.MakeJob(JobDefOf.HaulToContainer, thing, t);
+				job.count = Mathf.Min(building_GeneAssembler.ArchitesRequiredNow, thing.stackCount);
+				return job;
+			}
+		}
+		return JobMaker.MakeJob(JobDefOf.CreateXenogerm, t, 1200, checkOverrideOnExpiry: true);
+	}
+
+	private Thing FindArchiteCapsule(Pawn pawn)
+	{
+		return GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(ThingDefOf.ArchiteCapsule), PathEndMode.ClosestTouch, TraverseParms.For(pawn), 9999f, (Thing x) => !x.IsForbidden(pawn) && pawn.CanReserve(x));
 	}
 }

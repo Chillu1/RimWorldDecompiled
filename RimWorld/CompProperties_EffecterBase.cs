@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_EffecterBase : CompProperties
 {
-	public class CompProperties_EffecterBase : CompProperties
-	{
-		public EffecterDef effecterDef;
-	}
+	public EffecterDef effecterDef;
 }

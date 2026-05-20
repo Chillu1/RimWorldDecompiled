@@ -1,20 +1,19 @@
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_SetTicksUntilAcceptanceExpiry : QuestNode
 {
-	public class QuestNode_SetTicksUntilAcceptanceExpiry : QuestNode
+	public SlateRef<int> ticks;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		public SlateRef<int> ticks;
+		return true;
+	}
 
-		protected override bool TestRunInt(Slate slate)
-		{
-			return true;
-		}
-
-		protected override void RunInt()
-		{
-			Slate slate = QuestGen.slate;
-			QuestGen.quest.acceptanceExpireTick = GenTicks.TicksGame + ticks.GetValue(slate);
-		}
+	protected override void RunInt()
+	{
+		Slate slate = QuestGen.slate;
+		QuestGen.quest.acceptanceExpireTick = GenTicks.TicksGame + ticks.GetValue(slate);
 	}
 }

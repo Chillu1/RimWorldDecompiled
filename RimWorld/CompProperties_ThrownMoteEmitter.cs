@@ -2,43 +2,42 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_ThrownMoteEmitter : CompProperties
 {
-	public class CompProperties_ThrownMoteEmitter : CompProperties
+	public ThingDef mote;
+
+	public Vector3 offsetMin;
+
+	public Vector3 offsetMax;
+
+	public int emissionInterval = -1;
+
+	public int burstCount = 1;
+
+	public Color colorA = Color.white;
+
+	public Color colorB = Color.white;
+
+	public FloatRange scale = FloatRange.One;
+
+	public FloatRange rotationRate;
+
+	public FloatRange velocityX;
+
+	public FloatRange velocityY;
+
+	public CompProperties_ThrownMoteEmitter()
 	{
-		public ThingDef mote;
+		compClass = typeof(CompThrownMoteEmitter);
+	}
 
-		public Vector3 offsetMin;
-
-		public Vector3 offsetMax;
-
-		public int emissionInterval = -1;
-
-		public int burstCount = 1;
-
-		public Color colorA = Color.white;
-
-		public Color colorB = Color.white;
-
-		public FloatRange scale = FloatRange.One;
-
-		public FloatRange rotationRate;
-
-		public FloatRange velocityX;
-
-		public FloatRange velocityY;
-
-		public CompProperties_ThrownMoteEmitter()
+	public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+	{
+		if (mote == null)
 		{
-			compClass = typeof(CompThrownMoteEmitter);
-		}
-
-		public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
-		{
-			if (mote == null)
-			{
-				yield return "CompThrownMoteEmitter must have a mote assigned.";
-			}
+			yield return "CompThrownMoteEmitter must have a mote assigned.";
 		}
 	}
 }

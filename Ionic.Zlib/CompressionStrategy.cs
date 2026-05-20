@@ -1,9 +1,8 @@
-namespace Ionic.Zlib
+namespace Ionic.Zlib;
+
+public enum CompressionStrategy
 {
-	public enum CompressionStrategy
-	{
-		Default,
-		Filtered,
-		HuffmanOnly
-	}
+	Default,
+	Filtered,
+	HuffmanOnly
 }

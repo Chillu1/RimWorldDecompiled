@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum PawnHealthState : byte
 {
-	public enum PawnHealthState : byte
-	{
-		Dead,
-		Down,
-		Mobile
-	}
+	Dead,
+	Down,
+	Mobile
 }

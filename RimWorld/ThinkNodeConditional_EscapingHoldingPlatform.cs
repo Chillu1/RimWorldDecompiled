@@ -1,13 +1,12 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThinkNodeConditional_EscapingHoldingPlatform : ThinkNode_Conditional
 {
-	public class ThinkNodeConditional_EscapingHoldingPlatform : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
-		{
-			return pawn.TryGetComp<CompHoldingPlatformTarget>()?.isEscaping ?? false;
-		}
+		return pawn.TryGetComp<CompHoldingPlatformTarget>()?.isEscaping ?? false;
 	}
 }

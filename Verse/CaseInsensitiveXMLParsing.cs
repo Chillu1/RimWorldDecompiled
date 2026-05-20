@@ -1,8 +1,7 @@
 using System;
 
-namespace Verse
+namespace Verse;
+
+public class CaseInsensitiveXMLParsing : Attribute
 {
-	public class CaseInsensitiveXMLParsing : Attribute
-	{
-	}
 }

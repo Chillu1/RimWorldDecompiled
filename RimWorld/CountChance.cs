@@ -1,9 +1,8 @@
-namespace RimWorld
-{
-	public struct CountChance
-	{
-		public int count;
+namespace RimWorld;
 
-		public float chance;
-	}
+public struct CountChance
+{
+	public int count;
+
+	public float chance;
 }

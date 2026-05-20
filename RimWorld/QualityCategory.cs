@@ -1,13 +1,12 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum QualityCategory : byte
 {
-	public enum QualityCategory : byte
-	{
-		Awful,
-		Poor,
-		Normal,
-		Good,
-		Excellent,
-		Masterwork,
-		Legendary
-	}
+	Awful,
+	Poor,
+	Normal,
+	Good,
+	Excellent,
+	Masterwork,
+	Legendary
 }

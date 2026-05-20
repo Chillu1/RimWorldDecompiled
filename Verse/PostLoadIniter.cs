@@ -1,62 +1,61 @@
 using System;
 using System.Collections.Generic;
 
-namespace Verse
-{
-	public class PostLoadIniter
-	{
-		private HashSet<IExposable> saveablesToPostLoad = new HashSet<IExposable>();
+namespace Verse;
 
-		public void RegisterForPostLoadInit(IExposable s)
+public class PostLoadIniter
+{
+	private HashSet<IExposable> saveablesToPostLoad = new HashSet<IExposable>();
+
+	public void RegisterForPostLoadInit(IExposable s)
+	{
+		if (Scribe.mode != LoadSaveMode.LoadingVars)
 		{
-			if (Scribe.mode != LoadSaveMode.LoadingVars)
+			Log.Error("Registered " + s?.ToString() + " for post load init, but current mode is " + Scribe.mode);
+			return;
+		}
+		if (s == null)
+		{
+			Log.Warning("Trying to register null in RegisterforPostLoadInit.");
+			return;
+		}
+		try
+		{
+			if (!saveablesToPostLoad.Add(s))
 			{
-				Log.Error("Registered " + s?.ToString() + " for post load init, but current mode is " + Scribe.mode);
-				return;
+				Log.Warning("Tried to register in RegisterforPostLoadInit when already registered: " + s);
 			}
-			if (s == null)
-			{
-				Log.Warning("Trying to register null in RegisterforPostLoadInit.");
-				return;
-			}
+		}
+		catch (Exception ex)
+		{
+			Log.Error("Could not register an object for post load init: " + ex);
+		}
+	}
+
+	public void DoAllPostLoadInits()
+	{
+		Scribe.mode = LoadSaveMode.PostLoadInit;
+		foreach (IExposable item in saveablesToPostLoad)
+		{
 			try
 			{
-				if (!saveablesToPostLoad.Add(s))
-				{
-					Log.Warning("Tried to register in RegisterforPostLoadInit when already registered: " + s);
-				}
+				Scribe.loader.curParent = item;
+				Scribe.loader.curPathRelToParent = null;
+				item.ExposeData();
 			}
 			catch (Exception ex)
 			{
-				Log.Error("Could not register an object for post load init: " + ex);
+				Log.Error("Could not do PostLoadInit on " + item.ToStringSafe() + ": " + ex);
 			}
 		}
+		Clear();
+		Scribe.loader.curParent = null;
+		Scribe.loader.curPathRelToParent = null;
+		Scribe.mode = LoadSaveMode.Inactive;
+	}
 
-		public void DoAllPostLoadInits()
-		{
-			Scribe.mode = LoadSaveMode.PostLoadInit;
-			foreach (IExposable item in saveablesToPostLoad)
-			{
-				try
-				{
-					Scribe.loader.curParent = item;
-					Scribe.loader.curPathRelToParent = null;
-					item.ExposeData();
-				}
-				catch (Exception ex)
-				{
-					Log.Error("Could not do PostLoadInit on " + item.ToStringSafe() + ": " + ex);
-				}
-			}
-			Clear();
-			Scribe.loader.curParent = null;
-			Scribe.loader.curPathRelToParent = null;
-			Scribe.mode = LoadSaveMode.Inactive;
-		}
-
-		public void Clear()
-		{
-			saveablesToPostLoad.Clear();
-		}
+	public void Clear()
+	{
+		saveablesToPostLoad.Clear();
 	}
 }

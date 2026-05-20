@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class Alert_Precept : Alert_Custom
 {
-	public abstract class Alert_Precept : Alert_Custom
-	{
-		public Precept sourcePrecept;
-	}
+	public Precept sourcePrecept;
 }

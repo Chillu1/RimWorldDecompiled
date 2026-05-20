@@ -1,77 +1,76 @@
 using System;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+[StaticConstructorOnStartup]
+public class Graphic_Fleck : Graphic_Single
 {
-	[StaticConstructorOnStartup]
-	public class Graphic_Fleck : Graphic_Single
+	protected virtual bool AllowInstancing => true;
+
+	public override void DrawWorker(Vector3 loc, Rot4 rot, ThingDef thingDef, Thing thing, float extraRotation)
 	{
-		protected virtual bool AllowInstancing => true;
+		throw new NotImplementedException();
+	}
 
-		public override void DrawWorker(Vector3 loc, Rot4 rot, ThingDef thingDef, Thing thing, float extraRotation)
+	public virtual void DrawFleck(FleckDrawData drawData, DrawBatch batch)
+	{
+		Color value;
+		if (drawData.overrideColor.HasValue)
 		{
-			throw new NotImplementedException();
+			value = drawData.overrideColor.Value;
 		}
-
-		public virtual void DrawFleck(FleckDrawData drawData, DrawBatch batch)
+		else
 		{
-			Color value;
-			if (drawData.overrideColor.HasValue)
+			float alpha = drawData.alpha;
+			if (alpha <= 0f)
 			{
-				value = drawData.overrideColor.Value;
-			}
-			else
-			{
-				float alpha = drawData.alpha;
-				if (alpha <= 0f)
+				if (drawData.propertyBlock != null)
 				{
-					if (drawData.propertyBlock != null)
-					{
-						batch.ReturnPropertyBlock(drawData.propertyBlock);
-					}
-					return;
+					batch.ReturnPropertyBlock(drawData.propertyBlock);
 				}
-				value = base.Color * drawData.color;
-				value.a *= alpha;
+				return;
 			}
-			Vector3 scale = drawData.scale;
-			scale.x *= data.drawSize.x;
-			scale.z *= data.drawSize.y;
-			Mesh mesh = MeshPool.plane10;
-			float num = drawData.rotation;
-			if (scale.x < 0f && scale.y >= 0f)
-			{
-				scale.x = 0f - scale.x;
-				mesh = MeshPool.plane10Flip;
-			}
-			else if (scale.x >= 0f && scale.y < 0f)
-			{
-				scale.y = 0f - scale.y;
-				mesh = MeshPool.plane10Flip;
-				num += 180f;
-			}
-			Matrix4x4 matrix = default(Matrix4x4);
-			matrix.SetTRS(drawData.pos, Quaternion.AngleAxis(num, Vector3.up), scale);
-			Material matSingle = MatSingle;
-			batch.DrawMesh(mesh, matrix, matSingle, drawData.drawLayer, value, data.renderInstanced && AllowInstancing, drawData.propertyBlock);
+			value = base.Color * drawData.color;
+			value.a *= alpha;
 		}
-
-		public override string ToString()
+		Vector3 scale = drawData.scale;
+		scale.x *= data.drawSize.x;
+		scale.z *= data.drawSize.y;
+		Mesh mesh = MeshPool.plane10;
+		float num = drawData.rotation;
+		if (scale.x < 0f && scale.y >= 0f)
 		{
-			string[] obj = new string[7]
-			{
-				"Fleck(path=",
-				path,
-				", shader=",
-				base.Shader?.ToString(),
-				", color=",
-				null,
-				null
-			};
-			Color color = base.color;
-			obj[5] = color.ToString();
-			obj[6] = ", colorTwo=unsupported)";
-			return string.Concat(obj);
+			scale.x = 0f - scale.x;
+			mesh = MeshPool.plane10Flip;
 		}
+		else if (scale.x >= 0f && scale.y < 0f)
+		{
+			scale.y = 0f - scale.y;
+			mesh = MeshPool.plane10Flip;
+			num += 180f;
+		}
+		Matrix4x4 matrix = default(Matrix4x4);
+		matrix.SetTRS(drawData.pos, Quaternion.AngleAxis(num, Vector3.up), scale);
+		Material matSingle = MatSingle;
+		batch.DrawMesh(mesh, matrix, matSingle, drawData.drawLayer, value, data.renderInstanced && AllowInstancing, drawData.propertyBlock);
+	}
+
+	public override string ToString()
+	{
+		string[] obj = new string[7]
+		{
+			"Fleck(path=",
+			path,
+			", shader=",
+			base.Shader?.ToString(),
+			", color=",
+			null,
+			null
+		};
+		Color color = base.color;
+		obj[5] = color.ToString();
+		obj[6] = ", colorTwo=unsupported)";
+		return string.Concat(obj);
 	}
 }

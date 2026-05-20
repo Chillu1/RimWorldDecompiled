@@ -1,95 +1,94 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class FastPriorityQueue<T>
 {
-	public class FastPriorityQueue<T>
+	protected List<T> innerList = new List<T>();
+
+	protected IComparer<T> comparer;
+
+	public int Count => innerList.Count;
+
+	public FastPriorityQueue()
 	{
-		protected List<T> innerList = new List<T>();
+		comparer = Comparer<T>.Default;
+	}
 
-		protected IComparer<T> comparer;
+	public FastPriorityQueue(IComparer<T> comparer)
+	{
+		this.comparer = comparer;
+	}
 
-		public int Count => innerList.Count;
-
-		public FastPriorityQueue()
+	public void Push(T item)
+	{
+		int num = innerList.Count;
+		innerList.Add(item);
+		while (num != 0)
 		{
-			comparer = Comparer<T>.Default;
-		}
-
-		public FastPriorityQueue(IComparer<T> comparer)
-		{
-			this.comparer = comparer;
-		}
-
-		public void Push(T item)
-		{
-			int num = innerList.Count;
-			innerList.Add(item);
-			while (num != 0)
+			int num2 = (num - 1) / 2;
+			if (CompareElements(num, num2) < 0)
 			{
-				int num2 = (num - 1) / 2;
-				if (CompareElements(num, num2) < 0)
-				{
-					SwapElements(num, num2);
-					num = num2;
-					continue;
-				}
+				SwapElements(num, num2);
+				num = num2;
+				continue;
+			}
+			break;
+		}
+	}
+
+	public T Pop()
+	{
+		T result = innerList[0];
+		int num = 0;
+		int count = innerList.Count;
+		innerList[0] = innerList[count - 1];
+		innerList.RemoveAt(count - 1);
+		count = innerList.Count;
+		while (true)
+		{
+			int num2 = num;
+			int num3 = 2 * num + 1;
+			int num4 = num3 + 1;
+			if (num3 < count && CompareElements(num, num3) > 0)
+			{
+				num = num3;
+			}
+			if (num4 < count && CompareElements(num, num4) > 0)
+			{
+				num = num4;
+			}
+			if (num == num2)
+			{
 				break;
 			}
+			SwapElements(num, num2);
 		}
+		return result;
+	}
 
-		public T Pop()
-		{
-			T result = innerList[0];
-			int num = 0;
-			int count = innerList.Count;
-			innerList[0] = innerList[count - 1];
-			innerList.RemoveAt(count - 1);
-			count = innerList.Count;
-			while (true)
-			{
-				int num2 = num;
-				int num3 = 2 * num + 1;
-				int num4 = num3 + 1;
-				if (num3 < count && CompareElements(num, num3) > 0)
-				{
-					num = num3;
-				}
-				if (num4 < count && CompareElements(num, num4) > 0)
-				{
-					num = num4;
-				}
-				if (num == num2)
-				{
-					break;
-				}
-				SwapElements(num, num2);
-			}
-			return result;
-		}
+	public void Clear()
+	{
+		innerList.Clear();
+	}
 
-		public void Clear()
-		{
-			innerList.Clear();
-		}
+	protected void SwapElements(int i, int j)
+	{
+		List<T> list = innerList;
+		List<T> list2 = innerList;
+		T val = innerList[j];
+		T val2 = innerList[i];
+		T val3 = (list[i] = val);
+		val3 = (list2[j] = val2);
+	}
 
-		protected void SwapElements(int i, int j)
-		{
-			List<T> list = innerList;
-			List<T> list2 = innerList;
-			T val = innerList[j];
-			T val2 = innerList[i];
-			T val3 = (list[i] = val);
-			val3 = (list2[j] = val2);
-		}
+	protected int CompareElements(int i, int j)
+	{
+		return comparer.Compare(innerList[i], innerList[j]);
+	}
 
-		protected int CompareElements(int i, int j)
-		{
-			return comparer.Compare(innerList[i], innerList[j]);
-		}
-
-		public bool Contains(T item)
-		{
-			return innerList.Contains(item);
-		}
+	public bool Contains(T item)
+	{
+		return innerList.Contains(item);
 	}
 }

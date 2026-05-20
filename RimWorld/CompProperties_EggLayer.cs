@@ -1,43 +1,42 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_EggLayer : CompProperties
 {
-	public class CompProperties_EggLayer : CompProperties
+	public float eggLayIntervalDays = 1f;
+
+	public IntRange eggCountRange = IntRange.One;
+
+	public ThingDef eggUnfertilizedDef;
+
+	public ThingDef eggFertilizedDef;
+
+	public int eggFertilizationCountMax = 1;
+
+	public bool eggLayFemaleOnly = true;
+
+	public float eggProgressUnfertilizedMax = 1f;
+
+	public CompProperties_EggLayer()
 	{
-		public float eggLayIntervalDays = 1f;
+		compClass = typeof(CompEggLayer);
+	}
 
-		public IntRange eggCountRange = IntRange.One;
-
-		public ThingDef eggUnfertilizedDef;
-
-		public ThingDef eggFertilizedDef;
-
-		public int eggFertilizationCountMax = 1;
-
-		public bool eggLayFemaleOnly = true;
-
-		public float eggProgressUnfertilizedMax = 1f;
-
-		public CompProperties_EggLayer()
+	public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+	{
+		if (eggFertilizedDef == null)
 		{
-			compClass = typeof(CompEggLayer);
+			yield return "eggFertilizedDef is null";
 		}
-
-		public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+		else if (eggUnfertilizedDef == null)
 		{
-			if (eggFertilizedDef == null)
-			{
-				yield return "eggFertilizedDef is null";
-			}
-			else if (eggUnfertilizedDef == null)
-			{
-				yield return "eggUnfertilizedDef is null";
-			}
-			foreach (string item in base.ConfigErrors(parentDef))
-			{
-				yield return item;
-			}
+			yield return "eggUnfertilizedDef is null";
+		}
+		foreach (string item in base.ConfigErrors(parentDef))
+		{
+			yield return item;
 		}
 	}
 }

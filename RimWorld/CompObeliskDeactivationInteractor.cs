@@ -3,94 +3,93 @@ using System.Linq;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompObeliskDeactivationInteractor : CompInteractable
 {
-	public class CompObeliskDeactivationInteractor : CompInteractable
+	private CompObelisk obeliskComp;
+
+	private CompObelisk ObeliskComp => obeliskComp ?? (obeliskComp = parent.GetComp<CompObelisk>());
+
+	private new CompProperties_ObeliskDeactivationInteractor Props => (CompProperties_ObeliskDeactivationInteractor)props;
+
+	public override string ExposeKey => "Deactivation";
+
+	public override bool CanCooldown => false;
+
+	public override AcceptanceReport CanInteract(Pawn activateBy = null, bool checkOptionalItems = true)
 	{
-		private CompObelisk obeliskComp;
-
-		private CompObelisk ObeliskComp => obeliskComp ?? (obeliskComp = parent.GetComp<CompObelisk>());
-
-		private new CompProperties_ObeliskDeactivationInteractor Props => (CompProperties_ObeliskDeactivationInteractor)props;
-
-		public override string ExposeKey => "Deactivation";
-
-		public override bool CanCooldown => false;
-
-		public override AcceptanceReport CanInteract(Pawn activateBy = null, bool checkOptionalItems = true)
+		if (!ObeliskComp.StudyFinished || ObeliskComp.Activated || ObeliskComp.ActivityComp.Deactivated)
 		{
-			if (!ObeliskComp.StudyFinished || ObeliskComp.Activated || ObeliskComp.ActivityComp.Deactivated)
-			{
-				return false;
-			}
-			if (activateBy != null)
-			{
-				if (checkOptionalItems && !activateBy.HasReserved(ThingDefOf.Shard) && !ReservationUtility.ExistsUnreservedAmountOfDef(parent.MapHeld, ThingDefOf.Shard, Faction.OfPlayer, Props.shardsRequired, (Thing t) => activateBy.CanReserveAndReach(t, PathEndMode.Touch, Danger.None)))
-				{
-					return "ObeliskDeactivateMissingShards".Translate(Props.shardsRequired);
-				}
-			}
-			else if (checkOptionalItems && !ReservationUtility.ExistsUnreservedAmountOfDef(parent.MapHeld, ThingDefOf.Shard, Faction.OfPlayer, Props.shardsRequired))
+			return false;
+		}
+		if (activateBy != null)
+		{
+			if (checkOptionalItems && !activateBy.HasReserved(ThingDefOf.Shard) && !ReservationUtility.ExistsUnreservedAmountOfDef(parent.MapHeld, ThingDefOf.Shard, Faction.OfPlayer, Props.shardsRequired, (Thing t) => activateBy.CanReserveAndReach(t, PathEndMode.Touch, Danger.None)))
 			{
 				return "ObeliskDeactivateMissingShards".Translate(Props.shardsRequired);
 			}
-			return base.CanInteract(activateBy, checkOptionalItems);
 		}
-
-		public override IEnumerable<Gizmo> CompGetGizmosExtra()
+		else if (checkOptionalItems && !ReservationUtility.ExistsUnreservedAmountOfDef(parent.MapHeld, ThingDefOf.Shard, Faction.OfPlayer, Props.shardsRequired))
 		{
-			if (!ObeliskComp.StudyFinished || ObeliskComp.Activated || ObeliskComp.ActivityComp.Deactivated)
-			{
-				yield break;
-			}
-			foreach (Gizmo item in base.CompGetGizmosExtra())
-			{
-				yield return item;
-			}
+			return "ObeliskDeactivateMissingShards".Translate(Props.shardsRequired);
 		}
+		return base.CanInteract(activateBy, checkOptionalItems);
+	}
 
-		public override IEnumerable<FloatMenuOption> CompFloatMenuOptions(Pawn selPawn)
+	public override IEnumerable<Gizmo> CompGetGizmosExtra()
+	{
+		if (!ObeliskComp.StudyFinished || ObeliskComp.Activated || ObeliskComp.ActivityComp.Deactivated)
 		{
-			if (!ObeliskComp.StudyFinished || ObeliskComp.Activated || ObeliskComp.ActivityComp.Deactivated)
-			{
-				yield break;
-			}
-			foreach (FloatMenuOption item in base.CompFloatMenuOptions(selPawn))
-			{
-				yield return item;
-			}
+			yield break;
 		}
-
-		public override void OrderForceTarget(LocalTargetInfo target)
+		foreach (Gizmo item in base.CompGetGizmosExtra())
 		{
-			if (ValidateTarget(target, showMessages: false))
-			{
-				OrderDeactivation(target.Pawn);
-			}
+			yield return item;
 		}
+	}
 
-		private void OrderDeactivation(Pawn pawn)
+	public override IEnumerable<FloatMenuOption> CompFloatMenuOptions(Pawn selPawn)
+	{
+		if (!ObeliskComp.StudyFinished || ObeliskComp.Activated || ObeliskComp.ActivityComp.Deactivated)
 		{
-			List<Thing> list = HaulAIUtility.FindFixedIngredientCount(pawn, ThingDefOf.Shard, Props.shardsRequired);
-			if (!list.NullOrEmpty())
-			{
-				Job job = JobMaker.MakeJob(JobDefOf.InteractThing, parent, list[0]);
-				job.targetQueueB = (from i in list.Skip(1)
-					select new LocalTargetInfo(i)).ToList();
-				job.count = Props.shardsRequired;
-				job.playerForced = true;
-				job.interactableIndex = 1;
-				pawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
-			}
+			yield break;
 		}
-
-		protected override void OnInteracted(Pawn caster)
+		foreach (FloatMenuOption item in base.CompFloatMenuOptions(selPawn))
 		{
-			if (!obeliskComp.Activated)
-			{
-				obeliskComp.ActivityComp.Deactivate();
-				parent.GetComp<CompObeliskTriggerInteractor>()?.ResetCooldown();
-			}
+			yield return item;
+		}
+	}
+
+	public override void OrderForceTarget(LocalTargetInfo target)
+	{
+		if (ValidateTarget(target, showMessages: false))
+		{
+			OrderDeactivation(target.Pawn);
+		}
+	}
+
+	private void OrderDeactivation(Pawn pawn)
+	{
+		List<Thing> list = HaulAIUtility.FindFixedIngredientCount(pawn, ThingDefOf.Shard, Props.shardsRequired);
+		if (!list.NullOrEmpty())
+		{
+			Job job = JobMaker.MakeJob(JobDefOf.InteractThing, parent, list[0]);
+			job.targetQueueB = (from i in list.Skip(1)
+				select new LocalTargetInfo(i)).ToList();
+			job.count = Props.shardsRequired;
+			job.playerForced = true;
+			job.interactableIndex = 1;
+			pawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
+		}
+	}
+
+	protected override void OnInteracted(Pawn caster)
+	{
+		if (!obeliskComp.Activated)
+		{
+			obeliskComp.ActivityComp.Deactivate();
+			parent.GetComp<CompObeliskTriggerInteractor>()?.ResetCooldown();
 		}
 	}
 }

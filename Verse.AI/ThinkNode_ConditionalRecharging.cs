@@ -1,12 +1,11 @@
 using RimWorld;
 
-namespace Verse.AI
+namespace Verse.AI;
+
+public class ThinkNode_ConditionalRecharging : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalRecharging : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
-		{
-			return pawn.IsCharging();
-		}
+		return pawn.IsCharging();
 	}
 }

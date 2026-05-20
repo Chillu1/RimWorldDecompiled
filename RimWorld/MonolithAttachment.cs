@@ -1,13 +1,12 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class MonolithAttachment
 {
-	public class MonolithAttachment
-	{
-		public ThingDef def;
+	public ThingDef def;
 
-		public int graphicIndex;
+	public int graphicIndex;
 
-		public IntVec2 offset;
-	}
+	public IntVec2 offset;
 }

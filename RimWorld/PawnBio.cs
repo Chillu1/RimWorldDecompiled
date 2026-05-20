@@ -1,49 +1,48 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+[CaseInsensitiveXMLParsing]
+public class PawnBio
 {
-	[CaseInsensitiveXMLParsing]
-	public class PawnBio
+	public GenderPossibility gender;
+
+	public NameTriple name;
+
+	public BackstoryDef childhood;
+
+	public BackstoryDef adulthood;
+
+	public bool pirateKing;
+
+	public bool rare;
+
+	public PawnBioType BioType
 	{
-		public GenderPossibility gender;
-
-		public NameTriple name;
-
-		public BackstoryDef childhood;
-
-		public BackstoryDef adulthood;
-
-		public bool pirateKing;
-
-		public bool rare;
-
-		public PawnBioType BioType
+		get
 		{
-			get
+			if (pirateKing)
 			{
-				if (pirateKing)
-				{
-					return PawnBioType.PirateKing;
-				}
-				if (adulthood != null)
-				{
-					return PawnBioType.BackstoryInGame;
-				}
-				return PawnBioType.Undefined;
+				return PawnBioType.PirateKing;
 			}
-		}
-
-		public void ResolveReferences()
-		{
-			if (adulthood.spawnCategories.Count == 1 && adulthood.spawnCategories[0] == "Trader")
+			if (adulthood != null)
 			{
-				adulthood.spawnCategories.Add("Civil");
+				return PawnBioType.BackstoryInGame;
 			}
+			return PawnBioType.Undefined;
 		}
+	}
 
-		public override string ToString()
+	public void ResolveReferences()
+	{
+		if (adulthood.spawnCategories.Count == 1 && adulthood.spawnCategories[0] == "Trader")
 		{
-			return "PawnBio(" + name?.ToString() + ")";
+			adulthood.spawnCategories.Add("Civil");
 		}
+	}
+
+	public override string ToString()
+	{
+		return "PawnBio(" + name?.ToString() + ")";
 	}
 }

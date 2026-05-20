@@ -1,31 +1,30 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_FillIn : JobDriver_RemoveBuilding
 {
-	public class JobDriver_FillIn : JobDriver_RemoveBuilding
+	protected override DesignationDef Designation => DesignationDefOf.FillIn;
+
+	protected override float TotalNeededWork => base.Target.def.building.uninstallWork;
+
+	protected override EffecterDef WorkEffecter
 	{
-		protected override DesignationDef Designation => DesignationDefOf.FillIn;
-
-		protected override float TotalNeededWork => base.Target.def.building.uninstallWork;
-
-		protected override EffecterDef WorkEffecter
+		get
 		{
-			get
+			if (!(base.Target is PitBurrow))
 			{
-				if (!(base.Target is PitBurrow))
-				{
-					return EffecterDefOf.FillingInCrater;
-				}
-				return EffecterDefOf.FillingInPitGate;
+				return EffecterDefOf.FillingInCrater;
 			}
+			return EffecterDefOf.FillingInPitGate;
 		}
+	}
 
-		protected override void FinishedRemoving()
+	protected override void FinishedRemoving()
+	{
+		if (base.Target is Crater crater)
 		{
-			if (base.Target is Crater crater)
-			{
-				crater.FillIn();
-			}
+			crater.FillIn();
 		}
 	}
 }

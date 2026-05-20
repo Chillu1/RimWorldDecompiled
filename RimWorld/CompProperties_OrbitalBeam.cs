@@ -2,31 +2,30 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_OrbitalBeam : CompProperties
 {
-	public class CompProperties_OrbitalBeam : CompProperties
+	public float width = 8f;
+
+	public Color color = Color.white;
+
+	public SoundDef sound;
+
+	public CompProperties_OrbitalBeam()
 	{
-		public float width = 8f;
+		compClass = typeof(CompOrbitalBeam);
+	}
 
-		public Color color = Color.white;
-
-		public SoundDef sound;
-
-		public CompProperties_OrbitalBeam()
+	public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+	{
+		foreach (string item in base.ConfigErrors(parentDef))
 		{
-			compClass = typeof(CompOrbitalBeam);
+			yield return item;
 		}
-
-		public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+		if (parentDef.drawerType != DrawerType.RealtimeOnly && parentDef.drawerType != DrawerType.MapMeshAndRealTime)
 		{
-			foreach (string item in base.ConfigErrors(parentDef))
-			{
-				yield return item;
-			}
-			if (parentDef.drawerType != DrawerType.RealtimeOnly && parentDef.drawerType != DrawerType.MapMeshAndRealTime)
-			{
-				yield return "orbital beam requires realtime drawer";
-			}
+			yield return "orbital beam requires realtime drawer";
 		}
 	}
 }

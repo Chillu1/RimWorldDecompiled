@@ -1,17 +1,16 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public interface IGeneResourceDrain
 {
-	public interface IGeneResourceDrain
-	{
-		Gene_Resource Resource { get; }
+	Gene_Resource Resource { get; }
 
-		bool CanOffset { get; }
+	bool CanOffset { get; }
 
-		float ResourceLossPerDay { get; }
+	float ResourceLossPerDay { get; }
 
-		Pawn Pawn { get; }
+	Pawn Pawn { get; }
 
-		string DisplayLabel { get; }
-	}
+	string DisplayLabel { get; }
 }

@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum LatitudeSection
 {
-	public enum LatitudeSection
-	{
-		Undefined,
-		Equatorial,
-		Seasonal,
-		Polar
-	}
+	Undefined,
+	Equatorial,
+	Seasonal,
+	Polar
 }

@@ -1,6 +1,5 @@
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public class WorldCameraConfig_Normal : WorldCameraConfig
 {
-	public class WorldCameraConfig_Normal : WorldCameraConfig
-	{
-	}
 }

@@ -1,18 +1,17 @@
 using System;
 
-namespace Verse
+namespace Verse;
+
+public static class TemperatureDisplayModeExtension
 {
-	public static class TemperatureDisplayModeExtension
+	public static string ToStringHuman(this TemperatureDisplayMode mode)
 	{
-		public static string ToStringHuman(this TemperatureDisplayMode mode)
+		return mode switch
 		{
-			return mode switch
-			{
-				TemperatureDisplayMode.Celsius => "Celsius".Translate(), 
-				TemperatureDisplayMode.Fahrenheit => "Fahrenheit".Translate(), 
-				TemperatureDisplayMode.Kelvin => "Kelvin".Translate(), 
-				_ => throw new NotImplementedException(), 
-			};
-		}
+			TemperatureDisplayMode.Celsius => "Celsius".Translate(), 
+			TemperatureDisplayMode.Fahrenheit => "Fahrenheit".Translate(), 
+			TemperatureDisplayMode.Kelvin => "Kelvin".Translate(), 
+			_ => throw new NotImplementedException(), 
+		};
 	}
 }

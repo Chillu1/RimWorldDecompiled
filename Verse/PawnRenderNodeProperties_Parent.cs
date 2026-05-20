@@ -1,11 +1,10 @@
-namespace Verse
+namespace Verse;
+
+public class PawnRenderNodeProperties_Parent : PawnRenderNodeProperties
 {
-	public class PawnRenderNodeProperties_Parent : PawnRenderNodeProperties
+	public PawnRenderNodeProperties_Parent()
 	{
-		public PawnRenderNodeProperties_Parent()
-		{
-			useGraphic = false;
-			nodeClass = typeof(PawnRenderNode_Parent);
-		}
+		useGraphic = false;
+		nodeClass = typeof(PawnRenderNode_Parent);
 	}
 }

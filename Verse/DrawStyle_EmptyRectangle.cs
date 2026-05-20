@@ -1,12 +1,11 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class DrawStyle_EmptyRectangle : DrawStyle
 {
-	public class DrawStyle_EmptyRectangle : DrawStyle
+	public override void Update(IntVec3 origin, IntVec3 target, List<IntVec3> buffer)
 	{
-		public override void Update(IntVec3 origin, IntVec3 target, List<IntVec3> buffer)
-		{
-			buffer.AddRange(CellRect.FromLimits(origin, target).EdgeCells);
-		}
+		buffer.AddRange(CellRect.FromLimits(origin, target).EdgeCells);
 	}
 }

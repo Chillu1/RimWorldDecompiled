@@ -1,24 +1,23 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class MapPortalProperties
 {
-	public class MapPortalProperties
-	{
-		public MapGeneratorDef pocketMapGenerator;
+	public MapGeneratorDef pocketMapGenerator;
 
-		public ThingDef exitDef;
+	public ThingDef exitDef;
 
-		public int pocketMapSize = 100;
+	public int pocketMapSize = 100;
 
-		[MustTranslate]
-		public string enteredLetterLabel;
+	[MustTranslate]
+	public string enteredLetterLabel;
 
-		[MustTranslate]
-		public string enteredLetterText;
+	[MustTranslate]
+	public string enteredLetterText;
 
-		[MustTranslate]
-		public LetterDef enteredLetterDef;
+	[MustTranslate]
+	public LetterDef enteredLetterDef;
 
-		public SoundDef traverseSound;
-	}
+	public SoundDef traverseSound;
 }

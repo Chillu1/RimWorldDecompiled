@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum StoryDanger : byte
 {
-	public enum StoryDanger : byte
-	{
-		None,
-		Low,
-		High
-	}
+	None,
+	Low,
+	High
 }

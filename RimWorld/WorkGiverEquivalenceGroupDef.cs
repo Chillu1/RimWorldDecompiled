@@ -1,8 +1,7 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WorkGiverEquivalenceGroupDef : Def
 {
-	public class WorkGiverEquivalenceGroupDef : Def
-	{
-	}
 }

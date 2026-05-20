@@ -1,15 +1,14 @@
-namespace Verse
+namespace Verse;
+
+public struct GizmoRenderParms
 {
-	public struct GizmoRenderParms
-	{
-		public bool highLight;
+	public bool highLight;
 
-		public bool lowLight;
+	public bool lowLight;
 
-		public bool shrunk;
+	public bool shrunk;
 
-		public bool isFirst;
+	public bool isFirst;
 
-		public bool multipleSelected;
-	}
+	public bool multipleSelected;
 }

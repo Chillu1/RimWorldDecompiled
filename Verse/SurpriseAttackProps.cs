@@ -1,9 +1,8 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class SurpriseAttackProps
 {
-	public class SurpriseAttackProps
-	{
-		public List<ExtraDamage> extraMeleeDamages;
-	}
+	public List<ExtraDamage> extraMeleeDamages;
 }

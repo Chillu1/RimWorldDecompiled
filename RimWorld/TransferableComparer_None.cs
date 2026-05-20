@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class TransferableComparer_None : TransferableComparer
 {
-	public class TransferableComparer_None : TransferableComparer
+	public override int Compare(Transferable lhs, Transferable rhs)
 	{
-		public override int Compare(Transferable lhs, Transferable rhs)
-		{
-			return 0;
-		}
+		return 0;
 	}
 }

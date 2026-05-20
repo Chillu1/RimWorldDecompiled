@@ -1,8 +1,7 @@
-namespace Verse
+namespace Verse;
+
+public enum HorizontalJustification
 {
-	public enum HorizontalJustification
-	{
-		Left,
-		Right
-	}
+	Left,
+	Right
 }

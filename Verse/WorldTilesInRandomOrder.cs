@@ -1,29 +1,28 @@
 using System.Collections.Generic;
 
-namespace Verse
-{
-	public class WorldTilesInRandomOrder
-	{
-		private List<int> randomizedTiles;
+namespace Verse;
 
-		public List<int> Tiles
+public class WorldTilesInRandomOrder
+{
+	private List<int> randomizedTiles;
+
+	public List<int> Tiles
+	{
+		get
 		{
-			get
+			if (randomizedTiles == null)
 			{
-				if (randomizedTiles == null)
+				randomizedTiles = new List<int>();
+				for (int i = 0; i < Find.WorldGrid.TilesCount; i++)
 				{
-					randomizedTiles = new List<int>();
-					for (int i = 0; i < Find.WorldGrid.TilesCount; i++)
-					{
-						randomizedTiles.Add(i);
-					}
-					Rand.PushState();
-					Rand.Seed = Find.World.info.Seed;
-					randomizedTiles.Shuffle();
-					Rand.PopState();
+					randomizedTiles.Add(i);
 				}
-				return randomizedTiles;
+				Rand.PushState();
+				Rand.Seed = Find.World.info.Seed;
+				randomizedTiles.Shuffle();
+				Rand.PopState();
 			}
+			return randomizedTiles;
 		}
 	}
 }

@@ -1,62 +1,61 @@
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public class CaravansBattlefield : MapParent
 {
-	public class CaravansBattlefield : MapParent
+	private bool wonBattle;
+
+	public bool WonBattle => wonBattle;
+
+	public override bool CanReformFoggedEnemies => true;
+
+	public override void ExposeData()
 	{
-		private bool wonBattle;
+		base.ExposeData();
+		Scribe_Values.Look(ref wonBattle, "wonBattle", defaultValue: false);
+	}
 
-		public bool WonBattle => wonBattle;
-
-		public override bool CanReformFoggedEnemies => true;
-
-		public override void ExposeData()
+	public override bool ShouldRemoveMapNow(out bool alsoRemoveWorldObject)
+	{
+		alsoRemoveWorldObject = false;
+		if (base.Map.mapPawns.AnyPawnBlockingMapRemoval)
 		{
-			base.ExposeData();
-			Scribe_Values.Look(ref wonBattle, "wonBattle", defaultValue: false);
+			return false;
 		}
-
-		public override bool ShouldRemoveMapNow(out bool alsoRemoveWorldObject)
+		if (TransporterUtility.IncomingTransporterPreventingMapRemoval(base.Map))
 		{
-			alsoRemoveWorldObject = false;
-			if (base.Map.mapPawns.AnyPawnBlockingMapRemoval)
-			{
-				return false;
-			}
-			if (TransporterUtility.IncomingTransporterPreventingMapRemoval(base.Map))
-			{
-				return false;
-			}
-			alsoRemoveWorldObject = true;
-			return true;
+			return false;
 		}
+		alsoRemoveWorldObject = true;
+		return true;
+	}
 
-		protected override void TickInterval(int delta)
+	protected override void TickInterval(int delta)
+	{
+		base.TickInterval(delta);
+		if (base.HasMap)
 		{
-			base.TickInterval(delta);
-			if (base.HasMap)
-			{
-				CheckWonBattle();
-			}
+			CheckWonBattle();
 		}
+	}
 
-		public override void PostMapGenerate()
-		{
-			base.PostMapGenerate();
-			GetComponent<TimedDetectionRaids>().StartDetectionCountdown(240000);
-		}
+	public override void PostMapGenerate()
+	{
+		base.PostMapGenerate();
+		GetComponent<TimedDetectionRaids>().StartDetectionCountdown(240000);
+	}
 
-		private void CheckWonBattle()
+	private void CheckWonBattle()
+	{
+		if (!wonBattle && !GenHostility.AnyHostileActiveThreatToPlayer(base.Map))
 		{
-			if (!wonBattle && !GenHostility.AnyHostileActiveThreatToPlayer(base.Map))
-			{
-				TimedDetectionRaids component = GetComponent<TimedDetectionRaids>();
-				component.SetNotifiedSilently();
-				string detectionCountdownTimeLeftString = component.DetectionCountdownTimeLeftString;
-				Find.LetterStack.ReceiveLetter("LetterLabelCaravansBattlefieldVictory".Translate(), "LetterCaravansBattlefieldVictory".Translate(detectionCountdownTimeLeftString), LetterDefOf.PositiveEvent, this);
-				TaleRecorder.RecordTale(TaleDefOf.CaravanAmbushDefeated, base.Map.mapPawns.FreeColonists.RandomElement());
-				wonBattle = true;
-			}
+			TimedDetectionRaids component = GetComponent<TimedDetectionRaids>();
+			component.SetNotifiedSilently();
+			string detectionCountdownTimeLeftString = component.DetectionCountdownTimeLeftString;
+			Find.LetterStack.ReceiveLetter("LetterLabelCaravansBattlefieldVictory".Translate(), "LetterCaravansBattlefieldVictory".Translate(detectionCountdownTimeLeftString), LetterDefOf.PositiveEvent, this);
+			TaleRecorder.RecordTale(TaleDefOf.CaravanAmbushDefeated, base.Map.mapPawns.FreeColonists.RandomElement());
+			wonBattle = true;
 		}
 	}
 }

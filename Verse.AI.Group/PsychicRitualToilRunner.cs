@@ -1,56 +1,55 @@
 using System;
 
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public static class PsychicRitualToilRunner
 {
-	public static class PsychicRitualToilRunner
+	public static void Start(PsychicRitualToil toil, PsychicRitual psychicRitual, PsychicRitualGraph parent)
 	{
-		public static void Start(PsychicRitualToil toil, PsychicRitual psychicRitual, PsychicRitualGraph parent)
+		try
 		{
-			try
-			{
-				toil?.Start(psychicRitual, parent);
-			}
-			catch (Exception arg)
-			{
-				Log.Error($"PsychicRitualToil {toil.ToStringSafe()} threw an exception during Start(): {arg}");
-			}
+			toil?.Start(psychicRitual, parent);
 		}
-
-		public static bool Tick(PsychicRitualToil toil, PsychicRitual psychicRitual, PsychicRitualGraph parent)
+		catch (Exception arg)
 		{
-			try
-			{
-				return toil?.Tick(psychicRitual, parent) ?? true;
-			}
-			catch (Exception arg)
-			{
-				Log.Error($"PsychicRitualToil {toil.ToStringSafe()} threw an exception during Tick(): {arg}");
-			}
-			return true;
+			Log.Error($"PsychicRitualToil {toil.ToStringSafe()} threw an exception during Start(): {arg}");
 		}
+	}
 
-		public static void UpdateAllDuties(PsychicRitualToil toil, PsychicRitual psychicRitual, PsychicRitualGraph parent)
+	public static bool Tick(PsychicRitualToil toil, PsychicRitual psychicRitual, PsychicRitualGraph parent)
+	{
+		try
 		{
-			try
-			{
-				toil?.UpdateAllDuties(psychicRitual, parent);
-			}
-			catch (Exception arg)
-			{
-				Log.Error($"PsychicRitualToil {toil.ToStringSafe()} threw an exception during UpdateAllDuties(): {arg}");
-			}
+			return toil?.Tick(psychicRitual, parent) ?? true;
 		}
-
-		public static void End(PsychicRitualToil toil, PsychicRitual psychicRitual, PsychicRitualGraph parent, bool success)
+		catch (Exception arg)
 		{
-			try
-			{
-				toil?.End(psychicRitual, parent, success);
-			}
-			catch (Exception arg)
-			{
-				Log.Error($"PsychicRitualToil {toil.ToStringSafe()} threw an exception during End(): {arg}");
-			}
+			Log.Error($"PsychicRitualToil {toil.ToStringSafe()} threw an exception during Tick(): {arg}");
+		}
+		return true;
+	}
+
+	public static void UpdateAllDuties(PsychicRitualToil toil, PsychicRitual psychicRitual, PsychicRitualGraph parent)
+	{
+		try
+		{
+			toil?.UpdateAllDuties(psychicRitual, parent);
+		}
+		catch (Exception arg)
+		{
+			Log.Error($"PsychicRitualToil {toil.ToStringSafe()} threw an exception during UpdateAllDuties(): {arg}");
+		}
+	}
+
+	public static void End(PsychicRitualToil toil, PsychicRitual psychicRitual, PsychicRitualGraph parent, bool success)
+	{
+		try
+		{
+			toil?.End(psychicRitual, parent, success);
+		}
+		catch (Exception arg)
+		{
+			Log.Error($"PsychicRitualToil {toil.ToStringSafe()} threw an exception during End(): {arg}");
 		}
 	}
 }

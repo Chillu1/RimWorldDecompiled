@@ -1,30 +1,29 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class SignalAction_OpenDoor : SignalAction
-	{
-		public Building_Door door;
+namespace RimWorld;
 
-		protected override void DoAction(SignalArgs args)
+public class SignalAction_OpenDoor : SignalAction
+{
+	public Building_Door door;
+
+	protected override void DoAction(SignalArgs args)
+	{
+		if (door != null)
 		{
-			if (door != null)
+			if (args.TryGetArg("SUBJECT", out Pawn arg))
 			{
-				if (args.TryGetArg("SUBJECT", out Pawn arg))
-				{
-					door.StartManualOpenBy(arg);
-				}
-				else
-				{
-					door.StartManualOpenBy(null);
-				}
+				door.StartManualOpenBy(arg);
+			}
+			else
+			{
+				door.StartManualOpenBy(null);
 			}
 		}
+	}
 
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_References.Look(ref door, "door");
-		}
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_References.Look(ref door, "door");
 	}
 }

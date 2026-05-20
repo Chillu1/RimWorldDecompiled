@@ -1,9 +1,8 @@
 using System;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class BookOutcomeProperties_JoyFactorModifier : BookOutcomeProperties
 {
-	public class BookOutcomeProperties_JoyFactorModifier : BookOutcomeProperties
-	{
-		public override Type DoerClass => typeof(ReadingOutcomeDoerJoyFactorModifier);
-	}
+	public override Type DoerClass => typeof(ReadingOutcomeDoerJoyFactorModifier);
 }

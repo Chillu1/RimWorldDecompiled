@@ -1,29 +1,28 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Landmark : IExposable
 {
-	public class Landmark : IExposable
+	public LandmarkDef def;
+
+	public string name;
+
+	public bool isComboLandmark;
+
+	public Landmark()
 	{
-		public LandmarkDef def;
+	}
 
-		public string name;
+	public Landmark(LandmarkDef def)
+	{
+		this.def = def;
+	}
 
-		public bool isComboLandmark;
-
-		public Landmark()
-		{
-		}
-
-		public Landmark(LandmarkDef def)
-		{
-			this.def = def;
-		}
-
-		public void ExposeData()
-		{
-			Scribe_Defs.Look(ref def, "def");
-			Scribe_Values.Look(ref name, "name");
-			Scribe_Values.Look(ref isComboLandmark, "isComboLandmark", defaultValue: false);
-		}
+	public void ExposeData()
+	{
+		Scribe_Defs.Look(ref def, "def");
+		Scribe_Values.Look(ref name, "name");
+		Scribe_Values.Look(ref isComboLandmark, "isComboLandmark", defaultValue: false);
 	}
 }

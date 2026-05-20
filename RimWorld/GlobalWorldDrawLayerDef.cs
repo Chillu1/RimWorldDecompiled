@@ -1,10 +1,9 @@
 using System;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class GlobalWorldDrawLayerDef : Def
 {
-	public class GlobalWorldDrawLayerDef : Def
-	{
-		public Type worldDrawLayer;
-	}
+	public Type worldDrawLayer;
 }

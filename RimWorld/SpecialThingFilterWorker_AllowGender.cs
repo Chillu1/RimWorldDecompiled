@@ -1,28 +1,27 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class SpecialThingFilterWorker_AllowGender : SpecialThingFilterWorker
 {
-	public abstract class SpecialThingFilterWorker_AllowGender : SpecialThingFilterWorker
+	private Gender targetGender;
+
+	protected SpecialThingFilterWorker_AllowGender(Gender targetGender)
 	{
-		private Gender targetGender;
+		this.targetGender = targetGender;
+	}
 
-		protected SpecialThingFilterWorker_AllowGender(Gender targetGender)
+	public override bool Matches(Thing t)
+	{
+		if (!(t is Pawn pawn))
 		{
-			this.targetGender = targetGender;
+			return false;
 		}
+		return pawn.gender == targetGender;
+	}
 
-		public override bool Matches(Thing t)
-		{
-			if (!(t is Pawn pawn))
-			{
-				return false;
-			}
-			return pawn.gender == targetGender;
-		}
-
-		public override bool CanEverMatch(ThingDef def)
-		{
-			return def.category == ThingCategory.Pawn;
-		}
+	public override bool CanEverMatch(ThingDef def)
+	{
+		return def.category == ThingCategory.Pawn;
 	}
 }

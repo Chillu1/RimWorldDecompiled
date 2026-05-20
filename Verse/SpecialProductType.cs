@@ -1,8 +1,7 @@
-namespace Verse
+namespace Verse;
+
+public enum SpecialProductType : byte
 {
-	public enum SpecialProductType : byte
-	{
-		Butchery,
-		Smelted
-	}
+	Butchery,
+	Smelted
 }

@@ -1,31 +1,30 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public struct SkullspikeSighting : IExposable
 {
-	public struct SkullspikeSighting : IExposable
+	public Thing skullspike;
+
+	public int tickSighted;
+
+	public const int MaxSightingAge = 1800;
+
+	public const int CheckRadius = 10;
+
+	public const int CheckIntervalTicks = 60;
+
+	public int TicksSinceSighting => Find.TickManager.TicksGame - tickSighted;
+
+	public SkullspikeSighting(Thing skullspike, int tickSighted)
 	{
-		public Thing skullspike;
+		this.skullspike = skullspike;
+		this.tickSighted = tickSighted;
+	}
 
-		public int tickSighted;
-
-		public const int MaxSightingAge = 1800;
-
-		public const int CheckRadius = 10;
-
-		public const int CheckIntervalTicks = 60;
-
-		public int TicksSinceSighting => Find.TickManager.TicksGame - tickSighted;
-
-		public SkullspikeSighting(Thing skullspike, int tickSighted)
-		{
-			this.skullspike = skullspike;
-			this.tickSighted = tickSighted;
-		}
-
-		public void ExposeData()
-		{
-			Scribe_References.Look(ref skullspike, "skullspike");
-			Scribe_Values.Look(ref tickSighted, "tickSighted", 0);
-		}
+	public void ExposeData()
+	{
+		Scribe_References.Look(ref skullspike, "skullspike");
+		Scribe_Values.Look(ref tickSighted, "tickSighted", 0);
 	}
 }

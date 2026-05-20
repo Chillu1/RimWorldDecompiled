@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum NameStyle
 {
-	public enum NameStyle
-	{
-		Full,
-		Numeric
-	}
+	Full,
+	Numeric
 }

@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_AbilityFlashstorm : CompProperties_AbilityEffect
 {
-	public class CompProperties_AbilityFlashstorm : CompProperties_AbilityEffect
+	public CompProperties_AbilityFlashstorm()
 	{
-		public CompProperties_AbilityFlashstorm()
-		{
-			compClass = typeof(CompAbilityEffect_Flashstorm);
-		}
+		compClass = typeof(CompAbilityEffect_Flashstorm);
 	}
 }

@@ -1,36 +1,35 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RoyalAid
 {
-	public class RoyalAid
-	{
-		public int favorCost;
+	public int favorCost;
 
-		public int points;
+	public int points;
 
-		public FloatRange? overrideAcceptableTemperatureRange;
+	public FloatRange? overrideAcceptableTemperatureRange;
 
-		public int pawnCount;
+	public int pawnCount;
 
-		public PawnKindDef pawnKindDef;
+	public PawnKindDef pawnKindDef;
 
-		public float targetingRange;
+	public float targetingRange;
 
-		public bool targetingRequireLOS = true;
+	public bool targetingRequireLOS = true;
 
-		public float aidDurationDays;
+	public float aidDurationDays;
 
-		public float radius;
+	public float radius;
 
-		public int intervalTicks;
+	public int intervalTicks;
 
-		public int explosionCount;
+	public int explosionCount;
 
-		public int warmupTicks;
+	public int warmupTicks;
 
-		public FloatRange explosionRadiusRange;
+	public FloatRange explosionRadiusRange;
 
-		public List<ThingDefCountClass> itemsToDrop;
-	}
+	public List<ThingDefCountClass> itemsToDrop;
 }

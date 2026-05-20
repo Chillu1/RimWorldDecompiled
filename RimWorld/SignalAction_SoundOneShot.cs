@@ -1,21 +1,20 @@
 using Verse;
 using Verse.Sound;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class SignalAction_SoundOneShot : SignalAction
 {
-	public class SignalAction_SoundOneShot : SignalAction
+	public SoundDef sound;
+
+	protected override void DoAction(SignalArgs args)
 	{
-		public SoundDef sound;
+		sound.PlayOneShot(this);
+	}
 
-		protected override void DoAction(SignalArgs args)
-		{
-			sound.PlayOneShot(this);
-		}
-
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_Defs.Look(ref sound, "sound");
-		}
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Defs.Look(ref sound, "sound");
 	}
 }

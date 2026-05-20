@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum IdeoWeaponDisposition
 {
-	public enum IdeoWeaponDisposition
-	{
-		None,
-		Noble,
-		Despised
-	}
+	None,
+	Noble,
+	Despised
 }

@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public interface IFixedBaseMarketValue
 {
-	public interface IFixedBaseMarketValue
-	{
-		float BaseMarketValue { get; }
-	}
+	float BaseMarketValue { get; }
 }

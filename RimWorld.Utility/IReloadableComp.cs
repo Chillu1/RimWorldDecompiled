@@ -1,29 +1,28 @@
 using Verse;
 
-namespace RimWorld.Utility
+namespace RimWorld.Utility;
+
+public interface IReloadableComp : ICompWithCharges
 {
-	public interface IReloadableComp : ICompWithCharges
-	{
-		Thing ReloadableThing { get; }
+	Thing ReloadableThing { get; }
 
-		ThingDef AmmoDef { get; }
+	ThingDef AmmoDef { get; }
 
-		int BaseReloadTicks { get; }
+	int BaseReloadTicks { get; }
 
-		int MaxCharges { get; }
+	int MaxCharges { get; }
 
-		string LabelRemaining { get; }
+	string LabelRemaining { get; }
 
-		bool NeedsReload(bool allowForceReload);
+	bool NeedsReload(bool allowForceReload);
 
-		int MinAmmoNeeded(bool allowForcedReload);
+	int MinAmmoNeeded(bool allowForcedReload);
 
-		int MaxAmmoNeeded(bool allowForcedReload);
+	int MaxAmmoNeeded(bool allowForcedReload);
 
-		int MaxAmmoAmount();
+	int MaxAmmoAmount();
 
-		void ReloadFrom(Thing ammo);
+	void ReloadFrom(Thing ammo);
 
-		string DisabledReason(int minNeeded, int maxNeeded);
-	}
+	string DisabledReason(int minNeeded, int maxNeeded);
 }

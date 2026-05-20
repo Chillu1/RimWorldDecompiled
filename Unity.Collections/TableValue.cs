@@ -1,7 +1,6 @@
-namespace Unity.Collections
+namespace Unity.Collections;
+
+internal struct TableValue
 {
-	internal struct TableValue
-	{
-		public int HeapIndex;
-	}
+	public int HeapIndex;
 }

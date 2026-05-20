@@ -1,29 +1,28 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_Lightball : CompProperties
 {
-	public class CompProperties_Lightball : CompProperties
+	public List<SoundDef> soundDefsPerSpeakerCount;
+
+	public int maxSpeakerDistance;
+
+	public CompProperties_Lightball()
 	{
-		public List<SoundDef> soundDefsPerSpeakerCount;
+		compClass = typeof(CompLightball);
+	}
 
-		public int maxSpeakerDistance;
-
-		public CompProperties_Lightball()
+	public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+	{
+		foreach (string item in base.ConfigErrors(parentDef))
 		{
-			compClass = typeof(CompLightball);
+			yield return item;
 		}
-
-		public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+		if (parentDef.comps.FirstOrDefault((CompProperties c) => c.compClass == typeof(CompPowerTrader)) == null)
 		{
-			foreach (string item in base.ConfigErrors(parentDef))
-			{
-				yield return item;
-			}
-			if (parentDef.comps.FirstOrDefault((CompProperties c) => c.compClass == typeof(CompPowerTrader)) == null)
-			{
-				yield return "Can't use CompLightball without CompPowerTrader.";
-			}
+			yield return "Can't use CompLightball without CompPowerTrader.";
 		}
 	}
 }

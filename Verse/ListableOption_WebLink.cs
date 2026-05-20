@@ -1,65 +1,64 @@
 using System;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class ListableOption_WebLink : ListableOption
 {
-	public class ListableOption_WebLink : ListableOption
+	public Texture2D image;
+
+	public string url;
+
+	private static readonly Vector2 Imagesize = new Vector2(24f, 18f);
+
+	public ListableOption_WebLink(string label, Texture2D image)
+		: base(label, null)
 	{
-		public Texture2D image;
+		minHeight = 24f;
+		this.image = image;
+	}
 
-		public string url;
+	public ListableOption_WebLink(string label, string url, Texture2D image)
+		: this(label, image)
+	{
+		this.url = url;
+	}
 
-		private static readonly Vector2 Imagesize = new Vector2(24f, 18f);
+	public ListableOption_WebLink(string label, Action action, Texture2D image)
+		: this(label, image)
+	{
+		base.action = action;
+	}
 
-		public ListableOption_WebLink(string label, Texture2D image)
-			: base(label, null)
+	public override float DrawOption(Vector2 pos, float width)
+	{
+		float num = width - Imagesize.x - 3f;
+		float num2 = Text.CalcHeight(label, num);
+		float num3 = Mathf.Max(minHeight, num2);
+		Rect rect = new Rect(pos.x, pos.y, width, num3);
+		GUI.color = Color.white;
+		if (image != null)
 		{
-			minHeight = 24f;
-			this.image = image;
-		}
-
-		public ListableOption_WebLink(string label, string url, Texture2D image)
-			: this(label, image)
-		{
-			this.url = url;
-		}
-
-		public ListableOption_WebLink(string label, Action action, Texture2D image)
-			: this(label, image)
-		{
-			base.action = action;
-		}
-
-		public override float DrawOption(Vector2 pos, float width)
-		{
-			float num = width - Imagesize.x - 3f;
-			float num2 = Text.CalcHeight(label, num);
-			float num3 = Mathf.Max(minHeight, num2);
-			Rect rect = new Rect(pos.x, pos.y, width, num3);
-			GUI.color = Color.white;
-			if (image != null)
+			Rect position = new Rect(pos.x, pos.y + num3 / 2f - Imagesize.y / 2f, Imagesize.x, Imagesize.y);
+			if (Mouse.IsOver(rect))
 			{
-				Rect position = new Rect(pos.x, pos.y + num3 / 2f - Imagesize.y / 2f, Imagesize.x, Imagesize.y);
-				if (Mouse.IsOver(rect))
-				{
-					GUI.color = Widgets.MouseoverOptionColor;
-				}
-				GUI.DrawTexture(position, image);
+				GUI.color = Widgets.MouseoverOptionColor;
 			}
-			Widgets.Label(new Rect(rect.xMax - num, pos.y, num, num2), label);
-			GUI.color = Color.white;
-			if (Widgets.ButtonInvisible(rect))
-			{
-				if (action != null)
-				{
-					action();
-				}
-				else
-				{
-					Application.OpenURL(url);
-				}
-			}
-			return num3;
+			GUI.DrawTexture(position, image);
 		}
+		Widgets.Label(new Rect(rect.xMax - num, pos.y, num, num2), label);
+		GUI.color = Color.white;
+		if (Widgets.ButtonInvisible(rect))
+		{
+			if (action != null)
+			{
+				action();
+			}
+			else
+			{
+				Application.OpenURL(url);
+			}
+		}
+		return num3;
 	}
 }

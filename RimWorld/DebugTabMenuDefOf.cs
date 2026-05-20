@@ -1,17 +1,16 @@
-namespace RimWorld
+namespace RimWorld;
+
+[DefOf]
+public static class DebugTabMenuDefOf
 {
-	[DefOf]
-	public static class DebugTabMenuDefOf
+	public static DebugTabMenuDef Actions;
+
+	public static DebugTabMenuDef Settings;
+
+	public static DebugTabMenuDef Output;
+
+	static DebugTabMenuDefOf()
 	{
-		public static DebugTabMenuDef Actions;
-
-		public static DebugTabMenuDef Settings;
-
-		public static DebugTabMenuDef Output;
-
-		static DebugTabMenuDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(DebugTabMenuDefOf));
-		}
+		DefOfHelper.EnsureInitializedInCtor(typeof(DebugTabMenuDefOf));
 	}
 }

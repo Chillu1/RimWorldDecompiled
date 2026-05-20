@@ -1,13 +1,12 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class IncidentWorker_MakeInitialDrought : IncidentWorker_MakeGameCondition
 {
-	public class IncidentWorker_MakeInitialDrought : IncidentWorker_MakeGameCondition
+	protected override bool TryExecuteWorker(IncidentParms parms)
 	{
-		protected override bool TryExecuteWorker(IncidentParms parms)
-		{
-			GameConditionManager gameConditionManager = parms.target.GameConditionManager;
-			GameCondition cond = GameConditionMaker.MakeConditionPermanent(GetGameConditionDef(parms));
-			gameConditionManager.RegisterCondition(cond);
-			return true;
-		}
+		GameConditionManager gameConditionManager = parms.target.GameConditionManager;
+		GameCondition cond = GameConditionMaker.MakeConditionPermanent(GetGameConditionDef(parms));
+		gameConditionManager.RegisterCondition(cond);
+		return true;
 	}
 }

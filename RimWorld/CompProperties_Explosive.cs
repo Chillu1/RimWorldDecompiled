@@ -1,112 +1,111 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_Explosive : CompProperties
 {
-	public class CompProperties_Explosive : CompProperties
+	public float explosiveRadius = 1.9f;
+
+	public DamageDef explosiveDamageType;
+
+	public int damageAmountBase = -1;
+
+	public float armorPenetrationBase = -1f;
+
+	public ThingDef postExplosionSpawnThingDef;
+
+	public float postExplosionSpawnChance;
+
+	public int postExplosionSpawnThingCount = 1;
+
+	public bool applyDamageToExplosionCellsNeighbors;
+
+	public ThingDef preExplosionSpawnThingDef;
+
+	public float preExplosionSpawnChance;
+
+	public int preExplosionSpawnThingCount = 1;
+
+	public float chanceToStartFire;
+
+	public bool damageFalloff;
+
+	public bool explodeOnKilled;
+
+	public bool explodeOnDestroyed;
+
+	public GasType? postExplosionGasType;
+
+	public float? postExplosionGasRadiusOverride;
+
+	public int postExplosionGasAmount = 255;
+
+	public bool doVisualEffects = true;
+
+	public bool doSoundEffects = true;
+
+	public float propagationSpeed = 1f;
+
+	public ThingDef postExplosionSpawnSingleThingDef;
+
+	public ThingDef preExplosionSpawnSingleThingDef;
+
+	public float explosiveExpandPerStackcount;
+
+	public float explosiveExpandPerFuel;
+
+	public EffecterDef explosionEffect;
+
+	public SoundDef explosionSound;
+
+	public List<DamageDef> startWickOnDamageTaken;
+
+	public float startWickHitPointsPercent = 0.2f;
+
+	public IntRange wickTicks = new IntRange(140, 150);
+
+	public float wickScale = 1f;
+
+	public List<DamageDef> startWickOnInternalDamageTaken;
+
+	public bool drawWick = true;
+
+	public float chanceNeverExplodeFromDamage;
+
+	public float destroyThingOnExplosionSize;
+
+	public DamageDef requiredDamageTypeToExplode;
+
+	public IntRange? countdownTicks;
+
+	public string extraInspectStringKey;
+
+	public List<WickMessage> wickMessages;
+
+	public CompProperties_Explosive()
 	{
-		public float explosiveRadius = 1.9f;
+		compClass = typeof(CompExplosive);
+	}
 
-		public DamageDef explosiveDamageType;
-
-		public int damageAmountBase = -1;
-
-		public float armorPenetrationBase = -1f;
-
-		public ThingDef postExplosionSpawnThingDef;
-
-		public float postExplosionSpawnChance;
-
-		public int postExplosionSpawnThingCount = 1;
-
-		public bool applyDamageToExplosionCellsNeighbors;
-
-		public ThingDef preExplosionSpawnThingDef;
-
-		public float preExplosionSpawnChance;
-
-		public int preExplosionSpawnThingCount = 1;
-
-		public float chanceToStartFire;
-
-		public bool damageFalloff;
-
-		public bool explodeOnKilled;
-
-		public bool explodeOnDestroyed;
-
-		public GasType? postExplosionGasType;
-
-		public float? postExplosionGasRadiusOverride;
-
-		public int postExplosionGasAmount = 255;
-
-		public bool doVisualEffects = true;
-
-		public bool doSoundEffects = true;
-
-		public float propagationSpeed = 1f;
-
-		public ThingDef postExplosionSpawnSingleThingDef;
-
-		public ThingDef preExplosionSpawnSingleThingDef;
-
-		public float explosiveExpandPerStackcount;
-
-		public float explosiveExpandPerFuel;
-
-		public EffecterDef explosionEffect;
-
-		public SoundDef explosionSound;
-
-		public List<DamageDef> startWickOnDamageTaken;
-
-		public float startWickHitPointsPercent = 0.2f;
-
-		public IntRange wickTicks = new IntRange(140, 150);
-
-		public float wickScale = 1f;
-
-		public List<DamageDef> startWickOnInternalDamageTaken;
-
-		public bool drawWick = true;
-
-		public float chanceNeverExplodeFromDamage;
-
-		public float destroyThingOnExplosionSize;
-
-		public DamageDef requiredDamageTypeToExplode;
-
-		public IntRange? countdownTicks;
-
-		public string extraInspectStringKey;
-
-		public List<WickMessage> wickMessages;
-
-		public CompProperties_Explosive()
+	public override void ResolveReferences(ThingDef parentDef)
+	{
+		base.ResolveReferences(parentDef);
+		if (explosiveDamageType == null)
 		{
-			compClass = typeof(CompExplosive);
+			explosiveDamageType = DamageDefOf.Bomb;
 		}
+	}
 
-		public override void ResolveReferences(ThingDef parentDef)
+	public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+	{
+		foreach (string item in base.ConfigErrors(parentDef))
 		{
-			base.ResolveReferences(parentDef);
-			if (explosiveDamageType == null)
-			{
-				explosiveDamageType = DamageDefOf.Bomb;
-			}
+			yield return item;
 		}
-
-		public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+		if (parentDef.tickerType != TickerType.Normal)
 		{
-			foreach (string item in base.ConfigErrors(parentDef))
-			{
-				yield return item;
-			}
-			if (parentDef.tickerType != TickerType.Normal)
-			{
-				yield return "CompExplosive requires Normal ticker type";
-			}
+			yield return "CompExplosive requires Normal ticker type";
 		}
 	}
 }

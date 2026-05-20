@@ -1,25 +1,24 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class QualityFactor
 {
-	public class QualityFactor
-	{
-		public string label;
+	public string label;
 
-		public string count;
+	public string count;
 
-		public string toolTip;
+	public string toolTip;
 
-		public bool present;
+	public bool present;
 
-		public bool uncertainOutcome;
+	public bool uncertainOutcome;
 
-		public string qualityChange;
+	public string qualityChange;
 
-		public float quality;
+	public float quality;
 
-		public bool positive = true;
+	public bool positive = true;
 
-		public bool noMiddleColumnInfo;
+	public bool noMiddleColumnInfo;
 
-		public float priority = -100f;
-	}
+	public float priority = -100f;
 }

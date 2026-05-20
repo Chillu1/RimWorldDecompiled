@@ -1,17 +1,16 @@
-namespace RimWorld
+namespace RimWorld;
+
+public interface IActivity
 {
-	public interface IActivity
-	{
-		void OnActivityActivated();
+	void OnActivityActivated();
 
-		void OnPassive();
+	void OnPassive();
 
-		bool ShouldGoPassive();
+	bool ShouldGoPassive();
 
-		bool CanBeSuppressed();
+	bool CanBeSuppressed();
 
-		bool CanActivate();
+	bool CanActivate();
 
-		string ActivityTooltipExtra();
-	}
+	string ActivityTooltipExtra();
 }

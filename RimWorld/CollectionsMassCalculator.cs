@@ -3,168 +3,112 @@ using System.Text;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class CollectionsMassCalculator
 {
-	public static class CollectionsMassCalculator
+	private static List<ThingCount> tmpThingCounts = new List<ThingCount>();
+
+	private static List<Thing> thingsInReverse = new List<Thing>();
+
+	public static float Capacity(List<ThingCount> thingCounts, StringBuilder explanation = null)
 	{
-		private static List<ThingCount> tmpThingCounts = new List<ThingCount>();
-
-		private static List<Thing> thingsInReverse = new List<Thing>();
-
-		public static float Capacity(List<ThingCount> thingCounts, StringBuilder explanation = null)
+		float num = 0f;
+		for (int i = 0; i < thingCounts.Count; i++)
 		{
-			float num = 0f;
-			for (int i = 0; i < thingCounts.Count; i++)
+			if (thingCounts[i].Count > 0 && thingCounts[i].Thing is Pawn p)
 			{
-				if (thingCounts[i].Count > 0 && thingCounts[i].Thing is Pawn p)
+				num += MassUtility.Capacity(p, explanation) * (float)thingCounts[i].Count;
+			}
+		}
+		return Mathf.Max(num, 0f);
+	}
+
+	public static float MassUsage(List<ThingCount> thingCounts, IgnorePawnsInventoryMode ignoreInventory, bool includePawnsMass = false, bool ignoreSpawnedCorpsesGearAndInventory = false)
+	{
+		float num = 0f;
+		for (int i = 0; i < thingCounts.Count; i++)
+		{
+			int count = thingCounts[i].Count;
+			if (count <= 0)
+			{
+				continue;
+			}
+			Thing thing = thingCounts[i].Thing;
+			if (thing is Pawn pawn)
+			{
+				num = ((!includePawnsMass) ? (num + MassUtility.GearAndInventoryMass(pawn) * (float)count) : (num + pawn.GetStatValue(StatDefOf.Mass) * (float)count));
+				if (InventoryCalculatorsUtility.ShouldIgnoreInventoryOf(pawn, ignoreInventory))
 				{
-					num += MassUtility.Capacity(p, explanation) * (float)thingCounts[i].Count;
+					num -= MassUtility.InventoryMass(pawn) * (float)count;
 				}
 			}
-			return Mathf.Max(num, 0f);
-		}
-
-		public static float MassUsage(List<ThingCount> thingCounts, IgnorePawnsInventoryMode ignoreInventory, bool includePawnsMass = false, bool ignoreSpawnedCorpsesGearAndInventory = false)
-		{
-			float num = 0f;
-			for (int i = 0; i < thingCounts.Count; i++)
+			else
 			{
-				int count = thingCounts[i].Count;
-				if (count <= 0)
+				num += thing.GetStatValue(StatDefOf.Mass) * (float)count;
+				if (ignoreSpawnedCorpsesGearAndInventory && thing is Corpse { Spawned: not false } corpse)
 				{
-					continue;
-				}
-				Thing thing = thingCounts[i].Thing;
-				if (thing is Pawn pawn)
-				{
-					num = ((!includePawnsMass) ? (num + MassUtility.GearAndInventoryMass(pawn) * (float)count) : (num + pawn.GetStatValue(StatDefOf.Mass) * (float)count));
-					if (InventoryCalculatorsUtility.ShouldIgnoreInventoryOf(pawn, ignoreInventory))
-					{
-						num -= MassUtility.InventoryMass(pawn) * (float)count;
-					}
-				}
-				else
-				{
-					num += thing.GetStatValue(StatDefOf.Mass) * (float)count;
-					if (ignoreSpawnedCorpsesGearAndInventory && thing is Corpse { Spawned: not false } corpse)
-					{
-						num -= MassUtility.GearAndInventoryMass(corpse.InnerPawn) * (float)count;
-					}
+					num -= MassUtility.GearAndInventoryMass(corpse.InnerPawn) * (float)count;
 				}
 			}
-			return Mathf.Max(num, 0f);
 		}
+		return Mathf.Max(num, 0f);
+	}
 
-		public static float MassUsage(ThingOwner container, IgnorePawnsInventoryMode ignoreInventory, bool includePawnsMass = false, bool ignoreSpawnedCorpsesGearAndInventory = false)
+	public static float MassUsage(ThingOwner container, IgnorePawnsInventoryMode ignoreInventory, bool includePawnsMass = false, bool ignoreSpawnedCorpsesGearAndInventory = false)
+	{
+		float num = 0f;
+		foreach (Thing item in (IEnumerable<Thing>)container)
 		{
-			float num = 0f;
-			foreach (Thing item in (IEnumerable<Thing>)container)
+			int stackCount = item.stackCount;
+			if (stackCount <= 0)
 			{
-				int stackCount = item.stackCount;
-				if (stackCount <= 0)
+				continue;
+			}
+			if (item is Pawn pawn)
+			{
+				num = ((!includePawnsMass) ? (num + MassUtility.GearAndInventoryMass(pawn) * (float)stackCount) : (num + pawn.GetStatValue(StatDefOf.Mass) * (float)stackCount));
+				if (InventoryCalculatorsUtility.ShouldIgnoreInventoryOf(pawn, ignoreInventory))
 				{
-					continue;
-				}
-				if (item is Pawn pawn)
-				{
-					num = ((!includePawnsMass) ? (num + MassUtility.GearAndInventoryMass(pawn) * (float)stackCount) : (num + pawn.GetStatValue(StatDefOf.Mass) * (float)stackCount));
-					if (InventoryCalculatorsUtility.ShouldIgnoreInventoryOf(pawn, ignoreInventory))
-					{
-						num -= MassUtility.InventoryMass(pawn) * (float)stackCount;
-					}
-				}
-				else
-				{
-					num += item.GetStatValue(StatDefOf.Mass) * (float)stackCount;
-					if (ignoreSpawnedCorpsesGearAndInventory && item is Corpse { Spawned: not false } corpse)
-					{
-						num -= MassUtility.GearAndInventoryMass(corpse.InnerPawn) * (float)stackCount;
-					}
+					num -= MassUtility.InventoryMass(pawn) * (float)stackCount;
 				}
 			}
-			return Mathf.Max(num, 0f);
-		}
-
-		public static float CapacityTransferables(List<TransferableOneWay> transferables, StringBuilder explanation = null)
-		{
-			tmpThingCounts.Clear();
-			for (int i = 0; i < transferables.Count; i++)
+			else
 			{
-				if (transferables[i].HasAnyThing && transferables[i].AnyThing is Pawn)
+				num += item.GetStatValue(StatDefOf.Mass) * (float)stackCount;
+				if (ignoreSpawnedCorpsesGearAndInventory && item is Corpse { Spawned: not false } corpse)
 				{
-					TransferableUtility.TransferNoSplit(transferables[i].things, transferables[i].CountToTransfer, delegate(Thing originalThing, int toTake)
-					{
-						tmpThingCounts.Add(new ThingCount(originalThing, toTake));
-					}, removeIfTakingEntireThing: false, errorIfNotEnoughThings: false);
+					num -= MassUtility.GearAndInventoryMass(corpse.InnerPawn) * (float)stackCount;
 				}
 			}
-			float result = Capacity(tmpThingCounts, explanation);
-			tmpThingCounts.Clear();
-			return result;
 		}
+		return Mathf.Max(num, 0f);
+	}
 
-		public static float CapacityLeftAfterTransfer(List<TransferableOneWay> transferables, StringBuilder explanation = null)
+	public static float CapacityTransferables(List<TransferableOneWay> transferables, StringBuilder explanation = null)
+	{
+		tmpThingCounts.Clear();
+		for (int i = 0; i < transferables.Count; i++)
 		{
-			tmpThingCounts.Clear();
-			for (int i = 0; i < transferables.Count; i++)
-			{
-				if (transferables[i].HasAnyThing && transferables[i].AnyThing is Pawn)
-				{
-					thingsInReverse.Clear();
-					thingsInReverse.AddRange(transferables[i].things);
-					thingsInReverse.Reverse();
-					TransferableUtility.TransferNoSplit(thingsInReverse, transferables[i].MaxCount - transferables[i].CountToTransfer, delegate(Thing originalThing, int toTake)
-					{
-						tmpThingCounts.Add(new ThingCount(originalThing, toTake));
-					}, removeIfTakingEntireThing: false, errorIfNotEnoughThings: false);
-				}
-			}
-			thingsInReverse.Clear();
-			float result = Capacity(tmpThingCounts, explanation);
-			tmpThingCounts.Clear();
-			return result;
-		}
-
-		public static float CapacityLeftAfterTradeableTransfer(List<Thing> allCurrentThings, List<Tradeable> tradeables, StringBuilder explanation = null)
-		{
-			tmpThingCounts.Clear();
-			TransferableUtility.SimulateTradeableTransfer(allCurrentThings, tradeables, tmpThingCounts);
-			float result = Capacity(tmpThingCounts, explanation);
-			tmpThingCounts.Clear();
-			return result;
-		}
-
-		public static float Capacity<T>(List<T> things, StringBuilder explanation = null) where T : Thing
-		{
-			tmpThingCounts.Clear();
-			for (int i = 0; i < things.Count; i++)
-			{
-				tmpThingCounts.Add(new ThingCount(things[i], things[i].stackCount));
-			}
-			float result = Capacity(tmpThingCounts, explanation);
-			tmpThingCounts.Clear();
-			return result;
-		}
-
-		public static float MassUsageTransferables(List<TransferableOneWay> transferables, IgnorePawnsInventoryMode ignoreInventory, bool includePawnsMass = false, bool ignoreSpawnedCorpsesGearAndInventory = false)
-		{
-			tmpThingCounts.Clear();
-			for (int i = 0; i < transferables.Count; i++)
+			if (transferables[i].HasAnyThing && transferables[i].AnyThing is Pawn)
 			{
 				TransferableUtility.TransferNoSplit(transferables[i].things, transferables[i].CountToTransfer, delegate(Thing originalThing, int toTake)
 				{
 					tmpThingCounts.Add(new ThingCount(originalThing, toTake));
 				}, removeIfTakingEntireThing: false, errorIfNotEnoughThings: false);
 			}
-			float result = MassUsage(tmpThingCounts, ignoreInventory, includePawnsMass, ignoreSpawnedCorpsesGearAndInventory);
-			tmpThingCounts.Clear();
-			return result;
 		}
+		float result = Capacity(tmpThingCounts, explanation);
+		tmpThingCounts.Clear();
+		return result;
+	}
 
-		public static float MassUsageLeftAfterTransfer(List<TransferableOneWay> transferables, IgnorePawnsInventoryMode ignoreInventory, bool includePawnsMass = false, bool ignoreSpawnedCorpsesGearAndInventory = false)
+	public static float CapacityLeftAfterTransfer(List<TransferableOneWay> transferables, StringBuilder explanation = null)
+	{
+		tmpThingCounts.Clear();
+		for (int i = 0; i < transferables.Count; i++)
 		{
-			tmpThingCounts.Clear();
-			for (int i = 0; i < transferables.Count; i++)
+			if (transferables[i].HasAnyThing && transferables[i].AnyThing is Pawn)
 			{
 				thingsInReverse.Clear();
 				thingsInReverse.AddRange(transferables[i].things);
@@ -174,30 +118,85 @@ namespace RimWorld
 					tmpThingCounts.Add(new ThingCount(originalThing, toTake));
 				}, removeIfTakingEntireThing: false, errorIfNotEnoughThings: false);
 			}
-			float result = MassUsage(tmpThingCounts, ignoreInventory, includePawnsMass, ignoreSpawnedCorpsesGearAndInventory);
-			tmpThingCounts.Clear();
-			return result;
 		}
+		thingsInReverse.Clear();
+		float result = Capacity(tmpThingCounts, explanation);
+		tmpThingCounts.Clear();
+		return result;
+	}
 
-		public static float MassUsage<T>(List<T> things, IgnorePawnsInventoryMode ignoreInventory, bool includePawnsMass = false, bool ignoreSpawnedCorpsesGearAndInventory = false) where T : Thing
+	public static float CapacityLeftAfterTradeableTransfer(List<Thing> allCurrentThings, List<Tradeable> tradeables, StringBuilder explanation = null)
+	{
+		tmpThingCounts.Clear();
+		TransferableUtility.SimulateTradeableTransfer(allCurrentThings, tradeables, tmpThingCounts);
+		float result = Capacity(tmpThingCounts, explanation);
+		tmpThingCounts.Clear();
+		return result;
+	}
+
+	public static float Capacity<T>(List<T> things, StringBuilder explanation = null) where T : Thing
+	{
+		tmpThingCounts.Clear();
+		for (int i = 0; i < things.Count; i++)
 		{
-			tmpThingCounts.Clear();
-			for (int i = 0; i < things.Count; i++)
+			tmpThingCounts.Add(new ThingCount(things[i], things[i].stackCount));
+		}
+		float result = Capacity(tmpThingCounts, explanation);
+		tmpThingCounts.Clear();
+		return result;
+	}
+
+	public static float MassUsageTransferables(List<TransferableOneWay> transferables, IgnorePawnsInventoryMode ignoreInventory, bool includePawnsMass = false, bool ignoreSpawnedCorpsesGearAndInventory = false)
+	{
+		tmpThingCounts.Clear();
+		for (int i = 0; i < transferables.Count; i++)
+		{
+			TransferableUtility.TransferNoSplit(transferables[i].things, transferables[i].CountToTransfer, delegate(Thing originalThing, int toTake)
 			{
-				tmpThingCounts.Add(new ThingCount(things[i], things[i].stackCount));
-			}
-			float result = MassUsage(tmpThingCounts, ignoreInventory, includePawnsMass, ignoreSpawnedCorpsesGearAndInventory);
-			tmpThingCounts.Clear();
-			return result;
+				tmpThingCounts.Add(new ThingCount(originalThing, toTake));
+			}, removeIfTakingEntireThing: false, errorIfNotEnoughThings: false);
 		}
+		float result = MassUsage(tmpThingCounts, ignoreInventory, includePawnsMass, ignoreSpawnedCorpsesGearAndInventory);
+		tmpThingCounts.Clear();
+		return result;
+	}
 
-		public static float MassUsageLeftAfterTradeableTransfer(List<Thing> allCurrentThings, List<Tradeable> tradeables, IgnorePawnsInventoryMode ignoreInventory, bool includePawnsMass = false, bool ignoreSpawnedCorpsesGearAndInventory = false)
+	public static float MassUsageLeftAfterTransfer(List<TransferableOneWay> transferables, IgnorePawnsInventoryMode ignoreInventory, bool includePawnsMass = false, bool ignoreSpawnedCorpsesGearAndInventory = false)
+	{
+		tmpThingCounts.Clear();
+		for (int i = 0; i < transferables.Count; i++)
 		{
-			tmpThingCounts.Clear();
-			TransferableUtility.SimulateTradeableTransfer(allCurrentThings, tradeables, tmpThingCounts);
-			float result = MassUsage(tmpThingCounts, ignoreInventory, includePawnsMass, ignoreSpawnedCorpsesGearAndInventory);
-			tmpThingCounts.Clear();
-			return result;
+			thingsInReverse.Clear();
+			thingsInReverse.AddRange(transferables[i].things);
+			thingsInReverse.Reverse();
+			TransferableUtility.TransferNoSplit(thingsInReverse, transferables[i].MaxCount - transferables[i].CountToTransfer, delegate(Thing originalThing, int toTake)
+			{
+				tmpThingCounts.Add(new ThingCount(originalThing, toTake));
+			}, removeIfTakingEntireThing: false, errorIfNotEnoughThings: false);
 		}
+		float result = MassUsage(tmpThingCounts, ignoreInventory, includePawnsMass, ignoreSpawnedCorpsesGearAndInventory);
+		tmpThingCounts.Clear();
+		return result;
+	}
+
+	public static float MassUsage<T>(List<T> things, IgnorePawnsInventoryMode ignoreInventory, bool includePawnsMass = false, bool ignoreSpawnedCorpsesGearAndInventory = false) where T : Thing
+	{
+		tmpThingCounts.Clear();
+		for (int i = 0; i < things.Count; i++)
+		{
+			tmpThingCounts.Add(new ThingCount(things[i], things[i].stackCount));
+		}
+		float result = MassUsage(tmpThingCounts, ignoreInventory, includePawnsMass, ignoreSpawnedCorpsesGearAndInventory);
+		tmpThingCounts.Clear();
+		return result;
+	}
+
+	public static float MassUsageLeftAfterTradeableTransfer(List<Thing> allCurrentThings, List<Tradeable> tradeables, IgnorePawnsInventoryMode ignoreInventory, bool includePawnsMass = false, bool ignoreSpawnedCorpsesGearAndInventory = false)
+	{
+		tmpThingCounts.Clear();
+		TransferableUtility.SimulateTradeableTransfer(allCurrentThings, tradeables, tmpThingCounts);
+		float result = MassUsage(tmpThingCounts, ignoreInventory, includePawnsMass, ignoreSpawnedCorpsesGearAndInventory);
+		tmpThingCounts.Clear();
+		return result;
 	}
 }

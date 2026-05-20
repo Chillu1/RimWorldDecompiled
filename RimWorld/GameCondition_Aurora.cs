@@ -3,175 +3,174 @@ using System.Linq;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class GameCondition_Aurora : GameCondition
 {
-	public class GameCondition_Aurora : GameCondition
+	private int curColorIndex = -1;
+
+	private int prevColorIndex = -1;
+
+	private float curColorTransition;
+
+	public const float MaxSunGlow = 0.5f;
+
+	private const float Glow = 0.25f;
+
+	private const float SkyColorStrength = 0.075f;
+
+	private const float OverlayColorStrength = 0.025f;
+
+	private const float BaseBrightness = 0.73f;
+
+	private const int TransitionDurationTicks_NotPermanent = 280;
+
+	private const int TransitionDurationTicks_Permanent = 3750;
+
+	private static readonly Color[] Colors = new Color[8]
 	{
-		private int curColorIndex = -1;
+		new Color(0f, 1f, 0f),
+		new Color(0.3f, 1f, 0f),
+		new Color(0f, 1f, 0.7f),
+		new Color(0.3f, 1f, 0.7f),
+		new Color(0f, 0.5f, 1f),
+		new Color(0f, 0f, 1f),
+		new Color(0.87f, 0f, 1f),
+		new Color(0.75f, 0f, 1f)
+	};
 
-		private int prevColorIndex = -1;
+	public Color CurrentColor => Color.Lerp(Colors[prevColorIndex], Colors[curColorIndex], curColorTransition);
 
-		private float curColorTransition;
-
-		public const float MaxSunGlow = 0.5f;
-
-		private const float Glow = 0.25f;
-
-		private const float SkyColorStrength = 0.075f;
-
-		private const float OverlayColorStrength = 0.025f;
-
-		private const float BaseBrightness = 0.73f;
-
-		private const int TransitionDurationTicks_NotPermanent = 280;
-
-		private const int TransitionDurationTicks_Permanent = 3750;
-
-		private static readonly Color[] Colors = new Color[8]
+	private int TransitionDurationTicks
+	{
+		get
 		{
-			new Color(0f, 1f, 0f),
-			new Color(0.3f, 1f, 0f),
-			new Color(0f, 1f, 0.7f),
-			new Color(0.3f, 1f, 0.7f),
-			new Color(0f, 0.5f, 1f),
-			new Color(0f, 0f, 1f),
-			new Color(0.87f, 0f, 1f),
-			new Color(0.75f, 0f, 1f)
-		};
-
-		public Color CurrentColor => Color.Lerp(Colors[prevColorIndex], Colors[curColorIndex], curColorTransition);
-
-		private int TransitionDurationTicks
-		{
-			get
+			if (!base.Permanent)
 			{
-				if (!base.Permanent)
-				{
-					return 280;
-				}
-				return 3750;
+				return 280;
 			}
+			return 3750;
 		}
+	}
 
-		private bool BrightInAllMaps
+	private bool BrightInAllMaps
+	{
+		get
 		{
-			get
+			List<Map> maps = Find.Maps;
+			for (int i = 0; i < maps.Count; i++)
 			{
-				List<Map> maps = Find.Maps;
-				for (int i = 0; i < maps.Count; i++)
+				if (GenCelestial.CurCelestialSunGlow(maps[i]) <= 0.5f)
 				{
-					if (GenCelestial.CurCelestialSunGlow(maps[i]) <= 0.5f)
-					{
-						return false;
-					}
+					return false;
 				}
-				return true;
 			}
+			return true;
 		}
+	}
 
-		public bool AlwaysDarkInAllMaps
+	public bool AlwaysDarkInAllMaps
+	{
+		get
 		{
-			get
+			List<Map> maps = Find.Maps;
+			for (int i = 0; i < maps.Count; i++)
 			{
-				List<Map> maps = Find.Maps;
-				for (int i = 0; i < maps.Count; i++)
+				if (!maps[i].GameConditionManager.IsAlwaysDarkOutside)
 				{
-					if (!maps[i].GameConditionManager.IsAlwaysDarkOutside)
-					{
-						return false;
-					}
+					return false;
 				}
-				return true;
 			}
+			return true;
 		}
+	}
 
-		public override int TransitionTicks => 200;
+	public override int TransitionTicks => 200;
 
-		public override void ExposeData()
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Values.Look(ref curColorIndex, "curColorIndex", 0);
+		Scribe_Values.Look(ref prevColorIndex, "prevColorIndex", 0);
+		Scribe_Values.Look(ref curColorTransition, "curColorTransition", 0f);
+	}
+
+	public override void Init()
+	{
+		base.Init();
+		curColorIndex = Rand.Range(0, Colors.Length);
+		prevColorIndex = curColorIndex;
+		curColorTransition = 1f;
+	}
+
+	public override float SkyGazeChanceFactor(Map map)
+	{
+		if (map.GameConditionManager.IsAlwaysDarkOutside)
 		{
-			base.ExposeData();
-			Scribe_Values.Look(ref curColorIndex, "curColorIndex", 0);
-			Scribe_Values.Look(ref prevColorIndex, "prevColorIndex", 0);
-			Scribe_Values.Look(ref curColorTransition, "curColorTransition", 0f);
+			return 0f;
 		}
+		return 8f;
+	}
 
-		public override void Init()
+	public override float SkyGazeJoyGainFactor(Map map)
+	{
+		if (map.GameConditionManager.IsAlwaysDarkOutside)
 		{
-			base.Init();
-			curColorIndex = Rand.Range(0, Colors.Length);
+			return 0f;
+		}
+		return 5f;
+	}
+
+	public override float SkyTargetLerpFactor(Map map)
+	{
+		if (map.GameConditionManager.IsAlwaysDarkOutside)
+		{
+			return 0f;
+		}
+		return GameConditionUtility.LerpInOutValue(this, TransitionTicks);
+	}
+
+	public override SkyTarget? SkyTarget(Map map)
+	{
+		if (map.GameConditionManager.IsAlwaysDarkOutside)
+		{
+			return null;
+		}
+		Color currentColor = CurrentColor;
+		return new SkyTarget(colorSet: new SkyColorSet(Color.Lerp(Color.white, currentColor, 0.075f) * Brightness(map), new Color(0.92f, 0.92f, 0.92f), Color.Lerp(Color.white, currentColor, 0.025f) * Brightness(map), 1f), glow: Mathf.Max(GenCelestial.CurCelestialSunGlow(map), 0.25f), lightsourceShineSize: 1f, lightsourceShineIntensity: 1f);
+	}
+
+	private float Brightness(Map map)
+	{
+		return Mathf.Max(0.73f, GenCelestial.CurCelestialSunGlow(map));
+	}
+
+	public override void GameConditionTick()
+	{
+		curColorTransition += 1f / (float)TransitionDurationTicks;
+		if (curColorTransition >= 1f)
+		{
 			prevColorIndex = curColorIndex;
-			curColorTransition = 1f;
+			curColorIndex = GetNewColorIndex();
+			curColorTransition = 0f;
 		}
-
-		public override float SkyGazeChanceFactor(Map map)
+		if (!base.Permanent && base.TicksLeft > TransitionTicks)
 		{
-			if (map.GameConditionManager.IsAlwaysDarkOutside)
+			if (BrightInAllMaps)
 			{
-				return 0f;
+				base.TicksLeft = TransitionTicks;
 			}
-			return 8f;
-		}
-
-		public override float SkyGazeJoyGainFactor(Map map)
-		{
-			if (map.GameConditionManager.IsAlwaysDarkOutside)
+			if (AlwaysDarkInAllMaps)
 			{
-				return 0f;
-			}
-			return 5f;
-		}
-
-		public override float SkyTargetLerpFactor(Map map)
-		{
-			if (map.GameConditionManager.IsAlwaysDarkOutside)
-			{
-				return 0f;
-			}
-			return GameConditionUtility.LerpInOutValue(this, TransitionTicks);
-		}
-
-		public override SkyTarget? SkyTarget(Map map)
-		{
-			if (map.GameConditionManager.IsAlwaysDarkOutside)
-			{
-				return null;
-			}
-			Color currentColor = CurrentColor;
-			return new SkyTarget(colorSet: new SkyColorSet(Color.Lerp(Color.white, currentColor, 0.075f) * Brightness(map), new Color(0.92f, 0.92f, 0.92f), Color.Lerp(Color.white, currentColor, 0.025f) * Brightness(map), 1f), glow: Mathf.Max(GenCelestial.CurCelestialSunGlow(map), 0.25f), lightsourceShineSize: 1f, lightsourceShineIntensity: 1f);
-		}
-
-		private float Brightness(Map map)
-		{
-			return Mathf.Max(0.73f, GenCelestial.CurCelestialSunGlow(map));
-		}
-
-		public override void GameConditionTick()
-		{
-			curColorTransition += 1f / (float)TransitionDurationTicks;
-			if (curColorTransition >= 1f)
-			{
-				prevColorIndex = curColorIndex;
-				curColorIndex = GetNewColorIndex();
-				curColorTransition = 0f;
-			}
-			if (!base.Permanent && base.TicksLeft > TransitionTicks)
-			{
-				if (BrightInAllMaps)
-				{
-					base.TicksLeft = TransitionTicks;
-				}
-				if (AlwaysDarkInAllMaps)
-				{
-					base.TicksLeft = TransitionTicks;
-				}
+				base.TicksLeft = TransitionTicks;
 			}
 		}
+	}
 
-		private int GetNewColorIndex()
-		{
-			return (from x in Enumerable.Range(0, Colors.Length)
-				where x != curColorIndex
-				select x).RandomElement();
-		}
+	private int GetNewColorIndex()
+	{
+		return (from x in Enumerable.Range(0, Colors.Length)
+			where x != curColorIndex
+			select x).RandomElement();
 	}
 }

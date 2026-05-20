@@ -1,9 +1,8 @@
 using System;
 
-namespace LudeonTK
+namespace LudeonTK;
+
+[AttributeUsage(AttributeTargets.Method)]
+public class DebugActionYielderAttribute : Attribute
 {
-	[AttributeUsage(AttributeTargets.Method)]
-	public class DebugActionYielderAttribute : Attribute
-	{
-	}
 }

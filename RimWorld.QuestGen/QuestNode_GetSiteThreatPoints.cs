@@ -2,40 +2,39 @@ using System.Collections.Generic;
 using RimWorld.Planet;
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_GetSiteThreatPoints : QuestNode
 {
-	public class QuestNode_GetSiteThreatPoints : QuestNode
+	[NoTranslate]
+	public SlateRef<string> storeAs;
+
+	public SlateRef<Site> site;
+
+	public SlateRef<IEnumerable<SitePartDefWithParams>> sitePartsParams;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		[NoTranslate]
-		public SlateRef<string> storeAs;
+		return true;
+	}
 
-		public SlateRef<Site> site;
-
-		public SlateRef<IEnumerable<SitePartDefWithParams>> sitePartsParams;
-
-		protected override bool TestRunInt(Slate slate)
+	protected override void RunInt()
+	{
+		Slate slate = QuestGen.slate;
+		if (site.GetValue(slate) != null)
 		{
-			return true;
+			slate.Set(storeAs.GetValue(slate), site.GetValue(slate).ActualThreatPoints);
+			return;
 		}
-
-		protected override void RunInt()
+		float num = 0f;
+		IEnumerable<SitePartDefWithParams> value = sitePartsParams.GetValue(slate);
+		if (value != null)
 		{
-			Slate slate = QuestGen.slate;
-			if (site.GetValue(slate) != null)
+			foreach (SitePartDefWithParams item in value)
 			{
-				slate.Set(storeAs.GetValue(slate), site.GetValue(slate).ActualThreatPoints);
-				return;
+				num += item.parms.threatPoints;
 			}
-			float num = 0f;
-			IEnumerable<SitePartDefWithParams> value = sitePartsParams.GetValue(slate);
-			if (value != null)
-			{
-				foreach (SitePartDefWithParams item in value)
-				{
-					num += item.parms.threatPoints;
-				}
-			}
-			slate.Set(storeAs.GetValue(slate), num);
 		}
+		slate.Set(storeAs.GetValue(slate), num);
 	}
 }

@@ -1,35 +1,34 @@
 using System;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class Command_Action : Command
 {
-	public class Command_Action : Command
+	public Action action;
+
+	public Action onHover;
+
+	private Color? iconDrawColorOverride;
+
+	public override Color IconDrawColor => iconDrawColorOverride ?? base.IconDrawColor;
+
+	public override void ProcessInput(Event ev)
 	{
-		public Action action;
+		base.ProcessInput(ev);
+		action();
+	}
 
-		public Action onHover;
-
-		private Color? iconDrawColorOverride;
-
-		public override Color IconDrawColor => iconDrawColorOverride ?? base.IconDrawColor;
-
-		public override void ProcessInput(Event ev)
+	public override void GizmoUpdateOnMouseover()
+	{
+		if (onHover != null)
 		{
-			base.ProcessInput(ev);
-			action();
+			onHover();
 		}
+	}
 
-		public override void GizmoUpdateOnMouseover()
-		{
-			if (onHover != null)
-			{
-				onHover();
-			}
-		}
-
-		public void SetColorOverride(Color color)
-		{
-			iconDrawColorOverride = color;
-		}
+	public void SetColorOverride(Color color)
+	{
+		iconDrawColorOverride = color;
 	}
 }

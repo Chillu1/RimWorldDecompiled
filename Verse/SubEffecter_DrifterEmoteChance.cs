@@ -1,18 +1,17 @@
-namespace Verse
-{
-	public class SubEffecter_DrifterEmoteChance : SubEffecter_DrifterEmote
-	{
-		public SubEffecter_DrifterEmoteChance(SubEffecterDef def, Effecter parent)
-			: base(def, parent)
-		{
-		}
+namespace Verse;
 
-		public override void SubEffectTick(TargetInfo A, TargetInfo B)
+public class SubEffecter_DrifterEmoteChance : SubEffecter_DrifterEmote
+{
+	public SubEffecter_DrifterEmoteChance(SubEffecterDef def, Effecter parent)
+		: base(def, parent)
+	{
+	}
+
+	public override void SubEffectTick(TargetInfo A, TargetInfo B)
+	{
+		if (Rand.Chance(def.chancePerTick))
 		{
-			if (Rand.Chance(def.chancePerTick))
-			{
-				MakeMote(A);
-			}
+			MakeMote(A);
 		}
 	}
 }

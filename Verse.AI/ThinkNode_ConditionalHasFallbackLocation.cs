@@ -1,14 +1,13 @@
-namespace Verse.AI
+namespace Verse.AI;
+
+public class ThinkNode_ConditionalHasFallbackLocation : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalHasFallbackLocation : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
+		if (pawn.mindState.duty != null)
 		{
-			if (pawn.mindState.duty != null)
-			{
-				return pawn.mindState.duty.focusSecond.IsValid;
-			}
-			return false;
+			return pawn.mindState.duty.focusSecond.IsValid;
 		}
+		return false;
 	}
 }

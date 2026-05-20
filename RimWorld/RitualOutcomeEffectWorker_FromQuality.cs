@@ -4,230 +4,229 @@ using System.Linq;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RitualOutcomeEffectWorker_FromQuality : RitualOutcomeEffectWorker
 {
-	public class RitualOutcomeEffectWorker_FromQuality : RitualOutcomeEffectWorker
+	public static FloatRange ProgressToQualityMapping = new FloatRange(0.25f, 1f);
+
+	public override bool SupportsAttachableOutcomeEffect => def.allowAttachableOutcome;
+
+	public virtual bool GivesDevelopmentPoints => def.givesDevelopmentPoints;
+
+	public RitualOutcomeEffectWorker_FromQuality()
 	{
-		public static FloatRange ProgressToQualityMapping = new FloatRange(0.25f, 1f);
+	}
 
-		public override bool SupportsAttachableOutcomeEffect => def.allowAttachableOutcome;
+	public RitualOutcomeEffectWorker_FromQuality(RitualOutcomeEffectDef def)
+		: base(def)
+	{
+	}
 
-		public virtual bool GivesDevelopmentPoints => def.givesDevelopmentPoints;
+	public virtual RitualOutcomePossibility GetOutcome(float quality, LordJob_Ritual ritual)
+	{
+		return def.outcomeChances.Where((RitualOutcomePossibility o) => OutcomePossible(o, ritual)).RandomElementByWeight((RitualOutcomePossibility c) => ChanceWithQuality(c, quality));
+	}
 
-		public RitualOutcomeEffectWorker_FromQuality()
+	public virtual float GetOutcomeChanceAtQuality(LordJob_Ritual ritual, RitualOutcomePossibility outcome, float quality)
+	{
+		float num = def.outcomeChances.Where((RitualOutcomePossibility o) => OutcomePossible(o, ritual)).Sum((RitualOutcomePossibility c) => ChanceWithQuality(c, quality));
+		return ChanceWithQuality(outcome, quality) / num;
+	}
+
+	protected static float ChanceWithQuality(RitualOutcomePossibility outcome, float quality)
+	{
+		if (!outcome.Positive)
 		{
+			return outcome.chance;
 		}
+		return Mathf.Max(outcome.chance * quality, 0f);
+	}
 
-		public RitualOutcomeEffectWorker_FromQuality(RitualOutcomeEffectDef def)
-			: base(def)
+	protected virtual void ApplyAttachableOutcome(Dictionary<Pawn, int> totalPresence, LordJob_Ritual jobRitual, RitualOutcomePossibility outcomeChance, out string extraLetterText, ref LookTargets letterLookTargets)
+	{
+		extraLetterText = null;
+		if (jobRitual.Ritual.attachableOutcomeEffect != null && jobRitual.Ritual.attachableOutcomeEffect.AppliesToOutcome(jobRitual.Ritual.outcomeEffect.def, outcomeChance))
 		{
+			jobRitual.Ritual.attachableOutcomeEffect.Worker.Apply(totalPresence, jobRitual, outcomeChance, out extraLetterText, ref letterLookTargets);
 		}
+	}
 
-		public virtual RitualOutcomePossibility GetOutcome(float quality, LordJob_Ritual ritual)
+	public override void Apply(float progress, Dictionary<Pawn, int> totalPresence, LordJob_Ritual jobRitual)
+	{
+		float quality = GetQuality(jobRitual, progress);
+		RitualOutcomePossibility outcome = GetOutcome(quality, jobRitual);
+		LookTargets letterLookTargets = jobRitual.selectedTarget;
+		ApplyExtraOutcome(totalPresence, jobRitual, outcome, out var extraOutcomeDesc, ref letterLookTargets);
+		string extraLetterText = null;
+		if (jobRitual.Ritual != null)
 		{
-			return def.outcomeChances.Where((RitualOutcomePossibility o) => OutcomePossible(o, ritual)).RandomElementByWeight((RitualOutcomePossibility c) => ChanceWithQuality(c, quality));
+			ApplyAttachableOutcome(totalPresence, jobRitual, outcome, out extraLetterText, ref letterLookTargets);
 		}
-
-		public virtual float GetOutcomeChanceAtQuality(LordJob_Ritual ritual, RitualOutcomePossibility outcome, float quality)
+		string text = outcome.description.Formatted(jobRitual.Ritual.Label).CapitalizeFirst();
+		string text2 = def.OutcomeMoodBreakdown(outcome);
+		if (!text2.NullOrEmpty())
 		{
-			float num = def.outcomeChances.Where((RitualOutcomePossibility o) => OutcomePossible(o, ritual)).Sum((RitualOutcomePossibility c) => ChanceWithQuality(c, quality));
-			return ChanceWithQuality(outcome, quality) / num;
+			text = text + "\n\n" + text2;
 		}
-
-		protected static float ChanceWithQuality(RitualOutcomePossibility outcome, float quality)
+		if (extraOutcomeDesc != null)
 		{
-			if (!outcome.Positive)
-			{
-				return outcome.chance;
-			}
-			return Mathf.Max(outcome.chance * quality, 0f);
+			text = text + "\n\n" + extraOutcomeDesc;
 		}
-
-		protected virtual void ApplyAttachableOutcome(Dictionary<Pawn, int> totalPresence, LordJob_Ritual jobRitual, RitualOutcomePossibility outcomeChance, out string extraLetterText, ref LookTargets letterLookTargets)
+		if (extraLetterText != null)
 		{
-			extraLetterText = null;
-			if (jobRitual.Ritual.attachableOutcomeEffect != null && jobRitual.Ritual.attachableOutcomeEffect.AppliesToOutcome(jobRitual.Ritual.outcomeEffect.def, outcomeChance))
-			{
-				jobRitual.Ritual.attachableOutcomeEffect.Worker.Apply(totalPresence, jobRitual, outcomeChance, out extraLetterText, ref letterLookTargets);
-			}
+			text = text + "\n\n" + extraLetterText;
 		}
-
-		public override void Apply(float progress, Dictionary<Pawn, int> totalPresence, LordJob_Ritual jobRitual)
+		text = text + "\n\n" + OutcomeQualityBreakdownDesc(quality, progress, jobRitual);
+		ApplyDevelopmentPoints(jobRitual.Ritual, outcome, out var extraOutcomeDesc2);
+		if (extraOutcomeDesc2 != null)
 		{
-			float quality = GetQuality(jobRitual, progress);
-			RitualOutcomePossibility outcome = GetOutcome(quality, jobRitual);
-			LookTargets letterLookTargets = jobRitual.selectedTarget;
-			ApplyExtraOutcome(totalPresence, jobRitual, outcome, out var extraOutcomeDesc, ref letterLookTargets);
-			string extraLetterText = null;
-			if (jobRitual.Ritual != null)
+			text = text + "\n\n" + extraOutcomeDesc2;
+		}
+		Find.LetterStack.ReceiveLetter("OutcomeLetterLabel".Translate(outcome.label.Named("OUTCOMELABEL"), jobRitual.Ritual.Label.Named("RITUALLABEL")), text, outcome.Positive ? LetterDefOf.RitualOutcomePositive : LetterDefOf.RitualOutcomeNegative, letterLookTargets);
+		foreach (KeyValuePair<Pawn, int> item in totalPresence)
+		{
+			if (!outcome.roleIdsNotGainingMemory.NullOrEmpty())
 			{
-				ApplyAttachableOutcome(totalPresence, jobRitual, outcome, out extraLetterText, ref letterLookTargets);
-			}
-			string text = outcome.description.Formatted(jobRitual.Ritual.Label).CapitalizeFirst();
-			string text2 = def.OutcomeMoodBreakdown(outcome);
-			if (!text2.NullOrEmpty())
-			{
-				text = text + "\n\n" + text2;
-			}
-			if (extraOutcomeDesc != null)
-			{
-				text = text + "\n\n" + extraOutcomeDesc;
-			}
-			if (extraLetterText != null)
-			{
-				text = text + "\n\n" + extraLetterText;
-			}
-			text = text + "\n\n" + OutcomeQualityBreakdownDesc(quality, progress, jobRitual);
-			ApplyDevelopmentPoints(jobRitual.Ritual, outcome, out var extraOutcomeDesc2);
-			if (extraOutcomeDesc2 != null)
-			{
-				text = text + "\n\n" + extraOutcomeDesc2;
-			}
-			Find.LetterStack.ReceiveLetter("OutcomeLetterLabel".Translate(outcome.label.Named("OUTCOMELABEL"), jobRitual.Ritual.Label.Named("RITUALLABEL")), text, outcome.Positive ? LetterDefOf.RitualOutcomePositive : LetterDefOf.RitualOutcomeNegative, letterLookTargets);
-			foreach (KeyValuePair<Pawn, int> item in totalPresence)
-			{
-				if (!outcome.roleIdsNotGainingMemory.NullOrEmpty())
+				RitualRole ritualRole = jobRitual.assignments.RoleForPawn(item.Key);
+				if (ritualRole != null && outcome.roleIdsNotGainingMemory.Contains(ritualRole.id))
 				{
-					RitualRole ritualRole = jobRitual.assignments.RoleForPawn(item.Key);
-					if (ritualRole != null && outcome.roleIdsNotGainingMemory.Contains(ritualRole.id))
-					{
-						continue;
-					}
-				}
-				if (outcome.memory != null)
-				{
-					GiveMemoryToPawn(item.Key, outcome.memory, jobRitual);
+					continue;
 				}
 			}
-		}
-
-		protected void GiveMemoryToPawn(Pawn pawn, ThoughtDef memory, LordJob_Ritual jobRitual)
-		{
-			if (pawn.needs?.mood != null)
+			if (outcome.memory != null)
 			{
-				Thought_AttendedRitual newThought = (Thought_AttendedRitual)MakeMemory(pawn, jobRitual, memory);
-				pawn.needs.mood.thoughts.memories.TryGainMemory(newThought);
+				GiveMemoryToPawn(item.Key, outcome.memory, jobRitual);
 			}
 		}
+	}
 
-		protected virtual void ApplyExtraOutcome(Dictionary<Pawn, int> totalPresence, LordJob_Ritual jobRitual, RitualOutcomePossibility outcome, out string extraOutcomeDesc, ref LookTargets letterLookTargets)
+	protected void GiveMemoryToPawn(Pawn pawn, ThoughtDef memory, LordJob_Ritual jobRitual)
+	{
+		if (pawn.needs?.mood != null)
 		{
-			extraOutcomeDesc = null;
+			Thought_AttendedRitual newThought = (Thought_AttendedRitual)MakeMemory(pawn, jobRitual, memory);
+			pawn.needs.mood.thoughts.memories.TryGainMemory(newThought);
 		}
+	}
 
-		protected virtual void ApplyDevelopmentPoints(Precept_Ritual ritual, RitualOutcomePossibility outcome, out string extraOutcomeDesc)
+	protected virtual void ApplyExtraOutcome(Dictionary<Pawn, int> totalPresence, LordJob_Ritual jobRitual, RitualOutcomePossibility outcome, out string extraOutcomeDesc, ref LookTargets letterLookTargets)
+	{
+		extraOutcomeDesc = null;
+	}
+
+	protected virtual void ApplyDevelopmentPoints(Precept_Ritual ritual, RitualOutcomePossibility outcome, out string extraOutcomeDesc)
+	{
+		if (ritual?.ideo != null && ritual.ideo.Fluid)
 		{
-			if (ritual?.ideo != null && ritual.ideo.Fluid)
+			if (ritual.ideo.development.Points == ritual.ideo.development.NextReformationDevelopmentPoints)
 			{
-				if (ritual.ideo.development.Points == ritual.ideo.development.NextReformationDevelopmentPoints)
+				extraOutcomeDesc = "RitualOutcomeExtraDesc_DevelopmentPointsAwardedCapped".Translate(ritual.ideo.development.NextReformationDevelopmentPoints);
+				return;
+			}
+			int num = def.outcomeChances.IndexOf(outcome);
+			if (num >= 0 && ritual.ideo.development.TryGainDevelopmentPointsForRitualOutcome(ritual, num, out var developmentPoints))
+			{
+				if (developmentPoints > 0)
 				{
-					extraOutcomeDesc = "RitualOutcomeExtraDesc_DevelopmentPointsAwardedCapped".Translate(ritual.ideo.development.NextReformationDevelopmentPoints);
-					return;
+					extraOutcomeDesc = "RitualOutcomeExtraDesc_DevelopmentPointsAwarded".Translate(ritual.ideo.development.Points - developmentPoints, ritual.ideo.development.Points, developmentPoints.ToStringWithSign());
 				}
-				int num = def.outcomeChances.IndexOf(outcome);
-				if (num >= 0 && ritual.ideo.development.TryGainDevelopmentPointsForRitualOutcome(ritual, num, out var developmentPoints))
+				else
 				{
-					if (developmentPoints > 0)
-					{
-						extraOutcomeDesc = "RitualOutcomeExtraDesc_DevelopmentPointsAwarded".Translate(ritual.ideo.development.Points - developmentPoints, ritual.ideo.development.Points, developmentPoints.ToStringWithSign());
-					}
-					else
-					{
-						extraOutcomeDesc = "RitualOutcomeExtraDesc_NoDevelopmentPointsAwarded".Translate();
-					}
-					return;
+					extraOutcomeDesc = "RitualOutcomeExtraDesc_NoDevelopmentPointsAwarded".Translate();
 				}
+				return;
 			}
-			extraOutcomeDesc = null;
 		}
+		extraOutcomeDesc = null;
+	}
 
-		protected float GetQuality(LordJob_Ritual jobRitual, float progress)
+	protected float GetQuality(LordJob_Ritual jobRitual, float progress)
+	{
+		float num = def.startingQuality;
+		foreach (RitualOutcomeComp comp in def.comps)
 		{
-			float num = def.startingQuality;
-			foreach (RitualOutcomeComp comp in def.comps)
+			if (comp is RitualOutcomeComp_Quality && comp.Applies(jobRitual))
 			{
-				if (comp is RitualOutcomeComp_Quality && comp.Applies(jobRitual))
-				{
-					num += comp.QualityOffset(jobRitual, DataForComp(comp));
-				}
+				num += comp.QualityOffset(jobRitual, DataForComp(comp));
 			}
-			if (jobRitual.repeatPenalty && jobRitual.Ritual != null)
-			{
-				num += jobRitual.Ritual.RepeatQualityPenalty;
-			}
-			Tuple<ExpectationDef, float> expectationsOffset = GetExpectationsOffset(jobRitual.Map, jobRitual.Ritual?.def);
-			if (expectationsOffset != null)
-			{
-				num += expectationsOffset.Item2;
-			}
-			return Mathf.Clamp(num * Mathf.Lerp(ProgressToQualityMapping.min, ProgressToQualityMapping.max, progress), def.minQuality, def.maxQuality);
 		}
-
-		public static Tuple<ExpectationDef, float> GetExpectationsOffset(Map map, PreceptDef ritual)
+		if (jobRitual.repeatPenalty && jobRitual.Ritual != null)
 		{
-			if (ritual == null || !ritual.receivesExpectationsQualityOffset)
-			{
-				return null;
-			}
-			ExpectationDef expectationDef = ExpectationsUtility.CurrentExpectationFor(map);
-			if (Math.Abs(expectationDef.ritualQualityOffset) > float.Epsilon)
-			{
-				return new Tuple<ExpectationDef, float>(expectationDef, expectationDef.ritualQualityOffset);
-			}
+			num += jobRitual.Ritual.RepeatQualityPenalty;
+		}
+		Tuple<ExpectationDef, float> expectationsOffset = GetExpectationsOffset(jobRitual.Map, jobRitual.Ritual?.def);
+		if (expectationsOffset != null)
+		{
+			num += expectationsOffset.Item2;
+		}
+		return Mathf.Clamp(num * Mathf.Lerp(ProgressToQualityMapping.min, ProgressToQualityMapping.max, progress), def.minQuality, def.maxQuality);
+	}
+
+	public static Tuple<ExpectationDef, float> GetExpectationsOffset(Map map, PreceptDef ritual)
+	{
+		if (ritual == null || !ritual.receivesExpectationsQualityOffset)
+		{
 			return null;
 		}
-
-		public virtual string OutcomeQualityBreakdownDesc(float quality, float progress, LordJob_Ritual jobRitual)
+		ExpectationDef expectationDef = ExpectationsUtility.CurrentExpectationFor(map);
+		if (Math.Abs(expectationDef.ritualQualityOffset) > float.Epsilon)
 		{
-			TaggedString taggedString = "RitualOutcomeQualitySpecific".Translate(jobRitual.Ritual.Label, quality.ToStringPercent()).CapitalizeFirst() + ":\n";
-			if (def.startingQuality > 0f)
+			return new Tuple<ExpectationDef, float>(expectationDef, expectationDef.ritualQualityOffset);
+		}
+		return null;
+	}
+
+	public virtual string OutcomeQualityBreakdownDesc(float quality, float progress, LordJob_Ritual jobRitual)
+	{
+		TaggedString taggedString = "RitualOutcomeQualitySpecific".Translate(jobRitual.Ritual.Label, quality.ToStringPercent()).CapitalizeFirst() + ":\n";
+		if (def.startingQuality > 0f)
+		{
+			taggedString += "\n  - " + "StartingRitualQuality".Translate(def.startingQuality.ToStringPercent()) + ".";
+		}
+		foreach (RitualOutcomeComp comp in def.comps)
+		{
+			if (comp is RitualOutcomeComp_Quality && comp.Applies(jobRitual) && Mathf.Abs(comp.QualityOffset(jobRitual, DataForComp(comp))) >= float.Epsilon)
 			{
-				taggedString += "\n  - " + "StartingRitualQuality".Translate(def.startingQuality.ToStringPercent()) + ".";
+				taggedString += "\n  - " + comp.GetDesc(jobRitual, DataForComp(comp)).CapitalizeFirst();
 			}
-			foreach (RitualOutcomeComp comp in def.comps)
+		}
+		if (jobRitual.repeatPenalty && jobRitual.Ritual != null)
+		{
+			taggedString += "\n  - " + "RitualOutcomePerformedRecently".Translate() + ": " + jobRitual.Ritual.RepeatQualityPenalty.ToStringPercent();
+		}
+		Tuple<ExpectationDef, float> expectationsOffset = GetExpectationsOffset(jobRitual.Map, jobRitual.Ritual?.def);
+		if (expectationsOffset != null)
+		{
+			taggedString += "\n  - " + "RitualQualityExpectations".Translate(expectationsOffset.Item1.LabelCap) + ": " + expectationsOffset.Item2.ToStringPercent();
+		}
+		if (progress < 1f)
+		{
+			taggedString += "\n  - " + "RitualOutcomeProgress".Translate(jobRitual.Ritual.Label).CapitalizeFirst() + ": x" + Mathf.Lerp(ProgressToQualityMapping.min, ProgressToQualityMapping.max, progress).ToStringPercent();
+		}
+		return taggedString;
+	}
+
+	protected virtual bool OutcomePossible(RitualOutcomePossibility chance, LordJob_Ritual ritual)
+	{
+		return true;
+	}
+
+	public override string ExtraAlertParagraph(Precept_Ritual ritual)
+	{
+		string text = "";
+		foreach (RitualOutcomeComp comp in def.comps)
+		{
+			if (comp is RitualOutcomeComp_Quality)
 			{
-				if (comp is RitualOutcomeComp_Quality && comp.Applies(jobRitual) && Mathf.Abs(comp.QualityOffset(jobRitual, DataForComp(comp))) >= float.Epsilon)
+				string desc = comp.GetDesc();
+				if (!desc.NullOrEmpty())
 				{
-					taggedString += "\n  - " + comp.GetDesc(jobRitual, DataForComp(comp)).CapitalizeFirst();
+					text = text + "\n  - " + desc.CapitalizeFirst();
 				}
 			}
-			if (jobRitual.repeatPenalty && jobRitual.Ritual != null)
-			{
-				taggedString += "\n  - " + "RitualOutcomePerformedRecently".Translate() + ": " + jobRitual.Ritual.RepeatQualityPenalty.ToStringPercent();
-			}
-			Tuple<ExpectationDef, float> expectationsOffset = GetExpectationsOffset(jobRitual.Map, jobRitual.Ritual?.def);
-			if (expectationsOffset != null)
-			{
-				taggedString += "\n  - " + "RitualQualityExpectations".Translate(expectationsOffset.Item1.LabelCap) + ": " + expectationsOffset.Item2.ToStringPercent();
-			}
-			if (progress < 1f)
-			{
-				taggedString += "\n  - " + "RitualOutcomeProgress".Translate(jobRitual.Ritual.Label).CapitalizeFirst() + ": x" + Mathf.Lerp(ProgressToQualityMapping.min, ProgressToQualityMapping.max, progress).ToStringPercent();
-			}
-			return taggedString;
 		}
-
-		protected virtual bool OutcomePossible(RitualOutcomePossibility chance, LordJob_Ritual ritual)
-		{
-			return true;
-		}
-
-		public override string ExtraAlertParagraph(Precept_Ritual ritual)
-		{
-			string text = "";
-			foreach (RitualOutcomeComp comp in def.comps)
-			{
-				if (comp is RitualOutcomeComp_Quality)
-				{
-					string desc = comp.GetDesc();
-					if (!desc.NullOrEmpty())
-					{
-						text = text + "\n  - " + desc.CapitalizeFirst();
-					}
-				}
-			}
-			string text2 = ("RitualOutcomeQualityAbstract".Translate(ritual.Label).Resolve().CapitalizeFirst() + ":").Colorize(ColoredText.TipSectionTitleColor) + text;
-			return text2 + "\n  - " + "RitualOutcomeProgress".Translate(ritual.Label).Resolve().CapitalizeFirst() + ": " + "OutcomeBonusDesc_QualitySingleOffset".Translate("x" + ProgressToQualityMapping.min * 100f + "-" + ProgressToQualityMapping.max.ToStringPercent()).Resolve() + ".";
-		}
+		string text2 = ("RitualOutcomeQualityAbstract".Translate(ritual.Label).Resolve().CapitalizeFirst() + ":").Colorize(ColoredText.TipSectionTitleColor) + text;
+		return text2 + "\n  - " + "RitualOutcomeProgress".Translate(ritual.Label).Resolve().CapitalizeFirst() + ": " + "OutcomeBonusDesc_QualitySingleOffset".Translate("x" + ProgressToQualityMapping.min * 100f + "-" + ProgressToQualityMapping.max.ToStringPercent()).Resolve() + ".";
 	}
 }

@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public interface ICompAbilityEffectOnJumpCompleted
 {
-	public interface ICompAbilityEffectOnJumpCompleted
-	{
-		void OnJumpCompleted(IntVec3 origin, LocalTargetInfo target);
-	}
+	void OnJumpCompleted(IntVec3 origin, LocalTargetInfo target);
 }

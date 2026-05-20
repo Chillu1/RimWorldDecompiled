@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_PowerBeam : CompProperties_EffectWithDest
 {
-	public class CompProperties_PowerBeam : CompProperties_EffectWithDest
-	{
-		public int durationTicks;
-	}
+	public int durationTicks;
 }

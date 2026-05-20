@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public interface IExposable
 {
-	public interface IExposable
-	{
-		void ExposeData();
-	}
+	void ExposeData();
 }

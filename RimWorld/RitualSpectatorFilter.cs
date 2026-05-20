@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
-{
-	public abstract class RitualSpectatorFilter
-	{
-		[MustTranslate]
-		public string description;
+namespace RimWorld;
 
-		public abstract bool Allowed(Pawn p);
-	}
+public abstract class RitualSpectatorFilter
+{
+	[MustTranslate]
+	public string description;
+
+	public abstract bool Allowed(Pawn p);
 }

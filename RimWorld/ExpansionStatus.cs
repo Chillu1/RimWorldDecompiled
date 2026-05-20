@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum ExpansionStatus
 {
-	public enum ExpansionStatus
-	{
-		Active,
-		Installed,
-		NotInstalled
-	}
+	Active,
+	Installed,
+	NotInstalled
 }

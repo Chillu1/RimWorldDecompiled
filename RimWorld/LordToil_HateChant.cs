@@ -4,96 +4,95 @@ using Verse;
 using Verse.AI;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class LordToil_HateChant : LordToil
 {
-	public class LordToil_HateChant : LordToil
+	private readonly int DroneBoostInterval = 15000;
+
+	protected LordToilData_HateChant Data => (LordToilData_HateChant)data;
+
+	public LordToil_HateChant()
 	{
-		private readonly int DroneBoostInterval = 15000;
+		data = new LordToilData_HateChant();
+	}
 
-		protected LordToilData_HateChant Data => (LordToilData_HateChant)data;
+	public LordToil_HateChant(IEnumerable<PsychicRitualParticipant> participants)
+	{
+		data = new LordToilData_HateChant();
+		SetParticipants(participants);
+	}
 
-		public LordToil_HateChant()
+	public override void Init()
+	{
+		base.Init();
+		TryCreatingDrone();
+		Data.lastDroneUpdate = Find.TickManager.TicksGame;
+	}
+
+	public override void UpdateAllDuties()
+	{
+		foreach (var (pawn2, intVec2) in Data.chanters)
 		{
-			data = new LordToilData_HateChant();
+			if (pawn2?.mindState != null)
+			{
+				pawn2.mindState.duty = new PawnDuty(DutyDefOf.PerformHateChant, intVec2);
+			}
+			pawn2?.health.AddHediff(HediffDefOf.PsychicTrance);
 		}
+	}
 
-		public LordToil_HateChant(IEnumerable<PsychicRitualParticipant> participants)
+	public override void LordToilTick()
+	{
+		base.LordToilTick();
+		if (Data.condition != null && (int)Data.condition.level < 5 && Find.TickManager.TicksGame > Data.lastDroneUpdate + DroneBoostInterval)
 		{
-			data = new LordToilData_HateChant();
-			SetParticipants(participants);
-		}
-
-		public override void Init()
-		{
-			base.Init();
-			TryCreatingDrone();
 			Data.lastDroneUpdate = Find.TickManager.TicksGame;
+			Data.condition.level++;
+			Messages.Message("MessageHateChantIncreased".Translate(), MessageTypeDefOf.ThreatSmall);
 		}
+	}
 
-		public override void UpdateAllDuties()
+	public override void Cleanup()
+	{
+		base.Cleanup();
+		if (Data.condition != null)
 		{
-			foreach (var (pawn2, intVec2) in Data.chanters)
+			Data.condition.End();
+			Data.condition = null;
+		}
+	}
+
+	public void SetParticipants(IEnumerable<PsychicRitualParticipant> participants)
+	{
+		PsychicRitualParticipant[] collection = (participants as PsychicRitualParticipant[]) ?? participants.ToArray();
+		Data.chanters = new List<PsychicRitualParticipant>(collection);
+	}
+
+	private void TryCreatingDrone()
+	{
+		GameConditionManager gameConditionManager = lord.Map.gameConditionManager;
+		if (gameConditionManager == null)
+		{
+			Log.ErrorOnce($"Couldn't find condition manager for incident target {lord.Map}", 70849667);
+		}
+		else
+		{
+			if (gameConditionManager.ConditionIsActive(GameConditionDefOf.HateChantDrone))
 			{
-				if (pawn2?.mindState != null)
-				{
-					pawn2.mindState.duty = new PawnDuty(DutyDefOf.PerformHateChant, intVec2);
-				}
-				pawn2?.health.AddHediff(HediffDefOf.PsychicTrance);
+				return;
 			}
-		}
-
-		public override void LordToilTick()
-		{
-			base.LordToilTick();
-			if (Data.condition != null && (int)Data.condition.level < 5 && Find.TickManager.TicksGame > Data.lastDroneUpdate + DroneBoostInterval)
+			List<GameCondition> activeConditions = gameConditionManager.ActiveConditions;
+			for (int i = 0; i < activeConditions.Count; i++)
 			{
-				Data.lastDroneUpdate = Find.TickManager.TicksGame;
-				Data.condition.level++;
-				Messages.Message("MessageHateChantIncreased".Translate(), MessageTypeDefOf.ThreatSmall);
-			}
-		}
-
-		public override void Cleanup()
-		{
-			base.Cleanup();
-			if (Data.condition != null)
-			{
-				Data.condition.End();
-				Data.condition = null;
-			}
-		}
-
-		public void SetParticipants(IEnumerable<PsychicRitualParticipant> participants)
-		{
-			PsychicRitualParticipant[] collection = (participants as PsychicRitualParticipant[]) ?? participants.ToArray();
-			Data.chanters = new List<PsychicRitualParticipant>(collection);
-		}
-
-		private void TryCreatingDrone()
-		{
-			GameConditionManager gameConditionManager = lord.Map.gameConditionManager;
-			if (gameConditionManager == null)
-			{
-				Log.ErrorOnce($"Couldn't find condition manager for incident target {lord.Map}", 70849667);
-			}
-			else
-			{
-				if (gameConditionManager.ConditionIsActive(GameConditionDefOf.HateChantDrone))
+				if (!GameConditionDefOf.HateChantDrone.CanCoexistWith(activeConditions[i].def))
 				{
 					return;
 				}
-				List<GameCondition> activeConditions = gameConditionManager.ActiveConditions;
-				for (int i = 0; i < activeConditions.Count; i++)
-				{
-					if (!GameConditionDefOf.HateChantDrone.CanCoexistWith(activeConditions[i].def))
-					{
-						return;
-					}
-				}
-				GameCondition_HateChantDrone gameCondition_HateChantDrone = (GameCondition_HateChantDrone)GameConditionMaker.MakeCondition(GameConditionDefOf.HateChantDrone);
-				gameConditionManager.RegisterCondition(gameCondition_HateChantDrone);
-				Data.condition = gameCondition_HateChantDrone;
 			}
+			GameCondition_HateChantDrone gameCondition_HateChantDrone = (GameCondition_HateChantDrone)GameConditionMaker.MakeCondition(GameConditionDefOf.HateChantDrone);
+			gameConditionManager.RegisterCondition(gameCondition_HateChantDrone);
+			Data.condition = gameCondition_HateChantDrone;
 		}
 	}
 }

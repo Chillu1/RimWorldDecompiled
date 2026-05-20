@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class MainButtonWorker_ToggleTab : MainButtonWorker
 {
-	public class MainButtonWorker_ToggleTab : MainButtonWorker
+	public override void Activate()
 	{
-		public override void Activate()
-		{
-			Find.MainTabsRoot.ToggleTab(def);
-		}
+		Find.MainTabsRoot.ToggleTab(def);
 	}
 }

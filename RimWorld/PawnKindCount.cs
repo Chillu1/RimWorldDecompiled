@@ -1,29 +1,28 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class PawnKindCount : StartingPawnCount
 {
-	public class PawnKindCount : StartingPawnCount
+	public PawnKindDef kindDef;
+
+	public override string Summary => "PawnCount".Translate(count.Named("COUNT"), ((count > 1) ? kindDef.GetLabelPlural(count) : kindDef.label).Named("KINDLABEL"));
+
+	public override void ExposeData()
 	{
-		public PawnKindDef kindDef;
+		base.ExposeData();
+		Scribe_Defs.Look(ref kindDef, "kindDef");
+	}
 
-		public override string Summary => "PawnCount".Translate(count.Named("COUNT"), ((count > 1) ? kindDef.GetLabelPlural(count) : kindDef.label).Named("KINDLABEL"));
-
-		public override void ExposeData()
+	public override int GetHashCode()
+	{
+		int hashCode = base.GetHashCode();
+		hashCode ^= count;
+		hashCode ^= (requiredAtStart ? 1 : 0);
+		if (kindDef != null)
 		{
-			base.ExposeData();
-			Scribe_Defs.Look(ref kindDef, "kindDef");
+			hashCode ^= kindDef.GetHashCode();
 		}
-
-		public override int GetHashCode()
-		{
-			int hashCode = base.GetHashCode();
-			hashCode ^= count;
-			hashCode ^= (requiredAtStart ? 1 : 0);
-			if (kindDef != null)
-			{
-				hashCode ^= kindDef.GetHashCode();
-			}
-			return hashCode;
-		}
+		return hashCode;
 	}
 }

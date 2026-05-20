@@ -1,29 +1,28 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class StatPart_NaturalNotMissingBodyPartsCoverage : StatPart
 {
-	public class StatPart_NaturalNotMissingBodyPartsCoverage : StatPart
+	public override void TransformValue(StatRequest req, ref float val)
 	{
-		public override void TransformValue(StatRequest req, ref float val)
+		if (TryGetValue(req, out var value))
 		{
-			if (TryGetValue(req, out var value))
-			{
-				val *= value;
-			}
+			val *= value;
 		}
+	}
 
-		public override string ExplanationPart(StatRequest req)
+	public override string ExplanationPart(StatRequest req)
+	{
+		if (TryGetValue(req, out var value))
 		{
-			if (TryGetValue(req, out var value))
-			{
-				return "StatsReport_MissingBodyParts".Translate() + ": x" + value.ToStringPercent();
-			}
-			return null;
+			return "StatsReport_MissingBodyParts".Translate() + ": x" + value.ToStringPercent();
 		}
+		return null;
+	}
 
-		private bool TryGetValue(StatRequest req, out float value)
-		{
-			return PawnOrCorpseStatUtility.TryGetPawnOrCorpseStat(req, (Pawn x) => x.health.hediffSet.GetCoverageOfNotMissingNaturalParts(x.RaceProps.body.corePart), (ThingDef x) => 1f, out value);
-		}
+	private bool TryGetValue(StatRequest req, out float value)
+	{
+		return PawnOrCorpseStatUtility.TryGetPawnOrCorpseStat(req, (Pawn x) => x.health.hediffSet.GetCoverageOfNotMissingNaturalParts(x.RaceProps.body.corePart), (ThingDef x) => 1f, out value);
 	}
 }

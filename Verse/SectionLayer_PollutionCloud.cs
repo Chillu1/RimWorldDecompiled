@@ -2,149 +2,148 @@ using System.Collections.Generic;
 using RimWorld;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+[StaticConstructorOnStartup]
+public class SectionLayer_PollutionCloud : SectionLayer_Gas
 {
-	[StaticConstructorOnStartup]
-	public class SectionLayer_PollutionCloud : SectionLayer_Gas
+	private static Material matCached;
+
+	private float MinCellDistance = 5f;
+
+	private int AttemptsPerCell = 15;
+
+	private float MinPercentage = 0.35f;
+
+	private static readonly SimpleCurve NumCellsPerSectionPollutionLevel = new SimpleCurve
 	{
-		private static Material matCached;
+		new CurvePoint(10f, 3f),
+		new CurvePoint(20f, 6f)
+	};
 
-		private float MinCellDistance = 5f;
+	private static readonly Vector2 FadeTexScrollSpeed = new Vector2(0.035f, 0.0125f);
 
-		private int AttemptsPerCell = 15;
+	private static readonly Vector2 FadeTexScale = new Vector2(0.15f, 0.15f);
 
-		private float MinPercentage = 0.35f;
+	private static readonly CachedTexture PollutionTex = new CachedTexture("Other/PollutionCloud");
 
-		private static readonly SimpleCurve NumCellsPerSectionPollutionLevel = new SimpleCurve
+	private static readonly CachedTexture PollutionFadeTex = new CachedTexture("Other/PollutionCloudFade");
+
+	private static readonly Color SnowPollutionCloudColor = new Color(1f, 1f, 1f, 0.66f);
+
+	private const float SnowPollutionColorThreshold = 0.4f;
+
+	private List<IntVec3> cellsTmp = new List<IntVec3>();
+
+	protected override FloatRange VertexScaleOffsetRange => new FloatRange(7f, 11f);
+
+	protected override FloatRange VertexPositionOffsetRange => new FloatRange(-1f, 1f);
+
+	public override Material Mat
+	{
+		get
 		{
-			new CurvePoint(10f, 3f),
-			new CurvePoint(20f, 6f)
-		};
-
-		private static readonly Vector2 FadeTexScrollSpeed = new Vector2(0.035f, 0.0125f);
-
-		private static readonly Vector2 FadeTexScale = new Vector2(0.15f, 0.15f);
-
-		private static readonly CachedTexture PollutionTex = new CachedTexture("Other/PollutionCloud");
-
-		private static readonly CachedTexture PollutionFadeTex = new CachedTexture("Other/PollutionCloudFade");
-
-		private static readonly Color SnowPollutionCloudColor = new Color(1f, 1f, 1f, 0.66f);
-
-		private const float SnowPollutionColorThreshold = 0.4f;
-
-		private List<IntVec3> cellsTmp = new List<IntVec3>();
-
-		protected override FloatRange VertexScaleOffsetRange => new FloatRange(7f, 11f);
-
-		protected override FloatRange VertexPositionOffsetRange => new FloatRange(-1f, 1f);
-
-		public override Material Mat
-		{
-			get
+			if (matCached == null)
 			{
-				if (matCached == null)
-				{
-					matCached = MaterialPool.MatFrom(PollutionTex.Texture, ShaderDatabase.PollutionCloud, Color.white, 3000);
-					matCached.SetTexture(ShaderPropertyIDs.FadeTex, PollutionFadeTex.Texture);
-					matCached.SetVector(ShaderPropertyIDs.TexScrollSpeed, FadeTexScrollSpeed);
-					matCached.SetVector(ShaderPropertyIDs.TexScale, FadeTexScale);
-				}
-				return matCached;
+				matCached = MaterialPool.MatFrom(PollutionTex.Texture, ShaderDatabase.PollutionCloud, Color.white, 3000);
+				matCached.SetTexture(ShaderPropertyIDs.FadeTex, PollutionFadeTex.Texture);
+				matCached.SetVector(ShaderPropertyIDs.TexScrollSpeed, FadeTexScrollSpeed);
+				matCached.SetVector(ShaderPropertyIDs.TexScale, FadeTexScale);
 			}
+			return matCached;
 		}
+	}
 
-		public override bool Visible
+	public override bool Visible
+	{
+		get
 		{
-			get
+			if (base.Visible)
 			{
-				if (base.Visible)
-				{
-					return ModsConfig.BiotechActive;
-				}
-				return false;
+				return ModsConfig.BiotechActive;
 			}
+			return false;
 		}
+	}
 
-		public SectionLayer_PollutionCloud(Section section)
-			: base(section)
+	public SectionLayer_PollutionCloud(Section section)
+		: base(section)
+	{
+		relevantChangeTypes = MapMeshFlagDefOf.Pollution;
+	}
+
+	public override Color ColorAt(IntVec3 cell)
+	{
+		float depth = base.Map.snowGrid.GetDepth(cell);
+		cell.GetSandDepth(base.Map);
+		TerrainDef terrainDef = base.Map.terrainGrid.TerrainAt(cell);
+		if (!(depth < 0.4f))
 		{
-			relevantChangeTypes = MapMeshFlagDefOf.Pollution;
+			return SnowPollutionCloudColor;
 		}
+		return terrainDef.pollutionCloudColor;
+	}
 
-		public override Color ColorAt(IntVec3 cell)
+	public override void Regenerate()
+	{
+		ClearSubMeshes(MeshParts.All);
+		LayerSubMesh subMesh = GetSubMesh(Mat);
+		float altitude = AltitudeLayer.Gas.AltitudeFor();
+		int num = section.botLeft.x;
+		foreach (IntVec3 item in AffectedCells(section.CellRect))
 		{
-			float depth = base.Map.snowGrid.GetDepth(cell);
-			cell.GetSandDepth(base.Map);
-			TerrainDef terrainDef = base.Map.terrainGrid.TerrainAt(cell);
-			if (!(depth < 0.4f))
+			int count = subMesh.verts.Count;
+			AddCell(item, num, count, subMesh, altitude);
+			num++;
+		}
+		if (subMesh.verts.Count > 0)
+		{
+			subMesh.FinalizeMesh(MeshParts.All);
+		}
+	}
+
+	private IEnumerable<IntVec3> AffectedCells(CellRect rect)
+	{
+		cellsTmp.Clear();
+		int num = 0;
+		foreach (IntVec3 cell in rect.Cells)
+		{
+			if (base.Map.pollutionGrid.IsPolluted(cell))
 			{
-				return SnowPollutionCloudColor;
-			}
-			return terrainDef.pollutionCloudColor;
-		}
-
-		public override void Regenerate()
-		{
-			ClearSubMeshes(MeshParts.All);
-			LayerSubMesh subMesh = GetSubMesh(Mat);
-			float altitude = AltitudeLayer.Gas.AltitudeFor();
-			int num = section.botLeft.x;
-			foreach (IntVec3 item in AffectedCells(section.CellRect))
-			{
-				int count = subMesh.verts.Count;
-				AddCell(item, num, count, subMesh, altitude);
 				num++;
 			}
-			if (subMesh.verts.Count > 0)
-			{
-				subMesh.FinalizeMesh(MeshParts.All);
-			}
 		}
-
-		private IEnumerable<IntVec3> AffectedCells(CellRect rect)
+		if ((float)num / (float)rect.Area < MinPercentage)
 		{
-			cellsTmp.Clear();
-			int num = 0;
-			foreach (IntVec3 cell in rect.Cells)
+			yield break;
+		}
+		float numCellsToCover = NumCellsPerSectionPollutionLevel.Evaluate(num);
+		for (int i = 0; (float)i < numCellsToCover; i++)
+		{
+			for (int j = 0; j < AttemptsPerCell; j++)
 			{
-				if (base.Map.pollutionGrid.IsPolluted(cell))
+				IntVec3 randomCell = rect.RandomCell;
+				if (!base.Map.pollutionGrid.IsPolluted(randomCell) || base.Map.terrainGrid.TerrainAt(randomCell).IsWater)
 				{
-					num++;
+					continue;
 				}
-			}
-			if ((float)num / (float)rect.Area < MinPercentage)
-			{
-				yield break;
-			}
-			float numCellsToCover = NumCellsPerSectionPollutionLevel.Evaluate(num);
-			for (int i = 0; (float)i < numCellsToCover; i++)
-			{
-				for (int j = 0; j < AttemptsPerCell; j++)
+				bool flag = !cellsTmp.Contains(randomCell);
+				if (flag)
 				{
-					IntVec3 randomCell = rect.RandomCell;
-					if (!base.Map.pollutionGrid.IsPolluted(randomCell) || base.Map.terrainGrid.TerrainAt(randomCell).IsWater)
+					foreach (IntVec3 item in cellsTmp)
 					{
-						continue;
-					}
-					bool flag = !cellsTmp.Contains(randomCell);
-					if (flag)
-					{
-						foreach (IntVec3 item in cellsTmp)
+						if (!item.InHorDistOf(randomCell, MinCellDistance))
 						{
-							if (!item.InHorDistOf(randomCell, MinCellDistance))
-							{
-								flag = false;
-								break;
-							}
+							flag = false;
+							break;
 						}
 					}
-					if (flag)
-					{
-						cellsTmp.Add(randomCell);
-						yield return randomCell;
-						break;
-					}
+				}
+				if (flag)
+				{
+					cellsTmp.Add(randomCell);
+					yield return randomCell;
+					break;
 				}
 			}
 		}

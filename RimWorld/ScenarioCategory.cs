@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum ScenarioCategory
 {
-	public enum ScenarioCategory
-	{
-		Undefined,
-		FromDef,
-		CustomLocal,
-		SteamWorkshop
-	}
+	Undefined,
+	FromDef,
+	CustomLocal,
+	SteamWorkshop
 }

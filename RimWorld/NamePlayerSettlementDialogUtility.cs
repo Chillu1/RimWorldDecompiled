@@ -1,33 +1,32 @@
 using RimWorld.Planet;
 using Verse.Grammar;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class NamePlayerSettlementDialogUtility
 {
-	public static class NamePlayerSettlementDialogUtility
+	public const int CharacterLimit = 64;
+
+	public static bool IsValidName(string s)
 	{
-		public const int CharacterLimit = 64;
-
-		public static bool IsValidName(string s)
+		if (s.Length == 0)
 		{
-			if (s.Length == 0)
-			{
-				return false;
-			}
-			if (s.Length > 64)
-			{
-				return false;
-			}
-			if (GrammarResolver.ContainsSpecialChars(s))
-			{
-				return false;
-			}
-			return true;
+			return false;
 		}
-
-		public static void Named(Settlement factionBase, string s)
+		if (s.Length > 64)
 		{
-			factionBase.Name = s;
-			factionBase.namedByPlayer = true;
+			return false;
 		}
+		if (GrammarResolver.ContainsSpecialChars(s))
+		{
+			return false;
+		}
+		return true;
+	}
+
+	public static void Named(Settlement factionBase, string s)
+	{
+		factionBase.Name = s;
+		factionBase.namedByPlayer = true;
 	}
 }

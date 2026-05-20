@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public class PawnRenderNodeProperties_Overlay : PawnRenderNodeProperties
 {
-	public class PawnRenderNodeProperties_Overlay : PawnRenderNodeProperties
+	public PawnRenderNodeProperties_Overlay()
 	{
-		public PawnRenderNodeProperties_Overlay()
-		{
-			useGraphic = false;
-		}
+		useGraphic = false;
 	}
 }

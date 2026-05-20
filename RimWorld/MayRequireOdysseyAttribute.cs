@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class MayRequireOdysseyAttribute : MayRequireAttribute
 {
-	public class MayRequireOdysseyAttribute : MayRequireAttribute
+	public MayRequireOdysseyAttribute()
+		: base("ludeon.rimworld.odyssey")
 	{
-		public MayRequireOdysseyAttribute()
-			: base("ludeon.rimworld.odyssey")
-		{
-		}
 	}
 }

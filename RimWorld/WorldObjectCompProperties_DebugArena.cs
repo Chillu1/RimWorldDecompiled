@@ -1,12 +1,11 @@
 using RimWorld.Planet;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WorldObjectCompProperties_DebugArena : WorldObjectCompProperties
 {
-	public class WorldObjectCompProperties_DebugArena : WorldObjectCompProperties
+	public WorldObjectCompProperties_DebugArena()
 	{
-		public WorldObjectCompProperties_DebugArena()
-		{
-			compClass = typeof(DebugArena);
-		}
+		compClass = typeof(DebugArena);
 	}
 }

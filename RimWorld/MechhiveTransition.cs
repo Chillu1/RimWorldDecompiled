@@ -1,23 +1,22 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class MechhiveTransition : OrbitalTransition
 {
-	public class MechhiveTransition : OrbitalTransition
+	public override bool IsTransitionSatisfied()
 	{
-		public override bool IsTransitionSatisfied()
+		if (!base.IsTransitionSatisfied())
 		{
-			if (!base.IsTransitionSatisfied())
-			{
-				return false;
-			}
-			foreach (Map map in Find.Maps)
-			{
-				if (map.listerThings.AnyThingWithDef(ThingDefOf.CerebrexCore))
-				{
-					return true;
-				}
-			}
 			return false;
 		}
+		foreach (Map map in Find.Maps)
+		{
+			if (map.listerThings.AnyThingWithDef(ThingDefOf.CerebrexCore))
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 }

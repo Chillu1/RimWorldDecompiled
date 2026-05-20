@@ -1,12 +1,11 @@
-namespace Verse
-{
-	public class HediffCompProperties_KillAfterDays : HediffCompProperties
-	{
-		public int days;
+namespace Verse;
 
-		public HediffCompProperties_KillAfterDays()
-		{
-			compClass = typeof(HediffComp_KillAfterDays);
-		}
+public class HediffCompProperties_KillAfterDays : HediffCompProperties
+{
+	public int days;
+
+	public HediffCompProperties_KillAfterDays()
+	{
+		compClass = typeof(HediffComp_KillAfterDays);
 	}
 }

@@ -1,63 +1,62 @@
 using System;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class ThoughtWorker
 {
-	public abstract class ThoughtWorker
+	public ThoughtDef def;
+
+	public virtual string PostProcessLabel(Pawn p, string label)
 	{
-		public ThoughtDef def;
+		return label.Formatted(p.Named("PAWN"));
+	}
 
-		public virtual string PostProcessLabel(Pawn p, string label)
-		{
-			return label.Formatted(p.Named("PAWN"));
-		}
+	public virtual string PostProcessDescription(Pawn p, string description)
+	{
+		return description.Formatted(p.Named("PAWN"));
+	}
 
-		public virtual string PostProcessDescription(Pawn p, string description)
+	private ThoughtState? FailState(Pawn p)
+	{
+		if (!ThoughtUtility.CanGetThought(p, def))
 		{
-			return description.Formatted(p.Named("PAWN"));
+			return ThoughtState.Inactive;
 		}
+		return null;
+	}
 
-		private ThoughtState? FailState(Pawn p)
-		{
-			if (!ThoughtUtility.CanGetThought(p, def))
-			{
-				return ThoughtState.Inactive;
-			}
-			return null;
-		}
+	public ThoughtState CurrentState(Pawn p)
+	{
+		return PostProcessedState(FailState(p) ?? CurrentStateInternal(p));
+	}
 
-		public ThoughtState CurrentState(Pawn p)
-		{
-			return PostProcessedState(FailState(p) ?? CurrentStateInternal(p));
-		}
+	public ThoughtState CurrentSocialState(Pawn p, Pawn otherPawn)
+	{
+		return PostProcessedState(FailState(p) ?? CurrentSocialStateInternal(p, otherPawn));
+	}
 
-		public ThoughtState CurrentSocialState(Pawn p, Pawn otherPawn)
+	private ThoughtState PostProcessedState(ThoughtState state)
+	{
+		if (def.invert)
 		{
-			return PostProcessedState(FailState(p) ?? CurrentSocialStateInternal(p, otherPawn));
+			state = ((!state.Active) ? ThoughtState.ActiveAtStage(0) : ThoughtState.Inactive);
 		}
+		return state;
+	}
 
-		private ThoughtState PostProcessedState(ThoughtState state)
-		{
-			if (def.invert)
-			{
-				state = ((!state.Active) ? ThoughtState.ActiveAtStage(0) : ThoughtState.Inactive);
-			}
-			return state;
-		}
+	protected virtual ThoughtState CurrentStateInternal(Pawn p)
+	{
+		throw new NotImplementedException(def.defName + " (normal)");
+	}
 
-		protected virtual ThoughtState CurrentStateInternal(Pawn p)
-		{
-			throw new NotImplementedException(def.defName + " (normal)");
-		}
+	protected virtual ThoughtState CurrentSocialStateInternal(Pawn p, Pawn otherPawn)
+	{
+		throw new NotImplementedException(def.defName + " (social)");
+	}
 
-		protected virtual ThoughtState CurrentSocialStateInternal(Pawn p, Pawn otherPawn)
-		{
-			throw new NotImplementedException(def.defName + " (social)");
-		}
-
-		public virtual float MoodMultiplier(Pawn p)
-		{
-			return 1f;
-		}
+	public virtual float MoodMultiplier(Pawn p)
+	{
+		return 1f;
 	}
 }

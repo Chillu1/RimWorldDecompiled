@@ -1,117 +1,116 @@
 using System;
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public static class LargestAreaFinder
 {
-	public static class LargestAreaFinder
+	private static BoolGrid visited;
+
+	private static List<IntVec3> randomOrderWorkingList = new List<IntVec3>();
+
+	private static HashSet<IntVec3> tmpProcessed = new HashSet<IntVec3>();
+
+	public static CellRect FindLargestRect(Map map, Predicate<IntVec3> predicate, int breakEarlyOn = -1)
 	{
-		private static BoolGrid visited;
-
-		private static List<IntVec3> randomOrderWorkingList = new List<IntVec3>();
-
-		private static HashSet<IntVec3> tmpProcessed = new HashSet<IntVec3>();
-
-		public static CellRect FindLargestRect(Map map, Predicate<IntVec3> predicate, int breakEarlyOn = -1)
+		if (visited == null)
 		{
-			if (visited == null)
+			visited = new BoolGrid(map);
+		}
+		visited.ClearAndResizeTo(map);
+		Rand.PushState(map.uniqueID ^ 0x1CDAF373);
+		CellRect largestRect = CellRect.Empty;
+		for (int i = 0; i < 3; i++)
+		{
+			tmpProcessed.Clear();
+			foreach (IntVec3 item in map.cellsInRandomOrder.GetAll().InRandomOrder(randomOrderWorkingList))
 			{
-				visited = new BoolGrid(map);
-			}
-			visited.ClearAndResizeTo(map);
-			Rand.PushState(map.uniqueID ^ 0x1CDAF373);
-			CellRect largestRect = CellRect.Empty;
-			for (int i = 0; i < 3; i++)
-			{
-				tmpProcessed.Clear();
-				foreach (IntVec3 item in map.cellsInRandomOrder.GetAll().InRandomOrder(randomOrderWorkingList))
+				CellRect cellRect = FindLargestRectAt(item, map, tmpProcessed, predicate);
+				if (cellRect.Area > largestRect.Area)
 				{
-					CellRect cellRect = FindLargestRectAt(item, map, tmpProcessed, predicate);
-					if (cellRect.Area > largestRect.Area)
+					largestRect = cellRect;
+					if (ShouldBreakEarly())
 					{
-						largestRect = cellRect;
-						if (ShouldBreakEarly())
-						{
-							break;
-						}
+						break;
 					}
 				}
-				if (ShouldBreakEarly())
-				{
-					break;
-				}
 			}
-			Rand.PopState();
-			return largestRect;
-			bool ShouldBreakEarly()
+			if (ShouldBreakEarly())
 			{
-				if (breakEarlyOn >= 0 && largestRect.Width >= breakEarlyOn)
-				{
-					return largestRect.Height >= breakEarlyOn;
-				}
-				return false;
+				break;
 			}
 		}
-
-		private static CellRect FindLargestRectAt(IntVec3 c, Map map, HashSet<IntVec3> processed, Predicate<IntVec3> predicate)
+		Rand.PopState();
+		return largestRect;
+		bool ShouldBreakEarly()
 		{
-			if (processed.Contains(c) || !predicate(c))
+			if (breakEarlyOn >= 0 && largestRect.Width >= breakEarlyOn)
 			{
-				return CellRect.Empty;
+				return largestRect.Height >= breakEarlyOn;
 			}
-			return ExpandRect(CellRect.SingleCell(c), map, processed, predicate, keepSquare: true);
+			return false;
 		}
+	}
 
-		public static CellRect ExpandRect(CellRect rect, Map map, HashSet<IntVec3> processed, Predicate<IntVec3> predicate, bool keepSquare = false)
+	private static CellRect FindLargestRectAt(IntVec3 c, Map map, HashSet<IntVec3> processed, Predicate<IntVec3> predicate)
+	{
+		if (processed.Contains(c) || !predicate(c))
 		{
-			bool flag;
-			do
+			return CellRect.Empty;
+		}
+		return ExpandRect(CellRect.SingleCell(c), map, processed, predicate, keepSquare: true);
+	}
+
+	public static CellRect ExpandRect(CellRect rect, Map map, HashSet<IntVec3> processed, Predicate<IntVec3> predicate, bool keepSquare = false)
+	{
+		bool flag;
+		do
+		{
+			flag = false;
+			if (!keepSquare || rect.Width <= rect.Height)
 			{
-				flag = false;
-				if (!keepSquare || rect.Width <= rect.Height)
+				if (rect.maxX + 1 < map.Size.x && CanExpand(Rot4.East))
 				{
-					if (rect.maxX + 1 < map.Size.x && CanExpand(Rot4.East))
-					{
-						rect.maxX++;
-						flag = true;
-					}
-					if (rect.minX > 0 && CanExpand(Rot4.West))
-					{
-						rect.minX--;
-						flag = true;
-					}
+					rect.maxX++;
+					flag = true;
 				}
-				if (!keepSquare || rect.Height <= rect.Width)
+				if (rect.minX > 0 && CanExpand(Rot4.West))
 				{
-					if (rect.maxZ + 1 < map.Size.z && CanExpand(Rot4.North))
-					{
-						rect.maxZ++;
-						flag = true;
-					}
-					if (rect.minZ > 0 && CanExpand(Rot4.South))
-					{
-						rect.minZ--;
-						flag = true;
-					}
+					rect.minX--;
+					flag = true;
 				}
 			}
-			while (flag);
-			foreach (IntVec3 item in rect)
+			if (!keepSquare || rect.Height <= rect.Width)
 			{
-				processed.Add(item);
-			}
-			return rect;
-			bool CanExpand(Rot4 dir)
-			{
-				foreach (IntVec3 edgeCell in rect.GetEdgeCells(dir))
+				if (rect.maxZ + 1 < map.Size.z && CanExpand(Rot4.North))
 				{
-					IntVec3 intVec = edgeCell + dir.FacingCell;
-					if (processed.Contains(intVec) || !predicate(intVec))
-					{
-						return false;
-					}
+					rect.maxZ++;
+					flag = true;
 				}
-				return true;
+				if (rect.minZ > 0 && CanExpand(Rot4.South))
+				{
+					rect.minZ--;
+					flag = true;
+				}
 			}
+		}
+		while (flag);
+		foreach (IntVec3 item in rect)
+		{
+			processed.Add(item);
+		}
+		return rect;
+		bool CanExpand(Rot4 dir)
+		{
+			foreach (IntVec3 edgeCell in rect.GetEdgeCells(dir))
+			{
+				IntVec3 intVec = edgeCell + dir.FacingCell;
+				if (processed.Contains(intVec) || !predicate(intVec))
+				{
+					return false;
+				}
+			}
+			return true;
 		}
 	}
 }

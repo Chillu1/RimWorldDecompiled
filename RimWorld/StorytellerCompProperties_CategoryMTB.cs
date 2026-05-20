@@ -1,18 +1,17 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class StorytellerCompProperties_CategoryMTB : StorytellerCompProperties
 {
-	public class StorytellerCompProperties_CategoryMTB : StorytellerCompProperties
+	public float mtbDays = -1f;
+
+	public SimpleCurve mtbDaysFactorByDaysPassedCurve;
+
+	public IncidentCategoryDef category;
+
+	public StorytellerCompProperties_CategoryMTB()
 	{
-		public float mtbDays = -1f;
-
-		public SimpleCurve mtbDaysFactorByDaysPassedCurve;
-
-		public IncidentCategoryDef category;
-
-		public StorytellerCompProperties_CategoryMTB()
-		{
-			compClass = typeof(StorytellerComp_CategoryMTB);
-		}
+		compClass = typeof(StorytellerComp_CategoryMTB);
 	}
 }

@@ -1,13 +1,12 @@
 using Verse;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobGiver_ManTurretsNearPoint : JobGiver_ManTurrets
 {
-	public class JobGiver_ManTurretsNearPoint : JobGiver_ManTurrets
+	protected override IntVec3 GetRoot(Pawn pawn)
 	{
-		protected override IntVec3 GetRoot(Pawn pawn)
-		{
-			return pawn.GetLord().CurLordToil.FlagLoc;
-		}
+		return pawn.GetLord().CurLordToil.FlagLoc;
 	}
 }

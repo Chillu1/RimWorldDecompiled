@@ -1,47 +1,46 @@
 using RimWorld;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class PawnCapacityModifier
 {
-	public class PawnCapacityModifier
+	public PawnCapacityDef capacity;
+
+	public float offset;
+
+	public float setMax = 999f;
+
+	public float postFactor = 1f;
+
+	public StatDef statFactorMod;
+
+	public SimpleCurve setMaxCurveOverride;
+
+	public StatDef setMaxCurveEvaluateStat;
+
+	public bool SetMaxDefined
 	{
-		public PawnCapacityDef capacity;
-
-		public float offset;
-
-		public float setMax = 999f;
-
-		public float postFactor = 1f;
-
-		public StatDef statFactorMod;
-
-		public SimpleCurve setMaxCurveOverride;
-
-		public StatDef setMaxCurveEvaluateStat;
-
-		public bool SetMaxDefined
+		get
 		{
-			get
+			if (Mathf.Approximately(setMax, 999f))
 			{
-				if (Mathf.Approximately(setMax, 999f))
+				if (setMaxCurveOverride != null)
 				{
-					if (setMaxCurveOverride != null)
-					{
-						return setMaxCurveEvaluateStat != null;
-					}
-					return false;
+					return setMaxCurveEvaluateStat != null;
 				}
-				return true;
+				return false;
 			}
+			return true;
 		}
+	}
 
-		public float EvaluateSetMax(Pawn pawn)
+	public float EvaluateSetMax(Pawn pawn)
+	{
+		if (setMaxCurveOverride == null || setMaxCurveEvaluateStat == null)
 		{
-			if (setMaxCurveOverride == null || setMaxCurveEvaluateStat == null)
-			{
-				return setMax;
-			}
-			return setMaxCurveOverride.Evaluate(pawn.GetStatValue(setMaxCurveEvaluateStat));
+			return setMax;
 		}
+		return setMaxCurveOverride.Evaluate(pawn.GetStatValue(setMaxCurveEvaluateStat));
 	}
 }

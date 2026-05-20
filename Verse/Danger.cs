@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum Danger : byte
 {
-	public enum Danger : byte
-	{
-		Unspecified,
-		None,
-		Some,
-		Deadly
-	}
+	Unspecified,
+	None,
+	Some,
+	Deadly
 }

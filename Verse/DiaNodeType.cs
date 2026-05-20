@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum DiaNodeType : byte
 {
-	public enum DiaNodeType : byte
-	{
-		Undefined,
-		Special,
-		BaseEncounters,
-		InsanityBattles
-	}
+	Undefined,
+	Special,
+	BaseEncounters,
+	InsanityBattles
 }

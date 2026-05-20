@@ -1,15 +1,14 @@
 using Verse;
 
-namespace RimWorld
-{
-	[DefOf]
-	public static class InventoryStockGroupDefOf
-	{
-		public static InventoryStockGroupDef Medicine;
+namespace RimWorld;
 
-		static InventoryStockGroupDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(InventoryStockGroupDefOf));
-		}
+[DefOf]
+public static class InventoryStockGroupDefOf
+{
+	public static InventoryStockGroupDef Medicine;
+
+	static InventoryStockGroupDefOf()
+	{
+		DefOfHelper.EnsureInitializedInCtor(typeof(InventoryStockGroupDefOf));
 	}
 }

@@ -1,23 +1,22 @@
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public class PrisonerWillingToJoinComp : ImportantPawnComp, IThingHolder
 {
-	public class PrisonerWillingToJoinComp : ImportantPawnComp, IThingHolder
+	protected override string PawnSaveKey => "prisoner";
+
+	protected override void RemovePawnOnWorldObjectRemoved()
 	{
-		protected override string PawnSaveKey => "prisoner";
+		pawn.ClearAndDestroyContentsOrPassToWorld();
+	}
 
-		protected override void RemovePawnOnWorldObjectRemoved()
+	public override string CompInspectStringExtra()
+	{
+		if (pawn.Any)
 		{
-			pawn.ClearAndDestroyContentsOrPassToWorld();
+			return "Prisoner".Translate() + ": " + pawn[0].LabelCap;
 		}
-
-		public override string CompInspectStringExtra()
-		{
-			if (pawn.Any)
-			{
-				return "Prisoner".Translate() + ": " + pawn[0].LabelCap;
-			}
-			return null;
-		}
+		return null;
 	}
 }

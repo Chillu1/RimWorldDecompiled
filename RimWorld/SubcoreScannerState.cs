@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum SubcoreScannerState
 {
-	public enum SubcoreScannerState
-	{
-		Inactive,
-		WaitingForIngredients,
-		WaitingForOccupant,
-		Occupied
-	}
+	Inactive,
+	WaitingForIngredients,
+	WaitingForOccupant,
+	Occupied
 }

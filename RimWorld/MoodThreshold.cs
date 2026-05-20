@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum MoodThreshold
 {
-	public enum MoodThreshold
-	{
-		None,
-		Minor,
-		Major,
-		Extreme
-	}
+	None,
+	Minor,
+	Major,
+	Extreme
 }

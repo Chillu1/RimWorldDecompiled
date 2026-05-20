@@ -1,14 +1,13 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_AbilityStartTrial : CompProperties_AbilityStartRitualOnPawn
 {
-	public class CompProperties_AbilityStartTrial : CompProperties_AbilityStartRitualOnPawn
+	public PreceptDef ritualDefForPrisoner;
+
+	public PreceptDef ritualDefForMentalState;
+
+	public CompProperties_AbilityStartTrial()
 	{
-		public PreceptDef ritualDefForPrisoner;
-
-		public PreceptDef ritualDefForMentalState;
-
-		public CompProperties_AbilityStartTrial()
-		{
-			compClass = typeof(CompAbilityEffect_StartTrial);
-		}
+		compClass = typeof(CompAbilityEffect_StartTrial);
 	}
 }

@@ -1,76 +1,75 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class ScrollPositioner
 {
-	public class ScrollPositioner
+	private Rect? interestRect;
+
+	private bool armed;
+
+	public void Arm(bool armed = true)
 	{
-		private Rect? interestRect;
+		this.armed = armed;
+	}
 
-		private bool armed;
+	public void ClearInterestRects()
+	{
+		interestRect = null;
+	}
 
-		public void Arm(bool armed = true)
+	public void RegisterInterestRect(Rect rect)
+	{
+		if (interestRect.HasValue)
 		{
-			this.armed = armed;
+			interestRect = rect.Union(interestRect.Value);
 		}
-
-		public void ClearInterestRects()
+		else
 		{
-			interestRect = null;
+			interestRect = rect;
 		}
+	}
 
-		public void RegisterInterestRect(Rect rect)
+	public void ScrollHorizontally(ref Vector2 scrollPos, Vector2 outRectSize)
+	{
+		Scroll(ref scrollPos, outRectSize, scrollHorizontally: true, scrollVertically: false);
+	}
+
+	public void ScrollVertically(ref Vector2 scrollPos, Vector2 outRectSize)
+	{
+		Scroll(ref scrollPos, outRectSize, scrollHorizontally: false);
+	}
+
+	public void Scroll(ref Vector2 scrollPos, Vector2 outRectSize, bool scrollHorizontally = true, bool scrollVertically = true)
+	{
+		if (Event.current.type != EventType.Layout || !armed)
 		{
-			if (interestRect.HasValue)
+			return;
+		}
+		armed = false;
+		if (interestRect.HasValue)
+		{
+			if (scrollHorizontally)
 			{
-				interestRect = rect.Union(interestRect.Value);
+				ScrollInDimension(ref scrollPos.x, outRectSize.x, interestRect.Value.xMin, interestRect.Value.xMax);
 			}
-			else
+			if (scrollVertically)
 			{
-				interestRect = rect;
-			}
-		}
-
-		public void ScrollHorizontally(ref Vector2 scrollPos, Vector2 outRectSize)
-		{
-			Scroll(ref scrollPos, outRectSize, scrollHorizontally: true, scrollVertically: false);
-		}
-
-		public void ScrollVertically(ref Vector2 scrollPos, Vector2 outRectSize)
-		{
-			Scroll(ref scrollPos, outRectSize, scrollHorizontally: false);
-		}
-
-		public void Scroll(ref Vector2 scrollPos, Vector2 outRectSize, bool scrollHorizontally = true, bool scrollVertically = true)
-		{
-			if (Event.current.type != EventType.Layout || !armed)
-			{
-				return;
-			}
-			armed = false;
-			if (interestRect.HasValue)
-			{
-				if (scrollHorizontally)
-				{
-					ScrollInDimension(ref scrollPos.x, outRectSize.x, interestRect.Value.xMin, interestRect.Value.xMax);
-				}
-				if (scrollVertically)
-				{
-					ScrollInDimension(ref scrollPos.y, outRectSize.y, interestRect.Value.yMin, interestRect.Value.yMax);
-				}
+				ScrollInDimension(ref scrollPos.y, outRectSize.y, interestRect.Value.yMin, interestRect.Value.yMax);
 			}
 		}
+	}
 
-		private void ScrollInDimension(ref float scrollPos, float scrollViewSize, float v0, float v1)
+	private void ScrollInDimension(ref float scrollPos, float scrollViewSize, float v0, float v1)
+	{
+		float num = v1 - v0;
+		if (num <= scrollViewSize)
 		{
-			float num = v1 - v0;
-			if (num <= scrollViewSize)
-			{
-				scrollPos = v0 + num / 2f - scrollViewSize / 2f;
-			}
-			else
-			{
-				scrollPos = v0;
-			}
+			scrollPos = v0 + num / 2f - scrollViewSize / 2f;
+		}
+		else
+		{
+			scrollPos = v0;
 		}
 	}
 }

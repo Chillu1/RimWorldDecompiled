@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum WipeMode
 {
-	public enum WipeMode
-	{
-		Vanish,
-		FullRefund,
-		VanishOrMoveAside
-	}
+	Vanish,
+	FullRefund,
+	VanishOrMoveAside
 }

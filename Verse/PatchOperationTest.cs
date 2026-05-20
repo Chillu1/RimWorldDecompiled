@@ -1,12 +1,11 @@
 using System.Xml;
 
-namespace Verse
+namespace Verse;
+
+public class PatchOperationTest : PatchOperationPathed
 {
-	public class PatchOperationTest : PatchOperationPathed
+	protected override bool ApplyWorker(XmlDocument xml)
 	{
-		protected override bool ApplyWorker(XmlDocument xml)
-		{
-			return xml.SelectSingleNode(xpath) != null;
-		}
+		return xml.SelectSingleNode(xpath) != null;
 	}
 }

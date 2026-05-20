@@ -1,12 +1,11 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum ComfortCategory : byte
 {
-	public enum ComfortCategory : byte
-	{
-		Uncomfortable,
-		Normal,
-		Comfortable,
-		VeryComfortable,
-		ExtremelyComfortable,
-		LuxuriantlyComfortable
-	}
+	Uncomfortable,
+	Normal,
+	Comfortable,
+	VeryComfortable,
+	ExtremelyComfortable,
+	LuxuriantlyComfortable
 }

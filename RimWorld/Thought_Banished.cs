@@ -1,17 +1,16 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class Thought_Banished : Thought_Memory
 {
-	public class Thought_Banished : Thought_Memory
+	public override bool ShouldDiscard
 	{
-		public override bool ShouldDiscard
+		get
 		{
-			get
+			if (!base.ShouldDiscard)
 			{
-				if (!base.ShouldDiscard)
-				{
-					return otherPawn.Faction == pawn.Faction;
-				}
-				return true;
+				return otherPawn.Faction == pawn.Faction;
 			}
+			return true;
 		}
 	}
 }

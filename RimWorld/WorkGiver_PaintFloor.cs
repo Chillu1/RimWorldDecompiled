@@ -3,138 +3,137 @@ using UnityEngine;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WorkGiver_PaintFloor : WorkGiver_Scanner
 {
-	public class WorkGiver_PaintFloor : WorkGiver_Scanner
+	private static List<Thing> tmpDye = new List<Thing>();
+
+	public override PathEndMode PathEndMode => PathEndMode.Touch;
+
+	public override bool ShouldSkip(Pawn pawn, bool forced = false)
 	{
-		private static List<Thing> tmpDye = new List<Thing>();
+		return !pawn.Map.designationManager.AnySpawnedDesignationOfDef(DesignationDefOf.PaintFloor);
+	}
 
-		public override PathEndMode PathEndMode => PathEndMode.Touch;
-
-		public override bool ShouldSkip(Pawn pawn, bool forced = false)
+	public override IEnumerable<IntVec3> PotentialWorkCellsGlobal(Pawn pawn)
+	{
+		foreach (Designation item in pawn.Map.designationManager.SpawnedDesignationsOfDef(DesignationDefOf.PaintFloor))
 		{
-			return !pawn.Map.designationManager.AnySpawnedDesignationOfDef(DesignationDefOf.PaintFloor);
+			yield return item.target.Cell;
 		}
+	}
 
-		public override IEnumerable<IntVec3> PotentialWorkCellsGlobal(Pawn pawn)
+	public override bool HasJobOnCell(Pawn pawn, IntVec3 c, bool forced = false)
+	{
+		AcceptanceReport acceptanceReport = ShouldPaintCell(pawn, c, forced, checkDye: true);
+		if (!acceptanceReport)
 		{
-			foreach (Designation item in pawn.Map.designationManager.SpawnedDesignationsOfDef(DesignationDefOf.PaintFloor))
+			if (!acceptanceReport.Reason.NullOrEmpty())
 			{
-				yield return item.target.Cell;
+				JobFailReason.Is(acceptanceReport.Reason);
 			}
+			return false;
 		}
+		return true;
+	}
 
-		public override bool HasJobOnCell(Pawn pawn, IntVec3 c, bool forced = false)
+	public override Job JobOnCell(Pawn pawn, IntVec3 cell, bool forced = false)
+	{
+		tmpDye.Clear();
+		tmpDye = PaintUtility.FindNearbyDyes(pawn, forced);
+		int stackCountFromThingList = ThingUtility.GetStackCountFromThingList(tmpDye);
+		if (!tmpDye.Any())
 		{
-			AcceptanceReport acceptanceReport = ShouldPaintCell(pawn, c, forced, checkDye: true);
-			if (!acceptanceReport)
-			{
-				if (!acceptanceReport.Reason.NullOrEmpty())
-				{
-					JobFailReason.Is(acceptanceReport.Reason);
-				}
-				return false;
-			}
-			return true;
+			return null;
 		}
-
-		public override Job JobOnCell(Pawn pawn, IntVec3 cell, bool forced = false)
+		tmpDye.SortBy((Thing x) => x.Position.DistanceToSquared(cell));
+		int num = 0;
+		Job job = JobMaker.MakeJob(JobDefOf.PaintFloor);
+		job.AddQueuedTarget(TargetIndex.A, cell);
+		job.AddQueuedTarget(TargetIndex.B, tmpDye[num]);
+		job.countQueue = new List<int> { 1 };
+		int num2 = Mathf.Min(10, stackCountFromThingList);
+		for (int num3 = 0; num3 < 100; num3++)
 		{
-			tmpDye.Clear();
-			tmpDye = PaintUtility.FindNearbyDyes(pawn, forced);
-			int stackCountFromThingList = ThingUtility.GetStackCountFromThingList(tmpDye);
-			if (!tmpDye.Any())
+			IntVec3 intVec = cell + GenRadial.RadialPattern[num3];
+			if (!intVec.InBounds(pawn.Map) || intVec.Fogged(pawn.Map) || !pawn.CanReach(intVec, PathEndMode.Touch, Danger.Deadly))
 			{
-				return null;
+				continue;
 			}
-			tmpDye.SortBy((Thing x) => x.Position.DistanceToSquared(cell));
-			int num = 0;
-			Job job = JobMaker.MakeJob(JobDefOf.PaintFloor);
-			job.AddQueuedTarget(TargetIndex.A, cell);
-			job.AddQueuedTarget(TargetIndex.B, tmpDye[num]);
-			job.countQueue = new List<int> { 1 };
-			int num2 = Mathf.Min(10, stackCountFromThingList);
-			for (int num3 = 0; num3 < 100; num3++)
+			if ((bool)ShouldPaintCell(pawn, intVec, forced, checkDye: false))
 			{
-				IntVec3 intVec = cell + GenRadial.RadialPattern[num3];
-				if (!intVec.InBounds(pawn.Map) || intVec.Fogged(pawn.Map) || !pawn.CanReach(intVec, PathEndMode.Touch, Danger.Deadly))
+				if (job.targetQueueA.Contains(intVec))
 				{
 					continue;
 				}
-				if ((bool)ShouldPaintCell(pawn, intVec, forced, checkDye: false))
+				job.AddQueuedTarget(TargetIndex.A, intVec);
+				job.countQueue[0]++;
+				if (job.countQueue[0] >= tmpDye[num].stackCount)
 				{
-					if (job.targetQueueA.Contains(intVec))
+					num++;
+					if (num >= tmpDye.Count)
 					{
-						continue;
+						break;
 					}
-					job.AddQueuedTarget(TargetIndex.A, intVec);
-					job.countQueue[0]++;
-					if (job.countQueue[0] >= tmpDye[num].stackCount)
-					{
-						num++;
-						if (num >= tmpDye.Count)
-						{
-							break;
-						}
-						job.AddQueuedTarget(TargetIndex.B, tmpDye[num]);
-					}
-				}
-				if (job.GetTargetQueue(TargetIndex.A).Count >= num2)
-				{
-					break;
+					job.AddQueuedTarget(TargetIndex.B, tmpDye[num]);
 				}
 			}
-			if (job.targetQueueA != null && job.targetQueueA.Count >= 5)
+			if (job.GetTargetQueue(TargetIndex.A).Count >= num2)
 			{
-				job.targetQueueA.SortBy((LocalTargetInfo targ) => targ.Cell.DistanceToSquared(pawn.Position));
+				break;
 			}
-			return job;
 		}
-
-		private AcceptanceReport ShouldPaintCell(Pawn pawn, IntVec3 c, bool forced, bool checkDye)
+		if (job.targetQueueA != null && job.targetQueueA.Count >= 5)
 		{
-			if (!pawn.Map.terrainGrid.TerrainAt(c).isPaintable)
-			{
-				return false;
-			}
-			Designation designation = pawn.Map.designationManager.DesignationAt(c, DesignationDefOf.PaintFloor);
-			if (designation?.colorDef == null)
-			{
-				return false;
-			}
-			if (pawn.Map.terrainGrid.ColorAt(c) == designation.colorDef)
-			{
-				return false;
-			}
-			if (pawn.Map.designationManager.DesignationAt(c, DesignationDefOf.PaintFloor) == null)
-			{
-				return false;
-			}
-			if (pawn.Map.designationManager.DesignationAt(c, DesignationDefOf.RemoveFloor) != null)
-			{
-				return false;
-			}
-			if (pawn.Map.designationManager.DesignationAt(c, DesignationDefOf.RemovePaintFloor) != null)
-			{
-				return false;
-			}
-			if (!pawn.CanReserve(c, 1, -1, ReservationLayerDefOf.Floor, forced))
-			{
-				return false;
-			}
-			if (checkDye)
-			{
-				List<Thing> list = pawn.Map.listerThings.ThingsOfDef(ThingDefOf.Dye);
-				for (int i = 0; i < list.Count; i++)
-				{
-					if (!list[i].IsForbidden(pawn) && pawn.CanReserveAndReach(list[i], PathEndMode.ClosestTouch, Danger.Deadly, 1, 1, null, forced))
-					{
-						return true;
-					}
-				}
-				return "NoIngredient".Translate(ThingDefOf.Dye);
-			}
-			return true;
+			job.targetQueueA.SortBy((LocalTargetInfo targ) => targ.Cell.DistanceToSquared(pawn.Position));
 		}
+		return job;
+	}
+
+	private AcceptanceReport ShouldPaintCell(Pawn pawn, IntVec3 c, bool forced, bool checkDye)
+	{
+		if (!pawn.Map.terrainGrid.TerrainAt(c).isPaintable)
+		{
+			return false;
+		}
+		Designation designation = pawn.Map.designationManager.DesignationAt(c, DesignationDefOf.PaintFloor);
+		if (designation?.colorDef == null)
+		{
+			return false;
+		}
+		if (pawn.Map.terrainGrid.ColorAt(c) == designation.colorDef)
+		{
+			return false;
+		}
+		if (pawn.Map.designationManager.DesignationAt(c, DesignationDefOf.PaintFloor) == null)
+		{
+			return false;
+		}
+		if (pawn.Map.designationManager.DesignationAt(c, DesignationDefOf.RemoveFloor) != null)
+		{
+			return false;
+		}
+		if (pawn.Map.designationManager.DesignationAt(c, DesignationDefOf.RemovePaintFloor) != null)
+		{
+			return false;
+		}
+		if (!pawn.CanReserve(c, 1, -1, ReservationLayerDefOf.Floor, forced))
+		{
+			return false;
+		}
+		if (checkDye)
+		{
+			List<Thing> list = pawn.Map.listerThings.ThingsOfDef(ThingDefOf.Dye);
+			for (int i = 0; i < list.Count; i++)
+			{
+				if (!list[i].IsForbidden(pawn) && pawn.CanReserveAndReach(list[i], PathEndMode.ClosestTouch, Danger.Deadly, 1, 1, null, forced))
+				{
+					return true;
+				}
+			}
+			return "NoIngredient".Translate(ThingDefOf.Dye);
+		}
+		return true;
 	}
 }

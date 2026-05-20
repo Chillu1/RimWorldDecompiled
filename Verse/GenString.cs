@@ -2,66 +2,65 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Verse
+namespace Verse;
+
+public static class GenString
 {
-	public static class GenString
+	private static string[] numberStrings;
+
+	static GenString()
 	{
-		private static string[] numberStrings;
-
-		static GenString()
+		numberStrings = new string[10000];
+		for (int i = 0; i < 10000; i++)
 		{
-			numberStrings = new string[10000];
-			for (int i = 0; i < 10000; i++)
-			{
-				numberStrings[i] = (i - 5000).ToString();
-			}
+			numberStrings[i] = (i - 5000).ToString();
 		}
+	}
 
-		public static string ToStringCached(this int num)
+	public static string ToStringCached(this int num)
+	{
+		if (num < -4999)
 		{
-			if (num < -4999)
-			{
-				return num.ToString();
-			}
-			if (num > 4999)
-			{
-				return num.ToString();
-			}
-			return numberStrings[num + 5000];
+			return num.ToString();
 		}
+		if (num > 4999)
+		{
+			return num.ToString();
+		}
+		return numberStrings[num + 5000];
+	}
 
-		public static IEnumerable<string> SplitBy(this string str, int chunkLength)
+	public static IEnumerable<string> SplitBy(this string str, int chunkLength)
+	{
+		if (str.NullOrEmpty())
 		{
-			if (str.NullOrEmpty())
-			{
-				yield break;
-			}
-			if (chunkLength < 1)
-			{
-				throw new ArgumentException();
-			}
-			for (int i = 0; i < str.Length; i += chunkLength)
-			{
-				if (chunkLength > str.Length - i)
-				{
-					chunkLength = str.Length - i;
-				}
-				yield return str.Substring(i, chunkLength);
-			}
+			yield break;
 		}
+		if (chunkLength < 1)
+		{
+			throw new ArgumentException();
+		}
+		for (int i = 0; i < str.Length; i += chunkLength)
+		{
+			if (chunkLength > str.Length - i)
+			{
+				chunkLength = str.Length - i;
+			}
+			yield return str.Substring(i, chunkLength);
+		}
+	}
 
-		public static StringBuilder AppendLineIfNotEmpty(this StringBuilder sb)
+	public static StringBuilder AppendLineIfNotEmpty(this StringBuilder sb)
+	{
+		if (sb.Length > 0)
 		{
-			if (sb.Length > 0)
-			{
-				sb.AppendLine();
-			}
-			return sb;
+			sb.AppendLine();
 		}
+		return sb;
+	}
 
-		public static int GetHashCodeSafe(this string val)
-		{
-			return val?.GetHashCode() ?? 0;
-		}
+	public static int GetHashCodeSafe(this string val)
+	{
+		return val?.GetHashCode() ?? 0;
 	}
 }

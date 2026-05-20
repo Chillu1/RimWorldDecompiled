@@ -1,13 +1,12 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThinkNode_ConditionalCannotReachMapEdge : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalCannotReachMapEdge : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
-		{
-			return !pawn.CanReachMapEdge();
-		}
+		return !pawn.CanReachMapEdge();
 	}
 }

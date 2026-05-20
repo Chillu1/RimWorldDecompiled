@@ -1,31 +1,30 @@
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class HediffComp_ChangeNeed : HediffComp
 {
-	public class HediffComp_ChangeNeed : HediffComp
+	private Need needCached;
+
+	public HediffCompProperties_ChangeNeed Props => (HediffCompProperties_ChangeNeed)props;
+
+	private Need Need
 	{
-		private Need needCached;
-
-		public HediffCompProperties_ChangeNeed Props => (HediffCompProperties_ChangeNeed)props;
-
-		private Need Need
+		get
 		{
-			get
+			if (needCached == null)
 			{
-				if (needCached == null)
-				{
-					base.Pawn.needs.TryGetNeed(out needCached);
-				}
-				return needCached;
+				base.Pawn.needs.TryGetNeed(out needCached);
 			}
+			return needCached;
 		}
+	}
 
-		public override void CompPostTickInterval(ref float severityAdjustment, int delta)
+	public override void CompPostTickInterval(ref float severityAdjustment, int delta)
+	{
+		if (Need != null)
 		{
-			if (Need != null)
-			{
-				Need.CurLevelPercentage += Props.percentPerDay / 60000f * (float)delta;
-			}
+			Need.CurLevelPercentage += Props.percentPerDay / 60000f * (float)delta;
 		}
 	}
 }

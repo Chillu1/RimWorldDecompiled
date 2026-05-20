@@ -1,14 +1,13 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_RitualEffectDrum : CompProperties_RitualEffectIntervalSpawn
 {
-	public class CompProperties_RitualEffectDrum : CompProperties_RitualEffectIntervalSpawn
+	public int maxDistance;
+
+	public float maxOffset;
+
+	public CompProperties_RitualEffectDrum()
 	{
-		public int maxDistance;
-
-		public float maxOffset;
-
-		public CompProperties_RitualEffectDrum()
-		{
-			compClass = typeof(CompRitualEffect_Drum);
-		}
+		compClass = typeof(CompRitualEffect_Drum);
 	}
 }

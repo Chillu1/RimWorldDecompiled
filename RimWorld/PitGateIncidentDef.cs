@@ -1,27 +1,26 @@
 using System;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class PitGateIncidentDef : Def
 {
-	public class PitGateIncidentDef : Def
-	{
-		public Type workerClass = typeof(PitGateIncidentWorker);
+	public Type workerClass = typeof(PitGateIncidentWorker);
 
-		public float baseChance;
+	public float baseChance;
 
-		public IntRange durationRangeTicks;
+	public IntRange durationRangeTicks;
 
-		public bool usesThreatPoints;
+	public bool usesThreatPoints;
 
-		public int disableEnteringTicks;
+	public int disableEnteringTicks;
 
-		[MustTranslate]
-		public string disableEnteringReason;
+	[MustTranslate]
+	public string disableEnteringReason;
 
-		[MustTranslate]
-		public string letterText;
+	[MustTranslate]
+	public string letterText;
 
-		[MustTranslate]
-		public string letterLabel;
-	}
+	[MustTranslate]
+	public string letterLabel;
 }

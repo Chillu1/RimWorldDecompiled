@@ -1,32 +1,31 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class QuestPart_ReserveFaction : QuestPart
 {
-	public class QuestPart_ReserveFaction : QuestPart
+	public Faction faction;
+
+	public override bool QuestPartReserves(Faction f)
 	{
-		public Faction faction;
-
-		public override bool QuestPartReserves(Faction f)
+		if (f != null)
 		{
-			if (f != null)
-			{
-				return f == faction;
-			}
-			return false;
+			return f == faction;
 		}
+		return false;
+	}
 
-		public override void Notify_FactionRemoved(Faction f)
+	public override void Notify_FactionRemoved(Faction f)
+	{
+		if (faction == f)
 		{
-			if (faction == f)
-			{
-				faction = null;
-			}
+			faction = null;
 		}
+	}
 
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_References.Look(ref faction, "faction");
-		}
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_References.Look(ref faction, "faction");
 	}
 }

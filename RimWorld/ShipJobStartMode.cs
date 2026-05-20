@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum ShipJobStartMode
 {
-	public enum ShipJobStartMode
-	{
-		Queue,
-		Instant,
-		Force,
-		Force_DelayCurrent
-	}
+	Queue,
+	Instant,
+	Force,
+	Force_DelayCurrent
 }

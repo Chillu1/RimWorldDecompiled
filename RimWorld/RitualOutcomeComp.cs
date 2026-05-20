@@ -1,68 +1,67 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class RitualOutcomeComp
 {
-	public abstract class RitualOutcomeComp
+	[MustTranslate]
+	protected string label;
+
+	[MustTranslate]
+	protected string labelAbstract;
+
+	protected float qualityOffset;
+
+	public virtual bool DataRequired => true;
+
+	public virtual float QualityOffset(LordJob_Ritual ritual, RitualOutcomeComp_Data data)
 	{
-		[MustTranslate]
-		protected string label;
+		return 0f;
+	}
 
-		[MustTranslate]
-		protected string labelAbstract;
+	public virtual RitualOutcomeComp_Data MakeData()
+	{
+		return null;
+	}
 
-		protected float qualityOffset;
+	public abstract bool Applies(LordJob_Ritual ritual);
 
-		public virtual bool DataRequired => true;
+	public virtual void Tick(LordJob_Ritual ritual, RitualOutcomeComp_Data data, float progressAmount)
+	{
+	}
 
-		public virtual float QualityOffset(LordJob_Ritual ritual, RitualOutcomeComp_Data data)
-		{
-			return 0f;
-		}
+	public virtual string GetDesc(LordJob_Ritual ritual = null, RitualOutcomeComp_Data data = null)
+	{
+		return label;
+	}
 
-		public virtual RitualOutcomeComp_Data MakeData()
-		{
-			return null;
-		}
+	public virtual string GetDescAbstract(bool positive, float quality = -1f)
+	{
+		return label;
+	}
 
-		public abstract bool Applies(LordJob_Ritual ritual);
+	public virtual string GetBonusDescShort()
+	{
+		return label;
+	}
 
-		public virtual void Tick(LordJob_Ritual ritual, RitualOutcomeComp_Data data, float progressAmount)
-		{
-		}
+	public virtual QualityFactor GetQualityFactor(Precept_Ritual ritual, TargetInfo ritualTarget, RitualObligation obligation, RitualRoleAssignments assignments, RitualOutcomeComp_Data data)
+	{
+		return null;
+	}
 
-		public virtual string GetDesc(LordJob_Ritual ritual = null, RitualOutcomeComp_Data data = null)
-		{
-			return label;
-		}
+	protected virtual string ExpectedOffsetDesc(bool positive, float quality = 0f)
+	{
+		return "";
+	}
 
-		public virtual string GetDescAbstract(bool positive, float quality = -1f)
-		{
-			return label;
-		}
+	public virtual void Notify_AssignmentsChanged(RitualRoleAssignments assignments, RitualOutcomeComp_Data data)
+	{
+	}
 
-		public virtual string GetBonusDescShort()
-		{
-			return label;
-		}
-
-		public virtual QualityFactor GetQualityFactor(Precept_Ritual ritual, TargetInfo ritualTarget, RitualObligation obligation, RitualRoleAssignments assignments, RitualOutcomeComp_Data data)
-		{
-			return null;
-		}
-
-		protected virtual string ExpectedOffsetDesc(bool positive, float quality = 0f)
-		{
-			return "";
-		}
-
-		public virtual void Notify_AssignmentsChanged(RitualRoleAssignments assignments, RitualOutcomeComp_Data data)
-		{
-		}
-
-		public virtual IEnumerable<string> BlockingIssues(Precept_Ritual ritual, TargetInfo target, RitualRoleAssignments assignments)
-		{
-			yield break;
-		}
+	public virtual IEnumerable<string> BlockingIssues(Precept_Ritual ritual, TargetInfo target, RitualRoleAssignments assignments)
+	{
+		yield break;
 	}
 }

@@ -1,10 +1,9 @@
-namespace Verse.AI
+namespace Verse.AI;
+
+public class ThinkNode_ConditionalPlayerMech : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalPlayerMech : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
-		{
-			return pawn.IsColonyMech;
-		}
+		return pawn.IsColonyMech;
 	}
 }

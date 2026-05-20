@@ -1,18 +1,17 @@
-namespace RimWorld
-{
-	public class StatPart_Biocoded : StatPart
-	{
-		public override void TransformValue(StatRequest req, ref float val)
-		{
-			if (req.HasThing && CompBiocodable.IsBiocoded(req.Thing))
-			{
-				val *= 0f;
-			}
-		}
+namespace RimWorld;
 
-		public override string ExplanationPart(StatRequest req)
+public class StatPart_Biocoded : StatPart
+{
+	public override void TransformValue(StatRequest req, ref float val)
+	{
+		if (req.HasThing && CompBiocodable.IsBiocoded(req.Thing))
 		{
-			return null;
+			val *= 0f;
 		}
+	}
+
+	public override string ExplanationPart(StatRequest req)
+	{
+		return null;
 	}
 }

@@ -1,54 +1,53 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public struct RewardsGeneratorParams
 {
-	public struct RewardsGeneratorParams
+	public float rewardValue;
+
+	public Faction giverFaction;
+
+	public string chosenPawnSignal;
+
+	public bool giveToCaravan;
+
+	public float minGeneratedRewardValue;
+
+	public bool thingRewardDisallowed;
+
+	public bool thingRewardRequired;
+
+	public bool thingRewardItemsOnly;
+
+	public List<ThingDef> disallowedThingDefs;
+
+	public bool allowRoyalFavor;
+
+	public bool allowGoodwill;
+
+	public bool allowDevelopmentPoints;
+
+	public bool allowXenogermReimplantation;
+
+	public float populationIntent;
+
+	public string ConfigError()
 	{
-		public float rewardValue;
-
-		public Faction giverFaction;
-
-		public string chosenPawnSignal;
-
-		public bool giveToCaravan;
-
-		public float minGeneratedRewardValue;
-
-		public bool thingRewardDisallowed;
-
-		public bool thingRewardRequired;
-
-		public bool thingRewardItemsOnly;
-
-		public List<ThingDef> disallowedThingDefs;
-
-		public bool allowRoyalFavor;
-
-		public bool allowGoodwill;
-
-		public bool allowDevelopmentPoints;
-
-		public bool allowXenogermReimplantation;
-
-		public float populationIntent;
-
-		public string ConfigError()
+		if (rewardValue <= 0f)
 		{
-			if (rewardValue <= 0f)
-			{
-				return "rewardValue is " + rewardValue;
-			}
-			if (thingRewardDisallowed && thingRewardRequired)
-			{
-				return "thing reward is both disallowed and required";
-			}
-			return null;
+			return "rewardValue is " + rewardValue;
 		}
-
-		public override string ToString()
+		if (thingRewardDisallowed && thingRewardRequired)
 		{
-			return GenText.FieldsToString(this);
+			return "thing reward is both disallowed and required";
 		}
+		return null;
+	}
+
+	public override string ToString()
+	{
+		return GenText.FieldsToString(this);
 	}
 }

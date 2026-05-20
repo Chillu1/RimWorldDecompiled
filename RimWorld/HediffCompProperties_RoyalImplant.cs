@@ -1,14 +1,13 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class HediffCompProperties_RoyalImplant : HediffCompProperties
-	{
-		public string violationTriggerDescriptionKey;
+namespace RimWorld;
 
-		public HediffCompProperties_RoyalImplant()
-		{
-			compClass = typeof(HediffComp_RoyalImplant);
-		}
+public class HediffCompProperties_RoyalImplant : HediffCompProperties
+{
+	public string violationTriggerDescriptionKey;
+
+	public HediffCompProperties_RoyalImplant()
+	{
+		compClass = typeof(HediffComp_RoyalImplant);
 	}
 }

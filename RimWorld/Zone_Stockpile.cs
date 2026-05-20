@@ -2,150 +2,149 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Zone_Stockpile : Zone, ISlotGroupParent, IStoreSettingsParent, IHaulDestination
 {
-	public class Zone_Stockpile : Zone, ISlotGroupParent, IStoreSettingsParent, IHaulDestination
+	public StorageSettings settings;
+
+	public SlotGroup slotGroup;
+
+	private static readonly ITab[] ITabs = new ITab[1]
 	{
-		public StorageSettings settings;
+		new ITab_Storage()
+	};
 
-		public SlotGroup slotGroup;
+	public bool StorageTabVisible => true;
 
-		private static readonly ITab[] ITabs = new ITab[1]
+	public bool IgnoreStoredThingsBeauty => false;
+
+	public bool HaulDestinationEnabled => true;
+
+	protected override Color NextZoneColor => ZoneColorUtility.NextStorageZoneColor();
+
+	public int SpaceRemaining => base.CellCount - base.HeldThingsCount;
+
+	public string GroupingLabel => "StockpilePlural".Translate();
+
+	public int GroupingOrder => -50;
+
+	public Zone_Stockpile()
+	{
+		slotGroup = new SlotGroup(this);
+	}
+
+	public Zone_Stockpile(StorageSettingsPreset preset, ZoneManager zoneManager)
+		: base(preset.PresetName(), zoneManager)
+	{
+		settings = new StorageSettings(this);
+		settings.SetFromPreset(preset);
+		slotGroup = new SlotGroup(this);
+	}
+
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Deep.Look(ref settings, "settings", this);
+	}
+
+	public override void AddCell(IntVec3 sq)
+	{
+		base.AddCell(sq);
+		slotGroup?.Notify_AddedCell(sq);
+		LessonAutoActivator.TeachOpportunity(ConceptDefOf.Shelves, OpportunityType.GoodToKnow);
+	}
+
+	public override void RemoveCell(IntVec3 sq)
+	{
+		base.RemoveCell(sq);
+		slotGroup.Notify_LostCell(sq);
+	}
+
+	public override void PostDeregister()
+	{
+		base.PostDeregister();
+		BillUtility.Notify_ISlotGroupRemoved(slotGroup);
+	}
+
+	public override IEnumerable<InspectTabBase> GetInspectTabs()
+	{
+		return ITabs;
+	}
+
+	public override IEnumerable<Gizmo> GetGizmos()
+	{
+		yield return new Command_Hide_ZoneStockpile(this);
+		foreach (Gizmo gizmo in base.GetGizmos())
 		{
-			new ITab_Storage()
-		};
-
-		public bool StorageTabVisible => true;
-
-		public bool IgnoreStoredThingsBeauty => false;
-
-		public bool HaulDestinationEnabled => true;
-
-		protected override Color NextZoneColor => ZoneColorUtility.NextStorageZoneColor();
-
-		public int SpaceRemaining => base.CellCount - base.HeldThingsCount;
-
-		public string GroupingLabel => "StockpilePlural".Translate();
-
-		public int GroupingOrder => -50;
-
-		public Zone_Stockpile()
-		{
-			slotGroup = new SlotGroup(this);
+			yield return gizmo;
 		}
-
-		public Zone_Stockpile(StorageSettingsPreset preset, ZoneManager zoneManager)
-			: base(preset.PresetName(), zoneManager)
+		foreach (Gizmo item in StorageSettingsClipboard.CopyPasteGizmosFor(settings))
 		{
-			settings = new StorageSettings(this);
-			settings.SetFromPreset(preset);
-			slotGroup = new SlotGroup(this);
+			yield return item;
 		}
+	}
 
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_Deep.Look(ref settings, "settings", this);
-		}
+	public override IEnumerable<Gizmo> GetZoneAddGizmos()
+	{
+		yield return DesignatorUtility.FindAllowedDesignator<Designator_ZoneAddStockpile_Expand>();
+	}
 
-		public override void AddCell(IntVec3 sq)
-		{
-			base.AddCell(sq);
-			slotGroup?.Notify_AddedCell(sq);
-			LessonAutoActivator.TeachOpportunity(ConceptDefOf.Shelves, OpportunityType.GoodToKnow);
-		}
+	public SlotGroup GetSlotGroup()
+	{
+		return slotGroup;
+	}
 
-		public override void RemoveCell(IntVec3 sq)
+	public IEnumerable<IntVec3> AllSlotCells()
+	{
+		for (int i = 0; i < cells.Count; i++)
 		{
-			base.RemoveCell(sq);
-			slotGroup.Notify_LostCell(sq);
+			yield return cells[i];
 		}
+	}
 
-		public override void PostDeregister()
-		{
-			base.PostDeregister();
-			BillUtility.Notify_ISlotGroupRemoved(slotGroup);
-		}
+	public List<IntVec3> AllSlotCellsList()
+	{
+		return cells;
+	}
 
-		public override IEnumerable<InspectTabBase> GetInspectTabs()
-		{
-			return ITabs;
-		}
+	public StorageSettings GetParentStoreSettings()
+	{
+		return StorageSettings.EverStorableFixedSettings();
+	}
 
-		public override IEnumerable<Gizmo> GetGizmos()
-		{
-			yield return new Command_Hide_ZoneStockpile(this);
-			foreach (Gizmo gizmo in base.GetGizmos())
-			{
-				yield return gizmo;
-			}
-			foreach (Gizmo item in StorageSettingsClipboard.CopyPasteGizmosFor(settings))
-			{
-				yield return item;
-			}
-		}
+	public StorageSettings GetStoreSettings()
+	{
+		return settings;
+	}
 
-		public override IEnumerable<Gizmo> GetZoneAddGizmos()
+	public void Notify_SettingsChanged()
+	{
+		if (base.Map != null && slotGroup != null)
 		{
-			yield return DesignatorUtility.FindAllowedDesignator<Designator_ZoneAddStockpile_Expand>();
+			base.Map.listerHaulables.Notify_SlotGroupChanged(slotGroup);
 		}
+	}
 
-		public SlotGroup GetSlotGroup()
-		{
-			return slotGroup;
-		}
+	public bool Accepts(Thing t)
+	{
+		return settings.AllowedToAccept(t);
+	}
 
-		public IEnumerable<IntVec3> AllSlotCells()
-		{
-			for (int i = 0; i < cells.Count; i++)
-			{
-				yield return cells[i];
-			}
-		}
+	public string SlotYielderLabel()
+	{
+		return label;
+	}
 
-		public List<IntVec3> AllSlotCellsList()
+	public void Notify_ReceivedThing(Thing newItem)
+	{
+		if (newItem.def.storedConceptLearnOpportunity != null)
 		{
-			return cells;
+			LessonAutoActivator.TeachOpportunity(newItem.def.storedConceptLearnOpportunity, OpportunityType.GoodToKnow);
 		}
+	}
 
-		public StorageSettings GetParentStoreSettings()
-		{
-			return StorageSettings.EverStorableFixedSettings();
-		}
-
-		public StorageSettings GetStoreSettings()
-		{
-			return settings;
-		}
-
-		public void Notify_SettingsChanged()
-		{
-			if (base.Map != null && slotGroup != null)
-			{
-				base.Map.listerHaulables.Notify_SlotGroupChanged(slotGroup);
-			}
-		}
-
-		public bool Accepts(Thing t)
-		{
-			return settings.AllowedToAccept(t);
-		}
-
-		public string SlotYielderLabel()
-		{
-			return label;
-		}
-
-		public void Notify_ReceivedThing(Thing newItem)
-		{
-			if (newItem.def.storedConceptLearnOpportunity != null)
-			{
-				LessonAutoActivator.TeachOpportunity(newItem.def.storedConceptLearnOpportunity, OpportunityType.GoodToKnow);
-			}
-		}
-
-		public void Notify_LostThing(Thing newItem)
-		{
-		}
+	public void Notify_LostThing(Thing newItem)
+	{
 	}
 }

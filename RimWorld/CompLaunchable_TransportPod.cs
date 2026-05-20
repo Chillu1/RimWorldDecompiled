@@ -1,81 +1,80 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompLaunchable_TransportPod : CompLaunchable
 {
-	public class CompLaunchable_TransportPod : CompLaunchable
+	private new CompProperties_Launchable_TransportPod Props => (CompProperties_Launchable_TransportPod)props;
+
+	public CompRefuelable FuelingPortSource => FuelingPortUtility.FuelingPortGiverAtFuelingPortCell(parent.Position, parent.Map).TryGetComp<CompRefuelable>();
+
+	public bool ConnectedToFuelingPort => FuelingPortSource != null;
+
+	public override CompRefuelable Refuelable => FuelingPortSource;
+
+	public override float FuelLevel => FuelingPortSourceFuel;
+
+	public override bool RequiresFuelingPort => Props.requiresFuelingPort;
+
+	public override float MaxFuelLevel
 	{
-		private new CompProperties_Launchable_TransportPod Props => (CompProperties_Launchable_TransportPod)props;
-
-		public CompRefuelable FuelingPortSource => FuelingPortUtility.FuelingPortGiverAtFuelingPortCell(parent.Position, parent.Map).TryGetComp<CompRefuelable>();
-
-		public bool ConnectedToFuelingPort => FuelingPortSource != null;
-
-		public override CompRefuelable Refuelable => FuelingPortSource;
-
-		public override float FuelLevel => FuelingPortSourceFuel;
-
-		public override bool RequiresFuelingPort => Props.requiresFuelingPort;
-
-		public override float MaxFuelLevel
+		get
 		{
-			get
+			if (!Props.requiresFuelingPort)
 			{
-				if (!Props.requiresFuelingPort)
+				return float.PositiveInfinity;
+			}
+			return FuelingPortSource.Props.fuelCapacity;
+		}
+	}
+
+	private float FuelingPortSourceFuel
+	{
+		get
+		{
+			if (!RequiresFuelingPort)
+			{
+				return float.PositiveInfinity;
+			}
+			if (FuelingPortSource == null)
+			{
+				return 0f;
+			}
+			return FuelingPortSource.Fuel;
+		}
+	}
+
+	private bool AllInGroupConnectedToFuelingPort
+	{
+		get
+		{
+			foreach (CompTransporter item in base.TransportersInGroup)
+			{
+				CompLaunchable_TransportPod obj = item.Launchable as CompLaunchable_TransportPod;
+				if (obj != null && !obj.ConnectedToFuelingPort)
 				{
-					return float.PositiveInfinity;
+					return false;
 				}
-				return FuelingPortSource.Props.fuelCapacity;
 			}
+			return true;
 		}
+	}
 
-		private float FuelingPortSourceFuel
+	public override AcceptanceReport CanLaunch(float? overrideFuelLevel)
+	{
+		if (base.Transporter.LoadingInProgressOrReadyToLaunch && Props.requiresFuelingPort && !AllInGroupConnectedToFuelingPort)
 		{
-			get
-			{
-				if (!RequiresFuelingPort)
-				{
-					return float.PositiveInfinity;
-				}
-				if (FuelingPortSource == null)
-				{
-					return 0f;
-				}
-				return FuelingPortSource.Fuel;
-			}
+			return "CommandLaunchGroupFailNotConnectedToFuelingPort".Translate();
 		}
+		return base.CanLaunch(overrideFuelLevel);
+	}
 
-		private bool AllInGroupConnectedToFuelingPort
+	public override string CompInspectStringExtra()
+	{
+		if (base.Transporter.LoadingInProgressOrReadyToLaunch && Props.requiresFuelingPort && !AllInGroupConnectedToFuelingPort)
 		{
-			get
-			{
-				foreach (CompTransporter item in base.TransportersInGroup)
-				{
-					CompLaunchable_TransportPod obj = item.Launchable as CompLaunchable_TransportPod;
-					if (obj != null && !obj.ConnectedToFuelingPort)
-					{
-						return false;
-					}
-				}
-				return true;
-			}
+			return "NotReadyForLaunch".Translate() + ": " + "NotAllInGroupConnectedToFuelingPort".Translate().CapitalizeFirst() + ".";
 		}
-
-		public override AcceptanceReport CanLaunch(float? overrideFuelLevel)
-		{
-			if (base.Transporter.LoadingInProgressOrReadyToLaunch && Props.requiresFuelingPort && !AllInGroupConnectedToFuelingPort)
-			{
-				return "CommandLaunchGroupFailNotConnectedToFuelingPort".Translate();
-			}
-			return base.CanLaunch(overrideFuelLevel);
-		}
-
-		public override string CompInspectStringExtra()
-		{
-			if (base.Transporter.LoadingInProgressOrReadyToLaunch && Props.requiresFuelingPort && !AllInGroupConnectedToFuelingPort)
-			{
-				return "NotReadyForLaunch".Translate() + ": " + "NotAllInGroupConnectedToFuelingPort".Translate().CapitalizeFirst() + ".";
-			}
-			return base.CompInspectStringExtra();
-		}
+		return base.CompInspectStringExtra();
 	}
 }

@@ -1,12 +1,11 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum ColorType : byte
 {
-	public enum ColorType : byte
-	{
-		Misc,
-		Ideo,
-		Hair,
-		Structure,
-		Weapon,
-		Planning
-	}
+	Misc,
+	Ideo,
+	Hair,
+	Structure,
+	Weapon,
+	Planning
 }

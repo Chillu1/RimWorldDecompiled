@@ -1,9 +1,8 @@
 using System.Collections.Generic;
 
-namespace RimWorld
+namespace RimWorld;
+
+public interface IIncidentMakerQuestPart
 {
-	public interface IIncidentMakerQuestPart
-	{
-		IEnumerable<FiringIncident> MakeIntervalIncidents();
-	}
+	IEnumerable<FiringIncident> MakeIntervalIncidents();
 }

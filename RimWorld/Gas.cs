@@ -1,47 +1,46 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Gas : Thing
 {
-	public class Gas : Thing
+	public int destroyTick;
+
+	public float graphicRotation;
+
+	public float graphicRotationSpeed;
+
+	public override void SpawnSetup(Map map, bool respawningAfterLoad)
 	{
-		public int destroyTick;
-
-		public float graphicRotation;
-
-		public float graphicRotationSpeed;
-
-		public override void SpawnSetup(Map map, bool respawningAfterLoad)
+		while (true)
 		{
-			while (true)
+			Thing gas = base.Position.GetGas(map);
+			if (gas == null)
 			{
-				Thing gas = base.Position.GetGas(map);
-				if (gas == null)
-				{
-					break;
-				}
-				gas.Destroy();
+				break;
 			}
-			base.SpawnSetup(map, respawningAfterLoad);
-			if (!respawningAfterLoad && !base.BeingTransportedOnGravship)
-			{
-				destroyTick = Find.TickManager.TicksGame + def.gas.expireSeconds.RandomInRange.SecondsToTicks();
-			}
-			graphicRotationSpeed = Rand.Range(0f - def.gas.rotationSpeed, def.gas.rotationSpeed) / 60f;
+			gas.Destroy();
 		}
-
-		protected override void TickInterval(int delta)
+		base.SpawnSetup(map, respawningAfterLoad);
+		if (!respawningAfterLoad && !base.BeingTransportedOnGravship)
 		{
-			if (destroyTick <= Find.TickManager.TicksGame)
-			{
-				Destroy();
-			}
-			graphicRotation += graphicRotationSpeed * (float)delta;
+			destroyTick = Find.TickManager.TicksGame + def.gas.expireSeconds.RandomInRange.SecondsToTicks();
 		}
+		graphicRotationSpeed = Rand.Range(0f - def.gas.rotationSpeed, def.gas.rotationSpeed) / 60f;
+	}
 
-		public override void ExposeData()
+	protected override void TickInterval(int delta)
+	{
+		if (destroyTick <= Find.TickManager.TicksGame)
 		{
-			base.ExposeData();
-			Scribe_Values.Look(ref destroyTick, "destroyTick", 0);
+			Destroy();
 		}
+		graphicRotation += graphicRotationSpeed * (float)delta;
+	}
+
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Values.Look(ref destroyTick, "destroyTick", 0);
 	}
 }

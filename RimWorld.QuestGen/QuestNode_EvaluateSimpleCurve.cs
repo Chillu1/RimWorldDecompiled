@@ -1,37 +1,36 @@
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_EvaluateSimpleCurve : QuestNode
 {
-	public class QuestNode_EvaluateSimpleCurve : QuestNode
+	[NoTranslate]
+	public SlateRef<string> storeAs;
+
+	public SlateRef<SimpleCurve> curve;
+
+	public SlateRef<float> value;
+
+	public SlateRef<bool> roundRandom;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		[NoTranslate]
-		public SlateRef<string> storeAs;
+		SetVars(slate);
+		return true;
+	}
 
-		public SlateRef<SimpleCurve> curve;
+	protected override void RunInt()
+	{
+		SetVars(QuestGen.slate);
+	}
 
-		public SlateRef<float> value;
-
-		public SlateRef<bool> roundRandom;
-
-		protected override bool TestRunInt(Slate slate)
+	private void SetVars(Slate slate)
+	{
+		float num = curve.GetValue(slate).Evaluate(value.GetValue(slate));
+		if (roundRandom.GetValue(slate))
 		{
-			SetVars(slate);
-			return true;
+			num = GenMath.RoundRandom(num);
 		}
-
-		protected override void RunInt()
-		{
-			SetVars(QuestGen.slate);
-		}
-
-		private void SetVars(Slate slate)
-		{
-			float num = curve.GetValue(slate).Evaluate(value.GetValue(slate));
-			if (roundRandom.GetValue(slate))
-			{
-				num = GenMath.RoundRandom(num);
-			}
-			slate.Set(storeAs.GetValue(slate), num);
-		}
+		slate.Set(storeAs.GetValue(slate), num);
 	}
 }

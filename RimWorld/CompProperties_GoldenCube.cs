@@ -1,21 +1,20 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_GoldenCube : CompProperties_Interactable
 {
-	public class CompProperties_GoldenCube : CompProperties_Interactable
+	[MustTranslate]
+	public string letterDeactivatedLabel;
+
+	[MustTranslate]
+	public string letterDeactivatedDesc;
+
+	[MustTranslate]
+	public string letterDeactivatedAppend;
+
+	public CompProperties_GoldenCube()
 	{
-		[MustTranslate]
-		public string letterDeactivatedLabel;
-
-		[MustTranslate]
-		public string letterDeactivatedDesc;
-
-		[MustTranslate]
-		public string letterDeactivatedAppend;
-
-		public CompProperties_GoldenCube()
-		{
-			compClass = typeof(CompGoldenCube);
-		}
+		compClass = typeof(CompGoldenCube);
 	}
 }

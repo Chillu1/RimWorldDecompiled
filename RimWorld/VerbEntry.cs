@@ -1,39 +1,38 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public struct VerbEntry
 {
-	public struct VerbEntry
+	public Verb verb;
+
+	private float cachedSelectionWeight;
+
+	public bool IsMeleeAttack => verb.IsMeleeAttack;
+
+	public VerbEntry(Verb verb, Pawn pawn, List<Verb> allVerbs, float highestSelWeight)
 	{
-		public Verb verb;
+		this.verb = verb;
+		cachedSelectionWeight = VerbUtility.FinalSelectionWeight(verb, pawn, allVerbs, highestSelWeight);
+	}
 
-		private float cachedSelectionWeight;
-
-		public bool IsMeleeAttack => verb.IsMeleeAttack;
-
-		public VerbEntry(Verb verb, Pawn pawn, List<Verb> allVerbs, float highestSelWeight)
+	public float GetSelectionWeight(Thing target)
+	{
+		if (!verb.IsUsableOn(target))
 		{
-			this.verb = verb;
-			cachedSelectionWeight = VerbUtility.FinalSelectionWeight(verb, pawn, allVerbs, highestSelWeight);
+			return 0f;
 		}
-
-		public float GetSelectionWeight(Thing target)
+		float num = cachedSelectionWeight;
+		if (target?.def?.IsEdifice() == true)
 		{
-			if (!verb.IsUsableOn(target))
-			{
-				return 0f;
-			}
-			float num = cachedSelectionWeight;
-			if (target?.def?.IsEdifice() == true)
-			{
-				num *= verb.verbProps.commonalityVsEdificeFactor;
-			}
-			return num;
+			num *= verb.verbProps.commonalityVsEdificeFactor;
 		}
+		return num;
+	}
 
-		public override string ToString()
-		{
-			return verb?.ToString() + " - " + cachedSelectionWeight;
-		}
+	public override string ToString()
+	{
+		return verb?.ToString() + " - " + cachedSelectionWeight;
 	}
 }

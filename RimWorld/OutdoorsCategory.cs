@@ -1,12 +1,11 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum OutdoorsCategory : byte
 {
-	public enum OutdoorsCategory : byte
-	{
-		Entombed,
-		Trapped,
-		CabinFeverSevere,
-		CabinFeverLight,
-		NeedFreshAir,
-		Free
-	}
+	Entombed,
+	Trapped,
+	CabinFeverSevere,
+	CabinFeverLight,
+	NeedFreshAir,
+	Free
 }

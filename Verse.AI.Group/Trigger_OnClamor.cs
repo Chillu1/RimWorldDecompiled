@@ -1,21 +1,20 @@
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public class Trigger_OnClamor : Trigger
 {
-	public class Trigger_OnClamor : Trigger
+	private ClamorDef clamorType;
+
+	public Trigger_OnClamor(ClamorDef clamorType)
 	{
-		private ClamorDef clamorType;
+		this.clamorType = clamorType;
+	}
 
-		public Trigger_OnClamor(ClamorDef clamorType)
+	public override bool ActivateOn(Lord lord, TriggerSignal signal)
+	{
+		if (signal.type == TriggerSignalType.Clamor)
 		{
-			this.clamorType = clamorType;
+			return signal.clamorType == clamorType;
 		}
-
-		public override bool ActivateOn(Lord lord, TriggerSignal signal)
-		{
-			if (signal.type == TriggerSignalType.Clamor)
-			{
-				return signal.clamorType == clamorType;
-			}
-			return false;
-		}
+		return false;
 	}
 }

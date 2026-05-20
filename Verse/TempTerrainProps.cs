@@ -1,13 +1,12 @@
-namespace Verse
+namespace Verse;
+
+public class TempTerrainProps
 {
-	public class TempTerrainProps
-	{
-		public TerrainDef terrainOnRemoved;
+	public TerrainDef terrainOnRemoved;
 
-		public bool destroysFloors;
+	public bool destroysFloors;
 
-		public bool removedByExplosions;
+	public bool removedByExplosions;
 
-		public bool replaceableByBridge;
-	}
+	public bool replaceableByBridge;
 }

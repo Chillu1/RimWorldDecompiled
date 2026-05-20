@@ -2,41 +2,40 @@ using System.Collections.Generic;
 using System.Linq;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class StorytellerComp_RandomEpicQuest : StorytellerComp_OnOffCycle
 {
-	public class StorytellerComp_RandomEpicQuest : StorytellerComp_OnOffCycle
+	public override IEnumerable<FiringIncident> MakeIntervalIncidents(IIncidentTarget target)
 	{
-		public override IEnumerable<FiringIncident> MakeIntervalIncidents(IIncidentTarget target)
+		List<Quest> questsListForReading = Find.QuestManager.QuestsListForReading;
+		int num = 0;
+		while (true)
 		{
-			List<Quest> questsListForReading = Find.QuestManager.QuestsListForReading;
-			int num = 0;
-			while (true)
+			if (num < questsListForReading.Count)
 			{
-				if (num < questsListForReading.Count)
+				if (!questsListForReading[num].root.IsEpic || (questsListForReading[num].State != QuestState.NotYetAccepted && questsListForReading[num].State != QuestState.Ongoing))
 				{
-					if (!questsListForReading[num].root.IsEpic || (questsListForReading[num].State != QuestState.NotYetAccepted && questsListForReading[num].State != QuestState.Ongoing))
-					{
-						num++;
-						continue;
-					}
-					break;
-				}
-				foreach (FiringIncident item in base.MakeIntervalIncidents(target))
-				{
-					yield return item;
+					num++;
+					continue;
 				}
 				break;
 			}
-		}
-
-		public override IncidentParms GenerateParms(IncidentCategoryDef incCat, IIncidentTarget target)
-		{
-			IncidentParms parms = base.GenerateParms(incCat, target);
-			if (DefDatabase<QuestScriptDef>.AllDefs.Where((QuestScriptDef x) => x.IsEpic && x.CanRun(parms.points, target)).TryRandomElement(out var result))
+			foreach (FiringIncident item in base.MakeIntervalIncidents(target))
 			{
-				parms.questScriptDef = result;
+				yield return item;
 			}
-			return parms;
+			break;
 		}
+	}
+
+	public override IncidentParms GenerateParms(IncidentCategoryDef incCat, IIncidentTarget target)
+	{
+		IncidentParms parms = base.GenerateParms(incCat, target);
+		if (DefDatabase<QuestScriptDef>.AllDefs.Where((QuestScriptDef x) => x.IsEpic && x.CanRun(parms.points, target)).TryRandomElement(out var result))
+		{
+			parms.questScriptDef = result;
+		}
+		return parms;
 	}
 }

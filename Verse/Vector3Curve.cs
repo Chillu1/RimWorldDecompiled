@@ -1,22 +1,21 @@
 using LudeonTK;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class Vector3Curve
 {
-	public class Vector3Curve
+	public ComplexCurve x;
+
+	public ComplexCurve y;
+
+	public ComplexCurve z;
+
+	public Vector3 Evaluate(float time, float nullCurveValue = 0f)
 	{
-		public ComplexCurve x;
-
-		public ComplexCurve y;
-
-		public ComplexCurve z;
-
-		public Vector3 Evaluate(float time, float nullCurveValue = 0f)
-		{
-			float num = x?.Evaluate(time) ?? nullCurveValue;
-			float num2 = y?.Evaluate(time) ?? nullCurveValue;
-			float num3 = z?.Evaluate(time) ?? nullCurveValue;
-			return new Vector3(num, num2, num3);
-		}
+		float num = x?.Evaluate(time) ?? nullCurveValue;
+		float num2 = y?.Evaluate(time) ?? nullCurveValue;
+		float num3 = z?.Evaluate(time) ?? nullCurveValue;
+		return new Vector3(num, num2, num3);
 	}
 }

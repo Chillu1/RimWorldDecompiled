@@ -1,50 +1,49 @@
 using RimWorld;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class ImmunityRecord : IExposable
 {
-	public class ImmunityRecord : IExposable
+	public HediffDef hediffDef;
+
+	public HediffDef source;
+
+	public float immunity;
+
+	public void ExposeData()
 	{
-		public HediffDef hediffDef;
+		Scribe_Defs.Look(ref hediffDef, "hediffDef");
+		Scribe_Defs.Look(ref source, "source");
+		Scribe_Values.Look(ref immunity, "immunity", 0f);
+	}
 
-		public HediffDef source;
+	public void ImmunityTickInterval(Pawn pawn, bool sick, Hediff diseaseInstance, int delta)
+	{
+		immunity += ImmunityChangePerTick(pawn, sick, diseaseInstance) * (float)delta;
+		immunity = Mathf.Clamp01(immunity);
+	}
 
-		public float immunity;
-
-		public void ExposeData()
+	public float ImmunityChangePerTick(Pawn pawn, bool sick, Hediff diseaseInstance)
+	{
+		if (!pawn.RaceProps.IsFlesh)
 		{
-			Scribe_Defs.Look(ref hediffDef, "hediffDef");
-			Scribe_Defs.Look(ref source, "source");
-			Scribe_Values.Look(ref immunity, "immunity", 0f);
+			return 0f;
 		}
-
-		public void ImmunityTickInterval(Pawn pawn, bool sick, Hediff diseaseInstance, int delta)
+		HediffCompProperties_Immunizable hediffCompProperties_Immunizable = hediffDef.CompProps<HediffCompProperties_Immunizable>();
+		if (sick)
 		{
-			immunity += ImmunityChangePerTick(pawn, sick, diseaseInstance) * (float)delta;
-			immunity = Mathf.Clamp01(immunity);
-		}
-
-		public float ImmunityChangePerTick(Pawn pawn, bool sick, Hediff diseaseInstance)
-		{
-			if (!pawn.RaceProps.IsFlesh)
+			float immunityPerDaySick = hediffCompProperties_Immunizable.immunityPerDaySick;
+			immunityPerDaySick *= pawn.GetStatValue(StatDefOf.ImmunityGainSpeed);
+			if (diseaseInstance != null)
 			{
-				return 0f;
+				Rand.PushState();
+				Rand.Seed = Gen.HashCombineInt(diseaseInstance.loadID ^ Find.World.info.persistentRandomValue, 156482735);
+				immunityPerDaySick *= Mathf.Lerp(0.8f, 1.2f, Rand.Value);
+				Rand.PopState();
 			}
-			HediffCompProperties_Immunizable hediffCompProperties_Immunizable = hediffDef.CompProps<HediffCompProperties_Immunizable>();
-			if (sick)
-			{
-				float immunityPerDaySick = hediffCompProperties_Immunizable.immunityPerDaySick;
-				immunityPerDaySick *= pawn.GetStatValue(StatDefOf.ImmunityGainSpeed);
-				if (diseaseInstance != null)
-				{
-					Rand.PushState();
-					Rand.Seed = Gen.HashCombineInt(diseaseInstance.loadID ^ Find.World.info.persistentRandomValue, 156482735);
-					immunityPerDaySick *= Mathf.Lerp(0.8f, 1.2f, Rand.Value);
-					Rand.PopState();
-				}
-				return immunityPerDaySick / 60000f;
-			}
-			return hediffCompProperties_Immunizable.immunityPerDayNotSick / 60000f;
+			return immunityPerDaySick / 60000f;
 		}
+		return hediffCompProperties_Immunizable.immunityPerDayNotSick / 60000f;
 	}
 }

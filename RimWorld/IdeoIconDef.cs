@@ -1,26 +1,25 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class IdeoIconDef : IdeoSymbolPartDef
 {
-	public class IdeoIconDef : IdeoSymbolPartDef
+	[NoTranslate]
+	public string iconPath;
+
+	[Unsaved(false)]
+	private Texture2D cachedIcon;
+
+	public Texture2D Icon
 	{
-		[NoTranslate]
-		public string iconPath;
-
-		[Unsaved(false)]
-		private Texture2D cachedIcon;
-
-		public Texture2D Icon
+		get
 		{
-			get
+			if (cachedIcon == null)
 			{
-				if (cachedIcon == null)
-				{
-					cachedIcon = ContentFinder<Texture2D>.Get(iconPath);
-				}
-				return cachedIcon;
+				cachedIcon = ContentFinder<Texture2D>.Get(iconPath);
 			}
+			return cachedIcon;
 		}
 	}
 }

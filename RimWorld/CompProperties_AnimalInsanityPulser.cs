@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_AnimalInsanityPulser : CompProperties
 {
-	public class CompProperties_AnimalInsanityPulser : CompProperties
+	public IntRange pulseInterval = new IntRange(60000, 150000);
+
+	public int radius = 25;
+
+	public CompProperties_AnimalInsanityPulser()
 	{
-		public IntRange pulseInterval = new IntRange(60000, 150000);
-
-		public int radius = 25;
-
-		public CompProperties_AnimalInsanityPulser()
-		{
-			compClass = typeof(CompAnimalInsanityPulser);
-		}
+		compClass = typeof(CompAnimalInsanityPulser);
 	}
 }

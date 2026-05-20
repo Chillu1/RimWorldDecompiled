@@ -1,12 +1,11 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum PriceType : byte
 {
-	public enum PriceType : byte
-	{
-		Undefined,
-		VeryCheap,
-		Cheap,
-		Normal,
-		Expensive,
-		Exorbitant
-	}
+	Undefined,
+	VeryCheap,
+	Cheap,
+	Normal,
+	Expensive,
+	Exorbitant
 }

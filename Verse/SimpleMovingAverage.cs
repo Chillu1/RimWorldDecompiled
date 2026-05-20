@@ -1,39 +1,38 @@
 using System;
 
-namespace Verse
+namespace Verse;
+
+public class SimpleMovingAverage
 {
-	public class SimpleMovingAverage
+	private readonly float[] values;
+
+	private int lastValueIndex;
+
+	public SimpleMovingAverage(int numValues)
 	{
-		private readonly float[] values;
+		values = new float[numValues];
+	}
 
-		private int lastValueIndex;
+	public void AddValue(float value)
+	{
+		values[lastValueIndex] = value;
+		lastValueIndex = (lastValueIndex + 1) % values.Length;
+	}
 
-		public SimpleMovingAverage(int numValues)
+	public float GetAverage()
+	{
+		float num = 0f;
+		int num2 = ((values[^1] == 0f) ? lastValueIndex : values.Length);
+		for (int i = 0; i < num2; i++)
 		{
-			values = new float[numValues];
+			num += values[i];
 		}
+		return num / (float)num2;
+	}
 
-		public void AddValue(float value)
-		{
-			values[lastValueIndex] = value;
-			lastValueIndex = (lastValueIndex + 1) % values.Length;
-		}
-
-		public float GetAverage()
-		{
-			float num = 0f;
-			int num2 = ((values[^1] == 0f) ? lastValueIndex : values.Length);
-			for (int i = 0; i < num2; i++)
-			{
-				num += values[i];
-			}
-			return num / (float)num2;
-		}
-
-		public void Reset()
-		{
-			lastValueIndex = 0;
-			Array.Clear(values, 0, values.Length);
-		}
+	public void Reset()
+	{
+		lastValueIndex = 0;
+		Array.Clear(values, 0, values.Length);
 	}
 }

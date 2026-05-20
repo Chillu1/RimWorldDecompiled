@@ -1,8 +1,7 @@
-namespace Verse
+namespace Verse;
+
+public enum PregnancyAttitude
 {
-	public enum PregnancyAttitude
-	{
-		Positive,
-		Negative
-	}
+	Positive,
+	Negative
 }

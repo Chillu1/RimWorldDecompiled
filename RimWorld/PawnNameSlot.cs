@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum PawnNameSlot : byte
 {
-	public enum PawnNameSlot : byte
-	{
-		First,
-		Last,
-		Nick,
-		Only
-	}
+	First,
+	Last,
+	Nick,
+	Only
 }

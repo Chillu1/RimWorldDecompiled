@@ -1,37 +1,36 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Alert_BrawlerHasRangedWeapon : Alert
 {
-	public class Alert_BrawlerHasRangedWeapon : Alert
+	private List<Pawn> brawlersWithRangedWeaponResult = new List<Pawn>();
+
+	private List<Pawn> BrawlersWithRangedWeapon
 	{
-		private List<Pawn> brawlersWithRangedWeaponResult = new List<Pawn>();
-
-		private List<Pawn> BrawlersWithRangedWeapon
+		get
 		{
-			get
+			brawlersWithRangedWeaponResult.Clear();
+			foreach (Pawn item in PawnsFinder.AllMaps_FreeColonistsSpawned)
 			{
-				brawlersWithRangedWeaponResult.Clear();
-				foreach (Pawn item in PawnsFinder.AllMaps_FreeColonistsSpawned)
+				if (item.story.traits.HasTrait(TraitDefOf.Brawler) && item.equipment.Primary != null && item.equipment.Primary.def.IsRangedWeapon)
 				{
-					if (item.story.traits.HasTrait(TraitDefOf.Brawler) && item.equipment.Primary != null && item.equipment.Primary.def.IsRangedWeapon)
-					{
-						brawlersWithRangedWeaponResult.Add(item);
-					}
+					brawlersWithRangedWeaponResult.Add(item);
 				}
-				return brawlersWithRangedWeaponResult;
 			}
+			return brawlersWithRangedWeaponResult;
 		}
+	}
 
-		public Alert_BrawlerHasRangedWeapon()
-		{
-			defaultLabel = "BrawlerHasRangedWeapon".Translate();
-			defaultExplanation = "BrawlerHasRangedWeaponDesc".Translate();
-		}
+	public Alert_BrawlerHasRangedWeapon()
+	{
+		defaultLabel = "BrawlerHasRangedWeapon".Translate();
+		defaultExplanation = "BrawlerHasRangedWeaponDesc".Translate();
+	}
 
-		public override AlertReport GetReport()
-		{
-			return AlertReport.CulpritsAre(BrawlersWithRangedWeapon);
-		}
+	public override AlertReport GetReport()
+	{
+		return AlertReport.CulpritsAre(BrawlersWithRangedWeapon);
 	}
 }

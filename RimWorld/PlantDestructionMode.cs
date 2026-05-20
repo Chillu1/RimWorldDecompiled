@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum PlantDestructionMode
 {
-	public enum PlantDestructionMode
-	{
-		Smash,
-		Flame,
-		Chop,
-		Cut
-	}
+	Smash,
+	Flame,
+	Chop,
+	Cut
 }

@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum DrawerType : byte
 {
-	public enum DrawerType : byte
-	{
-		None,
-		RealtimeOnly,
-		MapMeshOnly,
-		MapMeshAndRealTime
-	}
+	None,
+	RealtimeOnly,
+	MapMeshOnly,
+	MapMeshAndRealTime
 }

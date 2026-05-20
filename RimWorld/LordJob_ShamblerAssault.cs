@@ -1,34 +1,33 @@
 using Verse;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class LordJob_ShamblerAssault : LordJob
 {
-	public class LordJob_ShamblerAssault : LordJob
+	public override StateGraph CreateGraph()
 	{
-		public override StateGraph CreateGraph()
-		{
-			StateGraph stateGraph = new StateGraph();
-			LordToil toil = new LordToil_ShamblerAssault();
-			stateGraph.AddToil(toil);
-			return stateGraph;
-		}
+		StateGraph stateGraph = new StateGraph();
+		LordToil toil = new LordToil_ShamblerAssault();
+		stateGraph.AddToil(toil);
+		return stateGraph;
+	}
 
-		public override bool ShouldRemovePawn(Pawn p, PawnLostCondition reason)
+	public override bool ShouldRemovePawn(Pawn p, PawnLostCondition reason)
+	{
+		if (reason == PawnLostCondition.Incapped && p.IsMutant && p.mutant.Def.canAttackWhileCrawling && p.health.CanCrawl)
 		{
-			if (reason == PawnLostCondition.Incapped && p.IsMutant && p.mutant.Def.canAttackWhileCrawling && p.health.CanCrawl)
-			{
-				return false;
-			}
-			return base.ShouldRemovePawn(p, reason);
+			return false;
 		}
+		return base.ShouldRemovePawn(p, reason);
+	}
 
-		public override void Notify_PawnDowned(Pawn p)
+	public override void Notify_PawnDowned(Pawn p)
+	{
+		base.Notify_PawnDowned(p);
+		if (!p.health.CanCrawl)
 		{
-			base.Notify_PawnDowned(p);
-			if (!p.health.CanCrawl)
-			{
-				lord.Notify_PawnLost(p, PawnLostCondition.Incapped);
-			}
+			lord.Notify_PawnLost(p, PawnLostCondition.Incapped);
 		}
 	}
 }

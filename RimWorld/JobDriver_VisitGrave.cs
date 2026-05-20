@@ -1,31 +1,30 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_VisitGrave : JobDriver_VisitJoyThing
 {
-	public class JobDriver_VisitGrave : JobDriver_VisitJoyThing
+	private Building_Grave Grave => (Building_Grave)job.GetTarget(TargetIndex.A).Thing;
+
+	protected override void WaitTickAction(int delta)
 	{
-		private Building_Grave Grave => (Building_Grave)job.GetTarget(TargetIndex.A).Thing;
-
-		protected override void WaitTickAction(int delta)
+		float num = 1f;
+		Room room = pawn.GetRoom();
+		if (room != null)
 		{
-			float num = 1f;
-			Room room = pawn.GetRoom();
-			if (room != null)
-			{
-				num *= room.GetStat(RoomStatDefOf.GraveVisitingJoyGainFactor);
-			}
-			pawn.GainComfortFromCellIfPossible(delta);
-			JoyUtility.JoyTickCheckEnd(pawn, delta, JoyTickFullJoyAction.EndJob, num, Grave);
+			num *= room.GetStat(RoomStatDefOf.GraveVisitingJoyGainFactor);
 		}
+		pawn.GainComfortFromCellIfPossible(delta);
+		JoyUtility.JoyTickCheckEnd(pawn, delta, JoyTickFullJoyAction.EndJob, num, Grave);
+	}
 
-		public override object[] TaleParameters()
+	public override object[] TaleParameters()
+	{
+		return new object[2]
 		{
-			return new object[2]
-			{
-				pawn,
-				Grave.Corpse?.InnerPawn
-			};
-		}
+			pawn,
+			Grave.Corpse?.InnerPawn
+		};
 	}
 }

@@ -1,46 +1,45 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_ChangeImplantLevel : HediffCompProperties
 {
-	public class HediffCompProperties_ChangeImplantLevel : HediffCompProperties
+	public HediffDef implant;
+
+	public int levelOffset;
+
+	public List<ChangeImplantLevel_Probability> probabilityPerStage;
+
+	public HediffCompProperties_ChangeImplantLevel()
 	{
-		public HediffDef implant;
+		compClass = typeof(HediffComp_ChangeImplantLevel);
+	}
 
-		public int levelOffset;
-
-		public List<ChangeImplantLevel_Probability> probabilityPerStage;
-
-		public HediffCompProperties_ChangeImplantLevel()
+	public override IEnumerable<string> ConfigErrors(HediffDef parentDef)
+	{
+		foreach (string item in base.ConfigErrors(parentDef))
 		{
-			compClass = typeof(HediffComp_ChangeImplantLevel);
+			yield return item;
 		}
-
-		public override IEnumerable<string> ConfigErrors(HediffDef parentDef)
+		if (implant == null)
 		{
-			foreach (string item in base.ConfigErrors(parentDef))
-			{
-				yield return item;
-			}
-			if (implant == null)
-			{
-				yield return "implant is null";
-			}
-			else if (!typeof(Hediff_Level).IsAssignableFrom(implant.hediffClass))
-			{
-				yield return "implant is not Hediff_Level";
-			}
-			if (levelOffset == 0)
-			{
-				yield return "levelOffset is 0";
-			}
-			if (probabilityPerStage == null)
-			{
-				yield return "probabilityPerStage is not defined";
-			}
-			else if (probabilityPerStage.Count != parentDef.stages.Count)
-			{
-				yield return "probabilityPerStage count doesn't match Hediffs number of stages";
-			}
+			yield return "implant is null";
+		}
+		else if (!typeof(Hediff_Level).IsAssignableFrom(implant.hediffClass))
+		{
+			yield return "implant is not Hediff_Level";
+		}
+		if (levelOffset == 0)
+		{
+			yield return "levelOffset is 0";
+		}
+		if (probabilityPerStage == null)
+		{
+			yield return "probabilityPerStage is not defined";
+		}
+		else if (probabilityPerStage.Count != parentDef.stages.Count)
+		{
+			yield return "probabilityPerStage count doesn't match Hediffs number of stages";
 		}
 	}
 }

@@ -1,9 +1,8 @@
-namespace RimWorld.Utility
-{
-	public interface ICompWithCharges
-	{
-		int RemainingCharges { get; }
+namespace RimWorld.Utility;
 
-		bool CanBeUsed(out string reason);
-	}
+public interface ICompWithCharges
+{
+	int RemainingCharges { get; }
+
+	bool CanBeUsed(out string reason);
 }

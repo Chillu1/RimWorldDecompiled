@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum PsychGlow : byte
 {
-	public enum PsychGlow : byte
-	{
-		Dark,
-		Lit,
-		Overlit
-	}
+	Dark,
+	Lit,
+	Overlit
 }

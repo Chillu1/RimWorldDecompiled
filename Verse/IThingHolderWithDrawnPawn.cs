@@ -1,13 +1,12 @@
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public interface IThingHolderWithDrawnPawn : IThingHolder
 {
-	public interface IThingHolderWithDrawnPawn : IThingHolder
-	{
-		float HeldPawnDrawPos_Y { get; }
+	float HeldPawnDrawPos_Y { get; }
 
-		float HeldPawnBodyAngle { get; }
+	float HeldPawnBodyAngle { get; }
 
-		PawnPosture HeldPawnPosture { get; }
-	}
+	PawnPosture HeldPawnPosture { get; }
 }

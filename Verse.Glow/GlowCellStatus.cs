@@ -1,9 +1,8 @@
-namespace Verse.Glow
+namespace Verse.Glow;
+
+public enum GlowCellStatus : byte
 {
-	public enum GlowCellStatus : byte
-	{
-		Unvisited,
-		Open,
-		Finalized
-	}
+	Unvisited,
+	Open,
+	Finalized
 }

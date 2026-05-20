@@ -2,49 +2,48 @@ using System.Collections.Generic;
 using System.Linq;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Instruction_EquipWeapons : Lesson_Instruction
 {
-	public class Instruction_EquipWeapons : Lesson_Instruction
+	protected override float ProgressPercent
 	{
-		protected override float ProgressPercent
+		get
 		{
-			get
-			{
-				IEnumerable<Pawn> source = base.Map.mapPawns.FreeColonists.Where((Pawn c) => !LifeStageUtility.AlwaysDowned(c));
-				return (float)source.Where((Pawn c) => c.equipment.Primary != null).Count() / (float)source.Count();
-			}
+			IEnumerable<Pawn> source = base.Map.mapPawns.FreeColonists.Where((Pawn c) => !LifeStageUtility.AlwaysDowned(c));
+			return (float)source.Where((Pawn c) => c.equipment.Primary != null).Count() / (float)source.Count();
 		}
+	}
 
-		private IEnumerable<Thing> Weapons => Find.TutorialState.startingItems.Where((Thing it) => IsWeapon(it) && it.Spawned);
+	private IEnumerable<Thing> Weapons => Find.TutorialState.startingItems.Where((Thing it) => IsWeapon(it) && it.Spawned);
 
-		public static bool IsWeapon(Thing t)
+	public static bool IsWeapon(Thing t)
+	{
+		if (t.def.IsWeapon)
 		{
-			if (t.def.IsWeapon)
-			{
-				return t.def.BaseMarketValue > 30f;
-			}
-			return false;
+			return t.def.BaseMarketValue > 30f;
 		}
+		return false;
+	}
 
-		public override void LessonOnGUI()
+	public override void LessonOnGUI()
+	{
+		foreach (Thing weapon in Weapons)
 		{
-			foreach (Thing weapon in Weapons)
-			{
-				TutorUtility.DrawLabelOnThingOnGUI(weapon, def.onMapInstruction);
-			}
-			base.LessonOnGUI();
+			TutorUtility.DrawLabelOnThingOnGUI(weapon, def.onMapInstruction);
 		}
+		base.LessonOnGUI();
+	}
 
-		public override void LessonUpdate()
+	public override void LessonUpdate()
+	{
+		foreach (Thing weapon in Weapons)
 		{
-			foreach (Thing weapon in Weapons)
-			{
-				GenDraw.DrawArrowPointingAt(weapon.DrawPos, offscreenOnly: true);
-			}
-			if (ProgressPercent > 0.9999f)
-			{
-				Find.ActiveLesson.Deactivate();
-			}
+			GenDraw.DrawArrowPointingAt(weapon.DrawPos, offscreenOnly: true);
+		}
+		if (ProgressPercent > 0.9999f)
+		{
+			Find.ActiveLesson.Deactivate();
 		}
 	}
 }

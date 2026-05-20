@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum SignalActionAmbushType
 {
-	public enum SignalActionAmbushType
-	{
-		Normal,
-		Manhunters,
-		Mechanoids
-	}
+	Normal,
+	Manhunters,
+	Mechanoids
 }

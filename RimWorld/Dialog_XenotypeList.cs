@@ -2,27 +2,26 @@ using System;
 using System.IO;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class Dialog_XenotypeList : Dialog_FileList
 {
-	public abstract class Dialog_XenotypeList : Dialog_FileList
+	protected override void ReloadFiles()
 	{
-		protected override void ReloadFiles()
+		files.Clear();
+		foreach (FileInfo allCustomXenotypeFile in GenFilePaths.AllCustomXenotypeFiles)
 		{
-			files.Clear();
-			foreach (FileInfo allCustomXenotypeFile in GenFilePaths.AllCustomXenotypeFiles)
+			try
 			{
-				try
-				{
-					SaveFileInfo saveFileInfo = new SaveFileInfo(allCustomXenotypeFile);
-					saveFileInfo.LoadData();
-					files.Add(saveFileInfo);
-				}
-				catch (Exception ex)
-				{
-					Log.Error("Exception loading " + allCustomXenotypeFile.Name + ": " + ex.ToString());
-				}
+				SaveFileInfo saveFileInfo = new SaveFileInfo(allCustomXenotypeFile);
+				saveFileInfo.LoadData();
+				files.Add(saveFileInfo);
 			}
-			CharacterCardUtility.cachedCustomXenotypes = null;
+			catch (Exception ex)
+			{
+				Log.Error("Exception loading " + allCustomXenotypeFile.Name + ": " + ex.ToString());
+			}
 		}
+		CharacterCardUtility.cachedCustomXenotypes = null;
 	}
 }

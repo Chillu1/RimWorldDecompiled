@@ -1,9 +1,8 @@
 using System;
 
-namespace Verse
+namespace Verse;
+
+[AttributeUsage(AttributeTargets.Class, Inherited = true)]
+public class EditorShowClassNameAttribute : Attribute
 {
-	[AttributeUsage(AttributeTargets.Class, Inherited = true)]
-	public class EditorShowClassNameAttribute : Attribute
-	{
-	}
 }

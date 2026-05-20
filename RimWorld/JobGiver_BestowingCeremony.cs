@@ -1,18 +1,17 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobGiver_BestowingCeremony : ThinkNode_JobGiver
 {
-	public class JobGiver_BestowingCeremony : ThinkNode_JobGiver
+	protected override Job TryGiveJob(Pawn pawn)
 	{
-		protected override Job TryGiveJob(Pawn pawn)
+		PawnDuty duty = pawn.mindState.duty;
+		if (duty == null)
 		{
-			PawnDuty duty = pawn.mindState.duty;
-			if (duty == null)
-			{
-				return null;
-			}
-			return JobMaker.MakeJob(JobDefOf.BestowingCeremony, duty.focus.Pawn, duty.focusSecond);
+			return null;
 		}
+		return JobMaker.MakeJob(JobDefOf.BestowingCeremony, duty.focus.Pawn, duty.focusSecond);
 	}
 }

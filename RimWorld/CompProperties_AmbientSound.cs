@@ -1,20 +1,19 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_AmbientSound : CompProperties
 {
-	public class CompProperties_AmbientSound : CompProperties
+	public SoundDef sound;
+
+	public bool disabledOnUnpowered;
+
+	public bool disableOnHacked;
+
+	public bool disableOnInteracted;
+
+	public CompProperties_AmbientSound()
 	{
-		public SoundDef sound;
-
-		public bool disabledOnUnpowered;
-
-		public bool disableOnHacked;
-
-		public bool disableOnInteracted;
-
-		public CompProperties_AmbientSound()
-		{
-			compClass = typeof(CompAmbientSound);
-		}
+		compClass = typeof(CompAmbientSound);
 	}
 }

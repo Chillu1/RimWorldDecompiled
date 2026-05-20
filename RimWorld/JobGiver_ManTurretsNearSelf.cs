@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobGiver_ManTurretsNearSelf : JobGiver_ManTurrets
 {
-	public class JobGiver_ManTurretsNearSelf : JobGiver_ManTurrets
+	protected override IntVec3 GetRoot(Pawn pawn)
 	{
-		protected override IntVec3 GetRoot(Pawn pawn)
-		{
-			return pawn.Position;
-		}
+		return pawn.Position;
 	}
 }

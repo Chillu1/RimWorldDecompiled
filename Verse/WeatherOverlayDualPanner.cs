@@ -1,108 +1,107 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+[StaticConstructorOnStartup]
+public class WeatherOverlayDualPanner : SkyOverlay
 {
-	[StaticConstructorOnStartup]
-	public class WeatherOverlayDualPanner : SkyOverlay
+	private Vector2 worldPan1 = Vector2.zero;
+
+	private Vector2 worldPan2 = Vector2.zero;
+
+	public Material worldOverlayMat;
+
+	public Material screenOverlayMat;
+
+	protected float worldOverlayPanSpeed1;
+
+	protected float worldOverlayPanSpeed2;
+
+	protected Vector2 worldPanDir1;
+
+	protected Vector2 worldPanDir2;
+
+	private static readonly int RenderLayer = LayerMask.NameToLayer("GravshipExclude");
+
+	private static readonly int MainTex2 = Shader.PropertyToID("_MainTex2");
+
+	private static readonly int MainTex = Shader.PropertyToID("_MainTex");
+
+	public WeatherOverlayDualPanner()
 	{
-		private Vector2 worldPan1 = Vector2.zero;
-
-		private Vector2 worldPan2 = Vector2.zero;
-
-		public Material worldOverlayMat;
-
-		public Material screenOverlayMat;
-
-		protected float worldOverlayPanSpeed1;
-
-		protected float worldOverlayPanSpeed2;
-
-		protected Vector2 worldPanDir1;
-
-		protected Vector2 worldPanDir2;
-
-		private static readonly int RenderLayer = LayerMask.NameToLayer("GravshipExclude");
-
-		private static readonly int MainTex2 = Shader.PropertyToID("_MainTex2");
-
-		private static readonly int MainTex = Shader.PropertyToID("_MainTex");
-
-		public WeatherOverlayDualPanner()
+		LongEventHandler.ExecuteWhenFinished(delegate
 		{
-			LongEventHandler.ExecuteWhenFinished(delegate
-			{
-				SetOverlayColor(Color.clear);
-			});
-		}
+			SetOverlayColor(Color.clear);
+		});
+	}
 
-		public override void TickOverlay(Map map, float lerpFactor)
+	public override void TickOverlay(Map map, float lerpFactor)
+	{
+		if (!(worldOverlayMat == null))
 		{
-			if (!(worldOverlayMat == null))
+			worldPan1 -= worldPanDir1 * (worldOverlayPanSpeed1 * worldOverlayMat.GetTextureScale(MainTex).x * Find.TickManager.TickRateMultiplier);
+			worldOverlayMat.SetTextureOffset(MainTex, worldPan1);
+			if (worldOverlayMat.HasProperty(MainTex2))
 			{
-				worldPan1 -= worldPanDir1 * (worldOverlayPanSpeed1 * worldOverlayMat.GetTextureScale(MainTex).x * Find.TickManager.TickRateMultiplier);
-				worldOverlayMat.SetTextureOffset(MainTex, worldPan1);
-				if (worldOverlayMat.HasProperty(MainTex2))
-				{
-					worldPan2 -= worldPanDir2 * (worldOverlayPanSpeed2 * worldOverlayMat.GetTextureScale(MainTex2).x * Find.TickManager.TickRateMultiplier);
-					worldOverlayMat.SetTextureOffset(MainTex2, worldPan2);
-				}
+				worldPan2 -= worldPanDir2 * (worldOverlayPanSpeed2 * worldOverlayMat.GetTextureScale(MainTex2).x * Find.TickManager.TickRateMultiplier);
+				worldOverlayMat.SetTextureOffset(MainTex2, worldPan2);
 			}
 		}
+	}
 
-		public override void DrawOverlay(Map map)
+	public override void DrawOverlay(Map map)
+	{
+		if (worldOverlayMat != null)
 		{
-			if (worldOverlayMat != null)
+			SkyOverlay.DrawWorldOverlay(map, worldOverlayMat, GetRenderLayer());
+		}
+		if (screenOverlayMat != null)
+		{
+			SkyOverlay.DrawScreenOverlay(screenOverlayMat, GetRenderLayer());
+		}
+	}
+
+	public override void SetOverlayColor(Color color)
+	{
+		if (worldOverlayMat != null)
+		{
+			worldOverlayMat.color = color;
+		}
+		if (screenOverlayMat != null)
+		{
+			screenOverlayMat.color = color;
+		}
+	}
+
+	protected virtual int GetRenderLayer()
+	{
+		return RenderLayer;
+	}
+
+	public override void Reset()
+	{
+		worldPan1 = Vector2.zero;
+		worldPan2 = Vector2.zero;
+		if (worldOverlayMat != null)
+		{
+			worldOverlayMat.SetTextureOffset(MainTex, worldPan1);
+			if (worldOverlayMat.HasProperty(MainTex2))
 			{
-				SkyOverlay.DrawWorldOverlay(map, worldOverlayMat, GetRenderLayer());
-			}
-			if (screenOverlayMat != null)
-			{
-				SkyOverlay.DrawScreenOverlay(screenOverlayMat, GetRenderLayer());
+				worldOverlayMat.SetTextureOffset(MainTex2, worldPan2);
 			}
 		}
+	}
 
-		public override void SetOverlayColor(Color color)
+	public override string ToString()
+	{
+		if (worldOverlayMat != null)
 		{
-			if (worldOverlayMat != null)
-			{
-				worldOverlayMat.color = color;
-			}
-			if (screenOverlayMat != null)
-			{
-				screenOverlayMat.color = color;
-			}
+			return worldOverlayMat.name;
 		}
-
-		protected virtual int GetRenderLayer()
+		if (screenOverlayMat != null)
 		{
-			return RenderLayer;
+			return screenOverlayMat.name;
 		}
-
-		public override void Reset()
-		{
-			worldPan1 = Vector2.zero;
-			worldPan2 = Vector2.zero;
-			if (worldOverlayMat != null)
-			{
-				worldOverlayMat.SetTextureOffset(MainTex, worldPan1);
-				if (worldOverlayMat.HasProperty(MainTex2))
-				{
-					worldOverlayMat.SetTextureOffset(MainTex2, worldPan2);
-				}
-			}
-		}
-
-		public override string ToString()
-		{
-			if (worldOverlayMat != null)
-			{
-				return worldOverlayMat.name;
-			}
-			if (screenOverlayMat != null)
-			{
-				return screenOverlayMat.name;
-			}
-			return base.ToString();
-		}
+		return base.ToString();
 	}
 }

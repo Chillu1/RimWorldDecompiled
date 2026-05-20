@@ -1,9 +1,8 @@
 using System;
 
-namespace Verse
+namespace Verse;
+
+[AttributeUsage(AttributeTargets.Class)]
+public class EditorReplaceableAttribute : Attribute
 {
-	[AttributeUsage(AttributeTargets.Class)]
-	public class EditorReplaceableAttribute : Attribute
-	{
-	}
 }

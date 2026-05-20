@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_Precept_GrowthVatEssentialPregnant : ThoughtWorker_Precept
 {
-	public class ThoughtWorker_Precept_GrowthVatEssentialPregnant : ThoughtWorker_Precept
+	protected override ThoughtState ShouldHaveThought(Pawn p)
 	{
-		protected override ThoughtState ShouldHaveThought(Pawn p)
+		if (!ModsConfig.IdeologyActive || !ModsConfig.BiotechActive)
 		{
-			if (!ModsConfig.IdeologyActive || !ModsConfig.BiotechActive)
-			{
-				return ThoughtState.Inactive;
-			}
-			return p.health.hediffSet.HasHediff(HediffDefOf.PregnantHuman);
+			return ThoughtState.Inactive;
 		}
+		return p.health.hediffSet.HasHediff(HediffDefOf.PregnantHuman);
 	}
 }

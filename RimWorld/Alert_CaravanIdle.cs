@@ -3,48 +3,47 @@ using System.Text;
 using RimWorld.Planet;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Alert_CaravanIdle : Alert
 {
-	public class Alert_CaravanIdle : Alert
+	private List<Caravan> idleCaravansResult = new List<Caravan>();
+
+	private StringBuilder sb = new StringBuilder();
+
+	private List<Caravan> IdleCaravans
 	{
-		private List<Caravan> idleCaravansResult = new List<Caravan>();
-
-		private StringBuilder sb = new StringBuilder();
-
-		private List<Caravan> IdleCaravans
+		get
 		{
-			get
+			idleCaravansResult.Clear();
+			foreach (Caravan caravan in Find.WorldObjects.Caravans)
 			{
-				idleCaravansResult.Clear();
-				foreach (Caravan caravan in Find.WorldObjects.Caravans)
+				if (caravan.Spawned && caravan.IsPlayerControlled && !caravan.pather.MovingNow && !caravan.CantMove)
 				{
-					if (caravan.Spawned && caravan.IsPlayerControlled && !caravan.pather.MovingNow && !caravan.CantMove)
-					{
-						idleCaravansResult.Add(caravan);
-					}
+					idleCaravansResult.Add(caravan);
 				}
-				return idleCaravansResult;
 			}
+			return idleCaravansResult;
 		}
+	}
 
-		public Alert_CaravanIdle()
-		{
-			defaultLabel = "CaravanIdle".Translate();
-		}
+	public Alert_CaravanIdle()
+	{
+		defaultLabel = "CaravanIdle".Translate();
+	}
 
-		public override TaggedString GetExplanation()
+	public override TaggedString GetExplanation()
+	{
+		sb.Length = 0;
+		foreach (Caravan item in idleCaravansResult)
 		{
-			sb.Length = 0;
-			foreach (Caravan item in idleCaravansResult)
-			{
-				sb.AppendLine("  - " + item.Label);
-			}
-			return "CaravanIdleDesc".Translate(sb.ToString().TrimEndNewlines());
+			sb.AppendLine("  - " + item.Label);
 		}
+		return "CaravanIdleDesc".Translate(sb.ToString().TrimEndNewlines());
+	}
 
-		public override AlertReport GetReport()
-		{
-			return AlertReport.CulpritsAre(IdleCaravans);
-		}
+	public override AlertReport GetReport()
+	{
+		return AlertReport.CulpritsAre(IdleCaravans);
 	}
 }

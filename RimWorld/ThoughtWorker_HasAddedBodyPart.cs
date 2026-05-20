@@ -1,17 +1,16 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_HasAddedBodyPart : ThoughtWorker
 {
-	public class ThoughtWorker_HasAddedBodyPart : ThoughtWorker
+	protected override ThoughtState CurrentStateInternal(Pawn p)
 	{
-		protected override ThoughtState CurrentStateInternal(Pawn p)
+		int num = GeneUtility.AddedAndImplantedPartsWithXenogenesCount(p);
+		if (num > 0)
 		{
-			int num = GeneUtility.AddedAndImplantedPartsWithXenogenesCount(p);
-			if (num > 0)
-			{
-				return ThoughtState.ActiveAtStage(num - 1);
-			}
-			return false;
+			return ThoughtState.ActiveAtStage(num - 1);
 		}
+		return false;
 	}
 }

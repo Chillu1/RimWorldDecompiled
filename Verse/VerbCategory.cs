@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum VerbCategory : byte
 {
-	public enum VerbCategory : byte
-	{
-		Undefined,
-		BeatFire,
-		Ignite,
-		Misc
-	}
+	Undefined,
+	BeatFire,
+	Ignite,
+	Misc
 }

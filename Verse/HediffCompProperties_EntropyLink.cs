@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_EntropyLink : HediffCompProperties
 {
-	public class HediffCompProperties_EntropyLink : HediffCompProperties
-	{
-		public float entropyTransferAmount;
-	}
+	public float entropyTransferAmount;
 }

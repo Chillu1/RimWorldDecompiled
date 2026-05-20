@@ -1,11 +1,10 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class PreceptThingPair
-	{
-		public PreceptDef precept;
+namespace RimWorld;
 
-		public ThingDef thing;
-	}
+public class PreceptThingPair
+{
+	public PreceptDef precept;
+
+	public ThingDef thing;
 }

@@ -1,12 +1,11 @@
 using System;
 
-namespace RimWorld
+namespace RimWorld;
+
+[Serializable]
+public enum ConditionCauserSiteLinkState
 {
-	[Serializable]
-	public enum ConditionCauserSiteLinkState
-	{
-		NULL,
-		LINKED,
-		UNLINKED
-	}
+	NULL,
+	LINKED,
+	UNLINKED
 }

@@ -2,46 +2,45 @@ using System.Collections.Generic;
 using Verse;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class LordToil_TravelAndWaitForItems : LordToil_Travel, IWaitForItemsLordToil
 {
-	public class LordToil_TravelAndWaitForItems : LordToil_Travel, IWaitForItemsLordToil
+	public Pawn target;
+
+	public ThingDef requestedThingDef;
+
+	public int requestedThingCount;
+
+	public bool HasAllRequestedItems => CountRemaining <= 0;
+
+	public int CountRemaining => GiveItemsToPawnUtility.GetCountRemaining(target, requestedThingDef, requestedThingCount);
+
+	public LordToil_TravelAndWaitForItems(IntVec3 dest, Pawn target, ThingDef thingDef, int amount)
+		: base(dest)
 	{
-		public Pawn target;
+		this.target = target;
+		requestedThingDef = thingDef;
+		requestedThingCount = amount;
+	}
 
-		public ThingDef requestedThingDef;
-
-		public int requestedThingCount;
-
-		public bool HasAllRequestedItems => CountRemaining <= 0;
-
-		public int CountRemaining => GiveItemsToPawnUtility.GetCountRemaining(target, requestedThingDef, requestedThingCount);
-
-		public LordToil_TravelAndWaitForItems(IntVec3 dest, Pawn target, ThingDef thingDef, int amount)
-			: base(dest)
+	public override void DrawPawnGUIOverlay(Pawn pawn)
+	{
+		if (pawn == target)
 		{
-			this.target = target;
-			requestedThingDef = thingDef;
-			requestedThingCount = amount;
+			pawn.Map.overlayDrawer.DrawOverlay(pawn, OverlayTypes.QuestionMark);
 		}
+	}
 
-		public override void DrawPawnGUIOverlay(Pawn pawn)
+	public override IEnumerable<FloatMenuOption> ExtraFloatMenuOptions(Pawn requester, Pawn current)
+	{
+		if (target != requester)
 		{
-			if (pawn == target)
-			{
-				pawn.Map.overlayDrawer.DrawOverlay(pawn, OverlayTypes.QuestionMark);
-			}
+			yield break;
 		}
-
-		public override IEnumerable<FloatMenuOption> ExtraFloatMenuOptions(Pawn requester, Pawn current)
+		foreach (FloatMenuOption item in GiveItemsToPawnUtility.GetFloatMenuOptionsForPawn(requester, current, requestedThingDef, requestedThingCount))
 		{
-			if (target != requester)
-			{
-				yield break;
-			}
-			foreach (FloatMenuOption item in GiveItemsToPawnUtility.GetFloatMenuOptionsForPawn(requester, current, requestedThingDef, requestedThingCount))
-			{
-				yield return item;
-			}
+			yield return item;
 		}
 	}
 }

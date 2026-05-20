@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_DisappearsOnDeath : HediffCompProperties
 {
-	public class HediffCompProperties_DisappearsOnDeath : HediffCompProperties
+	public HediffCompProperties_DisappearsOnDeath()
 	{
-		public HediffCompProperties_DisappearsOnDeath()
-		{
-			compClass = typeof(HediffComp_DisappearsOnDeath);
-		}
+		compClass = typeof(HediffComp_DisappearsOnDeath);
 	}
 }

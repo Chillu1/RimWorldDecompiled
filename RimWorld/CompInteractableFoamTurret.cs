@@ -1,56 +1,55 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompInteractableFoamTurret : CompInteractable
 {
-	public class CompInteractableFoamTurret : CompInteractable
+	private Building_TurretGun ParentGun => (Building_TurretGun)parent;
+
+	public override bool CanCooldown
 	{
-		private Building_TurretGun ParentGun => (Building_TurretGun)parent;
-
-		public override bool CanCooldown
+		get
 		{
-			get
+			if (power != null)
 			{
-				if (power != null)
-				{
-					return power.PowerOn;
-				}
-				return true;
-			}
-		}
-
-		public override AcceptanceReport CanInteract(Pawn activateBy = null, bool checkOptionalItems = true)
-		{
-			AcceptanceReport result = base.CanInteract(activateBy, checkOptionalItems);
-			if (!result.Accepted)
-			{
-				return result;
-			}
-			if (!ParentGun.TryFindNewTarget().IsValid)
-			{
-				return "NoNearbyFire".Translate();
+				return power.PowerOn;
 			}
 			return true;
 		}
+	}
 
-		protected override void SendDeactivateMessage()
+	public override AcceptanceReport CanInteract(Pawn activateBy = null, bool checkOptionalItems = true)
+	{
+		AcceptanceReport result = base.CanInteract(activateBy, checkOptionalItems);
+		if (!result.Accepted)
 		{
-			Messages.Message("MessageActivationCanceled".Translate(parent) + ": " + "NoNearbyFireNoFuelUsed".Translate(), parent, MessageTypeDefOf.NeutralEvent);
+			return result;
 		}
+		if (!ParentGun.TryFindNewTarget().IsValid)
+		{
+			return "NoNearbyFire".Translate();
+		}
+		return true;
+	}
 
-		protected override bool ShouldDeactivate()
-		{
-			return !CanInteract();
-		}
+	protected override void SendDeactivateMessage()
+	{
+		Messages.Message("MessageActivationCanceled".Translate(parent) + ": " + "NoNearbyFireNoFuelUsed".Translate(), parent, MessageTypeDefOf.NeutralEvent);
+	}
 
-		protected override bool TryInteractTick()
+	protected override bool ShouldDeactivate()
+	{
+		return !CanInteract();
+	}
+
+	protected override bool TryInteractTick()
+	{
+		ParentGun.TryActivateBurst();
+		if (ParentGun.CurrentTarget.IsValid)
 		{
-			ParentGun.TryActivateBurst();
-			if (ParentGun.CurrentTarget.IsValid)
-			{
-				ParentGun.Top.ForceFaceTarget(ParentGun.CurrentTarget);
-				return true;
-			}
-			return false;
+			ParentGun.Top.ForceFaceTarget(ParentGun.CurrentTarget);
+			return true;
 		}
+		return false;
 	}
 }

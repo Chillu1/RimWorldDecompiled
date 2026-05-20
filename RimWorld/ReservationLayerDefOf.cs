@@ -1,19 +1,18 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+[DefOf]
+public static class ReservationLayerDefOf
 {
-	[DefOf]
-	public static class ReservationLayerDefOf
+	public static ReservationLayerDef Floor;
+
+	public static ReservationLayerDef Ceiling;
+
+	public static ReservationLayerDef Empty;
+
+	static ReservationLayerDefOf()
 	{
-		public static ReservationLayerDef Floor;
-
-		public static ReservationLayerDef Ceiling;
-
-		public static ReservationLayerDef Empty;
-
-		static ReservationLayerDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(ReservationLayerDefOf));
-		}
+		DefOfHelper.EnsureInitializedInCtor(typeof(ReservationLayerDefOf));
 	}
 }

@@ -1,31 +1,30 @@
 using System.Collections.Generic;
 
-namespace Verse.AI
+namespace Verse.AI;
+
+public class ThinkNode_ConditionalRequireCapacities : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalRequireCapacities : ThinkNode_Conditional
+	public List<PawnCapacityDef> requiredCapacities;
+
+	public override ThinkNode DeepCopy(bool resolve = true)
 	{
-		public List<PawnCapacityDef> requiredCapacities;
+		ThinkNode_ConditionalRequireCapacities obj = (ThinkNode_ConditionalRequireCapacities)base.DeepCopy(resolve);
+		obj.requiredCapacities = requiredCapacities;
+		return obj;
+	}
 
-		public override ThinkNode DeepCopy(bool resolve = true)
+	protected override bool Satisfied(Pawn pawn)
+	{
+		if (pawn.health != null && pawn.health.capacities != null)
 		{
-			ThinkNode_ConditionalRequireCapacities obj = (ThinkNode_ConditionalRequireCapacities)base.DeepCopy(resolve);
-			obj.requiredCapacities = requiredCapacities;
-			return obj;
-		}
-
-		protected override bool Satisfied(Pawn pawn)
-		{
-			if (pawn.health != null && pawn.health.capacities != null)
+			foreach (PawnCapacityDef requiredCapacity in requiredCapacities)
 			{
-				foreach (PawnCapacityDef requiredCapacity in requiredCapacities)
+				if (!pawn.health.capacities.CapableOf(requiredCapacity))
 				{
-					if (!pawn.health.capacities.CapableOf(requiredCapacity))
-					{
-						return false;
-					}
+					return false;
 				}
 			}
-			return true;
 		}
+		return true;
 	}
 }

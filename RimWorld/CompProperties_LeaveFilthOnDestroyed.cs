@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_LeaveFilthOnDestroyed : CompProperties
 {
-	public class CompProperties_LeaveFilthOnDestroyed : CompProperties
+	public int thickness;
+
+	public ThingDef filthDef;
+
+	public CompProperties_LeaveFilthOnDestroyed()
 	{
-		public int thickness;
-
-		public ThingDef filthDef;
-
-		public CompProperties_LeaveFilthOnDestroyed()
-		{
-			compClass = typeof(CompLeaveFilthOnDestroyed);
-		}
+		compClass = typeof(CompLeaveFilthOnDestroyed);
 	}
 }

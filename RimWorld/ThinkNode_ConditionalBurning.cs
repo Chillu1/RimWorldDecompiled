@@ -1,13 +1,12 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThinkNode_ConditionalBurning : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalBurning : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
-		{
-			return pawn.HasAttachment(ThingDefOf.Fire);
-		}
+		return pawn.HasAttachment(ThingDefOf.Fire);
 	}
 }

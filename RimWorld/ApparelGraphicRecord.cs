@@ -1,17 +1,16 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public struct ApparelGraphicRecord
 {
-	public struct ApparelGraphicRecord
+	public Graphic graphic;
+
+	public Apparel sourceApparel;
+
+	public ApparelGraphicRecord(Graphic graphic, Apparel sourceApparel)
 	{
-		public Graphic graphic;
-
-		public Apparel sourceApparel;
-
-		public ApparelGraphicRecord(Graphic graphic, Apparel sourceApparel)
-		{
-			this.graphic = graphic;
-			this.sourceApparel = sourceApparel;
-		}
+		this.graphic = graphic;
+		this.sourceApparel = sourceApparel;
 	}
 }

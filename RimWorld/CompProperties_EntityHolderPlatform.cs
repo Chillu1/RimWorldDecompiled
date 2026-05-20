@@ -1,28 +1,27 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_EntityHolderPlatform : CompProperties_EntityHolder
 {
-	public class CompProperties_EntityHolderPlatform : CompProperties_EntityHolder
+	[NoTranslate]
+	public string untetheredGraphicTexPath;
+
+	[NoTranslate]
+	public string tilingChainTexPath;
+
+	[NoTranslate]
+	public string baseChainFastenerTexPath;
+
+	[NoTranslate]
+	public string targetChainFastenerTexPath;
+
+	public SoundDef entityLungeSoundHi;
+
+	public SoundDef entityLungeSoundLow;
+
+	public CompProperties_EntityHolderPlatform()
 	{
-		[NoTranslate]
-		public string untetheredGraphicTexPath;
-
-		[NoTranslate]
-		public string tilingChainTexPath;
-
-		[NoTranslate]
-		public string baseChainFastenerTexPath;
-
-		[NoTranslate]
-		public string targetChainFastenerTexPath;
-
-		public SoundDef entityLungeSoundHi;
-
-		public SoundDef entityLungeSoundLow;
-
-		public CompProperties_EntityHolderPlatform()
-		{
-			compClass = typeof(CompEntityHolderPlatform);
-		}
+		compClass = typeof(CompEntityHolderPlatform);
 	}
 }

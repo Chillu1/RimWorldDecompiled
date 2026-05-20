@@ -1,28 +1,27 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public static class MessagesRepeatAvoider
 {
-	public static class MessagesRepeatAvoider
+	private static Dictionary<string, float> lastShowTimes = new Dictionary<string, float>();
+
+	public static void Reset()
 	{
-		private static Dictionary<string, float> lastShowTimes = new Dictionary<string, float>();
+		lastShowTimes.Clear();
+	}
 
-		public static void Reset()
+	public static bool MessageShowAllowed(string tag, float minSecondsSinceLastShow)
+	{
+		if (!lastShowTimes.TryGetValue(tag, out var value))
 		{
-			lastShowTimes.Clear();
+			value = -99999f;
 		}
-
-		public static bool MessageShowAllowed(string tag, float minSecondsSinceLastShow)
+		bool num = RealTime.LastRealTime > value + minSecondsSinceLastShow;
+		if (num)
 		{
-			if (!lastShowTimes.TryGetValue(tag, out var value))
-			{
-				value = -99999f;
-			}
-			bool num = RealTime.LastRealTime > value + minSecondsSinceLastShow;
-			if (num)
-			{
-				lastShowTimes[tag] = RealTime.LastRealTime;
-			}
-			return num;
+			lastShowTimes[tag] = RealTime.LastRealTime;
 		}
+		return num;
 	}
 }

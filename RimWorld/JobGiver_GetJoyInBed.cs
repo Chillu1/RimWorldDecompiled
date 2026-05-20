@@ -1,39 +1,38 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobGiver_GetJoyInBed : JobGiver_GetJoy
 {
-	public class JobGiver_GetJoyInBed : JobGiver_GetJoy
+	private const float MaxJoyLevel = 0.5f;
+
+	protected override bool CanDoDuringMedicalRest => true;
+
+	protected override bool JoyGiverAllowed(JoyGiverDef def)
 	{
-		private const float MaxJoyLevel = 0.5f;
+		return def.canDoWhileInBed;
+	}
 
-		protected override bool CanDoDuringMedicalRest => true;
+	protected override Job TryGiveJobFromJoyGiverDefDirect(JoyGiverDef def, Pawn pawn)
+	{
+		return def.Worker.TryGiveJobWhileInBed(pawn);
+	}
 
-		protected override bool JoyGiverAllowed(JoyGiverDef def)
+	protected override Job TryGiveJob(Pawn pawn)
+	{
+		if (pawn.CurJob == null || !pawn.InBed() || !pawn.Awake() || pawn.needs.joy == null)
 		{
-			return def.canDoWhileInBed;
+			return null;
 		}
-
-		protected override Job TryGiveJobFromJoyGiverDefDirect(JoyGiverDef def, Pawn pawn)
+		if (pawn.health.hediffSet.InLabor())
 		{
-			return def.Worker.TryGiveJobWhileInBed(pawn);
+			return null;
 		}
-
-		protected override Job TryGiveJob(Pawn pawn)
+		if (pawn.needs.joy.CurLevel > 0.5f)
 		{
-			if (pawn.CurJob == null || !pawn.InBed() || !pawn.Awake() || pawn.needs.joy == null)
-			{
-				return null;
-			}
-			if (pawn.health.hediffSet.InLabor())
-			{
-				return null;
-			}
-			if (pawn.needs.joy.CurLevel > 0.5f)
-			{
-				return null;
-			}
-			return base.TryGiveJob(pawn);
+			return null;
 		}
+		return base.TryGiveJob(pawn);
 	}
 }

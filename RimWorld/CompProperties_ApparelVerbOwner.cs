@@ -1,31 +1,30 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_ApparelVerbOwner : CompProperties
 {
-	public class CompProperties_ApparelVerbOwner : CompProperties
+	public KeyBindingDef hotKey;
+
+	public bool displayGizmoWhileUndrafted = true;
+
+	public bool displayGizmoWhileDrafted = true;
+
+	public CompProperties_ApparelVerbOwner()
 	{
-		public KeyBindingDef hotKey;
+		compClass = typeof(CompApparelVerbOwner);
+	}
 
-		public bool displayGizmoWhileUndrafted = true;
-
-		public bool displayGizmoWhileDrafted = true;
-
-		public CompProperties_ApparelVerbOwner()
+	public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+	{
+		foreach (string item in base.ConfigErrors(parentDef))
 		{
-			compClass = typeof(CompApparelVerbOwner);
+			yield return item;
 		}
-
-		public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+		if (!typeof(Apparel).IsAssignableFrom(parentDef.thingClass))
 		{
-			foreach (string item in base.ConfigErrors(parentDef))
-			{
-				yield return item;
-			}
-			if (!typeof(Apparel).IsAssignableFrom(parentDef.thingClass))
-			{
-				yield return $"Comp {compClass} can only be added to Apparel";
-			}
+			yield return $"Comp {compClass} can only be added to Apparel";
 		}
 	}
 }

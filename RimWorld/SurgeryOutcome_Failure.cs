@@ -1,40 +1,39 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class SurgeryOutcome_Failure : SurgeryOutcome
 {
-	public class SurgeryOutcome_Failure : SurgeryOutcome
+	protected virtual bool CanApply(RecipeDef recipe)
 	{
-		protected virtual bool CanApply(RecipeDef recipe)
-		{
-			return Rand.Chance(chance);
-		}
+		return Rand.Chance(chance);
+	}
 
-		public override bool Apply(float quality, RecipeDef recipe, Pawn surgeon, Pawn patient, BodyPartRecord part)
+	public override bool Apply(float quality, RecipeDef recipe, Pawn surgeon, Pawn patient, BodyPartRecord part)
+	{
+		if (CanApply(recipe))
 		{
-			if (CanApply(recipe))
+			ApplyDamage(patient, part);
+			PostDamagedApplied(patient);
+			if (!patient.Dead)
 			{
-				ApplyDamage(patient, part);
-				PostDamagedApplied(patient);
-				if (!patient.Dead)
-				{
-					TryGainBotchedSurgeryThought(patient, surgeon);
-				}
-				SendLetter(surgeon, patient, recipe);
-				return true;
+				TryGainBotchedSurgeryThought(patient, surgeon);
 			}
-			return false;
+			SendLetter(surgeon, patient, recipe);
+			return true;
 		}
+		return false;
+	}
 
-		protected virtual void PostDamagedApplied(Pawn patient)
-		{
-		}
+	protected virtual void PostDamagedApplied(Pawn patient)
+	{
+	}
 
-		protected void TryGainBotchedSurgeryThought(Pawn patient, Pawn surgeon)
+	protected void TryGainBotchedSurgeryThought(Pawn patient, Pawn surgeon)
+	{
+		if (patient.RaceProps.Humanlike && patient.needs.mood != null)
 		{
-			if (patient.RaceProps.Humanlike && patient.needs.mood != null)
-			{
-				patient.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.BotchedMySurgery, surgeon);
-			}
+			patient.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.BotchedMySurgery, surgeon);
 		}
 	}
 }

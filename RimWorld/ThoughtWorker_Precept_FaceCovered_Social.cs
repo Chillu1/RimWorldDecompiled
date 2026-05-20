@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_Precept_FaceCovered_Social : ThoughtWorker_Precept_Social
 {
-	public class ThoughtWorker_Precept_FaceCovered_Social : ThoughtWorker_Precept_Social
+	protected override ThoughtState ShouldHaveThought(Pawn p, Pawn otherPawn)
 	{
-		protected override ThoughtState ShouldHaveThought(Pawn p, Pawn otherPawn)
-		{
-			return ThoughtWorker_Precept_FaceCovered.HasCoveredFace(otherPawn);
-		}
+		return ThoughtWorker_Precept_FaceCovered.HasCoveredFace(otherPawn);
 	}
 }

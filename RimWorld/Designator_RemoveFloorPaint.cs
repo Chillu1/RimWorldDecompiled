@@ -2,55 +2,54 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Designator_RemoveFloorPaint : Designator_Cells
 {
-	public class Designator_RemoveFloorPaint : Designator_Cells
+	public override bool DragDrawMeasurements => true;
+
+	public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Paint;
+
+	public Designator_RemoveFloorPaint()
 	{
-		public override bool DragDrawMeasurements => true;
+		defaultLabel = "DesignatorRemoveFloorPaint".Translate();
+		defaultDesc = "DesignatorRemoveFloorPaintDesc".Translate();
+		icon = ContentFinder<Texture2D>.Get("UI/Designators/RemovePaint");
+		soundDragSustain = SoundDefOf.Designate_DragStandard;
+		soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
+		useMouseIcon = true;
+		soundSucceeded = SoundDefOf.Designate_RemovePaint;
+		hotKey = KeyBindingDefOf.Misc7;
+		tutorTag = "RemovePaint";
+	}
 
-		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Paint;
-
-		public Designator_RemoveFloorPaint()
+	public override AcceptanceReport CanDesignateCell(IntVec3 c)
+	{
+		if (!c.InBounds(base.Map) || c.Fogged(base.Map))
 		{
-			defaultLabel = "DesignatorRemoveFloorPaint".Translate();
-			defaultDesc = "DesignatorRemoveFloorPaintDesc".Translate();
-			icon = ContentFinder<Texture2D>.Get("UI/Designators/RemovePaint");
-			soundDragSustain = SoundDefOf.Designate_DragStandard;
-			soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
-			useMouseIcon = true;
-			soundSucceeded = SoundDefOf.Designate_RemovePaint;
-			hotKey = KeyBindingDefOf.Misc7;
-			tutorTag = "RemovePaint";
+			return false;
 		}
-
-		public override AcceptanceReport CanDesignateCell(IntVec3 c)
+		if (base.Map.terrainGrid.ColorAt(c) == null)
 		{
-			if (!c.InBounds(base.Map) || c.Fogged(base.Map))
-			{
-				return false;
-			}
-			if (base.Map.terrainGrid.ColorAt(c) == null)
-			{
-				return "MessageMustDesignatePainted".Translate();
-			}
-			return AcceptanceReport.WasAccepted;
+			return "MessageMustDesignatePainted".Translate();
 		}
+		return AcceptanceReport.WasAccepted;
+	}
 
-		public override void DesignateSingleCell(IntVec3 c)
+	public override void DesignateSingleCell(IntVec3 c)
+	{
+		if (DebugSettings.godMode)
 		{
-			if (DebugSettings.godMode)
-			{
-				base.Map.terrainGrid.SetTerrainColor(c, null);
-			}
-			else
-			{
-				base.Map.designationManager.AddDesignation(new Designation(c, DesignationDefOf.RemovePaintFloor));
-			}
+			base.Map.terrainGrid.SetTerrainColor(c, null);
 		}
+		else
+		{
+			base.Map.designationManager.AddDesignation(new Designation(c, DesignationDefOf.RemovePaintFloor));
+		}
+	}
 
-		public override void RenderHighlight(List<IntVec3> dragCells)
-		{
-			DesignatorUtility.RenderHighlightOverSelectableCells(this, dragCells);
-		}
+	public override void RenderHighlight(List<IntVec3> dragCells)
+	{
+		DesignatorUtility.RenderHighlightOverSelectableCells(this, dragCells);
 	}
 }

@@ -1,12 +1,11 @@
 using RimWorld.Planet;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WorldObjectCompProperties_DownedRefugee : WorldObjectCompProperties
 {
-	public class WorldObjectCompProperties_DownedRefugee : WorldObjectCompProperties
+	public WorldObjectCompProperties_DownedRefugee()
 	{
-		public WorldObjectCompProperties_DownedRefugee()
-		{
-			compClass = typeof(DownedRefugeeComp);
-		}
+		compClass = typeof(DownedRefugeeComp);
 	}
 }

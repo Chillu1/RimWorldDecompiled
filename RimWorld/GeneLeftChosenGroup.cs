@@ -1,17 +1,16 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class GeneLeftChosenGroup
 {
-	public class GeneLeftChosenGroup
+	public GeneDef leftChosen;
+
+	public List<GeneDef> overriddenGenes = new List<GeneDef>();
+
+	public GeneLeftChosenGroup(GeneDef left)
 	{
-		public GeneDef leftChosen;
-
-		public List<GeneDef> overriddenGenes = new List<GeneDef>();
-
-		public GeneLeftChosenGroup(GeneDef left)
-		{
-			leftChosen = left;
-		}
+		leftChosen = left;
 	}
 }

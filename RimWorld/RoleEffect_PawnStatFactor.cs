@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RoleEffect_PawnStatFactor : RoleEffect_PawnStatModifier
 {
-	public class RoleEffect_PawnStatFactor : RoleEffect_PawnStatModifier
+	public override string Label(Pawn pawn, Precept_Role role)
 	{
-		public override string Label(Pawn pawn, Precept_Role role)
-		{
-			return statDef.LabelCap + ": " + statDef.ValueToString(modifier, ToStringNumberSense.Factor, finalized: false);
-		}
+		return statDef.LabelCap + ": " + statDef.ValueToString(modifier, ToStringNumberSense.Factor, finalized: false);
 	}
 }

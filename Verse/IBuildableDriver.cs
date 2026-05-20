@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public interface IBuildableDriver
 {
-	public interface IBuildableDriver
-	{
-		bool TryGetBuildableRect(out CellRect rect);
-	}
+	bool TryGetBuildableRect(out CellRect rect);
 }

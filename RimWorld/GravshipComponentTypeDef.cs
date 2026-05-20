@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class GravshipComponentTypeDef : Def
 {
-	public class GravshipComponentTypeDef : Def
-	{
-		public bool requiredForLaunch = true;
-	}
+	public bool requiredForLaunch = true;
 }

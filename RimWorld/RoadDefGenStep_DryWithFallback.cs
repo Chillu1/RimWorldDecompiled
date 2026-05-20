@@ -1,27 +1,26 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RoadDefGenStep_DryWithFallback : RoadDefGenStep
 {
-	public class RoadDefGenStep_DryWithFallback : RoadDefGenStep
+	public TerrainDef fallback;
+
+	public override void Place(Map map, IntVec3 position, TerrainDef rockDef, IntVec3 origin, GenStep_Roads.DistanceElement[,] distance)
 	{
-		public TerrainDef fallback;
+		PlaceWorker(map, position, fallback);
+	}
 
-		public override void Place(Map map, IntVec3 position, TerrainDef rockDef, IntVec3 origin, GenStep_Roads.DistanceElement[,] distance)
+	public static void PlaceWorker(Map map, IntVec3 position, TerrainDef fallback)
+	{
+		while (map.terrainGrid.TerrainAt(position).driesTo != null)
 		{
-			PlaceWorker(map, position, fallback);
+			map.terrainGrid.SetTerrain(position, map.terrainGrid.TerrainAt(position).driesTo);
 		}
-
-		public static void PlaceWorker(Map map, IntVec3 position, TerrainDef fallback)
+		TerrainDef terrainDef = map.terrainGrid.TerrainAt(position);
+		if (terrainDef.passability == Traversability.Impassable || terrainDef.IsRiver)
 		{
-			while (map.terrainGrid.TerrainAt(position).driesTo != null)
-			{
-				map.terrainGrid.SetTerrain(position, map.terrainGrid.TerrainAt(position).driesTo);
-			}
-			TerrainDef terrainDef = map.terrainGrid.TerrainAt(position);
-			if (terrainDef.passability == Traversability.Impassable || terrainDef.IsRiver)
-			{
-				map.terrainGrid.SetTerrain(position, fallback);
-			}
+			map.terrainGrid.SetTerrain(position, fallback);
 		}
 	}
 }

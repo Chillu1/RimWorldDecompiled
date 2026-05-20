@@ -1,47 +1,46 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class PawnRenderNodeWorker_Carried : PawnRenderNodeWorker
 {
-	public class PawnRenderNodeWorker_Carried : PawnRenderNodeWorker
+	public override bool CanDrawNow(PawnRenderNode node, PawnDrawParms parms)
 	{
-		public override bool CanDrawNow(PawnRenderNode node, PawnDrawParms parms)
+		if (!base.CanDrawNow(node, parms))
 		{
-			if (!base.CanDrawNow(node, parms))
-			{
-				return false;
-			}
-			if (parms.Portrait || parms.pawn.Dead || !parms.pawn.Spawned)
-			{
-				return false;
-			}
-			return true;
+			return false;
 		}
-
-		public override Vector3 OffsetFor(PawnRenderNode node, PawnDrawParms parms, out Vector3 pivot)
+		if (parms.Portrait || parms.pawn.Dead || !parms.pawn.Spawned)
 		{
-			Vector3 result = base.OffsetFor(node, parms, out pivot);
-			result.y = AltitudeFor(node, parms);
-			return result;
+			return false;
 		}
+		return true;
+	}
 
-		public override void AppendDrawRequests(PawnRenderNode node, PawnDrawParms parms, List<PawnGraphicDrawRequest> requests)
+	public override Vector3 OffsetFor(PawnRenderNode node, PawnDrawParms parms, out Vector3 pivot)
+	{
+		Vector3 result = base.OffsetFor(node, parms, out pivot);
+		result.y = AltitudeFor(node, parms);
+		return result;
+	}
+
+	public override void AppendDrawRequests(PawnRenderNode node, PawnDrawParms parms, List<PawnGraphicDrawRequest> requests)
+	{
+		requests.Add(new PawnGraphicDrawRequest(node));
+	}
+
+	public override void PostDraw(PawnRenderNode node, PawnDrawParms parms, Mesh mesh, Matrix4x4 matrix)
+	{
+		Vector3 pivot;
+		Vector3 vector = parms.matrix.Position() + OffsetFor(node, parms, out pivot);
+		if (parms.pawn.carryTracker?.CarriedThing != null)
 		{
-			requests.Add(new PawnGraphicDrawRequest(node));
+			PawnRenderUtility.DrawCarriedThing(parms.pawn, vector, parms.pawn.carryTracker.CarriedThing);
 		}
-
-		public override void PostDraw(PawnRenderNode node, PawnDrawParms parms, Mesh mesh, Matrix4x4 matrix)
+		else
 		{
-			Vector3 pivot;
-			Vector3 vector = parms.matrix.Position() + OffsetFor(node, parms, out pivot);
-			if (parms.pawn.carryTracker?.CarriedThing != null)
-			{
-				PawnRenderUtility.DrawCarriedThing(parms.pawn, vector, parms.pawn.carryTracker.CarriedThing);
-			}
-			else
-			{
-				PawnRenderUtility.DrawEquipmentAndApparelExtras(parms.pawn, vector, parms.facing, parms.flags);
-			}
+			PawnRenderUtility.DrawEquipmentAndApparelExtras(parms.pawn, vector, parms.facing, parms.flags);
 		}
 	}
 }

@@ -1,17 +1,16 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_WearingColor_Favorite : ThoughtWorker_WearingColor
 {
-	public class ThoughtWorker_WearingColor_Favorite : ThoughtWorker_WearingColor
+	protected override Color? Color(Pawn p)
 	{
-		protected override Color? Color(Pawn p)
+		if (p.DevelopmentalStage.Baby())
 		{
-			if (p.DevelopmentalStage.Baby())
-			{
-				return null;
-			}
-			return p.story.favoriteColor?.color;
+			return null;
 		}
+		return p.story.favoriteColor?.color;
 	}
 }

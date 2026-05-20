@@ -1,12 +1,11 @@
-namespace Verse
-{
-	public abstract class PatchOperationAttribute : PatchOperationPathed
-	{
-		protected string attribute;
+namespace Verse;
 
-		public override string ToString()
-		{
-			return $"{base.ToString()}({attribute})";
-		}
+public abstract class PatchOperationAttribute : PatchOperationPathed
+{
+	protected string attribute;
+
+	public override string ToString()
+	{
+		return $"{base.ToString()}({attribute})";
 	}
 }

@@ -1,20 +1,19 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobGiver_Berserk_Warcall : JobGiver_Berserk
 {
-	public class JobGiver_Berserk_Warcall : JobGiver_Berserk
+	protected override bool IsGoodTarget(Thing thing)
 	{
-		protected override bool IsGoodTarget(Thing thing)
+		if (!base.IsGoodTarget(thing))
 		{
-			if (!base.IsGoodTarget(thing))
+			if (thing.Spawned)
 			{
-				if (thing.Spawned)
-				{
-					return !(thing is Pawn);
-				}
-				return false;
+				return !(thing is Pawn);
 			}
-			return true;
+			return false;
 		}
+		return true;
 	}
 }

@@ -1,119 +1,118 @@
 using System;
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public static class MapComponentUtility
 {
-	public static class MapComponentUtility
+	public static void MapComponentUpdate(Map map)
 	{
-		public static void MapComponentUpdate(Map map)
+		List<MapComponent> components = map.components;
+		for (int i = 0; i < components.Count; i++)
 		{
-			List<MapComponent> components = map.components;
-			for (int i = 0; i < components.Count; i++)
+			try
 			{
-				try
-				{
-					components[i].MapComponentUpdate();
-				}
-				catch (Exception ex)
-				{
-					Log.Error(ex.ToString());
-				}
+				components[i].MapComponentUpdate();
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex.ToString());
 			}
 		}
+	}
 
-		public static void MapComponentTick(Map map)
+	public static void MapComponentTick(Map map)
+	{
+		List<MapComponent> components = map.components;
+		for (int i = 0; i < components.Count; i++)
 		{
-			List<MapComponent> components = map.components;
-			for (int i = 0; i < components.Count; i++)
+			try
 			{
-				try
-				{
-					components[i].MapComponentTick();
-				}
-				catch (Exception ex)
-				{
-					Log.Error(ex.ToString());
-				}
+				components[i].MapComponentTick();
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex.ToString());
 			}
 		}
+	}
 
-		public static void MapComponentOnGUI(Map map)
+	public static void MapComponentOnGUI(Map map)
+	{
+		List<MapComponent> components = map.components;
+		for (int i = 0; i < components.Count; i++)
 		{
-			List<MapComponent> components = map.components;
-			for (int i = 0; i < components.Count; i++)
+			try
 			{
-				try
-				{
-					components[i].MapComponentOnGUI();
-				}
-				catch (Exception ex)
-				{
-					Log.Error(ex.ToString());
-				}
+				components[i].MapComponentOnGUI();
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex.ToString());
 			}
 		}
+	}
 
-		public static void MapComponentOnDraw(Map map)
+	public static void MapComponentOnDraw(Map map)
+	{
+		List<MapComponent> components = map.components;
+		for (int i = 0; i < components.Count; i++)
 		{
-			List<MapComponent> components = map.components;
-			for (int i = 0; i < components.Count; i++)
+			try
 			{
-				try
-				{
-					components[i].MapComponentDraw();
-				}
-				catch (Exception ex)
-				{
-					Log.Error(ex.ToString());
-				}
+				components[i].MapComponentDraw();
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex.ToString());
 			}
 		}
+	}
 
-		public static void FinalizeInit(Map map)
+	public static void FinalizeInit(Map map)
+	{
+		List<MapComponent> components = map.components;
+		for (int i = 0; i < components.Count; i++)
 		{
-			List<MapComponent> components = map.components;
-			for (int i = 0; i < components.Count; i++)
+			try
 			{
-				try
-				{
-					components[i].FinalizeInit();
-				}
-				catch (Exception ex)
-				{
-					Log.Error(ex.ToString());
-				}
+				components[i].FinalizeInit();
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex.ToString());
 			}
 		}
+	}
 
-		public static void MapGenerated(Map map)
+	public static void MapGenerated(Map map)
+	{
+		List<MapComponent> components = map.components;
+		for (int i = 0; i < components.Count; i++)
 		{
-			List<MapComponent> components = map.components;
-			for (int i = 0; i < components.Count; i++)
+			try
 			{
-				try
-				{
-					components[i].MapGenerated();
-				}
-				catch (Exception ex)
-				{
-					Log.Error(ex.ToString());
-				}
+				components[i].MapGenerated();
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex.ToString());
 			}
 		}
+	}
 
-		public static void MapRemoved(Map map)
+	public static void MapRemoved(Map map)
+	{
+		List<MapComponent> components = map.components;
+		for (int i = 0; i < components.Count; i++)
 		{
-			List<MapComponent> components = map.components;
-			for (int i = 0; i < components.Count; i++)
+			try
 			{
-				try
-				{
-					components[i].MapRemoved();
-				}
-				catch (Exception ex)
-				{
-					Log.Error("Could not notify map component: " + ex);
-				}
+				components[i].MapRemoved();
+			}
+			catch (Exception ex)
+			{
+				Log.Error("Could not notify map component: " + ex);
 			}
 		}
 	}

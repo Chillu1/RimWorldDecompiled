@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum TextGenerationPurpose
 {
-	public enum TextGenerationPurpose
-	{
-		ArtDescription,
-		ArtName
-	}
+	ArtDescription,
+	ArtName
 }

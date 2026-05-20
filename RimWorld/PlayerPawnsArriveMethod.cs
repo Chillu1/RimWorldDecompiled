@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum PlayerPawnsArriveMethod
 {
-	public enum PlayerPawnsArriveMethod
-	{
-		Standing,
-		DropPods,
-		Gravship
-	}
+	Standing,
+	DropPods,
+	Gravship
 }

@@ -1,18 +1,17 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public struct CachedPawnRitualDuty
 {
-	public struct CachedPawnRitualDuty
-	{
-		public DutyDef duty;
+	public DutyDef duty;
 
-		public IntVec3 spot;
+	public IntVec3 spot;
 
-		public Thing usedThing;
+	public Thing usedThing;
 
-		public Rot4 overrideFacing;
+	public Rot4 overrideFacing;
 
-		public LocalTargetInfo secondFocus;
-	}
+	public LocalTargetInfo secondFocus;
 }

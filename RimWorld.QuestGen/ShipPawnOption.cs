@@ -1,13 +1,12 @@
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class ShipPawnOption
 {
-	public class ShipPawnOption
-	{
-		public PawnKindDef pawnKind;
+	public PawnKindDef pawnKind;
 
-		public float weight;
+	public float weight;
 
-		public bool requireOneOf;
-	}
+	public bool requireOneOf;
 }

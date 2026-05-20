@@ -1,25 +1,24 @@
 using RimWorld;
 
-namespace Verse.AI
+namespace Verse.AI;
+
+public class DutyDef : Def
 {
-	public class DutyDef : Def
-	{
-		public ThinkNode thinkNode;
+	public ThinkNode thinkNode;
 
-		public ThinkNode constantThinkNode;
+	public ThinkNode constantThinkNode;
 
-		public bool alwaysShowWeapon;
+	public bool alwaysShowWeapon;
 
-		public ThinkTreeDutyHook hook = ThinkTreeDutyHook.HighPriority;
+	public ThinkTreeDutyHook hook = ThinkTreeDutyHook.HighPriority;
 
-		public RandomSocialMode socialModeMax = RandomSocialMode.SuperActive;
+	public RandomSocialMode socialModeMax = RandomSocialMode.SuperActive;
 
-		public bool threatDisabled;
+	public bool threatDisabled;
 
-		public bool ritualSpectateTarget;
+	public bool ritualSpectateTarget;
 
-		public bool forceFaceUpPosture;
+	public bool forceFaceUpPosture;
 
-		public bool? drawBodyOverride;
-	}
+	public bool? drawBodyOverride;
 }

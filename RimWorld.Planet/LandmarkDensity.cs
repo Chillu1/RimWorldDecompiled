@@ -1,13 +1,12 @@
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public enum LandmarkDensity
 {
-	public enum LandmarkDensity
-	{
-		Sparse,
-		SlightlyMoreSparse,
-		SlightlySparse,
-		Normal,
-		SlightlyCrowded,
-		SlightlyMoreCrowded,
-		Crowded
-	}
+	Sparse,
+	SlightlyMoreSparse,
+	SlightlySparse,
+	Normal,
+	SlightlyCrowded,
+	SlightlyMoreCrowded,
+	Crowded
 }

@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_Sick : ThoughtWorker
 {
-	public class ThoughtWorker_Sick : ThoughtWorker
+	protected override ThoughtState CurrentStateInternal(Pawn p)
 	{
-		protected override ThoughtState CurrentStateInternal(Pawn p)
-		{
-			return p.health.hediffSet.AnyHediffMakesSickThought;
-		}
+		return p.health.hediffSet.AnyHediffMakesSickThought;
 	}
 }

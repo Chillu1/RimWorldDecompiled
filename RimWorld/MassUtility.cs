@@ -3,104 +3,103 @@ using System.Text;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class MassUtility
 {
-	public static class MassUtility
+	public const float MassCapacityPerBodySize = 35f;
+
+	public static float EncumbrancePercent(Pawn pawn)
 	{
-		public const float MassCapacityPerBodySize = 35f;
+		return Mathf.Clamp01(UnboundedEncumbrancePercent(pawn));
+	}
 
-		public static float EncumbrancePercent(Pawn pawn)
-		{
-			return Mathf.Clamp01(UnboundedEncumbrancePercent(pawn));
-		}
+	public static float UnboundedEncumbrancePercent(Pawn pawn)
+	{
+		return GearAndInventoryMass(pawn) / Capacity(pawn);
+	}
 
-		public static float UnboundedEncumbrancePercent(Pawn pawn)
-		{
-			return GearAndInventoryMass(pawn) / Capacity(pawn);
-		}
+	public static bool IsOverEncumbered(Pawn pawn)
+	{
+		return UnboundedEncumbrancePercent(pawn) > 1f;
+	}
 
-		public static bool IsOverEncumbered(Pawn pawn)
-		{
-			return UnboundedEncumbrancePercent(pawn) > 1f;
-		}
+	public static bool WillBeOverEncumberedAfterPickingUp(Pawn pawn, Thing thing, int count)
+	{
+		return FreeSpace(pawn) < (float)count * thing.GetStatValue(StatDefOf.Mass);
+	}
 
-		public static bool WillBeOverEncumberedAfterPickingUp(Pawn pawn, Thing thing, int count)
-		{
-			return FreeSpace(pawn) < (float)count * thing.GetStatValue(StatDefOf.Mass);
-		}
+	public static int CountToPickUpUntilOverEncumbered(Pawn pawn, Thing thing)
+	{
+		return Mathf.FloorToInt(FreeSpace(pawn) / thing.GetStatValue(StatDefOf.Mass));
+	}
 
-		public static int CountToPickUpUntilOverEncumbered(Pawn pawn, Thing thing)
-		{
-			return Mathf.FloorToInt(FreeSpace(pawn) / thing.GetStatValue(StatDefOf.Mass));
-		}
+	public static float FreeSpace(Pawn pawn)
+	{
+		return Mathf.Max(Capacity(pawn) - GearAndInventoryMass(pawn), 0f);
+	}
 
-		public static float FreeSpace(Pawn pawn)
-		{
-			return Mathf.Max(Capacity(pawn) - GearAndInventoryMass(pawn), 0f);
-		}
+	public static float GearAndInventoryMass(Pawn pawn)
+	{
+		return GearMass(pawn) + InventoryMass(pawn);
+	}
 
-		public static float GearAndInventoryMass(Pawn pawn)
+	public static float GearMass(Pawn p)
+	{
+		float num = 0f;
+		if (p.apparel != null)
 		{
-			return GearMass(pawn) + InventoryMass(pawn);
-		}
-
-		public static float GearMass(Pawn p)
-		{
-			float num = 0f;
-			if (p.apparel != null)
+			List<Apparel> wornApparel = p.apparel.WornApparel;
+			for (int i = 0; i < wornApparel.Count; i++)
 			{
-				List<Apparel> wornApparel = p.apparel.WornApparel;
-				for (int i = 0; i < wornApparel.Count; i++)
-				{
-					num += wornApparel[i].GetStatValue(StatDefOf.Mass, applyPostProcess: true, 1);
-				}
+				num += wornApparel[i].GetStatValue(StatDefOf.Mass, applyPostProcess: true, 1);
 			}
-			if (p.equipment != null)
-			{
-				foreach (ThingWithComps item in p.equipment.AllEquipmentListForReading)
-				{
-					num += item.GetStatValue(StatDefOf.Mass, applyPostProcess: true, 1);
-				}
-			}
-			return num;
 		}
-
-		public static float InventoryMass(Pawn p)
+		if (p.equipment != null)
 		{
-			float num = 0f;
-			for (int i = 0; i < p.inventory.innerContainer.Count; i++)
+			foreach (ThingWithComps item in p.equipment.AllEquipmentListForReading)
 			{
-				Thing thing = p.inventory.innerContainer[i];
-				num += (float)thing.stackCount * thing.GetStatValue(StatDefOf.Mass);
+				num += item.GetStatValue(StatDefOf.Mass, applyPostProcess: true, 1);
 			}
-			return num;
 		}
+		return num;
+	}
 
-		public static float Capacity(Pawn p, StringBuilder explanation = null)
+	public static float InventoryMass(Pawn p)
+	{
+		float num = 0f;
+		for (int i = 0; i < p.inventory.innerContainer.Count; i++)
 		{
-			if (!CanEverCarryAnything(p))
-			{
-				return 0f;
-			}
-			float num = p.BodySize * 35f;
-			if (explanation != null)
-			{
-				if (explanation.Length > 0)
-				{
-					explanation.AppendLine();
-				}
-				explanation.Append("  - " + p.LabelShortCap + ": " + num.ToStringMassOffset());
-			}
-			return num;
+			Thing thing = p.inventory.innerContainer[i];
+			num += (float)thing.stackCount * thing.GetStatValue(StatDefOf.Mass);
 		}
+		return num;
+	}
 
-		public static bool CanEverCarryAnything(Pawn p)
+	public static float Capacity(Pawn p, StringBuilder explanation = null)
+	{
+		if (!CanEverCarryAnything(p))
 		{
-			if (!p.RaceProps.ToolUser || p.DevelopmentalStage.Baby() || p.IsSubhuman)
-			{
-				return p.RaceProps.packAnimal;
-			}
-			return true;
+			return 0f;
 		}
+		float num = p.BodySize * 35f;
+		if (explanation != null)
+		{
+			if (explanation.Length > 0)
+			{
+				explanation.AppendLine();
+			}
+			explanation.Append("  - " + p.LabelShortCap + ": " + num.ToStringMassOffset());
+		}
+		return num;
+	}
+
+	public static bool CanEverCarryAnything(Pawn p)
+	{
+		if (!p.RaceProps.ToolUser || p.DevelopmentalStage.Baby() || p.IsSubhuman)
+		{
+			return p.RaceProps.packAnimal;
+		}
+		return true;
 	}
 }

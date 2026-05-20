@@ -1,13 +1,12 @@
-namespace Verse
+namespace Verse;
+
+public enum LinkDrawerType : byte
 {
-	public enum LinkDrawerType : byte
-	{
-		None,
-		Basic,
-		CornerFiller,
-		CornerOverlay,
-		Transmitter,
-		TransmitterOverlay,
-		Asymmetric
-	}
+	None,
+	Basic,
+	CornerFiller,
+	CornerOverlay,
+	Transmitter,
+	TransmitterOverlay,
+	Asymmetric
 }

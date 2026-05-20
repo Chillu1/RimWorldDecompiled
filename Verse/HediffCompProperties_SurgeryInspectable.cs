@@ -1,15 +1,14 @@
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_SurgeryInspectable : HediffCompProperties
 {
-	public class HediffCompProperties_SurgeryInspectable : HediffCompProperties
+	[MustTranslate]
+	public string surgicalDetectionDesc;
+
+	public bool preventLetterIfPreviouslyDetected;
+
+	public HediffCompProperties_SurgeryInspectable()
 	{
-		[MustTranslate]
-		public string surgicalDetectionDesc;
-
-		public bool preventLetterIfPreviouslyDetected;
-
-		public HediffCompProperties_SurgeryInspectable()
-		{
-			compClass = typeof(HediffComp_SurgeryInspectable);
-		}
+		compClass = typeof(HediffComp_SurgeryInspectable);
 	}
 }

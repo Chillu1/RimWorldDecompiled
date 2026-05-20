@@ -1,172 +1,171 @@
 using RimWorld;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public sealed class DeepResourceGrid : ICellBoolGiver, IExposable
 {
-	public sealed class DeepResourceGrid : ICellBoolGiver, IExposable
+	private const float LineSpacing = 29f;
+
+	private const float IconPaddingRight = 4f;
+
+	private const float IconSize = 27f;
+
+	private Map map;
+
+	private CellBoolDrawer drawer;
+
+	private ushort[] defGrid;
+
+	private ushort[] countGrid;
+
+	public Color Color => Color.white;
+
+	public DeepResourceGrid(Map map)
 	{
-		private const float LineSpacing = 29f;
+		this.map = map;
+		defGrid = new ushort[map.cellIndices.NumGridCells];
+		countGrid = new ushort[map.cellIndices.NumGridCells];
+		drawer = new CellBoolDrawer(this, map.Size.x, map.Size.z, 3640, 1f);
+	}
 
-		private const float IconPaddingRight = 4f;
-
-		private const float IconSize = 27f;
-
-		private Map map;
-
-		private CellBoolDrawer drawer;
-
-		private ushort[] defGrid;
-
-		private ushort[] countGrid;
-
-		public Color Color => Color.white;
-
-		public DeepResourceGrid(Map map)
+	public void ExposeData()
+	{
+		MapExposeUtility.ExposeUshort(map, (IntVec3 c) => defGrid[map.cellIndices.CellToIndex(c)], delegate(IntVec3 c, ushort val)
 		{
-			this.map = map;
-			defGrid = new ushort[map.cellIndices.NumGridCells];
-			countGrid = new ushort[map.cellIndices.NumGridCells];
-			drawer = new CellBoolDrawer(this, map.Size.x, map.Size.z, 3640, 1f);
+			defGrid[map.cellIndices.CellToIndex(c)] = val;
+		}, "defGrid");
+		MapExposeUtility.ExposeUshort(map, (IntVec3 c) => countGrid[map.cellIndices.CellToIndex(c)], delegate(IntVec3 c, ushort val)
+		{
+			countGrid[map.cellIndices.CellToIndex(c)] = val;
+		}, "countGrid");
+	}
+
+	public ThingDef ThingDefAt(IntVec3 c)
+	{
+		return DefDatabase<ThingDef>.GetByShortHash(defGrid[map.cellIndices.CellToIndex(c)]);
+	}
+
+	public int CountAt(IntVec3 c)
+	{
+		return countGrid[map.cellIndices.CellToIndex(c)];
+	}
+
+	public void SetAt(IntVec3 c, ThingDef def, int count)
+	{
+		if (count == 0)
+		{
+			def = null;
 		}
-
-		public void ExposeData()
+		ushort num = def?.shortHash ?? 0;
+		ushort num2 = (ushort)count;
+		if (count > 65535)
 		{
-			MapExposeUtility.ExposeUshort(map, (IntVec3 c) => defGrid[map.cellIndices.CellToIndex(c)], delegate(IntVec3 c, ushort val)
-			{
-				defGrid[map.cellIndices.CellToIndex(c)] = val;
-			}, "defGrid");
-			MapExposeUtility.ExposeUshort(map, (IntVec3 c) => countGrid[map.cellIndices.CellToIndex(c)], delegate(IntVec3 c, ushort val)
-			{
-				countGrid[map.cellIndices.CellToIndex(c)] = val;
-			}, "countGrid");
+			Log.Error("Cannot store count " + count + " in DeepResourceGrid: out of ushort range.");
+			num2 = ushort.MaxValue;
 		}
-
-		public ThingDef ThingDefAt(IntVec3 c)
+		if (count < 0)
 		{
-			return DefDatabase<ThingDef>.GetByShortHash(defGrid[map.cellIndices.CellToIndex(c)]);
+			Log.Error("Cannot store count " + count + " in DeepResourceGrid: out of ushort range.");
+			num2 = 0;
 		}
-
-		public int CountAt(IntVec3 c)
+		int num3 = map.cellIndices.CellToIndex(c);
+		if (defGrid[num3] != num || countGrid[num3] != num2)
 		{
-			return countGrid[map.cellIndices.CellToIndex(c)];
+			defGrid[num3] = num;
+			countGrid[num3] = num2;
+			drawer.SetDirty();
 		}
+	}
 
-		public void SetAt(IntVec3 c, ThingDef def, int count)
+	public void DeepResourceGridUpdate()
+	{
+		drawer.CellBoolDrawerUpdate();
+		if (DebugViewSettings.drawDeepResources)
 		{
-			if (count == 0)
-			{
-				def = null;
-			}
-			ushort num = def?.shortHash ?? 0;
-			ushort num2 = (ushort)count;
-			if (count > 65535)
-			{
-				Log.Error("Cannot store count " + count + " in DeepResourceGrid: out of ushort range.");
-				num2 = ushort.MaxValue;
-			}
-			if (count < 0)
-			{
-				Log.Error("Cannot store count " + count + " in DeepResourceGrid: out of ushort range.");
-				num2 = 0;
-			}
-			int num3 = map.cellIndices.CellToIndex(c);
-			if (defGrid[num3] != num || countGrid[num3] != num2)
-			{
-				defGrid[num3] = num;
-				countGrid[num3] = num2;
-				drawer.SetDirty();
-			}
+			MarkForDraw();
 		}
+	}
 
-		public void DeepResourceGridUpdate()
+	public void MarkForDraw()
+	{
+		if (map == Find.CurrentMap && !Find.ScreenshotModeHandler.Active)
 		{
-			drawer.CellBoolDrawerUpdate();
-			if (DebugViewSettings.drawDeepResources)
-			{
-				MarkForDraw();
-			}
+			drawer.MarkForDraw();
 		}
+	}
 
-		public void MarkForDraw()
+	public void DrawPlacingMouseAttachments(BuildableDef placingDef)
+	{
+		if (placingDef is ThingDef thingDef && thingDef.CompDefFor<CompDeepDrill>() != null && AnyActiveDeepScannersOnMap())
 		{
-			if (map == Find.CurrentMap && !Find.ScreenshotModeHandler.Active)
-			{
-				drawer.MarkForDraw();
-			}
+			RenderMouseAttachments();
 		}
+	}
 
-		public void DrawPlacingMouseAttachments(BuildableDef placingDef)
+	public void DeepResourcesOnGUI()
+	{
+		Thing singleSelectedThing = Find.Selector.SingleSelectedThing;
+		if (singleSelectedThing != null)
 		{
-			if (placingDef is ThingDef thingDef && thingDef.CompDefFor<CompDeepDrill>() != null && AnyActiveDeepScannersOnMap())
+			CompDeepScanner compDeepScanner = singleSelectedThing.TryGetComp<CompDeepScanner>();
+			CompDeepDrill compDeepDrill = singleSelectedThing.TryGetComp<CompDeepDrill>();
+			if ((compDeepScanner != null || compDeepDrill != null) && AnyActiveDeepScannersOnMap())
 			{
 				RenderMouseAttachments();
 			}
 		}
+	}
 
-		public void DeepResourcesOnGUI()
+	public bool AnyActiveDeepScannersOnMap()
+	{
+		foreach (Building item in map.listerBuildings.allBuildingsColonist)
 		{
-			Thing singleSelectedThing = Find.Selector.SingleSelectedThing;
-			if (singleSelectedThing != null)
+			CompDeepScanner compDeepScanner = item.TryGetComp<CompDeepScanner>();
+			if (compDeepScanner != null && compDeepScanner.ShouldShowDeepResourceOverlay())
 			{
-				CompDeepScanner compDeepScanner = singleSelectedThing.TryGetComp<CompDeepScanner>();
-				CompDeepDrill compDeepDrill = singleSelectedThing.TryGetComp<CompDeepDrill>();
-				if ((compDeepScanner != null || compDeepDrill != null) && AnyActiveDeepScannersOnMap())
-				{
-					RenderMouseAttachments();
-				}
+				return true;
 			}
 		}
+		return false;
+	}
 
-		public bool AnyActiveDeepScannersOnMap()
+	private void RenderMouseAttachments()
+	{
+		IntVec3 c = UI.MouseCell();
+		if (!c.InBounds(map))
 		{
-			foreach (Building item in map.listerBuildings.allBuildingsColonist)
-			{
-				CompDeepScanner compDeepScanner = item.TryGetComp<CompDeepScanner>();
-				if (compDeepScanner != null && compDeepScanner.ShouldShowDeepResourceOverlay())
-				{
-					return true;
-				}
-			}
-			return false;
+			return;
 		}
-
-		private void RenderMouseAttachments()
+		ThingDef thingDef = map.deepResourceGrid.ThingDefAt(c);
+		if (thingDef != null)
 		{
-			IntVec3 c = UI.MouseCell();
-			if (!c.InBounds(map))
+			int num = map.deepResourceGrid.CountAt(c);
+			if (num > 0)
 			{
-				return;
-			}
-			ThingDef thingDef = map.deepResourceGrid.ThingDefAt(c);
-			if (thingDef != null)
-			{
-				int num = map.deepResourceGrid.CountAt(c);
-				if (num > 0)
-				{
-					Vector2 vector = c.ToVector3().MapToUIPosition();
-					GUI.color = Color.white;
-					Text.Font = GameFont.Small;
-					Text.Anchor = TextAnchor.MiddleLeft;
-					float num2 = (UI.CurUICellSize() - 27f) / 2f;
-					Rect rect = new Rect(vector.x + num2, vector.y - UI.CurUICellSize() + num2, 27f, 27f);
-					Widgets.ThingIcon(rect, thingDef);
-					Widgets.Label(new Rect(rect.xMax + 4f, rect.y, 999f, 29f), "DeepResourceRemaining".Translate(NamedArgumentUtility.Named(thingDef, "RESOURCE"), num.Named("COUNT")));
-					Text.Anchor = TextAnchor.UpperLeft;
-				}
+				Vector2 vector = c.ToVector3().MapToUIPosition();
+				GUI.color = Color.white;
+				Text.Font = GameFont.Small;
+				Text.Anchor = TextAnchor.MiddleLeft;
+				float num2 = (UI.CurUICellSize() - 27f) / 2f;
+				Rect rect = new Rect(vector.x + num2, vector.y - UI.CurUICellSize() + num2, 27f, 27f);
+				Widgets.ThingIcon(rect, thingDef);
+				Widgets.Label(new Rect(rect.xMax + 4f, rect.y, 999f, 29f), "DeepResourceRemaining".Translate(NamedArgumentUtility.Named(thingDef, "RESOURCE"), num.Named("COUNT")));
+				Text.Anchor = TextAnchor.UpperLeft;
 			}
 		}
+	}
 
-		public bool GetCellBool(int index)
-		{
-			return CountAt(map.cellIndices.IndexToCell(index)) > 0;
-		}
+	public bool GetCellBool(int index)
+	{
+		return CountAt(map.cellIndices.IndexToCell(index)) > 0;
+	}
 
-		public Color GetCellExtraColor(int index)
-		{
-			IntVec3 c = map.cellIndices.IndexToCell(index);
-			int num = CountAt(c);
-			ThingDef thingDef = ThingDefAt(c);
-			return DebugMatsSpectrum.Mat(Mathf.RoundToInt((float)num / (float)thingDef.deepCountPerCell / 2f * 100f) % 100, transparent: true).color;
-		}
+	public Color GetCellExtraColor(int index)
+	{
+		IntVec3 c = map.cellIndices.IndexToCell(index);
+		int num = CountAt(c);
+		ThingDef thingDef = ThingDefAt(c);
+		return DebugMatsSpectrum.Mat(Mathf.RoundToInt((float)num / (float)thingDef.deepCountPerCell / 2f * 100f) % 100, transparent: true).color;
 	}
 }

@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum VerbSelectionCategory
 {
-	public enum VerbSelectionCategory
-	{
-		Best,
-		Mid,
-		Worst
-	}
+	Best,
+	Mid,
+	Worst
 }

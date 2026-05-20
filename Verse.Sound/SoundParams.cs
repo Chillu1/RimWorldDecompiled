@@ -1,28 +1,27 @@
 using System.Collections.Generic;
 
-namespace Verse.Sound
+namespace Verse.Sound;
+
+public class SoundParams
 {
-	public class SoundParams
+	private Dictionary<string, float> storedParams = new Dictionary<string, float>();
+
+	public SoundSizeAggregator sizeAggregator;
+
+	public float this[string key]
 	{
-		private Dictionary<string, float> storedParams = new Dictionary<string, float>();
-
-		public SoundSizeAggregator sizeAggregator;
-
-		public float this[string key]
+		get
 		{
-			get
-			{
-				return storedParams[key];
-			}
-			set
-			{
-				storedParams[key] = value;
-			}
+			return storedParams[key];
 		}
-
-		public bool TryGetValue(string key, out float val)
+		set
 		{
-			return storedParams.TryGetValue(key, out val);
+			storedParams[key] = value;
 		}
+	}
+
+	public bool TryGetValue(string key, out float val)
+	{
+		return storedParams.TryGetValue(key, out val);
 	}
 }

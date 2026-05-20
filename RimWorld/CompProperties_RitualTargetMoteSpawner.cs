@@ -1,14 +1,13 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class CompProperties_RitualTargetMoteSpawner : CompProperties
-	{
-		public ThingDef mote;
+namespace RimWorld;
 
-		public CompProperties_RitualTargetMoteSpawner()
-		{
-			compClass = typeof(CompRitualTargetMoteSpawner);
-		}
+public class CompProperties_RitualTargetMoteSpawner : CompProperties
+{
+	public ThingDef mote;
+
+	public CompProperties_RitualTargetMoteSpawner()
+	{
+		compClass = typeof(CompRitualTargetMoteSpawner);
 	}
 }

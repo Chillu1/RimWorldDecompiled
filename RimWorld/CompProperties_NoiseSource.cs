@@ -1,14 +1,13 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class CompProperties_NoiseSource : CompProperties
-	{
-		public float radius;
+namespace RimWorld;
 
-		public CompProperties_NoiseSource()
-		{
-			compClass = typeof(CompNoiseSource);
-		}
+public class CompProperties_NoiseSource : CompProperties
+{
+	public float radius;
+
+	public CompProperties_NoiseSource()
+	{
+		compClass = typeof(CompNoiseSource);
 	}
 }

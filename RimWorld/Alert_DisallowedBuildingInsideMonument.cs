@@ -2,74 +2,73 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Alert_DisallowedBuildingInsideMonument : Alert_Critical
 {
-	public class Alert_DisallowedBuildingInsideMonument : Alert_Critical
+	private List<Thing> disallowedBuildingsResult = new List<Thing>();
+
+	private List<Thing> DisallowedBuildings
 	{
-		private List<Thing> disallowedBuildingsResult = new List<Thing>();
-
-		private List<Thing> DisallowedBuildings
+		get
 		{
-			get
+			disallowedBuildingsResult.Clear();
+			List<Map> maps = Find.Maps;
+			for (int i = 0; i < maps.Count; i++)
 			{
-				disallowedBuildingsResult.Clear();
-				List<Map> maps = Find.Maps;
-				for (int i = 0; i < maps.Count; i++)
+				List<Thing> list = maps[i].listerThings.ThingsOfDef(ThingDefOf.MonumentMarker);
+				for (int j = 0; j < list.Count; j++)
 				{
-					List<Thing> list = maps[i].listerThings.ThingsOfDef(ThingDefOf.MonumentMarker);
-					for (int j = 0; j < list.Count; j++)
+					MonumentMarker monumentMarker = (MonumentMarker)list[j];
+					if (monumentMarker.AllDone)
 					{
-						MonumentMarker monumentMarker = (MonumentMarker)list[j];
-						if (monumentMarker.AllDone)
+						Thing firstDisallowedBuilding = monumentMarker.FirstDisallowedBuilding;
+						if (firstDisallowedBuilding != null)
 						{
-							Thing firstDisallowedBuilding = monumentMarker.FirstDisallowedBuilding;
-							if (firstDisallowedBuilding != null)
-							{
-								disallowedBuildingsResult.Add(firstDisallowedBuilding);
-							}
+							disallowedBuildingsResult.Add(firstDisallowedBuilding);
 						}
 					}
 				}
-				return disallowedBuildingsResult;
 			}
+			return disallowedBuildingsResult;
 		}
+	}
 
-		private int MinTicksLeft
+	private int MinTicksLeft
+	{
+		get
 		{
-			get
+			int num = int.MaxValue;
+			List<Map> maps = Find.Maps;
+			for (int i = 0; i < maps.Count; i++)
 			{
-				int num = int.MaxValue;
-				List<Map> maps = Find.Maps;
-				for (int i = 0; i < maps.Count; i++)
+				List<Thing> list = maps[i].listerThings.ThingsOfDef(ThingDefOf.MonumentMarker);
+				for (int j = 0; j < list.Count; j++)
 				{
-					List<Thing> list = maps[i].listerThings.ThingsOfDef(ThingDefOf.MonumentMarker);
-					for (int j = 0; j < list.Count; j++)
+					MonumentMarker monumentMarker = (MonumentMarker)list[j];
+					if (monumentMarker.AllDone && monumentMarker.AnyDisallowedBuilding)
 					{
-						MonumentMarker monumentMarker = (MonumentMarker)list[j];
-						if (monumentMarker.AllDone && monumentMarker.AnyDisallowedBuilding)
-						{
-							num = Mathf.Min(num, 60000 - monumentMarker.ticksSinceDisallowedBuilding);
-						}
+						num = Mathf.Min(num, 60000 - monumentMarker.ticksSinceDisallowedBuilding);
 					}
 				}
-				return num;
 			}
+			return num;
 		}
+	}
 
-		public Alert_DisallowedBuildingInsideMonument()
-		{
-			defaultLabel = "DisallowedBuildingInsideMonument".Translate();
-			requireRoyalty = true;
-		}
+	public Alert_DisallowedBuildingInsideMonument()
+	{
+		defaultLabel = "DisallowedBuildingInsideMonument".Translate();
+		requireRoyalty = true;
+	}
 
-		public override AlertReport GetReport()
-		{
-			return AlertReport.CulpritsAre(DisallowedBuildings);
-		}
+	public override AlertReport GetReport()
+	{
+		return AlertReport.CulpritsAre(DisallowedBuildings);
+	}
 
-		public override TaggedString GetExplanation()
-		{
-			return "DisallowedBuildingInsideMonumentDesc".Translate(MinTicksLeft.ToStringTicksToPeriodVerbose());
-		}
+	public override TaggedString GetExplanation()
+	{
+		return "DisallowedBuildingInsideMonumentDesc".Translate(MinTicksLeft.ToStringTicksToPeriodVerbose());
 	}
 }

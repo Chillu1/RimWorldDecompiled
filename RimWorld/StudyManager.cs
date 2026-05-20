@@ -1,141 +1,140 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public sealed class StudyManager : IExposable
 {
-	public sealed class StudyManager : IExposable
+	public const float DefaultStudyPerTick = 0.08f;
+
+	public const float DefaultStudyPerInteraction = 0.87f;
+
+	public const int DefaultStudyInteractions = 5;
+
+	public const string ThingStudiedSignal = "ThingStudied";
+
+	private Dictionary<Map, HashSet<Thing>> studiableThingsCache = new Dictionary<Map, HashSet<Thing>>();
+
+	public Dictionary<ThingDef, float> backCompatStudyProgress = new Dictionary<ThingDef, float>();
+
+	public void UpdateStudiableCache(Thing thing, Map map)
 	{
-		public const float DefaultStudyPerTick = 0.08f;
-
-		public const float DefaultStudyPerInteraction = 0.87f;
-
-		public const int DefaultStudyInteractions = 5;
-
-		public const string ThingStudiedSignal = "ThingStudied";
-
-		private Dictionary<Map, HashSet<Thing>> studiableThingsCache = new Dictionary<Map, HashSet<Thing>>();
-
-		public Dictionary<ThingDef, float> backCompatStudyProgress = new Dictionary<ThingDef, float>();
-
-		public void UpdateStudiableCache(Thing thing, Map map)
+		if (map == null)
 		{
-			if (map == null)
+			return;
+		}
+		if (!studiableThingsCache.ContainsKey(map))
+		{
+			studiableThingsCache.Add(map, new HashSet<Thing>());
+		}
+		if (thing.def.IsStudiable)
+		{
+			CompStudiable compStudiable = thing.TryGetComp<CompStudiable>();
+			if (compStudiable != null && compStudiable.EverStudiableCached())
 			{
-				return;
-			}
-			if (!studiableThingsCache.ContainsKey(map))
-			{
-				studiableThingsCache.Add(map, new HashSet<Thing>());
-			}
-			if (thing.def.IsStudiable)
-			{
-				CompStudiable compStudiable = thing.TryGetComp<CompStudiable>();
-				if (compStudiable != null && compStudiable.EverStudiableCached())
-				{
-					goto IL_005d;
-				}
-			}
-			if (!ModsConfig.AnomalyActive || !(thing is Building_HoldingPlatform { HeldPawn: not null }))
-			{
-				if (studiableThingsCache[map].Contains(thing))
-				{
-					studiableThingsCache[map].Remove(thing);
-					if (studiableThingsCache[map].NullOrEmpty())
-					{
-						studiableThingsCache.Remove(map);
-					}
-				}
-				return;
-			}
-			goto IL_005d;
-			IL_005d:
-			if (!studiableThingsCache[map].Contains(thing))
-			{
-				studiableThingsCache[map].Add(thing);
+				goto IL_005d;
 			}
 		}
-
-		public HashSet<Thing> GetStudiableThingsAndPlatforms(Map map)
+		if (!ModsConfig.AnomalyActive || !(thing is Building_HoldingPlatform { HeldPawn: not null }))
 		{
-			if (!studiableThingsCache.ContainsKey(map))
+			if (studiableThingsCache[map].Contains(thing))
 			{
-				return new HashSet<Thing>();
+				studiableThingsCache[map].Remove(thing);
+				if (studiableThingsCache[map].NullOrEmpty())
+				{
+					studiableThingsCache.Remove(map);
+				}
 			}
-			return studiableThingsCache[map];
+			return;
 		}
-
-		public void Study(Thing studiedThing, Pawn studier, float studyAmount)
+		goto IL_005d;
+		IL_005d:
+		if (!studiableThingsCache[map].Contains(thing))
 		{
-			if (!studiedThing.def.IsStudiable)
+			studiableThingsCache[map].Add(thing);
+		}
+	}
+
+	public HashSet<Thing> GetStudiableThingsAndPlatforms(Map map)
+	{
+		if (!studiableThingsCache.ContainsKey(map))
+		{
+			return new HashSet<Thing>();
+		}
+		return studiableThingsCache[map];
+	}
+
+	public void Study(Thing studiedThing, Pawn studier, float studyAmount)
+	{
+		if (!studiedThing.def.IsStudiable)
+		{
+			Log.Error("Tried to study " + studiedThing.def.label + " which is not studiable.");
+			return;
+		}
+		CompStudiable compStudiable = studiedThing.TryGetComp<CompStudiable>();
+		compStudiable.studyPoints += studyAmount;
+		if (compStudiable.Props.studyAmountToComplete > 0f && compStudiable.studyPoints >= compStudiable.Props.studyAmountToComplete)
+		{
+			compStudiable.studyPoints = compStudiable.Props.studyAmountToComplete;
+		}
+		studiedThing.Notify_Studied(studier, studyAmount);
+		Find.SignalManager.SendSignal(new Signal("ThingStudied", global: true));
+	}
+
+	public void StudyAnomaly(Thing studiedThing, Pawn studier, float knowledgeAmount, KnowledgeCategoryDef knowledgeCategory)
+	{
+		if (ModsConfig.AnomalyActive && !(knowledgeAmount <= 0f))
+		{
+			Thing thing = studiedThing;
+			if (thing.Map == null)
 			{
-				Log.Error("Tried to study " + studiedThing.def.label + " which is not studiable.");
-				return;
+				thing = thing.ParentHolder as Thing;
 			}
-			CompStudiable compStudiable = studiedThing.TryGetComp<CompStudiable>();
-			compStudiable.studyPoints += studyAmount;
-			if (compStudiable.Props.studyAmountToComplete > 0f && compStudiable.studyPoints >= compStudiable.Props.studyAmountToComplete)
+			if (thing != null)
 			{
-				compStudiable.studyPoints = compStudiable.Props.studyAmountToComplete;
+				MoteMaker.ThrowText(thing.DrawPos, thing.Map, $"{knowledgeCategory.LabelCap} +{knowledgeAmount:0.00}", 3f);
 			}
-			studiedThing.Notify_Studied(studier, studyAmount);
+			Find.ResearchManager.ApplyKnowledge(knowledgeCategory, knowledgeAmount);
+			studiedThing.Notify_Studied(studier, knowledgeAmount, knowledgeCategory);
 			Find.SignalManager.SendSignal(new Signal("ThingStudied", global: true));
 		}
+	}
 
-		public void StudyAnomaly(Thing studiedThing, Pawn studier, float knowledgeAmount, KnowledgeCategoryDef knowledgeCategory)
+	public float GetKnowledgeAmount(KnowledgeCategoryDef knowledgeCategory)
+	{
+		float num = 0f;
+		foreach (ResearchProjectDef item in DefDatabase<ResearchProjectDef>.AllDefsListForReading)
 		{
-			if (ModsConfig.AnomalyActive && !(knowledgeAmount <= 0f))
+			if (item.knowledgeCategory == knowledgeCategory)
 			{
-				Thing thing = studiedThing;
-				if (thing.Map == null)
-				{
-					thing = thing.ParentHolder as Thing;
-				}
-				if (thing != null)
-				{
-					MoteMaker.ThrowText(thing.DrawPos, thing.Map, $"{knowledgeCategory.LabelCap} +{knowledgeAmount:0.00}", 3f);
-				}
-				Find.ResearchManager.ApplyKnowledge(knowledgeCategory, knowledgeAmount);
-				studiedThing.Notify_Studied(studier, knowledgeAmount, knowledgeCategory);
-				Find.SignalManager.SendSignal(new Signal("ThingStudied", global: true));
+				num += Find.ResearchManager.GetKnowledge(item);
 			}
 		}
+		return num;
+	}
 
-		public float GetKnowledgeAmount(KnowledgeCategoryDef knowledgeCategory)
+	public void ExposeData()
+	{
+		if (Scribe.mode != LoadSaveMode.LoadingVars)
 		{
-			float num = 0f;
-			foreach (ResearchProjectDef item in DefDatabase<ResearchProjectDef>.AllDefsListForReading)
-			{
-				if (item.knowledgeCategory == knowledgeCategory)
-				{
-					num += Find.ResearchManager.GetKnowledge(item);
-				}
-			}
-			return num;
+			return;
 		}
-
-		public void ExposeData()
+		Dictionary<ThingDef, float> dict = new Dictionary<ThingDef, float>();
+		Scribe_Collections.Look(ref dict, "studyProgress", LookMode.Def, LookMode.Value);
+		if (dict == null)
 		{
-			if (Scribe.mode != LoadSaveMode.LoadingVars)
+			return;
+		}
+		foreach (ThingDef key in dict.Keys)
+		{
+			if (key.GetCompProperties<CompProperties_Studiable>() != null)
 			{
-				return;
+				backCompatStudyProgress[key] = dict[key];
 			}
-			Dictionary<ThingDef, float> dict = new Dictionary<ThingDef, float>();
-			Scribe_Collections.Look(ref dict, "studyProgress", LookMode.Def, LookMode.Value);
-			if (dict == null)
+			CompProperties_CompAnalyzableUnlockResearch compProperties = key.GetCompProperties<CompProperties_CompAnalyzableUnlockResearch>();
+			if (compProperties != null && dict[key] >= 1f)
 			{
-				return;
-			}
-			foreach (ThingDef key in dict.Keys)
-			{
-				if (key.GetCompProperties<CompProperties_Studiable>() != null)
-				{
-					backCompatStudyProgress[key] = dict[key];
-				}
-				CompProperties_CompAnalyzableUnlockResearch compProperties = key.GetCompProperties<CompProperties_CompAnalyzableUnlockResearch>();
-				if (compProperties != null && dict[key] >= 1f)
-				{
-					Find.AnalysisManager?.ForceCompleteAnalysisProgress(compProperties.analysisID);
-				}
+				Find.AnalysisManager?.ForceCompleteAnalysisProgress(compProperties.analysisID);
 			}
 		}
 	}

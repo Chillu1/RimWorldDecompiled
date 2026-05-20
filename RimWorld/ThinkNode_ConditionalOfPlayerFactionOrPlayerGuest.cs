@@ -1,21 +1,20 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThinkNode_ConditionalOfPlayerFactionOrPlayerGuest : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalOfPlayerFactionOrPlayerGuest : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
+		if (pawn.Faction != Faction.OfPlayer)
 		{
-			if (pawn.Faction != Faction.OfPlayer)
+			if (pawn.HostFaction == Faction.OfPlayer)
 			{
-				if (pawn.HostFaction == Faction.OfPlayer)
-				{
-					return !pawn.guest.IsPrisoner;
-				}
-				return false;
+				return !pawn.guest.IsPrisoner;
 			}
-			return true;
+			return false;
 		}
+		return true;
 	}
 }

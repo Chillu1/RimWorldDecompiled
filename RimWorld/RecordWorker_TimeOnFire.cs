@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RecordWorker_TimeOnFire : RecordWorker
 {
-	public class RecordWorker_TimeOnFire : RecordWorker
+	public override bool ShouldMeasureTimeNow(Pawn pawn)
 	{
-		public override bool ShouldMeasureTimeNow(Pawn pawn)
-		{
-			return pawn.IsBurning();
-		}
+		return pawn.IsBurning();
 	}
 }

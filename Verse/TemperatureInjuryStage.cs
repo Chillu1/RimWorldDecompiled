@@ -1,12 +1,11 @@
-namespace Verse
+namespace Verse;
+
+public enum TemperatureInjuryStage : byte
 {
-	public enum TemperatureInjuryStage : byte
-	{
-		Hidden,
-		Initial,
-		Minor,
-		Serious,
-		Extreme,
-		Deadly
-	}
+	Hidden,
+	Initial,
+	Minor,
+	Serious,
+	Extreme,
+	Deadly
 }

@@ -1,27 +1,26 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class QuestPart_Filter_FactionHostileToOtherFaction : QuestPart_Filter
 {
-	public class QuestPart_Filter_FactionHostileToOtherFaction : QuestPart_Filter
+	public Faction faction;
+
+	public Faction other;
+
+	protected override bool Pass(SignalArgs args)
 	{
-		public Faction faction;
-
-		public Faction other;
-
-		protected override bool Pass(SignalArgs args)
+		if (faction == null || other == null || faction == other)
 		{
-			if (faction == null || other == null || faction == other)
-			{
-				return false;
-			}
-			return faction.HostileTo(other);
+			return false;
 		}
+		return faction.HostileTo(other);
+	}
 
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_References.Look(ref faction, "faction");
-			Scribe_References.Look(ref other, "other");
-		}
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_References.Look(ref faction, "faction");
+		Scribe_References.Look(ref other, "other");
 	}
 }

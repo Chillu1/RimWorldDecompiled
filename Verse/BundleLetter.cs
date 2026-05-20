@@ -2,47 +2,46 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class BundleLetter : Letter
 {
-	public class BundleLetter : Letter
+	private List<Letter> bundledLetters = new List<Letter>();
+
+	private List<FloatMenuOption> floatMenuOptions = new List<FloatMenuOption>();
+
+	public override bool CanDismissWithRightClick => false;
+
+	public void SetLetters(List<Letter> letters)
 	{
-		private List<Letter> bundledLetters = new List<Letter>();
-
-		private List<FloatMenuOption> floatMenuOptions = new List<FloatMenuOption>();
-
-		public override bool CanDismissWithRightClick => false;
-
-		public void SetLetters(List<Letter> letters)
+		if (GenCollection.ListsEqual(letters, bundledLetters))
 		{
-			if (GenCollection.ListsEqual(letters, bundledLetters))
-			{
-				return;
-			}
-			bundledLetters.Clear();
-			bundledLetters.AddRange(letters);
-			floatMenuOptions.Clear();
-			foreach (Letter letter in letters)
-			{
-				FloatMenuOption item = new FloatMenuOption(letter.Label, delegate
-				{
-					letter.OpenLetter();
-				});
-				floatMenuOptions.Add(item);
-			}
-			base.Label = bundledLetters.Count + " " + "MoreLower".Translate() + "...";
+			return;
 		}
-
-		public override void OpenLetter()
+		bundledLetters.Clear();
+		bundledLetters.AddRange(letters);
+		floatMenuOptions.Clear();
+		foreach (Letter letter in letters)
 		{
-			if (Event.current.button == 0)
+			FloatMenuOption item = new FloatMenuOption(letter.Label, delegate
 			{
-				Find.WindowStack.Add(new FloatMenu(floatMenuOptions));
-			}
+				letter.OpenLetter();
+			});
+			floatMenuOptions.Add(item);
 		}
+		base.Label = bundledLetters.Count + " " + "MoreLower".Translate() + "...";
+	}
 
-		protected override string GetMouseoverText()
+	public override void OpenLetter()
+	{
+		if (Event.current.button == 0)
 		{
-			return "MoreLetters".Translate(bundledLetters.Count) + ":\n\n" + bundledLetters.Select((Letter l) => l.Label.ToString()).ToLineList(" - ");
+			Find.WindowStack.Add(new FloatMenu(floatMenuOptions));
 		}
+	}
+
+	protected override string GetMouseoverText()
+	{
+		return "MoreLetters".Translate(bundledLetters.Count) + ":\n\n" + bundledLetters.Select((Letter l) => l.Label.ToString()).ToLineList(" - ");
 	}
 }

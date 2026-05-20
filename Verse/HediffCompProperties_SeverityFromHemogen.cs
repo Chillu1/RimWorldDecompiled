@@ -1,14 +1,13 @@
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_SeverityFromHemogen : HediffCompProperties
 {
-	public class HediffCompProperties_SeverityFromHemogen : HediffCompProperties
+	public float severityPerHourEmpty;
+
+	public float severityPerHourHemogen;
+
+	public HediffCompProperties_SeverityFromHemogen()
 	{
-		public float severityPerHourEmpty;
-
-		public float severityPerHourHemogen;
-
-		public HediffCompProperties_SeverityFromHemogen()
-		{
-			compClass = typeof(HediffComp_SeverityFromHemogen);
-		}
+		compClass = typeof(HediffComp_SeverityFromHemogen);
 	}
 }

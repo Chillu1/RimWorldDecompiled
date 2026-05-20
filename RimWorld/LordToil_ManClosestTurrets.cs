@@ -1,16 +1,15 @@
 using Verse.AI;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class LordToil_ManClosestTurrets : LordToil
 {
-	public class LordToil_ManClosestTurrets : LordToil
+	public override void UpdateAllDuties()
 	{
-		public override void UpdateAllDuties()
+		for (int i = 0; i < lord.ownedPawns.Count; i++)
 		{
-			for (int i = 0; i < lord.ownedPawns.Count; i++)
-			{
-				lord.ownedPawns[i].mindState.duty = new PawnDuty(DutyDefOf.ManClosestTurret, lord.ownedPawns[i].Position);
-			}
+			lord.ownedPawns[i].mindState.duty = new PawnDuty(DutyDefOf.ManClosestTurret, lord.ownedPawns[i].Position);
 		}
 	}
 }

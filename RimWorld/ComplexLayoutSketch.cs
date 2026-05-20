@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ComplexLayoutSketch : LayoutSketch
 {
-	public class ComplexLayoutSketch : LayoutSketch
+	protected override ThingDef GetWallStuff(int roomId)
 	{
-		protected override ThingDef GetWallStuff(int roomId)
+		if (roomId % 2 != 0)
 		{
-			if (roomId % 2 != 0)
-			{
-				return ThingDefOf.Steel;
-			}
-			return wallStuff;
+			return ThingDefOf.Steel;
 		}
+		return wallStuff;
 	}
 }

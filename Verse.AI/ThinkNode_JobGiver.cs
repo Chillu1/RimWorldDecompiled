@@ -1,41 +1,40 @@
-namespace Verse.AI
+namespace Verse.AI;
+
+public abstract class ThinkNode_JobGiver : ThinkNode
 {
-	public abstract class ThinkNode_JobGiver : ThinkNode
+	[MustTranslate]
+	protected string reportStringOverride;
+
+	[MustTranslate]
+	protected string crawlingReportStringOverride;
+
+	public virtual string CrawlingReportStringOverride => crawlingReportStringOverride;
+
+	public override ThinkNode DeepCopy(bool resolve = true)
 	{
-		[MustTranslate]
-		protected string reportStringOverride;
+		ThinkNode_JobGiver obj = (ThinkNode_JobGiver)base.DeepCopy(resolve);
+		obj.reportStringOverride = reportStringOverride;
+		obj.crawlingReportStringOverride = crawlingReportStringOverride;
+		return obj;
+	}
 
-		[MustTranslate]
-		protected string crawlingReportStringOverride;
+	protected abstract Job TryGiveJob(Pawn pawn);
 
-		public virtual string CrawlingReportStringOverride => crawlingReportStringOverride;
-
-		public override ThinkNode DeepCopy(bool resolve = true)
+	public override ThinkResult TryIssueJobPackage(Pawn pawn, JobIssueParams jobParams)
+	{
+		Job job = TryGiveJob(pawn);
+		if (job == null)
 		{
-			ThinkNode_JobGiver obj = (ThinkNode_JobGiver)base.DeepCopy(resolve);
-			obj.reportStringOverride = reportStringOverride;
-			obj.crawlingReportStringOverride = crawlingReportStringOverride;
-			return obj;
+			return ThinkResult.NoJob;
 		}
-
-		protected abstract Job TryGiveJob(Pawn pawn);
-
-		public override ThinkResult TryIssueJobPackage(Pawn pawn, JobIssueParams jobParams)
+		if (reportStringOverride != null)
 		{
-			Job job = TryGiveJob(pawn);
-			if (job == null)
-			{
-				return ThinkResult.NoJob;
-			}
-			if (reportStringOverride != null)
-			{
-				job.reportStringOverride = reportStringOverride;
-			}
-			if (CrawlingReportStringOverride != null)
-			{
-				job.crawlingReportStringOverride = CrawlingReportStringOverride;
-			}
-			return new ThinkResult(job, this);
+			job.reportStringOverride = reportStringOverride;
 		}
+		if (CrawlingReportStringOverride != null)
+		{
+			job.crawlingReportStringOverride = CrawlingReportStringOverride;
+		}
+		return new ThinkResult(job, this);
 	}
 }

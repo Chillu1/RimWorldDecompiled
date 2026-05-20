@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WorkGiver_RebalanceAnimalsInPens : WorkGiver_TakeToPen
 {
-	public class WorkGiver_RebalanceAnimalsInPens : WorkGiver_TakeToPen
+	public WorkGiver_RebalanceAnimalsInPens()
 	{
-		public WorkGiver_RebalanceAnimalsInPens()
-		{
-			ropingPriority = RopingPriority.Balanced;
-		}
+		ropingPriority = RopingPriority.Balanced;
 	}
 }

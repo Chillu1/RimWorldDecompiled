@@ -1,13 +1,12 @@
-namespace Verse
+namespace Verse;
+
+public enum TextureAtlasGroup
 {
-	public enum TextureAtlasGroup
-	{
-		Misc,
-		Plant,
-		Item,
-		Building,
-		Filth,
-		Terrain,
-		Meta
-	}
+	Misc,
+	Plant,
+	Item,
+	Building,
+	Filth,
+	Terrain,
+	Meta
 }

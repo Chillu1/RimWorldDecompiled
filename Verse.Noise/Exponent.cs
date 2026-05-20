@@ -1,44 +1,43 @@
 using System;
 
-namespace Verse.Noise
+namespace Verse.Noise;
+
+public class Exponent : ModuleBase
 {
-	public class Exponent : ModuleBase
+	private double m_exponent = 1.0;
+
+	public double Value
 	{
-		private double m_exponent = 1.0;
-
-		public double Value
+		get
 		{
-			get
-			{
-				return m_exponent;
-			}
-			set
-			{
-				m_exponent = value;
-			}
+			return m_exponent;
 		}
-
-		public Exponent()
-			: base(1)
+		set
 		{
+			m_exponent = value;
 		}
+	}
 
-		public Exponent(ModuleBase input)
-			: base(1)
-		{
-			modules[0] = input;
-		}
+	public Exponent()
+		: base(1)
+	{
+	}
 
-		public Exponent(double exponent, ModuleBase input)
-			: base(1)
-		{
-			modules[0] = input;
-			Value = exponent;
-		}
+	public Exponent(ModuleBase input)
+		: base(1)
+	{
+		modules[0] = input;
+	}
 
-		public override double GetValue(double x, double y, double z)
-		{
-			return Math.Pow(Math.Abs((modules[0].GetValue(x, y, z) + 1.0) / 2.0), m_exponent) * 2.0 - 1.0;
-		}
+	public Exponent(double exponent, ModuleBase input)
+		: base(1)
+	{
+		modules[0] = input;
+		Value = exponent;
+	}
+
+	public override double GetValue(double x, double y, double z)
+	{
+		return Math.Pow(Math.Abs((modules[0].GetValue(x, y, z) + 1.0) / 2.0), m_exponent) * 2.0 - 1.0;
 	}
 }

@@ -1,57 +1,56 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompObeliskTriggerInteractor : CompInteractable
 {
-	public class CompObeliskTriggerInteractor : CompInteractable
+	private CompObelisk obeliskComp;
+
+	private const int StudyNeeded = 2;
+
+	private CompObelisk ObeliskComp => obeliskComp ?? (obeliskComp = parent.GetComp<CompObelisk>());
+
+	public override string ExposeKey => "Interactor";
+
+	public override AcceptanceReport CanInteract(Pawn activateBy = null, bool checkOptionalItems = true)
 	{
-		private CompObelisk obeliskComp;
-
-		private const int StudyNeeded = 2;
-
-		private CompObelisk ObeliskComp => obeliskComp ?? (obeliskComp = parent.GetComp<CompObelisk>());
-
-		public override string ExposeKey => "Interactor";
-
-		public override AcceptanceReport CanInteract(Pawn activateBy = null, bool checkOptionalItems = true)
+		if (ObeliskComp.StudyLevel < 2 || ObeliskComp.ActivityComp.Deactivated || ObeliskComp.Activated)
 		{
-			if (ObeliskComp.StudyLevel < 2 || ObeliskComp.ActivityComp.Deactivated || ObeliskComp.Activated)
-			{
-				return false;
-			}
-			return base.CanInteract(activateBy, checkOptionalItems);
+			return false;
 		}
+		return base.CanInteract(activateBy, checkOptionalItems);
+	}
 
-		public override IEnumerable<Gizmo> CompGetGizmosExtra()
+	public override IEnumerable<Gizmo> CompGetGizmosExtra()
+	{
+		if (2 > ObeliskComp.StudyLevel || ObeliskComp.ActivityComp.Deactivated || ObeliskComp.Activated)
 		{
-			if (2 > ObeliskComp.StudyLevel || ObeliskComp.ActivityComp.Deactivated || ObeliskComp.Activated)
-			{
-				yield break;
-			}
-			foreach (Gizmo item in base.CompGetGizmosExtra())
-			{
-				yield return item;
-			}
+			yield break;
 		}
-
-		public override IEnumerable<FloatMenuOption> CompFloatMenuOptions(Pawn selPawn)
+		foreach (Gizmo item in base.CompGetGizmosExtra())
 		{
-			if (2 > ObeliskComp.StudyLevel || ObeliskComp.ActivityComp.Deactivated || ObeliskComp.Activated)
-			{
-				yield break;
-			}
-			foreach (FloatMenuOption item in base.CompFloatMenuOptions(selPawn))
-			{
-				yield return item;
-			}
+			yield return item;
 		}
+	}
 
-		protected override void OnInteracted(Pawn caster)
+	public override IEnumerable<FloatMenuOption> CompFloatMenuOptions(Pawn selPawn)
+	{
+		if (2 > ObeliskComp.StudyLevel || ObeliskComp.ActivityComp.Deactivated || ObeliskComp.Activated)
 		{
-			if (!obeliskComp.Activated)
-			{
-				ObeliskComp.TriggerInteractionEffect(caster, triggeredByPlayer: true);
-			}
+			yield break;
+		}
+		foreach (FloatMenuOption item in base.CompFloatMenuOptions(selPawn))
+		{
+			yield return item;
+		}
+	}
+
+	protected override void OnInteracted(Pawn caster)
+	{
+		if (!obeliskComp.Activated)
+		{
+			ObeliskComp.TriggerInteractionEffect(caster, triggeredByPlayer: true);
 		}
 	}
 }

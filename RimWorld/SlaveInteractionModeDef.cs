@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class SlaveInteractionModeDef : Def
 {
-	public class SlaveInteractionModeDef : Def
-	{
-		public int listOrder;
-	}
+	public int listOrder;
 }

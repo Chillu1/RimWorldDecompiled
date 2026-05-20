@@ -1,17 +1,16 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class StageEndTrigger_RoleArrivedOrInTargetBed : StageEndTrigger_RolesArrived
 {
-	public class StageEndTrigger_RoleArrivedOrInTargetBed : StageEndTrigger_RolesArrived
+	protected override bool ArrivedCheck(string r, LordJob_Ritual ritual)
 	{
-		protected override bool ArrivedCheck(string r, LordJob_Ritual ritual)
+		Pawn pawn = ritual.PawnWithRole(r);
+		if (pawn != null && pawn.CurrentBed() == ritual.selectedTarget.Thing)
 		{
-			Pawn pawn = ritual.PawnWithRole(r);
-			if (pawn != null && pawn.CurrentBed() == ritual.selectedTarget.Thing)
-			{
-				return true;
-			}
-			return base.ArrivedCheck(r, ritual);
+			return true;
 		}
+		return base.ArrivedCheck(r, ritual);
 	}
 }

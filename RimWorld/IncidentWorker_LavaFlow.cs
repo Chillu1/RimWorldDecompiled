@@ -1,13 +1,12 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class IncidentWorker_LavaFlow : IncidentWorker
 {
-	public class IncidentWorker_LavaFlow : IncidentWorker
+	protected override bool TryExecuteWorker(IncidentParms parms)
 	{
-		protected override bool TryExecuteWorker(IncidentParms parms)
-		{
-			((Map)parms.target).GameConditionManager.RegisterCondition(GameConditionMaker.MakeConditionPermanent(GameConditionDefOf.LavaFlow));
-			return true;
-		}
+		((Map)parms.target).GameConditionManager.RegisterCondition(GameConditionMaker.MakeConditionPermanent(GameConditionDefOf.LavaFlow));
+		return true;
 	}
 }

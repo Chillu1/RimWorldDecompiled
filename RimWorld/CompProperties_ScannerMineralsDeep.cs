@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_ScannerMineralsDeep : CompProperties_Scanner
 {
-	public class CompProperties_ScannerMineralsDeep : CompProperties_Scanner
+	public CompProperties_ScannerMineralsDeep()
 	{
-		public CompProperties_ScannerMineralsDeep()
-		{
-			compClass = typeof(CompDeepScanner);
-		}
+		compClass = typeof(CompDeepScanner);
 	}
 }

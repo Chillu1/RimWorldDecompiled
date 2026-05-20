@@ -1,21 +1,20 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class StageFailTrigger_PawnAsleep : StageFailTrigger
 {
-	public class StageFailTrigger_PawnAsleep : StageFailTrigger
+	[NoTranslate]
+	public string pawnId;
+
+	public override bool Failed(LordJob_Ritual ritual, TargetInfo spot, TargetInfo focus)
 	{
-		[NoTranslate]
-		public string pawnId;
+		return ritual.PawnWithRole(pawnId).jobs.curDriver.asleep;
+	}
 
-		public override bool Failed(LordJob_Ritual ritual, TargetInfo spot, TargetInfo focus)
-		{
-			return ritual.PawnWithRole(pawnId).jobs.curDriver.asleep;
-		}
-
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_Values.Look(ref pawnId, "pawnId");
-		}
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Values.Look(ref pawnId, "pawnId");
 	}
 }

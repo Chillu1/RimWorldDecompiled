@@ -1,4 +1,3 @@
-namespace Verse
-{
-	public delegate void SwoopCallbackMethod();
-}
+namespace Verse;
+
+public delegate void SwoopCallbackMethod();

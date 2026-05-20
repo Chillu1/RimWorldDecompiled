@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum BuySellMode : byte
 {
-	public enum BuySellMode : byte
-	{
-		Buying,
-		Selling
-	}
+	Buying,
+	Selling
 }

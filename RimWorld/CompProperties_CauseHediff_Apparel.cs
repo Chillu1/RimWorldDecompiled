@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_CauseHediff_Apparel : CompProperties
 {
-	public class CompProperties_CauseHediff_Apparel : CompProperties
+	public HediffDef hediff;
+
+	public BodyPartDef part;
+
+	public CompProperties_CauseHediff_Apparel()
 	{
-		public HediffDef hediff;
-
-		public BodyPartDef part;
-
-		public CompProperties_CauseHediff_Apparel()
-		{
-			compClass = typeof(CompCauseHediff_Apparel);
-		}
+		compClass = typeof(CompCauseHediff_Apparel);
 	}
 }

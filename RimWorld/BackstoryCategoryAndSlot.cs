@@ -1,9 +1,8 @@
-namespace RimWorld
-{
-	public class BackstoryCategoryAndSlot
-	{
-		public string categoryName;
+namespace RimWorld;
 
-		public BackstorySlot slot;
-	}
+public class BackstoryCategoryAndSlot
+{
+	public string categoryName;
+
+	public BackstorySlot slot;
 }

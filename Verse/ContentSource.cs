@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum ContentSource
 {
-	public enum ContentSource
-	{
-		Undefined,
-		OfficialModsFolder,
-		ModsFolder,
-		SteamWorkshop
-	}
+	Undefined,
+	OfficialModsFolder,
+	ModsFolder,
+	SteamWorkshop
 }

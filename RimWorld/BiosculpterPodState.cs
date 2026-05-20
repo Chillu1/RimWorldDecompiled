@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum BiosculpterPodState
 {
-	public enum BiosculpterPodState
-	{
-		LoadingNutrition,
-		SelectingCycle,
-		Occupied
-	}
+	LoadingNutrition,
+	SelectingCycle,
+	Occupied
 }

@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public abstract class UIMenuBackground
 {
-	public abstract class UIMenuBackground
-	{
-		public abstract void BackgroundOnGUI();
-	}
+	public abstract void BackgroundOnGUI();
 }

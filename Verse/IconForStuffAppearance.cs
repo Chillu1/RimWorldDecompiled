@@ -1,14 +1,13 @@
-namespace Verse
+namespace Verse;
+
+public class IconForStuffAppearance
 {
-	public class IconForStuffAppearance
-	{
-		private StuffAppearanceDef appearance;
+	private StuffAppearanceDef appearance;
 
-		[NoTranslate]
-		private string iconPath;
+	[NoTranslate]
+	private string iconPath;
 
-		public StuffAppearanceDef Appearance => appearance;
+	public StuffAppearanceDef Appearance => appearance;
 
-		public string IconPath => iconPath;
-	}
+	public string IconPath => iconPath;
 }

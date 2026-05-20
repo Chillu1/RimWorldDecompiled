@@ -1,33 +1,32 @@
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_Root_MysteriousCargoUnnaturalCorpse : QuestNode_Root_MysteriousCargo
 {
-	public class QuestNode_Root_MysteriousCargoUnnaturalCorpse : QuestNode_Root_MysteriousCargo
+	protected override Thing GenerateThing(Pawn pawn)
 	{
-		protected override Thing GenerateThing(Pawn pawn)
-		{
-			return AnomalyUtility.MakeUnnaturalCorpse(pawn);
-		}
+		return AnomalyUtility.MakeUnnaturalCorpse(pawn);
+	}
 
-		protected override bool ValidatePawn(Pawn pawn)
+	protected override bool ValidatePawn(Pawn pawn)
+	{
+		if (!base.ValidatePawn(pawn))
 		{
-			if (!base.ValidatePawn(pawn))
-			{
-				return false;
-			}
-			if (pawn.RaceProps.unnaturalCorpseDef == null)
-			{
-				return false;
-			}
-			return !Find.Anomaly.PawnHasUnnaturalCorpse(pawn);
+			return false;
 		}
+		if (pawn.RaceProps.unnaturalCorpseDef == null)
+		{
+			return false;
+		}
+		return !Find.Anomaly.PawnHasUnnaturalCorpse(pawn);
+	}
 
-		protected override void AddPostDroppedQuestParts(Pawn pawn, Thing thing, Quest quest)
+	protected override void AddPostDroppedQuestParts(Pawn pawn, Thing thing, Quest quest)
+	{
+		quest.PawnDestroyed(pawn, null, delegate
 		{
-			quest.PawnDestroyed(pawn, null, delegate
-			{
-				quest.LinkUnnaturalCorpse(pawn, thing as UnnaturalCorpse);
-			});
-		}
+			quest.LinkUnnaturalCorpse(pawn, thing as UnnaturalCorpse);
+		});
 	}
 }

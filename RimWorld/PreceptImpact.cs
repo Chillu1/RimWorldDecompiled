@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum PreceptImpact
 {
-	public enum PreceptImpact
-	{
-		Low,
-		Medium,
-		High
-	}
+	Low,
+	Medium,
+	High
 }

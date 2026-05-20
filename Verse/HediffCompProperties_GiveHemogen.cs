@@ -1,12 +1,11 @@
-namespace Verse
-{
-	public class HediffCompProperties_GiveHemogen : HediffCompProperties
-	{
-		public float amountPerDay;
+namespace Verse;
 
-		public HediffCompProperties_GiveHemogen()
-		{
-			compClass = typeof(HediffComp_GiveHemogen);
-		}
+public class HediffCompProperties_GiveHemogen : HediffCompProperties
+{
+	public float amountPerDay;
+
+	public HediffCompProperties_GiveHemogen()
+	{
+		compClass = typeof(HediffComp_GiveHemogen);
 	}
 }

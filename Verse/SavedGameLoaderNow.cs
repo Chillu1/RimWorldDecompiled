@@ -1,38 +1,37 @@
 using System;
 using System.Linq;
 
-namespace Verse
+namespace Verse;
+
+public class SavedGameLoaderNow
 {
-	public class SavedGameLoaderNow
+	public static void LoadGameFromSaveFileNow(string fileName)
 	{
-		public static void LoadGameFromSaveFileNow(string fileName)
+		string text = LoadedModManager.RunningMods.Select((ModContentPack mod) => mod.PackageIdPlayerFacing + ((!mod.ModMetaData.VersionCompatible) ? " (incompatible version)" : "")).ToLineList("  - ");
+		Log.Message("Loading game from file " + fileName + " with mods:\n" + text);
+		DeepProfiler.Start("Loading game from file " + fileName);
+		Current.Game = new Game();
+		DeepProfiler.Start("InitLoading (read file)");
+		Scribe.loader.InitLoading(GenFilePaths.FilePathForSavedGame(fileName));
+		DeepProfiler.End();
+		try
 		{
-			string text = LoadedModManager.RunningMods.Select((ModContentPack mod) => mod.PackageIdPlayerFacing + ((!mod.ModMetaData.VersionCompatible) ? " (incompatible version)" : "")).ToLineList("  - ");
-			Log.Message("Loading game from file " + fileName + " with mods:\n" + text);
-			DeepProfiler.Start("Loading game from file " + fileName);
-			Current.Game = new Game();
-			DeepProfiler.Start("InitLoading (read file)");
-			Scribe.loader.InitLoading(GenFilePaths.FilePathForSavedGame(fileName));
-			DeepProfiler.End();
-			try
+			ScribeMetaHeaderUtility.LoadGameDataHeader(ScribeMetaHeaderUtility.ScribeHeaderMode.Map, logVersionConflictWarning: true);
+			if (!Scribe.EnterNode("game"))
 			{
-				ScribeMetaHeaderUtility.LoadGameDataHeader(ScribeMetaHeaderUtility.ScribeHeaderMode.Map, logVersionConflictWarning: true);
-				if (!Scribe.EnterNode("game"))
-				{
-					Log.Error("Could not find game XML node.");
-					Scribe.ForceStop();
-					return;
-				}
-				Current.Game = new Game();
-				Current.Game.LoadGame();
-			}
-			catch (Exception)
-			{
+				Log.Error("Could not find game XML node.");
 				Scribe.ForceStop();
-				throw;
+				return;
 			}
-			PermadeathModeUtility.CheckUpdatePermadeathModeUniqueNameOnGameLoad(fileName);
-			DeepProfiler.End();
+			Current.Game = new Game();
+			Current.Game.LoadGame();
 		}
+		catch (Exception)
+		{
+			Scribe.ForceStop();
+			throw;
+		}
+		PermadeathModeUtility.CheckUpdatePermadeathModeUniqueNameOnGameLoad(fileName);
+		DeepProfiler.End();
 	}
 }

@@ -1,9 +1,8 @@
 using System;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class BookOutcomeProperties_GainAnomalyResearch : BookOutcomeProperties_GainResearch
 {
-	public class BookOutcomeProperties_GainAnomalyResearch : BookOutcomeProperties_GainResearch
-	{
-		public override Type DoerClass => typeof(ReadingOutcomeDoerGainAnomalyResearch);
-	}
+	public override Type DoerClass => typeof(ReadingOutcomeDoerGainAnomalyResearch);
 }

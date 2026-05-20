@@ -1,11 +1,10 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum DrugCategory
 {
-	public enum DrugCategory
-	{
-		None,
-		Medical,
-		Social,
-		Hard,
-		Any
-	}
+	None,
+	Medical,
+	Social,
+	Hard,
+	Any
 }

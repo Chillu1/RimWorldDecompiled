@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public interface IThingGlower
 {
-	public interface IThingGlower
-	{
-		bool ShouldBeLitNow();
-	}
+	bool ShouldBeLitNow();
 }

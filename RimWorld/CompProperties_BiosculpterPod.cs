@@ -2,37 +2,36 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_BiosculpterPod : CompProperties
 {
-	public class CompProperties_BiosculpterPod : CompProperties
+	public SoundDef enterSound;
+
+	public SoundDef exitSound;
+
+	public EffecterDef operatingEffecter;
+
+	public EffecterDef readyEffecter;
+
+	public Color selectCycleColor;
+
+	public float biotunedCycleSpeedFactor;
+
+	public CompProperties_BiosculpterPod()
 	{
-		public SoundDef enterSound;
+		compClass = typeof(CompBiosculpterPod);
+	}
 
-		public SoundDef exitSound;
-
-		public EffecterDef operatingEffecter;
-
-		public EffecterDef readyEffecter;
-
-		public Color selectCycleColor;
-
-		public float biotunedCycleSpeedFactor;
-
-		public CompProperties_BiosculpterPod()
+	public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+	{
+		foreach (string item in base.ConfigErrors(parentDef))
 		{
-			compClass = typeof(CompBiosculpterPod);
+			yield return item;
 		}
-
-		public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+		if (parentDef.tickerType != TickerType.Normal)
 		{
-			foreach (string item in base.ConfigErrors(parentDef))
-			{
-				yield return item;
-			}
-			if (parentDef.tickerType != TickerType.Normal)
-			{
-				yield return GetType().Name + " requires parent ticker type Normal";
-			}
+			yield return GetType().Name + " requires parent ticker type Normal";
 		}
 	}
 }

@@ -1,40 +1,39 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RoomRequirement_AllThingsAreGlowing : RoomRequirement
 {
-	public class RoomRequirement_AllThingsAreGlowing : RoomRequirement
+	public ThingDef thingDef;
+
+	public override bool Met(Room r, Pawn p = null)
 	{
-		public ThingDef thingDef;
-
-		public override bool Met(Room r, Pawn p = null)
+		foreach (Thing item in r.ContainedThings(thingDef))
 		{
-			foreach (Thing item in r.ContainedThings(thingDef))
+			if (!item.TryGetComp<CompGlower>().Glows)
 			{
-				if (!item.TryGetComp<CompGlower>().Glows)
-				{
-					return false;
-				}
-			}
-			return true;
-		}
-
-		public override IEnumerable<string> ConfigErrors()
-		{
-			if (thingDef == null)
-			{
-				yield return "thingDef is null";
-			}
-			else if (thingDef.GetCompProperties<CompProperties_Glower>() == null)
-			{
-				yield return "No comp glower on thingDef";
+				return false;
 			}
 		}
+		return true;
+	}
 
-		public override void ExposeData()
+	public override IEnumerable<string> ConfigErrors()
+	{
+		if (thingDef == null)
 		{
-			base.ExposeData();
-			Scribe_Defs.Look(ref thingDef, "thingDef");
+			yield return "thingDef is null";
 		}
+		else if (thingDef.GetCompProperties<CompProperties_Glower>() == null)
+		{
+			yield return "No comp glower on thingDef";
+		}
+	}
+
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Defs.Look(ref thingDef, "thingDef");
 	}
 }

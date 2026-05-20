@@ -1,16 +1,15 @@
 using System;
 
-namespace Verse
+namespace Verse;
+
+public static class ModToolUtility
 {
-	public static class ModToolUtility
+	public static bool IsValueEditable(this Type type)
 	{
-		public static bool IsValueEditable(this Type type)
+		if (!type.IsValueType)
 		{
-			if (!type.IsValueType)
-			{
-				return type == typeof(string);
-			}
-			return true;
+			return type == typeof(string);
 		}
+		return true;
 	}
 }

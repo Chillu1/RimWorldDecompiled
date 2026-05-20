@@ -2,159 +2,158 @@ using System.Collections.Generic;
 using RimWorld;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class BodyPartDef : Def
 {
-	public class BodyPartDef : Def
+	[MustTranslate]
+	public string labelShort;
+
+	public List<BodyPartTagDef> tags = new List<BodyPartTagDef>();
+
+	public int hitPoints = 10;
+
+	public float permanentInjuryChanceFactor = 1f;
+
+	public float bleedRate = 1f;
+
+	public float frostbiteVulnerability;
+
+	private bool skinCovered;
+
+	private bool solid;
+
+	public bool alive = true;
+
+	public bool delicate;
+
+	public bool canScarify;
+
+	public bool beautyRelated;
+
+	public bool conceptual;
+
+	public bool socketed;
+
+	public ThingDef spawnThingOnRemoved;
+
+	public bool pawnGeneratorCanAmputate;
+
+	public bool canSuggestAmputation = true;
+
+	public bool forceAlwaysRemovable;
+
+	public Dictionary<DamageDef, float> hitChanceFactors;
+
+	public bool destroyableByDamage = true;
+
+	public bool canBeVacuumBurnt = true;
+
+	[MustTranslate]
+	public string removeRecipeLabelOverride;
+
+	public float executionPartPriority;
+
+	[Unsaved(false)]
+	private string cachedLabelShortCap;
+
+	public bool IsSolidInDefinition_Debug => solid;
+
+	public bool IsSkinCoveredInDefinition_Debug => skinCovered;
+
+	public bool IsMirroredPart => tags.Contains(BodyPartTagDefOf.Mirrored);
+
+	public string LabelShort
 	{
-		[MustTranslate]
-		public string labelShort;
-
-		public List<BodyPartTagDef> tags = new List<BodyPartTagDef>();
-
-		public int hitPoints = 10;
-
-		public float permanentInjuryChanceFactor = 1f;
-
-		public float bleedRate = 1f;
-
-		public float frostbiteVulnerability;
-
-		private bool skinCovered;
-
-		private bool solid;
-
-		public bool alive = true;
-
-		public bool delicate;
-
-		public bool canScarify;
-
-		public bool beautyRelated;
-
-		public bool conceptual;
-
-		public bool socketed;
-
-		public ThingDef spawnThingOnRemoved;
-
-		public bool pawnGeneratorCanAmputate;
-
-		public bool canSuggestAmputation = true;
-
-		public bool forceAlwaysRemovable;
-
-		public Dictionary<DamageDef, float> hitChanceFactors;
-
-		public bool destroyableByDamage = true;
-
-		public bool canBeVacuumBurnt = true;
-
-		[MustTranslate]
-		public string removeRecipeLabelOverride;
-
-		public float executionPartPriority;
-
-		[Unsaved(false)]
-		private string cachedLabelShortCap;
-
-		public bool IsSolidInDefinition_Debug => solid;
-
-		public bool IsSkinCoveredInDefinition_Debug => skinCovered;
-
-		public bool IsMirroredPart => tags.Contains(BodyPartTagDefOf.Mirrored);
-
-		public string LabelShort
+		get
 		{
-			get
+			if (!labelShort.NullOrEmpty())
 			{
-				if (!labelShort.NullOrEmpty())
-				{
-					return labelShort;
-				}
-				return label;
+				return labelShort;
 			}
+			return label;
 		}
+	}
 
-		public string LabelShortCap
+	public string LabelShortCap
+	{
+		get
 		{
-			get
+			if (labelShort.NullOrEmpty())
 			{
-				if (labelShort.NullOrEmpty())
-				{
-					return LabelCap;
-				}
-				if (cachedLabelShortCap == null)
-				{
-					cachedLabelShortCap = labelShort.CapitalizeFirst();
-				}
-				return cachedLabelShortCap;
+				return LabelCap;
 			}
+			if (cachedLabelShortCap == null)
+			{
+				cachedLabelShortCap = labelShort.CapitalizeFirst();
+			}
+			return cachedLabelShortCap;
 		}
+	}
 
-		public override IEnumerable<string> ConfigErrors()
+	public override IEnumerable<string> ConfigErrors()
+	{
+		foreach (string item in base.ConfigErrors())
 		{
-			foreach (string item in base.ConfigErrors())
-			{
-				yield return item;
-			}
-			if (frostbiteVulnerability > 10f)
-			{
-				yield return "frostbitePriority > max 10: " + frostbiteVulnerability;
-			}
-			if (solid && bleedRate > 0f)
-			{
-				yield return "solid but bleedRate is not zero";
-			}
+			yield return item;
 		}
-
-		public bool IsSolid(BodyPartRecord part, List<Hediff> hediffs)
+		if (frostbiteVulnerability > 10f)
 		{
-			for (BodyPartRecord bodyPartRecord = part; bodyPartRecord != null; bodyPartRecord = bodyPartRecord.parent)
+			yield return "frostbitePriority > max 10: " + frostbiteVulnerability;
+		}
+		if (solid && bleedRate > 0f)
+		{
+			yield return "solid but bleedRate is not zero";
+		}
+	}
+
+	public bool IsSolid(BodyPartRecord part, List<Hediff> hediffs)
+	{
+		for (BodyPartRecord bodyPartRecord = part; bodyPartRecord != null; bodyPartRecord = bodyPartRecord.parent)
+		{
+			for (int i = 0; i < hediffs.Count; i++)
 			{
-				for (int i = 0; i < hediffs.Count; i++)
+				if (hediffs[i].Part == bodyPartRecord && hediffs[i] is Hediff_AddedPart)
 				{
-					if (hediffs[i].Part == bodyPartRecord && hediffs[i] is Hediff_AddedPart)
+					if (hediffs[i].def.addedPartProps.solid)
 					{
-						if (hediffs[i].def.addedPartProps.solid)
-						{
-							return !hediffs[i].def.organicAddedBodypart;
-						}
-						return false;
+						return !hediffs[i].def.organicAddedBodypart;
 					}
+					return false;
 				}
 			}
-			return solid;
 		}
+		return solid;
+	}
 
-		public bool IsSkinCovered(BodyPartRecord part, HediffSet body)
+	public bool IsSkinCovered(BodyPartRecord part, HediffSet body)
+	{
+		if (body.PartOrAnyAncestorHasDirectlyAddedParts(part))
 		{
-			if (body.PartOrAnyAncestorHasDirectlyAddedParts(part))
-			{
-				return false;
-			}
-			return skinCovered;
+			return false;
 		}
+		return skinCovered;
+	}
 
-		public float GetMaxHealth(Pawn pawn)
+	public float GetMaxHealth(Pawn pawn)
+	{
+		return Mathf.CeilToInt((float)hitPoints * pawn.HealthScale);
+	}
+
+	public float GetHitChanceFactorFor(DamageDef damage)
+	{
+		if (conceptual)
 		{
-			return Mathf.CeilToInt((float)hitPoints * pawn.HealthScale);
+			return 0f;
 		}
-
-		public float GetHitChanceFactorFor(DamageDef damage)
+		if (hitChanceFactors == null)
 		{
-			if (conceptual)
-			{
-				return 0f;
-			}
-			if (hitChanceFactors == null)
-			{
-				return 1f;
-			}
-			if (hitChanceFactors.TryGetValue(damage, out var value))
-			{
-				return value;
-			}
 			return 1f;
 		}
+		if (hitChanceFactors.TryGetValue(damage, out var value))
+		{
+			return value;
+		}
+		return 1f;
 	}
 }

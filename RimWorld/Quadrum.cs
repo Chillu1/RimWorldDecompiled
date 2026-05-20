@@ -1,11 +1,10 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum Quadrum : byte
 {
-	public enum Quadrum : byte
-	{
-		Aprimay,
-		Jugust,
-		Septober,
-		Decembary,
-		Undefined
-	}
+	Aprimay,
+	Jugust,
+	Septober,
+	Decembary,
+	Undefined
 }

@@ -3,226 +3,225 @@ using System.Linq;
 using RimWorld;
 using UnityEngine;
 
-namespace Verse.Sound
+namespace Verse.Sound;
+
+public abstract class Sample
 {
-	public abstract class Sample
+	public SubSoundDef subDef;
+
+	public AudioSource source;
+
+	public float startRealTime;
+
+	public int startTick;
+
+	public float resolvedVolume;
+
+	public float resolvedPitch;
+
+	private bool mappingsApplied;
+
+	private Dictionary<SoundParamTarget, float> volumeInMappings = new Dictionary<SoundParamTarget, float>();
+
+	public float AgeRealTime => Time.realtimeSinceStartup - startRealTime;
+
+	public int AgeTicks
 	{
-		public SubSoundDef subDef;
-
-		public AudioSource source;
-
-		public float startRealTime;
-
-		public int startTick;
-
-		public float resolvedVolume;
-
-		public float resolvedPitch;
-
-		private bool mappingsApplied;
-
-		private Dictionary<SoundParamTarget, float> volumeInMappings = new Dictionary<SoundParamTarget, float>();
-
-		public float AgeRealTime => Time.realtimeSinceStartup - startRealTime;
-
-		public int AgeTicks
+		get
 		{
-			get
-			{
-				if (Current.ProgramState == ProgramState.Playing)
-				{
-					return Find.TickManager.TicksGame - startTick;
-				}
-				return (int)(AgeRealTime * 60f);
-			}
-		}
-
-		public abstract float ParentStartRealTime { get; }
-
-		public abstract float ParentStartTick { get; }
-
-		public abstract float ParentHashCode { get; }
-
-		public abstract SoundParams ExternalParams { get; }
-
-		public abstract SoundInfo Info { get; }
-
-		public Map Map => Info.Maker.Map;
-
-		protected bool TestPlaying => Info.testPlay;
-
-		protected float MappedVolumeMultiplier
-		{
-			get
-			{
-				float num = 1f;
-				foreach (float value in volumeInMappings.Values)
-				{
-					num *= value;
-				}
-				return num;
-			}
-		}
-
-		protected float ContextVolumeMultiplier
-		{
-			get
-			{
-				if (Screen_Credits.creditsShowing)
-				{
-					return 1f - Mathf.Clamp01((Time.realtimeSinceStartup - Screen_Credits.creationRealtime) / 3f);
-				}
-				if (TestPlaying || SoundDefHelper.CorrectContextNow(subDef.parentDef, Map))
-				{
-					if (subDef.parentDef.context != SoundContext.MapOnly && subDef.parentDef.context != SoundContext.WorldOnly)
-					{
-						return Prefs.VolumeUI;
-					}
-					if ((subDef.parentDef.context == SoundContext.MapOnly || subDef.parentDef.context == SoundContext.WorldOnly) && !IsAmbient)
-					{
-						return Prefs.VolumeGame;
-					}
-					return 1f;
-				}
-				return 0f;
-			}
-		}
-
-		protected virtual float Volume
-		{
-			get
-			{
-				if (subDef.muteWhenPaused && Current.ProgramState == ProgramState.Playing && Find.TickManager.Paused && !TestPlaying)
-				{
-					return 0f;
-				}
-				return resolvedVolume * Info.volumeFactor * MappedVolumeMultiplier * ContextVolumeMultiplier;
-			}
-		}
-
-		public float SanitizedVolume => AudioSourceUtility.GetSanitizedVolume(Volume, subDef.parentDef);
-
-		public bool IsAmbient
-		{
-			get
-			{
-				foreach (SubSoundDef subSound in subDef.parentDef.subSounds)
-				{
-					foreach (SoundParameterMapping paramMapping in subSound.paramMappings)
-					{
-						if (paramMapping.inParam is SoundParamSource_AmbientVolume)
-						{
-							return true;
-						}
-					}
-				}
-				return false;
-			}
-		}
-
-		protected virtual float Pitch
-		{
-			get
-			{
-				float num = resolvedPitch * Info.pitchFactor;
-				if (subDef.tempoAffectedByGameSpeed && Current.ProgramState == ProgramState.Playing && !TestPlaying && !Find.TickManager.Paused)
-				{
-					num *= Find.TickManager.TickRateMultiplier;
-				}
-				return num;
-			}
-		}
-
-		public float SanitizedPitch => AudioSourceUtility.GetSanitizedPitch(Pitch, subDef.parentDef);
-
-		public Sample(SubSoundDef def)
-		{
-			subDef = def;
-			resolvedVolume = def.RandomizedVolume();
-			resolvedPitch = def.pitchRange.RandomInRange;
-			startRealTime = Time.realtimeSinceStartup;
 			if (Current.ProgramState == ProgramState.Playing)
 			{
-				startTick = Find.TickManager.TicksGame;
+				return Find.TickManager.TicksGame - startTick;
 			}
-			else
-			{
-				startTick = 0;
-			}
-			foreach (SoundParamTarget_Volume item in subDef.paramMappings.Select((SoundParameterMapping m) => m.outParam).OfType<SoundParamTarget_Volume>())
-			{
-				volumeInMappings.Add(item, 0f);
-			}
+			return (int)(AgeRealTime * 60f);
 		}
+	}
 
-		public virtual void Update()
+	public abstract float ParentStartRealTime { get; }
+
+	public abstract float ParentStartTick { get; }
+
+	public abstract float ParentHashCode { get; }
+
+	public abstract SoundParams ExternalParams { get; }
+
+	public abstract SoundInfo Info { get; }
+
+	public Map Map => Info.Maker.Map;
+
+	protected bool TestPlaying => Info.testPlay;
+
+	protected float MappedVolumeMultiplier
+	{
+		get
 		{
-			source.pitch = SanitizedPitch;
-			ApplyMappedParameters();
-			source.volume = SanitizedVolume;
-			if (source.volume < 0.001f)
+			float num = 1f;
+			foreach (float value in volumeInMappings.Values)
 			{
-				source.mute = true;
+				num *= value;
 			}
-			else
+			return num;
+		}
+	}
+
+	protected float ContextVolumeMultiplier
+	{
+		get
+		{
+			if (Screen_Credits.creditsShowing)
 			{
-				source.mute = false;
+				return 1f - Mathf.Clamp01((Time.realtimeSinceStartup - Screen_Credits.creationRealtime) / 3f);
 			}
-			if (!subDef.tempoAffectedByGameSpeed || TestPlaying)
+			if (TestPlaying || SoundDefHelper.CorrectContextNow(subDef.parentDef, Map))
 			{
-				return;
-			}
-			if (Current.ProgramState == ProgramState.Playing && Find.TickManager.Paused)
-			{
-				if (source.isPlaying)
+				if (subDef.parentDef.context != SoundContext.MapOnly && subDef.parentDef.context != SoundContext.WorldOnly)
 				{
-					source.Pause();
+					return Prefs.VolumeUI;
+				}
+				if ((subDef.parentDef.context == SoundContext.MapOnly || subDef.parentDef.context == SoundContext.WorldOnly) && !IsAmbient)
+				{
+					return Prefs.VolumeGame;
+				}
+				return 1f;
+			}
+			return 0f;
+		}
+	}
+
+	protected virtual float Volume
+	{
+		get
+		{
+			if (subDef.muteWhenPaused && Current.ProgramState == ProgramState.Playing && Find.TickManager.Paused && !TestPlaying)
+			{
+				return 0f;
+			}
+			return resolvedVolume * Info.volumeFactor * MappedVolumeMultiplier * ContextVolumeMultiplier;
+		}
+	}
+
+	public float SanitizedVolume => AudioSourceUtility.GetSanitizedVolume(Volume, subDef.parentDef);
+
+	public bool IsAmbient
+	{
+		get
+		{
+			foreach (SubSoundDef subSound in subDef.parentDef.subSounds)
+			{
+				foreach (SoundParameterMapping paramMapping in subSound.paramMappings)
+				{
+					if (paramMapping.inParam is SoundParamSource_AmbientVolume)
+					{
+						return true;
+					}
 				}
 			}
-			else if (!source.isPlaying)
+			return false;
+		}
+	}
+
+	protected virtual float Pitch
+	{
+		get
+		{
+			float num = resolvedPitch * Info.pitchFactor;
+			if (subDef.tempoAffectedByGameSpeed && Current.ProgramState == ProgramState.Playing && !TestPlaying && !Find.TickManager.Paused)
 			{
-				source.UnPause();
+				num *= Find.TickManager.TickRateMultiplier;
+			}
+			return num;
+		}
+	}
+
+	public float SanitizedPitch => AudioSourceUtility.GetSanitizedPitch(Pitch, subDef.parentDef);
+
+	public Sample(SubSoundDef def)
+	{
+		subDef = def;
+		resolvedVolume = def.RandomizedVolume();
+		resolvedPitch = def.pitchRange.RandomInRange;
+		startRealTime = Time.realtimeSinceStartup;
+		if (Current.ProgramState == ProgramState.Playing)
+		{
+			startTick = Find.TickManager.TicksGame;
+		}
+		else
+		{
+			startTick = 0;
+		}
+		foreach (SoundParamTarget_Volume item in subDef.paramMappings.Select((SoundParameterMapping m) => m.outParam).OfType<SoundParamTarget_Volume>())
+		{
+			volumeInMappings.Add(item, 0f);
+		}
+	}
+
+	public virtual void Update()
+	{
+		source.pitch = SanitizedPitch;
+		ApplyMappedParameters();
+		source.volume = SanitizedVolume;
+		if (source.volume < 0.001f)
+		{
+			source.mute = true;
+		}
+		else
+		{
+			source.mute = false;
+		}
+		if (!subDef.tempoAffectedByGameSpeed || TestPlaying)
+		{
+			return;
+		}
+		if (Current.ProgramState == ProgramState.Playing && Find.TickManager.Paused)
+		{
+			if (source.isPlaying)
+			{
+				source.Pause();
 			}
 		}
-
-		public void ApplyMappedParameters()
+		else if (!source.isPlaying)
 		{
-			for (int i = 0; i < subDef.paramMappings.Count; i++)
-			{
-				SoundParameterMapping soundParameterMapping = subDef.paramMappings[i];
-				if (soundParameterMapping.paramUpdateMode != SoundParamUpdateMode.OncePerSample || !mappingsApplied)
-				{
-					soundParameterMapping.Apply(this);
-				}
-			}
-			mappingsApplied = true;
+			source.UnPause();
 		}
+	}
 
-		public void SignalMappedVolume(float value, SoundParamTarget sourceParam)
+	public void ApplyMappedParameters()
+	{
+		for (int i = 0; i < subDef.paramMappings.Count; i++)
 		{
-			volumeInMappings[sourceParam] = value;
-		}
-
-		public virtual void SampleCleanup()
-		{
-			for (int i = 0; i < subDef.paramMappings.Count; i++)
+			SoundParameterMapping soundParameterMapping = subDef.paramMappings[i];
+			if (soundParameterMapping.paramUpdateMode != SoundParamUpdateMode.OncePerSample || !mappingsApplied)
 			{
-				SoundParameterMapping soundParameterMapping = subDef.paramMappings[i];
-				if (soundParameterMapping.curve.HasView)
-				{
-					soundParameterMapping.curve.View.ClearDebugInputFrom(this);
-				}
+				soundParameterMapping.Apply(this);
 			}
 		}
+		mappingsApplied = true;
+	}
 
-		public override string ToString()
-		{
-			return $"Sample_{subDef.name} volume={source.volume} pitch={source.pitch} at {source.transform.position.ToIntVec3()}";
-		}
+	public void SignalMappedVolume(float value, SoundParamTarget sourceParam)
+	{
+		volumeInMappings[sourceParam] = value;
+	}
 
-		public override int GetHashCode()
+	public virtual void SampleCleanup()
+	{
+		for (int i = 0; i < subDef.paramMappings.Count; i++)
 		{
-			return Gen.HashCombine(startRealTime.GetHashCode(), subDef);
+			SoundParameterMapping soundParameterMapping = subDef.paramMappings[i];
+			if (soundParameterMapping.curve.HasView)
+			{
+				soundParameterMapping.curve.View.ClearDebugInputFrom(this);
+			}
 		}
+	}
+
+	public override string ToString()
+	{
+		return $"Sample_{subDef.name} volume={source.volume} pitch={source.pitch} at {source.transform.position.ToIntVec3()}";
+	}
+
+	public override int GetHashCode()
+	{
+		return Gen.HashCombine(startRealTime.GetHashCode(), subDef);
 	}
 }

@@ -1,27 +1,26 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class FloorEtchingRambling : Building
 {
-	public class FloorEtchingRambling : Building
+	private CompFloorEtchingRambling comp;
+
+	public override string DescriptionFlavor
 	{
-		private CompFloorEtchingRambling comp;
-
-		public override string DescriptionFlavor
+		get
 		{
-			get
+			if (comp.deciphered)
 			{
-				if (comp.deciphered)
-				{
-					return comp.message;
-				}
-				return base.DescriptionFlavor;
+				return comp.message;
 			}
+			return base.DescriptionFlavor;
 		}
+	}
 
-		public override void PostMake()
-		{
-			base.PostMake();
-			comp = GetComp<CompFloorEtchingRambling>();
-		}
+	public override void PostMake()
+	{
+		base.PostMake();
+		comp = GetComp<CompFloorEtchingRambling>();
 	}
 }

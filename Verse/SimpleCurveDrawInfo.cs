@@ -1,15 +1,14 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class SimpleCurveDrawInfo
 {
-	public class SimpleCurveDrawInfo
-	{
-		public SimpleCurve curve;
+	public SimpleCurve curve;
 
-		public string label = string.Empty;
+	public string label = string.Empty;
 
-		public Color color = Color.green;
+	public Color color = Color.green;
 
-		public string valueFormat;
-	}
+	public string valueFormat;
 }

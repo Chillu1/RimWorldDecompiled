@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompRitualEffect_SpawnOnOrganizer : CompRitualEffect_SpawnOnPawn
 {
-	public class CompRitualEffect_SpawnOnOrganizer : CompRitualEffect_SpawnOnPawn
+	protected override Pawn GetPawn(LordJob_Ritual ritual)
 	{
-		protected override Pawn GetPawn(LordJob_Ritual ritual)
-		{
-			return ritual.Organizer;
-		}
+		return ritual.Organizer;
 	}
 }

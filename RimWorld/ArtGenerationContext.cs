@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum ArtGenerationContext : byte
 {
-	public enum ArtGenerationContext : byte
-	{
-		Outsider,
-		Colony
-	}
+	Outsider,
+	Colony
 }

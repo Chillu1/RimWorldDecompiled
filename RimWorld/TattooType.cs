@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum TattooType
 {
-	public enum TattooType
-	{
-		Face,
-		Body
-	}
+	Face,
+	Body
 }

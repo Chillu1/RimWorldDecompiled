@@ -1,9 +1,8 @@
-namespace UnityStandardAssets.ImageEffects
+namespace UnityStandardAssets.ImageEffects;
+
+public enum LensflareStyle34
 {
-	public enum LensflareStyle34
-	{
-		Ghosting,
-		Anamorphic,
-		Combined
-	}
+	Ghosting,
+	Anamorphic,
+	Combined
 }

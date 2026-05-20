@@ -1,17 +1,16 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobGiver_AICastAbilityOnSelf : JobGiver_AICastAbility
 {
-	public class JobGiver_AICastAbilityOnSelf : JobGiver_AICastAbility
+	protected override LocalTargetInfo GetTarget(Pawn caster, Ability ability)
 	{
-		protected override LocalTargetInfo GetTarget(Pawn caster, Ability ability)
+		LocalTargetInfo localTargetInfo = new LocalTargetInfo(caster);
+		if (!ability.def.targetRequired || ability.CanApplyOn(localTargetInfo))
 		{
-			LocalTargetInfo localTargetInfo = new LocalTargetInfo(caster);
-			if (!ability.def.targetRequired || ability.CanApplyOn(localTargetInfo))
-			{
-				return localTargetInfo;
-			}
-			return LocalTargetInfo.Invalid;
+			return localTargetInfo;
 		}
+		return LocalTargetInfo.Invalid;
 	}
 }

@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class RaidStrategyWorker_ImmediateAttackBreachingSmart : RaidStrategyWorker_ImmediateAttackBreaching
 {
-	public class RaidStrategyWorker_ImmediateAttackBreachingSmart : RaidStrategyWorker_ImmediateAttackBreaching
+	public RaidStrategyWorker_ImmediateAttackBreachingSmart()
 	{
-		public RaidStrategyWorker_ImmediateAttackBreachingSmart()
-		{
-			useAvoidGridSmart = true;
-		}
+		useAvoidGridSmart = true;
 	}
 }

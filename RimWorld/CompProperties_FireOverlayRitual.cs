@@ -1,12 +1,11 @@
-namespace RimWorld
-{
-	public class CompProperties_FireOverlayRitual : CompProperties_FireOverlay
-	{
-		public float minRitualProgress;
+namespace RimWorld;
 
-		public CompProperties_FireOverlayRitual()
-		{
-			compClass = typeof(CompRitualFireOverlay);
-		}
+public class CompProperties_FireOverlayRitual : CompProperties_FireOverlay
+{
+	public float minRitualProgress;
+
+	public CompProperties_FireOverlayRitual()
+	{
+		compClass = typeof(CompRitualFireOverlay);
 	}
 }

@@ -1,22 +1,21 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace Verse
+namespace Verse;
+
+[StructLayout(LayoutKind.Sequential, Size = 1)]
+public struct ProfilerBlock : IDisposable
 {
-	[StructLayout(LayoutKind.Sequential, Size = 1)]
-	public struct ProfilerBlock : IDisposable
+	public ProfilerBlock(string blockName)
 	{
-		public ProfilerBlock(string blockName)
-		{
-		}
+	}
 
-		public void Dispose()
-		{
-		}
+	public void Dispose()
+	{
+	}
 
-		public static ProfilerBlock Scope(string blockName)
-		{
-			return new ProfilerBlock(blockName);
-		}
+	public static ProfilerBlock Scope(string blockName)
+	{
+		return new ProfilerBlock(blockName);
 	}
 }

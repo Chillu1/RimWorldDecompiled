@@ -1,20 +1,19 @@
 using System;
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class LanguageInfo
 {
-	public class LanguageInfo
-	{
-		public string friendlyNameNative;
+	public string friendlyNameNative;
 
-		public string friendlyNameEnglish;
+	public string friendlyNameEnglish;
 
-		public bool canBeTiny = true;
+	public bool canBeTiny = true;
 
-		public List<CreditsEntry> credits = new List<CreditsEntry>();
+	public List<CreditsEntry> credits = new List<CreditsEntry>();
 
-		public Type languageWorkerClass = typeof(LanguageWorker_Default);
+	public Type languageWorkerClass = typeof(LanguageWorker_Default);
 
-		public int? totalNumCaseCount;
-	}
+	public int? totalNumCaseCount;
 }

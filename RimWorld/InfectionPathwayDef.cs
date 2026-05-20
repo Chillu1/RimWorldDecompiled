@@ -1,17 +1,16 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class InfectionPathwayDef : Def
 {
-	public class InfectionPathwayDef : Def
-	{
-		private float expiryDays = 30f;
+	private float expiryDays = 30f;
 
-		private bool pawnRequired;
+	private bool pawnRequired;
 
-		public float ExpiryDays => expiryDays;
+	public float ExpiryDays => expiryDays;
 
-		public int ExpiryTicks => (int)expiryDays * 60000;
+	public int ExpiryTicks => (int)expiryDays * 60000;
 
-		public bool PawnRequired => pawnRequired;
-	}
+	public bool PawnRequired => pawnRequired;
 }

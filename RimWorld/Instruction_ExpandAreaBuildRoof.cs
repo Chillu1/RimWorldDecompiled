@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Instruction_ExpandAreaBuildRoof : Instruction_ExpandArea
 {
-	public class Instruction_ExpandAreaBuildRoof : Instruction_ExpandArea
-	{
-		protected override Area MyArea => base.Map.areaManager.BuildRoof;
-	}
+	protected override Area MyArea => base.Map.areaManager.BuildRoof;
 }

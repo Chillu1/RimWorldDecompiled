@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_ShipLandingBeacon : CompProperties
 {
-	public class CompProperties_ShipLandingBeacon : CompProperties
+	public FloatRange edgeLengthRange;
+
+	public TerrainAffordanceDef landingAreaTerrainSupport;
+
+	public CompProperties_ShipLandingBeacon()
 	{
-		public FloatRange edgeLengthRange;
-
-		public TerrainAffordanceDef landingAreaTerrainSupport;
-
-		public CompProperties_ShipLandingBeacon()
-		{
-			compClass = typeof(CompShipLandingBeacon);
-		}
+		compClass = typeof(CompShipLandingBeacon);
 	}
 }

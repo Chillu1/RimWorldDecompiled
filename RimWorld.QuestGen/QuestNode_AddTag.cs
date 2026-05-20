@@ -2,43 +2,42 @@ using System.Collections.Generic;
 using RimWorld.Planet;
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_AddTag : QuestNode
 {
-	public class QuestNode_AddTag : QuestNode
+	[NoTranslate]
+	public SlateRef<IEnumerable<object>> targets;
+
+	[NoTranslate]
+	public SlateRef<string> tag;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		[NoTranslate]
-		public SlateRef<IEnumerable<object>> targets;
+		return true;
+	}
 
-		[NoTranslate]
-		public SlateRef<string> tag;
-
-		protected override bool TestRunInt(Slate slate)
+	protected override void RunInt()
+	{
+		Slate slate = QuestGen.slate;
+		if (targets.GetValue(slate) == null)
 		{
-			return true;
+			return;
 		}
-
-		protected override void RunInt()
+		string questTagToAdd = QuestGenUtility.HardcodedTargetQuestTagWithQuestID(tag.GetValue(slate));
+		foreach (object item in targets.GetValue(slate))
 		{
-			Slate slate = QuestGen.slate;
-			if (targets.GetValue(slate) == null)
+			if (item is Thing thing)
 			{
-				return;
+				QuestUtility.AddQuestTag(ref thing.questTags, questTagToAdd);
 			}
-			string questTagToAdd = QuestGenUtility.HardcodedTargetQuestTagWithQuestID(tag.GetValue(slate));
-			foreach (object item in targets.GetValue(slate))
+			else if (item is WorldObject worldObject)
 			{
-				if (item is Thing thing)
-				{
-					QuestUtility.AddQuestTag(ref thing.questTags, questTagToAdd);
-				}
-				else if (item is WorldObject worldObject)
-				{
-					QuestUtility.AddQuestTag(ref worldObject.questTags, questTagToAdd);
-				}
-				else if (item is TransportShip transportShip)
-				{
-					QuestUtility.AddQuestTag(ref transportShip.questTags, questTagToAdd);
-				}
+				QuestUtility.AddQuestTag(ref worldObject.questTags, questTagToAdd);
+			}
+			else if (item is TransportShip transportShip)
+			{
+				QuestUtility.AddQuestTag(ref transportShip.questTags, questTagToAdd);
 			}
 		}
 	}

@@ -1,35 +1,34 @@
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public abstract class WorldComponent : IExposable
 {
-	public abstract class WorldComponent : IExposable
+	public World world;
+
+	public WorldComponent(World world)
 	{
-		public World world;
+		this.world = world;
+	}
 
-		public WorldComponent(World world)
-		{
-			this.world = world;
-		}
+	public virtual void WorldComponentUpdate()
+	{
+	}
 
-		public virtual void WorldComponentUpdate()
-		{
-		}
+	public virtual void WorldComponentTick()
+	{
+	}
 
-		public virtual void WorldComponentTick()
-		{
-		}
+	public virtual void WorldComponentOnGUI()
+	{
+	}
 
-		public virtual void WorldComponentOnGUI()
-		{
-		}
+	public virtual void ExposeData()
+	{
+		BackCompatibility.PostExposeData(this);
+	}
 
-		public virtual void ExposeData()
-		{
-			BackCompatibility.PostExposeData(this);
-		}
-
-		public virtual void FinalizeInit(bool fromLoad)
-		{
-		}
+	public virtual void FinalizeInit(bool fromLoad)
+	{
 	}
 }

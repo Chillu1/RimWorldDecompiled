@@ -1,8 +1,7 @@
-namespace Verse
+namespace Verse;
+
+public enum FailMode : byte
 {
-	public enum FailMode : byte
-	{
-		Silent,
-		LogErrors
-	}
+	Silent,
+	LogErrors
 }

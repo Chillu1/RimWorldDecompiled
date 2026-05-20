@@ -1,17 +1,16 @@
 using System;
 
-namespace LudeonTK
+namespace LudeonTK;
+
+[Flags]
+public enum AllowedGameStates
 {
-	[Flags]
-	public enum AllowedGameStates
-	{
-		Invalid = 0,
-		Entry = 1,
-		Playing = 2,
-		WorldRenderedNow = 4,
-		IsCurrentlyOnMap = 8,
-		HasGameCondition = 0x10,
-		PlayingOnMap = 0xA,
-		PlayingOnWorld = 6
-	}
+	Invalid = 0,
+	Entry = 1,
+	Playing = 2,
+	WorldRenderedNow = 4,
+	IsCurrentlyOnMap = 8,
+	HasGameCondition = 0x10,
+	PlayingOnMap = 0xA,
+	PlayingOnWorld = 6
 }

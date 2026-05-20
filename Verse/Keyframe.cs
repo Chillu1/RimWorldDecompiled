@@ -1,17 +1,16 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class Keyframe
 {
-	public class Keyframe
-	{
-		public int tick;
+	public int tick;
 
-		public Vector3 offset = Vector3.zero;
+	public Vector3 offset = Vector3.zero;
 
-		public float angle;
+	public float angle;
 
-		public Vector3 scale = Vector3.one;
+	public Vector3 scale = Vector3.one;
 
-		public GraphicStateDef graphicState;
-	}
+	public GraphicStateDef graphicState;
 }

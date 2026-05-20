@@ -1,18 +1,17 @@
 using System.Collections.Generic;
 
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public class TransitionAction_CheckForJobOverride : TransitionAction
 {
-	public class TransitionAction_CheckForJobOverride : TransitionAction
+	public override void DoAction(Transition trans)
 	{
-		public override void DoAction(Transition trans)
+		List<Pawn> ownedPawns = trans.target.lord.ownedPawns;
+		for (int i = 0; i < ownedPawns.Count; i++)
 		{
-			List<Pawn> ownedPawns = trans.target.lord.ownedPawns;
-			for (int i = 0; i < ownedPawns.Count; i++)
+			if (ownedPawns[i].CurJob != null)
 			{
-				if (ownedPawns[i].CurJob != null)
-				{
-					ownedPawns[i].jobs.CheckForJobOverride();
-				}
+				ownedPawns[i].jobs.CheckForJobOverride();
 			}
 		}
 	}

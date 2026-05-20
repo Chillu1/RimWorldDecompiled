@@ -2,92 +2,91 @@ using System.Collections.Generic;
 using System.Text;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+[StaticConstructorOnStartup]
+public class AncientHatch : MapPortal
 {
-	[StaticConstructorOnStartup]
-	public class AncientHatch : MapPortal
+	public TileMutatorWorker_Stockpile.StockpileType stockpileType;
+
+	public LayoutDef layout;
+
+	private CompHackable hackableInt;
+
+	private GraphicData openGraphicData;
+
+	private const string OpenTexturePath = "Things/Building/AncientHatch/AncientHatch_Open";
+
+	private CompHackable Hackable => hackableInt ?? (hackableInt = GetComp<CompHackable>());
+
+	public override void ExposeData()
 	{
-		public TileMutatorWorker_Stockpile.StockpileType stockpileType;
+		base.ExposeData();
+		Scribe_Values.Look(ref stockpileType, "stockpileType", TileMutatorWorker_Stockpile.StockpileType.Medicine);
+		Scribe_Defs.Look(ref layout, "layout");
+	}
 
-		public LayoutDef layout;
+	public override void SpawnSetup(Map map, bool respawningAfterLoad)
+	{
+		base.SpawnSetup(map, respawningAfterLoad);
+		openGraphicData = new GraphicData();
+		openGraphicData.CopyFrom(def.graphicData);
+		openGraphicData.texPath = "Things/Building/AncientHatch/AncientHatch_Open";
+	}
 
-		private CompHackable hackableInt;
-
-		private GraphicData openGraphicData;
-
-		private const string OpenTexturePath = "Things/Building/AncientHatch/AncientHatch_Open";
-
-		private CompHackable Hackable => hackableInt ?? (hackableInt = GetComp<CompHackable>());
-
-		public override void ExposeData()
+	public override void Print(SectionLayer layer)
+	{
+		if (IsEnterable(out var _))
 		{
-			base.ExposeData();
-			Scribe_Values.Look(ref stockpileType, "stockpileType", TileMutatorWorker_Stockpile.StockpileType.Medicine);
-			Scribe_Defs.Look(ref layout, "layout");
+			openGraphicData.Graphic.Print(layer, this, 0f);
 		}
-
-		public override void SpawnSetup(Map map, bool respawningAfterLoad)
+		else
 		{
-			base.SpawnSetup(map, respawningAfterLoad);
-			openGraphicData = new GraphicData();
-			openGraphicData.CopyFrom(def.graphicData);
-			openGraphicData.texPath = "Things/Building/AncientHatch/AncientHatch_Open";
+			Graphic.Print(layer, this, 0f);
 		}
+	}
 
-		public override void Print(SectionLayer layer)
+	protected override IEnumerable<GenStepWithParams> GetExtraGenSteps()
+	{
+		if (layout != null)
 		{
-			if (IsEnterable(out var _))
+			yield return new GenStepWithParams(GenStepDefOf.AncientStockpile, new GenStepParams
 			{
-				openGraphicData.Graphic.Print(layer, this, 0f);
-			}
-			else
-			{
-				Graphic.Print(layer, this, 0f);
-			}
+				layout = layout
+			});
 		}
-
-		protected override IEnumerable<GenStepWithParams> GetExtraGenSteps()
+		else
 		{
-			if (layout != null)
-			{
-				yield return new GenStepWithParams(GenStepDefOf.AncientStockpile, new GenStepParams
-				{
-					layout = layout
-				});
-			}
-			else
-			{
-				yield return new GenStepWithParams(GenStepDefOf.AncientStockpile, default(GenStepParams));
-			}
+			yield return new GenStepWithParams(GenStepDefOf.AncientStockpile, default(GenStepParams));
 		}
+	}
 
-		public override bool IsEnterable(out string reason)
+	public override bool IsEnterable(out string reason)
+	{
+		if (!Hackable.IsHacked)
 		{
-			if (!Hackable.IsHacked)
-			{
-				reason = "Locked".Translate();
-				return false;
-			}
-			return base.IsEnterable(out reason);
+			reason = "Locked".Translate();
+			return false;
 		}
+		return base.IsEnterable(out reason);
+	}
 
-		public override string GetInspectString()
+	public override string GetInspectString()
+	{
+		StringBuilder stringBuilder = new StringBuilder(base.GetInspectString());
+		if (Hackable.IsHacked)
 		{
-			StringBuilder stringBuilder = new StringBuilder(base.GetInspectString());
-			if (Hackable.IsHacked)
-			{
-				stringBuilder.AppendLineIfNotEmpty();
-				stringBuilder.Append("HatchUnlocked".Translate());
-			}
-			return stringBuilder.ToString();
+			stringBuilder.AppendLineIfNotEmpty();
+			stringBuilder.Append("HatchUnlocked".Translate());
 		}
+		return stringBuilder.ToString();
+	}
 
-		public override IEnumerable<Gizmo> GetGizmos()
+	public override IEnumerable<Gizmo> GetGizmos()
+	{
+		foreach (Gizmo gizmo in base.GetGizmos())
 		{
-			foreach (Gizmo gizmo in base.GetGizmos())
-			{
-				yield return gizmo;
-			}
+			yield return gizmo;
 		}
 	}
 }

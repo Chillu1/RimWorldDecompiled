@@ -1,6 +1,5 @@
-namespace Verse.Steam
+namespace Verse.Steam;
+
+public class WorkshopItem_NotInstalled : WorkshopItem
 {
-	public class WorkshopItem_NotInstalled : WorkshopItem
-	{
-	}
 }

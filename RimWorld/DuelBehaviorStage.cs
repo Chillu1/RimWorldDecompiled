@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum DuelBehaviorStage
 {
-	public enum DuelBehaviorStage
-	{
-		Attack,
-		Move
-	}
+	Attack,
+	Move
 }

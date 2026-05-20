@@ -3,62 +3,61 @@ using UnityEngine;
 using Verse;
 using Verse.Sound;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompAbilityEffect_MoteOnTarget : CompAbilityEffect
 {
-	public class CompAbilityEffect_MoteOnTarget : CompAbilityEffect
+	public new CompProperties_AbilityMoteOnTarget Props => (CompProperties_AbilityMoteOnTarget)props;
+
+	public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
 	{
-		public new CompProperties_AbilityMoteOnTarget Props => (CompProperties_AbilityMoteOnTarget)props;
-
-		public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
+		if (Props.preCastTicks <= 0)
 		{
-			if (Props.preCastTicks <= 0)
-			{
-				Props.sound?.PlayOneShot(new TargetInfo(target.Cell, parent.pawn.Map));
-				SpawnAll(target);
-			}
+			Props.sound?.PlayOneShot(new TargetInfo(target.Cell, parent.pawn.Map));
+			SpawnAll(target);
 		}
+	}
 
-		public override IEnumerable<PreCastAction> GetPreCastActions()
+	public override IEnumerable<PreCastAction> GetPreCastActions()
+	{
+		if (Props.preCastTicks > 0)
 		{
-			if (Props.preCastTicks > 0)
+			yield return new PreCastAction
 			{
-				yield return new PreCastAction
+				action = delegate(LocalTargetInfo t, LocalTargetInfo d)
 				{
-					action = delegate(LocalTargetInfo t, LocalTargetInfo d)
-					{
-						SpawnAll(t);
-						Props.sound?.PlayOneShot(new TargetInfo(t.Cell, parent.pawn.Map));
-					},
-					ticksAwayFromCast = Props.preCastTicks
-				};
+					SpawnAll(t);
+					Props.sound?.PlayOneShot(new TargetInfo(t.Cell, parent.pawn.Map));
+				},
+				ticksAwayFromCast = Props.preCastTicks
+			};
+		}
+	}
+
+	private void SpawnAll(LocalTargetInfo target)
+	{
+		if (!Props.moteDefs.NullOrEmpty())
+		{
+			for (int i = 0; i < Props.moteDefs.Count; i++)
+			{
+				SpawnMote(target, Props.moteDefs[i]);
 			}
 		}
-
-		private void SpawnAll(LocalTargetInfo target)
+		else
 		{
-			if (!Props.moteDefs.NullOrEmpty())
-			{
-				for (int i = 0; i < Props.moteDefs.Count; i++)
-				{
-					SpawnMote(target, Props.moteDefs[i]);
-				}
-			}
-			else
-			{
-				SpawnMote(target, Props.moteDef);
-			}
+			SpawnMote(target, Props.moteDef);
 		}
+	}
 
-		private void SpawnMote(LocalTargetInfo target, ThingDef def)
+	private void SpawnMote(LocalTargetInfo target, ThingDef def)
+	{
+		if (target.HasThing)
 		{
-			if (target.HasThing)
-			{
-				MoteMaker.MakeAttachedOverlay(target.Thing, def, Vector3.zero, Props.scale);
-			}
-			else
-			{
-				MoteMaker.MakeStaticMote(target.Cell, parent.pawn.Map, def, Props.scale);
-			}
+			MoteMaker.MakeAttachedOverlay(target.Thing, def, Vector3.zero, Props.scale);
+		}
+		else
+		{
+			MoteMaker.MakeStaticMote(target.Cell, parent.pawn.Map, def, Props.scale);
 		}
 	}
 }

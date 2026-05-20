@@ -2,76 +2,75 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml;
 
-namespace Verse
+namespace Verse;
+
+public class PatchOperation
 {
-	public class PatchOperation
+	private enum Success
 	{
-		private enum Success
+		Normal,
+		Invert,
+		Always,
+		Never
+	}
+
+	public string sourceFile;
+
+	private bool neverSucceeded = true;
+
+	private Success success;
+
+	public bool Apply(XmlDocument xml)
+	{
+		if (DeepProfiler.enabled)
 		{
-			Normal,
-			Invert,
-			Always,
-			Never
+			DeepProfiler.Start(GetType().FullName + " Worker");
 		}
-
-		public string sourceFile;
-
-		private bool neverSucceeded = true;
-
-		private Success success;
-
-		public bool Apply(XmlDocument xml)
+		bool flag = ApplyWorker(xml);
+		if (DeepProfiler.enabled)
 		{
-			if (DeepProfiler.enabled)
-			{
-				DeepProfiler.Start(GetType().FullName + " Worker");
-			}
-			bool flag = ApplyWorker(xml);
-			if (DeepProfiler.enabled)
-			{
-				DeepProfiler.End();
-			}
-			if (success == Success.Always)
-			{
-				flag = true;
-			}
-			else if (success == Success.Never)
-			{
-				flag = false;
-			}
-			else if (success == Success.Invert)
-			{
-				flag = !flag;
-			}
-			if (flag)
-			{
-				neverSucceeded = false;
-			}
-			return flag;
+			DeepProfiler.End();
 		}
-
-		protected virtual bool ApplyWorker(XmlDocument xml)
+		if (success == Success.Always)
 		{
-			Log.Error("Attempted to use PatchOperation directly; patch will always fail");
-			return false;
+			flag = true;
 		}
-
-		public virtual void Complete(string modIdentifier)
+		else if (success == Success.Never)
 		{
-			if (neverSucceeded)
+			flag = false;
+		}
+		else if (success == Success.Invert)
+		{
+			flag = !flag;
+		}
+		if (flag)
+		{
+			neverSucceeded = false;
+		}
+		return flag;
+	}
+
+	protected virtual bool ApplyWorker(XmlDocument xml)
+	{
+		Log.Error("Attempted to use PatchOperation directly; patch will always fail");
+		return false;
+	}
+
+	public virtual void Complete(string modIdentifier)
+	{
+		if (neverSucceeded)
+		{
+			string text = $"[{modIdentifier}] Patch operation {this} failed";
+			if (!string.IsNullOrEmpty(sourceFile))
 			{
-				string text = $"[{modIdentifier}] Patch operation {this} failed";
-				if (!string.IsNullOrEmpty(sourceFile))
-				{
-					text = text + "\nfile: " + sourceFile;
-				}
-				Log.Error(text);
+				text = text + "\nfile: " + sourceFile;
 			}
+			Log.Error(text);
 		}
+	}
 
-		public virtual IEnumerable<string> ConfigErrors()
-		{
-			return Enumerable.Empty<string>();
-		}
+	public virtual IEnumerable<string> ConfigErrors()
+	{
+		return Enumerable.Empty<string>();
 	}
 }

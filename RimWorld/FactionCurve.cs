@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class FactionCurve
 {
-	public class FactionCurve
+	public FactionDef faction;
+
+	private SimpleCurve selectionWeightPerPointsCurve;
+
+	public float Evaluate(float x)
 	{
-		public FactionDef faction;
-
-		private SimpleCurve selectionWeightPerPointsCurve;
-
-		public float Evaluate(float x)
-		{
-			return selectionWeightPerPointsCurve.Evaluate(x);
-		}
+		return selectionWeightPerPointsCurve.Evaluate(x);
 	}
 }

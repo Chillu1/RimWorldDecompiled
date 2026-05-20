@@ -1,28 +1,27 @@
 using System;
 
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public class Trigger_TickCondition : Trigger
 {
-	public class Trigger_TickCondition : Trigger
+	private Func<bool> condition;
+
+	private int checkEveryTicks = 1;
+
+	private TriggerData_Reason Data => (TriggerData_Reason)data;
+
+	public Trigger_TickCondition(Func<bool> condition, int checkEveryTicks = 1)
 	{
-		private Func<bool> condition;
+		this.condition = condition;
+		this.checkEveryTicks = checkEveryTicks;
+	}
 
-		private int checkEveryTicks = 1;
-
-		private TriggerData_Reason Data => (TriggerData_Reason)data;
-
-		public Trigger_TickCondition(Func<bool> condition, int checkEveryTicks = 1)
+	public override bool ActivateOn(Lord lord, TriggerSignal signal)
+	{
+		if (signal.type == TriggerSignalType.Tick && Find.TickManager.TicksGame % checkEveryTicks == 0)
 		{
-			this.condition = condition;
-			this.checkEveryTicks = checkEveryTicks;
+			return condition();
 		}
-
-		public override bool ActivateOn(Lord lord, TriggerSignal signal)
-		{
-			if (signal.type == TriggerSignalType.Tick && Find.TickManager.TicksGame % checkEveryTicks == 0)
-			{
-				return condition();
-			}
-			return false;
-		}
+		return false;
 	}
 }

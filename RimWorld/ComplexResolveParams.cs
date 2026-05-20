@@ -1,28 +1,27 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public struct ComplexResolveParams
 {
-	public struct ComplexResolveParams
-	{
-		public List<Thing> spawnedThings;
+	public List<Thing> spawnedThings;
 
-		public LayoutRoom room;
+	public LayoutRoom room;
 
-		public List<LayoutRoom> allRooms;
+	public List<LayoutRoom> allRooms;
 
-		public float points;
+	public float points;
 
-		public Map map;
+	public Map map;
 
-		public CellRect complexRect;
+	public CellRect complexRect;
 
-		public Faction hostileFaction;
+	public Faction hostileFaction;
 
-		public string triggerSignal;
+	public string triggerSignal;
 
-		public int? delayTicks;
+	public int? delayTicks;
 
-		public bool passive;
-	}
+	public bool passive;
 }

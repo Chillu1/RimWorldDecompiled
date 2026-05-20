@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum NeededWarmth : byte
 {
-	public enum NeededWarmth : byte
-	{
-		Any,
-		Warm,
-		Cool
-	}
+	Any,
+	Warm,
+	Cool
 }

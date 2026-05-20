@@ -1,28 +1,27 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class SpecialThingFilterWorker_AllowResearch : SpecialThingFilterWorker
 {
-	public abstract class SpecialThingFilterWorker_AllowResearch : SpecialThingFilterWorker
+	private readonly ResearchTabDef tab;
+
+	protected SpecialThingFilterWorker_AllowResearch(ResearchTabDef tab)
 	{
-		private readonly ResearchTabDef tab;
+		this.tab = tab;
+	}
 
-		protected SpecialThingFilterWorker_AllowResearch(ResearchTabDef tab)
+	public override bool Matches(Thing t)
+	{
+		if (t is Book book && book.BookComp.TryGetDoer<ReadingOutcomeDoerGainResearch>(out var doer))
 		{
-			this.tab = tab;
+			return doer.Props.tab == tab;
 		}
+		return false;
+	}
 
-		public override bool Matches(Thing t)
-		{
-			if (t is Book book && book.BookComp.TryGetDoer<ReadingOutcomeDoerGainResearch>(out var doer))
-			{
-				return doer.Props.tab == tab;
-			}
-			return false;
-		}
-
-		public override bool CanEverMatch(ThingDef def)
-		{
-			return def.HasComp<CompBook>();
-		}
+	public override bool CanEverMatch(ThingDef def)
+	{
+		return def.HasComp<CompBook>();
 	}
 }

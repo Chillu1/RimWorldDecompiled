@@ -1,38 +1,37 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_Disorientation : HediffCompProperties
 {
-	public class HediffCompProperties_Disorientation : HediffCompProperties
+	public float wanderMtbHours = -1f;
+
+	public float wanderRadius;
+
+	public int singleWanderDurationTicks = -1;
+
+	public HediffCompProperties_Disorientation()
 	{
-		public float wanderMtbHours = -1f;
+		compClass = typeof(HediffComp_Disorientation);
+	}
 
-		public float wanderRadius;
-
-		public int singleWanderDurationTicks = -1;
-
-		public HediffCompProperties_Disorientation()
+	public override IEnumerable<string> ConfigErrors(HediffDef parentDef)
+	{
+		foreach (string item in base.ConfigErrors(parentDef))
 		{
-			compClass = typeof(HediffComp_Disorientation);
+			yield return item;
 		}
-
-		public override IEnumerable<string> ConfigErrors(HediffDef parentDef)
+		if (wanderMtbHours <= 0f)
 		{
-			foreach (string item in base.ConfigErrors(parentDef))
-			{
-				yield return item;
-			}
-			if (wanderMtbHours <= 0f)
-			{
-				yield return "wanderMtbHours must be greater than zero";
-			}
-			if (singleWanderDurationTicks <= 0)
-			{
-				yield return "singleWanderDurationTicks must be greater than zero";
-			}
-			if (wanderRadius <= 0f)
-			{
-				yield return "wanderRadius must be greater than zero";
-			}
+			yield return "wanderMtbHours must be greater than zero";
+		}
+		if (singleWanderDurationTicks <= 0)
+		{
+			yield return "singleWanderDurationTicks must be greater than zero";
+		}
+		if (wanderRadius <= 0f)
+		{
+			yield return "wanderRadius must be greater than zero";
 		}
 	}
 }

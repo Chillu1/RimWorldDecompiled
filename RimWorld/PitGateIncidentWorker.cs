@@ -1,50 +1,49 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class PitGateIncidentWorker : IExposable, ILoadReferenceable
 {
-	public abstract class PitGateIncidentWorker : IExposable, ILoadReferenceable
+	private int loadID = -1;
+
+	public PitGateIncidentDef def;
+
+	public Building pitGate;
+
+	public int fireTick = -99999;
+
+	protected PitGateIncidentWorker()
 	{
-		private int loadID = -1;
+		loadID = Find.UniqueIDsManager.GetNextPitGateIncidentID();
+	}
 
-		public PitGateIncidentDef def;
+	public virtual void Setup(float points)
+	{
+		fireTick = Find.TickManager.TicksGame;
+	}
 
-		public Building pitGate;
-
-		public int fireTick = -99999;
-
-		protected PitGateIncidentWorker()
+	public virtual bool CanFireNow()
+	{
+		if (pitGate == null || pitGate.Destroyed)
 		{
-			loadID = Find.UniqueIDsManager.GetNextPitGateIncidentID();
+			return false;
 		}
+		return true;
+	}
 
-		public virtual void Setup(float points)
-		{
-			fireTick = Find.TickManager.TicksGame;
-		}
+	public virtual void Tick()
+	{
+	}
 
-		public virtual bool CanFireNow()
-		{
-			if (pitGate == null || pitGate.Destroyed)
-			{
-				return false;
-			}
-			return true;
-		}
+	public virtual void ExposeData()
+	{
+		Scribe_Values.Look(ref loadID, "loadID", 0);
+		Scribe_Defs.Look(ref def, "def");
+		Scribe_References.Look(ref pitGate, "pitGate");
+	}
 
-		public virtual void Tick()
-		{
-		}
-
-		public virtual void ExposeData()
-		{
-			Scribe_Values.Look(ref loadID, "loadID", 0);
-			Scribe_Defs.Look(ref def, "def");
-			Scribe_References.Look(ref pitGate, "pitGate");
-		}
-
-		public string GetUniqueLoadID()
-		{
-			return "PitGateIncident_" + def.defName + "_" + loadID;
-		}
+	public string GetUniqueLoadID()
+	{
+		return "PitGateIncident_" + def.defName + "_" + loadID;
 	}
 }

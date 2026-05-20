@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class MayRequireIdeologyAttribute : MayRequireAttribute
 {
-	public class MayRequireIdeologyAttribute : MayRequireAttribute
+	public MayRequireIdeologyAttribute()
+		: base("ludeon.rimworld.ideology")
 	{
-		public MayRequireIdeologyAttribute()
-			: base("ludeon.rimworld.ideology")
-		{
-		}
 	}
 }

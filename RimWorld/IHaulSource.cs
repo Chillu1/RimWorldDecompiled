@@ -1,11 +1,10 @@
 using Verse;
 
-namespace RimWorld
-{
-	public interface IHaulSource : IStoreSettingsParent, IThingHolder
-	{
-		Map Map { get; }
+namespace RimWorld;
 
-		bool HaulSourceEnabled { get; }
-	}
+public interface IHaulSource : IStoreSettingsParent, IThingHolder
+{
+	Map Map { get; }
+
+	bool HaulSourceEnabled { get; }
 }

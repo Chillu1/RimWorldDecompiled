@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum LoopMode
 {
-	public enum LoopMode
-	{
-		Loop,
-		Clamp,
-		End
-	}
+	Loop,
+	Clamp,
+	End
 }

@@ -1,12 +1,11 @@
-namespace Verse.AI
+namespace Verse.AI;
+
+public enum ToilCompleteMode : byte
 {
-	public enum ToilCompleteMode : byte
-	{
-		Undefined,
-		Instant,
-		PatherArrival,
-		Delay,
-		FinishedBusy,
-		Never
-	}
+	Undefined,
+	Instant,
+	PatherArrival,
+	Delay,
+	FinishedBusy,
+	Never
 }

@@ -1,12 +1,11 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum PodContentsType
 {
-	public enum PodContentsType
-	{
-		Empty,
-		AncientFriendly,
-		AncientIncapped,
-		AncientHalfEaten,
-		AncientHostile,
-		Slave
-	}
+	Empty,
+	AncientFriendly,
+	AncientIncapped,
+	AncientHalfEaten,
+	AncientHostile,
+	Slave
 }

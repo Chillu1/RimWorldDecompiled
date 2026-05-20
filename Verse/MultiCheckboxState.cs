@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum MultiCheckboxState : byte
 {
-	public enum MultiCheckboxState : byte
-	{
-		On,
-		Off,
-		Partial
-	}
+	On,
+	Off,
+	Partial
 }

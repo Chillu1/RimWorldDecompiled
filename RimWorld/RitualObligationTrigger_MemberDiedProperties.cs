@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class RitualObligationTrigger_MemberDiedProperties : RitualObligationTriggerProperties
 {
-	public class RitualObligationTrigger_MemberDiedProperties : RitualObligationTriggerProperties
+	public RitualObligationTrigger_MemberDiedProperties()
 	{
-		public RitualObligationTrigger_MemberDiedProperties()
-		{
-			triggerClass = typeof(RitualObligationTrigger_MemberDied);
-		}
+		triggerClass = typeof(RitualObligationTrigger_MemberDied);
 	}
 }

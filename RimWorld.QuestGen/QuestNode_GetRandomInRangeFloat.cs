@@ -1,24 +1,23 @@
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_GetRandomInRangeFloat : QuestNode
 {
-	public class QuestNode_GetRandomInRangeFloat : QuestNode
+	[NoTranslate]
+	public SlateRef<string> storeAs;
+
+	public SlateRef<FloatRange> range;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		[NoTranslate]
-		public SlateRef<string> storeAs;
+		slate.Set(storeAs.GetValue(slate), range.GetValue(slate).RandomInRange);
+		return true;
+	}
 
-		public SlateRef<FloatRange> range;
-
-		protected override bool TestRunInt(Slate slate)
-		{
-			slate.Set(storeAs.GetValue(slate), range.GetValue(slate).RandomInRange);
-			return true;
-		}
-
-		protected override void RunInt()
-		{
-			Slate slate = QuestGen.slate;
-			QuestGen.slate.Set(storeAs.GetValue(slate), range.GetValue(slate).RandomInRange);
-		}
+	protected override void RunInt()
+	{
+		Slate slate = QuestGen.slate;
+		QuestGen.slate.Set(storeAs.GetValue(slate), range.GetValue(slate).RandomInRange);
 	}
 }

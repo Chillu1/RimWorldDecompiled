@@ -1,96 +1,95 @@
 using System.Collections.Generic;
 using Verse.AI;
 
-namespace Verse
+namespace Verse;
+
+public class ThinkTreeDef : Def
 {
-	public class ThinkTreeDef : Def
+	public ThinkNode thinkRoot;
+
+	[NoTranslate]
+	public string insertTag;
+
+	public float insertPriority;
+
+	public override void ResolveReferences()
 	{
-		public ThinkNode thinkRoot;
-
-		[NoTranslate]
-		public string insertTag;
-
-		public float insertPriority;
-
-		public override void ResolveReferences()
+		base.ResolveReferences();
+		thinkRoot.ResolveSubnodesAndRecur();
+		foreach (ThinkNode item in thinkRoot.ThisAndChildrenRecursive)
 		{
-			base.ResolveReferences();
-			thinkRoot.ResolveSubnodesAndRecur();
-			foreach (ThinkNode item in thinkRoot.ThisAndChildrenRecursive)
-			{
-				item.ResolveReferences();
-			}
-			ThinkTreeKeyAssigner.AssignKeys(thinkRoot, GenText.StableStringHash(defName));
-			ResolveParentNodes(thinkRoot);
+			item.ResolveReferences();
 		}
+		ThinkTreeKeyAssigner.AssignKeys(thinkRoot, GenText.StableStringHash(defName));
+		ResolveParentNodes(thinkRoot);
+	}
 
-		public override IEnumerable<string> ConfigErrors()
+	public override IEnumerable<string> ConfigErrors()
+	{
+		foreach (string item in base.ConfigErrors())
 		{
-			foreach (string item in base.ConfigErrors())
-			{
-				yield return item;
-			}
-			HashSet<int> usedKeys = new HashSet<int>();
-			HashSet<ThinkNode> instances = new HashSet<ThinkNode>();
-			foreach (ThinkNode node in thinkRoot.ThisAndChildrenRecursive)
-			{
-				int key = node.UniqueSaveKey;
-				if (key == -1)
-				{
-					yield return "Thinknode " + node.GetType()?.ToString() + " has invalid save key " + key;
-				}
-				else if (instances.Contains(node))
-				{
-					yield return "There are two same ThinkNode instances in one think tree (their type is " + node.GetType()?.ToString() + ")";
-				}
-				else if (usedKeys.Contains(key))
-				{
-					yield return "Two ThinkNodes have the same unique save key " + key + " (one of the nodes is " + node.GetType()?.ToString() + ")";
-				}
-				if (key != -1)
-				{
-					usedKeys.Add(key);
-				}
-				instances.Add(node);
-			}
+			yield return item;
 		}
-
-		public bool TryGetThinkNodeWithSaveKey(int key, out ThinkNode outNode)
+		HashSet<int> usedKeys = new HashSet<int>();
+		HashSet<ThinkNode> instances = new HashSet<ThinkNode>();
+		foreach (ThinkNode node in thinkRoot.ThisAndChildrenRecursive)
 		{
-			outNode = null;
+			int key = node.UniqueSaveKey;
 			if (key == -1)
 			{
-				return false;
+				yield return "Thinknode " + node.GetType()?.ToString() + " has invalid save key " + key;
 			}
-			if (key == thinkRoot.UniqueSaveKey)
+			else if (instances.Contains(node))
 			{
-				outNode = thinkRoot;
-				return true;
+				yield return "There are two same ThinkNode instances in one think tree (their type is " + node.GetType()?.ToString() + ")";
 			}
-			foreach (ThinkNode item in thinkRoot.ChildrenRecursive)
+			else if (usedKeys.Contains(key))
 			{
-				if (item.UniqueSaveKey == key)
-				{
-					outNode = item;
-					return true;
-				}
+				yield return "Two ThinkNodes have the same unique save key " + key + " (one of the nodes is " + node.GetType()?.ToString() + ")";
 			}
+			if (key != -1)
+			{
+				usedKeys.Add(key);
+			}
+			instances.Add(node);
+		}
+	}
+
+	public bool TryGetThinkNodeWithSaveKey(int key, out ThinkNode outNode)
+	{
+		outNode = null;
+		if (key == -1)
+		{
 			return false;
 		}
-
-		private void ResolveParentNodes(ThinkNode node)
+		if (key == thinkRoot.UniqueSaveKey)
 		{
-			for (int i = 0; i < node.subNodes.Count; i++)
+			outNode = thinkRoot;
+			return true;
+		}
+		foreach (ThinkNode item in thinkRoot.ChildrenRecursive)
+		{
+			if (item.UniqueSaveKey == key)
 			{
-				if (node.subNodes[i].parent != null)
-				{
-					Log.Warning("Think node " + node.subNodes[i]?.ToString() + " from think tree " + defName + " already has a parent node (" + node.subNodes[i].parent?.ToString() + "). This means that it's referenced by more than one think tree (should have been copied instead).");
-				}
-				else
-				{
-					node.subNodes[i].parent = node;
-					ResolveParentNodes(node.subNodes[i]);
-				}
+				outNode = item;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private void ResolveParentNodes(ThinkNode node)
+	{
+		for (int i = 0; i < node.subNodes.Count; i++)
+		{
+			if (node.subNodes[i].parent != null)
+			{
+				Log.Warning("Think node " + node.subNodes[i]?.ToString() + " from think tree " + defName + " already has a parent node (" + node.subNodes[i].parent?.ToString() + "). This means that it's referenced by more than one think tree (should have been copied instead).");
+			}
+			else
+			{
+				node.subNodes[i].parent = node;
+				ResolveParentNodes(node.subNodes[i]);
 			}
 		}
 	}

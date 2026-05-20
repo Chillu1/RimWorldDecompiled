@@ -3,49 +3,48 @@ using Verse;
 using Verse.AI;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class LordToil_Gathering : LordToil
 {
-	public abstract class LordToil_Gathering : LordToil
+	protected IntVec3 spot;
+
+	protected GatheringDef gatheringDef;
+
+	public LordToilData_Gathering Data => (LordToilData_Gathering)data;
+
+	public LordToil_Gathering(IntVec3 spot, GatheringDef gatheringDef)
 	{
-		protected IntVec3 spot;
+		this.spot = spot;
+		this.gatheringDef = gatheringDef;
+		data = new LordToilData_Gathering();
+	}
 
-		protected GatheringDef gatheringDef;
+	public override ThinkTreeDutyHook VoluntaryJoinDutyHookFor(Pawn p)
+	{
+		return gatheringDef.duty.hook;
+	}
 
-		public LordToilData_Gathering Data => (LordToilData_Gathering)data;
-
-		public LordToil_Gathering(IntVec3 spot, GatheringDef gatheringDef)
+	public override void UpdateAllDuties()
+	{
+		for (int i = 0; i < lord.ownedPawns.Count; i++)
 		{
-			this.spot = spot;
-			this.gatheringDef = gatheringDef;
-			data = new LordToilData_Gathering();
+			lord.ownedPawns[i].mindState.duty = new PawnDuty(gatheringDef.duty, spot);
 		}
+	}
 
-		public override ThinkTreeDutyHook VoluntaryJoinDutyHookFor(Pawn p)
+	public override void LordToilTick()
+	{
+		List<Pawn> ownedPawns = lord.ownedPawns;
+		for (int i = 0; i < ownedPawns.Count; i++)
 		{
-			return gatheringDef.duty.hook;
-		}
-
-		public override void UpdateAllDuties()
-		{
-			for (int i = 0; i < lord.ownedPawns.Count; i++)
+			if (GatheringsUtility.InGatheringArea(ownedPawns[i].Position, spot, base.Map))
 			{
-				lord.ownedPawns[i].mindState.duty = new PawnDuty(gatheringDef.duty, spot);
-			}
-		}
-
-		public override void LordToilTick()
-		{
-			List<Pawn> ownedPawns = lord.ownedPawns;
-			for (int i = 0; i < ownedPawns.Count; i++)
-			{
-				if (GatheringsUtility.InGatheringArea(ownedPawns[i].Position, spot, base.Map))
+				if (!Data.presentForTicks.ContainsKey(ownedPawns[i]))
 				{
-					if (!Data.presentForTicks.ContainsKey(ownedPawns[i]))
-					{
-						Data.presentForTicks.Add(ownedPawns[i], 0);
-					}
-					Data.presentForTicks[ownedPawns[i]]++;
+					Data.presentForTicks.Add(ownedPawns[i], 0);
 				}
+				Data.presentForTicks[ownedPawns[i]]++;
 			}
 		}
 	}

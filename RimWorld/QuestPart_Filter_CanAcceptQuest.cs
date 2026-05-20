@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class QuestPart_Filter_CanAcceptQuest : QuestPart_Filter
 {
-	public class QuestPart_Filter_CanAcceptQuest : QuestPart_Filter
+	protected override bool Pass(SignalArgs args)
 	{
-		protected override bool Pass(SignalArgs args)
-		{
-			return QuestUtility.CanAcceptQuest(quest);
-		}
+		return QuestUtility.CanAcceptQuest(quest);
 	}
 }

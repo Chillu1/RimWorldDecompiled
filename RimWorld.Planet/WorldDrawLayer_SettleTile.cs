@@ -1,28 +1,27 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public class WorldDrawLayer_SettleTile : WorldDrawLayer_SingleTile
 {
-	public class WorldDrawLayer_SettleTile : WorldDrawLayer_SingleTile
+	protected override PlanetTile Tile
 	{
-		protected override PlanetTile Tile
+		get
 		{
-			get
+			if (!(WorldGizmoUtility.LastMouseOverGizmo is Command_Settle))
 			{
-				if (!(WorldGizmoUtility.LastMouseOverGizmo is Command_Settle))
-				{
-					return PlanetTile.Invalid;
-				}
-				if (!(Find.WorldSelector.SingleSelectedObject is Caravan caravan))
-				{
-					return PlanetTile.Invalid;
-				}
-				return caravan.Tile;
+				return PlanetTile.Invalid;
 			}
+			if (!(Find.WorldSelector.SingleSelectedObject is Caravan caravan))
+			{
+				return PlanetTile.Invalid;
+			}
+			return caravan.Tile;
 		}
-
-		protected override Material Material => WorldMaterials.CurrentMapTile;
-
-		protected override float Alpha => Mathf.Abs(Time.time % 2f - 1f);
 	}
+
+	protected override Material Material => WorldMaterials.CurrentMapTile;
+
+	protected override float Alpha => Mathf.Abs(Time.time % 2f - 1f);
 }

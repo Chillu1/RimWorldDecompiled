@@ -1,21 +1,20 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_DestroyAfterDelay : CompProperties
 {
-	public class CompProperties_DestroyAfterDelay : CompProperties
+	public int delayTicks;
+
+	public DestroyMode destroyMode;
+
+	public bool displayCountdownOnLabel;
+
+	[MustTranslate]
+	public string countdownLabel;
+
+	public CompProperties_DestroyAfterDelay()
 	{
-		public int delayTicks;
-
-		public DestroyMode destroyMode;
-
-		public bool displayCountdownOnLabel;
-
-		[MustTranslate]
-		public string countdownLabel;
-
-		public CompProperties_DestroyAfterDelay()
-		{
-			compClass = typeof(CompDestroyAfterDelay);
-		}
+		compClass = typeof(CompDestroyAfterDelay);
 	}
 }

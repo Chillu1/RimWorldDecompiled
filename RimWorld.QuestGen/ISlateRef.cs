@@ -1,9 +1,8 @@
-namespace RimWorld.QuestGen
-{
-	public interface ISlateRef
-	{
-		string SlateRef { get; set; }
+namespace RimWorld.QuestGen;
 
-		bool TryGetConvertedValue<T>(Slate slate, out T value);
-	}
+public interface ISlateRef
+{
+	string SlateRef { get; set; }
+
+	bool TryGetConvertedValue<T>(Slate slate, out T value);
 }

@@ -1,16 +1,15 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class MemeGroupDef : Def
 {
-	public class MemeGroupDef : Def
-	{
-		public Vector2 drawOffset;
+	public Vector2 drawOffset;
 
-		public int maxRows = 2;
+	public int maxRows = 2;
 
-		public int renderOrder;
+	public int renderOrder;
 
-		public bool renderWithGap;
-	}
+	public bool renderWithGap;
 }

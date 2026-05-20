@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public interface IResourceWorldObject
 {
-	public interface IResourceWorldObject
-	{
-		ThingDef PreciousResource { get; set; }
-	}
+	ThingDef PreciousResource { get; set; }
 }

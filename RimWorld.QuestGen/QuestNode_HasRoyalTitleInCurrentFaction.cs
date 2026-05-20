@@ -1,55 +1,54 @@
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_HasRoyalTitleInCurrentFaction : QuestNode
 {
-	public class QuestNode_HasRoyalTitleInCurrentFaction : QuestNode
+	public SlateRef<Pawn> pawn;
+
+	public QuestNode node;
+
+	public QuestNode elseNode;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		public SlateRef<Pawn> pawn;
-
-		public QuestNode node;
-
-		public QuestNode elseNode;
-
-		protected override bool TestRunInt(Slate slate)
+		if (HasRoyalTitleInCurrentFaction(slate))
 		{
-			if (HasRoyalTitleInCurrentFaction(slate))
+			if (node != null)
 			{
-				if (node != null)
-				{
-					return node.TestRun(slate);
-				}
-				return true;
-			}
-			if (elseNode != null)
-			{
-				return elseNode.TestRun(slate);
+				return node.TestRun(slate);
 			}
 			return true;
 		}
-
-		protected override void RunInt()
+		if (elseNode != null)
 		{
-			if (HasRoyalTitleInCurrentFaction(QuestGen.slate))
+			return elseNode.TestRun(slate);
+		}
+		return true;
+	}
+
+	protected override void RunInt()
+	{
+		if (HasRoyalTitleInCurrentFaction(QuestGen.slate))
+		{
+			if (node != null)
 			{
-				if (node != null)
-				{
-					node.Run();
-				}
-			}
-			else if (elseNode != null)
-			{
-				elseNode.Run();
+				node.Run();
 			}
 		}
-
-		private bool HasRoyalTitleInCurrentFaction(Slate slate)
+		else if (elseNode != null)
 		{
-			Pawn value = pawn.GetValue(slate);
-			if (value != null && value.Faction != null && value.royalty != null)
-			{
-				return value.royalty.HasAnyTitleIn(value.Faction);
-			}
-			return false;
+			elseNode.Run();
 		}
+	}
+
+	private bool HasRoyalTitleInCurrentFaction(Slate slate)
+	{
+		Pawn value = pawn.GetValue(slate);
+		if (value != null && value.Faction != null && value.royalty != null)
+		{
+			return value.royalty.HasAnyTitleIn(value.Faction);
+		}
+		return false;
 	}
 }

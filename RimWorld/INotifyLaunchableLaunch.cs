@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public interface INotifyLaunchableLaunch
 {
-	public interface INotifyLaunchableLaunch
-	{
-		void Notify_LaunchableLaunched(CompLaunchable launchable);
-	}
+	void Notify_LaunchableLaunched(CompLaunchable launchable);
 }

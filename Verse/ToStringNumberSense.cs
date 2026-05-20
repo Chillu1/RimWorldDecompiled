@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum ToStringNumberSense : byte
 {
-	public enum ToStringNumberSense : byte
-	{
-		Undefined,
-		Absolute,
-		Factor,
-		Offset
-	}
+	Undefined,
+	Absolute,
+	Factor,
+	Offset
 }

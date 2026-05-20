@@ -1,28 +1,27 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Recipe_RemoveBodyPart_Cut : Recipe_RemoveBodyPart
 {
-	public class Recipe_RemoveBodyPart_Cut : Recipe_RemoveBodyPart
+	protected override bool SpawnPartsWhenRemoved => false;
+
+	public override IEnumerable<BodyPartRecord> GetPartsToApplyOn(Pawn pawn, RecipeDef recipe)
 	{
-		protected override bool SpawnPartsWhenRemoved => false;
+		return MedicalRecipesUtility.GetFixedPartsToApplyOn(recipe, pawn, (BodyPartRecord record) => !pawn.health.hediffSet.PartIsMissing(record));
+	}
 
-		public override IEnumerable<BodyPartRecord> GetPartsToApplyOn(Pawn pawn, RecipeDef recipe)
+	public override void ApplyThoughts(Pawn pawn, Pawn billDoer)
+	{
+		if (pawn.Dead)
 		{
-			return MedicalRecipesUtility.GetFixedPartsToApplyOn(recipe, pawn, (BodyPartRecord record) => !pawn.health.hediffSet.PartIsMissing(record));
+			ThoughtUtility.GiveThoughtsForPawnExecuted(pawn, billDoer, PawnExecutionKind.GenericBrutal);
 		}
+	}
 
-		public override void ApplyThoughts(Pawn pawn, Pawn billDoer)
-		{
-			if (pawn.Dead)
-			{
-				ThoughtUtility.GiveThoughtsForPawnExecuted(pawn, billDoer, PawnExecutionKind.GenericBrutal);
-			}
-		}
-
-		public override string GetLabelWhenUsedOn(Pawn pawn, BodyPartRecord part)
-		{
-			return "Cut".Translate();
-		}
+	public override string GetLabelWhenUsedOn(Pawn pawn, BodyPartRecord part)
+	{
+		return "Cut".Translate();
 	}
 }

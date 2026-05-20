@@ -1,14 +1,13 @@
-namespace RimWorld
-{
-	[DefOf]
-	public static class GauranlenTreeModeDefOf
-	{
-		[MayRequireIdeology]
-		public static GauranlenTreeModeDef Gaumaker;
+namespace RimWorld;
 
-		static GauranlenTreeModeDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(GauranlenTreeModeDefOf));
-		}
+[DefOf]
+public static class GauranlenTreeModeDefOf
+{
+	[MayRequireIdeology]
+	public static GauranlenTreeModeDef Gaumaker;
+
+	static GauranlenTreeModeDefOf()
+	{
+		DefOfHelper.EnsureInitializedInCtor(typeof(GauranlenTreeModeDefOf));
 	}
 }

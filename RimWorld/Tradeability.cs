@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum Tradeability : byte
 {
-	public enum Tradeability : byte
-	{
-		None,
-		Sellable,
-		Buyable,
-		All
-	}
+	None,
+	Sellable,
+	Buyable,
+	All
 }

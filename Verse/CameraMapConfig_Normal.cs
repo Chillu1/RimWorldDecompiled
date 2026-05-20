@@ -1,6 +1,5 @@
-namespace Verse
+namespace Verse;
+
+public class CameraMapConfig_Normal : CameraMapConfig
 {
-	public class CameraMapConfig_Normal : CameraMapConfig
-	{
-	}
 }

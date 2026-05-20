@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum OverseerSubjectState
 {
-	public enum OverseerSubjectState
-	{
-		RequiresOverseer,
-		RequiresBandwidth,
-		Overseen
-	}
+	RequiresOverseer,
+	RequiresBandwidth,
+	Overseen
 }

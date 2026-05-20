@@ -1,34 +1,33 @@
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_SeverityPerDay : HediffCompProperties
 {
-	public class HediffCompProperties_SeverityPerDay : HediffCompProperties
+	public float severityPerDay;
+
+	public bool showDaysToRecover;
+
+	public bool showHoursToRecover;
+
+	public float mechanitorFactor = 1f;
+
+	public float reverseSeverityChangeChance;
+
+	public FloatRange severityPerDayRange = FloatRange.Zero;
+
+	public float minAge;
+
+	public HediffCompProperties_SeverityPerDay()
 	{
-		public float severityPerDay;
+		compClass = typeof(HediffComp_SeverityPerDay);
+	}
 
-		public bool showDaysToRecover;
-
-		public bool showHoursToRecover;
-
-		public float mechanitorFactor = 1f;
-
-		public float reverseSeverityChangeChance;
-
-		public FloatRange severityPerDayRange = FloatRange.Zero;
-
-		public float minAge;
-
-		public HediffCompProperties_SeverityPerDay()
+	public float CalculateSeverityPerDay()
+	{
+		float num = severityPerDay + severityPerDayRange.RandomInRange;
+		if (Rand.Chance(reverseSeverityChangeChance))
 		{
-			compClass = typeof(HediffComp_SeverityPerDay);
+			num *= -1f;
 		}
-
-		public float CalculateSeverityPerDay()
-		{
-			float num = severityPerDay + severityPerDayRange.RandomInRange;
-			if (Rand.Chance(reverseSeverityChangeChance))
-			{
-				num *= -1f;
-			}
-			return num;
-		}
+		return num;
 	}
 }

@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_Fleshmass : CompProperties
 {
-	public class CompProperties_Fleshmass : CompProperties
+	public CompProperties_Fleshmass()
 	{
-		public CompProperties_Fleshmass()
-		{
-			compClass = typeof(CompFleshmass);
-		}
+		compClass = typeof(CompFleshmass);
 	}
 }

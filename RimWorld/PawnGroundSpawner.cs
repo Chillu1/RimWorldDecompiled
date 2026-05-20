@@ -1,51 +1,50 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class PawnGroundSpawner : GroundSpawner, IThingHolder
 {
-	public class PawnGroundSpawner : GroundSpawner, IThingHolder
+	private IntRange spawnDelay;
+
+	private ThingOwner<Pawn> innerContainer;
+
+	protected override IntRange ResultSpawnDelay => spawnDelay;
+
+	public PawnGroundSpawner()
 	{
-		private IntRange spawnDelay;
+		dustMoteSpawnMTB = 0.5f;
+		filthSpawnMTB = 0.5f;
+		filthSpawnRadius = 1f;
+		innerContainer = new ThingOwner<Pawn>(this, oneStackOnly: true);
+	}
 
-		private ThingOwner<Pawn> innerContainer;
+	public void Init(Pawn pawnToSpawn, IntRange delayTicksRange)
+	{
+		spawnDelay = delayTicksRange;
+		innerContainer.ClearAndDestroyContentsOrPassToWorld();
+		innerContainer.TryAdd(pawnToSpawn);
+	}
 
-		protected override IntRange ResultSpawnDelay => spawnDelay;
+	protected override void Spawn(Map map, IntVec3 loc)
+	{
+		innerContainer.TryDropAll(loc, map, ThingPlaceMode.Direct, null, null, playDropSound: false);
+	}
 
-		public PawnGroundSpawner()
-		{
-			dustMoteSpawnMTB = 0.5f;
-			filthSpawnMTB = 0.5f;
-			filthSpawnRadius = 1f;
-			innerContainer = new ThingOwner<Pawn>(this, oneStackOnly: true);
-		}
+	public void GetChildHolders(List<IThingHolder> outChildren)
+	{
+		ThingOwnerUtility.AppendThingHoldersFromThings(outChildren, GetDirectlyHeldThings());
+	}
 
-		public void Init(Pawn pawnToSpawn, IntRange delayTicksRange)
-		{
-			spawnDelay = delayTicksRange;
-			innerContainer.ClearAndDestroyContentsOrPassToWorld();
-			innerContainer.TryAdd(pawnToSpawn);
-		}
+	public ThingOwner GetDirectlyHeldThings()
+	{
+		return innerContainer;
+	}
 
-		protected override void Spawn(Map map, IntVec3 loc)
-		{
-			innerContainer.TryDropAll(loc, map, ThingPlaceMode.Direct, null, null, playDropSound: false);
-		}
-
-		public void GetChildHolders(List<IThingHolder> outChildren)
-		{
-			ThingOwnerUtility.AppendThingHoldersFromThings(outChildren, GetDirectlyHeldThings());
-		}
-
-		public ThingOwner GetDirectlyHeldThings()
-		{
-			return innerContainer;
-		}
-
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_Values.Look(ref spawnDelay, "spawnDelay");
-			Scribe_Deep.Look(ref innerContainer, "innerContainer", this);
-		}
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Values.Look(ref spawnDelay, "spawnDelay");
+		Scribe_Deep.Look(ref innerContainer, "innerContainer", this);
 	}
 }

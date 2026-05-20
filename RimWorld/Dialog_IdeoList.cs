@@ -2,25 +2,24 @@ using System;
 using System.IO;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class Dialog_IdeoList : Dialog_FileList
 {
-	public abstract class Dialog_IdeoList : Dialog_FileList
+	protected override void ReloadFiles()
 	{
-		protected override void ReloadFiles()
+		files.Clear();
+		foreach (FileInfo allCustomIdeoFile in GenFilePaths.AllCustomIdeoFiles)
 		{
-			files.Clear();
-			foreach (FileInfo allCustomIdeoFile in GenFilePaths.AllCustomIdeoFiles)
+			try
 			{
-				try
-				{
-					SaveFileInfo saveFileInfo = new SaveFileInfo(allCustomIdeoFile);
-					saveFileInfo.LoadData();
-					files.Add(saveFileInfo);
-				}
-				catch (Exception ex)
-				{
-					Log.Error("Exception loading " + allCustomIdeoFile.Name + ": " + ex.ToString());
-				}
+				SaveFileInfo saveFileInfo = new SaveFileInfo(allCustomIdeoFile);
+				saveFileInfo.LoadData();
+				files.Add(saveFileInfo);
+			}
+			catch (Exception ex)
+			{
+				Log.Error("Exception loading " + allCustomIdeoFile.Name + ": " + ex.ToString());
 			}
 		}
 	}

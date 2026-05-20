@@ -1,15 +1,14 @@
-namespace Verse
+namespace Verse;
+
+public enum LookMode : byte
 {
-	public enum LookMode : byte
-	{
-		Undefined,
-		Value,
-		Deep,
-		Reference,
-		Def,
-		LocalTargetInfo,
-		TargetInfo,
-		GlobalTargetInfo,
-		BodyPart
-	}
+	Undefined,
+	Value,
+	Deep,
+	Reference,
+	Def,
+	LocalTargetInfo,
+	TargetInfo,
+	GlobalTargetInfo,
+	BodyPart
 }

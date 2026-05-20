@@ -1,17 +1,16 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompInspectStringSchooldesk : CompInspectString
 {
-	public class CompInspectStringSchooldesk : CompInspectString
+	public override string CompInspectStringExtra()
 	{
-		public override string CompInspectStringExtra()
+		float num = LearningUtility.SchoolDeskLearningRate(parent);
+		if (num > 1f)
 		{
-			float num = LearningUtility.SchoolDeskLearningRate(parent);
-			if (num > 1f)
-			{
-				return base.Props.inspectString + ": " + (num - 1f).ToStringPercent();
-			}
-			return null;
+			return base.Props.inspectString + ": " + (num - 1f).ToStringPercent();
 		}
+		return null;
 	}
 }

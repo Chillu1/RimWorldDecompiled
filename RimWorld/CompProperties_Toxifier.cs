@@ -1,35 +1,34 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_Toxifier : CompProperties
 {
-	public class CompProperties_Toxifier : CompProperties
+	public float radius = 5.9f;
+
+	public int pollutionIntervalTicks = 60000;
+
+	public int cellsToPollute = 6;
+
+	public CompProperties_Toxifier()
 	{
-		public float radius = 5.9f;
+		compClass = typeof(CompToxifier);
+	}
 
-		public int pollutionIntervalTicks = 60000;
-
-		public int cellsToPollute = 6;
-
-		public CompProperties_Toxifier()
+	public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+	{
+		if (pollutionIntervalTicks <= 0)
 		{
-			compClass = typeof(CompToxifier);
+			yield return "Pollution interval ticks must be greater than zero.";
 		}
-
-		public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+		if (cellsToPollute <= 0)
 		{
-			if (pollutionIntervalTicks <= 0)
-			{
-				yield return "Pollution interval ticks must be greater than zero.";
-			}
-			if (cellsToPollute <= 0)
-			{
-				yield return "Cells to pollute must be greater than zero.";
-			}
-			if (radius <= 0f)
-			{
-				yield return "Radius to pollute must be greater than zero.";
-			}
+			yield return "Cells to pollute must be greater than zero.";
+		}
+		if (radius <= 0f)
+		{
+			yield return "Radius to pollute must be greater than zero.";
 		}
 	}
 }

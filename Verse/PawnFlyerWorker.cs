@@ -1,29 +1,28 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class PawnFlyerWorker
 {
-	public class PawnFlyerWorker
+	public PawnFlyerProperties properties;
+
+	public PawnFlyerWorker(PawnFlyerProperties properties)
 	{
-		public PawnFlyerProperties properties;
+		this.properties = properties;
+	}
 
-		public PawnFlyerWorker(PawnFlyerProperties properties)
+	public virtual float AdjustedProgress(float t)
+	{
+		AnimationCurve progressCurve = properties.ProgressCurve;
+		if (progressCurve == null || progressCurve.length == 0)
 		{
-			this.properties = properties;
+			return t;
 		}
+		return progressCurve.Evaluate(t);
+	}
 
-		public virtual float AdjustedProgress(float t)
-		{
-			AnimationCurve progressCurve = properties.ProgressCurve;
-			if (progressCurve == null || progressCurve.length == 0)
-			{
-				return t;
-			}
-			return progressCurve.Evaluate(t);
-		}
-
-		public virtual float GetHeight(float t)
-		{
-			return GenMath.InverseParabola(t);
-		}
+	public virtual float GetHeight(float t)
+	{
+		return GenMath.InverseParabola(t);
 	}
 }

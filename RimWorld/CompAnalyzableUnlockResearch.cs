@@ -2,49 +2,48 @@ using System.Collections.Generic;
 using System.Linq;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompAnalyzableUnlockResearch : CompAnalyzable
 {
-	public class CompAnalyzableUnlockResearch : CompAnalyzable
+	private List<ResearchProjectDef> researchUnlocked;
+
+	public new CompProperties_CompAnalyzableUnlockResearch Props => (CompProperties_CompAnalyzableUnlockResearch)props;
+
+	public List<ResearchProjectDef> ResearchUnlocked
 	{
-		private List<ResearchProjectDef> researchUnlocked;
-
-		public new CompProperties_CompAnalyzableUnlockResearch Props => (CompProperties_CompAnalyzableUnlockResearch)props;
-
-		public List<ResearchProjectDef> ResearchUnlocked
+		get
 		{
-			get
+			if (researchUnlocked == null)
 			{
-				if (researchUnlocked == null)
+				researchUnlocked = new List<ResearchProjectDef>();
+				foreach (ResearchProjectDef allDef in DefDatabase<ResearchProjectDef>.AllDefs)
 				{
-					researchUnlocked = new List<ResearchProjectDef>();
-					foreach (ResearchProjectDef allDef in DefDatabase<ResearchProjectDef>.AllDefs)
+					if (!allDef.requiredAnalyzed.NullOrEmpty() && allDef.requiredAnalyzed.Contains(parent.def))
 					{
-						if (!allDef.requiredAnalyzed.NullOrEmpty() && allDef.requiredAnalyzed.Contains(parent.def))
-						{
-							researchUnlocked.Add(allDef);
-						}
+						researchUnlocked.Add(allDef);
 					}
 				}
-				return researchUnlocked;
 			}
+			return researchUnlocked;
 		}
+	}
 
-		public override NamedArgument? ExtraNamedArg => ResearchUnlocked.Select((ResearchProjectDef r) => r.label).ToCommaList(useAnd: true).Named("RESEARCH");
+	public override NamedArgument? ExtraNamedArg => ResearchUnlocked.Select((ResearchProjectDef r) => r.label).ToCommaList(useAnd: true).Named("RESEARCH");
 
-		public override int AnalysisID => Props.analysisID;
+	public override int AnalysisID => Props.analysisID;
 
-		public override AcceptanceReport CanInteract(Pawn activateBy = null, bool checkOptionalItems = true)
+	public override AcceptanceReport CanInteract(Pawn activateBy = null, bool checkOptionalItems = true)
+	{
+		AcceptanceReport result = base.CanInteract(activateBy, checkOptionalItems);
+		if (!result.Accepted)
 		{
-			AcceptanceReport result = base.CanInteract(activateBy, checkOptionalItems);
-			if (!result.Accepted)
-			{
-				return result;
-			}
-			if (activateBy != null && Props.requiresMechanitor && !MechanitorUtility.IsMechanitor(activateBy))
-			{
-				return "RequiresMechanitor".Translate();
-			}
-			return true;
+			return result;
 		}
+		if (activateBy != null && Props.requiresMechanitor && !MechanitorUtility.IsMechanitor(activateBy))
+		{
+			return "RequiresMechanitor".Translate();
+		}
+		return true;
 	}
 }

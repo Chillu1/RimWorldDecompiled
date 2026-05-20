@@ -1,17 +1,16 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public class AbandonComp : WorldObjectComp
 {
-	public class AbandonComp : WorldObjectComp
+	public override IEnumerable<Gizmo> GetGizmos()
 	{
-		public override IEnumerable<Gizmo> GetGizmos()
+		MapParent mapParent = parent as MapParent;
+		if (mapParent.HasMap && mapParent.Faction == Faction.OfPlayer)
 		{
-			MapParent mapParent = parent as MapParent;
-			if (mapParent.HasMap && mapParent.Faction == Faction.OfPlayer)
-			{
-				yield return SettlementAbandonUtility.AbandonCommand(mapParent);
-			}
+			yield return SettlementAbandonUtility.AbandonCommand(mapParent);
 		}
 	}
 }

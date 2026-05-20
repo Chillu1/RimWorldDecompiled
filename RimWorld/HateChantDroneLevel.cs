@@ -1,12 +1,11 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum HateChantDroneLevel : byte
 {
-	public enum HateChantDroneLevel : byte
-	{
-		None,
-		VeryLow,
-		Low,
-		Medium,
-		High,
-		Extreme
-	}
+	None,
+	VeryLow,
+	Low,
+	Medium,
+	High,
+	Extreme
 }

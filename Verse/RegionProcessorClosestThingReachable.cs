@@ -3,136 +3,135 @@ using System.Collections.Generic;
 using RimWorld;
 using Verse.AI;
 
-namespace Verse
+namespace Verse;
+
+public class RegionProcessorClosestThingReachable : RegionProcessorDelegateCache
 {
-	public class RegionProcessorClosestThingReachable : RegionProcessorDelegateCache
+	private TraverseParms traverseParams;
+
+	private float maxDistance;
+
+	private IntVec3 root;
+
+	public Thing closestThing;
+
+	public int regionsSeenScan;
+
+	private bool ignoreEntirelyForbiddenRegions;
+
+	private ThingRequest req;
+
+	private PathEndMode peMode;
+
+	private Func<Thing, float> priorityGetter;
+
+	private Predicate<Thing> validator;
+
+	private float bestPrio;
+
+	private float closestDistSquared;
+
+	private int minRegions;
+
+	private bool lookInHaulSources;
+
+	private float maxDistSquared;
+
+	public void SetParameters(TraverseParms traverseParams, float maxDistance, IntVec3 root, bool ignoreEntirelyForbiddenRegions, ThingRequest req, PathEndMode peMode, Func<Thing, float> priorityGetter, Predicate<Thing> validator, int minRegions, float closestDistSquared = 9999999f, int regionsSeenScan = 0, float bestPrio = float.MinValue, Thing closestThing = null, bool lookInHaulSources = false)
 	{
-		private TraverseParms traverseParams;
+		this.traverseParams = traverseParams;
+		this.maxDistance = maxDistance;
+		this.root = root;
+		this.regionsSeenScan = regionsSeenScan;
+		this.ignoreEntirelyForbiddenRegions = ignoreEntirelyForbiddenRegions;
+		this.req = req;
+		this.peMode = peMode;
+		this.priorityGetter = priorityGetter;
+		this.validator = validator;
+		this.bestPrio = bestPrio;
+		this.closestDistSquared = closestDistSquared;
+		this.closestThing = closestThing;
+		this.minRegions = minRegions;
+		this.lookInHaulSources = lookInHaulSources;
+		maxDistSquared = maxDistance * maxDistance;
+	}
 
-		private float maxDistance;
+	public void Clear()
+	{
+		SetParameters(default(TraverseParms), 0f, default(IntVec3), ignoreEntirelyForbiddenRegions: false, default(ThingRequest), PathEndMode.None, null, null, 0, 0f, 0, 0f);
+	}
 
-		private IntVec3 root;
-
-		public Thing closestThing;
-
-		public int regionsSeenScan;
-
-		private bool ignoreEntirelyForbiddenRegions;
-
-		private ThingRequest req;
-
-		private PathEndMode peMode;
-
-		private Func<Thing, float> priorityGetter;
-
-		private Predicate<Thing> validator;
-
-		private float bestPrio;
-
-		private float closestDistSquared;
-
-		private int minRegions;
-
-		private bool lookInHaulSources;
-
-		private float maxDistSquared;
-
-		public void SetParameters(TraverseParms traverseParams, float maxDistance, IntVec3 root, bool ignoreEntirelyForbiddenRegions, ThingRequest req, PathEndMode peMode, Func<Thing, float> priorityGetter, Predicate<Thing> validator, int minRegions, float closestDistSquared = 9999999f, int regionsSeenScan = 0, float bestPrio = float.MinValue, Thing closestThing = null, bool lookInHaulSources = false)
+	protected override bool RegionEntryPredicate(Region from, Region to)
+	{
+		if (!to.Allows(traverseParams, isDestination: false))
 		{
-			this.traverseParams = traverseParams;
-			this.maxDistance = maxDistance;
-			this.root = root;
-			this.regionsSeenScan = regionsSeenScan;
-			this.ignoreEntirelyForbiddenRegions = ignoreEntirelyForbiddenRegions;
-			this.req = req;
-			this.peMode = peMode;
-			this.priorityGetter = priorityGetter;
-			this.validator = validator;
-			this.bestPrio = bestPrio;
-			this.closestDistSquared = closestDistSquared;
-			this.closestThing = closestThing;
-			this.minRegions = minRegions;
-			this.lookInHaulSources = lookInHaulSources;
-			maxDistSquared = maxDistance * maxDistance;
+			return false;
 		}
-
-		public void Clear()
+		if (!(maxDistance > 5000f))
 		{
-			SetParameters(default(TraverseParms), 0f, default(IntVec3), ignoreEntirelyForbiddenRegions: false, default(ThingRequest), PathEndMode.None, null, null, 0, 0f, 0, 0f);
+			return to.extentsClose.ClosestDistSquaredTo(root) < maxDistSquared;
 		}
+		return true;
+	}
 
-		protected override bool RegionEntryPredicate(Region from, Region to)
+	protected override bool RegionProcessor(Region reg)
+	{
+		if (RegionTraverser.ShouldCountRegion(reg))
 		{
-			if (!to.Allows(traverseParams, isDestination: false))
-			{
-				return false;
-			}
-			if (!(maxDistance > 5000f))
-			{
-				return to.extentsClose.ClosestDistSquaredTo(root) < maxDistSquared;
-			}
-			return true;
+			regionsSeenScan++;
 		}
-
-		protected override bool RegionProcessor(Region reg)
+		if (!reg.IsDoorway && !reg.Allows(traverseParams, isDestination: true))
 		{
-			if (RegionTraverser.ShouldCountRegion(reg))
+			return false;
+		}
+		if (!ignoreEntirelyForbiddenRegions || !reg.IsForbiddenEntirely(traverseParams.pawn))
+		{
+			List<Thing> list = reg.ListerThings.ThingsMatching(req);
+			for (int i = 0; i < list.Count; i++)
 			{
-				regionsSeenScan++;
+				ProcessThing(reg, list[i]);
 			}
-			if (!reg.IsDoorway && !reg.Allows(traverseParams, isDestination: true))
+			bool flag = traverseParams.pawn?.IsColonist ?? false;
+			if (lookInHaulSources)
 			{
-				return false;
-			}
-			if (!ignoreEntirelyForbiddenRegions || !reg.IsForbiddenEntirely(traverseParams.pawn))
-			{
-				List<Thing> list = reg.ListerThings.ThingsMatching(req);
-				for (int i = 0; i < list.Count; i++)
+				foreach (Building item in reg.ListerThings.GetThingsOfType<Building>())
 				{
-					ProcessThing(reg, list[i]);
-				}
-				bool flag = traverseParams.pawn?.IsColonist ?? false;
-				if (lookInHaulSources)
-				{
-					foreach (Building item in reg.ListerThings.GetThingsOfType<Building>())
+					if (!(item is IHaulSource haulSource) || (flag && !haulSource.HaulSourceEnabled))
 					{
-						if (!(item is IHaulSource haulSource) || (flag && !haulSource.HaulSourceEnabled))
+						continue;
+					}
+					foreach (Thing item2 in (IEnumerable<Thing>)haulSource.GetDirectlyHeldThings())
+					{
+						if (req.Accepts(item2))
 						{
-							continue;
-						}
-						foreach (Thing item2 in (IEnumerable<Thing>)haulSource.GetDirectlyHeldThings())
-						{
-							if (req.Accepts(item2))
-							{
-								ProcessThing(reg, item2);
-							}
+							ProcessThing(reg, item2);
 						}
 					}
 				}
 			}
-			if (regionsSeenScan >= minRegions)
-			{
-				return closestThing != null;
-			}
-			return false;
 		}
-
-		private void ProcessThing(Region reg, Thing t)
+		if (regionsSeenScan >= minRegions)
 		{
-			if (!ReachabilityWithinRegion.ThingFromRegionListerReachable(t.SpawnedParentOrMe, reg, peMode, traverseParams.pawn))
+			return closestThing != null;
+		}
+		return false;
+	}
+
+	private void ProcessThing(Region reg, Thing t)
+	{
+		if (!ReachabilityWithinRegion.ThingFromRegionListerReachable(t.SpawnedParentOrMe, reg, peMode, traverseParams.pawn))
+		{
+			return;
+		}
+		float num = priorityGetter?.Invoke(t) ?? 0f;
+		if (!(num < bestPrio))
+		{
+			float num2 = (t.PositionHeld - root).LengthHorizontalSquared;
+			if ((num > bestPrio || num2 < closestDistSquared) && num2 < maxDistSquared && (validator == null || validator(t)))
 			{
-				return;
-			}
-			float num = priorityGetter?.Invoke(t) ?? 0f;
-			if (!(num < bestPrio))
-			{
-				float num2 = (t.PositionHeld - root).LengthHorizontalSquared;
-				if ((num > bestPrio || num2 < closestDistSquared) && num2 < maxDistSquared && (validator == null || validator(t)))
-				{
-					closestThing = t;
-					closestDistSquared = num2;
-					bestPrio = num;
-				}
+				closestThing = t;
+				closestDistSquared = num2;
+				bestPrio = num;
 			}
 		}
 	}

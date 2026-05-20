@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class DeityNameType
-	{
-		public string name;
+namespace RimWorld;
 
-		[MustTranslate]
-		public string type;
-	}
+public class DeityNameType
+{
+	public string name;
+
+	[MustTranslate]
+	public string type;
 }

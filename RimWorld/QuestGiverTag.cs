@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum QuestGiverTag
 {
-	public enum QuestGiverTag
-	{
-		Traders,
-		OrbitalScanner,
-		Reading,
-		Beggars
-	}
+	Traders,
+	OrbitalScanner,
+	Reading,
+	Beggars
 }

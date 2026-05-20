@@ -1,15 +1,14 @@
-namespace RimWorld
+namespace RimWorld;
+
+[DefOf]
+public static class GatheringDefOf
 {
-	[DefOf]
-	public static class GatheringDefOf
+	public static GatheringDef Party;
+
+	public static GatheringDef MarriageCeremony;
+
+	static GatheringDefOf()
 	{
-		public static GatheringDef Party;
-
-		public static GatheringDef MarriageCeremony;
-
-		static GatheringDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(GatheringDefOf));
-		}
+		DefOfHelper.EnsureInitializedInCtor(typeof(GatheringDefOf));
 	}
 }

@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_BladelinkWeapon : CompProperties_Biocodable
 {
-	public class CompProperties_BladelinkWeapon : CompProperties_Biocodable
+	public CompProperties_BladelinkWeapon()
 	{
-		public CompProperties_BladelinkWeapon()
-		{
-			compClass = typeof(CompBladelinkWeapon);
-		}
+		compClass = typeof(CompBladelinkWeapon);
 	}
 }

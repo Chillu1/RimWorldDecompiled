@@ -1,17 +1,16 @@
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_MessageBase : HediffCompProperties
 {
-	public class HediffCompProperties_MessageBase : HediffCompProperties
+	public MessageTypeDef messageType;
+
+	[MustTranslate]
+	public string message;
+
+	public bool onlyMessageForColonistsOrPrisoners = true;
+
+	public HediffCompProperties_MessageBase()
 	{
-		public MessageTypeDef messageType;
-
-		[MustTranslate]
-		public string message;
-
-		public bool onlyMessageForColonistsOrPrisoners = true;
-
-		public HediffCompProperties_MessageBase()
-		{
-			compClass = typeof(HediffComp_MessageBase);
-		}
+		compClass = typeof(HediffComp_MessageBase);
 	}
 }

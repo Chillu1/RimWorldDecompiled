@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum PainCategory
 {
-	public enum PainCategory
-	{
-		Painless = 0,
-		LowPain = 1,
-		MediumPain = 3,
-		HighPain = 6
-	}
+	Painless = 0,
+	LowPain = 1,
+	MediumPain = 3,
+	HighPain = 6
 }

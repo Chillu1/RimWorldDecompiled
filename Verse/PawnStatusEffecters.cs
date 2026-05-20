@@ -1,114 +1,113 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+internal struct PawnStatusEffecters
 {
-	internal struct PawnStatusEffecters
+	private class LiveEffecter : IFullPoolable
 	{
-		private class LiveEffecter : IFullPoolable
+		public EffecterDef def;
+
+		public Effecter effecter;
+
+		public int lastMaintainTick;
+
+		public bool Expired => Find.TickManager.TicksGame > lastMaintainTick;
+
+		public void Cleanup()
 		{
-			public EffecterDef def;
-
-			public Effecter effecter;
-
-			public int lastMaintainTick;
-
-			public bool Expired => Find.TickManager.TicksGame > lastMaintainTick;
-
-			public void Cleanup()
+			if (effecter != null)
 			{
-				if (effecter != null)
-				{
-					effecter.Cleanup();
-				}
-				FullPool<LiveEffecter>.Return(this);
+				effecter.Cleanup();
 			}
-
-			public void Reset()
-			{
-				def = null;
-				effecter = null;
-				lastMaintainTick = -1;
-			}
-
-			public void Maintain()
-			{
-				lastMaintainTick = Find.TickManager.TicksGame;
-			}
-
-			public void Tick(Pawn pawn, int delta)
-			{
-				if (effecter == null)
-				{
-					effecter = def.SpawnAttached(pawn, pawn.MapHeld);
-				}
-				effecter.EffectTick(pawn, pawn);
-			}
+			FullPool<LiveEffecter>.Return(this);
 		}
 
-		public Pawn pawn;
-
-		private List<LiveEffecter> pairs;
-
-		public PawnStatusEffecters(Pawn pawn)
+		public void Reset()
 		{
-			this.pawn = pawn;
-			pairs = new List<LiveEffecter>();
+			def = null;
+			effecter = null;
+			lastMaintainTick = -1;
 		}
 
-		public void EffectersTick(bool suspended)
+		public void Maintain()
 		{
-			if (!suspended)
+			lastMaintainTick = Find.TickManager.TicksGame;
+		}
+
+		public void Tick(Pawn pawn, int delta)
+		{
+			if (effecter == null)
 			{
-				List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
-				for (int i = 0; i < hediffs.Count; i++)
+				effecter = def.SpawnAttached(pawn, pawn.MapHeld);
+			}
+			effecter.EffectTick(pawn, pawn);
+		}
+	}
+
+	public Pawn pawn;
+
+	private List<LiveEffecter> pairs;
+
+	public PawnStatusEffecters(Pawn pawn)
+	{
+		this.pawn = pawn;
+		pairs = new List<LiveEffecter>();
+	}
+
+	public void EffectersTick(bool suspended)
+	{
+		if (!suspended)
+		{
+			List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
+			for (int i = 0; i < hediffs.Count; i++)
+			{
+				HediffComp_Effecter hediffComp_Effecter = hediffs[i].TryGetComp<HediffComp_Effecter>();
+				if (hediffComp_Effecter != null)
 				{
-					HediffComp_Effecter hediffComp_Effecter = hediffs[i].TryGetComp<HediffComp_Effecter>();
-					if (hediffComp_Effecter != null)
+					EffecterDef effecterDef = hediffComp_Effecter.CurrentStateEffecter();
+					if (effecterDef != null)
 					{
-						EffecterDef effecterDef = hediffComp_Effecter.CurrentStateEffecter();
-						if (effecterDef != null)
-						{
-							AddOrMaintain(effecterDef);
-						}
-					}
-				}
-				if (pawn.mindState?.mentalStateHandler.CurState != null)
-				{
-					EffecterDef effecterDef2 = pawn.mindState.mentalStateHandler.CurState.CurrentStateEffecter();
-					if (effecterDef2 != null)
-					{
-						AddOrMaintain(effecterDef2);
+						AddOrMaintain(effecterDef);
 					}
 				}
 			}
-			for (int num = pairs.Count - 1; num >= 0; num--)
+			if (pawn.mindState?.mentalStateHandler.CurState != null)
 			{
-				if (pairs[num].Expired)
+				EffecterDef effecterDef2 = pawn.mindState.mentalStateHandler.CurState.CurrentStateEffecter();
+				if (effecterDef2 != null)
 				{
-					pairs[num].Cleanup();
-					pairs.RemoveAt(num);
-				}
-				else
-				{
-					pairs[num].Tick(pawn, 1);
+					AddOrMaintain(effecterDef2);
 				}
 			}
 		}
-
-		private void AddOrMaintain(EffecterDef def)
+		for (int num = pairs.Count - 1; num >= 0; num--)
 		{
-			for (int i = 0; i < pairs.Count; i++)
+			if (pairs[num].Expired)
 			{
-				if (pairs[i].def == def)
-				{
-					pairs[i].Maintain();
-					return;
-				}
+				pairs[num].Cleanup();
+				pairs.RemoveAt(num);
 			}
-			LiveEffecter liveEffecter = FullPool<LiveEffecter>.Get();
-			liveEffecter.def = def;
-			liveEffecter.Maintain();
-			pairs.Add(liveEffecter);
+			else
+			{
+				pairs[num].Tick(pawn, 1);
+			}
 		}
+	}
+
+	private void AddOrMaintain(EffecterDef def)
+	{
+		for (int i = 0; i < pairs.Count; i++)
+		{
+			if (pairs[i].def == def)
+			{
+				pairs[i].Maintain();
+				return;
+			}
+		}
+		LiveEffecter liveEffecter = FullPool<LiveEffecter>.Get();
+		liveEffecter.def = def;
+		liveEffecter.Maintain();
+		pairs.Add(liveEffecter);
 	}
 }

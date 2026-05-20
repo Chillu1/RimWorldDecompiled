@@ -1,99 +1,98 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class CompColorable : ThingComp
 {
-	public class CompColorable : ThingComp
+	private Color? desiredColor;
+
+	private Color color = Color.white;
+
+	private bool active;
+
+	public Color? DesiredColor
 	{
-		private Color? desiredColor;
-
-		private Color color = Color.white;
-
-		private bool active;
-
-		public Color? DesiredColor
+		get
 		{
-			get
-			{
-				return desiredColor;
-			}
-			set
-			{
-				desiredColor = value;
-			}
+			return desiredColor;
 		}
-
-		public Color Color
+		set
 		{
-			get
-			{
-				if (!active)
-				{
-					return parent.def.graphicData.color;
-				}
-				return color;
-			}
+			desiredColor = value;
 		}
+	}
 
-		public bool Active => active;
-
-		public override void Initialize(CompProperties props)
+	public Color Color
+	{
+		get
 		{
-			base.Initialize(props);
-			if (parent.def.colorGenerator != null && (parent.Stuff == null || parent.Stuff.stuffProps.allowColorGenerators))
+			if (!active)
 			{
-				SetColor(parent.def.colorGenerator.NewRandomizedColor());
+				return parent.def.graphicData.color;
 			}
+			return color;
 		}
+	}
 
-		public override void PostExposeData()
+	public bool Active => active;
+
+	public override void Initialize(CompProperties props)
+	{
+		base.Initialize(props);
+		if (parent.def.colorGenerator != null && (parent.Stuff == null || parent.Stuff.stuffProps.allowColorGenerators))
 		{
-			base.PostExposeData();
-			Scribe_Values.Look(ref desiredColor, "desiredColor");
-			if (Scribe.mode != LoadSaveMode.Saving || active)
-			{
-				Scribe_Values.Look(ref color, "color");
-				Scribe_Values.Look(ref active, "colorActive", defaultValue: false);
-			}
+			SetColor(parent.def.colorGenerator.NewRandomizedColor());
 		}
+	}
 
-		public override void PostSplitOff(Thing piece)
+	public override void PostExposeData()
+	{
+		base.PostExposeData();
+		Scribe_Values.Look(ref desiredColor, "desiredColor");
+		if (Scribe.mode != LoadSaveMode.Saving || active)
 		{
-			base.PostSplitOff(piece);
-			if (active)
-			{
-				piece.SetColor(color);
-			}
+			Scribe_Values.Look(ref color, "color");
+			Scribe_Values.Look(ref active, "colorActive", defaultValue: false);
 		}
+	}
 
-		public void Recolor()
+	public override void PostSplitOff(Thing piece)
+	{
+		base.PostSplitOff(piece);
+		if (active)
 		{
-			if (!desiredColor.HasValue)
-			{
-				Log.Error($"Tried recoloring apparel {parent} which does not have a desired color set!");
-			}
-			else
-			{
-				SetColor(DesiredColor.Value);
-			}
+			piece.SetColor(color);
 		}
+	}
 
-		public void Disable()
+	public void Recolor()
+	{
+		if (!desiredColor.HasValue)
 		{
-			active = false;
-			color = Color.white;
+			Log.Error($"Tried recoloring apparel {parent} which does not have a desired color set!");
+		}
+		else
+		{
+			SetColor(DesiredColor.Value);
+		}
+	}
+
+	public void Disable()
+	{
+		active = false;
+		color = Color.white;
+		desiredColor = null;
+		parent.Notify_ColorChanged();
+	}
+
+	public void SetColor(Color value)
+	{
+		if (!(value == color))
+		{
+			active = true;
+			color = value;
 			desiredColor = null;
 			parent.Notify_ColorChanged();
-		}
-
-		public void SetColor(Color value)
-		{
-			if (!(value == color))
-			{
-				active = true;
-				color = value;
-				desiredColor = null;
-				parent.Notify_ColorChanged();
-			}
 		}
 	}
 }

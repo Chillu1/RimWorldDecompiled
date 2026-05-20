@@ -1,8 +1,7 @@
-namespace Verse
+namespace Verse;
+
+public enum RoofCollapseResponse
 {
-	public enum RoofCollapseResponse
-	{
-		None,
-		RemoveThing
-	}
+	None,
+	RemoveThing
 }

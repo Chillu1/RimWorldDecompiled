@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class MayRequireRoyaltyAttribute : MayRequireAttribute
 {
-	public class MayRequireRoyaltyAttribute : MayRequireAttribute
+	public MayRequireRoyaltyAttribute()
+		: base("ludeon.rimworld.royalty")
 	{
-		public MayRequireRoyaltyAttribute()
-			: base("ludeon.rimworld.royalty")
-		{
-		}
 	}
 }

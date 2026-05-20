@@ -1,15 +1,14 @@
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class SkillRange
 {
-	public class SkillRange
-	{
-		private SkillDef skill;
+	private SkillDef skill;
 
-		private IntRange range = IntRange.One;
+	private IntRange range = IntRange.One;
 
-		public SkillDef Skill => skill;
+	public SkillDef Skill => skill;
 
-		public IntRange Range => range;
-	}
+	public IntRange Range => range;
 }

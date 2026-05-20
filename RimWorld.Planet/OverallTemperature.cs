@@ -1,13 +1,12 @@
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public enum OverallTemperature
 {
-	public enum OverallTemperature
-	{
-		VeryCold,
-		Cold,
-		LittleBitColder,
-		Normal,
-		LittleBitWarmer,
-		Hot,
-		VeryHot
-	}
+	VeryCold,
+	Cold,
+	LittleBitColder,
+	Normal,
+	LittleBitWarmer,
+	Hot,
+	VeryHot
 }

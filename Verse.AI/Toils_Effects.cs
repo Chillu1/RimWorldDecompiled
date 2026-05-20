@@ -1,18 +1,17 @@
 using Verse.Sound;
 
-namespace Verse.AI
+namespace Verse.AI;
+
+public static class Toils_Effects
 {
-	public static class Toils_Effects
+	public static Toil MakeSound(SoundDef soundDef)
 	{
-		public static Toil MakeSound(SoundDef soundDef)
+		Toil toil = ToilMaker.MakeToil("MakeSound");
+		toil.initAction = delegate
 		{
-			Toil toil = ToilMaker.MakeToil("MakeSound");
-			toil.initAction = delegate
-			{
-				Pawn actor = toil.actor;
-				soundDef.PlayOneShot(new TargetInfo(actor.Position, actor.Map));
-			};
-			return toil;
-		}
+			Pawn actor = toil.actor;
+			soundDef.PlayOneShot(new TargetInfo(actor.Position, actor.Map));
+		};
+		return toil;
 	}
 }

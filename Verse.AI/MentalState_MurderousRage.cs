@@ -1,73 +1,72 @@
 using RimWorld;
 
-namespace Verse.AI
+namespace Verse.AI;
+
+public class MentalState_MurderousRage : MentalState
 {
-	public class MentalState_MurderousRage : MentalState
+	public Pawn target;
+
+	private const int NoLongerValidTargetCheckInterval = 120;
+
+	public override void ExposeData()
 	{
-		public Pawn target;
+		base.ExposeData();
+		Scribe_References.Look(ref target, "target");
+	}
 
-		private const int NoLongerValidTargetCheckInterval = 120;
+	public override RandomSocialMode SocialModeMax()
+	{
+		return RandomSocialMode.Off;
+	}
 
-		public override void ExposeData()
+	public override void PreStart()
+	{
+		base.PreStart();
+		TryFindNewTarget();
+	}
+
+	public override void MentalStateTick(int delta)
+	{
+		base.MentalStateTick(delta);
+		if (target != null && target.Dead)
 		{
-			base.ExposeData();
-			Scribe_References.Look(ref target, "target");
+			RecoverFromState();
 		}
-
-		public override RandomSocialMode SocialModeMax()
+		if (pawn.IsHashIntervalTick(120, delta) && !IsTargetStillValidAndReachable())
 		{
-			return RandomSocialMode.Off;
-		}
-
-		public override void PreStart()
-		{
-			base.PreStart();
-			TryFindNewTarget();
-		}
-
-		public override void MentalStateTick(int delta)
-		{
-			base.MentalStateTick(delta);
-			if (target != null && target.Dead)
+			if (!TryFindNewTarget())
 			{
 				RecoverFromState();
+				return;
 			}
-			if (pawn.IsHashIntervalTick(120, delta) && !IsTargetStillValidAndReachable())
-			{
-				if (!TryFindNewTarget())
-				{
-					RecoverFromState();
-					return;
-				}
-				Messages.Message("MessageMurderousRageChangedTarget".Translate(pawn.NameShortColored, target.Label, pawn.Named("PAWN"), target.Named("TARGET")).Resolve().AdjustedFor(pawn), pawn, MessageTypeDefOf.NegativeEvent);
-				base.MentalStateTick(delta);
-			}
+			Messages.Message("MessageMurderousRageChangedTarget".Translate(pawn.NameShortColored, target.Label, pawn.Named("PAWN"), target.Named("TARGET")).Resolve().AdjustedFor(pawn), pawn, MessageTypeDefOf.NegativeEvent);
+			base.MentalStateTick(delta);
 		}
+	}
 
-		public override TaggedString GetBeginLetterText()
+	public override TaggedString GetBeginLetterText()
+	{
+		if (target == null)
 		{
-			if (target == null)
-			{
-				Log.Error("No target. This should have been checked in this mental state's worker.");
-				return "";
-			}
-			return def.beginLetter.Formatted(pawn.NameShortColored, target.NameShortColored, pawn.Named("PAWN"), target.Named("TARGET")).AdjustedFor(pawn).Resolve()
-				.CapitalizeFirst();
+			Log.Error("No target. This should have been checked in this mental state's worker.");
+			return "";
 		}
+		return def.beginLetter.Formatted(pawn.NameShortColored, target.NameShortColored, pawn.Named("PAWN"), target.Named("TARGET")).AdjustedFor(pawn).Resolve()
+			.CapitalizeFirst();
+	}
 
-		private bool TryFindNewTarget()
-		{
-			target = MurderousRageMentalStateUtility.FindPawnToKill(pawn);
-			return target != null;
-		}
+	private bool TryFindNewTarget()
+	{
+		target = MurderousRageMentalStateUtility.FindPawnToKill(pawn);
+		return target != null;
+	}
 
-		public bool IsTargetStillValidAndReachable()
+	public bool IsTargetStillValidAndReachable()
+	{
+		if (target != null && target.SpawnedParentOrMe != null && (!(target.SpawnedParentOrMe is Pawn) || target.SpawnedParentOrMe == target))
 		{
-			if (target != null && target.SpawnedParentOrMe != null && (!(target.SpawnedParentOrMe is Pawn) || target.SpawnedParentOrMe == target))
-			{
-				return pawn.CanReach(target.SpawnedParentOrMe, PathEndMode.Touch, Danger.Deadly, canBashDoors: true);
-			}
-			return false;
+			return pawn.CanReach(target.SpawnedParentOrMe, PathEndMode.Touch, Danger.Deadly, canBashDoors: true);
 		}
+		return false;
 	}
 }

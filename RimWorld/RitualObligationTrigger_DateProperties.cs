@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class RitualObligationTrigger_DateProperties : RitualObligationTriggerProperties
 {
-	public class RitualObligationTrigger_DateProperties : RitualObligationTriggerProperties
+	public RitualObligationTrigger_DateProperties()
 	{
-		public RitualObligationTrigger_DateProperties()
-		{
-			triggerClass = typeof(RitualObligationTrigger_Date);
-		}
+		triggerClass = typeof(RitualObligationTrigger_Date);
 	}
 }

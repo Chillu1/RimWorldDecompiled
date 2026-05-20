@@ -2,41 +2,40 @@ using System.Collections.Generic;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_Spectate : JobDriver
 {
-	public class JobDriver_Spectate : JobDriver
+	private const TargetIndex MySpotOrChairInd = TargetIndex.A;
+
+	private const TargetIndex WatchTargetInd = TargetIndex.B;
+
+	private const TargetIndex ChairInd = TargetIndex.C;
+
+	public override bool TryMakePreToilReservations(bool errorOnFailed)
 	{
-		private const TargetIndex MySpotOrChairInd = TargetIndex.A;
+		return pawn.ReserveSittableOrSpot(job.GetTarget(TargetIndex.A).Cell, job, errorOnFailed);
+	}
 
-		private const TargetIndex WatchTargetInd = TargetIndex.B;
-
-		private const TargetIndex ChairInd = TargetIndex.C;
-
-		public override bool TryMakePreToilReservations(bool errorOnFailed)
+	protected override IEnumerable<Toil> MakeNewToils()
+	{
+		if (job.GetTarget(TargetIndex.C).HasThing)
 		{
-			return pawn.ReserveSittableOrSpot(job.GetTarget(TargetIndex.A).Cell, job, errorOnFailed);
+			this.EndOnDespawnedOrNull(TargetIndex.C);
 		}
-
-		protected override IEnumerable<Toil> MakeNewToils()
+		yield return Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.OnCell);
+		Toil toil = ToilMaker.MakeToil("MakeNewToils");
+		toil.tickIntervalAction = delegate(int delta)
 		{
-			if (job.GetTarget(TargetIndex.C).HasThing)
+			pawn.rotationTracker.FaceCell(job.GetTarget(TargetIndex.B).Cell);
+			pawn.GainComfortFromCellIfPossible(delta);
+			if (pawn.IsHashIntervalTick(100, delta))
 			{
-				this.EndOnDespawnedOrNull(TargetIndex.C);
+				pawn.jobs.CheckForJobOverride();
 			}
-			yield return Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.OnCell);
-			Toil toil = ToilMaker.MakeToil("MakeNewToils");
-			toil.tickIntervalAction = delegate(int delta)
-			{
-				pawn.rotationTracker.FaceCell(job.GetTarget(TargetIndex.B).Cell);
-				pawn.GainComfortFromCellIfPossible(delta);
-				if (pawn.IsHashIntervalTick(100, delta))
-				{
-					pawn.jobs.CheckForJobOverride();
-				}
-			};
-			toil.defaultCompleteMode = ToilCompleteMode.Never;
-			toil.handlingFacing = true;
-			yield return toil;
-		}
+		};
+		toil.defaultCompleteMode = ToilCompleteMode.Never;
+		toil.handlingFacing = true;
+		yield return toil;
 	}
 }

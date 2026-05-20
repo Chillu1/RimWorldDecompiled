@@ -3,56 +3,55 @@ using System.Linq;
 using RimWorld.Planet;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class QuestPart_NoWorldObject : QuestPartActivable
 {
-	public class QuestPart_NoWorldObject : QuestPartActivable
+	public WorldObject worldObject;
+
+	public override IEnumerable<GlobalTargetInfo> QuestLookTargets
 	{
-		public WorldObject worldObject;
-
-		public override IEnumerable<GlobalTargetInfo> QuestLookTargets
+		get
 		{
-			get
+			foreach (GlobalTargetInfo questLookTarget in base.QuestLookTargets)
 			{
-				foreach (GlobalTargetInfo questLookTarget in base.QuestLookTargets)
-				{
-					yield return questLookTarget;
-				}
-				if (worldObject != null)
-				{
-					yield return worldObject;
-				}
+				yield return questLookTarget;
+			}
+			if (worldObject != null)
+			{
+				yield return worldObject;
 			}
 		}
+	}
 
-		public override void QuestPartTick()
+	public override void QuestPartTick()
+	{
+		base.QuestPartTick();
+		if (worldObject == null || !worldObject.Spawned)
 		{
-			base.QuestPartTick();
-			if (worldObject == null || !worldObject.Spawned)
-			{
-				Complete();
-			}
+			Complete();
 		}
+	}
 
-		public override void ExposeData()
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_References.Look(ref worldObject, "worldObject");
+	}
+
+	public override void AssignDebugData()
+	{
+		base.AssignDebugData();
+		Site site = Find.WorldObjects.Sites.FirstOrDefault();
+		if (site != null)
 		{
-			base.ExposeData();
-			Scribe_References.Look(ref worldObject, "worldObject");
+			worldObject = site;
+			return;
 		}
-
-		public override void AssignDebugData()
+		Map randomPlayerHomeMap = Find.RandomPlayerHomeMap;
+		if (randomPlayerHomeMap != null)
 		{
-			base.AssignDebugData();
-			Site site = Find.WorldObjects.Sites.FirstOrDefault();
-			if (site != null)
-			{
-				worldObject = site;
-				return;
-			}
-			Map randomPlayerHomeMap = Find.RandomPlayerHomeMap;
-			if (randomPlayerHomeMap != null)
-			{
-				worldObject = randomPlayerHomeMap.Parent;
-			}
+			worldObject = randomPlayerHomeMap.Parent;
 		}
 	}
 }

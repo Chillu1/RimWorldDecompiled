@@ -1,37 +1,36 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Alert_FuelNodeIgnition : Alert_ActionDelay
 {
-	public class Alert_FuelNodeIgnition : Alert_ActionDelay
+	private SignalAction_StartWick startWickAction;
+
+	public Alert_FuelNodeIgnition()
 	{
-		private SignalAction_StartWick startWickAction;
+	}
 
-		public Alert_FuelNodeIgnition()
-		{
-		}
+	public Alert_FuelNodeIgnition(SignalAction_StartWick startWickAction)
+	{
+		this.startWickAction = startWickAction;
+	}
 
-		public Alert_FuelNodeIgnition(SignalAction_StartWick startWickAction)
+	public override AlertReport GetReport()
+	{
+		if (startWickAction == null)
 		{
-			this.startWickAction = startWickAction;
+			return AlertReport.Inactive;
 		}
+		return AlertReport.CulpritIs(startWickAction.thingWithWick);
+	}
 
-		public override AlertReport GetReport()
-		{
-			if (startWickAction == null)
-			{
-				return AlertReport.Inactive;
-			}
-			return AlertReport.CulpritIs(startWickAction.thingWithWick);
-		}
+	public override string GetLabel()
+	{
+		return "AlertFuelNodeIgniting".Translate(startWickAction.delayTicks.ToStringTicksToPeriodVerbose());
+	}
 
-		public override string GetLabel()
-		{
-			return "AlertFuelNodeIgniting".Translate(startWickAction.delayTicks.ToStringTicksToPeriodVerbose());
-		}
-
-		public override TaggedString GetExplanation()
-		{
-			return "AlertFuelNodeIgnitingDesc".Translate();
-		}
+	public override TaggedString GetExplanation()
+	{
+		return "AlertFuelNodeIgnitingDesc".Translate();
 	}
 }

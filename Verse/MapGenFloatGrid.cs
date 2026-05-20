@@ -2,42 +2,41 @@ using System;
 using LudeonTK;
 using Unity.Collections;
 
-namespace Verse
+namespace Verse;
+
+public class MapGenFloatGrid : IDisposable
 {
-	public class MapGenFloatGrid : IDisposable
+	private readonly Map map;
+
+	private NativeArray<float> grid;
+
+	public float this[IntVec3 c]
 	{
-		private readonly Map map;
-
-		private NativeArray<float> grid;
-
-		public float this[IntVec3 c]
+		get
 		{
-			get
-			{
-				return grid[map.cellIndices.CellToIndex(c)];
-			}
-			set
-			{
-				grid[map.cellIndices.CellToIndex(c)] = value;
-			}
+			return grid[map.cellIndices.CellToIndex(c)];
 		}
-
-		internal ref NativeArray<float> Grid_Unsafe => ref grid;
-
-		public MapGenFloatGrid(Map map)
+		set
 		{
-			this.map = map;
-			grid = new NativeArray<float>(map.cellIndices.NumGridCells, Allocator.Persistent);
+			grid[map.cellIndices.CellToIndex(c)] = value;
 		}
+	}
 
-		public void Clear()
-		{
-			NativeArrayUtility.MemClear(grid);
-		}
+	internal ref NativeArray<float> Grid_Unsafe => ref grid;
 
-		public void Dispose()
-		{
-			grid.Dispose();
-		}
+	public MapGenFloatGrid(Map map)
+	{
+		this.map = map;
+		grid = new NativeArray<float>(map.cellIndices.NumGridCells, Allocator.Persistent);
+	}
+
+	public void Clear()
+	{
+		NativeArrayUtility.MemClear(grid);
+	}
+
+	public void Dispose()
+	{
+		grid.Dispose();
 	}
 }

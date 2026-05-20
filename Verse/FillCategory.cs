@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum FillCategory : byte
 {
-	public enum FillCategory : byte
-	{
-		None,
-		Partial,
-		Full
-	}
+	None,
+	Partial,
+	Full
 }

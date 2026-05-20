@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_DisableUnnaturalCorpse : CompProperties_Interactable
 {
-	public class CompProperties_DisableUnnaturalCorpse : CompProperties_Interactable
+	public CompProperties_DisableUnnaturalCorpse()
 	{
-		public CompProperties_DisableUnnaturalCorpse()
-		{
-			compClass = typeof(CompDisableUnnaturalCorpse);
-		}
+		compClass = typeof(CompDisableUnnaturalCorpse);
 	}
 }

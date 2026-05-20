@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum PawnGenerationContext
 {
-	public enum PawnGenerationContext
-	{
-		All,
-		PlayerStarter,
-		NonPlayer
-	}
+	All,
+	PlayerStarter,
+	NonPlayer
 }

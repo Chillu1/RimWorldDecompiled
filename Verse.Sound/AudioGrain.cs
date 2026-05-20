@@ -1,9 +1,8 @@
 using System.Collections.Generic;
 
-namespace Verse.Sound
+namespace Verse.Sound;
+
+public abstract class AudioGrain
 {
-	public abstract class AudioGrain
-	{
-		public abstract IEnumerable<ResolvedGrain> GetResolvedGrains();
-	}
+	public abstract IEnumerable<ResolvedGrain> GetResolvedGrains();
 }

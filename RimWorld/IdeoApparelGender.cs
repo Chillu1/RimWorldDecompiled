@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum IdeoApparelGender
 {
-	public enum IdeoApparelGender
-	{
-		Any,
-		SupremeGender,
-		SubordinateGender
-	}
+	Any,
+	SupremeGender,
+	SubordinateGender
 }

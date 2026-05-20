@@ -1,17 +1,16 @@
 using System.Xml;
 
-namespace Verse
+namespace Verse;
+
+public class MechWorkTypePriority
 {
-	public class MechWorkTypePriority
+	public WorkTypeDef def;
+
+	public int priority;
+
+	public void LoadDataFromXmlCustom(XmlNode xmlRoot)
 	{
-		public WorkTypeDef def;
-
-		public int priority;
-
-		public void LoadDataFromXmlCustom(XmlNode xmlRoot)
-		{
-			DirectXmlCrossRefLoader.RegisterObjectWantsCrossRef(this, "def", xmlRoot.Name);
-			priority = (xmlRoot.HasChildNodes ? ParseHelper.FromString<int>(xmlRoot.FirstChild.Value) : 3);
-		}
+		DirectXmlCrossRefLoader.RegisterObjectWantsCrossRef(this, "def", xmlRoot.Name);
+		priority = (xmlRoot.HasChildNodes ? ParseHelper.FromString<int>(xmlRoot.FirstChild.Value) : 3);
 	}
 }

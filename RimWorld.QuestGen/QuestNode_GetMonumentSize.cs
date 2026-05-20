@@ -1,31 +1,30 @@
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_GetMonumentSize : QuestNode
 {
-	public class QuestNode_GetMonumentSize : QuestNode
+	[NoTranslate]
+	public SlateRef<string> storeAs;
+
+	public SlateRef<MonumentMarker> monumentMarker;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		[NoTranslate]
-		public SlateRef<string> storeAs;
+		DoWork(slate);
+		return true;
+	}
 
-		public SlateRef<MonumentMarker> monumentMarker;
+	protected override void RunInt()
+	{
+		DoWork(QuestGen.slate);
+	}
 
-		protected override bool TestRunInt(Slate slate)
+	private void DoWork(Slate slate)
+	{
+		if (monumentMarker.GetValue(slate) != null)
 		{
-			DoWork(slate);
-			return true;
-		}
-
-		protected override void RunInt()
-		{
-			DoWork(QuestGen.slate);
-		}
-
-		private void DoWork(Slate slate)
-		{
-			if (monumentMarker.GetValue(slate) != null)
-			{
-				slate.Set(storeAs.GetValue(slate), monumentMarker.GetValue(slate).Size);
-			}
+			slate.Set(storeAs.GetValue(slate), monumentMarker.GetValue(slate).Size);
 		}
 	}
 }

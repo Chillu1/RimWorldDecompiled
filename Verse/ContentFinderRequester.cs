@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public static class ContentFinderRequester
 {
-	public static class ContentFinderRequester
-	{
-		public static Def requester;
-	}
+	public static Def requester;
 }

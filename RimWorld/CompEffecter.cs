@@ -1,38 +1,37 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompEffecter : ThingComp
 {
-	public class CompEffecter : ThingComp
+	private Effecter effecter;
+
+	public CompProperties_EffecterBase Props => (CompProperties_EffecterBase)props;
+
+	protected virtual bool ShouldShowEffecter()
 	{
-		private Effecter effecter;
-
-		public CompProperties_EffecterBase Props => (CompProperties_EffecterBase)props;
-
-		protected virtual bool ShouldShowEffecter()
+		if (parent.Spawned)
 		{
-			if (parent.Spawned)
-			{
-				return parent.MapHeld == Find.CurrentMap;
-			}
-			return false;
+			return parent.MapHeld == Find.CurrentMap;
 		}
+		return false;
+	}
 
-		public override void CompTick()
+	public override void CompTick()
+	{
+		base.CompTick();
+		if (ShouldShowEffecter())
 		{
-			base.CompTick();
-			if (ShouldShowEffecter())
+			if (effecter == null)
 			{
-				if (effecter == null)
-				{
-					effecter = Props.effecterDef.SpawnAttached(parent, parent.MapHeld);
-				}
-				effecter?.EffectTick(parent, parent);
+				effecter = Props.effecterDef.SpawnAttached(parent, parent.MapHeld);
 			}
-			else
-			{
-				effecter?.Cleanup();
-				effecter = null;
-			}
+			effecter?.EffectTick(parent, parent);
+		}
+		else
+		{
+			effecter?.Cleanup();
+			effecter = null;
 		}
 	}
 }

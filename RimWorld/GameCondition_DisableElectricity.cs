@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class GameCondition_DisableElectricity : GameCondition
 {
-	public class GameCondition_DisableElectricity : GameCondition
-	{
-		public override bool ElectricityDisabled => true;
-	}
+	public override bool ElectricityDisabled => true;
 }

@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum AlertPriority : byte
 {
-	public enum AlertPriority : byte
-	{
-		Medium,
-		High,
-		Critical
-	}
+	Medium,
+	High,
+	Critical
 }

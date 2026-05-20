@@ -1,9 +1,8 @@
-namespace Verse.AI
+namespace Verse.AI;
+
+public class JobDriver_WaitMaintainPosture : JobDriver_Wait
 {
-	public class JobDriver_WaitMaintainPosture : JobDriver_Wait
+	public override void SetInitialPosture()
 	{
-		public override void SetInitialPosture()
-		{
-		}
 	}
 }

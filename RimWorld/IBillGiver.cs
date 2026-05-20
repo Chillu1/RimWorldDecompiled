@@ -1,22 +1,21 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public interface IBillGiver
 {
-	public interface IBillGiver
-	{
-		Map Map { get; }
+	Map Map { get; }
 
-		BillStack BillStack { get; }
+	BillStack BillStack { get; }
 
-		IEnumerable<IntVec3> IngredientStackCells { get; }
+	IEnumerable<IntVec3> IngredientStackCells { get; }
 
-		string LabelShort { get; }
+	string LabelShort { get; }
 
-		bool CurrentlyUsableForBills();
+	bool CurrentlyUsableForBills();
 
-		bool UsableForBillsAfterFueling();
+	bool UsableForBillsAfterFueling();
 
-		void Notify_BillDeleted(Bill bill);
-	}
+	void Notify_BillDeleted(Bill bill);
 }

@@ -1,12 +1,11 @@
 using RimWorld;
 
-namespace Verse.AI
+namespace Verse.AI;
+
+public class ThinkNode_ChancePerHour_Nuzzle : ThinkNode_ChancePerHour
 {
-	public class ThinkNode_ChancePerHour_Nuzzle : ThinkNode_ChancePerHour
+	protected override float MtbHours(Pawn pawn)
 	{
-		protected override float MtbHours(Pawn pawn)
-		{
-			return NuzzleUtility.GetNuzzleMTBHours(pawn);
-		}
+		return NuzzleUtility.GetNuzzleMTBHours(pawn);
 	}
 }

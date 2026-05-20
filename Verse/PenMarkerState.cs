@@ -1,58 +1,57 @@
 using System.Collections.Generic;
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class PenMarkerState
 {
-	public class PenMarkerState
+	private readonly CompAnimalPenMarker marker;
+
+	private AnimalPenEnclosureStateCalculator state;
+
+	public bool Enclosed => Calc().Enclosed;
+
+	public bool Unenclosed => !Enclosed;
+
+	public bool PassableDoors => Calc().PassableDoors;
+
+	public bool HasOutsideAccess
 	{
-		private readonly CompAnimalPenMarker marker;
-
-		private AnimalPenEnclosureStateCalculator state;
-
-		public bool Enclosed => Calc().Enclosed;
-
-		public bool Unenclosed => !Enclosed;
-
-		public bool PassableDoors => Calc().PassableDoors;
-
-		public bool HasOutsideAccess
+		get
 		{
-			get
+			if (Enclosed)
 			{
-				if (Enclosed)
-				{
-					return Calc().ImpassableDoors;
-				}
-				return true;
+				return Calc().ImpassableDoors;
 			}
+			return true;
 		}
+	}
 
-		public List<Region> DirectlyConnectedRegions => Calc().DirectlyConnectedRegions;
+	public List<Region> DirectlyConnectedRegions => Calc().DirectlyConnectedRegions;
 
-		public HashSet<Region> ConnectedRegions => Calc().ConnectedRegions;
+	public HashSet<Region> ConnectedRegions => Calc().ConnectedRegions;
 
-		public bool ContainsConnectedRegion(Region r)
+	public bool ContainsConnectedRegion(Region r)
+	{
+		return Calc().ContainsConnectedRegion(r);
+	}
+
+	public PenMarkerState(CompAnimalPenMarker marker)
+	{
+		this.marker = marker;
+	}
+
+	private AnimalPenEnclosureStateCalculator Calc()
+	{
+		if (state == null)
 		{
-			return Calc().ContainsConnectedRegion(r);
+			state = new AnimalPenEnclosureStateCalculator();
+			state.Recalulate(marker.parent.Position, marker.parent.Map);
 		}
-
-		public PenMarkerState(CompAnimalPenMarker marker)
+		else if (state.NeedsRecalculation())
 		{
-			this.marker = marker;
+			state.Recalulate(marker.parent.Position, marker.parent.Map);
 		}
-
-		private AnimalPenEnclosureStateCalculator Calc()
-		{
-			if (state == null)
-			{
-				state = new AnimalPenEnclosureStateCalculator();
-				state.Recalulate(marker.parent.Position, marker.parent.Map);
-			}
-			else if (state.NeedsRecalculation())
-			{
-				state.Recalulate(marker.parent.Position, marker.parent.Map);
-			}
-			return state;
-		}
+		return state;
 	}
 }

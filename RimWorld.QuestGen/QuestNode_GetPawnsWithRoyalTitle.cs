@@ -2,54 +2,53 @@ using System.Collections.Generic;
 using System.Linq;
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_GetPawnsWithRoyalTitle : QuestNode
 {
-	public class QuestNode_GetPawnsWithRoyalTitle : QuestNode
+	public SlateRef<List<Pawn>> pawns;
+
+	[NoTranslate]
+	public SlateRef<string> storeAs;
+
+	[NoTranslate]
+	public SlateRef<string> storeCountAs;
+
+	[NoTranslate]
+	public SlateRef<string> storePawnsLabelAs;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		public SlateRef<List<Pawn>> pawns;
+		return true;
+	}
 
-		[NoTranslate]
-		public SlateRef<string> storeAs;
-
-		[NoTranslate]
-		public SlateRef<string> storeCountAs;
-
-		[NoTranslate]
-		public SlateRef<string> storePawnsLabelAs;
-
-		protected override bool TestRunInt(Slate slate)
+	protected override void RunInt()
+	{
+		Slate slate = QuestGen.slate;
+		if (pawns.GetValue(slate) == null)
 		{
-			return true;
+			return;
 		}
-
-		protected override void RunInt()
+		IEnumerable<Pawn> filteredPawns = GetFilteredPawns(pawns.GetValue(slate));
+		slate.Set(storeAs.GetValue(slate), filteredPawns);
+		if (storeCountAs.GetValue(slate) != null)
 		{
-			Slate slate = QuestGen.slate;
-			if (pawns.GetValue(slate) == null)
-			{
-				return;
-			}
-			IEnumerable<Pawn> filteredPawns = GetFilteredPawns(pawns.GetValue(slate));
-			slate.Set(storeAs.GetValue(slate), filteredPawns);
-			if (storeCountAs.GetValue(slate) != null)
-			{
-				slate.Set(storeCountAs.GetValue(slate), filteredPawns.Count());
-			}
-			if (storePawnsLabelAs.GetValue(slate) != null)
-			{
-				slate.Set(storePawnsLabelAs.GetValue(slate), filteredPawns.Select((Pawn p) => p.LabelNoCountColored.Resolve()).ToCommaList(useAnd: true));
-			}
+			slate.Set(storeCountAs.GetValue(slate), filteredPawns.Count());
 		}
-
-		private IEnumerable<Pawn> GetFilteredPawns(List<Pawn> pawns)
+		if (storePawnsLabelAs.GetValue(slate) != null)
 		{
-			_ = QuestGen.slate;
-			for (int i = 0; i < pawns.Count; i++)
+			slate.Set(storePawnsLabelAs.GetValue(slate), filteredPawns.Select((Pawn p) => p.LabelNoCountColored.Resolve()).ToCommaList(useAnd: true));
+		}
+	}
+
+	private IEnumerable<Pawn> GetFilteredPawns(List<Pawn> pawns)
+	{
+		_ = QuestGen.slate;
+		for (int i = 0; i < pawns.Count; i++)
+		{
+			if (pawns[i].royalty != null && pawns[i].royalty.AllTitlesInEffectForReading.Any())
 			{
-				if (pawns[i].royalty != null && pawns[i].royalty.AllTitlesInEffectForReading.Any())
-				{
-					yield return pawns[i];
-				}
+				yield return pawns[i];
 			}
 		}
 	}

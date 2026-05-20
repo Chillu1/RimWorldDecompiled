@@ -1,9 +1,8 @@
-namespace Verse
-{
-	public interface IPathFindCostProvider
-	{
-		ushort PathFindCostFor(Pawn pawn);
+namespace Verse;
 
-		CellRect GetOccupiedRect();
-	}
+public interface IPathFindCostProvider
+{
+	ushort PathFindCostFor(Pawn pawn);
+
+	CellRect GetOccupiedRect();
 }

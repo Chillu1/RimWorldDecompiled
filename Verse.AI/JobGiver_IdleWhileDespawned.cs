@@ -1,12 +1,11 @@
 using RimWorld;
 
-namespace Verse.AI
+namespace Verse.AI;
+
+public class JobGiver_IdleWhileDespawned : ThinkNode_JobGiver
 {
-	public class JobGiver_IdleWhileDespawned : ThinkNode_JobGiver
+	protected override Job TryGiveJob(Pawn pawn)
 	{
-		protected override Job TryGiveJob(Pawn pawn)
-		{
-			return JobMaker.MakeJob(JobDefOf.IdleWhileDespawned);
-		}
+		return JobMaker.MakeJob(JobDefOf.IdleWhileDespawned);
 	}
 }

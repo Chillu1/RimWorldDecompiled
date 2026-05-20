@@ -1,71 +1,70 @@
 using Verse;
 using Verse.Sound;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompFleshmass : ThingComp, ISizeReporter
 {
-	public class CompFleshmass : ThingComp, ISizeReporter
+	public Thing source;
+
+	private Sustainer sustainer;
+
+	public CompProperties_Fleshmass Props => (CompProperties_Fleshmass)props;
+
+	public float CurrentSize()
 	{
-		public Thing source;
+		return 1f;
+	}
 
-		private Sustainer sustainer;
+	public override void PostExposeData()
+	{
+		base.PostExposeData();
+		Scribe_References.Look(ref source, "source");
+	}
 
-		public CompProperties_Fleshmass Props => (CompProperties_Fleshmass)props;
-
-		public float CurrentSize()
+	public override void CompTickRare()
+	{
+		if (sustainer == null && !parent.Position.Fogged(parent.Map))
 		{
-			return 1f;
+			SoundInfo info = SoundInfo.InMap(new TargetInfo(parent.Position, parent.Map), MaintenanceType.PerTickRare);
+			sustainer = SustainerAggregatorUtility.AggregateOrSpawnSustainerFor(this, SoundDefOf.FleshmassAmbience, info);
 		}
+		sustainer?.Maintain();
+	}
 
-		public override void PostExposeData()
+	public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
+	{
+		if (sustainer != null)
 		{
-			base.PostExposeData();
-			Scribe_References.Look(ref source, "source");
-		}
-
-		public override void CompTickRare()
-		{
-			if (sustainer == null && !parent.Position.Fogged(parent.Map))
+			if (sustainer.externalParams.sizeAggregator == null)
 			{
-				SoundInfo info = SoundInfo.InMap(new TargetInfo(parent.Position, parent.Map), MaintenanceType.PerTickRare);
-				sustainer = SustainerAggregatorUtility.AggregateOrSpawnSustainerFor(this, SoundDefOf.FleshmassAmbience, info);
+				sustainer.externalParams.sizeAggregator = new SoundSizeAggregator();
 			}
-			sustainer?.Maintain();
+			sustainer.externalParams.sizeAggregator.RemoveReporter(this);
 		}
+		sustainer = null;
+	}
 
-		public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
+	public override void Notify_Killed(Map prevMap, DamageInfo? dinfo = null)
+	{
+		if ((dinfo?.Instigator?.Faction == null || dinfo.Value.Instigator.Faction == Faction.OfPlayer) && source != null && source.Spawned)
 		{
-			if (sustainer != null)
-			{
-				if (sustainer.externalParams.sizeAggregator == null)
-				{
-					sustainer.externalParams.sizeAggregator = new SoundSizeAggregator();
-				}
-				sustainer.externalParams.sizeAggregator.RemoveReporter(this);
-			}
-			sustainer = null;
+			source.TryGetComp<CompGrowsFleshmassTendrils>()?.Notify_FleshmassDestroyedByPlayer(parent);
 		}
+	}
 
-		public override void Notify_Killed(Map prevMap, DamageInfo? dinfo = null)
-		{
-			if ((dinfo?.Instigator?.Faction == null || dinfo.Value.Instigator.Faction == Faction.OfPlayer) && source != null && source.Spawned)
-			{
-				source.TryGetComp<CompGrowsFleshmassTendrils>()?.Notify_FleshmassDestroyedByPlayer(parent);
-			}
-		}
+	public override void PostDestroy(DestroyMode mode, Map previousMap)
+	{
+		source.TryGetComp<CompGrowsFleshmassTendrils>()?.Notify_FleshmassDestroyed(parent);
+	}
 
-		public override void PostDestroy(DestroyMode mode, Map previousMap)
+	public override string CompInspectStringExtra()
+	{
+		CompGrowsFleshmassTendrils compGrowsFleshmassTendrils = source?.TryGetComp<CompGrowsFleshmassTendrils>();
+		if (parent.def == ThingDefOf.Fleshmass_Active && compGrowsFleshmassTendrils != null && compGrowsFleshmassTendrils.Props.fleshbeastBirthThresholdRange.HasValue)
 		{
-			source.TryGetComp<CompGrowsFleshmassTendrils>()?.Notify_FleshmassDestroyed(parent);
+			return "ActiveFleshmassInspect".Translate();
 		}
-
-		public override string CompInspectStringExtra()
-		{
-			CompGrowsFleshmassTendrils compGrowsFleshmassTendrils = source?.TryGetComp<CompGrowsFleshmassTendrils>();
-			if (parent.def == ThingDefOf.Fleshmass_Active && compGrowsFleshmassTendrils != null && compGrowsFleshmassTendrils.Props.fleshbeastBirthThresholdRange.HasValue)
-			{
-				return "ActiveFleshmassInspect".Translate();
-			}
-			return "";
-		}
+		return "";
 	}
 }

@@ -1,11 +1,10 @@
-namespace Verse
+namespace Verse;
+
+public enum Favorability : byte
 {
-	public enum Favorability : byte
-	{
-		VeryBad,
-		Bad,
-		Neutral,
-		Good,
-		VeryGood
-	}
+	VeryBad,
+	Bad,
+	Neutral,
+	Good,
+	VeryGood
 }

@@ -1,20 +1,19 @@
 using System;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompDisruptorFlarePack : CompAIUsablePack
 {
-	public class CompDisruptorFlarePack : CompAIUsablePack
+	public new CompProperties_DisruptorFlarePack Props => (CompProperties_DisruptorFlarePack)props;
+
+	protected override float ChanceToUse(Pawn wearer)
 	{
-		public new CompProperties_DisruptorFlarePack Props => (CompProperties_DisruptorFlarePack)props;
+		return 0f;
+	}
 
-		protected override float ChanceToUse(Pawn wearer)
-		{
-			return 0f;
-		}
-
-		protected override void UsePack(Pawn wearer)
-		{
-			throw new NotImplementedException();
-		}
+	protected override void UsePack(Pawn wearer)
+	{
+		throw new NotImplementedException();
 	}
 }

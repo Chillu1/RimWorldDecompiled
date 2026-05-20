@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum ApparelRequirementSource
 {
-	public enum ApparelRequirementSource
-	{
-		Invalid,
-		Title,
-		Role
-	}
+	Invalid,
+	Title,
+	Role
 }

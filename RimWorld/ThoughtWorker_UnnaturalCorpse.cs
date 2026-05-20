@@ -1,20 +1,19 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_UnnaturalCorpse : ThoughtWorker
 {
-	public class ThoughtWorker_UnnaturalCorpse : ThoughtWorker
+	protected override ThoughtState CurrentStateInternal(Pawn p)
 	{
-		protected override ThoughtState CurrentStateInternal(Pawn p)
+		if (!ModsConfig.AnomalyActive)
 		{
-			if (!ModsConfig.AnomalyActive)
-			{
-				return false;
-			}
-			if (!Find.Anomaly.TryGetUnnaturalCorpseTrackerForHaunted(p, out var _))
-			{
-				return false;
-			}
-			return ThoughtState.ActiveDefault;
+			return false;
 		}
+		if (!Find.Anomaly.TryGetUnnaturalCorpseTrackerForHaunted(p, out var _))
+		{
+			return false;
+		}
+		return ThoughtState.ActiveDefault;
 	}
 }

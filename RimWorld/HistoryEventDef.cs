@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class HistoryEventDef : Def
 {
-	public class HistoryEventDef : Def
-	{
-		public int maxRemembered = 20;
-	}
+	public int maxRemembered = 20;
 }

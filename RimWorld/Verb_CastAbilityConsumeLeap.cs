@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Verb_CastAbilityConsumeLeap : Verb_CastAbilityJump
 {
-	public class Verb_CastAbilityConsumeLeap : Verb_CastAbilityJump
-	{
-		public override ThingDef JumpFlyerDef => ThingDefOf.PawnFlyer_ConsumeLeap;
-	}
+	public override ThingDef JumpFlyerDef => ThingDefOf.PawnFlyer_ConsumeLeap;
 }

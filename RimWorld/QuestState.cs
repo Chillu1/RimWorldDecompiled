@@ -1,13 +1,12 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum QuestState
 {
-	public enum QuestState
-	{
-		NotYetAccepted,
-		Ongoing,
-		EndedUnknownOutcome,
-		EndedOfferExpired,
-		EndedSuccess,
-		EndedFailed,
-		EndedInvalid
-	}
+	NotYetAccepted,
+	Ongoing,
+	EndedUnknownOutcome,
+	EndedOfferExpired,
+	EndedSuccess,
+	EndedFailed,
+	EndedInvalid
 }

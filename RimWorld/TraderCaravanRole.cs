@@ -1,11 +1,10 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum TraderCaravanRole
 {
-	public enum TraderCaravanRole
-	{
-		None,
-		Trader,
-		Carrier,
-		Guard,
-		Chattel
-	}
+	None,
+	Trader,
+	Carrier,
+	Guard,
+	Chattel
 }

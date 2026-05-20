@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum ResourceCountPriority : byte
 {
-	public enum ResourceCountPriority : byte
-	{
-		Uncounted,
-		Last,
-		Middle,
-		First
-	}
+	Uncounted,
+	Last,
+	Middle,
+	First
 }

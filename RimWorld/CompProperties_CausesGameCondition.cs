@@ -1,20 +1,19 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_CausesGameCondition : CompProperties
 {
-	public class CompProperties_CausesGameCondition : CompProperties
+	public GameConditionDef conditionDef;
+
+	public int worldRange;
+
+	public bool hideSource;
+
+	public bool preventConditionStacking = true;
+
+	public CompProperties_CausesGameCondition()
 	{
-		public GameConditionDef conditionDef;
-
-		public int worldRange;
-
-		public bool hideSource;
-
-		public bool preventConditionStacking = true;
-
-		public CompProperties_CausesGameCondition()
-		{
-			compClass = typeof(CompCauseGameCondition);
-		}
+		compClass = typeof(CompCauseGameCondition);
 	}
 }

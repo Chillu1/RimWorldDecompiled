@@ -1,120 +1,119 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Building_WorkTable : Building, IBillGiver, IBillGiverWithTickAction
 {
-	public class Building_WorkTable : Building, IBillGiver, IBillGiverWithTickAction
+	public BillStack billStack;
+
+	private CompPowerTrader powerComp;
+
+	private CompRefuelable refuelableComp;
+
+	private CompBreakdownable breakdownableComp;
+
+	private CompMoteEmitter moteEmitterComp;
+
+	public bool CanWorkWithoutPower
 	{
-		public BillStack billStack;
-
-		private CompPowerTrader powerComp;
-
-		private CompRefuelable refuelableComp;
-
-		private CompBreakdownable breakdownableComp;
-
-		private CompMoteEmitter moteEmitterComp;
-
-		public bool CanWorkWithoutPower
+		get
 		{
-			get
+			if (powerComp == null)
 			{
-				if (powerComp == null)
-				{
-					return true;
-				}
-				if (def.building.unpoweredWorkTableWorkSpeedFactor > 0f)
-				{
-					return true;
-				}
-				return false;
+				return true;
 			}
+			if (def.building.unpoweredWorkTableWorkSpeedFactor > 0f)
+			{
+				return true;
+			}
+			return false;
 		}
+	}
 
-		public bool CanWorkWithoutFuel => refuelableComp == null;
+	public bool CanWorkWithoutFuel => refuelableComp == null;
 
-		public BillStack BillStack => billStack;
+	public BillStack BillStack => billStack;
 
-		public IntVec3 BillInteractionCell => InteractionCell;
+	public IntVec3 BillInteractionCell => InteractionCell;
 
-		public IEnumerable<IntVec3> IngredientStackCells => GenAdj.CellsOccupiedBy(this);
+	public IEnumerable<IntVec3> IngredientStackCells => GenAdj.CellsOccupiedBy(this);
 
-		public Building_WorkTable()
+	public Building_WorkTable()
+	{
+		billStack = new BillStack(this);
+	}
+
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Deep.Look(ref billStack, "billStack", this);
+	}
+
+	public override void SpawnSetup(Map map, bool respawningAfterLoad)
+	{
+		base.SpawnSetup(map, respawningAfterLoad);
+		powerComp = GetComp<CompPowerTrader>();
+		refuelableComp = GetComp<CompRefuelable>();
+		breakdownableComp = GetComp<CompBreakdownable>();
+		moteEmitterComp = GetComp<CompMoteEmitter>();
+		if (base.BeingTransportedOnGravship)
 		{
-			billStack = new BillStack(this);
+			return;
 		}
-
-		public override void ExposeData()
+		foreach (Bill item in billStack)
 		{
-			base.ExposeData();
-			Scribe_Deep.Look(ref billStack, "billStack", this);
+			item.ValidateSettings();
 		}
+	}
 
-		public override void SpawnSetup(Map map, bool respawningAfterLoad)
+	public virtual void UsedThisTick()
+	{
+		if (refuelableComp != null)
 		{
-			base.SpawnSetup(map, respawningAfterLoad);
-			powerComp = GetComp<CompPowerTrader>();
-			refuelableComp = GetComp<CompRefuelable>();
-			breakdownableComp = GetComp<CompBreakdownable>();
-			moteEmitterComp = GetComp<CompMoteEmitter>();
-			if (base.BeingTransportedOnGravship)
-			{
-				return;
-			}
-			foreach (Bill item in billStack)
-			{
-				item.ValidateSettings();
-			}
+			refuelableComp.Notify_UsedThisTick();
 		}
+		if (moteEmitterComp != null)
+		{
+			if (!moteEmitterComp.MoteLive)
+			{
+				moteEmitterComp.Emit();
+			}
+			moteEmitterComp.Maintain();
+		}
+	}
 
-		public virtual void UsedThisTick()
+	public bool CurrentlyUsableForBills()
+	{
+		if (!UsableForBillsAfterFueling())
 		{
-			if (refuelableComp != null)
-			{
-				refuelableComp.Notify_UsedThisTick();
-			}
-			if (moteEmitterComp != null)
-			{
-				if (!moteEmitterComp.MoteLive)
-				{
-					moteEmitterComp.Emit();
-				}
-				moteEmitterComp.Maintain();
-			}
+			return false;
 		}
+		if (!CanWorkWithoutPower && (powerComp == null || !powerComp.PowerOn))
+		{
+			return false;
+		}
+		if (!CanWorkWithoutFuel && (refuelableComp == null || !refuelableComp.HasFuel))
+		{
+			return false;
+		}
+		return true;
+	}
 
-		public bool CurrentlyUsableForBills()
+	public bool UsableForBillsAfterFueling()
+	{
+		if (!CanWorkWithoutPower && (powerComp == null || !powerComp.PowerOn))
 		{
-			if (!UsableForBillsAfterFueling())
-			{
-				return false;
-			}
-			if (!CanWorkWithoutPower && (powerComp == null || !powerComp.PowerOn))
-			{
-				return false;
-			}
-			if (!CanWorkWithoutFuel && (refuelableComp == null || !refuelableComp.HasFuel))
-			{
-				return false;
-			}
-			return true;
+			return false;
 		}
+		if (breakdownableComp != null && breakdownableComp.BrokenDown)
+		{
+			return false;
+		}
+		return true;
+	}
 
-		public bool UsableForBillsAfterFueling()
-		{
-			if (!CanWorkWithoutPower && (powerComp == null || !powerComp.PowerOn))
-			{
-				return false;
-			}
-			if (breakdownableComp != null && breakdownableComp.BrokenDown)
-			{
-				return false;
-			}
-			return true;
-		}
-
-		public virtual void Notify_BillDeleted(Bill bill)
-		{
-		}
+	public virtual void Notify_BillDeleted(Bill bill)
+	{
 	}
 }

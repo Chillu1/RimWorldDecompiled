@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class StorytellerCompProperties_ClassicIntro : StorytellerCompProperties
 {
-	public class StorytellerCompProperties_ClassicIntro : StorytellerCompProperties
+	public StorytellerCompProperties_ClassicIntro()
 	{
-		public StorytellerCompProperties_ClassicIntro()
-		{
-			compClass = typeof(StorytellerComp_ClassicIntro);
-		}
+		compClass = typeof(StorytellerComp_ClassicIntro);
 	}
 }

@@ -4,94 +4,93 @@ using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class StockGenerator
 {
-	public abstract class StockGenerator
+	[Unsaved(false)]
+	public TraderKindDef trader;
+
+	public IntRange countRange = IntRange.Zero;
+
+	public List<ThingDefCountRangeClass> customCountRanges;
+
+	public FloatRange totalPriceRange = FloatRange.Zero;
+
+	public TechLevel maxTechLevelGenerate = TechLevel.Archotech;
+
+	public TechLevel maxTechLevelBuy = TechLevel.Archotech;
+
+	public PriceType price = PriceType.Normal;
+
+	public virtual void ResolveReferences(TraderKindDef trader)
 	{
-		[Unsaved(false)]
-		public TraderKindDef trader;
+		this.trader = trader;
+	}
 
-		public IntRange countRange = IntRange.Zero;
+	public virtual IEnumerable<string> ConfigErrors(TraderKindDef parentDef)
+	{
+		return Enumerable.Empty<string>();
+	}
 
-		public List<ThingDefCountRangeClass> customCountRanges;
+	public abstract IEnumerable<Thing> GenerateThings(PlanetTile forTile, Faction faction = null);
 
-		public FloatRange totalPriceRange = FloatRange.Zero;
+	public abstract bool HandlesThingDef(ThingDef thingDef);
 
-		public TechLevel maxTechLevelGenerate = TechLevel.Archotech;
-
-		public TechLevel maxTechLevelBuy = TechLevel.Archotech;
-
-		public PriceType price = PriceType.Normal;
-
-		public virtual void ResolveReferences(TraderKindDef trader)
+	public virtual Tradeability TradeabilityFor(ThingDef thingDef)
+	{
+		if (!HandlesThingDef(thingDef))
 		{
-			this.trader = trader;
+			return Tradeability.None;
 		}
+		return thingDef.tradeability;
+	}
 
-		public virtual IEnumerable<string> ConfigErrors(TraderKindDef parentDef)
+	public bool TryGetPriceType(ThingDef thingDef, TradeAction action, out PriceType priceType)
+	{
+		if (!HandlesThingDef(thingDef))
 		{
-			return Enumerable.Empty<string>();
+			priceType = PriceType.Undefined;
+			return false;
 		}
+		priceType = price;
+		return true;
+	}
 
-		public abstract IEnumerable<Thing> GenerateThings(PlanetTile forTile, Faction faction = null);
-
-		public abstract bool HandlesThingDef(ThingDef thingDef);
-
-		public virtual Tradeability TradeabilityFor(ThingDef thingDef)
+	protected int RandomCountOf(ThingDef def)
+	{
+		IntRange intRange = countRange;
+		if (customCountRanges != null)
 		{
-			if (!HandlesThingDef(thingDef))
+			for (int i = 0; i < customCountRanges.Count; i++)
 			{
-				return Tradeability.None;
-			}
-			return thingDef.tradeability;
-		}
-
-		public bool TryGetPriceType(ThingDef thingDef, TradeAction action, out PriceType priceType)
-		{
-			if (!HandlesThingDef(thingDef))
-			{
-				priceType = PriceType.Undefined;
-				return false;
-			}
-			priceType = price;
-			return true;
-		}
-
-		protected int RandomCountOf(ThingDef def)
-		{
-			IntRange intRange = countRange;
-			if (customCountRanges != null)
-			{
-				for (int i = 0; i < customCountRanges.Count; i++)
+				if (customCountRanges[i].thingDef == def)
 				{
-					if (customCountRanges[i].thingDef == def)
-					{
-						intRange = customCountRanges[i].countRange;
-						break;
-					}
+					intRange = customCountRanges[i].countRange;
+					break;
 				}
 			}
-			if (intRange.max <= 0 && totalPriceRange.max <= 0f)
-			{
-				return 0;
-			}
-			if (intRange.max > 0 && totalPriceRange.max <= 0f)
-			{
-				return intRange.RandomInRange;
-			}
-			if (intRange.max <= 0 && totalPriceRange.max > 0f)
-			{
-				return Mathf.RoundToInt(totalPriceRange.RandomInRange / def.BaseMarketValue);
-			}
-			int num = 0;
-			int randomInRange;
-			do
-			{
-				randomInRange = intRange.RandomInRange;
-				num++;
-			}
-			while (num <= 100 && !totalPriceRange.Includes((float)randomInRange * def.BaseMarketValue));
-			return randomInRange;
 		}
+		if (intRange.max <= 0 && totalPriceRange.max <= 0f)
+		{
+			return 0;
+		}
+		if (intRange.max > 0 && totalPriceRange.max <= 0f)
+		{
+			return intRange.RandomInRange;
+		}
+		if (intRange.max <= 0 && totalPriceRange.max > 0f)
+		{
+			return Mathf.RoundToInt(totalPriceRange.RandomInRange / def.BaseMarketValue);
+		}
+		int num = 0;
+		int randomInRange;
+		do
+		{
+			randomInRange = intRange.RandomInRange;
+			num++;
+		}
+		while (num <= 100 && !totalPriceRange.Includes((float)randomInRange * def.BaseMarketValue));
+		return randomInRange;
 	}
 }

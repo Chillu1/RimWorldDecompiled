@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public class MechWeightClassDef : Def
 {
-	public class MechWeightClassDef : Def
-	{
-		public bool canResurrect = true;
-	}
+	public bool canResurrect = true;
 }

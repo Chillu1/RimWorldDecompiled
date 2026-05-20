@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum TemperatureDisplayMode : byte
 {
-	public enum TemperatureDisplayMode : byte
-	{
-		Celsius,
-		Fahrenheit,
-		Kelvin
-	}
+	Celsius,
+	Fahrenheit,
+	Kelvin
 }

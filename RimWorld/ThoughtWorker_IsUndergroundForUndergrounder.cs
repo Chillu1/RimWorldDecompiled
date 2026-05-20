@@ -1,13 +1,12 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_IsUndergroundForUndergrounder : ThoughtWorker
 {
-	public class ThoughtWorker_IsUndergroundForUndergrounder : ThoughtWorker
+	protected override ThoughtState CurrentStateInternal(Pawn p)
 	{
-		protected override ThoughtState CurrentStateInternal(Pawn p)
-		{
-			bool isNaturalRoof;
-			return ThoughtWorker_IsIndoorsForUndergrounder.IsAwakeAndIndoors(p, out isNaturalRoof) && isNaturalRoof;
-		}
+		bool isNaturalRoof;
+		return ThoughtWorker_IsIndoorsForUndergrounder.IsAwakeAndIndoors(p, out isNaturalRoof) && isNaturalRoof;
 	}
 }

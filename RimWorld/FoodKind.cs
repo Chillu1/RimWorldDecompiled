@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum FoodKind
 {
-	public enum FoodKind
-	{
-		Meat,
-		NonMeat,
-		Any
-	}
+	Meat,
+	NonMeat,
+	Any
 }

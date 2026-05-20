@@ -3,40 +3,39 @@ using System.Collections.Generic;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_RevenantSleep : JobDriver
 {
-	public class JobDriver_RevenantSleep : JobDriver
+	private CompRevenant Comp => pawn.TryGetComp<CompRevenant>();
+
+	public override bool TryMakePreToilReservations(bool errorOnFailed)
 	{
-		private CompRevenant Comp => pawn.TryGetComp<CompRevenant>();
+		return true;
+	}
 
-		public override bool TryMakePreToilReservations(bool errorOnFailed)
+	protected override IEnumerable<Toil> MakeNewToils()
+	{
+		Toil toil = ToilMaker.MakeToil("MakeNewToils");
+		toil.initAction = (Action)Delegate.Combine(toil.initAction, (Action)delegate
 		{
-			return true;
-		}
-
-		protected override IEnumerable<Toil> MakeNewToils()
+			base.Map.pawnDestinationReservationManager.Reserve(pawn, job, pawn.Position);
+			pawn.pather?.StopDead();
+		});
+		toil.tickIntervalAction = (Action<int>)Delegate.Combine(toil.tickIntervalAction, (Action<int>)delegate(int delta)
 		{
-			Toil toil = ToilMaker.MakeToil("MakeNewToils");
-			toil.initAction = (Action)Delegate.Combine(toil.initAction, (Action)delegate
+			if (Find.TickManager.TicksGame >= Comp.nextHypnosis && Rand.MTBEventOccurs(2500f, 1f, delta))
 			{
-				base.Map.pawnDestinationReservationManager.Reserve(pawn, job, pawn.Position);
-				pawn.pather?.StopDead();
-			});
-			toil.tickIntervalAction = (Action<int>)Delegate.Combine(toil.tickIntervalAction, (Action<int>)delegate(int delta)
-			{
-				if (Find.TickManager.TicksGame >= Comp.nextHypnosis && Rand.MTBEventOccurs(2500f, 1f, delta))
+				Pawn pawn = RevenantUtility.ScanForTarget(base.pawn);
+				if (pawn != null)
 				{
-					Pawn pawn = RevenantUtility.ScanForTarget(base.pawn);
-					if (pawn != null)
-					{
-						base.pawn.mindState.enemyTarget = pawn;
-						Comp.revenantState = RevenantState.Attack;
-						EndJobWith(JobCondition.InterruptForced);
-					}
+					base.pawn.mindState.enemyTarget = pawn;
+					Comp.revenantState = RevenantState.Attack;
+					EndJobWith(JobCondition.InterruptForced);
 				}
-			});
-			toil.defaultCompleteMode = ToilCompleteMode.Never;
-			yield return toil;
-		}
+			}
+		});
+		toil.defaultCompleteMode = ToilCompleteMode.Never;
+		yield return toil;
 	}
 }

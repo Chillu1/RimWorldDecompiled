@@ -1,14 +1,13 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class BossGroupWave
 {
-	public class BossGroupWave
-	{
-		public int bossCount;
+	public int bossCount;
 
-		public List<ThingDef> bossApparel;
+	public List<ThingDef> bossApparel;
 
-		public List<PawnKindDefCount> escorts = new List<PawnKindDefCount>();
-	}
+	public List<PawnKindDefCount> escorts = new List<PawnKindDefCount>();
 }

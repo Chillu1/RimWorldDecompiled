@@ -1,11 +1,10 @@
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public enum QuestAskerType
 {
-	public enum QuestAskerType
-	{
-		Nobody,
-		FactionLeader,
-		FactionMember,
-		FactionlessWorldPawn,
-		ColonistOrPrisoner
-	}
+	Nobody,
+	FactionLeader,
+	FactionMember,
+	FactionlessWorldPawn,
+	ColonistOrPrisoner
 }

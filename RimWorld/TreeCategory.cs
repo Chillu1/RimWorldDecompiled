@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum TreeCategory
 {
-	public enum TreeCategory
-	{
-		None,
-		Mini,
-		Full,
-		Super
-	}
+	None,
+	Mini,
+	Full,
+	Super
 }

@@ -1,56 +1,55 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public class EscapeShip : MapParent
 {
-	public class EscapeShip : MapParent
+	private Material cachedPostGenerateMat;
+
+	public override Texture2D ExpandingIcon
 	{
-		private Material cachedPostGenerateMat;
-
-		public override Texture2D ExpandingIcon
+		get
 		{
-			get
+			if (!base.HasMap || base.Faction == null)
 			{
-				if (!base.HasMap || base.Faction == null)
-				{
-					return base.ExpandingIcon;
-				}
-				return base.Faction.def.FactionIcon;
+				return base.ExpandingIcon;
 			}
+			return base.Faction.def.FactionIcon;
 		}
+	}
 
-		public override Color ExpandingIconColor
+	public override Color ExpandingIconColor
+	{
+		get
 		{
-			get
+			if (!base.HasMap || base.Faction == null)
 			{
-				if (!base.HasMap || base.Faction == null)
-				{
-					return base.ExpandingIconColor;
-				}
-				return base.Faction.Color;
+				return base.ExpandingIconColor;
 			}
+			return base.Faction.Color;
 		}
+	}
 
-		public override Material Material
+	public override Material Material
+	{
+		get
 		{
-			get
+			if (!base.HasMap || base.Faction == null)
 			{
-				if (!base.HasMap || base.Faction == null)
-				{
-					return base.Material;
-				}
-				if (cachedPostGenerateMat == null)
-				{
-					cachedPostGenerateMat = MaterialPool.MatFrom(base.Faction.def.settlementTexturePath, ShaderDatabase.WorldOverlayTransparentLit, base.Faction.Color, 3550);
-				}
-				return cachedPostGenerateMat;
+				return base.Material;
 			}
+			if (cachedPostGenerateMat == null)
+			{
+				cachedPostGenerateMat = MaterialPool.MatFrom(base.Faction.def.settlementTexturePath, ShaderDatabase.WorldOverlayTransparentLit, base.Faction.Color, 3550);
+			}
+			return cachedPostGenerateMat;
 		}
+	}
 
-		public override void PostMapGenerate()
-		{
-			base.PostMapGenerate();
-			Find.World.renderer.SetDirty<WorldDrawLayer_WorldObjects>(base.Tile.Layer);
-		}
+	public override void PostMapGenerate()
+	{
+		base.PostMapGenerate();
+		Find.World.renderer.SetDirty<WorldDrawLayer_WorldObjects>(base.Tile.Layer);
 	}
 }

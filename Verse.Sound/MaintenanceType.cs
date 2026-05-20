@@ -1,10 +1,9 @@
-namespace Verse.Sound
+namespace Verse.Sound;
+
+public enum MaintenanceType : byte
 {
-	public enum MaintenanceType : byte
-	{
-		None,
-		PerTick,
-		PerFrame,
-		PerTickRare
-	}
+	None,
+	PerTick,
+	PerFrame,
+	PerTickRare
 }

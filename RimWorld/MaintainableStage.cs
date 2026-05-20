@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum MaintainableStage
 {
-	public enum MaintainableStage
-	{
-		Healthy,
-		NeedsMaintenance,
-		Damaging
-	}
+	Healthy,
+	NeedsMaintenance,
+	Damaging
 }

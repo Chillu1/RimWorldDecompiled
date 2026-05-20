@@ -1,63 +1,62 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Pawn_GuiltTracker : IExposable
 {
-	public class Pawn_GuiltTracker : IExposable
+	private Pawn pawn;
+
+	public bool awaitingExecution;
+
+	private int guiltyTicksLeft;
+
+	private const int DefaultGuiltyDuration = 60000;
+
+	public bool IsGuilty
 	{
-		private Pawn pawn;
-
-		public bool awaitingExecution;
-
-		private int guiltyTicksLeft;
-
-		private const int DefaultGuiltyDuration = 60000;
-
-		public bool IsGuilty
+		get
 		{
-			get
+			if (guiltyTicksLeft <= 0)
 			{
-				if (guiltyTicksLeft <= 0)
+				if (pawn.InAggroMentalState)
 				{
-					if (pawn.InAggroMentalState)
-					{
-						return pawn.MentalStateDef.allowGuilty;
-					}
-					return false;
+					return pawn.MentalStateDef.allowGuilty;
 				}
-				return true;
+				return false;
 			}
+			return true;
 		}
+	}
 
-		public int TicksUntilInnocent => guiltyTicksLeft;
+	public int TicksUntilInnocent => guiltyTicksLeft;
 
-		public string Tip => "GuiltyDesc".Translate() + ": " + TicksUntilInnocent.ToStringTicksToPeriod();
+	public string Tip => "GuiltyDesc".Translate() + ": " + TicksUntilInnocent.ToStringTicksToPeriod();
 
-		public Pawn_GuiltTracker(Pawn pawn)
+	public Pawn_GuiltTracker(Pawn pawn)
+	{
+		this.pawn = pawn;
+	}
+
+	public void ExposeData()
+	{
+		Scribe_Values.Look(ref guiltyTicksLeft, "guiltyTicksLeft", 0);
+		Scribe_Values.Look(ref awaitingExecution, "awaitingExecution", defaultValue: false);
+	}
+
+	public void Notify_Guilty(int durationTicks = 60000)
+	{
+		guiltyTicksLeft = durationTicks;
+	}
+
+	public void GuiltTrackerTickInterval(int delta)
+	{
+		if (guiltyTicksLeft > 0)
 		{
-			this.pawn = pawn;
+			guiltyTicksLeft -= delta;
 		}
-
-		public void ExposeData()
+		else if (!IsGuilty)
 		{
-			Scribe_Values.Look(ref guiltyTicksLeft, "guiltyTicksLeft", 0);
-			Scribe_Values.Look(ref awaitingExecution, "awaitingExecution", defaultValue: false);
-		}
-
-		public void Notify_Guilty(int durationTicks = 60000)
-		{
-			guiltyTicksLeft = durationTicks;
-		}
-
-		public void GuiltTrackerTickInterval(int delta)
-		{
-			if (guiltyTicksLeft > 0)
-			{
-				guiltyTicksLeft -= delta;
-			}
-			else if (!IsGuilty)
-			{
-				awaitingExecution = false;
-			}
+			awaitingExecution = false;
 		}
 	}
 }

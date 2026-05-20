@@ -1,30 +1,29 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class GenStep_Ambush_Hidden : GenStep_Ambush
 {
-	public class GenStep_Ambush_Hidden : GenStep_Ambush
+	public override int SeedPart => 921085483;
+
+	protected override RectTrigger MakeRectTrigger()
 	{
-		public override int SeedPart => 921085483;
+		RectTrigger rectTrigger = base.MakeRectTrigger();
+		rectTrigger.activateOnExplosion = true;
+		return rectTrigger;
+	}
 
-		protected override RectTrigger MakeRectTrigger()
+	protected override SignalAction_Ambush MakeAmbushSignalAction(CellRect rectToDefend, IntVec3 root, GenStepParams parms)
+	{
+		SignalAction_Ambush signalAction_Ambush = base.MakeAmbushSignalAction(rectToDefend, root, parms);
+		if (root.IsValid)
 		{
-			RectTrigger rectTrigger = base.MakeRectTrigger();
-			rectTrigger.activateOnExplosion = true;
-			return rectTrigger;
+			signalAction_Ambush.spawnNear = root;
 		}
-
-		protected override SignalAction_Ambush MakeAmbushSignalAction(CellRect rectToDefend, IntVec3 root, GenStepParams parms)
+		else
 		{
-			SignalAction_Ambush signalAction_Ambush = base.MakeAmbushSignalAction(rectToDefend, root, parms);
-			if (root.IsValid)
-			{
-				signalAction_Ambush.spawnNear = root;
-			}
-			else
-			{
-				signalAction_Ambush.spawnAround = rectToDefend;
-			}
-			return signalAction_Ambush;
+			signalAction_Ambush.spawnAround = rectToDefend;
 		}
+		return signalAction_Ambush;
 	}
 }

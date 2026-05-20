@@ -1,117 +1,116 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Bill_ProductionWithUft : Bill_Production
 {
-	public class Bill_ProductionWithUft : Bill_Production
+	private UnfinishedThing boundUftInt;
+
+	protected override string StatusString
 	{
-		private UnfinishedThing boundUftInt;
-
-		protected override string StatusString
+		get
 		{
-			get
+			if (BoundWorker == null)
 			{
-				if (BoundWorker == null)
-				{
-					return (base.StatusString ?? "").Trim();
-				}
-				return ("BoundWorkerIs".Translate(BoundWorker.LabelShort, BoundWorker) + base.StatusString).Trim();
+				return (base.StatusString ?? "").Trim();
 			}
+			return ("BoundWorkerIs".Translate(BoundWorker.LabelShort, BoundWorker) + base.StatusString).Trim();
 		}
+	}
 
-		public Pawn BoundWorker
+	public Pawn BoundWorker
+	{
+		get
 		{
-			get
+			if (boundUftInt == null)
 			{
-				if (boundUftInt == null)
+				return null;
+			}
+			Pawn creator = boundUftInt.Creator;
+			if (creator == null || creator.Downed || creator.HostFaction != null || creator.Destroyed || !creator.Spawned)
+			{
+				boundUftInt = null;
+				return null;
+			}
+			if (billStack.billGiver is Thing thing)
+			{
+				WorkTypeDef workTypeDef = null;
+				List<WorkGiverDef> allDefsListForReading = DefDatabase<WorkGiverDef>.AllDefsListForReading;
+				for (int i = 0; i < allDefsListForReading.Count; i++)
 				{
-					return null;
+					if (allDefsListForReading[i].fixedBillGiverDefs != null && allDefsListForReading[i].fixedBillGiverDefs.Contains(thing.def))
+					{
+						workTypeDef = allDefsListForReading[i].workType;
+						break;
+					}
 				}
-				Pawn creator = boundUftInt.Creator;
-				if (creator == null || creator.Downed || creator.HostFaction != null || creator.Destroyed || !creator.Spawned)
+				if (workTypeDef != null && !creator.workSettings.WorkIsActive(workTypeDef))
 				{
 					boundUftInt = null;
 					return null;
 				}
-				if (billStack.billGiver is Thing thing)
-				{
-					WorkTypeDef workTypeDef = null;
-					List<WorkGiverDef> allDefsListForReading = DefDatabase<WorkGiverDef>.AllDefsListForReading;
-					for (int i = 0; i < allDefsListForReading.Count; i++)
-					{
-						if (allDefsListForReading[i].fixedBillGiverDefs != null && allDefsListForReading[i].fixedBillGiverDefs.Contains(thing.def))
-						{
-							workTypeDef = allDefsListForReading[i].workType;
-							break;
-						}
-					}
-					if (workTypeDef != null && !creator.workSettings.WorkIsActive(workTypeDef))
-					{
-						boundUftInt = null;
-						return null;
-					}
-				}
-				return creator;
 			}
+			return creator;
 		}
+	}
 
-		public UnfinishedThing BoundUft => boundUftInt;
+	public UnfinishedThing BoundUft => boundUftInt;
 
-		public void SetBoundUft(UnfinishedThing value, bool setOtherLink = true)
+	public void SetBoundUft(UnfinishedThing value, bool setOtherLink = true)
+	{
+		if (value == boundUftInt)
 		{
-			if (value == boundUftInt)
+			return;
+		}
+		if (value != null && value.Destroyed)
+		{
+			Log.Error($"Tried to bound destroyed UnfinishedThing {value} to bill {this}.");
+			return;
+		}
+		UnfinishedThing unfinishedThing = boundUftInt;
+		boundUftInt = value;
+		if (setOtherLink)
+		{
+			if (unfinishedThing != null && unfinishedThing.BoundBill == this)
 			{
-				return;
+				unfinishedThing.BoundBill = null;
 			}
-			if (value != null && value.Destroyed)
+			if (value != null && value.BoundBill != this)
 			{
-				Log.Error($"Tried to bound destroyed UnfinishedThing {value} to bill {this}.");
-				return;
-			}
-			UnfinishedThing unfinishedThing = boundUftInt;
-			boundUftInt = value;
-			if (setOtherLink)
-			{
-				if (unfinishedThing != null && unfinishedThing.BoundBill == this)
-				{
-					unfinishedThing.BoundBill = null;
-				}
-				if (value != null && value.BoundBill != this)
-				{
-					boundUftInt.BoundBill = this;
-				}
+				boundUftInt.BoundBill = this;
 			}
 		}
+	}
 
-		public Bill_ProductionWithUft()
-		{
-		}
+	public Bill_ProductionWithUft()
+	{
+	}
 
-		public Bill_ProductionWithUft(RecipeDef recipe, Precept_ThingStyle precept = null)
-			: base(recipe, precept)
-		{
-		}
+	public Bill_ProductionWithUft(RecipeDef recipe, Precept_ThingStyle precept = null)
+		: base(recipe, precept)
+	{
+	}
 
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_References.Look(ref boundUftInt, "boundUft");
-		}
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_References.Look(ref boundUftInt, "boundUft");
+	}
 
-		public override void Notify_IterationCompleted(Pawn billDoer, List<Thing> ingredients)
-		{
-			ClearBoundUft();
-			base.Notify_IterationCompleted(billDoer, ingredients);
-		}
+	public override void Notify_IterationCompleted(Pawn billDoer, List<Thing> ingredients)
+	{
+		ClearBoundUft();
+		base.Notify_IterationCompleted(billDoer, ingredients);
+	}
 
-		public void ClearBoundUft()
-		{
-			boundUftInt = null;
-		}
+	public void ClearBoundUft()
+	{
+		boundUftInt = null;
+	}
 
-		public override Bill Clone()
-		{
-			return (Bill_Production)base.Clone();
-		}
+	public override Bill Clone()
+	{
+		return (Bill_Production)base.Clone();
 	}
 }

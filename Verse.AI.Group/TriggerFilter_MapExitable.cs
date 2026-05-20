@@ -1,10 +1,9 @@
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public class TriggerFilter_MapExitable : TriggerFilter
 {
-	public class TriggerFilter_MapExitable : TriggerFilter
+	public override bool AllowActivation(Lord lord, TriggerSignal signal)
 	{
-		public override bool AllowActivation(Lord lord, TriggerSignal signal)
-		{
-			return lord.Map.CanEverExit;
-		}
+		return lord.Map.CanEverExit;
 	}
 }

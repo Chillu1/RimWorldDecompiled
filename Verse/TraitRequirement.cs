@@ -1,56 +1,55 @@
 using System.Xml;
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class TraitRequirement
 {
-	public class TraitRequirement
+	public TraitDef def;
+
+	public int? degree;
+
+	public bool Matches(Trait trait)
 	{
-		public TraitDef def;
-
-		public int? degree;
-
-		public bool Matches(Trait trait)
+		if (trait.def == def)
 		{
-			if (trait.def == def)
+			if (degree.HasValue)
 			{
-				if (degree.HasValue)
-				{
-					return trait.Degree == degree.Value;
-				}
-				return true;
+				return trait.Degree == degree.Value;
 			}
+			return true;
+		}
+		return false;
+	}
+
+	public bool HasTrait(Pawn p)
+	{
+		if (p.story == null)
+		{
 			return false;
 		}
-
-		public bool HasTrait(Pawn p)
+		if (!degree.HasValue)
 		{
-			if (p.story == null)
-			{
-				return false;
-			}
-			if (!degree.HasValue)
-			{
-				return p.story.traits.HasTrait(def);
-			}
-			return p.story.traits.HasTrait(def, degree.Value);
+			return p.story.traits.HasTrait(def);
 		}
+		return p.story.traits.HasTrait(def, degree.Value);
+	}
 
-		public Trait GetTrait(Pawn p)
+	public Trait GetTrait(Pawn p)
+	{
+		if (p.story == null)
 		{
-			if (p.story == null)
-			{
-				return null;
-			}
-			if (!degree.HasValue)
-			{
-				return p.story.traits.GetTrait(def);
-			}
-			return p.story.traits.GetTrait(def, degree.Value);
+			return null;
 		}
+		if (!degree.HasValue)
+		{
+			return p.story.traits.GetTrait(def);
+		}
+		return p.story.traits.GetTrait(def, degree.Value);
+	}
 
-		public void LoadDataFromXmlCustom(XmlNode xmlRoot)
-		{
-			XmlHelper.ParseElements(this, xmlRoot, "def", "degree");
-		}
+	public void LoadDataFromXmlCustom(XmlNode xmlRoot)
+	{
+		XmlHelper.ParseElements(this, xmlRoot, "def", "degree");
 	}
 }

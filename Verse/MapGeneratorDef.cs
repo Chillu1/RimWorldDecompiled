@@ -1,41 +1,40 @@
 using System;
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class MapGeneratorDef : Def
 {
-	public class MapGeneratorDef : Def
-	{
-		public bool isUnderground;
+	public bool isUnderground;
 
-		public bool forceCaves;
+	public bool forceCaves;
 
-		public List<GenStepDef> genSteps;
+	public List<GenStepDef> genSteps;
 
-		public PocketMapProperties pocketMapProperties;
+	public PocketMapProperties pocketMapProperties;
 
-		public List<Type> customMapComponents = new List<Type>();
+	public List<Type> customMapComponents = new List<Type>();
 
-		public bool ignoreAreaRevealedLetter;
+	public bool ignoreAreaRevealedLetter;
 
-		public RoofDef roofDef;
+	public RoofDef roofDef;
 
-		public bool disableShadows;
+	public bool disableShadows;
 
-		public bool disableCallAid;
+	public bool disableCallAid;
 
-		public bool disableMapClippers;
+	public bool disableMapClippers;
 
-		public bool renderWorld;
+	public bool renderWorld;
 
-		public bool defeatRequiresCantReachUnfogged = true;
+	public bool defeatRequiresCantReachUnfogged = true;
 
-		public TerrainDef defaultUnderGridTerrain;
+	public TerrainDef defaultUnderGridTerrain;
 
-		public bool validScenarioMap;
+	public bool validScenarioMap;
 
-		[NoTranslate]
-		public string mapClipperTexturePath;
+	[NoTranslate]
+	public string mapClipperTexturePath;
 
-		public ShaderTypeDef mapClipperShader;
-	}
+	public ShaderTypeDef mapClipperShader;
 }

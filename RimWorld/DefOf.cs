@@ -1,9 +1,8 @@
 using System;
 
-namespace RimWorld
+namespace RimWorld;
+
+[AttributeUsage(AttributeTargets.Class)]
+public class DefOf : Attribute
 {
-	[AttributeUsage(AttributeTargets.Class)]
-	public class DefOf : Attribute
-	{
-	}
 }

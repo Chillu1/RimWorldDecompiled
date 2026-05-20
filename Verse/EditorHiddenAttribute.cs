@@ -1,9 +1,8 @@
 using System;
 
-namespace Verse
+namespace Verse;
+
+[AttributeUsage(AttributeTargets.Field)]
+public class EditorHiddenAttribute : Attribute
 {
-	[AttributeUsage(AttributeTargets.Field)]
-	public class EditorHiddenAttribute : Attribute
-	{
-	}
 }

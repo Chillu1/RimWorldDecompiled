@@ -1,19 +1,18 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public interface ILordJobRole
 {
-	public interface ILordJobRole
-	{
-		int MaxCount { get; }
+	int MaxCount { get; }
 
-		int MinCount { get; }
+	int MinCount { get; }
 
-		TaggedString Label { get; }
+	TaggedString Label { get; }
 
-		TaggedString LabelCap { get; }
+	TaggedString LabelCap { get; }
 
-		TaggedString CategoryLabel { get; }
+	TaggedString CategoryLabel { get; }
 
-		TaggedString CategoryLabelCap { get; }
-	}
+	TaggedString CategoryLabelCap { get; }
 }

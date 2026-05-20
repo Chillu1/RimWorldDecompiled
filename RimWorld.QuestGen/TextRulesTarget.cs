@@ -1,9 +1,8 @@
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public enum TextRulesTarget
 {
-	public enum TextRulesTarget
-	{
-		Description,
-		Name,
-		DecriptionAndName
-	}
+	Description,
+	Name,
+	DecriptionAndName
 }

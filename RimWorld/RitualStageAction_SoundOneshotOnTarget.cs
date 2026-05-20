@@ -1,20 +1,19 @@
 using Verse;
 using Verse.Sound;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RitualStageAction_SoundOneshotOnTarget : RitualStageAction
 {
-	public class RitualStageAction_SoundOneshotOnTarget : RitualStageAction
+	public SoundDef sound;
+
+	public override void Apply(LordJob_Ritual ritual)
 	{
-		public SoundDef sound;
+		sound.PlayOneShot(SoundInfo.InMap(ritual.selectedTarget));
+	}
 
-		public override void Apply(LordJob_Ritual ritual)
-		{
-			sound.PlayOneShot(SoundInfo.InMap(ritual.selectedTarget));
-		}
-
-		public override void ExposeData()
-		{
-			Scribe_Defs.Look(ref sound, "sound");
-		}
+	public override void ExposeData()
+	{
+		Scribe_Defs.Look(ref sound, "sound");
 	}
 }

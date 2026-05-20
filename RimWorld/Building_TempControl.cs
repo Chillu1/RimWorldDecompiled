@@ -1,18 +1,17 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Building_TempControl : Building
 {
-	public class Building_TempControl : Building
+	public CompTempControl compTempControl;
+
+	public CompPowerTrader compPowerTrader;
+
+	public override void SpawnSetup(Map map, bool respawningAfterLoad)
 	{
-		public CompTempControl compTempControl;
-
-		public CompPowerTrader compPowerTrader;
-
-		public override void SpawnSetup(Map map, bool respawningAfterLoad)
-		{
-			base.SpawnSetup(map, respawningAfterLoad);
-			compTempControl = GetComp<CompTempControl>();
-			compPowerTrader = GetComp<CompPowerTrader>();
-		}
+		base.SpawnSetup(map, respawningAfterLoad);
+		compTempControl = GetComp<CompTempControl>();
+		compPowerTrader = GetComp<CompPowerTrader>();
 	}
 }

@@ -1,67 +1,66 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_GetRelationsInfo : QuestNode
 {
-	public class QuestNode_GetRelationsInfo : QuestNode
+	public SlateRef<Pawn> pawn;
+
+	public SlateRef<IEnumerable<Pawn>> otherPawns;
+
+	[NoTranslate]
+	public SlateRef<string> storeAs;
+
+	public SlateRef<string> nonRelatedLabel;
+
+	public SlateRef<string> nonRelatedLabelPlural;
+
+	private static List<string> tmpRelations = new List<string>();
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		public SlateRef<Pawn> pawn;
+		SetVars(slate);
+		return true;
+	}
 
-		public SlateRef<IEnumerable<Pawn>> otherPawns;
+	protected override void RunInt()
+	{
+		SetVars(QuestGen.slate);
+	}
 
-		[NoTranslate]
-		public SlateRef<string> storeAs;
-
-		public SlateRef<string> nonRelatedLabel;
-
-		public SlateRef<string> nonRelatedLabelPlural;
-
-		private static List<string> tmpRelations = new List<string>();
-
-		protected override bool TestRunInt(Slate slate)
+	private void SetVars(Slate slate)
+	{
+		if (pawn.GetValue(slate) == null || otherPawns.GetValue(slate) == null)
 		{
-			SetVars(slate);
-			return true;
+			return;
 		}
-
-		protected override void RunInt()
+		tmpRelations.Clear();
+		int num = 0;
+		foreach (Pawn item in otherPawns.GetValue(slate))
 		{
-			SetVars(QuestGen.slate);
-		}
-
-		private void SetVars(Slate slate)
-		{
-			if (pawn.GetValue(slate) == null || otherPawns.GetValue(slate) == null)
+			PawnRelationDef mostImportantRelation = pawn.GetValue(slate).GetMostImportantRelation(item);
+			if (mostImportantRelation != null)
 			{
-				return;
+				tmpRelations.Add(mostImportantRelation.GetGenderSpecificLabel(item));
 			}
+			else
+			{
+				num++;
+			}
+		}
+		if (num == 1)
+		{
+			tmpRelations.Add(nonRelatedLabel.GetValue(slate));
+		}
+		else if (num >= 2)
+		{
+			tmpRelations.Add(num + " " + nonRelatedLabelPlural.GetValue(slate));
+		}
+		if (tmpRelations.Any())
+		{
+			slate.Set(storeAs.GetValue(slate), tmpRelations.ToCommaList(useAnd: true));
 			tmpRelations.Clear();
-			int num = 0;
-			foreach (Pawn item in otherPawns.GetValue(slate))
-			{
-				PawnRelationDef mostImportantRelation = pawn.GetValue(slate).GetMostImportantRelation(item);
-				if (mostImportantRelation != null)
-				{
-					tmpRelations.Add(mostImportantRelation.GetGenderSpecificLabel(item));
-				}
-				else
-				{
-					num++;
-				}
-			}
-			if (num == 1)
-			{
-				tmpRelations.Add(nonRelatedLabel.GetValue(slate));
-			}
-			else if (num >= 2)
-			{
-				tmpRelations.Add(num + " " + nonRelatedLabelPlural.GetValue(slate));
-			}
-			if (tmpRelations.Any())
-			{
-				slate.Set(storeAs.GetValue(slate), tmpRelations.ToCommaList(useAnd: true));
-				tmpRelations.Clear();
-			}
 		}
 	}
 }

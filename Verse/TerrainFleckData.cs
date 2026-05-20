@@ -1,17 +1,16 @@
-namespace Verse
+namespace Verse;
+
+public class TerrainFleckData
 {
-	public class TerrainFleckData
-	{
-		public FleckDef fleck;
+	public FleckDef fleck;
 
-		public FloatRange velocitySpeedRange;
+	public FloatRange velocitySpeedRange;
 
-		public FloatRange velocityAngleRange;
+	public FloatRange velocityAngleRange;
 
-		public FloatRange rotationSpeedRange;
+	public FloatRange rotationSpeedRange;
 
-		public FloatRange solidTicksRange;
+	public FloatRange solidTicksRange;
 
-		public FloatRange scaleRange;
-	}
+	public FloatRange scaleRange;
 }

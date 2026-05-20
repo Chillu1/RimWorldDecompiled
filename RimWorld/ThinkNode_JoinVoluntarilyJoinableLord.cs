@@ -3,71 +3,70 @@ using Verse;
 using Verse.AI;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThinkNode_JoinVoluntarilyJoinableLord : ThinkNode_Priority
 {
-	public class ThinkNode_JoinVoluntarilyJoinableLord : ThinkNode_Priority
+	public ThinkTreeDutyHook dutyHook;
+
+	public override ThinkNode DeepCopy(bool resolve = true)
 	{
-		public ThinkTreeDutyHook dutyHook;
+		ThinkNode_JoinVoluntarilyJoinableLord obj = (ThinkNode_JoinVoluntarilyJoinableLord)base.DeepCopy(resolve);
+		obj.dutyHook = dutyHook;
+		return obj;
+	}
 
-		public override ThinkNode DeepCopy(bool resolve = true)
+	public override ThinkResult TryIssueJobPackage(Pawn pawn, JobIssueParams jobParams)
+	{
+		CheckLeaveCurrentVoluntarilyJoinableLord(pawn);
+		JoinVoluntarilyJoinableLord(pawn);
+		if (pawn.GetLord() != null && (pawn.mindState.duty == null || pawn.mindState.duty.def.hook == dutyHook))
 		{
-			ThinkNode_JoinVoluntarilyJoinableLord obj = (ThinkNode_JoinVoluntarilyJoinableLord)base.DeepCopy(resolve);
-			obj.dutyHook = dutyHook;
-			return obj;
+			return base.TryIssueJobPackage(pawn, jobParams);
 		}
+		return ThinkResult.NoJob;
+	}
 
-		public override ThinkResult TryIssueJobPackage(Pawn pawn, JobIssueParams jobParams)
+	private void CheckLeaveCurrentVoluntarilyJoinableLord(Pawn pawn)
+	{
+		Lord lord = pawn.GetLord();
+		if (lord != null && lord.LordJob is LordJob_VoluntarilyJoinable lordJob_VoluntarilyJoinable && lordJob_VoluntarilyJoinable.VoluntaryJoinPriorityFor(pawn) <= 0f)
 		{
-			CheckLeaveCurrentVoluntarilyJoinableLord(pawn);
-			JoinVoluntarilyJoinableLord(pawn);
-			if (pawn.GetLord() != null && (pawn.mindState.duty == null || pawn.mindState.duty.def.hook == dutyHook))
+			lord.Notify_PawnLost(pawn, PawnLostCondition.LeftVoluntarily);
+		}
+	}
+
+	private void JoinVoluntarilyJoinableLord(Pawn pawn)
+	{
+		Lord lord = pawn.GetLord();
+		Lord lord2 = null;
+		float num = 0f;
+		if (lord != null)
+		{
+			if (!(lord.LordJob is LordJob_VoluntarilyJoinable lordJob_VoluntarilyJoinable))
 			{
-				return base.TryIssueJobPackage(pawn, jobParams);
+				return;
 			}
-			return ThinkResult.NoJob;
+			lord2 = lord;
+			num = lordJob_VoluntarilyJoinable.VoluntaryJoinPriorityFor(pawn);
 		}
-
-		private void CheckLeaveCurrentVoluntarilyJoinableLord(Pawn pawn)
+		List<Lord> lords = pawn.Map.lordManager.lords;
+		for (int i = 0; i < lords.Count; i++)
 		{
-			Lord lord = pawn.GetLord();
-			if (lord != null && lord.LordJob is LordJob_VoluntarilyJoinable lordJob_VoluntarilyJoinable && lordJob_VoluntarilyJoinable.VoluntaryJoinPriorityFor(pawn) <= 0f)
+			if (lords[i].LordJob is LordJob_VoluntarilyJoinable lordJob_VoluntarilyJoinable2 && lords[i].CurLordToil.VoluntaryJoinDutyHookFor(pawn) == dutyHook)
 			{
-				lord.Notify_PawnLost(pawn, PawnLostCondition.LeftVoluntarily);
-			}
-		}
-
-		private void JoinVoluntarilyJoinableLord(Pawn pawn)
-		{
-			Lord lord = pawn.GetLord();
-			Lord lord2 = null;
-			float num = 0f;
-			if (lord != null)
-			{
-				if (!(lord.LordJob is LordJob_VoluntarilyJoinable lordJob_VoluntarilyJoinable))
+				float num2 = lordJob_VoluntarilyJoinable2.VoluntaryJoinPriorityFor(pawn);
+				if (!(num2 <= 0f) && (lord2 == null || num2 > num))
 				{
-					return;
-				}
-				lord2 = lord;
-				num = lordJob_VoluntarilyJoinable.VoluntaryJoinPriorityFor(pawn);
-			}
-			List<Lord> lords = pawn.Map.lordManager.lords;
-			for (int i = 0; i < lords.Count; i++)
-			{
-				if (lords[i].LordJob is LordJob_VoluntarilyJoinable lordJob_VoluntarilyJoinable2 && lords[i].CurLordToil.VoluntaryJoinDutyHookFor(pawn) == dutyHook)
-				{
-					float num2 = lordJob_VoluntarilyJoinable2.VoluntaryJoinPriorityFor(pawn);
-					if (!(num2 <= 0f) && (lord2 == null || num2 > num))
-					{
-						lord2 = lords[i];
-						num = num2;
-					}
+					lord2 = lords[i];
+					num = num2;
 				}
 			}
-			if (lord2 != null && lord != lord2)
-			{
-				lord?.Notify_PawnLost(pawn, PawnLostCondition.LeftVoluntarily);
-				lord2.AddPawn(pawn);
-			}
+		}
+		if (lord2 != null && lord != lord2)
+		{
+			lord?.Notify_PawnLost(pawn, PawnLostCondition.LeftVoluntarily);
+			lord2.AddPawn(pawn);
 		}
 	}
 }

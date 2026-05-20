@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_StudyUnlocksMonolith : CompProperties_StudyUnlocks
 {
-	public class CompProperties_StudyUnlocksMonolith : CompProperties_StudyUnlocks
+	public CompProperties_StudyUnlocksMonolith()
 	{
-		public CompProperties_StudyUnlocksMonolith()
-		{
-			compClass = typeof(CompStudyUnlocksMonolith);
-		}
+		compClass = typeof(CompStudyUnlocksMonolith);
 	}
 }

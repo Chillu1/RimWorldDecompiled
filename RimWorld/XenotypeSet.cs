@@ -1,50 +1,49 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class XenotypeSet
 {
-	public class XenotypeSet
+	private List<XenotypeChance> xenotypeChances = new List<XenotypeChance>();
+
+	public XenotypeChance this[int index] => xenotypeChances[index];
+
+	public int Count => xenotypeChances.Count;
+
+	public float BaselinerChance
 	{
-		private List<XenotypeChance> xenotypeChances = new List<XenotypeChance>();
-
-		public XenotypeChance this[int index] => xenotypeChances[index];
-
-		public int Count => xenotypeChances.Count;
-
-		public float BaselinerChance
+		get
 		{
-			get
+			if (!ModsConfig.BiotechActive || xenotypeChances.NullOrEmpty())
 			{
-				if (!ModsConfig.BiotechActive || xenotypeChances.NullOrEmpty())
-				{
-					return 1f;
-				}
-				float num = 0f;
-				for (int i = 0; i < xenotypeChances.Count; i++)
-				{
-					if (xenotypeChances[i].xenotype != XenotypeDefOf.Baseliner)
-					{
-						num += xenotypeChances[i].chance;
-					}
-				}
-				return 1f - num;
+				return 1f;
 			}
+			float num = 0f;
+			for (int i = 0; i < xenotypeChances.Count; i++)
+			{
+				if (xenotypeChances[i].xenotype != XenotypeDefOf.Baseliner)
+				{
+					num += xenotypeChances[i].chance;
+				}
+			}
+			return 1f - num;
 		}
+	}
 
-		public bool Contains(XenotypeDef xenotype)
+	public bool Contains(XenotypeDef xenotype)
+	{
+		if (xenotype == XenotypeDefOf.Baseliner && BaselinerChance > 0f)
 		{
-			if (xenotype == XenotypeDefOf.Baseliner && BaselinerChance > 0f)
+			return true;
+		}
+		for (int i = 0; i < xenotypeChances.Count; i++)
+		{
+			if (xenotypeChances[i].xenotype == xenotype)
 			{
 				return true;
 			}
-			for (int i = 0; i < xenotypeChances.Count; i++)
-			{
-				if (xenotypeChances[i].xenotype == xenotype)
-				{
-					return true;
-				}
-			}
-			return false;
 		}
+		return false;
 	}
 }

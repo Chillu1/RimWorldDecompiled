@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum GameFont : byte
 {
-	public enum GameFont : byte
-	{
-		Tiny,
-		Small,
-		Medium
-	}
+	Tiny,
+	Small,
+	Medium
 }

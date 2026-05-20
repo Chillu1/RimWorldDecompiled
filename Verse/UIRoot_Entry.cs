@@ -3,94 +3,93 @@ using RimWorld.Planet;
 using UnityEngine;
 using Verse.Steam;
 
-namespace Verse
+namespace Verse;
+
+public class UIRoot_Entry : UIRoot
 {
-	public class UIRoot_Entry : UIRoot
+	private bool ShouldDoMainMenu
 	{
-		private bool ShouldDoMainMenu
+		get
 		{
-			get
+			if (LongEventHandler.AnyEventNowOrWaiting)
 			{
-				if (LongEventHandler.AnyEventNowOrWaiting)
+				return false;
+			}
+			for (int i = 0; i < Find.WindowStack.Count; i++)
+			{
+				if (windows[i].layer == WindowLayer.Dialog && !Find.WindowStack[i].IsDebug)
 				{
 					return false;
 				}
-				for (int i = 0; i < Find.WindowStack.Count; i++)
-				{
-					if (windows[i].layer == WindowLayer.Dialog && !Find.WindowStack[i].IsDebug)
-					{
-						return false;
-					}
-				}
-				return true;
 			}
+			return true;
 		}
+	}
 
-		public override void Init()
+	public override void Init()
+	{
+		base.Init();
+		UIMenuBackgroundManager.background = new UI_BackgroundMain();
+		MainMenuDrawer.Init();
+		QuickStarter.CheckQuickStart();
+		VersionUpdateDialogMaker.CreateVersionUpdateDialogIfNecessary();
+		if (!SteamManager.Initialized)
 		{
-			base.Init();
-			UIMenuBackgroundManager.background = new UI_BackgroundMain();
-			MainMenuDrawer.Init();
-			QuickStarter.CheckQuickStart();
-			VersionUpdateDialogMaker.CreateVersionUpdateDialogIfNecessary();
-			if (!SteamManager.Initialized)
+			Dialog_MessageBox window = new Dialog_MessageBox((string)"SteamClientMissing".Translate(), "Quit".Translate(), delegate
 			{
-				Dialog_MessageBox window = new Dialog_MessageBox((string)"SteamClientMissing".Translate(), "Quit".Translate(), delegate
-				{
-					Application.Quit();
-				}, "Ignore".Translate());
-				Find.WindowStack.Add(window);
-			}
+				Application.Quit();
+			}, "Ignore".Translate());
+			Find.WindowStack.Add(window);
 		}
+	}
 
-		public override void UIRootOnGUI()
+	public override void UIRootOnGUI()
+	{
+		base.UIRootOnGUI();
+		if (Find.World != null)
 		{
-			base.UIRootOnGUI();
-			if (Find.World != null)
-			{
-				Find.World.UI.WorldInterfaceOnGUI();
-			}
-			DoMainMenu();
-			if (Current.Game != null)
-			{
-				Find.Tutor.TutorOnGUI();
-			}
-			ReorderableWidget.ReorderableWidgetOnGUI_BeforeWindowStack();
-			DragAndDropWidget.DragAndDropWidgetOnGUI_BeforeWindowStack();
-			windows.WindowStackOnGUI();
-			DragAndDropWidget.DragAndDropWidgetOnGUI_AfterWindowStack();
-			ReorderableWidget.ReorderableWidgetOnGUI_AfterWindowStack();
-			Widgets.WidgetsOnGUI();
-			if (Find.World != null)
-			{
-				Find.World.UI.HandleLowPriorityInput();
-			}
+			Find.World.UI.WorldInterfaceOnGUI();
 		}
-
-		public override void UIRootUpdate()
+		DoMainMenu();
+		if (Current.Game != null)
 		{
-			base.UIRootUpdate();
-			if (Find.World != null)
-			{
-				Find.World.UI.WorldInterfaceUpdate();
-			}
-			if (Current.Game != null)
-			{
-				LessonAutoActivator.LessonAutoActivatorUpdate();
-				Find.Tutor.TutorUpdate();
-			}
+			Find.Tutor.TutorOnGUI();
 		}
-
-		private void DoMainMenu()
+		ReorderableWidget.ReorderableWidgetOnGUI_BeforeWindowStack();
+		DragAndDropWidget.DragAndDropWidgetOnGUI_BeforeWindowStack();
+		windows.WindowStackOnGUI();
+		DragAndDropWidget.DragAndDropWidgetOnGUI_AfterWindowStack();
+		ReorderableWidget.ReorderableWidgetOnGUI_AfterWindowStack();
+		Widgets.WidgetsOnGUI();
+		if (Find.World != null)
 		{
-			if (!WorldRendererUtility.WorldSelected)
+			Find.World.UI.HandleLowPriorityInput();
+		}
+	}
+
+	public override void UIRootUpdate()
+	{
+		base.UIRootUpdate();
+		if (Find.World != null)
+		{
+			Find.World.UI.WorldInterfaceUpdate();
+		}
+		if (Current.Game != null)
+		{
+			LessonAutoActivator.LessonAutoActivatorUpdate();
+			Find.Tutor.TutorUpdate();
+		}
+	}
+
+	private void DoMainMenu()
+	{
+		if (!WorldRendererUtility.WorldSelected)
+		{
+			UIMenuBackgroundManager.background.BackgroundOnGUI();
+			if (ShouldDoMainMenu)
 			{
-				UIMenuBackgroundManager.background.BackgroundOnGUI();
-				if (ShouldDoMainMenu)
-				{
-					Current.Game = null;
-					MainMenuDrawer.MainMenuOnGUI();
-				}
+				Current.Game = null;
+				MainMenuDrawer.MainMenuOnGUI();
 			}
 		}
 	}

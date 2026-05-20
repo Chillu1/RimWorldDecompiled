@@ -1,13 +1,12 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum BeautyCategory : byte
 {
-	public enum BeautyCategory : byte
-	{
-		Hideous,
-		VeryUgly,
-		Ugly,
-		Neutral,
-		Pretty,
-		VeryPretty,
-		Beautiful
-	}
+	Hideous,
+	VeryUgly,
+	Ugly,
+	Neutral,
+	Pretty,
+	VeryPretty,
+	Beautiful
 }

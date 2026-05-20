@@ -1,33 +1,32 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_FacilityInUse : CompProperties
 {
-	public class CompProperties_FacilityInUse : CompProperties
+	public float? inUsePowerConsumption;
+
+	public EffecterDef effectInUse;
+
+	public CompProperties_FacilityInUse()
 	{
-		public float? inUsePowerConsumption;
+		compClass = typeof(CompFacilityInUse);
+	}
 
-		public EffecterDef effectInUse;
-
-		public CompProperties_FacilityInUse()
+	public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+	{
+		foreach (string item in base.ConfigErrors(parentDef))
 		{
-			compClass = typeof(CompFacilityInUse);
+			yield return item;
 		}
-
-		public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+		if (parentDef.tickerType == TickerType.Never)
 		{
-			foreach (string item in base.ConfigErrors(parentDef))
-			{
-				yield return item;
-			}
-			if (parentDef.tickerType == TickerType.Never)
-			{
-				yield return $"CompProperties_FacilityInUse has parent {parentDef} with tickerType=Never";
-			}
-			if (effectInUse != null && parentDef.tickerType != TickerType.Normal)
-			{
-				yield return $"CompProperties_FacilityInUse has effectInUse but parent {parentDef} has tickerType!=Normal";
-			}
+			yield return $"CompProperties_FacilityInUse has parent {parentDef} with tickerType=Never";
+		}
+		if (effectInUse != null && parentDef.tickerType != TickerType.Normal)
+		{
+			yield return $"CompProperties_FacilityInUse has effectInUse but parent {parentDef} has tickerType!=Normal";
 		}
 	}
 }

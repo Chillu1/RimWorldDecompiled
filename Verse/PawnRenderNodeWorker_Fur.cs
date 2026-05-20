@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public class PawnRenderNodeWorker_Fur : PawnRenderNodeWorker_Body
 {
-	public class PawnRenderNodeWorker_Fur : PawnRenderNodeWorker_Body
+	public override bool ShouldListOnGraph(PawnRenderNode node, PawnDrawParms parms)
 	{
-		public override bool ShouldListOnGraph(PawnRenderNode node, PawnDrawParms parms)
-		{
-			return parms.pawn.story?.furDef != null;
-		}
+		return parms.pawn.story?.furDef != null;
 	}
 }

@@ -1,120 +1,119 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class BattleLog : IExposable
 {
-	public class BattleLog : IExposable
+	private List<Battle> battles = new List<Battle>();
+
+	private const int BattleHistoryLength = 20;
+
+	private HashSet<LogEntry> cachedActiveEntries;
+
+	public List<Battle> Battles => battles;
+
+	public void Add(LogEntry entry)
 	{
-		private List<Battle> battles = new List<Battle>();
-
-		private const int BattleHistoryLength = 20;
-
-		private HashSet<LogEntry> cachedActiveEntries;
-
-		public List<Battle> Battles => battles;
-
-		public void Add(LogEntry entry)
+		Battle battle = null;
+		foreach (Pawn concern in entry.GetConcerns())
 		{
-			Battle battle = null;
-			foreach (Pawn concern in entry.GetConcerns())
-			{
-				Battle battleActive = concern.records.BattleActive;
-				if (battle == null)
-				{
-					battle = battleActive;
-				}
-				else if (battleActive != null)
-				{
-					battle = ((battle.Importance > battleActive.Importance) ? battle : battleActive);
-				}
-			}
+			Battle battleActive = concern.records.BattleActive;
 			if (battle == null)
 			{
-				battle = Battle.Create();
-				battles.Insert(0, battle);
+				battle = battleActive;
 			}
-			foreach (Pawn concern2 in entry.GetConcerns())
+			else if (battleActive != null)
 			{
-				Battle battleActive2 = concern2.records.BattleActive;
-				if (battleActive2 != null && battleActive2 != battle)
-				{
-					battle.Absorb(battleActive2);
-					battles.Remove(battleActive2);
-				}
-				concern2.records.EnterBattle(battle);
+				battle = ((battle.Importance > battleActive.Importance) ? battle : battleActive);
 			}
-			battle.Add(entry);
+		}
+		if (battle == null)
+		{
+			battle = Battle.Create();
+			battles.Insert(0, battle);
+		}
+		foreach (Pawn concern2 in entry.GetConcerns())
+		{
+			Battle battleActive2 = concern2.records.BattleActive;
+			if (battleActive2 != null && battleActive2 != battle)
+			{
+				battle.Absorb(battleActive2);
+				battles.Remove(battleActive2);
+			}
+			concern2.records.EnterBattle(battle);
+		}
+		battle.Add(entry);
+		cachedActiveEntries = null;
+		ReduceToCapacity();
+	}
+
+	private void ReduceToCapacity()
+	{
+		int num = battles.Count((Battle btl) => btl.AbsorbedBy == null);
+		while (num > 20 && battles[battles.Count - 1].LastEntryTimestamp + Mathf.Max(420000, 5000) < Find.TickManager.TicksGame)
+		{
+			if (battles[battles.Count - 1].AbsorbedBy == null)
+			{
+				num--;
+			}
+			battles.RemoveAt(battles.Count - 1);
 			cachedActiveEntries = null;
-			ReduceToCapacity();
 		}
+	}
 
-		private void ReduceToCapacity()
+	public void ExposeData()
+	{
+		Scribe_Collections.Look(ref battles, "battles", LookMode.Deep);
+		if (Scribe.mode == LoadSaveMode.PostLoadInit && battles == null)
 		{
-			int num = battles.Count((Battle btl) => btl.AbsorbedBy == null);
-			while (num > 20 && battles[battles.Count - 1].LastEntryTimestamp + Mathf.Max(420000, 5000) < Find.TickManager.TicksGame)
+			battles = new List<Battle>();
+		}
+	}
+
+	public bool AnyEntryConcerns(Pawn p)
+	{
+		for (int i = 0; i < battles.Count; i++)
+		{
+			if (battles[i].Concerns(p))
 			{
-				if (battles[battles.Count - 1].AbsorbedBy == null)
-				{
-					num--;
-				}
-				battles.RemoveAt(battles.Count - 1);
-				cachedActiveEntries = null;
+				return true;
 			}
 		}
+		return false;
+	}
 
-		public void ExposeData()
+	public bool IsEntryActive(LogEntry log)
+	{
+		if (cachedActiveEntries == null)
 		{
-			Scribe_Collections.Look(ref battles, "battles", LookMode.Deep);
-			if (Scribe.mode == LoadSaveMode.PostLoadInit && battles == null)
-			{
-				battles = new List<Battle>();
-			}
-		}
-
-		public bool AnyEntryConcerns(Pawn p)
-		{
+			cachedActiveEntries = new HashSet<LogEntry>();
 			for (int i = 0; i < battles.Count; i++)
 			{
-				if (battles[i].Concerns(p))
+				List<LogEntry> entries = battles[i].Entries;
+				for (int j = 0; j < entries.Count; j++)
 				{
-					return true;
+					cachedActiveEntries.Add(entries[j]);
 				}
 			}
-			return false;
 		}
+		return cachedActiveEntries.Contains(log);
+	}
 
-		public bool IsEntryActive(LogEntry log)
+	public void RemoveEntry(LogEntry log)
+	{
+		for (int i = 0; i < battles.Count && !battles[i].Entries.Remove(log); i++)
 		{
-			if (cachedActiveEntries == null)
-			{
-				cachedActiveEntries = new HashSet<LogEntry>();
-				for (int i = 0; i < battles.Count; i++)
-				{
-					List<LogEntry> entries = battles[i].Entries;
-					for (int j = 0; j < entries.Count; j++)
-					{
-						cachedActiveEntries.Add(entries[j]);
-					}
-				}
-			}
-			return cachedActiveEntries.Contains(log);
 		}
+		cachedActiveEntries = null;
+	}
 
-		public void RemoveEntry(LogEntry log)
+	public void Notify_PawnDiscarded(Pawn p, bool silentlyRemoveReferences)
+	{
+		for (int num = battles.Count - 1; num >= 0; num--)
 		{
-			for (int i = 0; i < battles.Count && !battles[i].Entries.Remove(log); i++)
-			{
-			}
-			cachedActiveEntries = null;
+			battles[num].Notify_PawnDiscarded(p, silentlyRemoveReferences);
 		}
-
-		public void Notify_PawnDiscarded(Pawn p, bool silentlyRemoveReferences)
-		{
-			for (int num = battles.Count - 1; num >= 0; num--)
-			{
-				battles[num].Notify_PawnDiscarded(p, silentlyRemoveReferences);
-			}
-			cachedActiveEntries = null;
-		}
+		cachedActiveEntries = null;
 	}
 }

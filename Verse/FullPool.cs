@@ -1,24 +1,23 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public static class FullPool<T> where T : IFullPoolable, new()
 {
-	public static class FullPool<T> where T : IFullPoolable, new()
+	private static readonly Queue<T> freeItems = new Queue<T>();
+
+	public static T Get()
 	{
-		private static readonly Queue<T> freeItems = new Queue<T>();
-
-		public static T Get()
+		if (!freeItems.TryDequeue(out var result))
 		{
-			if (!freeItems.TryDequeue(out var result))
-			{
-				return new T();
-			}
-			return result;
+			return new T();
 		}
+		return result;
+	}
 
-		public static void Return(T item)
-		{
-			item.Reset();
-			freeItems.Enqueue(item);
-		}
+	public static void Return(T item)
+	{
+		item.Reset();
+		freeItems.Enqueue(item);
 	}
 }

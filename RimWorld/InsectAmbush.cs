@@ -3,84 +3,83 @@ using System.Linq;
 using Verse;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class InsectAmbush : Thing
 {
-	public class InsectAmbush : Thing
+	private static readonly IntRange TunnelDelayTicks = new IntRange(240, 480);
+
+	private static readonly FloatRange RadiusRange = new FloatRange(5f, 8f);
+
+	private static readonly SimpleCurve AmbushThreatPointsCurve = new SimpleCurve
 	{
-		private static readonly IntRange TunnelDelayTicks = new IntRange(240, 480);
+		new CurvePoint(100f, 100f),
+		new CurvePoint(1000f, 300f),
+		new CurvePoint(5000f, 1500f)
+	};
 
-		private static readonly FloatRange RadiusRange = new FloatRange(5f, 8f);
+	private float radius;
 
-		private static readonly SimpleCurve AmbushThreatPointsCurve = new SimpleCurve
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Values.Look(ref radius, "radius", 0f);
+	}
+
+	public override void SpawnSetup(Map map, bool respawningAfterLoad)
+	{
+		base.SpawnSetup(map, respawningAfterLoad);
+		radius = RadiusRange.RandomInRange;
+	}
+
+	protected override void Tick()
+	{
+		if (!this.IsHashIntervalTick(60))
 		{
-			new CurvePoint(100f, 100f),
-			new CurvePoint(1000f, 300f),
-			new CurvePoint(5000f, 1500f)
-		};
-
-		private float radius;
-
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_Values.Look(ref radius, "radius", 0f);
+			return;
 		}
-
-		public override void SpawnSetup(Map map, bool respawningAfterLoad)
+		Map map = base.Map;
+		int num = GenRadial.NumCellsInRadius(radius);
+		for (int i = 0; i < num; i++)
 		{
-			base.SpawnSetup(map, respawningAfterLoad);
-			radius = RadiusRange.RandomInRange;
-		}
-
-		protected override void Tick()
-		{
-			if (!this.IsHashIntervalTick(60))
+			IntVec3 c = base.Position + GenRadial.RadialPattern[i];
+			if (!c.InBounds(map))
 			{
-				return;
+				continue;
 			}
-			Map map = base.Map;
-			int num = GenRadial.NumCellsInRadius(radius);
-			for (int i = 0; i < num; i++)
+			foreach (Thing thing in c.GetThingList(map))
 			{
-				IntVec3 c = base.Position + GenRadial.RadialPattern[i];
-				if (!c.InBounds(map))
+				if (thing is Pawn { IsColonistPlayerControlled: not false } pawn && GenSight.LineOfSightToThing(pawn.Position, this, base.Map))
 				{
-					continue;
-				}
-				foreach (Thing thing in c.GetThingList(map))
-				{
-					if (thing is Pawn { IsColonistPlayerControlled: not false } pawn && GenSight.LineOfSightToThing(pawn.Position, this, base.Map))
-					{
-						Activate();
-						return;
-					}
+					Activate();
+					return;
 				}
 			}
 		}
+	}
 
-		private void Activate()
+	private void Activate()
+	{
+		float points = AmbushThreatPointsCurve.Evaluate(StorytellerUtility.DefaultThreatPointsNow(Find.AnyPlayerHomeMap));
+		List<Pawn> list = PawnGroupMakerUtility.GeneratePawns(new PawnGroupMakerParms
 		{
-			float points = AmbushThreatPointsCurve.Evaluate(StorytellerUtility.DefaultThreatPointsNow(Find.AnyPlayerHomeMap));
-			List<Pawn> list = PawnGroupMakerUtility.GeneratePawns(new PawnGroupMakerParms
+			groupKind = PawnGroupKindDefOf.Combat,
+			points = points,
+			faction = Faction.OfInsects
+		}).ToList();
+		List<Thing> list2 = new List<Thing>();
+		foreach (Pawn item in list)
+		{
+			if (CellFinder.TryFindRandomReachableNearbyCell(base.Position, base.Map, 5f, TraverseParms.For(TraverseMode.ByPawn), (IntVec3 cell) => cell.Standable(base.Map), null, out var result))
 			{
-				groupKind = PawnGroupKindDefOf.Combat,
-				points = points,
-				faction = Faction.OfInsects
-			}).ToList();
-			List<Thing> list2 = new List<Thing>();
-			foreach (Pawn item in list)
-			{
-				if (CellFinder.TryFindRandomReachableNearbyCell(base.Position, base.Map, 5f, TraverseParms.For(TraverseMode.ByPawn), (IntVec3 cell) => cell.Standable(base.Map), null, out var result))
-				{
-					PawnGroundSpawner pawnGroundSpawner = (PawnGroundSpawner)ThingMaker.MakeThing(ThingDefOf.PawnGroundSpawner);
-					pawnGroundSpawner.Init(item, TunnelDelayTicks);
-					GenSpawn.Spawn(pawnGroundSpawner, result, base.Map);
-					list2.Add(pawnGroundSpawner);
-				}
+				PawnGroundSpawner pawnGroundSpawner = (PawnGroundSpawner)ThingMaker.MakeThing(ThingDefOf.PawnGroundSpawner);
+				pawnGroundSpawner.Init(item, TunnelDelayTicks);
+				GenSpawn.Spawn(pawnGroundSpawner, result, base.Map);
+				list2.Add(pawnGroundSpawner);
 			}
-			Find.LetterStack.ReceiveLetter("InsectAmbushLetter".Translate(), "InsectAmbushLetterText".Translate(), LetterDefOf.ThreatBig, list2);
-			LordMaker.MakeNewLord(Faction.OfInsects, new LordJob_AssaultColony(), base.Map, list);
-			Destroy();
 		}
+		Find.LetterStack.ReceiveLetter("InsectAmbushLetter".Translate(), "InsectAmbushLetterText".Translate(), LetterDefOf.ThreatBig, list2);
+		LordMaker.MakeNewLord(Faction.OfInsects, new LordJob_AssaultColony(), base.Map, list);
+		Destroy();
 	}
 }

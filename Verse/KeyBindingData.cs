@@ -1,35 +1,34 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class KeyBindingData
 {
-	public class KeyBindingData
+	public KeyCode keyBindingA;
+
+	public KeyCode keyBindingB;
+
+	public KeyBindingData()
 	{
-		public KeyCode keyBindingA;
+	}
 
-		public KeyCode keyBindingB;
+	public KeyBindingData(KeyCode keyBindingA, KeyCode keyBindingB)
+	{
+		this.keyBindingA = keyBindingA;
+		this.keyBindingB = keyBindingB;
+	}
 
-		public KeyBindingData()
+	public override string ToString()
+	{
+		string text = "[";
+		if (keyBindingA != KeyCode.None)
 		{
+			text += keyBindingA;
 		}
-
-		public KeyBindingData(KeyCode keyBindingA, KeyCode keyBindingB)
+		if (keyBindingB != KeyCode.None)
 		{
-			this.keyBindingA = keyBindingA;
-			this.keyBindingB = keyBindingB;
+			text = text + ", " + keyBindingB;
 		}
-
-		public override string ToString()
-		{
-			string text = "[";
-			if (keyBindingA != KeyCode.None)
-			{
-				text += keyBindingA;
-			}
-			if (keyBindingB != KeyCode.None)
-			{
-				text = text + ", " + keyBindingB;
-			}
-			return text + "]";
-		}
+		return text + "]";
 	}
 }

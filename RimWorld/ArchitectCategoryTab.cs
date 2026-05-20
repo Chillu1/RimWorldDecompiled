@@ -2,143 +2,142 @@ using System;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ArchitectCategoryTab
 {
-	public class ArchitectCategoryTab
+	public readonly DesignationCategoryDef def;
+
+	private readonly QuickSearchFilter quickSearchFilter;
+
+	private bool anySearchMatches;
+
+	private Designator uniqueSearchMatch;
+
+	private readonly Func<Gizmo, bool> shouldLowLightGizmoFunc;
+
+	private readonly Func<Gizmo, bool> shouldHighLightGizmoFunc;
+
+	public const float InfoRectHeight = 270f;
+
+	public bool AnySearchMatches => anySearchMatches;
+
+	public Designator UniqueSearchMatch => uniqueSearchMatch;
+
+	public bool Visible => def.Visible;
+
+	public int? PreferredColumn => def.preferredColumn;
+
+	public static Rect InfoRect => new Rect(0f, (float)(UI.screenHeight - 35) - ((MainTabWindow_Architect)MainButtonDefOf.Architect.TabWindow).WinHeight - 270f, 200f, 270f);
+
+	public ArchitectCategoryTab(DesignationCategoryDef def, QuickSearchFilter quickSearchFilter)
 	{
-		public readonly DesignationCategoryDef def;
+		this.def = def;
+		this.quickSearchFilter = quickSearchFilter;
+		shouldLowLightGizmoFunc = ShouldLowLightGizmo;
+		shouldHighLightGizmoFunc = ShouldHighLightGizmo;
+	}
 
-		private readonly QuickSearchFilter quickSearchFilter;
-
-		private bool anySearchMatches;
-
-		private Designator uniqueSearchMatch;
-
-		private readonly Func<Gizmo, bool> shouldLowLightGizmoFunc;
-
-		private readonly Func<Gizmo, bool> shouldHighLightGizmoFunc;
-
-		public const float InfoRectHeight = 270f;
-
-		public bool AnySearchMatches => anySearchMatches;
-
-		public Designator UniqueSearchMatch => uniqueSearchMatch;
-
-		public bool Visible => def.Visible;
-
-		public int? PreferredColumn => def.preferredColumn;
-
-		public static Rect InfoRect => new Rect(0f, (float)(UI.screenHeight - 35) - ((MainTabWindow_Architect)MainButtonDefOf.Architect.TabWindow).WinHeight - 270f, 200f, 270f);
-
-		public ArchitectCategoryTab(DesignationCategoryDef def, QuickSearchFilter quickSearchFilter)
+	public void DesignationTabOnGUI(Designator forceActivatedCommand)
+	{
+		if (Find.DesignatorManager.SelectedDesignator != null)
 		{
-			this.def = def;
-			this.quickSearchFilter = quickSearchFilter;
-			shouldLowLightGizmoFunc = ShouldLowLightGizmo;
-			shouldHighLightGizmoFunc = ShouldHighLightGizmo;
+			Find.DesignatorManager.SelectedDesignator.DoExtraGuiControls(0f, (float)(UI.screenHeight - 35) - ((MainTabWindow_Architect)MainButtonDefOf.Architect.TabWindow).WinHeight - 270f);
 		}
-
-		public void DesignationTabOnGUI(Designator forceActivatedCommand)
+		Func<Gizmo, bool> customActivatorFunc = ((forceActivatedCommand == null) ? null : ((Func<Gizmo, bool>)((Gizmo cmd) => cmd == forceActivatedCommand)));
+		float startX = 210f;
+		GizmoGridDrawer.DrawGizmoGrid(def.ResolvedAllowedDesignators, startX, out var mouseoverGizmo, customActivatorFunc, shouldHighLightGizmoFunc, shouldLowLightGizmoFunc);
+		if (mouseoverGizmo == null && Find.DesignatorManager.SelectedDesignator != null)
 		{
-			if (Find.DesignatorManager.SelectedDesignator != null)
-			{
-				Find.DesignatorManager.SelectedDesignator.DoExtraGuiControls(0f, (float)(UI.screenHeight - 35) - ((MainTabWindow_Architect)MainButtonDefOf.Architect.TabWindow).WinHeight - 270f);
-			}
-			Func<Gizmo, bool> customActivatorFunc = ((forceActivatedCommand == null) ? null : ((Func<Gizmo, bool>)((Gizmo cmd) => cmd == forceActivatedCommand)));
-			float startX = 210f;
-			GizmoGridDrawer.DrawGizmoGrid(def.ResolvedAllowedDesignators, startX, out var mouseoverGizmo, customActivatorFunc, shouldHighLightGizmoFunc, shouldLowLightGizmoFunc);
-			if (mouseoverGizmo == null && Find.DesignatorManager.SelectedDesignator != null)
-			{
-				mouseoverGizmo = Find.DesignatorManager.SelectedDesignator;
-			}
-			DoInfoBox(InfoRect, (Designator)mouseoverGizmo);
+			mouseoverGizmo = Find.DesignatorManager.SelectedDesignator;
 		}
+		DoInfoBox(InfoRect, (Designator)mouseoverGizmo);
+	}
 
-		private bool ShouldLowLightGizmo(Gizmo gizmo)
+	private bool ShouldLowLightGizmo(Gizmo gizmo)
+	{
+		if (!(gizmo is Command c))
 		{
-			if (!(gizmo is Command c))
-			{
-				return false;
-			}
-			if (quickSearchFilter.Active && !Matches(c))
-			{
-				return true;
-			}
 			return false;
 		}
-
-		private bool ShouldHighLightGizmo(Gizmo gizmo)
+		if (quickSearchFilter.Active && !Matches(c))
 		{
-			if (!(gizmo is Command c))
-			{
-				return false;
-			}
-			if (quickSearchFilter.Active && Matches(c))
-			{
-				return true;
-			}
+			return true;
+		}
+		return false;
+	}
+
+	private bool ShouldHighLightGizmo(Gizmo gizmo)
+	{
+		if (!(gizmo is Command c))
+		{
 			return false;
 		}
-
-		private bool Matches(Command c)
+		if (quickSearchFilter.Active && Matches(c))
 		{
-			return quickSearchFilter.Matches(c.Label);
+			return true;
 		}
+		return false;
+	}
 
-		protected void DoInfoBox(Rect infoRect, Designator designator)
+	private bool Matches(Command c)
+	{
+		return quickSearchFilter.Matches(c.Label);
+	}
+
+	protected void DoInfoBox(Rect infoRect, Designator designator)
+	{
+		Find.WindowStack.ImmediateWindow(32520, infoRect, WindowLayer.GameUI, delegate
 		{
-			Find.WindowStack.ImmediateWindow(32520, infoRect, WindowLayer.GameUI, delegate
+			if (designator != null)
 			{
-				if (designator != null)
-				{
-					Rect rect = infoRect.AtZero().ContractedBy(7f);
-					Widgets.BeginGroup(rect);
-					Rect rect2 = new Rect(0f, 0f, rect.width - designator.PanelReadoutTitleExtraRightMargin, 999f);
-					Text.Font = GameFont.Small;
-					Widgets.Label(rect2, designator.LabelCap);
-					float curY = Mathf.Max(24f, Text.CalcHeight(designator.LabelCap, rect2.width));
-					designator.DrawPanelReadout(ref curY, rect.width);
-					Rect rect3 = new Rect(0f, curY, rect.width, rect.height - curY);
-					string desc = designator.Desc;
-					GenText.SetTextSizeToFit(desc, rect3);
-					desc = desc.TruncateHeight(rect3.width, rect3.height);
-					Widgets.Label(rect3, desc);
-					Widgets.EndGroup();
-				}
-			});
+				Rect rect = infoRect.AtZero().ContractedBy(7f);
+				Widgets.BeginGroup(rect);
+				Rect rect2 = new Rect(0f, 0f, rect.width - designator.PanelReadoutTitleExtraRightMargin, 999f);
+				Text.Font = GameFont.Small;
+				Widgets.Label(rect2, designator.LabelCap);
+				float curY = Mathf.Max(24f, Text.CalcHeight(designator.LabelCap, rect2.width));
+				designator.DrawPanelReadout(ref curY, rect.width);
+				Rect rect3 = new Rect(0f, curY, rect.width, rect.height - curY);
+				string desc = designator.Desc;
+				GenText.SetTextSizeToFit(desc, rect3);
+				desc = desc.TruncateHeight(rect3.width, rect3.height);
+				Widgets.Label(rect3, desc);
+				Widgets.EndGroup();
+			}
+		});
+	}
+
+	public void CacheSearchState()
+	{
+		anySearchMatches = true;
+		uniqueSearchMatch = null;
+		if (!quickSearchFilter.Active)
+		{
+			return;
 		}
-
-		public void CacheSearchState()
+		int num = 0;
+		Designator designator = null;
+		foreach (Designator resolvedAllowedDesignator in def.ResolvedAllowedDesignators)
 		{
-			anySearchMatches = true;
-			uniqueSearchMatch = null;
-			if (!quickSearchFilter.Active)
+			if (Matches(resolvedAllowedDesignator))
 			{
-				return;
-			}
-			int num = 0;
-			Designator designator = null;
-			foreach (Designator resolvedAllowedDesignator in def.ResolvedAllowedDesignators)
-			{
-				if (Matches(resolvedAllowedDesignator))
+				num++;
+				designator = resolvedAllowedDesignator;
+				if (num > 1)
 				{
-					num++;
-					designator = resolvedAllowedDesignator;
-					if (num > 1)
-					{
-						return;
-					}
+					return;
 				}
 			}
-			switch (num)
-			{
-			case 0:
-				anySearchMatches = false;
-				break;
-			case 1:
-				uniqueSearchMatch = designator;
-				break;
-			}
+		}
+		switch (num)
+		{
+		case 0:
+			anySearchMatches = false;
+			break;
+		case 1:
+			uniqueSearchMatch = designator;
+			break;
 		}
 	}
 }

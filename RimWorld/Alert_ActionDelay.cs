@@ -1,6 +1,5 @@
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class Alert_ActionDelay : Alert
 {
-	public abstract class Alert_ActionDelay : Alert
-	{
-	}
 }

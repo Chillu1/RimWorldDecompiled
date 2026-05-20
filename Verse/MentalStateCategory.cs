@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum MentalStateCategory
 {
-	public enum MentalStateCategory
-	{
-		Undefined,
-		Aggro,
-		Malicious,
-		Misc
-	}
+	Undefined,
+	Aggro,
+	Malicious,
+	Misc
 }

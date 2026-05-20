@@ -1,15 +1,14 @@
-namespace RimWorld
+namespace RimWorld;
+
+[DefOf]
+public static class ExpansionDefOf
 {
-	[DefOf]
-	public static class ExpansionDefOf
+	public static ExpansionDef Core;
+
+	public static ExpansionDef Anomaly;
+
+	static ExpansionDefOf()
 	{
-		public static ExpansionDef Core;
-
-		public static ExpansionDef Anomaly;
-
-		static ExpansionDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(ExpansionDefOf));
-		}
+		DefOfHelper.EnsureInitializedInCtor(typeof(ExpansionDefOf));
 	}
 }

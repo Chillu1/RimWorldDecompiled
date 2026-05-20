@@ -1,15 +1,14 @@
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class LordJob_SightstealerAssault : LordJob
 {
-	public class LordJob_SightstealerAssault : LordJob
+	public override StateGraph CreateGraph()
 	{
-		public override StateGraph CreateGraph()
-		{
-			StateGraph stateGraph = new StateGraph();
-			LordToil toil = new LordToil_SightstealerAssault();
-			stateGraph.AddToil(toil);
-			return stateGraph;
-		}
+		StateGraph stateGraph = new StateGraph();
+		LordToil toil = new LordToil_SightstealerAssault();
+		stateGraph.AddToil(toil);
+		return stateGraph;
 	}
 }

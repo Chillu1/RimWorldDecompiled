@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum Gender : byte
 {
-	public enum Gender : byte
-	{
-		None,
-		Male,
-		Female
-	}
+	None,
+	Male,
+	Female
 }

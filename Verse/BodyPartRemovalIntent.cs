@@ -1,8 +1,7 @@
-namespace Verse
+namespace Verse;
+
+public enum BodyPartRemovalIntent
 {
-	public enum BodyPartRemovalIntent
-	{
-		Harvest,
-		Amputate
-	}
+	Harvest,
+	Amputate
 }

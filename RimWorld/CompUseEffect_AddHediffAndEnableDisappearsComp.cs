@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompUseEffect_AddHediffAndEnableDisappearsComp : CompUseEffect_AddHediff
 {
-	public class CompUseEffect_AddHediffAndEnableDisappearsComp : CompUseEffect_AddHediff
+	public override void DoEffect(Pawn user)
 	{
-		public override void DoEffect(Pawn user)
-		{
-			user.health.AddHediff(base.Props.hediffDef).TryGetComp<HediffComp_DisappearsDisableable>().disabled = false;
-		}
+		user.health.AddHediff(base.Props.hediffDef).TryGetComp<HediffComp_DisappearsDisableable>().disabled = false;
 	}
 }

@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum GeneticBodyType
 {
-	public enum GeneticBodyType
-	{
-		Fat,
-		Thin,
-		Hulk,
-		Standard
-	}
+	Fat,
+	Thin,
+	Hulk,
+	Standard
 }

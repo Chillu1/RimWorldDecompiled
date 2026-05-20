@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_PsychologicallyNude : ThoughtWorker
 {
-	public class ThoughtWorker_PsychologicallyNude : ThoughtWorker
+	protected override ThoughtState CurrentStateInternal(Pawn p)
 	{
-		protected override ThoughtState CurrentStateInternal(Pawn p)
+		if (ModsConfig.IdeologyActive)
 		{
-			if (ModsConfig.IdeologyActive)
-			{
-				return false;
-			}
-			return p.apparel.PsychologicallyNude;
+			return false;
 		}
+		return p.apparel.PsychologicallyNude;
 	}
 }

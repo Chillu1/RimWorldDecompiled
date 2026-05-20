@@ -1,26 +1,25 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public interface ISlotGroupParent : IStoreSettingsParent, IHaulDestination
 {
-	public interface ISlotGroupParent : IStoreSettingsParent, IHaulDestination
-	{
-		bool IgnoreStoredThingsBeauty { get; }
+	bool IgnoreStoredThingsBeauty { get; }
 
-		string GroupingLabel { get; }
+	string GroupingLabel { get; }
 
-		int GroupingOrder { get; }
+	int GroupingOrder { get; }
 
-		IEnumerable<IntVec3> AllSlotCells();
+	IEnumerable<IntVec3> AllSlotCells();
 
-		List<IntVec3> AllSlotCellsList();
+	List<IntVec3> AllSlotCellsList();
 
-		void Notify_ReceivedThing(Thing newItem);
+	void Notify_ReceivedThing(Thing newItem);
 
-		void Notify_LostThing(Thing newItem);
+	void Notify_LostThing(Thing newItem);
 
-		string SlotYielderLabel();
+	string SlotYielderLabel();
 
-		SlotGroup GetSlotGroup();
-	}
+	SlotGroup GetSlotGroup();
 }

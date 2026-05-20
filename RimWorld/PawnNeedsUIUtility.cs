@@ -1,45 +1,44 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class PawnNeedsUIUtility
 {
-	public static class PawnNeedsUIUtility
+	public static void SortInDisplayOrder(List<Need> needs)
 	{
-		public static void SortInDisplayOrder(List<Need> needs)
-		{
-			needs.Sort((Need a, Need b) => b.def.listPriority.CompareTo(a.def.listPriority));
-		}
+		needs.Sort((Need a, Need b) => b.def.listPriority.CompareTo(a.def.listPriority));
+	}
 
-		public static Thought GetLeadingThoughtInGroup(List<Thought> thoughtsInGroup)
+	public static Thought GetLeadingThoughtInGroup(List<Thought> thoughtsInGroup)
+	{
+		Thought result = null;
+		int num = -1;
+		for (int i = 0; i < thoughtsInGroup.Count; i++)
 		{
-			Thought result = null;
-			int num = -1;
-			for (int i = 0; i < thoughtsInGroup.Count; i++)
+			if (thoughtsInGroup[i].CurStageIndex > num)
 			{
-				if (thoughtsInGroup[i].CurStageIndex > num)
-				{
-					num = thoughtsInGroup[i].CurStageIndex;
-					result = thoughtsInGroup[i];
-				}
+				num = thoughtsInGroup[i].CurStageIndex;
+				result = thoughtsInGroup[i];
 			}
-			return result;
 		}
+		return result;
+	}
 
-		public static void GetThoughtGroupsInDisplayOrder(Need_Mood mood, List<Thought> outThoughtGroupsPresent)
+	public static void GetThoughtGroupsInDisplayOrder(Need_Mood mood, List<Thought> outThoughtGroupsPresent)
+	{
+		mood.thoughts.GetDistinctMoodThoughtGroups(outThoughtGroupsPresent);
+		for (int num = outThoughtGroupsPresent.Count - 1; num >= 0; num--)
 		{
-			mood.thoughts.GetDistinctMoodThoughtGroups(outThoughtGroupsPresent);
-			for (int num = outThoughtGroupsPresent.Count - 1; num >= 0; num--)
+			if (!outThoughtGroupsPresent[num].VisibleInNeedsTab)
 			{
-				if (!outThoughtGroupsPresent[num].VisibleInNeedsTab)
-				{
-					outThoughtGroupsPresent.RemoveAt(num);
-				}
+				outThoughtGroupsPresent.RemoveAt(num);
 			}
-			foreach (Thought item in outThoughtGroupsPresent)
-			{
-				item.cachedMoodOffsetOfGroup = mood.thoughts.MoodOffsetOfGroup(item);
-			}
-			outThoughtGroupsPresent.SortByDescending((Thought t) => t.cachedMoodOffsetOfGroup, (Thought t) => t.GetHashCode());
 		}
+		foreach (Thought item in outThoughtGroupsPresent)
+		{
+			item.cachedMoodOffsetOfGroup = mood.thoughts.MoodOffsetOfGroup(item);
+		}
+		outThoughtGroupsPresent.SortByDescending((Thought t) => t.cachedMoodOffsetOfGroup, (Thought t) => t.GetHashCode());
 	}
 }

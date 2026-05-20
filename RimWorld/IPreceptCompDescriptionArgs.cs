@@ -1,10 +1,9 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public interface IPreceptCompDescriptionArgs
 {
-	public interface IPreceptCompDescriptionArgs
-	{
-		IEnumerable<NamedArgument> GetDescriptionArgs();
-	}
+	IEnumerable<NamedArgument> GetDescriptionArgs();
 }

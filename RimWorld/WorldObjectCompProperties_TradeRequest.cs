@@ -1,12 +1,11 @@
 using RimWorld.Planet;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WorldObjectCompProperties_TradeRequest : WorldObjectCompProperties
 {
-	public class WorldObjectCompProperties_TradeRequest : WorldObjectCompProperties
+	public WorldObjectCompProperties_TradeRequest()
 	{
-		public WorldObjectCompProperties_TradeRequest()
-		{
-			compClass = typeof(TradeRequestComp);
-		}
+		compClass = typeof(TradeRequestComp);
 	}
 }

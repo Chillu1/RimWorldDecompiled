@@ -1,20 +1,19 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_GasOnDamage : CompProperties
 {
-	public class CompProperties_GasOnDamage : CompProperties
+	public GasType type;
+
+	public float damageFactor = 6f;
+
+	public DamageDef damage;
+
+	public bool useStackCountAsFactor;
+
+	public CompProperties_GasOnDamage()
 	{
-		public GasType type;
-
-		public float damageFactor = 6f;
-
-		public DamageDef damage;
-
-		public bool useStackCountAsFactor;
-
-		public CompProperties_GasOnDamage()
-		{
-			compClass = typeof(CompGasOnDamage);
-		}
+		compClass = typeof(CompGasOnDamage);
 	}
 }

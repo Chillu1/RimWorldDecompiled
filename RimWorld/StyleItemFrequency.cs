@@ -1,12 +1,11 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum StyleItemFrequency
 {
-	public enum StyleItemFrequency
-	{
-		Never,
-		Rare,
-		Uncommon,
-		Normal,
-		Common,
-		Frequent
-	}
+	Never,
+	Rare,
+	Uncommon,
+	Normal,
+	Common,
+	Frequent
 }

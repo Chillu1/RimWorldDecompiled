@@ -1,25 +1,24 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompAbilityEffect_DropMechCluster : CompAbilityEffect_WithDest
 {
-	public class CompAbilityEffect_DropMechCluster : CompAbilityEffect_WithDest
+	public new CompProperties_DropMechCluster Props => (CompProperties_DropMechCluster)props;
+
+	public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
 	{
-		public new CompProperties_DropMechCluster Props => (CompProperties_DropMechCluster)props;
+		base.Apply(target, dest);
+		MechClusterSketch sketch = MechClusterGenerator.GenerateClusterSketch(Props.points, parent.pawn.Map, Props.startDormant);
+		MechClusterUtility.SpawnCluster(target.Cell, parent.pawn.Map, sketch);
+	}
 
-		public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
+	public override bool CanApplyOn(LocalTargetInfo target, LocalTargetInfo dest)
+	{
+		if (!ModsConfig.RoyaltyActive || Faction.OfMechanoids == null || Faction.OfMechanoids.deactivated)
 		{
-			base.Apply(target, dest);
-			MechClusterSketch sketch = MechClusterGenerator.GenerateClusterSketch(Props.points, parent.pawn.Map, Props.startDormant);
-			MechClusterUtility.SpawnCluster(target.Cell, parent.pawn.Map, sketch);
+			return false;
 		}
-
-		public override bool CanApplyOn(LocalTargetInfo target, LocalTargetInfo dest)
-		{
-			if (!ModsConfig.RoyaltyActive || Faction.OfMechanoids == null || Faction.OfMechanoids.deactivated)
-			{
-				return false;
-			}
-			return base.CanApplyOn(target, dest);
-		}
+		return base.CanApplyOn(target, dest);
 	}
 }

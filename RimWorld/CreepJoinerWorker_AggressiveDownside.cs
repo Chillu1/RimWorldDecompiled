@@ -1,13 +1,12 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CreepJoinerWorker_AggressiveDownside : BaseCreepJoinerWorker
 {
-	public class CreepJoinerWorker_AggressiveDownside : BaseCreepJoinerWorker
+	public override void DoResponse(List<TargetInfo> looktargets, List<NamedArgument> namedArgs)
 	{
-		public override void DoResponse(List<TargetInfo> looktargets, List<NamedArgument> namedArgs)
-		{
-			base.Tracker.DoAggressive();
-		}
+		base.Tracker.DoAggressive();
 	}
 }

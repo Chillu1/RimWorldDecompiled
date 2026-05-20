@@ -1,13 +1,12 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class DeityPreset
 {
-	public class DeityPreset
-	{
-		public DeityNameType nameType;
+	public DeityNameType nameType;
 
-		public Gender gender;
+	public Gender gender;
 
-		public string iconPath;
-	}
+	public string iconPath;
 }

@@ -1,29 +1,28 @@
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class Dialog_RenameAnimalPen : Dialog_Rename<CompAnimalPenMarker>
 {
-	public class Dialog_RenameAnimalPen : Dialog_Rename<CompAnimalPenMarker>
+	private readonly Map map;
+
+	public Dialog_RenameAnimalPen(Map map, CompAnimalPenMarker marker)
+		: base(marker)
 	{
-		private readonly Map map;
+		this.map = map;
+	}
 
-		public Dialog_RenameAnimalPen(Map map, CompAnimalPenMarker marker)
-			: base(marker)
+	protected override AcceptanceReport NameIsValid(string name)
+	{
+		AcceptanceReport result = base.NameIsValid(name);
+		if (!result.Accepted)
 		{
-			this.map = map;
+			return result;
 		}
-
-		protected override AcceptanceReport NameIsValid(string name)
+		if (name != renaming.label && map.animalPenManager.GetPenNamed(name) != null)
 		{
-			AcceptanceReport result = base.NameIsValid(name);
-			if (!result.Accepted)
-			{
-				return result;
-			}
-			if (name != renaming.label && map.animalPenManager.GetPenNamed(name) != null)
-			{
-				return "NameIsInUse".Translate();
-			}
-			return true;
+			return "NameIsInUse".Translate();
 		}
+		return true;
 	}
 }

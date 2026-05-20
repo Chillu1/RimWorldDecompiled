@@ -1,37 +1,36 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class WeatherEventHandler
 {
-	public class WeatherEventHandler
+	private List<WeatherEvent> liveEvents = new List<WeatherEvent>();
+
+	public List<WeatherEvent> LiveEventsListForReading => liveEvents;
+
+	public void AddEvent(WeatherEvent newEvent)
 	{
-		private List<WeatherEvent> liveEvents = new List<WeatherEvent>();
+		liveEvents.Add(newEvent);
+		newEvent.FireEvent();
+	}
 
-		public List<WeatherEvent> LiveEventsListForReading => liveEvents;
-
-		public void AddEvent(WeatherEvent newEvent)
+	public void WeatherEventHandlerTick()
+	{
+		for (int num = liveEvents.Count - 1; num >= 0; num--)
 		{
-			liveEvents.Add(newEvent);
-			newEvent.FireEvent();
-		}
-
-		public void WeatherEventHandlerTick()
-		{
-			for (int num = liveEvents.Count - 1; num >= 0; num--)
+			liveEvents[num].WeatherEventTick();
+			if (liveEvents[num].Expired)
 			{
-				liveEvents[num].WeatherEventTick();
-				if (liveEvents[num].Expired)
-				{
-					liveEvents.RemoveAt(num);
-				}
+				liveEvents.RemoveAt(num);
 			}
 		}
+	}
 
-		public void WeatherEventsDraw()
+	public void WeatherEventsDraw()
+	{
+		for (int i = 0; i < liveEvents.Count; i++)
 		{
-			for (int i = 0; i < liveEvents.Count; i++)
-			{
-				liveEvents[i].WeatherEventDraw();
-			}
+			liveEvents[i].WeatherEventDraw();
 		}
 	}
 }

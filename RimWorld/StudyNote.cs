@@ -1,19 +1,18 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class StudyNote
 {
-	public class StudyNote
-	{
-		public float threshold;
+	public float threshold;
 
-		public FloatRange thresholdRange = FloatRange.Zero;
+	public FloatRange thresholdRange = FloatRange.Zero;
 
-		public float? studyKnowledgeAmount;
+	public float? studyKnowledgeAmount;
 
-		[MustTranslate]
-		public string label;
+	[MustTranslate]
+	public string label;
 
-		[MustTranslate]
-		public string text;
-	}
+	[MustTranslate]
+	public string text;
 }

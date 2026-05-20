@@ -1,16 +1,15 @@
 using RimWorld;
 
-namespace Verse.AI
+namespace Verse.AI;
+
+public class MentalStateWorker_EntityLiberator : MentalStateWorker
 {
-	public class MentalStateWorker_EntityLiberator : MentalStateWorker
+	public override bool StateCanOccur(Pawn pawn)
 	{
-		public override bool StateCanOccur(Pawn pawn)
+		if (!base.StateCanOccur(pawn))
 		{
-			if (!base.StateCanOccur(pawn))
-			{
-				return false;
-			}
-			return AnomalyUtility.FindEntityOnPlatform(pawn.Map, EntityQueryType.ForRelease) != null;
+			return false;
 		}
+		return AnomalyUtility.FindEntityOnPlatform(pawn.Map, EntityQueryType.ForRelease) != null;
 	}
 }

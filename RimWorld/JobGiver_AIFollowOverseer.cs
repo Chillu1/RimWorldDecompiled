@@ -1,29 +1,28 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobGiver_AIFollowOverseer : JobGiver_AIFollowPawn
 {
-	public class JobGiver_AIFollowOverseer : JobGiver_AIFollowPawn
+	protected override int FollowJobExpireInterval => 200;
+
+	protected override Pawn GetFollowee(Pawn pawn)
 	{
-		protected override int FollowJobExpireInterval => 200;
+		return pawn.GetOverseer();
+	}
 
-		protected override Pawn GetFollowee(Pawn pawn)
-		{
-			return pawn.GetOverseer();
-		}
+	protected override float GetRadius(Pawn pawn)
+	{
+		return 5f;
+	}
 
-		protected override float GetRadius(Pawn pawn)
+	protected override Job TryGiveJob(Pawn pawn)
+	{
+		if (pawn.GetOverseer() == null)
 		{
-			return 5f;
+			return null;
 		}
-
-		protected override Job TryGiveJob(Pawn pawn)
-		{
-			if (pawn.GetOverseer() == null)
-			{
-				return null;
-			}
-			return base.TryGiveJob(pawn);
-		}
+		return base.TryGiveJob(pawn);
 	}
 }

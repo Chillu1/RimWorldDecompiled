@@ -1,35 +1,34 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class TimeSlower
 {
-	public class TimeSlower
+	private int forceNormalSpeedUntil;
+
+	private const int ForceTicksStandard = 800;
+
+	private const int ForceTicksShort = 240;
+
+	public bool ForcedNormalSpeed
 	{
-		private int forceNormalSpeedUntil;
-
-		private const int ForceTicksStandard = 800;
-
-		private const int ForceTicksShort = 240;
-
-		public bool ForcedNormalSpeed
+		get
 		{
-			get
+			if (DebugViewSettings.neverForceNormalSpeed)
 			{
-				if (DebugViewSettings.neverForceNormalSpeed)
-				{
-					return false;
-				}
-				return Find.TickManager.TicksGame < forceNormalSpeedUntil;
+				return false;
 			}
+			return Find.TickManager.TicksGame < forceNormalSpeedUntil;
 		}
+	}
 
-		public void SignalForceNormalSpeed()
-		{
-			forceNormalSpeedUntil = Mathf.Max(Find.TickManager.TicksGame + 800);
-		}
+	public void SignalForceNormalSpeed()
+	{
+		forceNormalSpeedUntil = Mathf.Max(Find.TickManager.TicksGame + 800);
+	}
 
-		public void SignalForceNormalSpeedShort()
-		{
-			forceNormalSpeedUntil = Mathf.Max(forceNormalSpeedUntil, Find.TickManager.TicksGame + 240);
-		}
+	public void SignalForceNormalSpeedShort()
+	{
+		forceNormalSpeedUntil = Mathf.Max(forceNormalSpeedUntil, Find.TickManager.TicksGame + 240);
 	}
 }

@@ -3,23 +3,22 @@ using System.Collections.Generic;
 using RimWorld.Planet;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WorldObjectCompProperties
 {
-	public class WorldObjectCompProperties
+	[TranslationHandle]
+	public Type compClass = typeof(WorldObjectComp);
+
+	public virtual IEnumerable<string> ConfigErrors(WorldObjectDef parentDef)
 	{
-		[TranslationHandle]
-		public Type compClass = typeof(WorldObjectComp);
-
-		public virtual IEnumerable<string> ConfigErrors(WorldObjectDef parentDef)
+		if (compClass == null)
 		{
-			if (compClass == null)
-			{
-				yield return parentDef.defName + " has WorldObjectCompProperties with null compClass.";
-			}
+			yield return parentDef.defName + " has WorldObjectCompProperties with null compClass.";
 		}
+	}
 
-		public virtual void ResolveReferences(WorldObjectDef parentDef)
-		{
-		}
+	public virtual void ResolveReferences(WorldObjectDef parentDef)
+	{
 	}
 }

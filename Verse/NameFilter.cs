@@ -1,14 +1,13 @@
 using System;
 
-namespace Verse
+namespace Verse;
+
+[Flags]
+public enum NameFilter
 {
-	[Flags]
-	public enum NameFilter
-	{
-		None = 0,
-		First = 1,
-		Nick = 2,
-		Last = 4,
-		Title = 8
-	}
+	None = 0,
+	First = 1,
+	Nick = 2,
+	Last = 4,
+	Title = 8
 }

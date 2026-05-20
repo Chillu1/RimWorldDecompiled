@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum DrugDesireCategory : byte
 {
-	public enum DrugDesireCategory : byte
-	{
-		Withdrawal,
-		Desire,
-		Satisfied
-	}
+	Withdrawal,
+	Desire,
+	Satisfied
 }

@@ -1,15 +1,14 @@
 using System;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class PreceptMaker
 {
-	public static class PreceptMaker
+	public static Precept MakePrecept(PreceptDef def)
 	{
-		public static Precept MakePrecept(PreceptDef def)
-		{
-			Precept obj = (Precept)Activator.CreateInstance(def.preceptClass);
-			obj.def = def;
-			obj.PostMake();
-			return obj;
-		}
+		Precept obj = (Precept)Activator.CreateInstance(def.preceptClass);
+		obj.def = def;
+		obj.PostMake();
+		return obj;
 	}
 }

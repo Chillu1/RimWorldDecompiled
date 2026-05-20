@@ -1,37 +1,36 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public class ItemStashContentsComp : WorldObjectComp, IThingHolder
 {
-	public class ItemStashContentsComp : WorldObjectComp, IThingHolder
+	public ThingOwner contents;
+
+	public ItemStashContentsComp()
 	{
-		public ThingOwner contents;
+		contents = new ThingOwner<Thing>(this);
+	}
 
-		public ItemStashContentsComp()
-		{
-			contents = new ThingOwner<Thing>(this);
-		}
+	public override void PostExposeData()
+	{
+		base.PostExposeData();
+		Scribe_Deep.Look(ref contents, "contents", this);
+	}
 
-		public override void PostExposeData()
-		{
-			base.PostExposeData();
-			Scribe_Deep.Look(ref contents, "contents", this);
-		}
+	public void GetChildHolders(List<IThingHolder> outChildren)
+	{
+		ThingOwnerUtility.AppendThingHoldersFromThings(outChildren, GetDirectlyHeldThings());
+	}
 
-		public void GetChildHolders(List<IThingHolder> outChildren)
-		{
-			ThingOwnerUtility.AppendThingHoldersFromThings(outChildren, GetDirectlyHeldThings());
-		}
+	public ThingOwner GetDirectlyHeldThings()
+	{
+		return contents;
+	}
 
-		public ThingOwner GetDirectlyHeldThings()
-		{
-			return contents;
-		}
-
-		public override void PostDestroy()
-		{
-			base.PostDestroy();
-			contents.ClearAndDestroyContents();
-		}
+	public override void PostDestroy()
+	{
+		base.PostDestroy();
+		contents.ClearAndDestroyContents();
 	}
 }

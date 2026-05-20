@@ -1,56 +1,55 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Thought_WeaponTrait : Thought_Memory
 {
-	public class Thought_WeaponTrait : Thought_Memory
+	public ThingWithComps weapon;
+
+	public override bool ShouldDiscard
 	{
-		public ThingWithComps weapon;
-
-		public override bool ShouldDiscard
+		get
 		{
-			get
+			if (!base.ShouldDiscard)
 			{
-				if (!base.ShouldDiscard)
-				{
-					return !HasWeapon;
-				}
-				return true;
+				return !HasWeapon;
 			}
+			return true;
 		}
+	}
 
-		public override string LabelCap => base.CurStage.label.Formatted(Name.Named("WEAPON")).CapitalizeFirst();
+	public override string LabelCap => base.CurStage.label.Formatted(Name.Named("WEAPON")).CapitalizeFirst();
 
-		public override string Description => base.CurStage.description.Formatted(Name.Named("WEAPON")).CapitalizeFirst();
+	public override string Description => base.CurStage.description.Formatted(Name.Named("WEAPON")).CapitalizeFirst();
 
-		protected bool HasWeapon
+	protected bool HasWeapon
+	{
+		get
 		{
-			get
+			if (weapon != null)
 			{
-				if (weapon != null)
-				{
-					return !weapon.Destroyed;
-				}
-				return false;
+				return !weapon.Destroyed;
 			}
+			return false;
 		}
+	}
 
-		private string Name
+	private string Name
+	{
+		get
 		{
-			get
+			CompGeneratedNames compGeneratedNames = weapon.TryGetComp<CompGeneratedNames>();
+			if (compGeneratedNames != null)
 			{
-				CompGeneratedNames compGeneratedNames = weapon.TryGetComp<CompGeneratedNames>();
-				if (compGeneratedNames != null)
-				{
-					return compGeneratedNames.Name;
-				}
-				return weapon.LabelNoCount;
+				return compGeneratedNames.Name;
 			}
+			return weapon.LabelNoCount;
 		}
+	}
 
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_References.Look(ref weapon, "weapon");
-		}
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_References.Look(ref weapon, "weapon");
 	}
 }

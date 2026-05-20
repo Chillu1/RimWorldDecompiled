@@ -3,43 +3,42 @@ using Verse;
 using Verse.AI;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+internal class JobGiver_FightFiresNearPoint : ThinkNode_JobGiver
 {
-	internal class JobGiver_FightFiresNearPoint : ThinkNode_JobGiver
+	public float maxDistFromPoint = -1f;
+
+	public override ThinkNode DeepCopy(bool resolve = true)
 	{
-		public float maxDistFromPoint = -1f;
+		JobGiver_FightFiresNearPoint obj = (JobGiver_FightFiresNearPoint)base.DeepCopy(resolve);
+		obj.maxDistFromPoint = maxDistFromPoint;
+		return obj;
+	}
 
-		public override ThinkNode DeepCopy(bool resolve = true)
+	protected override Job TryGiveJob(Pawn pawn)
+	{
+		Thing thing = GenClosest.ClosestThingReachable(pawn.GetLord().CurLordToil.FlagLoc, pawn.Map, ThingRequest.ForDef(ThingDefOf.Fire), PathEndMode.Touch, TraverseParms.For(pawn), maxDistFromPoint, FireValidator(pawn));
+		if (thing != null)
 		{
-			JobGiver_FightFiresNearPoint obj = (JobGiver_FightFiresNearPoint)base.DeepCopy(resolve);
-			obj.maxDistFromPoint = maxDistFromPoint;
-			return obj;
+			return JobMaker.MakeJob(JobDefOf.BeatFire, thing);
 		}
+		return null;
+	}
 
-		protected override Job TryGiveJob(Pawn pawn)
+	public static Predicate<Thing> FireValidator(Pawn pawn)
+	{
+		return delegate(Thing t)
 		{
-			Thing thing = GenClosest.ClosestThingReachable(pawn.GetLord().CurLordToil.FlagLoc, pawn.Map, ThingRequest.ForDef(ThingDefOf.Fire), PathEndMode.Touch, TraverseParms.For(pawn), maxDistFromPoint, FireValidator(pawn));
-			if (thing != null)
+			if (((AttachableThing)t).parent is Pawn)
 			{
-				return JobMaker.MakeJob(JobDefOf.BeatFire, thing);
+				return false;
 			}
-			return null;
-		}
-
-		public static Predicate<Thing> FireValidator(Pawn pawn)
-		{
-			return delegate(Thing t)
+			if (!pawn.CanReserve(t))
 			{
-				if (((AttachableThing)t).parent is Pawn)
-				{
-					return false;
-				}
-				if (!pawn.CanReserve(t))
-				{
-					return false;
-				}
-				return !pawn.WorkTagIsDisabled(WorkTags.Firefighting);
-			};
-		}
+				return false;
+			}
+			return !pawn.WorkTagIsDisabled(WorkTags.Firefighting);
+		};
 	}
 }

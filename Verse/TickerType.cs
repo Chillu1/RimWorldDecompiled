@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum TickerType : byte
 {
-	public enum TickerType : byte
-	{
-		Never,
-		Normal,
-		Rare,
-		Long
-	}
+	Never,
+	Normal,
+	Rare,
+	Long
 }

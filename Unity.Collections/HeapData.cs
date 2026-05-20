@@ -1,15 +1,14 @@
-namespace Unity.Collections
+namespace Unity.Collections;
+
+internal struct HeapData<T, U> where T : unmanaged
 {
-	internal struct HeapData<T, U> where T : unmanaged
-	{
-		public int Count;
+	public int Count;
 
-		public int Capacity;
+	public int Capacity;
 
-		public unsafe HeapNode<T>* Heap;
+	public unsafe HeapNode<T>* Heap;
 
-		public unsafe TableValue* Table;
+	public unsafe TableValue* Table;
 
-		public U Comparator;
-	}
+	public U Comparator;
 }

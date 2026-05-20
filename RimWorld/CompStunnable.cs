@@ -1,75 +1,74 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompStunnable : ThingComp
 {
-	public class CompStunnable : ThingComp
+	private StunHandler stunHandler;
+
+	private CompProperties_Stunnable Props => (CompProperties_Stunnable)props;
+
+	public StunHandler StunHandler => stunHandler;
+
+	public bool UseLargeEMPEffecter => Props.useLargeEMPEffecter;
+
+	public Vector3? EMPEffecterDimensions => Props.empEffecterDimensions;
+
+	public Vector3? EMPEffecterOffset => Props.empEffecterOffset;
+
+	public float? EMPChancePerTick => Props.empChancePerTick;
+
+	public override void Initialize(CompProperties props)
 	{
-		private StunHandler stunHandler;
+		base.Initialize(props);
+		stunHandler = new StunHandler(parent);
+	}
 
-		private CompProperties_Stunnable Props => (CompProperties_Stunnable)props;
+	public override void CompTick()
+	{
+		stunHandler.StunHandlerTick();
+	}
 
-		public StunHandler StunHandler => stunHandler;
-
-		public bool UseLargeEMPEffecter => Props.useLargeEMPEffecter;
-
-		public Vector3? EMPEffecterDimensions => Props.empEffecterDimensions;
-
-		public Vector3? EMPEffecterOffset => Props.empEffecterOffset;
-
-		public float? EMPChancePerTick => Props.empChancePerTick;
-
-		public override void Initialize(CompProperties props)
+	public override void PostExposeData()
+	{
+		base.PostExposeData();
+		Scribe_Deep.Look(ref stunHandler, "stunHandler", parent);
+		if (Scribe.mode == LoadSaveMode.PostLoadInit && stunHandler == null)
 		{
-			base.Initialize(props);
 			stunHandler = new StunHandler(parent);
 		}
+	}
 
-		public override void CompTick()
+	public override string CompInspectStringExtra()
+	{
+		if (!stunHandler.Stunned)
 		{
-			stunHandler.StunHandlerTick();
+			return null;
 		}
+		if (stunHandler.Hypnotized)
+		{
+			return "InTrance".Translate();
+		}
+		if (stunHandler.StunFromEMP)
+		{
+			return "StunnedByEMP".Translate().CapitalizeFirst() + ": " + stunHandler.StunTicksLeft.ToStringSecondsFromTicks();
+		}
+		return "StunLower".Translate().CapitalizeFirst() + ": " + stunHandler.StunTicksLeft.ToStringSecondsFromTicks();
+	}
 
-		public override void PostExposeData()
-		{
-			base.PostExposeData();
-			Scribe_Deep.Look(ref stunHandler, "stunHandler", parent);
-			if (Scribe.mode == LoadSaveMode.PostLoadInit && stunHandler == null)
-			{
-				stunHandler = new StunHandler(parent);
-			}
-		}
+	public void ApplyDamage(DamageInfo damageInfo)
+	{
+		stunHandler.Notify_DamageApplied(damageInfo);
+	}
 
-		public override string CompInspectStringExtra()
-		{
-			if (!stunHandler.Stunned)
-			{
-				return null;
-			}
-			if (stunHandler.Hypnotized)
-			{
-				return "InTrance".Translate();
-			}
-			if (stunHandler.StunFromEMP)
-			{
-				return "StunnedByEMP".Translate().CapitalizeFirst() + ": " + stunHandler.StunTicksLeft.ToStringSecondsFromTicks();
-			}
-			return "StunLower".Translate().CapitalizeFirst() + ": " + stunHandler.StunTicksLeft.ToStringSecondsFromTicks();
-		}
+	public bool CanBeStunnedByDamage(DamageDef def)
+	{
+		return Props.affectedDamageDefs.Contains(def);
+	}
 
-		public void ApplyDamage(DamageInfo damageInfo)
-		{
-			stunHandler.Notify_DamageApplied(damageInfo);
-		}
-
-		public bool CanBeStunnedByDamage(DamageDef def)
-		{
-			return Props.affectedDamageDefs.Contains(def);
-		}
-
-		public bool CanAdaptToDamage(DamageDef def)
-		{
-			return Props.adaptableDamageDefs.Contains(def);
-		}
+	public bool CanAdaptToDamage(DamageDef def)
+	{
+		return Props.adaptableDamageDefs.Contains(def);
 	}
 }

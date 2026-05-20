@@ -1,23 +1,22 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class PreceptComp_UnwillingToDo_Chance : PreceptComp_UnwillingToDo
 {
-	public class PreceptComp_UnwillingToDo_Chance : PreceptComp_UnwillingToDo
+	public float chance;
+
+	public override bool MemberWillingToDo(HistoryEvent ev)
 	{
-		public float chance;
-
-		public override bool MemberWillingToDo(HistoryEvent ev)
+		if (Rand.Value >= chance)
 		{
-			if (Rand.Value >= chance)
-			{
-				return true;
-			}
-			return base.MemberWillingToDo(ev);
+			return true;
 		}
+		return base.MemberWillingToDo(ev);
+	}
 
-		public override string GetProhibitionText()
-		{
-			return null;
-		}
+	public override string GetProhibitionText()
+	{
+		return null;
 	}
 }

@@ -1,45 +1,44 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class MapCellsInRandomOrder
 {
-	public class MapCellsInRandomOrder
+	private Map map;
+
+	private List<IntVec3> randomizedCells;
+
+	public MapCellsInRandomOrder(Map map)
 	{
-		private Map map;
+		this.map = map;
+	}
 
-		private List<IntVec3> randomizedCells;
+	public List<IntVec3> GetAll()
+	{
+		CreateListIfShould();
+		return randomizedCells;
+	}
 
-		public MapCellsInRandomOrder(Map map)
+	public IntVec3 Get(int index)
+	{
+		CreateListIfShould();
+		return randomizedCells[index];
+	}
+
+	private void CreateListIfShould()
+	{
+		if (randomizedCells != null)
 		{
-			this.map = map;
+			return;
 		}
-
-		public List<IntVec3> GetAll()
+		randomizedCells = new List<IntVec3>(map.Area);
+		foreach (IntVec3 allCell in map.AllCells)
 		{
-			CreateListIfShould();
-			return randomizedCells;
+			randomizedCells.Add(allCell);
 		}
-
-		public IntVec3 Get(int index)
-		{
-			CreateListIfShould();
-			return randomizedCells[index];
-		}
-
-		private void CreateListIfShould()
-		{
-			if (randomizedCells != null)
-			{
-				return;
-			}
-			randomizedCells = new List<IntVec3>(map.Area);
-			foreach (IntVec3 allCell in map.AllCells)
-			{
-				randomizedCells.Add(allCell);
-			}
-			Rand.PushState();
-			Rand.Seed = Find.World.info.Seed ^ map.Tile.GetHashCode();
-			randomizedCells.Shuffle();
-			Rand.PopState();
-		}
+		Rand.PushState();
+		Rand.Seed = Find.World.info.Seed ^ map.Tile.GetHashCode();
+		randomizedCells.Shuffle();
+		Rand.PopState();
 	}
 }

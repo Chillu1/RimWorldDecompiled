@@ -1,11 +1,10 @@
 using Verse;
 
-namespace RimWorld
-{
-	public abstract class DesignatorWithEyedropper : Designator
-	{
-		protected bool eyedropMode;
+namespace RimWorld;
 
-		protected Designator_Eyedropper eyedropper;
-	}
+public abstract class DesignatorWithEyedropper : Designator
+{
+	protected bool eyedropMode;
+
+	protected Designator_Eyedropper eyedropper;
 }

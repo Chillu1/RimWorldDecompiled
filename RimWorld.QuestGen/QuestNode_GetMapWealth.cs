@@ -1,24 +1,23 @@
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_GetMapWealth : QuestNode
 {
-	public class QuestNode_GetMapWealth : QuestNode
+	public SlateRef<Map> map;
+
+	[NoTranslate]
+	public SlateRef<string> storeAs;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		public SlateRef<Map> map;
+		slate.Set(storeAs.GetValue(slate), map.GetValue(slate).wealthWatcher.WealthTotal);
+		return true;
+	}
 
-		[NoTranslate]
-		public SlateRef<string> storeAs;
-
-		protected override bool TestRunInt(Slate slate)
-		{
-			slate.Set(storeAs.GetValue(slate), map.GetValue(slate).wealthWatcher.WealthTotal);
-			return true;
-		}
-
-		protected override void RunInt()
-		{
-			Slate slate = QuestGen.slate;
-			slate.Set(storeAs.GetValue(slate), map.GetValue(slate).wealthWatcher.WealthTotal);
-		}
+	protected override void RunInt()
+	{
+		Slate slate = QuestGen.slate;
+		slate.Set(storeAs.GetValue(slate), map.GetValue(slate).wealthWatcher.WealthTotal);
 	}
 }

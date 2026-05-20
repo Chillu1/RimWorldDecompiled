@@ -1,14 +1,13 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class AbilityGroupDef : Def
 {
-	public class AbilityGroupDef : Def
-	{
-		public int cooldownTicks;
+	public int cooldownTicks;
 
-		public bool sendMessageOnCooldownComplete;
+	public bool sendMessageOnCooldownComplete;
 
-		public List<string> ritualRoleIds;
-	}
+	public List<string> ritualRoleIds;
 }

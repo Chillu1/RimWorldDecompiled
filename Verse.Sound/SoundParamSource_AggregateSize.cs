@@ -1,16 +1,15 @@
-namespace Verse.Sound
-{
-	public class SoundParamSource_AggregateSize : SoundParamSource
-	{
-		public override string Label => "Aggregate size";
+namespace Verse.Sound;
 
-		public override float ValueFor(Sample samp)
+public class SoundParamSource_AggregateSize : SoundParamSource
+{
+	public override string Label => "Aggregate size";
+
+	public override float ValueFor(Sample samp)
+	{
+		if (samp.ExternalParams.sizeAggregator == null)
 		{
-			if (samp.ExternalParams.sizeAggregator == null)
-			{
-				return 0f;
-			}
-			return samp.ExternalParams.sizeAggregator.AggregateSize;
+			return 0f;
 		}
+		return samp.ExternalParams.sizeAggregator.AggregateSize;
 	}
 }

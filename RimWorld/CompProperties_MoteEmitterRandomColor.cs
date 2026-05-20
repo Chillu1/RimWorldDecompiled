@@ -2,27 +2,26 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_MoteEmitterRandomColor : CompProperties_MoteEmitter
 {
-	public class CompProperties_MoteEmitterRandomColor : CompProperties_MoteEmitter
+	public List<Color> colors;
+
+	public CompProperties_MoteEmitterRandomColor()
 	{
-		public List<Color> colors;
+		compClass = typeof(CompMoteEmitterRandomColor);
+	}
 
-		public CompProperties_MoteEmitterRandomColor()
+	public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+	{
+		foreach (string item in base.ConfigErrors(parentDef))
 		{
-			compClass = typeof(CompMoteEmitterRandomColor);
+			yield return item;
 		}
-
-		public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+		if (colors.NullOrEmpty())
 		{
-			foreach (string item in base.ConfigErrors(parentDef))
-			{
-				yield return item;
-			}
-			if (colors.NullOrEmpty())
-			{
-				yield return "colors list is empty or null";
-			}
+			yield return "colors list is empty or null";
 		}
 	}
 }

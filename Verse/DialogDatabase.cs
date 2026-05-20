@@ -1,79 +1,78 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public static class DialogDatabase
 {
-	public static class DialogDatabase
+	private static List<DiaNodeMold> Nodes;
+
+	private static List<DiaNodeList> NodeLists;
+
+	static DialogDatabase()
 	{
-		private static List<DiaNodeMold> Nodes;
+		Nodes = new List<DiaNodeMold>();
+		NodeLists = new List<DiaNodeList>();
+		LoadAllDialog();
+	}
 
-		private static List<DiaNodeList> NodeLists;
-
-		static DialogDatabase()
+	private static void LoadAllDialog()
+	{
+		Nodes.Clear();
+		Object[] array = Resources.LoadAll("Dialog", typeof(TextAsset));
+		foreach (Object obj in array)
 		{
-			Nodes = new List<DiaNodeMold>();
-			NodeLists = new List<DiaNodeList>();
-			LoadAllDialog();
+			TextAsset ass = obj as TextAsset;
+			if (obj.name == "BaseEncounters" || obj.name == "GeneratedDialogs")
+			{
+				LayerLoader.LoadFileIntoList(ass, Nodes, NodeLists, DiaNodeType.BaseEncounters);
+			}
+			if (obj.name == "InsanityBattles")
+			{
+				LayerLoader.LoadFileIntoList(ass, Nodes, NodeLists, DiaNodeType.InsanityBattles);
+			}
+			if (obj.name == "SpecialEncounters")
+			{
+				LayerLoader.LoadFileIntoList(ass, Nodes, NodeLists, DiaNodeType.Special);
+			}
 		}
-
-		private static void LoadAllDialog()
+		foreach (DiaNodeMold node in Nodes)
 		{
-			Nodes.Clear();
-			Object[] array = Resources.LoadAll("Dialog", typeof(TextAsset));
-			foreach (Object obj in array)
-			{
-				TextAsset ass = obj as TextAsset;
-				if (obj.name == "BaseEncounters" || obj.name == "GeneratedDialogs")
-				{
-					LayerLoader.LoadFileIntoList(ass, Nodes, NodeLists, DiaNodeType.BaseEncounters);
-				}
-				if (obj.name == "InsanityBattles")
-				{
-					LayerLoader.LoadFileIntoList(ass, Nodes, NodeLists, DiaNodeType.InsanityBattles);
-				}
-				if (obj.name == "SpecialEncounters")
-				{
-					LayerLoader.LoadFileIntoList(ass, Nodes, NodeLists, DiaNodeType.Special);
-				}
-			}
-			foreach (DiaNodeMold node in Nodes)
-			{
-				node.PostLoad();
-			}
-			LayerLoader.MarkNonRootNodes(Nodes);
+			node.PostLoad();
 		}
+		LayerLoader.MarkNonRootNodes(Nodes);
+	}
 
-		public static DiaNodeMold GetRandomEncounterRootNode(DiaNodeType NType)
+	public static DiaNodeMold GetRandomEncounterRootNode(DiaNodeType NType)
+	{
+		List<DiaNodeMold> list = new List<DiaNodeMold>();
+		foreach (DiaNodeMold node in Nodes)
 		{
-			List<DiaNodeMold> list = new List<DiaNodeMold>();
-			foreach (DiaNodeMold node in Nodes)
+			if (node.isRoot && (!node.unique || !node.used) && node.nodeType == NType)
 			{
-				if (node.isRoot && (!node.unique || !node.used) && node.nodeType == NType)
-				{
-					list.Add(node);
-				}
+				list.Add(node);
 			}
-			return list.RandomElement();
 		}
+		return list.RandomElement();
+	}
 
-		public static DiaNodeMold GetNodeNamed(string NodeName)
+	public static DiaNodeMold GetNodeNamed(string NodeName)
+	{
+		foreach (DiaNodeMold node in Nodes)
 		{
-			foreach (DiaNodeMold node in Nodes)
+			if (node.name == NodeName)
 			{
-				if (node.name == NodeName)
-				{
-					return node;
-				}
+				return node;
 			}
-			foreach (DiaNodeList nodeList in NodeLists)
-			{
-				if (nodeList.Name == NodeName)
-				{
-					return nodeList.RandomNodeFromList();
-				}
-			}
-			Log.Error("Did not find node named '" + NodeName + "'.");
-			return null;
 		}
+		foreach (DiaNodeList nodeList in NodeLists)
+		{
+			if (nodeList.Name == NodeName)
+			{
+				return nodeList.RandomNodeFromList();
+			}
+		}
+		Log.Error("Did not find node named '" + NodeName + "'.");
+		return null;
 	}
 }

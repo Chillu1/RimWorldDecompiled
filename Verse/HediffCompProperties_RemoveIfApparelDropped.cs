@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_RemoveIfApparelDropped : HediffCompProperties
 {
-	public class HediffCompProperties_RemoveIfApparelDropped : HediffCompProperties
+	public HediffCompProperties_RemoveIfApparelDropped()
 	{
-		public HediffCompProperties_RemoveIfApparelDropped()
-		{
-			compClass = typeof(HediffComp_RemoveIfApparelDropped);
-		}
+		compClass = typeof(HediffComp_RemoveIfApparelDropped);
 	}
 }

@@ -1,71 +1,70 @@
 using RimWorld;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class Graphic_ActivityStaged : Graphic_Collection
 {
-	public class Graphic_ActivityStaged : Graphic_Collection
+	public override Material MatSingle => subGraphics[0].MatSingle;
+
+	public override Graphic GetColoredVersion(Shader newShader, Color newColor, Color newColorTwo)
 	{
-		public override Material MatSingle => subGraphics[0].MatSingle;
+		return GraphicDatabase.Get<Graphic_ActivityStaged>(path, newShader, drawSize, newColor, newColorTwo, data);
+	}
 
-		public override Graphic GetColoredVersion(Shader newShader, Color newColor, Color newColorTwo)
+	public override Material MatAt(Rot4 rot, Thing thing = null)
+	{
+		if (thing == null)
 		{
-			return GraphicDatabase.Get<Graphic_ActivityStaged>(path, newShader, drawSize, newColor, newColorTwo, data);
+			return MatSingle;
 		}
+		return MatSingleFor(thing);
+	}
 
-		public override Material MatAt(Rot4 rot, Thing thing = null)
+	public override Material MatSingleFor(Thing thing)
+	{
+		if (thing == null)
 		{
-			if (thing == null)
-			{
-				return MatSingle;
-			}
-			return MatSingleFor(thing);
+			return MatSingle;
 		}
+		return SubGraphicFor(thing).MatSingle;
+	}
 
-		public override Material MatSingleFor(Thing thing)
+	public override void DrawWorker(Vector3 loc, Rot4 rot, ThingDef thingDef, Thing thing, float extraRotation)
+	{
+		((thing != null) ? SubGraphicFor(thing) : subGraphics[0]).DrawWorker(loc, rot, thingDef, thing, extraRotation);
+		if (base.ShadowGraphic != null)
 		{
-			if (thing == null)
-			{
-				return MatSingle;
-			}
-			return SubGraphicFor(thing).MatSingle;
+			base.ShadowGraphic.DrawWorker(loc, rot, thingDef, thing, extraRotation);
 		}
+	}
 
-		public override void DrawWorker(Vector3 loc, Rot4 rot, ThingDef thingDef, Thing thing, float extraRotation)
+	public override void Print(SectionLayer layer, Thing thing, float extraRotation)
+	{
+		((thing != null) ? SubGraphicFor(thing) : subGraphics[0]).Print(layer, thing, extraRotation);
+		if (base.ShadowGraphic != null && thing != null)
 		{
-			((thing != null) ? SubGraphicFor(thing) : subGraphics[0]).DrawWorker(loc, rot, thingDef, thing, extraRotation);
-			if (base.ShadowGraphic != null)
-			{
-				base.ShadowGraphic.DrawWorker(loc, rot, thingDef, thing, extraRotation);
-			}
+			base.ShadowGraphic.Print(layer, thing, extraRotation);
 		}
+	}
 
-		public override void Print(SectionLayer layer, Thing thing, float extraRotation)
+	private Graphic SubGraphicFor(Thing thing)
+	{
+		if (thing == null)
 		{
-			((thing != null) ? SubGraphicFor(thing) : subGraphics[0]).Print(layer, thing, extraRotation);
-			if (base.ShadowGraphic != null && thing != null)
-			{
-				base.ShadowGraphic.Print(layer, thing, extraRotation);
-			}
+			return subGraphics[0];
 		}
+		if (!thing.TryGetComp(out CompActivity comp))
+		{
+			Log.ErrorOnce(thing.Label + ": Graphic_ActivityStaged requires CompActivity.", 4627811);
+			return null;
+		}
+		int num = Mathf.Min(Mathf.FloorToInt((float)subGraphics.Length * comp.ActivityLevel), subGraphics.Length - 1);
+		return subGraphics[num];
+	}
 
-		private Graphic SubGraphicFor(Thing thing)
-		{
-			if (thing == null)
-			{
-				return subGraphics[0];
-			}
-			if (!thing.TryGetComp(out CompActivity comp))
-			{
-				Log.ErrorOnce(thing.Label + ": Graphic_ActivityStaged requires CompActivity.", 4627811);
-				return null;
-			}
-			int num = Mathf.Min(Mathf.FloorToInt((float)subGraphics.Length * comp.ActivityLevel), subGraphics.Length - 1);
-			return subGraphics[num];
-		}
-
-		public override string ToString()
-		{
-			return "ActivityStaged(path=" + path + ", count=" + subGraphics.Length + ")";
-		}
+	public override string ToString()
+	{
+		return "ActivityStaged(path=" + path + ", count=" + subGraphics.Length + ")";
 	}
 }

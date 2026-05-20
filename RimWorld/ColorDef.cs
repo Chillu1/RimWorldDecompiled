@@ -1,18 +1,17 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ColorDef : Def
 {
-	public class ColorDef : Def
-	{
-		public Color color;
+	public Color color;
 
-		public ColorType colorType;
+	public ColorType colorType;
 
-		public int displayOrder = int.MaxValue;
+	public int displayOrder = int.MaxValue;
 
-		public bool displayInStylingStationUI = true;
+	public bool displayInStylingStationUI = true;
 
-		public bool randomlyPickable = true;
-	}
+	public bool randomlyPickable = true;
 }

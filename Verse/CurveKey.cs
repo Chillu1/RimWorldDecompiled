@@ -1,9 +1,8 @@
-namespace Verse
-{
-	public class CurveKey
-	{
-		public int tick;
+namespace Verse;
 
-		public GraphicStateDef graphicState;
-	}
+public class CurveKey
+{
+	public int tick;
+
+	public GraphicStateDef graphicState;
 }

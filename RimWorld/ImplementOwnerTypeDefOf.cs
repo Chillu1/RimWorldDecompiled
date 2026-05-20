@@ -1,23 +1,22 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+[DefOf]
+public static class ImplementOwnerTypeDefOf
 {
-	[DefOf]
-	public static class ImplementOwnerTypeDefOf
+	public static ImplementOwnerTypeDef Weapon;
+
+	public static ImplementOwnerTypeDef Bodypart;
+
+	public static ImplementOwnerTypeDef Hediff;
+
+	public static ImplementOwnerTypeDef Terrain;
+
+	public static ImplementOwnerTypeDef NativeVerb;
+
+	static ImplementOwnerTypeDefOf()
 	{
-		public static ImplementOwnerTypeDef Weapon;
-
-		public static ImplementOwnerTypeDef Bodypart;
-
-		public static ImplementOwnerTypeDef Hediff;
-
-		public static ImplementOwnerTypeDef Terrain;
-
-		public static ImplementOwnerTypeDef NativeVerb;
-
-		static ImplementOwnerTypeDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(ImplementOwnerTypeDefOf));
-		}
+		DefOfHelper.EnsureInitializedInCtor(typeof(ImplementOwnerTypeDefOf));
 	}
 }

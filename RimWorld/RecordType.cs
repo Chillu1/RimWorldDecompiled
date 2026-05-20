@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum RecordType
 {
-	public enum RecordType
-	{
-		Time,
-		Int,
-		Float
-	}
+	Time,
+	Int,
+	Float
 }

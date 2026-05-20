@@ -2,33 +2,32 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 
-namespace Verse
+namespace Verse;
+
+public static class ProfilerPairValidation
 {
-	public static class ProfilerPairValidation
+	public static Stack<StackTrace> profilerSignatures = new Stack<StackTrace>();
+
+	public static void BeginSample(string token)
 	{
-		public static Stack<StackTrace> profilerSignatures = new Stack<StackTrace>();
+		profilerSignatures.Push(new StackTrace(1, fNeedFileInfo: true));
+	}
 
-		public static void BeginSample(string token)
+	public static void EndSample()
+	{
+		StackTrace stackTrace = profilerSignatures.Pop();
+		StackTrace stackTrace2 = new StackTrace(1, fNeedFileInfo: true);
+		if (stackTrace2.FrameCount != stackTrace.FrameCount)
 		{
-			profilerSignatures.Push(new StackTrace(1, fNeedFileInfo: true));
+			Log.Message($"Mismatch:\n{stackTrace}\n\n{stackTrace2}");
+			return;
 		}
-
-		public static void EndSample()
+		for (int i = 0; i < stackTrace2.FrameCount; i++)
 		{
-			StackTrace stackTrace = profilerSignatures.Pop();
-			StackTrace stackTrace2 = new StackTrace(1, fNeedFileInfo: true);
-			if (stackTrace2.FrameCount != stackTrace.FrameCount)
+			if (stackTrace2.GetFrame(i).GetMethod() != stackTrace.GetFrame(i).GetMethod() && (!(stackTrace.GetFrame(i).GetMethod().DeclaringType == typeof(ProfilerThreadCheck)) || !(stackTrace2.GetFrame(i).GetMethod().DeclaringType == typeof(ProfilerThreadCheck))) && (!(stackTrace.GetFrame(i).GetMethod() == typeof(PathFinder).GetMethod("PfProfilerBeginSample", BindingFlags.Instance | BindingFlags.NonPublic)) || !(stackTrace2.GetFrame(i).GetMethod() == typeof(PathFinder).GetMethod("PfProfilerEndSample", BindingFlags.Instance | BindingFlags.NonPublic))))
 			{
 				Log.Message($"Mismatch:\n{stackTrace}\n\n{stackTrace2}");
-				return;
-			}
-			for (int i = 0; i < stackTrace2.FrameCount; i++)
-			{
-				if (stackTrace2.GetFrame(i).GetMethod() != stackTrace.GetFrame(i).GetMethod() && (!(stackTrace.GetFrame(i).GetMethod().DeclaringType == typeof(ProfilerThreadCheck)) || !(stackTrace2.GetFrame(i).GetMethod().DeclaringType == typeof(ProfilerThreadCheck))) && (!(stackTrace.GetFrame(i).GetMethod() == typeof(PathFinder).GetMethod("PfProfilerBeginSample", BindingFlags.Instance | BindingFlags.NonPublic)) || !(stackTrace2.GetFrame(i).GetMethod() == typeof(PathFinder).GetMethod("PfProfilerEndSample", BindingFlags.Instance | BindingFlags.NonPublic))))
-				{
-					Log.Message($"Mismatch:\n{stackTrace}\n\n{stackTrace2}");
-					break;
-				}
+				break;
 			}
 		}
 	}

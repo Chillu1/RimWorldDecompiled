@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum Traversability : byte
 {
-	public enum Traversability : byte
-	{
-		Standable,
-		PassThroughOnly,
-		Impassable
-	}
+	Standable,
+	PassThroughOnly,
+	Impassable
 }

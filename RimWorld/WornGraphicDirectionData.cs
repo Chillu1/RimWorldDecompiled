@@ -1,23 +1,22 @@
 using UnityEngine;
 
-namespace RimWorld
+namespace RimWorld;
+
+public struct WornGraphicDirectionData
 {
-	public struct WornGraphicDirectionData
-	{
-		public Vector2 offset;
+	public Vector2 offset;
 
-		public Vector2? scale;
+	public Vector2? scale;
 
-		public WornGraphicBodyTypeData male;
+	public WornGraphicBodyTypeData male;
 
-		public WornGraphicBodyTypeData female;
+	public WornGraphicBodyTypeData female;
 
-		public WornGraphicBodyTypeData thin;
+	public WornGraphicBodyTypeData thin;
 
-		public WornGraphicBodyTypeData hulk;
+	public WornGraphicBodyTypeData hulk;
 
-		public WornGraphicBodyTypeData fat;
+	public WornGraphicBodyTypeData fat;
 
-		public Vector2 Scale => scale ?? Vector2.one;
-	}
+	public Vector2 Scale => scale ?? Vector2.one;
 }

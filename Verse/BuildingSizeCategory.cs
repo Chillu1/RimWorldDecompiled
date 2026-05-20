@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum BuildingSizeCategory
 {
-	public enum BuildingSizeCategory
-	{
-		None,
-		Small,
-		Medium,
-		Large
-	}
+	None,
+	Small,
+	Medium,
+	Large
 }

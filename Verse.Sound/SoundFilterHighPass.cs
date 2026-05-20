@@ -1,22 +1,21 @@
 using UnityEngine;
 
-namespace Verse.Sound
+namespace Verse.Sound;
+
+public class SoundFilterHighPass : SoundFilter
 {
-	public class SoundFilterHighPass : SoundFilter
+	[EditSliderRange(50f, 20000f)]
+	[Description("This filter will attenuate frequencies below this cutoff frequency.")]
+	public float cutoffFrequency = 10000f;
+
+	[EditSliderRange(1f, 10f)]
+	[Description("The resonance Q value.")]
+	public float highpassResonanceQ = 1f;
+
+	public override void SetupOn(AudioSource source)
 	{
-		[EditSliderRange(50f, 20000f)]
-		[Description("This filter will attenuate frequencies below this cutoff frequency.")]
-		public float cutoffFrequency = 10000f;
-
-		[EditSliderRange(1f, 10f)]
-		[Description("The resonance Q value.")]
-		public float highpassResonanceQ = 1f;
-
-		public override void SetupOn(AudioSource source)
-		{
-			AudioHighPassFilter orMakeFilterOn = SoundFilter.GetOrMakeFilterOn<AudioHighPassFilter>(source);
-			orMakeFilterOn.cutoffFrequency = cutoffFrequency;
-			orMakeFilterOn.highpassResonanceQ = highpassResonanceQ;
-		}
+		AudioHighPassFilter orMakeFilterOn = SoundFilter.GetOrMakeFilterOn<AudioHighPassFilter>(source);
+		orMakeFilterOn.cutoffFrequency = cutoffFrequency;
+		orMakeFilterOn.highpassResonanceQ = highpassResonanceQ;
 	}
 }

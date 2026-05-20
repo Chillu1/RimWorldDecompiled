@@ -1,15 +1,14 @@
-namespace RimWorld
+namespace RimWorld;
+
+public static class PassionExtension
 {
-	public static class PassionExtension
+	public static Passion IncrementPassion(this Passion passion)
 	{
-		public static Passion IncrementPassion(this Passion passion)
+		return passion switch
 		{
-			return passion switch
-			{
-				Passion.None => Passion.Minor, 
-				Passion.Minor => Passion.Major, 
-				_ => passion, 
-			};
-		}
+			Passion.None => Passion.Minor, 
+			Passion.Minor => Passion.Major, 
+			_ => passion, 
+		};
 	}
 }

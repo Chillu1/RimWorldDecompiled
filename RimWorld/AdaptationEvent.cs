@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum AdaptationEvent
 {
-	public enum AdaptationEvent
-	{
-		Downed,
-		Died,
-		Kidnapped,
-		LostBecauseMapClosed
-	}
+	Downed,
+	Died,
+	Kidnapped,
+	LostBecauseMapClosed
 }

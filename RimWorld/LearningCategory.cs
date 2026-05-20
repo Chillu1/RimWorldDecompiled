@@ -1,12 +1,11 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum LearningCategory : byte
 {
-	public enum LearningCategory : byte
-	{
-		Empty,
-		VeryLow,
-		Low,
-		Satisfied,
-		High,
-		Extreme
-	}
+	Empty,
+	VeryLow,
+	Low,
+	Satisfied,
+	High,
+	Extreme
 }

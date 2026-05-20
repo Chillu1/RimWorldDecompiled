@@ -1,11 +1,10 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class DamageEffectStage
-	{
-		public float minHitPointsPercent;
+namespace RimWorld;
 
-		public EffecterDef effecterDef;
-	}
+public class DamageEffectStage
+{
+	public float minHitPointsPercent;
+
+	public EffecterDef effecterDef;
 }

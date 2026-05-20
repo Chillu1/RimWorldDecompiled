@@ -1,41 +1,40 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RitualStageAction_Multi : RitualStageAction
 {
-	public class RitualStageAction_Multi : RitualStageAction
+	public List<RitualStageAction> subActions;
+
+	public override void Apply(LordJob_Ritual ritual)
 	{
-		public List<RitualStageAction> subActions;
-
-		public override void Apply(LordJob_Ritual ritual)
+		if (subActions == null)
 		{
-			if (subActions == null)
-			{
-				Log.Error("RitualStageAction_Multi without any sub actions on ritual " + ritual);
-				return;
-			}
-			foreach (RitualStageAction subAction in subActions)
-			{
-				subAction.Apply(ritual);
-			}
+			Log.Error("RitualStageAction_Multi without any sub actions on ritual " + ritual);
+			return;
 		}
-
-		public override void ApplyToPawn(LordJob_Ritual ritual, Pawn pawn)
+		foreach (RitualStageAction subAction in subActions)
 		{
-			if (subActions == null)
-			{
-				Log.Error("RitualStageAction_Multi without any sub actions on ritual " + ritual);
-				return;
-			}
-			foreach (RitualStageAction subAction in subActions)
-			{
-				subAction.ApplyToPawn(ritual, pawn);
-			}
+			subAction.Apply(ritual);
 		}
+	}
 
-		public override void ExposeData()
+	public override void ApplyToPawn(LordJob_Ritual ritual, Pawn pawn)
+	{
+		if (subActions == null)
 		{
-			Scribe_Collections.Look(ref subActions, "subActions", LookMode.Deep);
+			Log.Error("RitualStageAction_Multi without any sub actions on ritual " + ritual);
+			return;
 		}
+		foreach (RitualStageAction subAction in subActions)
+		{
+			subAction.ApplyToPawn(ritual, pawn);
+		}
+	}
+
+	public override void ExposeData()
+	{
+		Scribe_Collections.Look(ref subActions, "subActions", LookMode.Deep);
 	}
 }

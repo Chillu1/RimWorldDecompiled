@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class RoomContents_CryptosleepCaskets_Hostile : RoomContents_CryptosleepCaskets
 {
-	public class RoomContents_CryptosleepCaskets_Hostile : RoomContents_CryptosleepCaskets
+	public override PodContentsType GetContentsType()
 	{
-		public override PodContentsType GetContentsType()
-		{
-			return PodContentsType.AncientHostile;
-		}
+		return PodContentsType.AncientHostile;
 	}
 }

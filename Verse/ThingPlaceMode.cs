@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum ThingPlaceMode : byte
 {
-	public enum ThingPlaceMode : byte
-	{
-		Direct,
-		Near,
-		Radius
-	}
+	Direct,
+	Near,
+	Radius
 }

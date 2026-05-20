@@ -1,51 +1,50 @@
 using Steamworks;
 using UnityEngine;
 
-namespace Verse.Steam
+namespace Verse.Steam;
+
+public class Dialog_WorkshopOperationInProgress : Window
 {
-	public class Dialog_WorkshopOperationInProgress : Window
+	public override Vector2 InitialSize => new Vector2(600f, 400f);
+
+	public Dialog_WorkshopOperationInProgress()
 	{
-		public override Vector2 InitialSize => new Vector2(600f, 400f);
+		forcePause = true;
+		closeOnAccept = false;
+		closeOnCancel = false;
+		absorbInputAroundWindow = true;
+		preventDrawTutor = true;
+	}
 
-		public Dialog_WorkshopOperationInProgress()
+	public override void DoWindowContents(Rect inRect)
+	{
+		Workshop.GetUpdateStatus(out var updateStatus, out var progPercent);
+		WorkshopInteractStage curStage = Workshop.CurStage;
+		if (curStage == WorkshopInteractStage.None && updateStatus == EItemUpdateStatus.k_EItemUpdateStatusInvalid)
 		{
-			forcePause = true;
-			closeOnAccept = false;
-			closeOnCancel = false;
-			absorbInputAroundWindow = true;
-			preventDrawTutor = true;
+			Close();
+			return;
 		}
+		string text = "";
+		if (curStage != WorkshopInteractStage.None)
+		{
+			text += curStage.GetLabel();
+			text += "\n\n";
+		}
+		if (updateStatus != EItemUpdateStatus.k_EItemUpdateStatusInvalid)
+		{
+			text += updateStatus.GetLabel();
+			if (progPercent > 0f)
+			{
+				text = text + " (" + progPercent.ToStringPercent() + ")";
+			}
+			text += GenText.MarchingEllipsis();
+		}
+		Widgets.Label(inRect, text);
+	}
 
-		public override void DoWindowContents(Rect inRect)
-		{
-			Workshop.GetUpdateStatus(out var updateStatus, out var progPercent);
-			WorkshopInteractStage curStage = Workshop.CurStage;
-			if (curStage == WorkshopInteractStage.None && updateStatus == EItemUpdateStatus.k_EItemUpdateStatusInvalid)
-			{
-				Close();
-				return;
-			}
-			string text = "";
-			if (curStage != WorkshopInteractStage.None)
-			{
-				text += curStage.GetLabel();
-				text += "\n\n";
-			}
-			if (updateStatus != EItemUpdateStatus.k_EItemUpdateStatusInvalid)
-			{
-				text += updateStatus.GetLabel();
-				if (progPercent > 0f)
-				{
-					text = text + " (" + progPercent.ToStringPercent() + ")";
-				}
-				text += GenText.MarchingEllipsis();
-			}
-			Widgets.Label(inRect, text);
-		}
-
-		public static void CloseAll()
-		{
-			Find.WindowStack.WindowOfType<Dialog_WorkshopOperationInProgress>()?.Close();
-		}
+	public static void CloseAll()
+	{
+		Find.WindowStack.WindowOfType<Dialog_WorkshopOperationInProgress>()?.Close();
 	}
 }

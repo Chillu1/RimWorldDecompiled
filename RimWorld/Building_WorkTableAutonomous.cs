@@ -2,175 +2,174 @@ using System.Collections.Generic;
 using System.Text;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+[StaticConstructorOnStartup]
+public class Building_WorkTableAutonomous : Building_WorkTable, IThingHolder, INotifyHauledTo
 {
-	[StaticConstructorOnStartup]
-	public class Building_WorkTableAutonomous : Building_WorkTable, IThingHolder, INotifyHauledTo
+	public ThingOwner innerContainer;
+
+	protected Bill_Autonomous activeBill;
+
+	public Bill_Autonomous ActiveBill
 	{
-		public ThingOwner innerContainer;
-
-		protected Bill_Autonomous activeBill;
-
-		public Bill_Autonomous ActiveBill
+		get
 		{
-			get
+			return activeBill;
+		}
+		set
+		{
+			if (activeBill != value)
 			{
-				return activeBill;
-			}
-			set
-			{
-				if (activeBill != value)
-				{
-					activeBill = value;
-				}
+				activeBill = value;
 			}
 		}
+	}
 
-		public float CurrentBillFormingPercent
+	public float CurrentBillFormingPercent
+	{
+		get
 		{
-			get
+			if (activeBill == null || activeBill.State != FormingState.Forming)
 			{
-				if (activeBill == null || activeBill.State != FormingState.Forming)
-				{
-					return 0f;
-				}
-				return 1f - activeBill.formingTicks / (float)activeBill.recipe.formingTicks;
+				return 0f;
 			}
+			return 1f - activeBill.formingTicks / (float)activeBill.recipe.formingTicks;
 		}
+	}
 
-		public GenDraw.FillableBarRequest BarDrawData => def.building.BarDrawDataFor(base.Rotation);
+	public GenDraw.FillableBarRequest BarDrawData => def.building.BarDrawDataFor(base.Rotation);
 
-		public Building_WorkTableAutonomous()
+	public Building_WorkTableAutonomous()
+	{
+		innerContainer = new ThingOwner<Thing>(this);
+	}
+
+	public virtual void Notify_StartForming(Pawn billDoer)
+	{
+	}
+
+	public virtual void Notify_FormingCompleted()
+	{
+		Thing thing = activeBill.CreateProducts();
+		innerContainer.ClearAndDestroyContents();
+		if (thing != null)
 		{
-			innerContainer = new ThingOwner<Thing>(this);
+			innerContainer.TryAdd(thing);
 		}
+	}
 
-		public virtual void Notify_StartForming(Pawn billDoer)
+	public override void Notify_BillDeleted(Bill bill)
+	{
+		if (activeBill == bill)
 		{
-		}
-
-		public virtual void Notify_FormingCompleted()
-		{
-			Thing thing = activeBill.CreateProducts();
-			innerContainer.ClearAndDestroyContents();
-			if (thing != null)
-			{
-				innerContainer.TryAdd(thing);
-			}
-		}
-
-		public override void Notify_BillDeleted(Bill bill)
-		{
-			if (activeBill == bill)
-			{
-				EjectContents();
-				activeBill = null;
-			}
-		}
-
-		public virtual void Notify_HauledTo(Pawn hauler, Thing thing, int count)
-		{
-		}
-
-		public override void Destroy(DestroyMode mode = DestroyMode.Vanish)
-		{
-			activeBill?.Reset();
 			EjectContents();
-			base.Destroy(mode);
+			activeBill = null;
 		}
+	}
 
-		public virtual void EjectContents()
+	public virtual void Notify_HauledTo(Pawn hauler, Thing thing, int count)
+	{
+	}
+
+	public override void Destroy(DestroyMode mode = DestroyMode.Vanish)
+	{
+		activeBill?.Reset();
+		EjectContents();
+		base.Destroy(mode);
+	}
+
+	public virtual void EjectContents()
+	{
+		innerContainer.TryDropAll(InteractionCell, base.Map, ThingPlaceMode.Near);
+		activeBill?.Reset();
+	}
+
+	public virtual bool CanWork()
+	{
+		return true;
+	}
+
+	protected override void Tick()
+	{
+		base.Tick();
+		if (activeBill != null && CanWork())
 		{
-			innerContainer.TryDropAll(InteractionCell, base.Map, ThingPlaceMode.Near);
-			activeBill?.Reset();
+			activeBill.BillTick();
 		}
+	}
 
-		public virtual bool CanWork()
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Deep.Look(ref innerContainer, "innerContainer", this);
+		Scribe_References.Look(ref activeBill, "activeBill");
+	}
+
+	public override string GetInspectString()
+	{
+		StringBuilder stringBuilder = new StringBuilder();
+		string inspectString = base.GetInspectString();
+		if (!inspectString.NullOrEmpty())
 		{
-			return true;
+			stringBuilder.AppendLine(inspectString);
 		}
-
-		protected override void Tick()
+		string inspectStringExtra = GetInspectStringExtra();
+		if (!inspectStringExtra.NullOrEmpty())
 		{
-			base.Tick();
-			if (activeBill != null && CanWork())
-			{
-				activeBill.BillTick();
-			}
+			stringBuilder.AppendLine(inspectStringExtra);
 		}
-
-		public override void ExposeData()
+		if (CanWork() && activeBill != null)
 		{
-			base.ExposeData();
-			Scribe_Deep.Look(ref innerContainer, "innerContainer", this);
-			Scribe_References.Look(ref activeBill, "activeBill");
+			activeBill.AppendInspectionData(stringBuilder);
 		}
+		return stringBuilder.ToString().TrimEndNewlines();
+	}
 
-		public override string GetInspectString()
+	protected virtual string GetInspectStringExtra()
+	{
+		return null;
+	}
+
+	public override IEnumerable<Gizmo> GetGizmos()
+	{
+		foreach (Gizmo gizmo in base.GetGizmos())
 		{
-			StringBuilder stringBuilder = new StringBuilder();
-			string inspectString = base.GetInspectString();
-			if (!inspectString.NullOrEmpty())
-			{
-				stringBuilder.AppendLine(inspectString);
-			}
-			string inspectStringExtra = GetInspectStringExtra();
-			if (!inspectStringExtra.NullOrEmpty())
-			{
-				stringBuilder.AppendLine(inspectStringExtra);
-			}
-			if (CanWork() && activeBill != null)
-			{
-				activeBill.AppendInspectionData(stringBuilder);
-			}
-			return stringBuilder.ToString().TrimEndNewlines();
+			yield return gizmo;
 		}
-
-		protected virtual string GetInspectStringExtra()
+		if (!DebugSettings.ShowDevGizmos)
 		{
-			return null;
+			yield break;
 		}
-
-		public override IEnumerable<Gizmo> GetGizmos()
+		Bill_Autonomous bill_Autonomous = ActiveBill;
+		if (bill_Autonomous != null && bill_Autonomous.State == FormingState.Forming)
 		{
-			foreach (Gizmo gizmo in base.GetGizmos())
+			yield return new Command_Action
 			{
-				yield return gizmo;
-			}
-			if (!DebugSettings.ShowDevGizmos)
-			{
-				yield break;
-			}
-			Bill_Autonomous bill_Autonomous = ActiveBill;
-			if (bill_Autonomous != null && bill_Autonomous.State == FormingState.Forming)
-			{
-				yield return new Command_Action
+				action = delegate
 				{
-					action = delegate
-					{
-						ActiveBill.formingTicks -= (float)ActiveBill.recipe.formingTicks * 0.25f;
-					},
-					defaultLabel = "DEV: Forming cycle +25%"
-				};
-				yield return new Command_Action
+					ActiveBill.formingTicks -= (float)ActiveBill.recipe.formingTicks * 0.25f;
+				},
+				defaultLabel = "DEV: Forming cycle +25%"
+			};
+			yield return new Command_Action
+			{
+				action = delegate
 				{
-					action = delegate
-					{
-						ActiveBill.formingTicks = 0f;
-					},
-					defaultLabel = "DEV: Complete cycle"
-				};
-			}
+					ActiveBill.formingTicks = 0f;
+				},
+				defaultLabel = "DEV: Complete cycle"
+			};
 		}
+	}
 
-		public ThingOwner GetDirectlyHeldThings()
-		{
-			return innerContainer;
-		}
+	public ThingOwner GetDirectlyHeldThings()
+	{
+		return innerContainer;
+	}
 
-		public void GetChildHolders(List<IThingHolder> outChildren)
-		{
-			ThingOwnerUtility.AppendThingHoldersFromThings(outChildren, GetDirectlyHeldThings());
-		}
+	public void GetChildHolders(List<IThingHolder> outChildren)
+	{
+		ThingOwnerUtility.AppendThingHoldersFromThings(outChildren, GetDirectlyHeldThings());
 	}
 }

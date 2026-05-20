@@ -3,76 +3,75 @@ using System.Linq;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Designator_EjectFuel : Designator
 {
-	public class Designator_EjectFuel : Designator
+	protected override DesignationDef Designation => DesignationDefOf.EjectFuel;
+
+	public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.FilledRectangle;
+
+	public Designator_EjectFuel()
 	{
-		protected override DesignationDef Designation => DesignationDefOf.EjectFuel;
+		defaultLabel = "DesignatorEjectFuel".Translate();
+		defaultDesc = "DesignatorEjectFuelDesc".Translate();
+		icon = ContentFinder<Texture2D>.Get("UI/Designators/EjectFuel");
+		useMouseIcon = true;
+		soundSucceeded = SoundDefOf.Designate_Claim;
+	}
 
-		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.FilledRectangle;
-
-		public Designator_EjectFuel()
+	public override AcceptanceReport CanDesignateCell(IntVec3 c)
+	{
+		if (!c.InBounds(base.Map))
 		{
-			defaultLabel = "DesignatorEjectFuel".Translate();
-			defaultDesc = "DesignatorEjectFuelDesc".Translate();
-			icon = ContentFinder<Texture2D>.Get("UI/Designators/EjectFuel");
-			useMouseIcon = true;
-			soundSucceeded = SoundDefOf.Designate_Claim;
+			return false;
 		}
-
-		public override AcceptanceReport CanDesignateCell(IntVec3 c)
+		if (!RefuelablesInCell(c).Any())
 		{
-			if (!c.InBounds(base.Map))
-			{
-				return false;
-			}
-			if (!RefuelablesInCell(c).Any())
-			{
-				return false;
-			}
-			return true;
+			return false;
 		}
+		return true;
+	}
 
-		public override void DesignateSingleCell(IntVec3 c)
+	public override void DesignateSingleCell(IntVec3 c)
+	{
+		foreach (Thing item in RefuelablesInCell(c))
 		{
-			foreach (Thing item in RefuelablesInCell(c))
-			{
-				DesignateThing(item);
-			}
+			DesignateThing(item);
 		}
+	}
 
-		public override AcceptanceReport CanDesignateThing(Thing t)
+	public override AcceptanceReport CanDesignateThing(Thing t)
+	{
+		if (!t.TryGetComp(out CompRefuelable comp))
 		{
-			if (!t.TryGetComp(out CompRefuelable comp))
-			{
-				return false;
-			}
-			AcceptanceReport result = comp.CanEjectFuel();
-			if (!result.Accepted)
-			{
-				return result;
-			}
-			return base.Map.designationManager.DesignationOn(t, Designation) == null;
+			return false;
 		}
-
-		public override void DesignateThing(Thing t)
+		AcceptanceReport result = comp.CanEjectFuel();
+		if (!result.Accepted)
 		{
-			base.Map.designationManager.AddDesignation(new Designation(t, Designation));
+			return result;
 		}
+		return base.Map.designationManager.DesignationOn(t, Designation) == null;
+	}
 
-		private IEnumerable<Thing> RefuelablesInCell(IntVec3 c)
+	public override void DesignateThing(Thing t)
+	{
+		base.Map.designationManager.AddDesignation(new Designation(t, Designation));
+	}
+
+	private IEnumerable<Thing> RefuelablesInCell(IntVec3 c)
+	{
+		if (c.Fogged(base.Map))
 		{
-			if (c.Fogged(base.Map))
+			yield break;
+		}
+		List<Thing> thingList = c.GetThingList(base.Map);
+		for (int i = 0; i < thingList.Count; i++)
+		{
+			if (CanDesignateThing(thingList[i]).Accepted)
 			{
-				yield break;
-			}
-			List<Thing> thingList = c.GetThingList(base.Map);
-			for (int i = 0; i < thingList.Count; i++)
-			{
-				if (CanDesignateThing(thingList[i]).Accepted)
-				{
-					yield return thingList[i];
-				}
+				yield return thingList[i];
 			}
 		}
 	}

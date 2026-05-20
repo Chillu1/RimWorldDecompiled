@@ -1,28 +1,27 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_Precept_NoPsychicRituals : ThoughtWorker_Precept, IPreceptCompDescriptionArgs
 {
-	public class ThoughtWorker_Precept_NoPsychicRituals : ThoughtWorker_Precept, IPreceptCompDescriptionArgs
+	public const int TicksSinceLastPsychicRitualActiveTicks = 360000;
+
+	protected override ThoughtState ShouldHaveThought(Pawn p)
 	{
-		public const int TicksSinceLastPsychicRitualActiveTicks = 360000;
-
-		protected override ThoughtState ShouldHaveThought(Pawn p)
+		if (!ModsConfig.AnomalyActive)
 		{
-			if (!ModsConfig.AnomalyActive)
-			{
-				return false;
-			}
-			if (!p.IsColonist)
-			{
-				return false;
-			}
-			return Find.TickManager.TicksGame > Find.IdeoManager.lastPsychicRitualPerformedTick + 360000;
+			return false;
 		}
-
-		public IEnumerable<NamedArgument> GetDescriptionArgs()
+		if (!p.IsColonist)
 		{
-			yield return 360000.ToStringTicksToPeriod().Named("DURATION");
+			return false;
 		}
+		return Find.TickManager.TicksGame > Find.IdeoManager.lastPsychicRitualPerformedTick + 360000;
+	}
+
+	public IEnumerable<NamedArgument> GetDescriptionArgs()
+	{
+		yield return 360000.ToStringTicksToPeriod().Named("DURATION");
 	}
 }

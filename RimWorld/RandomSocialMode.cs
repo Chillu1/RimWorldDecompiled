@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum RandomSocialMode
 {
-	public enum RandomSocialMode
-	{
-		Off,
-		Quiet,
-		Normal,
-		SuperActive
-	}
+	Off,
+	Quiet,
+	Normal,
+	SuperActive
 }

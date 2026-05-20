@@ -1,37 +1,36 @@
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class Verb_AbilityShoot : Verb_Shoot, IAbilityVerb
 {
-	public class Verb_AbilityShoot : Verb_Shoot, IAbilityVerb
+	private Ability ability;
+
+	public Ability Ability
 	{
-		private Ability ability;
-
-		public Ability Ability
+		get
 		{
-			get
-			{
-				return ability;
-			}
-			set
-			{
-				ability = value;
-			}
+			return ability;
 		}
-
-		protected override bool TryCastShot()
+		set
 		{
-			bool num = base.TryCastShot();
-			if (num)
-			{
-				ability.StartCooldown(ability.def.cooldownTicksRange.RandomInRange);
-			}
-			return num;
+			ability = value;
 		}
+	}
 
-		public override void ExposeData()
+	protected override bool TryCastShot()
+	{
+		bool num = base.TryCastShot();
+		if (num)
 		{
-			Scribe_References.Look(ref ability, "ability");
-			base.ExposeData();
+			ability.StartCooldown(ability.def.cooldownTicksRange.RandomInRange);
 		}
+		return num;
+	}
+
+	public override void ExposeData()
+	{
+		Scribe_References.Look(ref ability, "ability");
+		base.ExposeData();
 	}
 }

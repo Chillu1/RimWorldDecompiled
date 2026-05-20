@@ -1,14 +1,13 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class CompProperties_AbilityLaunchProjectile : CompProperties_AbilityEffect
-	{
-		public ThingDef projectileDef;
+namespace RimWorld;
 
-		public CompProperties_AbilityLaunchProjectile()
-		{
-			compClass = typeof(CompAbilityEffect_LaunchProjectile);
-		}
+public class CompProperties_AbilityLaunchProjectile : CompProperties_AbilityEffect
+{
+	public ThingDef projectileDef;
+
+	public CompProperties_AbilityLaunchProjectile()
+	{
+		compClass = typeof(CompAbilityEffect_LaunchProjectile);
 	}
 }

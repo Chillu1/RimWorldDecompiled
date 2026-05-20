@@ -1,20 +1,19 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_RitualHediffGiverInRoom : CompProperties
 {
-	public class CompProperties_RitualHediffGiverInRoom : CompProperties
+	public HediffDef hediff;
+
+	public float minRadius = 999f;
+
+	public float severity = -1f;
+
+	public bool resetLastRecreationalDrugTick;
+
+	public CompProperties_RitualHediffGiverInRoom()
 	{
-		public HediffDef hediff;
-
-		public float minRadius = 999f;
-
-		public float severity = -1f;
-
-		public bool resetLastRecreationalDrugTick;
-
-		public CompProperties_RitualHediffGiverInRoom()
-		{
-			compClass = typeof(CompRitualHediffGiverInRoom);
-		}
+		compClass = typeof(CompRitualHediffGiverInRoom);
 	}
 }

@@ -1,18 +1,17 @@
-namespace Verse
+namespace Verse;
+
+public class StructureScatterValidator : ScattererValidator
 {
-	public class StructureScatterValidator : ScattererValidator
+	public CellRect structureRect;
+
+	public float maxDistFromStructure;
+
+	public override bool Allows(IntVec3 c, Map map)
 	{
-		public CellRect structureRect;
-
-		public float maxDistFromStructure;
-
-		public override bool Allows(IntVec3 c, Map map)
+		if (!c.InHorDistOf(structureRect.CenterCell, maxDistFromStructure))
 		{
-			if (!c.InHorDistOf(structureRect.CenterCell, maxDistFromStructure))
-			{
-				return false;
-			}
-			return true;
+			return false;
 		}
+		return true;
 	}
 }

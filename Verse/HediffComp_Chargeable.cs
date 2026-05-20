@@ -1,76 +1,75 @@
-namespace Verse
+namespace Verse;
+
+[StaticConstructorOnStartup]
+public class HediffComp_Chargeable : HediffComp
 {
-	[StaticConstructorOnStartup]
-	public class HediffComp_Chargeable : HediffComp
+	private float charge;
+
+	public HediffCompProperties_Chargeable Props => (HediffCompProperties_Chargeable)props;
+
+	public float Charge
 	{
-		private float charge;
-
-		public HediffCompProperties_Chargeable Props => (HediffCompProperties_Chargeable)props;
-
-		public float Charge
+		get
 		{
-			get
+			return charge;
+		}
+		protected set
+		{
+			charge = value;
+			if (charge > Props.fullChargeAmount)
 			{
-				return charge;
-			}
-			protected set
-			{
-				charge = value;
-				if (charge > Props.fullChargeAmount)
-				{
-					charge = Props.fullChargeAmount;
-				}
+				charge = Props.fullChargeAmount;
 			}
 		}
+	}
 
-		public bool CanActivate => charge >= Props.minChargeToActivate;
+	public bool CanActivate => charge >= Props.minChargeToActivate;
 
-		public override string CompLabelInBracketsExtra => Props.labelInBrackets.Formatted(charge.Named("CHARGE"), (charge / Props.fullChargeAmount).Named("CHARGEFACTOR"));
+	public override string CompLabelInBracketsExtra => Props.labelInBrackets.Formatted(charge.Named("CHARGE"), (charge / Props.fullChargeAmount).Named("CHARGEFACTOR"));
 
-		public override void CompPostMake()
+	public override void CompPostMake()
+	{
+		base.CompPostMake();
+		charge = Props.initialCharge;
+	}
+
+	public override void CompExposeData()
+	{
+		base.CompExposeData();
+		Scribe_Values.Look(ref charge, "charge", Props.initialCharge);
+	}
+
+	public virtual void TryCharge(float desiredChargeAmount)
+	{
+		Charge += desiredChargeAmount;
+	}
+
+	public override void CompPostTickInterval(ref float severityAdjustment, int delta)
+	{
+		base.CompPostTickInterval(ref severityAdjustment, delta);
+		if (Props.ticksToFullCharge > 0)
 		{
-			base.CompPostMake();
-			charge = Props.initialCharge;
+			TryCharge(Props.fullChargeAmount / (float)Props.ticksToFullCharge * (float)delta);
 		}
-
-		public override void CompExposeData()
+		else if (Props.ticksToFullCharge == 0)
 		{
-			base.CompExposeData();
-			Scribe_Values.Look(ref charge, "charge", Props.initialCharge);
+			TryCharge(Props.fullChargeAmount);
 		}
+	}
 
-		public virtual void TryCharge(float desiredChargeAmount)
+	public float GreedyConsume(float desiredCharge)
+	{
+		float num;
+		if (desiredCharge >= charge)
 		{
-			Charge += desiredChargeAmount;
+			num = charge;
+			charge = 0f;
 		}
-
-		public override void CompPostTickInterval(ref float severityAdjustment, int delta)
+		else
 		{
-			base.CompPostTickInterval(ref severityAdjustment, delta);
-			if (Props.ticksToFullCharge > 0)
-			{
-				TryCharge(Props.fullChargeAmount / (float)Props.ticksToFullCharge * (float)delta);
-			}
-			else if (Props.ticksToFullCharge == 0)
-			{
-				TryCharge(Props.fullChargeAmount);
-			}
+			num = desiredCharge;
+			charge -= num;
 		}
-
-		public float GreedyConsume(float desiredCharge)
-		{
-			float num;
-			if (desiredCharge >= charge)
-			{
-				num = charge;
-				charge = 0f;
-			}
-			else
-			{
-				num = desiredCharge;
-				charge -= num;
-			}
-			return num;
-		}
+		return num;
 	}
 }

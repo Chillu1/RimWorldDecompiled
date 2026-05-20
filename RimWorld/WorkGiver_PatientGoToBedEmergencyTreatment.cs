@@ -1,17 +1,16 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WorkGiver_PatientGoToBedEmergencyTreatment : WorkGiver_PatientGoToBedRecuperate
 {
-	public class WorkGiver_PatientGoToBedEmergencyTreatment : WorkGiver_PatientGoToBedRecuperate
+	public override Job NonScanJob(Pawn pawn)
 	{
-		public override Job NonScanJob(Pawn pawn)
+		if (!HealthAIUtility.ShouldBeTendedNowByPlayerUrgent(pawn))
 		{
-			if (!HealthAIUtility.ShouldBeTendedNowByPlayerUrgent(pawn))
-			{
-				return null;
-			}
-			return base.NonScanJob(pawn);
+			return null;
 		}
+		return base.NonScanJob(pawn);
 	}
 }

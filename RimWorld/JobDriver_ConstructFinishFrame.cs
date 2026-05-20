@@ -3,89 +3,88 @@ using UnityEngine;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_ConstructFinishFrame : JobDriver, IBuildableDriver
 {
-	public class JobDriver_ConstructFinishFrame : JobDriver, IBuildableDriver
+	private const int JobEndInterval = 5000;
+
+	private const TargetIndex BuildingInd = TargetIndex.A;
+
+	private Frame Frame => (Frame)job.GetTarget(TargetIndex.A).Thing;
+
+	private bool IsBuildingAttachment => ((GenConstruct.BuiltDefOf(Frame.def) as ThingDef)?.building)?.isAttachment ?? false;
+
+	public override bool TryMakePreToilReservations(bool errorOnFailed)
 	{
-		private const int JobEndInterval = 5000;
+		return pawn.Reserve(job.targetA, job, 1, -1, null, errorOnFailed);
+	}
 
-		private const TargetIndex BuildingInd = TargetIndex.A;
+	public bool TryGetBuildableRect(out CellRect rect)
+	{
+		rect = Frame.OccupiedRect();
+		return true;
+	}
 
-		private Frame Frame => (Frame)job.GetTarget(TargetIndex.A).Thing;
-
-		private bool IsBuildingAttachment => ((GenConstruct.BuiltDefOf(Frame.def) as ThingDef)?.building)?.isAttachment ?? false;
-
-		public override bool TryMakePreToilReservations(bool errorOnFailed)
+	protected override IEnumerable<Toil> MakeNewToils()
+	{
+		if (IsBuildingAttachment)
 		{
-			return pawn.Reserve(job.targetA, job, 1, -1, null, errorOnFailed);
+			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.OnCell).FailOnDespawnedNullOrForbidden(TargetIndex.A);
 		}
-
-		public bool TryGetBuildableRect(out CellRect rect)
+		else
 		{
-			rect = Frame.OccupiedRect();
-			return true;
+			yield return Toils_Goto.GotoBuild(TargetIndex.A).FailOnDespawnedNullOrForbidden(TargetIndex.A);
 		}
-
-		protected override IEnumerable<Toil> MakeNewToils()
+		Toil build = ToilMaker.MakeToil("MakeNewToils");
+		build.initAction = delegate
 		{
-			if (IsBuildingAttachment)
+			GenClamor.DoClamor(build.actor, 15f, ClamorDefOf.Construction);
+		};
+		build.tickIntervalAction = delegate(int delta)
+		{
+			Pawn actor = build.actor;
+			Frame frame = Frame;
+			if (frame.resourceContainer.Count > 0 && actor.skills != null)
 			{
-				yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.OnCell).FailOnDespawnedNullOrForbidden(TargetIndex.A);
+				actor.skills.Learn(SkillDefOf.Construction, 0.25f * (float)delta);
 			}
-			else
+			actor.rotationTracker.FaceTarget(IsBuildingAttachment ? GenConstruct.GetWallAttachedTo(frame) : frame);
+			float num = actor.GetStatValue(StatDefOf.ConstructionSpeed) * 1.7f * (float)delta;
+			if (frame.Stuff != null)
 			{
-				yield return Toils_Goto.GotoBuild(TargetIndex.A).FailOnDespawnedNullOrForbidden(TargetIndex.A);
+				num *= frame.Stuff.GetStatValueAbstract(StatDefOf.ConstructionSpeedFactor);
 			}
-			Toil build = ToilMaker.MakeToil("MakeNewToils");
-			build.initAction = delegate
+			float workToBuild = frame.WorkToBuild;
+			if (actor.Faction == Faction.OfPlayer)
 			{
-				GenClamor.DoClamor(build.actor, 15f, ClamorDefOf.Construction);
-			};
-			build.tickIntervalAction = delegate(int delta)
-			{
-				Pawn actor = build.actor;
-				Frame frame = Frame;
-				if (frame.resourceContainer.Count > 0 && actor.skills != null)
+				float statValue = actor.GetStatValue(StatDefOf.ConstructSuccessChance);
+				if (!TutorSystem.TutorialMode && Rand.Value < 1f - Mathf.Pow(statValue, num / workToBuild))
 				{
-					actor.skills.Learn(SkillDefOf.Construction, 0.25f * (float)delta);
-				}
-				actor.rotationTracker.FaceTarget(IsBuildingAttachment ? GenConstruct.GetWallAttachedTo(frame) : frame);
-				float num = actor.GetStatValue(StatDefOf.ConstructionSpeed) * 1.7f * (float)delta;
-				if (frame.Stuff != null)
-				{
-					num *= frame.Stuff.GetStatValueAbstract(StatDefOf.ConstructionSpeedFactor);
-				}
-				float workToBuild = frame.WorkToBuild;
-				if (actor.Faction == Faction.OfPlayer)
-				{
-					float statValue = actor.GetStatValue(StatDefOf.ConstructSuccessChance);
-					if (!TutorSystem.TutorialMode && Rand.Value < 1f - Mathf.Pow(statValue, num / workToBuild))
-					{
-						frame.FailConstruction(actor);
-						ReadyForNextToil();
-						return;
-					}
-				}
-				if (frame.def.entityDefToBuild is TerrainDef)
-				{
-					base.Map.snowGrid.SetDepth(frame.Position, 0f);
-					base.Map.sandGrid?.SetDepth(frame.Position, 0f);
-				}
-				frame.workDone += num;
-				if (frame.workDone >= workToBuild)
-				{
-					frame.CompleteConstruction(actor);
+					frame.FailConstruction(actor);
 					ReadyForNextToil();
+					return;
 				}
-			};
-			build.WithEffect(() => ((Frame)build.actor.jobs.curJob.GetTarget(TargetIndex.A).Thing).ConstructionEffect, TargetIndex.A);
-			build.FailOnDespawnedNullOrForbidden(TargetIndex.A);
-			build.FailOn(() => !GenConstruct.CanConstruct(Frame, pawn));
-			build.defaultCompleteMode = ToilCompleteMode.Delay;
-			build.defaultDuration = 5000;
-			build.activeSkill = () => SkillDefOf.Construction;
-			build.handlingFacing = true;
-			yield return build;
-		}
+			}
+			if (frame.def.entityDefToBuild is TerrainDef)
+			{
+				base.Map.snowGrid.SetDepth(frame.Position, 0f);
+				base.Map.sandGrid?.SetDepth(frame.Position, 0f);
+			}
+			frame.workDone += num;
+			if (frame.workDone >= workToBuild)
+			{
+				frame.CompleteConstruction(actor);
+				ReadyForNextToil();
+			}
+		};
+		build.WithEffect(() => ((Frame)build.actor.jobs.curJob.GetTarget(TargetIndex.A).Thing).ConstructionEffect, TargetIndex.A);
+		build.FailOnDespawnedNullOrForbidden(TargetIndex.A);
+		build.FailOn(() => !GenConstruct.CanConstruct(Frame, pawn));
+		build.defaultCompleteMode = ToilCompleteMode.Delay;
+		build.defaultDuration = 5000;
+		build.activeSkill = () => SkillDefOf.Construction;
+		build.handlingFacing = true;
+		yield return build;
 	}
 }

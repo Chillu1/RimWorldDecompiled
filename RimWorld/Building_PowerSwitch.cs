@@ -1,82 +1,81 @@
 using System.Text;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+[StaticConstructorOnStartup]
+public class Building_PowerSwitch : Building
 {
-	[StaticConstructorOnStartup]
-	public class Building_PowerSwitch : Building
+	private bool wantsOnOld = true;
+
+	private CompFlickable flickableComp;
+
+	public override bool TransmitsPowerNow => FlickUtility.WantsToBeOn(this);
+
+	public override Graphic Graphic => flickableComp.CurrentGraphic;
+
+	public override void SpawnSetup(Map map, bool respawningAfterLoad)
 	{
-		private bool wantsOnOld = true;
+		base.SpawnSetup(map, respawningAfterLoad);
+		flickableComp = GetComp<CompFlickable>();
+	}
 
-		private CompFlickable flickableComp;
-
-		public override bool TransmitsPowerNow => FlickUtility.WantsToBeOn(this);
-
-		public override Graphic Graphic => flickableComp.CurrentGraphic;
-
-		public override void SpawnSetup(Map map, bool respawningAfterLoad)
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		if (Scribe.mode == LoadSaveMode.PostLoadInit)
 		{
-			base.SpawnSetup(map, respawningAfterLoad);
-			flickableComp = GetComp<CompFlickable>();
+			if (flickableComp == null)
+			{
+				flickableComp = GetComp<CompFlickable>();
+			}
+			wantsOnOld = !FlickUtility.WantsToBeOn(this);
+			UpdatePowerGrid();
 		}
+	}
 
-		public override void ExposeData()
+	protected override void ReceiveCompSignal(string signal)
+	{
+		switch (signal)
 		{
-			base.ExposeData();
-			if (Scribe.mode == LoadSaveMode.PostLoadInit)
-			{
-				if (flickableComp == null)
-				{
-					flickableComp = GetComp<CompFlickable>();
-				}
-				wantsOnOld = !FlickUtility.WantsToBeOn(this);
-				UpdatePowerGrid();
-			}
+		case "FlickedOff":
+		case "FlickedOn":
+		case "ScheduledOn":
+		case "ScheduledOff":
+			UpdatePowerGrid();
+			break;
 		}
+	}
 
-		protected override void ReceiveCompSignal(string signal)
+	public override string GetInspectString()
+	{
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.Append(base.GetInspectString());
+		if (stringBuilder.Length != 0)
 		{
-			switch (signal)
-			{
-			case "FlickedOff":
-			case "FlickedOn":
-			case "ScheduledOn":
-			case "ScheduledOff":
-				UpdatePowerGrid();
-				break;
-			}
+			stringBuilder.AppendLine();
 		}
-
-		public override string GetInspectString()
+		stringBuilder.Append("PowerSwitch_Power".Translate() + ": ");
+		if (FlickUtility.WantsToBeOn(this))
 		{
-			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.Append(base.GetInspectString());
-			if (stringBuilder.Length != 0)
-			{
-				stringBuilder.AppendLine();
-			}
-			stringBuilder.Append("PowerSwitch_Power".Translate() + ": ");
-			if (FlickUtility.WantsToBeOn(this))
-			{
-				stringBuilder.Append("On".Translate().ToLower());
-			}
-			else
-			{
-				stringBuilder.Append("Off".Translate().ToLower());
-			}
-			return stringBuilder.ToString();
+			stringBuilder.Append("On".Translate().ToLower());
 		}
-
-		private void UpdatePowerGrid()
+		else
 		{
-			if (FlickUtility.WantsToBeOn(this) != wantsOnOld)
+			stringBuilder.Append("Off".Translate().ToLower());
+		}
+		return stringBuilder.ToString();
+	}
+
+	private void UpdatePowerGrid()
+	{
+		if (FlickUtility.WantsToBeOn(this) != wantsOnOld)
+		{
+			if (base.Spawned)
 			{
-				if (base.Spawned)
-				{
-					base.Map.powerNetManager.Notfiy_TransmitterTransmitsPowerNowChanged(base.PowerComp);
-				}
-				wantsOnOld = FlickUtility.WantsToBeOn(this);
+				base.Map.powerNetManager.Notfiy_TransmitterTransmitsPowerNowChanged(base.PowerComp);
 			}
+			wantsOnOld = FlickUtility.WantsToBeOn(this);
 		}
 	}
 }

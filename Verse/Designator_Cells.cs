@@ -1,12 +1,11 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public abstract class Designator_Cells : Designator
 {
-	public abstract class Designator_Cells : Designator
+	public override void RenderHighlight(List<IntVec3> dragCells)
 	{
-		public override void RenderHighlight(List<IntVec3> dragCells)
-		{
-			DesignatorUtility.RenderHighlightOverSelectableCells(this, dragCells);
-		}
+		DesignatorUtility.RenderHighlightOverSelectableCells(this, dragCells);
 	}
 }

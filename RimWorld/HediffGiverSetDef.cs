@@ -1,10 +1,9 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class HediffGiverSetDef : Def
 {
-	public class HediffGiverSetDef : Def
-	{
-		public List<HediffGiver> hediffGivers;
-	}
+	public List<HediffGiver> hediffGivers;
 }

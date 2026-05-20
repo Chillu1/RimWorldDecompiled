@@ -1,55 +1,54 @@
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_IsPermanentEnemy : QuestNode
 {
-	public class QuestNode_IsPermanentEnemy : QuestNode
+	public SlateRef<Thing> thing;
+
+	public QuestNode node;
+
+	public QuestNode elseNode;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		public SlateRef<Thing> thing;
-
-		public QuestNode node;
-
-		public QuestNode elseNode;
-
-		protected override bool TestRunInt(Slate slate)
+		if (IsPermanentEnemy(slate))
 		{
-			if (IsPermanentEnemy(slate))
+			if (node != null)
 			{
-				if (node != null)
-				{
-					return node.TestRun(slate);
-				}
-				return true;
-			}
-			if (elseNode != null)
-			{
-				return elseNode.TestRun(slate);
+				return node.TestRun(slate);
 			}
 			return true;
 		}
-
-		protected override void RunInt()
+		if (elseNode != null)
 		{
-			if (IsPermanentEnemy(QuestGen.slate))
+			return elseNode.TestRun(slate);
+		}
+		return true;
+	}
+
+	protected override void RunInt()
+	{
+		if (IsPermanentEnemy(QuestGen.slate))
+		{
+			if (node != null)
 			{
-				if (node != null)
-				{
-					node.Run();
-				}
-			}
-			else if (elseNode != null)
-			{
-				elseNode.Run();
+				node.Run();
 			}
 		}
-
-		private bool IsPermanentEnemy(Slate slate)
+		else if (elseNode != null)
 		{
-			Thing value = thing.GetValue(slate);
-			if (value != null && value.Faction != null)
-			{
-				return value.Faction.def.permanentEnemy;
-			}
-			return false;
+			elseNode.Run();
 		}
+	}
+
+	private bool IsPermanentEnemy(Slate slate)
+	{
+		Thing value = thing.GetValue(slate);
+		if (value != null && value.Faction != null)
+		{
+			return value.Faction.def.permanentEnemy;
+		}
+		return false;
 	}
 }

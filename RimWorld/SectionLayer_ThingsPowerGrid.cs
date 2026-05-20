@@ -1,30 +1,29 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class SectionLayer_ThingsPowerGrid : SectionLayer_Things
 {
-	public class SectionLayer_ThingsPowerGrid : SectionLayer_Things
+	public SectionLayer_ThingsPowerGrid(Section section)
+		: base(section)
 	{
-		public SectionLayer_ThingsPowerGrid(Section section)
-			: base(section)
-		{
-			requireAddToMapMesh = false;
-			relevantChangeTypes = MapMeshFlagDefOf.PowerGrid;
-		}
+		requireAddToMapMesh = false;
+		relevantChangeTypes = MapMeshFlagDefOf.PowerGrid;
+	}
 
-		public override void DrawLayer()
+	public override void DrawLayer()
+	{
+		if (OverlayDrawHandler.ShouldDrawPowerGrid)
 		{
-			if (OverlayDrawHandler.ShouldDrawPowerGrid)
-			{
-				base.DrawLayer();
-			}
+			base.DrawLayer();
 		}
+	}
 
-		protected override void TakePrintFrom(Thing t)
+	protected override void TakePrintFrom(Thing t)
+	{
+		if ((t.Faction == null || t.Faction == Faction.OfPlayer) && t is Building building)
 		{
-			if ((t.Faction == null || t.Faction == Faction.OfPlayer) && t is Building building)
-			{
-				building.PrintForPowerGrid(this);
-			}
+			building.PrintForPowerGrid(this);
 		}
 	}
 }

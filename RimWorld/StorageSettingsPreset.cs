@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum StorageSettingsPreset : byte
 {
-	public enum StorageSettingsPreset : byte
-	{
-		DefaultStockpile,
-		DumpingStockpile,
-		CorpseStockpile
-	}
+	DefaultStockpile,
+	DumpingStockpile,
+	CorpseStockpile
 }

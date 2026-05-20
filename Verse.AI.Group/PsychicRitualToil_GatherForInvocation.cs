@@ -2,84 +2,83 @@ using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
 
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public class PsychicRitualToil_GatherForInvocation : PsychicRitualToil_Multiplex
 {
-	public class PsychicRitualToil_GatherForInvocation : PsychicRitualToil_Multiplex
+	protected PsychicRitualToil_Goto fallbackToil;
+
+	protected PsychicRitualGraph invokerToil;
+
+	protected PsychicRitualToil_Goto invokerFinalToil;
+
+	private static List<Pawn> blockingPawns = new List<Pawn>(16);
+
+	protected PsychicRitualToil_GatherForInvocation()
 	{
-		protected PsychicRitualToil_Goto fallbackToil;
+	}
 
-		protected PsychicRitualGraph invokerToil;
+	protected PsychicRitualToil_GatherForInvocation(PsychicRitualDef_InvocationCircle def, PsychicRitualToil_Goto fallbackToil, PsychicRitualGraph invokerToil)
+		: base(new Dictionary<PsychicRitualRoleDef, PsychicRitualToil> { { def.InvokerRole, invokerToil } }, fallbackToil)
+	{
+		this.fallbackToil = fallbackToil;
+		this.invokerToil = invokerToil;
+		invokerFinalToil = (PsychicRitualToil_Goto)invokerToil.GetToil(invokerToil.ToilCount - 1);
+	}
 
-		protected PsychicRitualToil_Goto invokerFinalToil;
+	public PsychicRitualToil_GatherForInvocation(PsychicRitual psychicRitual, PsychicRitualDef_InvocationCircle def, IReadOnlyDictionary<PsychicRitualRoleDef, List<IntVec3>> rolePositions)
+		: this(def, FallbackToil(psychicRitual, def, rolePositions), InvokerToil(def, rolePositions))
+	{
+	}
 
-		private static List<Pawn> blockingPawns = new List<Pawn>(16);
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_References.Look(ref fallbackToil, "fallbackToil");
+		Scribe_References.Look(ref invokerToil, "invokerToil");
+		Scribe_References.Look(ref invokerFinalToil, "invokerFinalToil");
+	}
 
-		protected PsychicRitualToil_GatherForInvocation()
+	public override string GetReport(PsychicRitual psychicRitual, PsychicRitualGraph parent)
+	{
+		blockingPawns.Clear();
+		blockingPawns.AddRange(fallbackToil.BlockingPawns);
+		if (invokerToil.CurrentToil == invokerFinalToil)
 		{
+			blockingPawns.AddRange(invokerFinalToil.BlockingPawns);
 		}
-
-		protected PsychicRitualToil_GatherForInvocation(PsychicRitualDef_InvocationCircle def, PsychicRitualToil_Goto fallbackToil, PsychicRitualGraph invokerToil)
-			: base(new Dictionary<PsychicRitualRoleDef, PsychicRitualToil> { { def.InvokerRole, invokerToil } }, fallbackToil)
+		else
 		{
-			this.fallbackToil = fallbackToil;
-			this.invokerToil = invokerToil;
-			invokerFinalToil = (PsychicRitualToil_Goto)invokerToil.GetToil(invokerToil.ToilCount - 1);
+			blockingPawns.AddRange(invokerFinalToil.ControlledPawns(psychicRitual));
 		}
+		string text = "PsychicRitualToil_GatherForInvocation_Report".Translate();
+		string text2 = blockingPawns.Select((Pawn pawn) => pawn.LabelShortCap).ToCommaList();
+		return text + ": " + text2;
+	}
 
-		public PsychicRitualToil_GatherForInvocation(PsychicRitual psychicRitual, PsychicRitualDef_InvocationCircle def, IReadOnlyDictionary<PsychicRitualRoleDef, List<IntVec3>> rolePositions)
-			: this(def, FallbackToil(psychicRitual, def, rolePositions), InvokerToil(def, rolePositions))
-		{
-		}
+	public static PsychicRitualToil_Goto FallbackToil(PsychicRitual psychicRitual, PsychicRitualDef_InvocationCircle def, IReadOnlyDictionary<PsychicRitualRoleDef, List<IntVec3>> rolePositions)
+	{
+		return new PsychicRitualToil_Goto(rolePositions.Slice(rolePositions.Keys.Except(def.InvokerRole)));
+	}
 
-		public override void ExposeData()
+	public static PsychicRitualGraph InvokerToil(PsychicRitualDef_InvocationCircle def, IReadOnlyDictionary<PsychicRitualRoleDef, List<IntVec3>> rolePositions)
+	{
+		return new PsychicRitualGraph(InvokerGatherPhaseToils(def, rolePositions))
 		{
-			base.ExposeData();
-			Scribe_References.Look(ref fallbackToil, "fallbackToil");
-			Scribe_References.Look(ref invokerToil, "invokerToil");
-			Scribe_References.Look(ref invokerFinalToil, "invokerFinalToil");
-		}
+			willAdvancePastLastToil = false
+		};
+	}
 
-		public override string GetReport(PsychicRitual psychicRitual, PsychicRitualGraph parent)
+	public static IEnumerable<PsychicRitualToil> InvokerGatherPhaseToils(PsychicRitualDef_InvocationCircle def, IReadOnlyDictionary<PsychicRitualRoleDef, List<IntVec3>> rolePositions)
+	{
+		if (def.RequiredOffering != null)
 		{
-			blockingPawns.Clear();
-			blockingPawns.AddRange(fallbackToil.BlockingPawns);
-			if (invokerToil.CurrentToil == invokerFinalToil)
-			{
-				blockingPawns.AddRange(invokerFinalToil.BlockingPawns);
-			}
-			else
-			{
-				blockingPawns.AddRange(invokerFinalToil.ControlledPawns(psychicRitual));
-			}
-			string text = "PsychicRitualToil_GatherForInvocation_Report".Translate();
-			string text2 = blockingPawns.Select((Pawn pawn) => pawn.LabelShortCap).ToCommaList();
-			return text + ": " + text2;
+			yield return new PsychicRitualToil_GatherOfferings(def.InvokerRole, def.RequiredOffering);
 		}
-
-		public static PsychicRitualToil_Goto FallbackToil(PsychicRitual psychicRitual, PsychicRitualDef_InvocationCircle def, IReadOnlyDictionary<PsychicRitualRoleDef, List<IntVec3>> rolePositions)
+		if (def.TargetRole != null)
 		{
-			return new PsychicRitualToil_Goto(rolePositions.Slice(rolePositions.Keys.Except(def.InvokerRole)));
+			yield return new PsychicRitualToil_CarryAndGoto(def.InvokerRole, def.TargetRole, rolePositions);
 		}
-
-		public static PsychicRitualGraph InvokerToil(PsychicRitualDef_InvocationCircle def, IReadOnlyDictionary<PsychicRitualRoleDef, List<IntVec3>> rolePositions)
-		{
-			return new PsychicRitualGraph(InvokerGatherPhaseToils(def, rolePositions))
-			{
-				willAdvancePastLastToil = false
-			};
-		}
-
-		public static IEnumerable<PsychicRitualToil> InvokerGatherPhaseToils(PsychicRitualDef_InvocationCircle def, IReadOnlyDictionary<PsychicRitualRoleDef, List<IntVec3>> rolePositions)
-		{
-			if (def.RequiredOffering != null)
-			{
-				yield return new PsychicRitualToil_GatherOfferings(def.InvokerRole, def.RequiredOffering);
-			}
-			if (def.TargetRole != null)
-			{
-				yield return new PsychicRitualToil_CarryAndGoto(def.InvokerRole, def.TargetRole, rolePositions);
-			}
-			yield return new PsychicRitualToil_Goto(rolePositions.Slice(def.InvokerRole));
-		}
+		yield return new PsychicRitualToil_Goto(rolePositions.Slice(def.InvokerRole));
 	}
 }

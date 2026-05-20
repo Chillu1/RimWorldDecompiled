@@ -1,13 +1,12 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum PawnDiedOrDownedThoughtsKind
 {
-	public enum PawnDiedOrDownedThoughtsKind
-	{
-		Died,
-		Banished,
-		BanishedToDie,
-		Downed,
-		Lost,
-		DeniedJoining,
-		ReleasedToWild
-	}
+	Died,
+	Banished,
+	BanishedToDie,
+	Downed,
+	Lost,
+	DeniedJoining,
+	ReleasedToWild
 }

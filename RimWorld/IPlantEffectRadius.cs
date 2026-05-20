@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public interface IPlantEffectRadius
 {
-	public interface IPlantEffectRadius
-	{
-		float PlantEffectRadius { get; }
-	}
+	float PlantEffectRadius { get; }
 }

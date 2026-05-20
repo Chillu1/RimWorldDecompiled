@@ -1,22 +1,21 @@
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class Hediff_SentienceCatalyst : Hediff
 {
-	public class Hediff_SentienceCatalyst : Hediff
+	public override string TipStringExtra
 	{
-		public override string TipStringExtra
+		get
 		{
-			get
+			string tipStringExtra = base.TipStringExtra;
+			TrainabilityDef trainability = TrainableUtility.GetTrainability(pawn);
+			if (pawn.training == null || trainability == null || trainability == pawn.RaceProps.trainability)
 			{
-				string tipStringExtra = base.TipStringExtra;
-				TrainabilityDef trainability = TrainableUtility.GetTrainability(pawn);
-				if (pawn.training == null || trainability == null || trainability == pawn.RaceProps.trainability)
-				{
-					return tipStringExtra;
-				}
-				tipStringExtra += "\n";
-				return tipStringExtra + ("Trainability".Translate() + ": " + trainability.LabelCap);
+				return tipStringExtra;
 			}
+			tipStringExtra += "\n";
+			return tipStringExtra + ("Trainability".Translate() + ": " + trainability.LabelCap);
 		}
 	}
 }

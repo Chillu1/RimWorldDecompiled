@@ -1,90 +1,89 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompMaintainable : ThingComp
 {
-	public class CompMaintainable : ThingComp
+	public int ticksSinceMaintain;
+
+	public CompProperties_Maintainable Props => (CompProperties_Maintainable)props;
+
+	public MaintainableStage CurStage
 	{
-		public int ticksSinceMaintain;
-
-		public CompProperties_Maintainable Props => (CompProperties_Maintainable)props;
-
-		public MaintainableStage CurStage
+		get
 		{
-			get
+			if (ticksSinceMaintain < Props.ticksHealthy)
 			{
-				if (ticksSinceMaintain < Props.ticksHealthy)
-				{
-					return MaintainableStage.Healthy;
-				}
-				if (ticksSinceMaintain < Props.ticksHealthy + Props.ticksNeedsMaintenance)
-				{
-					return MaintainableStage.NeedsMaintenance;
-				}
-				return MaintainableStage.Damaging;
+				return MaintainableStage.Healthy;
 			}
-		}
-
-		private bool Active
-		{
-			get
+			if (ticksSinceMaintain < Props.ticksHealthy + Props.ticksNeedsMaintenance)
 			{
-				if (parent is Hive hive)
-				{
-					return hive.CompDormant.Awake;
-				}
-				return true;
+				return MaintainableStage.NeedsMaintenance;
 			}
+			return MaintainableStage.Damaging;
 		}
+	}
 
-		public override void PostExposeData()
+	private bool Active
+	{
+		get
 		{
-			Scribe_Values.Look(ref ticksSinceMaintain, "ticksSinceMaintain", 0);
-		}
-
-		public override void CompTick()
-		{
-			base.CompTick();
-			if (Active)
+			if (parent is Hive hive)
 			{
-				ticksSinceMaintain++;
-				if (parent.IsHashIntervalTick(250))
-				{
-					CheckTakeDamage();
-				}
+				return hive.CompDormant.Awake;
 			}
+			return true;
 		}
+	}
 
-		public override void CompTickRare()
+	public override void PostExposeData()
+	{
+		Scribe_Values.Look(ref ticksSinceMaintain, "ticksSinceMaintain", 0);
+	}
+
+	public override void CompTick()
+	{
+		base.CompTick();
+		if (Active)
 		{
-			base.CompTickRare();
-			if (Active)
+			ticksSinceMaintain++;
+			if (parent.IsHashIntervalTick(250))
 			{
-				ticksSinceMaintain += 250;
 				CheckTakeDamage();
 			}
 		}
+	}
 
-		private void CheckTakeDamage()
+	public override void CompTickRare()
+	{
+		base.CompTickRare();
+		if (Active)
 		{
-			if (CurStage == MaintainableStage.Damaging)
-			{
-				parent.TakeDamage(new DamageInfo(DamageDefOf.Deterioration, Props.damagePerTickRare));
-			}
+			ticksSinceMaintain += 250;
+			CheckTakeDamage();
 		}
+	}
 
-		public void Maintained()
+	private void CheckTakeDamage()
+	{
+		if (CurStage == MaintainableStage.Damaging)
 		{
-			ticksSinceMaintain = 0;
+			parent.TakeDamage(new DamageInfo(DamageDefOf.Deterioration, Props.damagePerTickRare));
 		}
+	}
 
-		public override string CompInspectStringExtra()
+	public void Maintained()
+	{
+		ticksSinceMaintain = 0;
+	}
+
+	public override string CompInspectStringExtra()
+	{
+		return CurStage switch
 		{
-			return CurStage switch
-			{
-				MaintainableStage.NeedsMaintenance => "DueForMaintenance".Translate(), 
-				MaintainableStage.Damaging => "DeterioratingDueToLackOfMaintenance".Translate(), 
-				_ => null, 
-			};
-		}
+			MaintainableStage.NeedsMaintenance => "DueForMaintenance".Translate(), 
+			MaintainableStage.Damaging => "DeterioratingDueToLackOfMaintenance".Translate(), 
+			_ => null, 
+		};
 	}
 }

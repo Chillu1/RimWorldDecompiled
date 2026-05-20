@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum Transactor : byte
 {
-	public enum Transactor : byte
-	{
-		Colony,
-		Trader
-	}
+	Colony,
+	Trader
 }

@@ -1,36 +1,35 @@
 using System;
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_Set : QuestNode
 {
-	public class QuestNode_Set : QuestNode
+	[NoTranslate]
+	public SlateRef<string> name;
+
+	public SlateRef<object> value;
+
+	public SlateRef<Type> convertTo;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		[NoTranslate]
-		public SlateRef<string> name;
+		SetVars(slate);
+		return true;
+	}
 
-		public SlateRef<object> value;
+	protected override void RunInt()
+	{
+		SetVars(QuestGen.slate);
+	}
 
-		public SlateRef<Type> convertTo;
-
-		protected override bool TestRunInt(Slate slate)
+	private void SetVars(Slate slate)
+	{
+		object obj = value.GetValue(slate);
+		if (convertTo.GetValue(slate) != null)
 		{
-			SetVars(slate);
-			return true;
+			obj = ConvertHelper.Convert(obj, convertTo.GetValue(slate));
 		}
-
-		protected override void RunInt()
-		{
-			SetVars(QuestGen.slate);
-		}
-
-		private void SetVars(Slate slate)
-		{
-			object obj = value.GetValue(slate);
-			if (convertTo.GetValue(slate) != null)
-			{
-				obj = ConvertHelper.Convert(obj, convertTo.GetValue(slate));
-			}
-			slate.Set(name.GetValue(slate), obj);
-		}
+		slate.Set(name.GetValue(slate), obj);
 	}
 }

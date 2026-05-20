@@ -1,27 +1,26 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_Rechargeable : CompProperties
 {
-	public class CompProperties_Rechargeable : CompProperties
+	public int ticksToRecharge;
+
+	public SoundDef chargedSoundDef;
+
+	public SoundDef dischargeSoundDef;
+
+	public CompProperties_Rechargeable()
 	{
-		public int ticksToRecharge;
+		compClass = typeof(CompRechargeable);
+	}
 
-		public SoundDef chargedSoundDef;
-
-		public SoundDef dischargeSoundDef;
-
-		public CompProperties_Rechargeable()
+	public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+	{
+		if (ticksToRecharge <= 0)
 		{
-			compClass = typeof(CompRechargeable);
-		}
-
-		public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
-		{
-			if (ticksToRecharge <= 0)
-			{
-				yield return "ticksToRecharge must be a positive value";
-			}
+			yield return "ticksToRecharge must be a positive value";
 		}
 	}
 }

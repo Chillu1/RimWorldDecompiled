@@ -1,15 +1,14 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class CompProperties_InspectString : CompProperties
-	{
-		[MustTranslate]
-		public string inspectString;
+namespace RimWorld;
 
-		public CompProperties_InspectString()
-		{
-			compClass = typeof(CompInspectString);
-		}
+public class CompProperties_InspectString : CompProperties
+{
+	[MustTranslate]
+	public string inspectString;
+
+	public CompProperties_InspectString()
+	{
+		compClass = typeof(CompInspectString);
 	}
 }

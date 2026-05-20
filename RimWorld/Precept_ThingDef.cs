@@ -3,130 +3,129 @@ using System.Linq;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Precept_ThingDef : Precept
 {
-	public class Precept_ThingDef : Precept
+	private ThingDef thingDef;
+
+	private static List<StyleCategoryPair> tmpStylesForBuilding = new List<StyleCategoryPair>();
+
+	private static List<ThingDef> usedThingDefsTmp = new List<ThingDef>();
+
+	public override string TipLabel => def.tipLabelOverride ?? ((string)(def.issue.LabelCap + ": " + ThingDef.LabelCap));
+
+	public ThingDef ThingDef
 	{
-		private ThingDef thingDef;
-
-		private static List<StyleCategoryPair> tmpStylesForBuilding = new List<StyleCategoryPair>();
-
-		private static List<ThingDef> usedThingDefsTmp = new List<ThingDef>();
-
-		public override string TipLabel => def.tipLabelOverride ?? ((string)(def.issue.LabelCap + ": " + ThingDef.LabelCap));
-
-		public ThingDef ThingDef
+		get
 		{
-			get
+			return thingDef;
+		}
+		set
+		{
+			if (thingDef != value)
 			{
-				return thingDef;
+				thingDef = value;
+				Notify_ThingDefSet();
 			}
-			set
+		}
+	}
+
+	public static List<StyleCategoryPair> AllPossibleStylesForBuilding(ThingDef building)
+	{
+		tmpStylesForBuilding.Clear();
+		foreach (StyleCategoryDef item in DefDatabase<StyleCategoryDef>.AllDefsListForReading)
+		{
+			foreach (ThingDefStyle thingDefStyle in item.thingDefStyles)
 			{
-				if (thingDef != value)
+				if (thingDefStyle.ThingDef == building)
 				{
-					thingDef = value;
-					Notify_ThingDefSet();
+					tmpStylesForBuilding.Add(new StyleCategoryPair
+					{
+						category = item,
+						styleDef = thingDefStyle.StyleDef
+					});
 				}
 			}
 		}
+		return tmpStylesForBuilding;
+	}
 
-		public static List<StyleCategoryPair> AllPossibleStylesForBuilding(ThingDef building)
+	public override void Init(Ideo ideo, FactionDef generatingFor = null)
+	{
+		base.Init(ideo);
+		IEnumerable<PreceptThingChance> enumerable = null;
+		if (!def.canUseAlreadyUsedThingDef)
 		{
-			tmpStylesForBuilding.Clear();
-			foreach (StyleCategoryDef item in DefDatabase<StyleCategoryDef>.AllDefsListForReading)
+			usedThingDefsTmp.Clear();
+			foreach (Precept item in ideo.PreceptsListForReading)
 			{
-				foreach (ThingDefStyle thingDefStyle in item.thingDefStyles)
+				if (item != this && item is Precept_ThingStyle precept_ThingStyle)
 				{
-					if (thingDefStyle.ThingDef == building)
-					{
-						tmpStylesForBuilding.Add(new StyleCategoryPair
-						{
-							category = item,
-							styleDef = thingDefStyle.StyleDef
-						});
-					}
+					usedThingDefsTmp.Add(precept_ThingStyle.ThingDef);
 				}
 			}
-			return tmpStylesForBuilding;
+			enumerable = from bd in def.Worker.ThingDefsForIdeo(ideo, generatingFor)
+				where !usedThingDefsTmp.Contains(bd.def)
+				select bd;
 		}
-
-		public override void Init(Ideo ideo, FactionDef generatingFor = null)
+		else
 		{
-			base.Init(ideo);
-			IEnumerable<PreceptThingChance> enumerable = null;
-			if (!def.canUseAlreadyUsedThingDef)
+			enumerable = def.Worker.ThingDefsForIdeo(ideo, generatingFor);
+		}
+		if (ThingDef == null)
+		{
+			if (enumerable.Any() && enumerable.TryRandomElementByWeight((PreceptThingChance d) => d.chance, out var result))
 			{
-				usedThingDefsTmp.Clear();
-				foreach (Precept item in ideo.PreceptsListForReading)
-				{
-					if (item != this && item is Precept_ThingStyle precept_ThingStyle)
-					{
-						usedThingDefsTmp.Add(precept_ThingStyle.ThingDef);
-					}
-				}
-				enumerable = from bd in def.Worker.ThingDefsForIdeo(ideo, generatingFor)
-					where !usedThingDefsTmp.Contains(bd.def)
-					select bd;
+				ThingDef = result.def;
 			}
 			else
 			{
-				enumerable = def.Worker.ThingDefsForIdeo(ideo, generatingFor);
-			}
-			if (ThingDef == null)
-			{
-				if (enumerable.Any() && enumerable.TryRandomElementByWeight((PreceptThingChance d) => d.chance, out var result))
-				{
-					ThingDef = result.def;
-				}
-				else
-				{
-					ThingDef = def.Worker.ThingDefsForIdeo(ideo, generatingFor).RandomElementByWeight((PreceptThingChance d) => d.chance).def;
-					Log.Warning("Failed to generate a unique building for " + ideo.name + " for precept " + def.defName);
-				}
-			}
-			if (UsesGeneratedName)
-			{
-				RegenerateName();
-			}
-			Notify_ThingDefSet();
-		}
-
-		protected virtual void Notify_ThingDefSet()
-		{
-			ideo.style.ResetStyleForThing(ThingDef);
-			if (ThingDef.canEditAnyStyle && ideo.GetStyleAndCategoryFor(ThingDef) == null)
-			{
-				StyleCategoryPair styleAndCat = AllPossibleStylesForBuilding(ThingDef).RandomElement();
-				ideo.style.SetStyleForThingDef(ThingDef, styleAndCat);
+				ThingDef = def.Worker.ThingDefsForIdeo(ideo, generatingFor).RandomElementByWeight((PreceptThingChance d) => d.chance).def;
+				Log.Warning("Failed to generate a unique building for " + ideo.name + " for precept " + def.defName);
 			}
 		}
-
-		public override string GenerateNameRaw()
+		if (UsesGeneratedName)
 		{
-			return name;
+			RegenerateName();
 		}
+		Notify_ThingDefSet();
+	}
 
-		public override void DrawIcon(Rect rect)
+	protected virtual void Notify_ThingDefSet()
+	{
+		ideo.style.ResetStyleForThing(ThingDef);
+		if (ThingDef.canEditAnyStyle && ideo.GetStyleAndCategoryFor(ThingDef) == null)
 		{
-			Widgets.DefIcon(rect, ThingDef, GenStuff.DefaultStuffFor(ThingDef), 1f, ideo.GetStyleFor(ThingDef));
+			StyleCategoryPair styleAndCat = AllPossibleStylesForBuilding(ThingDef).RandomElement();
+			ideo.style.SetStyleForThingDef(ThingDef, styleAndCat);
 		}
+	}
 
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_Defs.Look(ref thingDef, "thingDef");
-			if (Scribe.mode == LoadSaveMode.PostLoadInit && ThingDef == null)
-			{
-				Log.Error(GetType().Name + " had null thingDef after loading.");
-				ThingDef = def.Worker.ThingDefs.RandomElement().def;
-			}
-		}
+	public override string GenerateNameRaw()
+	{
+		return name;
+	}
 
-		public override void CopyTo(Precept other)
+	public override void DrawIcon(Rect rect)
+	{
+		Widgets.DefIcon(rect, ThingDef, GenStuff.DefaultStuffFor(ThingDef), 1f, ideo.GetStyleFor(ThingDef));
+	}
+
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Defs.Look(ref thingDef, "thingDef");
+		if (Scribe.mode == LoadSaveMode.PostLoadInit && ThingDef == null)
 		{
-			base.CopyTo(other);
-			((Precept_ThingDef)other).thingDef = thingDef;
+			Log.Error(GetType().Name + " had null thingDef after loading.");
+			ThingDef = def.Worker.ThingDefs.RandomElement().def;
 		}
+	}
+
+	public override void CopyTo(Precept other)
+	{
+		base.CopyTo(other);
+		((Precept_ThingDef)other).thingDef = thingDef;
 	}
 }

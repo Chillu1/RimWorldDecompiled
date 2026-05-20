@@ -5,188 +5,187 @@ using LudeonTK;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ITab_Pawn_Log : ITab
 {
-	public class ITab_Pawn_Log : ITab
+	public const float Width = 630f;
+
+	[TweakValue("Interface", 0f, 1000f)]
+	private static float ShowAllX = 60f;
+
+	[TweakValue("Interface", 0f, 1000f)]
+	private static float ShowAllWidth = 100f;
+
+	[TweakValue("Interface", 0f, 1000f)]
+	private static float ShowCombatX = 445f;
+
+	[TweakValue("Interface", 0f, 1000f)]
+	private static float ShowCombatWidth = 115f;
+
+	[TweakValue("Interface", 0f, 1000f)]
+	private static float ShowSocialX = 330f;
+
+	[TweakValue("Interface", 0f, 1000f)]
+	private static float ShowSocialWidth = 105f;
+
+	[TweakValue("Interface", 0f, 20f)]
+	private static float ToolbarHeight = 2f;
+
+	[TweakValue("Interface", 0f, 100f)]
+	private static float ButtonOffset = 60f;
+
+	private const int MaxLogLines = 300;
+
+	public bool showAll;
+
+	public bool showCombat = true;
+
+	public bool showSocial = true;
+
+	public LogEntry logSeek;
+
+	public ITab_Pawn_Log_Utility.LogDrawData data = new ITab_Pawn_Log_Utility.LogDrawData();
+
+	public List<ITab_Pawn_Log_Utility.LogLineDisplayable> cachedLogDisplay;
+
+	public int cachedLogDisplayLastTick = -1;
+
+	public int cachedLogPlayLastTick = -1;
+
+	private Pawn cachedLogForPawn;
+
+	private Vector2 scrollPosition;
+
+	private Pawn SelPawnForCombatInfo
 	{
-		public const float Width = 630f;
-
-		[TweakValue("Interface", 0f, 1000f)]
-		private static float ShowAllX = 60f;
-
-		[TweakValue("Interface", 0f, 1000f)]
-		private static float ShowAllWidth = 100f;
-
-		[TweakValue("Interface", 0f, 1000f)]
-		private static float ShowCombatX = 445f;
-
-		[TweakValue("Interface", 0f, 1000f)]
-		private static float ShowCombatWidth = 115f;
-
-		[TweakValue("Interface", 0f, 1000f)]
-		private static float ShowSocialX = 330f;
-
-		[TweakValue("Interface", 0f, 1000f)]
-		private static float ShowSocialWidth = 105f;
-
-		[TweakValue("Interface", 0f, 20f)]
-		private static float ToolbarHeight = 2f;
-
-		[TweakValue("Interface", 0f, 100f)]
-		private static float ButtonOffset = 60f;
-
-		private const int MaxLogLines = 300;
-
-		public bool showAll;
-
-		public bool showCombat = true;
-
-		public bool showSocial = true;
-
-		public LogEntry logSeek;
-
-		public ITab_Pawn_Log_Utility.LogDrawData data = new ITab_Pawn_Log_Utility.LogDrawData();
-
-		public List<ITab_Pawn_Log_Utility.LogLineDisplayable> cachedLogDisplay;
-
-		public int cachedLogDisplayLastTick = -1;
-
-		public int cachedLogPlayLastTick = -1;
-
-		private Pawn cachedLogForPawn;
-
-		private Vector2 scrollPosition;
-
-		private Pawn SelPawnForCombatInfo
+		get
 		{
-			get
+			if (SelPawn != null)
 			{
-				if (SelPawn != null)
+				return SelPawn;
+			}
+			if (base.SelThing is Corpse corpse)
+			{
+				return corpse.InnerPawn;
+			}
+			throw new InvalidOperationException("Social tab on non-pawn non-corpse " + base.SelThing);
+		}
+	}
+
+	public ITab_Pawn_Log()
+	{
+		size = new Vector2(630f, 510f);
+		labelKey = "TabLog";
+	}
+
+	protected override void FillTab()
+	{
+		Pawn selPawnForCombatInfo = SelPawnForCombatInfo;
+		Rect rect = new Rect(0f, 0f, size.x, size.y);
+		GameFont font = Text.Font;
+		Text.Font = GameFont.Small;
+		Rect rect2 = new Rect(ShowAllX, ToolbarHeight, ShowAllWidth, 24f);
+		bool flag = showAll;
+		Widgets.CheckboxLabeled(rect2, "ShowAll".Translate(), ref showAll);
+		if (flag != showAll)
+		{
+			cachedLogDisplay = null;
+		}
+		Rect rect3 = new Rect(ShowCombatX, ToolbarHeight, ShowCombatWidth, 24f);
+		bool flag2 = showCombat;
+		Widgets.CheckboxLabeled(rect3, "ShowCombat".Translate(), ref showCombat);
+		if (flag2 != showCombat)
+		{
+			cachedLogDisplay = null;
+		}
+		Rect rect4 = new Rect(ShowSocialX, ToolbarHeight, ShowSocialWidth, 24f);
+		bool flag3 = showSocial;
+		Widgets.CheckboxLabeled(rect4, "ShowSocial".Translate(), ref showSocial);
+		if (flag3 != showSocial)
+		{
+			cachedLogDisplay = null;
+		}
+		Text.Font = font;
+		if (cachedLogDisplay == null || cachedLogDisplayLastTick != selPawnForCombatInfo.records.LastBattleTick || cachedLogPlayLastTick != Find.PlayLog.LastTick || cachedLogForPawn != selPawnForCombatInfo)
+		{
+			cachedLogDisplay = ITab_Pawn_Log_Utility.GenerateLogLinesFor(selPawnForCombatInfo, showAll, showCombat, showSocial, 300);
+			cachedLogDisplayLastTick = selPawnForCombatInfo.records.LastBattleTick;
+			cachedLogPlayLastTick = Find.PlayLog.LastTick;
+			cachedLogForPawn = selPawnForCombatInfo;
+		}
+		Rect rect5 = new Rect(rect.width - ButtonOffset, 0f, 18f, 24f);
+		if (Widgets.ButtonImage(rect5, TexButton.Copy))
+		{
+			StringBuilder stringBuilder = new StringBuilder();
+			foreach (ITab_Pawn_Log_Utility.LogLineDisplayable item in cachedLogDisplay)
+			{
+				item.AppendTo(stringBuilder);
+			}
+			GUIUtility.systemCopyBuffer = stringBuilder.ToString();
+		}
+		TooltipHandler.TipRegionByKey(rect5, "CopyLogTip");
+		rect.yMin = 24f;
+		rect = rect.ContractedBy(10f);
+		float width = rect.width - 16f - 10f;
+		float num = 0f;
+		foreach (ITab_Pawn_Log_Utility.LogLineDisplayable item2 in cachedLogDisplay)
+		{
+			if (item2.Matches(logSeek))
+			{
+				scrollPosition.y = num - (item2.GetHeight(width) + rect.height) / 2f;
+			}
+			num += item2.GetHeight(width);
+		}
+		logSeek = null;
+		if (num > 0f)
+		{
+			Rect rect6 = new Rect(0f, 0f, rect.width - 16f, num);
+			data.StartNewDraw();
+			Rect rect7 = rect6;
+			rect7.yMin += scrollPosition.y;
+			rect7.height = rect.height;
+			Widgets.BeginScrollView(rect, ref scrollPosition, rect6);
+			float num2 = 0f;
+			foreach (ITab_Pawn_Log_Utility.LogLineDisplayable item3 in cachedLogDisplay)
+			{
+				float height = item3.GetHeight(width);
+				if (rect7.Overlaps(new Rect(0f, num2, width, height)))
 				{
-					return SelPawn;
+					item3.Draw(num2, width, data);
 				}
-				if (base.SelThing is Corpse corpse)
+				else
 				{
-					return corpse.InnerPawn;
+					data.alternatingBackground = !data.alternatingBackground;
 				}
-				throw new InvalidOperationException("Social tab on non-pawn non-corpse " + base.SelThing);
+				num2 += height;
 			}
+			Widgets.EndScrollView();
 		}
-
-		public ITab_Pawn_Log()
+		else
 		{
-			size = new Vector2(630f, 510f);
-			labelKey = "TabLog";
+			Text.Anchor = TextAnchor.MiddleCenter;
+			GUI.color = Color.grey;
+			Widgets.Label(new Rect(0f, 0f, size.x, size.y), "(" + "NoRecentEntries".Translate() + ")");
+			Text.Anchor = TextAnchor.UpperLeft;
+			GUI.color = Color.white;
 		}
+	}
 
-		protected override void FillTab()
-		{
-			Pawn selPawnForCombatInfo = SelPawnForCombatInfo;
-			Rect rect = new Rect(0f, 0f, size.x, size.y);
-			GameFont font = Text.Font;
-			Text.Font = GameFont.Small;
-			Rect rect2 = new Rect(ShowAllX, ToolbarHeight, ShowAllWidth, 24f);
-			bool flag = showAll;
-			Widgets.CheckboxLabeled(rect2, "ShowAll".Translate(), ref showAll);
-			if (flag != showAll)
-			{
-				cachedLogDisplay = null;
-			}
-			Rect rect3 = new Rect(ShowCombatX, ToolbarHeight, ShowCombatWidth, 24f);
-			bool flag2 = showCombat;
-			Widgets.CheckboxLabeled(rect3, "ShowCombat".Translate(), ref showCombat);
-			if (flag2 != showCombat)
-			{
-				cachedLogDisplay = null;
-			}
-			Rect rect4 = new Rect(ShowSocialX, ToolbarHeight, ShowSocialWidth, 24f);
-			bool flag3 = showSocial;
-			Widgets.CheckboxLabeled(rect4, "ShowSocial".Translate(), ref showSocial);
-			if (flag3 != showSocial)
-			{
-				cachedLogDisplay = null;
-			}
-			Text.Font = font;
-			if (cachedLogDisplay == null || cachedLogDisplayLastTick != selPawnForCombatInfo.records.LastBattleTick || cachedLogPlayLastTick != Find.PlayLog.LastTick || cachedLogForPawn != selPawnForCombatInfo)
-			{
-				cachedLogDisplay = ITab_Pawn_Log_Utility.GenerateLogLinesFor(selPawnForCombatInfo, showAll, showCombat, showSocial, 300);
-				cachedLogDisplayLastTick = selPawnForCombatInfo.records.LastBattleTick;
-				cachedLogPlayLastTick = Find.PlayLog.LastTick;
-				cachedLogForPawn = selPawnForCombatInfo;
-			}
-			Rect rect5 = new Rect(rect.width - ButtonOffset, 0f, 18f, 24f);
-			if (Widgets.ButtonImage(rect5, TexButton.Copy))
-			{
-				StringBuilder stringBuilder = new StringBuilder();
-				foreach (ITab_Pawn_Log_Utility.LogLineDisplayable item in cachedLogDisplay)
-				{
-					item.AppendTo(stringBuilder);
-				}
-				GUIUtility.systemCopyBuffer = stringBuilder.ToString();
-			}
-			TooltipHandler.TipRegionByKey(rect5, "CopyLogTip");
-			rect.yMin = 24f;
-			rect = rect.ContractedBy(10f);
-			float width = rect.width - 16f - 10f;
-			float num = 0f;
-			foreach (ITab_Pawn_Log_Utility.LogLineDisplayable item2 in cachedLogDisplay)
-			{
-				if (item2.Matches(logSeek))
-				{
-					scrollPosition.y = num - (item2.GetHeight(width) + rect.height) / 2f;
-				}
-				num += item2.GetHeight(width);
-			}
-			logSeek = null;
-			if (num > 0f)
-			{
-				Rect rect6 = new Rect(0f, 0f, rect.width - 16f, num);
-				data.StartNewDraw();
-				Rect rect7 = rect6;
-				rect7.yMin += scrollPosition.y;
-				rect7.height = rect.height;
-				Widgets.BeginScrollView(rect, ref scrollPosition, rect6);
-				float num2 = 0f;
-				foreach (ITab_Pawn_Log_Utility.LogLineDisplayable item3 in cachedLogDisplay)
-				{
-					float height = item3.GetHeight(width);
-					if (rect7.Overlaps(new Rect(0f, num2, width, height)))
-					{
-						item3.Draw(num2, width, data);
-					}
-					else
-					{
-						data.alternatingBackground = !data.alternatingBackground;
-					}
-					num2 += height;
-				}
-				Widgets.EndScrollView();
-			}
-			else
-			{
-				Text.Anchor = TextAnchor.MiddleCenter;
-				GUI.color = Color.grey;
-				Widgets.Label(new Rect(0f, 0f, size.x, size.y), "(" + "NoRecentEntries".Translate() + ")");
-				Text.Anchor = TextAnchor.UpperLeft;
-				GUI.color = Color.white;
-			}
-		}
+	public void SeekTo(LogEntry entry)
+	{
+		logSeek = entry;
+	}
 
-		public void SeekTo(LogEntry entry)
-		{
-			logSeek = entry;
-		}
+	public void Highlight(LogEntry entry)
+	{
+		data.highlightEntry = entry;
+		data.highlightIntensity = 1f;
+	}
 
-		public void Highlight(LogEntry entry)
-		{
-			data.highlightEntry = entry;
-			data.highlightIntensity = 1f;
-		}
-
-		public override void Notify_ClearingAllMapsMemory()
-		{
-			base.Notify_ClearingAllMapsMemory();
-			cachedLogForPawn = null;
-		}
+	public override void Notify_ClearingAllMapsMemory()
+	{
+		base.Notify_ClearingAllMapsMemory();
+		cachedLogForPawn = null;
 	}
 }

@@ -1,16 +1,15 @@
 using RimWorld;
 
-namespace Verse.AI
+namespace Verse.AI;
+
+public class ThinkNode_ActivityModeActive : ThinkNode_Conditional
 {
-	public class ThinkNode_ActivityModeActive : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
+		if (pawn.GetComp<CompActivity>() != null)
 		{
-			if (pawn.GetComp<CompActivity>() != null)
-			{
-				return pawn.GetComp<CompActivity>().IsActive;
-			}
-			return false;
+			return pawn.GetComp<CompActivity>().IsActive;
 		}
+		return false;
 	}
 }

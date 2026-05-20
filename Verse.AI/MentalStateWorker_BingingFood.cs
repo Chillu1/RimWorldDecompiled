@@ -1,22 +1,21 @@
-namespace Verse.AI
+namespace Verse.AI;
+
+public class MentalStateWorker_BingingFood : MentalStateWorker
 {
-	public class MentalStateWorker_BingingFood : MentalStateWorker
+	public override bool StateCanOccur(Pawn pawn)
 	{
-		public override bool StateCanOccur(Pawn pawn)
+		if (!base.StateCanOccur(pawn))
 		{
-			if (!base.StateCanOccur(pawn))
-			{
-				return false;
-			}
-			if (pawn.needs.food == null)
-			{
-				return false;
-			}
-			if (!pawn.Spawned)
-			{
-				return true;
-			}
-			return pawn.Map.resourceCounter.TotalHumanEdibleNutrition > 10f;
+			return false;
 		}
+		if (pawn.needs.food == null)
+		{
+			return false;
+		}
+		if (!pawn.Spawned)
+		{
+			return true;
+		}
+		return pawn.Map.resourceCounter.TotalHumanEdibleNutrition > 10f;
 	}
 }

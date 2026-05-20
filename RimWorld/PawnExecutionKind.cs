@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum PawnExecutionKind
 {
-	public enum PawnExecutionKind
-	{
-		GenericBrutal,
-		GenericHumane,
-		OrganHarvesting,
-		Ripscanned
-	}
+	GenericBrutal,
+	GenericHumane,
+	OrganHarvesting,
+	Ripscanned
 }

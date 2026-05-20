@@ -1,14 +1,13 @@
-namespace RimWorld
-{
-	[DefOf]
-	public static class RitualVisualEffectDefOf
-	{
-		[MayRequireIdeology]
-		public static RitualVisualEffectDef Basic;
+namespace RimWorld;
 
-		static RitualVisualEffectDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(RitualVisualEffectDefOf));
-		}
+[DefOf]
+public static class RitualVisualEffectDefOf
+{
+	[MayRequireIdeology]
+	public static RitualVisualEffectDef Basic;
+
+	static RitualVisualEffectDefOf()
+	{
+		DefOfHelper.EnsureInitializedInCtor(typeof(RitualVisualEffectDefOf));
 	}
 }

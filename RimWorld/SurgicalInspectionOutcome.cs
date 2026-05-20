@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum SurgicalInspectionOutcome
 {
-	public enum SurgicalInspectionOutcome
-	{
-		Nothing,
-		Detected,
-		DetectedNoLetter
-	}
+	Nothing,
+	Detected,
+	DetectedNoLetter
 }

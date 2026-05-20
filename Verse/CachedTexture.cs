@@ -1,59 +1,58 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class CachedTexture
 {
-	public class CachedTexture
+	private string texPath;
+
+	private Texture2D cachedTexture;
+
+	private int validationIndex;
+
+	private static int curValidationIndex = 0;
+
+	private static readonly Dictionary<string, CachedTexture> cachedTextures = new Dictionary<string, CachedTexture>(32);
+
+	public Texture2D Texture
 	{
-		private string texPath;
-
-		private Texture2D cachedTexture;
-
-		private int validationIndex;
-
-		private static int curValidationIndex = 0;
-
-		private static readonly Dictionary<string, CachedTexture> cachedTextures = new Dictionary<string, CachedTexture>(32);
-
-		public Texture2D Texture
+		get
 		{
-			get
+			if (cachedTexture == null || validationIndex != curValidationIndex)
 			{
-				if (cachedTexture == null || validationIndex != curValidationIndex)
+				if (texPath.NullOrEmpty())
 				{
-					if (texPath.NullOrEmpty())
-					{
-						cachedTexture = BaseContent.BadTex;
-					}
-					else
-					{
-						cachedTexture = ContentFinder<Texture2D>.Get(texPath) ?? BaseContent.BadTex;
-					}
-					validationIndex = curValidationIndex;
+					cachedTexture = BaseContent.BadTex;
 				}
-				return cachedTexture;
+				else
+				{
+					cachedTexture = ContentFinder<Texture2D>.Get(texPath) ?? BaseContent.BadTex;
+				}
+				validationIndex = curValidationIndex;
 			}
+			return cachedTexture;
 		}
+	}
 
-		public CachedTexture(string texPath)
-		{
-			this.texPath = texPath;
-			cachedTexture = null;
-			validationIndex = -1;
-		}
+	public CachedTexture(string texPath)
+	{
+		this.texPath = texPath;
+		cachedTexture = null;
+		validationIndex = -1;
+	}
 
-		public static void ResetStaticData()
-		{
-			curValidationIndex++;
-		}
+	public static void ResetStaticData()
+	{
+		curValidationIndex++;
+	}
 
-		public static Texture2D Get(string path)
+	public static Texture2D Get(string path)
+	{
+		if (!cachedTextures.TryGetValue(path, out var value))
 		{
-			if (!cachedTextures.TryGetValue(path, out var value))
-			{
-				value = (cachedTextures[path] = new CachedTexture(path));
-			}
-			return value.Texture;
+			value = (cachedTextures[path] = new CachedTexture(path));
 		}
+		return value.Texture;
 	}
 }

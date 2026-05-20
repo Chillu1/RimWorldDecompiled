@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public class TrainabilityDef : Def
 {
-	public class TrainabilityDef : Def
-	{
-		public int intelligenceOrder;
-	}
+	public int intelligenceOrder;
 }

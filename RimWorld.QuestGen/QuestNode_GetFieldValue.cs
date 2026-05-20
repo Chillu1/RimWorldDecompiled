@@ -2,44 +2,43 @@ using System;
 using System.Reflection;
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_GetFieldValue : QuestNode
 {
-	public class QuestNode_GetFieldValue : QuestNode
+	[NoTranslate]
+	public SlateRef<string> storeAs;
+
+	[NoTranslate]
+	public SlateRef<object> obj;
+
+	[NoTranslate]
+	public SlateRef<string> field;
+
+	public SlateRef<Type> type;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		[NoTranslate]
-		public SlateRef<string> storeAs;
+		SetVars(slate);
+		return true;
+	}
 
-		[NoTranslate]
-		public SlateRef<object> obj;
+	protected override void RunInt()
+	{
+		SetVars(QuestGen.slate);
+	}
 
-		[NoTranslate]
-		public SlateRef<string> field;
-
-		public SlateRef<Type> type;
-
-		protected override bool TestRunInt(Slate slate)
+	private void SetVars(Slate slate)
+	{
+		object obj = ((type.GetValue(slate) != null) ? ConvertHelper.Convert(this.obj.GetValue(slate), type.GetValue(slate)) : this.obj.GetValue(slate));
+		FieldInfo fieldInfo = obj.GetType().GetField(field.GetValue(slate), BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+		if (fieldInfo == null)
 		{
-			SetVars(slate);
-			return true;
+			Log.Error("QuestNode error: " + obj.GetType().Name + " doesn't have a field named " + field.GetValue(slate));
 		}
-
-		protected override void RunInt()
+		else
 		{
-			SetVars(QuestGen.slate);
-		}
-
-		private void SetVars(Slate slate)
-		{
-			object obj = ((type.GetValue(slate) != null) ? ConvertHelper.Convert(this.obj.GetValue(slate), type.GetValue(slate)) : this.obj.GetValue(slate));
-			FieldInfo fieldInfo = obj.GetType().GetField(field.GetValue(slate), BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-			if (fieldInfo == null)
-			{
-				Log.Error("QuestNode error: " + obj.GetType().Name + " doesn't have a field named " + field.GetValue(slate));
-			}
-			else
-			{
-				slate.Set(storeAs.GetValue(slate), fieldInfo.GetValue(obj));
-			}
+			slate.Set(storeAs.GetValue(slate), fieldInfo.GetValue(obj));
 		}
 	}
 }

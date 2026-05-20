@@ -1,42 +1,41 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class RottableUtility
 {
-	public static class RottableUtility
+	public static bool IsNotFresh(this Thing t)
 	{
-		public static bool IsNotFresh(this Thing t)
+		CompRottable compRottable = t.TryGetComp<CompRottable>();
+		if (compRottable != null)
 		{
-			CompRottable compRottable = t.TryGetComp<CompRottable>();
-			if (compRottable != null)
-			{
-				return compRottable.Stage != RotStage.Fresh;
-			}
-			return false;
+			return compRottable.Stage != RotStage.Fresh;
 		}
+		return false;
+	}
 
-		public static bool IsDessicated(this Thing t)
+	public static bool IsDessicated(this Thing t)
+	{
+		CompRottable compRottable = t.TryGetComp<CompRottable>();
+		if (compRottable != null)
 		{
-			CompRottable compRottable = t.TryGetComp<CompRottable>();
-			if (compRottable != null)
-			{
-				return compRottable.Stage == RotStage.Dessicated;
-			}
-			return false;
+			return compRottable.Stage == RotStage.Dessicated;
 		}
+		return false;
+	}
 
-		public static RotStage GetRotStage(this Thing t)
-		{
-			return t.TryGetComp<CompRottable>()?.Stage ?? RotStage.Fresh;
-		}
+	public static RotStage GetRotStage(this Thing t)
+	{
+		return t.TryGetComp<CompRottable>()?.Stage ?? RotStage.Fresh;
+	}
 
-		public static RotDrawMode GetRotDrawMode(RotStage stage)
+	public static RotDrawMode GetRotDrawMode(RotStage stage)
+	{
+		return stage switch
 		{
-			return stage switch
-			{
-				RotStage.Rotting => RotDrawMode.Rotting, 
-				RotStage.Dessicated => RotDrawMode.Dessicated, 
-				_ => RotDrawMode.Fresh, 
-			};
-		}
+			RotStage.Rotting => RotDrawMode.Rotting, 
+			RotStage.Dessicated => RotDrawMode.Dessicated, 
+			_ => RotDrawMode.Fresh, 
+		};
 	}
 }

@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum ExtraFactionType
 {
-	public enum ExtraFactionType
-	{
-		HomeFaction,
-		HostFaction,
-		MiniFaction
-	}
+	HomeFaction,
+	HostFaction,
+	MiniFaction
 }

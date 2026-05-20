@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_Precept_HumanLeatherApparel : ThoughtWorker_Precept
 {
-	public class ThoughtWorker_Precept_HumanLeatherApparel : ThoughtWorker_Precept
+	protected override ThoughtState ShouldHaveThought(Pawn p)
 	{
-		protected override ThoughtState ShouldHaveThought(Pawn p)
-		{
-			return ThoughtWorker_HumanLeatherApparel.CurrentThoughtState(p);
-		}
+		return ThoughtWorker_HumanLeatherApparel.CurrentThoughtState(p);
 	}
 }

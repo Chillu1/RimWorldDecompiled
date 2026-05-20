@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum BreastfeedMotherState
 {
-	public enum BreastfeedMotherState
-	{
-		Unset,
-		Downed,
-		Normal
-	}
+	Unset,
+	Downed,
+	Normal
 }

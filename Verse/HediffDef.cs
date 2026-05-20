@@ -3,519 +3,518 @@ using System.Collections.Generic;
 using RimWorld;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class HediffDef : Def, IRenderNodePropertiesParent
 {
-	public class HediffDef : Def, IRenderNodePropertiesParent
+	private class ReportStringOverride
 	{
-		private class ReportStringOverride
-		{
-			public JobDef jobDef;
-
-			[MustTranslate]
-			public string reportString;
-		}
-
-		public Type hediffClass = typeof(Hediff);
-
-		public List<HediffCompProperties> comps;
+		public JobDef jobDef;
 
 		[MustTranslate]
-		public string descriptionShort;
+		public string reportString;
+	}
 
-		[NoTranslate]
-		public string debugLabelExtra;
+	public Type hediffClass = typeof(Hediff);
 
-		public float initialSeverity = 0.5f;
+	public List<HediffCompProperties> comps;
 
-		public float lethalSeverity = -1f;
+	[MustTranslate]
+	public string descriptionShort;
 
-		public List<HediffStage> stages;
+	[NoTranslate]
+	public string debugLabelExtra;
 
-		public bool tendable;
+	public float initialSeverity = 0.5f;
 
-		public bool isBad = true;
+	public float lethalSeverity = -1f;
 
-		public ThingDef spawnThingOnRemoved;
+	public List<HediffStage> stages;
 
-		public float chanceToCauseNoPain;
+	public bool tendable;
 
-		public bool canApplyDodChanceForCapacityChanges;
+	public bool isBad = true;
 
-		public bool makesSickThought;
+	public ThingDef spawnThingOnRemoved;
 
-		public bool makesAlert = true;
+	public float chanceToCauseNoPain;
 
-		public NeedDef chemicalNeed;
+	public bool canApplyDodChanceForCapacityChanges;
 
-		public float minSeverity;
+	public bool makesSickThought;
 
-		public float maxSeverity = float.MaxValue;
+	public bool makesAlert = true;
 
-		public bool scenarioCanAdd;
+	public NeedDef chemicalNeed;
 
-		public List<HediffGiver> hediffGivers;
+	public float minSeverity;
 
-		public bool cureAllAtOnceIfCuredByItem;
+	public float maxSeverity = float.MaxValue;
 
-		public TaleDef taleOnVisible;
+	public bool scenarioCanAdd;
 
-		public bool recordDownedTale = true;
+	public List<HediffGiver> hediffGivers;
 
-		public bool everCurableByItem = true;
+	public bool cureAllAtOnceIfCuredByItem;
 
-		public List<string> tags;
+	public TaleDef taleOnVisible;
 
-		public bool priceImpact;
+	public bool recordDownedTale = true;
 
-		public float priceOffset;
+	public bool everCurableByItem = true;
 
-		public bool chronic;
+	public List<string> tags;
 
-		public bool keepOnBodyPartRestoration;
+	public bool priceImpact;
 
-		public bool countsAsAddedPartOrImplant;
+	public float priceOffset;
 
-		public bool blocksSocialInteraction;
+	public bool chronic;
 
-		public bool blocksSleeping;
+	public bool keepOnBodyPartRestoration;
 
-		[MustTranslate]
-		public string overrideTooltip;
+	public bool countsAsAddedPartOrImplant;
 
-		[MustTranslate]
-		public string extraTooltip;
+	public bool blocksSocialInteraction;
 
-		[MustTranslate]
-		public string inspectString;
+	public bool blocksSleeping;
 
-		public bool levelIsQuantity;
+	[MustTranslate]
+	public string overrideTooltip;
 
-		public bool removeOnDeathrestStart;
+	[MustTranslate]
+	public string extraTooltip;
 
-		public bool preventsCrawling;
+	[MustTranslate]
+	public string inspectString;
 
-		public bool preventsPregnancy;
+	public bool levelIsQuantity;
 
-		public bool preventsLungRot;
+	public bool removeOnDeathrestStart;
 
-		public bool pregnant;
+	public bool preventsCrawling;
 
-		public bool allowMothballIfLowPriorityWorldPawn;
+	public bool preventsPregnancy;
 
-		public List<string> removeWithTags;
+	public bool preventsLungRot;
 
-		public List<BodyPartDef> onlyLifeThreateningTo;
+	public bool pregnant;
 
-		public bool canAffectBionicOrImplant = true;
+	public bool allowMothballIfLowPriorityWorldPawn;
 
-		public bool alwaysShowSeverity;
+	public List<string> removeWithTags;
 
-		public bool showGizmosOnCorpse;
+	public List<BodyPartDef> onlyLifeThreateningTo;
 
-		public BodyPartDef defaultInstallPart;
+	public bool canAffectBionicOrImplant = true;
 
-		public Color? hairColorOverride;
+	public bool alwaysShowSeverity;
 
-		public List<HediffInfectionPathway> possiblePathways;
+	public bool showGizmosOnCorpse;
 
-		public List<InfectionPathwayDef> givesInfectionPathways;
+	public BodyPartDef defaultInstallPart;
 
-		public bool duplicationAllowed = true;
+	public Color? hairColorOverride;
 
-		public bool preventsDeath;
+	public List<HediffInfectionPathway> possiblePathways;
 
-		public List<MeditationFocusDef> allowedMeditationFocusTypes;
+	public List<InfectionPathwayDef> givesInfectionPathways;
 
-		public List<AbilityDef> abilities;
+	public bool duplicationAllowed = true;
 
-		public bool isInfection;
+	public bool preventsDeath;
 
-		public bool forceRemoveOnResurrection;
+	public List<MeditationFocusDef> allowedMeditationFocusTypes;
 
-		public bool organicAddedBodypart;
+	public List<AbilityDef> abilities;
 
-		public bool deprioritizeHealing;
+	public bool isInfection;
 
-		public bool clearsEgo;
+	public bool forceRemoveOnResurrection;
 
-		public List<Aptitude> aptitudes;
+	public bool organicAddedBodypart;
 
-		public SimpleCurve removeOnRedressChanceByDaysCurve = new SimpleCurve
+	public bool deprioritizeHealing;
+
+	public bool clearsEgo;
+
+	public List<Aptitude> aptitudes;
+
+	public SimpleCurve removeOnRedressChanceByDaysCurve = new SimpleCurve
+	{
+		new CurvePoint(0f, 0f),
+		new CurvePoint(1f, 0f)
+	};
+
+	public bool removeOnQuestLodgers;
+
+	public List<PawnKindDef> removeOnRedressIfNotOfKind;
+
+	public bool displayWound;
+
+	public float? woundAnchorRange;
+
+	public Color defaultLabelColor = Color.white;
+
+	private List<PawnRenderNodeProperties> renderNodeProperties;
+
+	public Color? skinColorOverride;
+
+	public Color? skinColorTint;
+
+	public float skinColorTintStrength = 0.5f;
+
+	public ShaderTypeDef skinShader;
+
+	public bool forceRenderTreeRecache;
+
+	public InjuryProps injuryProps;
+
+	public AddedBodyPartProps addedPartProps;
+
+	private List<ReportStringOverride> reportStringOverrides;
+
+	[MustTranslate]
+	public string labelNoun;
+
+	[MustTranslate]
+	public string battleStateLabel;
+
+	[MustTranslate]
+	public string labelNounPretty;
+
+	[MustTranslate]
+	public string targetPrefix;
+
+	private bool alwaysAllowMothballCached;
+
+	private bool alwaysAllowMothball;
+
+	private string descriptionCached;
+
+	private Dictionary<JobDef, string> reportStringOverridesDict;
+
+	private Hediff concreteExampleInt;
+
+	public bool HasDefinedGraphicProperties
+	{
+		get
 		{
-			new CurvePoint(0f, 0f),
-			new CurvePoint(1f, 0f)
-		};
-
-		public bool removeOnQuestLodgers;
-
-		public List<PawnKindDef> removeOnRedressIfNotOfKind;
-
-		public bool displayWound;
-
-		public float? woundAnchorRange;
-
-		public Color defaultLabelColor = Color.white;
-
-		private List<PawnRenderNodeProperties> renderNodeProperties;
-
-		public Color? skinColorOverride;
-
-		public Color? skinColorTint;
-
-		public float skinColorTintStrength = 0.5f;
-
-		public ShaderTypeDef skinShader;
-
-		public bool forceRenderTreeRecache;
-
-		public InjuryProps injuryProps;
-
-		public AddedBodyPartProps addedPartProps;
-
-		private List<ReportStringOverride> reportStringOverrides;
-
-		[MustTranslate]
-		public string labelNoun;
-
-		[MustTranslate]
-		public string battleStateLabel;
-
-		[MustTranslate]
-		public string labelNounPretty;
-
-		[MustTranslate]
-		public string targetPrefix;
-
-		private bool alwaysAllowMothballCached;
-
-		private bool alwaysAllowMothball;
-
-		private string descriptionCached;
-
-		private Dictionary<JobDef, string> reportStringOverridesDict;
-
-		private Hediff concreteExampleInt;
-
-		public bool HasDefinedGraphicProperties
-		{
-			get
+			if (renderNodeProperties.NullOrEmpty())
 			{
-				if (renderNodeProperties.NullOrEmpty())
-				{
-					return skinShader != null;
-				}
-				return true;
+				return skinShader != null;
 			}
+			return true;
 		}
+	}
 
-		public List<PawnRenderNodeProperties> RenderNodeProperties => renderNodeProperties ?? PawnRenderUtility.EmptyRenderNodeProperties;
+	public List<PawnRenderNodeProperties> RenderNodeProperties => renderNodeProperties ?? PawnRenderUtility.EmptyRenderNodeProperties;
 
-		public bool IsAddiction => typeof(Hediff_Addiction).IsAssignableFrom(hediffClass);
+	public bool IsAddiction => typeof(Hediff_Addiction).IsAssignableFrom(hediffClass);
 
-		public bool AlwaysAllowMothball
+	public bool AlwaysAllowMothball
+	{
+		get
 		{
-			get
+			if (!alwaysAllowMothballCached)
 			{
-				if (!alwaysAllowMothballCached)
+				alwaysAllowMothball = true;
+				if (comps != null && comps.Count > 0)
 				{
-					alwaysAllowMothball = true;
-					if (comps != null && comps.Count > 0)
-					{
-						alwaysAllowMothball = false;
-					}
-					if (stages != null)
-					{
-						for (int i = 0; i < stages.Count; i++)
-						{
-							HediffStage hediffStage = stages[i];
-							if (hediffStage.deathMtbDays > 0f || (hediffStage.hediffGivers != null && hediffStage.hediffGivers.Count > 0))
-							{
-								alwaysAllowMothball = false;
-							}
-						}
-					}
-					alwaysAllowMothballCached = true;
+					alwaysAllowMothball = false;
 				}
-				return alwaysAllowMothball;
-			}
-		}
-
-		public Hediff ConcreteExample => concreteExampleInt ?? (concreteExampleInt = HediffMaker.Debug_MakeConcreteExampleHediff(this));
-
-		public string Description
-		{
-			get
-			{
-				if (descriptionCached == null)
-				{
-					if (!descriptionShort.NullOrEmpty())
-					{
-						descriptionCached = descriptionShort;
-					}
-					else
-					{
-						descriptionCached = description;
-					}
-				}
-				return descriptionCached;
-			}
-		}
-
-		public bool HasComp(Type compClass)
-		{
-			if (comps != null)
-			{
-				for (int i = 0; i < comps.Count; i++)
-				{
-					if (comps[i].compClass == compClass)
-					{
-						return true;
-					}
-				}
-			}
-			return false;
-		}
-
-		public HediffCompProperties CompPropsFor(Type compClass)
-		{
-			if (comps != null)
-			{
-				for (int i = 0; i < comps.Count; i++)
-				{
-					if (comps[i].compClass == compClass)
-					{
-						return comps[i];
-					}
-				}
-			}
-			return null;
-		}
-
-		public T CompProps<T>() where T : HediffCompProperties
-		{
-			if (comps != null)
-			{
-				for (int i = 0; i < comps.Count; i++)
-				{
-					if (comps[i] is T result)
-					{
-						return result;
-					}
-				}
-			}
-			return null;
-		}
-
-		public bool PossibleToDevelopImmunityNaturally()
-		{
-			HediffCompProperties_Immunizable hediffCompProperties_Immunizable = CompProps<HediffCompProperties_Immunizable>();
-			if (hediffCompProperties_Immunizable != null && (hediffCompProperties_Immunizable.immunityPerDayNotSick > 0f || hediffCompProperties_Immunizable.immunityPerDaySick > 0f))
-			{
-				return true;
-			}
-			return false;
-		}
-
-		public string PrettyTextForPart(BodyPartRecord bodyPart)
-		{
-			if (labelNounPretty.NullOrEmpty())
-			{
-				return null;
-			}
-			return labelNounPretty.Formatted(label, bodyPart.Label);
-		}
-
-		public override void ResolveReferences()
-		{
-			base.ResolveReferences();
-			if (comps != null)
-			{
-				for (int i = 0; i < comps.Count; i++)
-				{
-					comps[i].ResolveReferences(this);
-				}
-			}
-			if (renderNodeProperties != null)
-			{
-				for (int j = 0; j < renderNodeProperties.Count; j++)
-				{
-					renderNodeProperties[j].ResolveReferencesRecursive();
-				}
-			}
-		}
-
-		public int StageAtSeverity(float severity)
-		{
-			if (stages == null)
-			{
-				return 0;
-			}
-			for (int num = stages.Count - 1; num >= 0; num--)
-			{
-				if (severity >= stages[num].minSeverity)
-				{
-					return num;
-				}
-			}
-			return 0;
-		}
-
-		public int AptitudeFor(SkillDef skill)
-		{
-			int num = 0;
-			if (aptitudes.NullOrEmpty())
-			{
-				return num;
-			}
-			for (int i = 0; i < aptitudes.Count; i++)
-			{
-				if (aptitudes[i].skill == skill)
-				{
-					num += aptitudes[i].level;
-				}
-			}
-			return num;
-		}
-
-		public override IEnumerable<string> ConfigErrors()
-		{
-			foreach (string item in base.ConfigErrors())
-			{
-				yield return item;
-			}
-			if (hediffClass == null)
-			{
-				yield return "hediffClass is null";
-			}
-			if (!comps.NullOrEmpty() && !typeof(HediffWithComps).IsAssignableFrom(hediffClass))
-			{
-				yield return "has comps but hediffClass is not HediffWithComps or subclass thereof";
-			}
-			if (minSeverity > initialSeverity)
-			{
-				yield return "minSeverity is greater than initialSeverity";
-			}
-			if (maxSeverity < initialSeverity)
-			{
-				yield return "maxSeverity is lower than initialSeverity";
-			}
-			if (!tendable && HasComp(typeof(HediffComp_TendDuration)))
-			{
-				yield return "has HediffComp_TendDuration but tendable = false";
-			}
-			if (string.IsNullOrEmpty(description))
-			{
-				yield return "Hediff with defName " + defName + " has no description!";
-			}
-			if (possiblePathways != null)
-			{
-				for (int i = 0; i < possiblePathways.Count - 1; i++)
-				{
-					HediffInfectionPathway vector = possiblePathways[i];
-					for (int j = i + 1; j < possiblePathways.Count; j++)
-					{
-						HediffInfectionPathway hediffInfectionPathway = possiblePathways[j];
-						if (vector.PathwayDef == hediffInfectionPathway.PathwayDef)
-						{
-							yield return "Multiple possible infection vectors of type: " + vector.PathwayDef.defName;
-							break;
-						}
-					}
-					if (string.IsNullOrEmpty(vector.Explanation))
-					{
-						yield return "Missing explanation for possible infection vector: " + vector.PathwayDef.defName;
-					}
-				}
-			}
-			if (comps != null)
-			{
-				for (int i = 0; i < comps.Count; i++)
-				{
-					foreach (string item2 in comps[i].ConfigErrors(this))
-					{
-						yield return $"{comps[i]}: {item2}";
-					}
-				}
-			}
-			if (stages != null)
-			{
-				if (!typeof(Hediff_Addiction).IsAssignableFrom(hediffClass))
+				if (stages != null)
 				{
 					for (int i = 0; i < stages.Count; i++)
 					{
-						if (i >= 1 && stages[i].minSeverity <= stages[i - 1].minSeverity)
+						HediffStage hediffStage = stages[i];
+						if (hediffStage.deathMtbDays > 0f || (hediffStage.hediffGivers != null && hediffStage.hediffGivers.Count > 0))
 						{
-							yield return "stages are not in order of minSeverity";
+							alwaysAllowMothball = false;
 						}
 					}
 				}
+				alwaysAllowMothballCached = true;
+			}
+			return alwaysAllowMothball;
+		}
+	}
+
+	public Hediff ConcreteExample => concreteExampleInt ?? (concreteExampleInt = HediffMaker.Debug_MakeConcreteExampleHediff(this));
+
+	public string Description
+	{
+		get
+		{
+			if (descriptionCached == null)
+			{
+				if (!descriptionShort.NullOrEmpty())
+				{
+					descriptionCached = descriptionShort;
+				}
+				else
+				{
+					descriptionCached = description;
+				}
+			}
+			return descriptionCached;
+		}
+	}
+
+	public bool HasComp(Type compClass)
+	{
+		if (comps != null)
+		{
+			for (int i = 0; i < comps.Count; i++)
+			{
+				if (comps[i].compClass == compClass)
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	public HediffCompProperties CompPropsFor(Type compClass)
+	{
+		if (comps != null)
+		{
+			for (int i = 0; i < comps.Count; i++)
+			{
+				if (comps[i].compClass == compClass)
+				{
+					return comps[i];
+				}
+			}
+		}
+		return null;
+	}
+
+	public T CompProps<T>() where T : HediffCompProperties
+	{
+		if (comps != null)
+		{
+			for (int i = 0; i < comps.Count; i++)
+			{
+				if (comps[i] is T result)
+				{
+					return result;
+				}
+			}
+		}
+		return null;
+	}
+
+	public bool PossibleToDevelopImmunityNaturally()
+	{
+		HediffCompProperties_Immunizable hediffCompProperties_Immunizable = CompProps<HediffCompProperties_Immunizable>();
+		if (hediffCompProperties_Immunizable != null && (hediffCompProperties_Immunizable.immunityPerDayNotSick > 0f || hediffCompProperties_Immunizable.immunityPerDaySick > 0f))
+		{
+			return true;
+		}
+		return false;
+	}
+
+	public string PrettyTextForPart(BodyPartRecord bodyPart)
+	{
+		if (labelNounPretty.NullOrEmpty())
+		{
+			return null;
+		}
+		return labelNounPretty.Formatted(label, bodyPart.Label);
+	}
+
+	public override void ResolveReferences()
+	{
+		base.ResolveReferences();
+		if (comps != null)
+		{
+			for (int i = 0; i < comps.Count; i++)
+			{
+				comps[i].ResolveReferences(this);
+			}
+		}
+		if (renderNodeProperties != null)
+		{
+			for (int j = 0; j < renderNodeProperties.Count; j++)
+			{
+				renderNodeProperties[j].ResolveReferencesRecursive();
+			}
+		}
+	}
+
+	public int StageAtSeverity(float severity)
+	{
+		if (stages == null)
+		{
+			return 0;
+		}
+		for (int num = stages.Count - 1; num >= 0; num--)
+		{
+			if (severity >= stages[num].minSeverity)
+			{
+				return num;
+			}
+		}
+		return 0;
+	}
+
+	public int AptitudeFor(SkillDef skill)
+	{
+		int num = 0;
+		if (aptitudes.NullOrEmpty())
+		{
+			return num;
+		}
+		for (int i = 0; i < aptitudes.Count; i++)
+		{
+			if (aptitudes[i].skill == skill)
+			{
+				num += aptitudes[i].level;
+			}
+		}
+		return num;
+	}
+
+	public override IEnumerable<string> ConfigErrors()
+	{
+		foreach (string item in base.ConfigErrors())
+		{
+			yield return item;
+		}
+		if (hediffClass == null)
+		{
+			yield return "hediffClass is null";
+		}
+		if (!comps.NullOrEmpty() && !typeof(HediffWithComps).IsAssignableFrom(hediffClass))
+		{
+			yield return "has comps but hediffClass is not HediffWithComps or subclass thereof";
+		}
+		if (minSeverity > initialSeverity)
+		{
+			yield return "minSeverity is greater than initialSeverity";
+		}
+		if (maxSeverity < initialSeverity)
+		{
+			yield return "maxSeverity is lower than initialSeverity";
+		}
+		if (!tendable && HasComp(typeof(HediffComp_TendDuration)))
+		{
+			yield return "has HediffComp_TendDuration but tendable = false";
+		}
+		if (string.IsNullOrEmpty(description))
+		{
+			yield return "Hediff with defName " + defName + " has no description!";
+		}
+		if (possiblePathways != null)
+		{
+			for (int i = 0; i < possiblePathways.Count - 1; i++)
+			{
+				HediffInfectionPathway vector = possiblePathways[i];
+				for (int j = i + 1; j < possiblePathways.Count; j++)
+				{
+					HediffInfectionPathway hediffInfectionPathway = possiblePathways[j];
+					if (vector.PathwayDef == hediffInfectionPathway.PathwayDef)
+					{
+						yield return "Multiple possible infection vectors of type: " + vector.PathwayDef.defName;
+						break;
+					}
+				}
+				if (string.IsNullOrEmpty(vector.Explanation))
+				{
+					yield return "Missing explanation for possible infection vector: " + vector.PathwayDef.defName;
+				}
+			}
+		}
+		if (comps != null)
+		{
+			for (int i = 0; i < comps.Count; i++)
+			{
+				foreach (string item2 in comps[i].ConfigErrors(this))
+				{
+					yield return $"{comps[i]}: {item2}";
+				}
+			}
+		}
+		if (stages != null)
+		{
+			if (!typeof(Hediff_Addiction).IsAssignableFrom(hediffClass))
+			{
 				for (int i = 0; i < stages.Count; i++)
 				{
-					if (stages[i].hediffGivers != null)
+					if (i >= 1 && stages[i].minSeverity <= stages[i - 1].minSeverity)
 					{
-						for (int k = 0; k < stages[i].hediffGivers.Count; k++)
+						yield return "stages are not in order of minSeverity";
+					}
+				}
+			}
+			for (int i = 0; i < stages.Count; i++)
+			{
+				if (stages[i].hediffGivers != null)
+				{
+					for (int k = 0; k < stages[i].hediffGivers.Count; k++)
+					{
+						foreach (string item3 in stages[i].hediffGivers[k].ConfigErrors())
 						{
-							foreach (string item3 in stages[i].hediffGivers[k].ConfigErrors())
-							{
-								yield return item3;
-							}
+							yield return item3;
 						}
 					}
-					if (stages[i].minSeverity > maxSeverity)
-					{
-						yield return $"minSeverity of stage {i} is greater than maxSeverity.";
-					}
 				}
-			}
-			if (hediffGivers == null)
-			{
-				yield break;
-			}
-			for (int i = 0; i < hediffGivers.Count; i++)
-			{
-				foreach (string item4 in hediffGivers[i].ConfigErrors())
+				if (stages[i].minSeverity > maxSeverity)
 				{
-					yield return item4;
+					yield return $"minSeverity of stage {i} is greater than maxSeverity.";
 				}
 			}
 		}
-
-		public override IEnumerable<StatDrawEntry> SpecialDisplayStats(StatRequest req)
+		if (hediffGivers == null)
 		{
-			if (stages == null || stages.Count != 1)
+			yield break;
+		}
+		for (int i = 0; i < hediffGivers.Count; i++)
+		{
+			foreach (string item4 in hediffGivers[i].ConfigErrors())
 			{
-				yield break;
-			}
-			foreach (StatDrawEntry item in stages[0].SpecialDisplayStats())
-			{
-				yield return item;
+				yield return item4;
 			}
 		}
+	}
 
-		public bool TryGetReportStringOverrideFor(JobDef def, out string str)
+	public override IEnumerable<StatDrawEntry> SpecialDisplayStats(StatRequest req)
+	{
+		if (stages == null || stages.Count != 1)
 		{
-			if (reportStringOverrides.NullOrEmpty())
+			yield break;
+		}
+		foreach (StatDrawEntry item in stages[0].SpecialDisplayStats())
+		{
+			yield return item;
+		}
+	}
+
+	public bool TryGetReportStringOverrideFor(JobDef def, out string str)
+	{
+		if (reportStringOverrides.NullOrEmpty())
+		{
+			str = null;
+			return false;
+		}
+		if (reportStringOverridesDict == null)
+		{
+			reportStringOverridesDict = new Dictionary<JobDef, string>();
+			if (reportStringOverrides != null)
 			{
-				str = null;
-				return false;
-			}
-			if (reportStringOverridesDict == null)
-			{
-				reportStringOverridesDict = new Dictionary<JobDef, string>();
-				if (reportStringOverrides != null)
+				foreach (ReportStringOverride reportStringOverride in reportStringOverrides)
 				{
-					foreach (ReportStringOverride reportStringOverride in reportStringOverrides)
-					{
-						reportStringOverridesDict[reportStringOverride.jobDef] = reportStringOverride.reportString;
-					}
+					reportStringOverridesDict[reportStringOverride.jobDef] = reportStringOverride.reportString;
 				}
 			}
-			return reportStringOverridesDict.TryGetValue(def, out str);
 		}
+		return reportStringOverridesDict.TryGetValue(def, out str);
+	}
 
-		public static HediffDef Named(string defName)
-		{
-			return DefDatabase<HediffDef>.GetNamed(defName);
-		}
+	public static HediffDef Named(string defName)
+	{
+		return DefDatabase<HediffDef>.GetNamed(defName);
 	}
 }

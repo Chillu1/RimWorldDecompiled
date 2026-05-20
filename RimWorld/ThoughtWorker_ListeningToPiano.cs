@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_ListeningToPiano : ThoughtWorker_MusicalInstrumentListeningBase
 {
-	public class ThoughtWorker_ListeningToPiano : ThoughtWorker_MusicalInstrumentListeningBase
-	{
-		protected override ThingDef InstrumentDef => ThingDefOf.Piano;
-	}
+	protected override ThingDef InstrumentDef => ThingDefOf.Piano;
 }

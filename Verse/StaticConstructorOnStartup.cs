@@ -1,9 +1,8 @@
 using System;
 
-namespace Verse
+namespace Verse;
+
+[AttributeUsage(AttributeTargets.Class, Inherited = false)]
+public class StaticConstructorOnStartup : Attribute
 {
-	[AttributeUsage(AttributeTargets.Class, Inherited = false)]
-	public class StaticConstructorOnStartup : Attribute
-	{
-	}
 }

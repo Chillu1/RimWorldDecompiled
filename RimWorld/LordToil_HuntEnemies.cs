@@ -2,40 +2,39 @@ using Verse;
 using Verse.AI;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class LordToil_HuntEnemies : LordToil
 {
-	public class LordToil_HuntEnemies : LordToil
+	private LordToilData_HuntEnemies Data => (LordToilData_HuntEnemies)data;
+
+	public override bool ForceHighStoryDanger => true;
+
+	public LordToil_HuntEnemies(IntVec3 fallbackLocation)
 	{
-		private LordToilData_HuntEnemies Data => (LordToilData_HuntEnemies)data;
+		data = new LordToilData_HuntEnemies();
+		Data.fallbackLocation = fallbackLocation;
+	}
 
-		public override bool ForceHighStoryDanger => true;
-
-		public LordToil_HuntEnemies(IntVec3 fallbackLocation)
+	public override void UpdateAllDuties()
+	{
+		LordToilData_HuntEnemies lordToilData_HuntEnemies = Data;
+		if (!lordToilData_HuntEnemies.fallbackLocation.IsValid)
 		{
-			data = new LordToilData_HuntEnemies();
-			Data.fallbackLocation = fallbackLocation;
-		}
-
-		public override void UpdateAllDuties()
-		{
-			LordToilData_HuntEnemies lordToilData_HuntEnemies = Data;
-			if (!lordToilData_HuntEnemies.fallbackLocation.IsValid)
+			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{
-				for (int i = 0; i < lord.ownedPawns.Count; i++)
+				Pawn pawn = lord.ownedPawns[i];
+				if (pawn.Spawned && RCellFinder.TryFindRandomSpotJustOutsideColony(pawn, out lordToilData_HuntEnemies.fallbackLocation) && lordToilData_HuntEnemies.fallbackLocation.IsValid)
 				{
-					Pawn pawn = lord.ownedPawns[i];
-					if (pawn.Spawned && RCellFinder.TryFindRandomSpotJustOutsideColony(pawn, out lordToilData_HuntEnemies.fallbackLocation) && lordToilData_HuntEnemies.fallbackLocation.IsValid)
-					{
-						break;
-					}
+					break;
 				}
 			}
-			for (int j = 0; j < lord.ownedPawns.Count; j++)
-			{
-				Pawn pawn2 = lord.ownedPawns[j];
-				pawn2.mindState.duty = new PawnDuty(DutyDefOf.HuntEnemiesIndividual);
-				pawn2.mindState.duty.focusSecond = lordToilData_HuntEnemies.fallbackLocation;
-			}
+		}
+		for (int j = 0; j < lord.ownedPawns.Count; j++)
+		{
+			Pawn pawn2 = lord.ownedPawns[j];
+			pawn2.mindState.duty = new PawnDuty(DutyDefOf.HuntEnemiesIndividual);
+			pawn2.mindState.duty.focusSecond = lordToilData_HuntEnemies.fallbackLocation;
 		}
 	}
 }

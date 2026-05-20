@@ -1,29 +1,28 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class GoodwillSituationWorker
 {
-	public abstract class GoodwillSituationWorker
+	public GoodwillSituationDef def;
+
+	public virtual string GetPostProcessedLabel(Faction other)
 	{
-		public GoodwillSituationDef def;
+		return def.label;
+	}
 
-		public virtual string GetPostProcessedLabel(Faction other)
-		{
-			return def.label;
-		}
+	public string GetPostProcessedLabelCap(Faction other)
+	{
+		return GetPostProcessedLabel(other).CapitalizeFirst(def);
+	}
 
-		public string GetPostProcessedLabelCap(Faction other)
-		{
-			return GetPostProcessedLabel(other).CapitalizeFirst(def);
-		}
+	public virtual int GetMaxGoodwill(Faction other)
+	{
+		return 100;
+	}
 
-		public virtual int GetMaxGoodwill(Faction other)
-		{
-			return 100;
-		}
-
-		public virtual int GetNaturalGoodwillOffset(Faction other)
-		{
-			return 0;
-		}
+	public virtual int GetNaturalGoodwillOffset(Faction other)
+	{
+		return 0;
 	}
 }

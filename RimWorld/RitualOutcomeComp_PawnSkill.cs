@@ -1,75 +1,74 @@
 using System;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RitualOutcomeComp_PawnSkill : RitualOutcomeComp_Quality
 {
-	public class RitualOutcomeComp_PawnSkill : RitualOutcomeComp_Quality
+	[NoTranslate]
+	public string roleId;
+
+	public SkillDef skillDef;
+
+	public override float QualityOffset(LordJob_Ritual ritual, RitualOutcomeComp_Data data)
 	{
-		[NoTranslate]
-		public string roleId;
+		return curve.Evaluate(Count(ritual, data));
+	}
 
-		public SkillDef skillDef;
+	protected float SkillValue(Pawn pawn)
+	{
+		return pawn.skills.GetSkill(skillDef).Level;
+	}
 
-		public override float QualityOffset(LordJob_Ritual ritual, RitualOutcomeComp_Data data)
+	public override float Count(LordJob_Ritual ritual, RitualOutcomeComp_Data data)
+	{
+		Pawn pawn = ritual.PawnWithRole(roleId);
+		if (pawn == null)
 		{
-			return curve.Evaluate(Count(ritual, data));
+			return 0f;
 		}
+		return SkillValue(pawn);
+	}
 
-		protected float SkillValue(Pawn pawn)
+	public override string GetDesc(LordJob_Ritual ritual = null, RitualOutcomeComp_Data data = null)
+	{
+		if (ritual == null)
 		{
-			return pawn.skills.GetSkill(skillDef).Level;
+			return labelAbstract;
 		}
+		Pawn pawn = ritual?.PawnWithRole(roleId);
+		if (pawn == null)
+		{
+			return null;
+		}
+		float x = SkillValue(pawn);
+		float num = curve.Evaluate(x);
+		string text = ((num < 0f) ? "" : "+");
+		return label.CapitalizeFirst().Formatted(pawn.Named("PAWN")) + ": " + "OutcomeBonusDesc_QualitySingleOffset".Translate(text + num.ToStringPercent()) + ".";
+	}
 
-		public override float Count(LordJob_Ritual ritual, RitualOutcomeComp_Data data)
+	public override QualityFactor GetQualityFactor(Precept_Ritual ritual, TargetInfo ritualTarget, RitualObligation obligation, RitualRoleAssignments assignments, RitualOutcomeComp_Data data)
+	{
+		Pawn pawn = assignments.FirstAssignedPawn(roleId);
+		if (pawn == null)
 		{
-			Pawn pawn = ritual.PawnWithRole(roleId);
-			if (pawn == null)
-			{
-				return 0f;
-			}
-			return SkillValue(pawn);
+			return null;
 		}
+		float x = SkillValue(pawn);
+		float num = curve.Evaluate(x);
+		return new QualityFactor
+		{
+			label = label.Formatted(pawn.Named("PAWN")),
+			count = x.ToString(),
+			qualityChange = ((Math.Abs(num) > float.Epsilon) ? "OutcomeBonusDesc_QualitySingleOffset".Translate(num.ToStringWithSign("0.#%")).Resolve() : " - "),
+			positive = (num >= 0f),
+			quality = num,
+			priority = 0f
+		};
+	}
 
-		public override string GetDesc(LordJob_Ritual ritual = null, RitualOutcomeComp_Data data = null)
-		{
-			if (ritual == null)
-			{
-				return labelAbstract;
-			}
-			Pawn pawn = ritual?.PawnWithRole(roleId);
-			if (pawn == null)
-			{
-				return null;
-			}
-			float x = SkillValue(pawn);
-			float num = curve.Evaluate(x);
-			string text = ((num < 0f) ? "" : "+");
-			return label.CapitalizeFirst().Formatted(pawn.Named("PAWN")) + ": " + "OutcomeBonusDesc_QualitySingleOffset".Translate(text + num.ToStringPercent()) + ".";
-		}
-
-		public override QualityFactor GetQualityFactor(Precept_Ritual ritual, TargetInfo ritualTarget, RitualObligation obligation, RitualRoleAssignments assignments, RitualOutcomeComp_Data data)
-		{
-			Pawn pawn = assignments.FirstAssignedPawn(roleId);
-			if (pawn == null)
-			{
-				return null;
-			}
-			float x = SkillValue(pawn);
-			float num = curve.Evaluate(x);
-			return new QualityFactor
-			{
-				label = label.Formatted(pawn.Named("PAWN")),
-				count = x.ToString(),
-				qualityChange = ((Math.Abs(num) > float.Epsilon) ? "OutcomeBonusDesc_QualitySingleOffset".Translate(num.ToStringWithSign("0.#%")).Resolve() : " - "),
-				positive = (num >= 0f),
-				quality = num,
-				priority = 0f
-			};
-		}
-
-		public override bool Applies(LordJob_Ritual ritual)
-		{
-			return true;
-		}
+	public override bool Applies(LordJob_Ritual ritual)
+	{
+		return true;
 	}
 }

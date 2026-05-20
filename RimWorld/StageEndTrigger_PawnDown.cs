@@ -2,30 +2,29 @@ using System.Collections.Generic;
 using Verse;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class StageEndTrigger_PawnDown : StageEndTrigger
 {
-	public class StageEndTrigger_PawnDown : StageEndTrigger
+	[NoTranslate]
+	public string roleId;
+
+	public override Trigger MakeTrigger(LordJob_Ritual ritual, TargetInfo spot, IEnumerable<TargetInfo> foci, RitualStage stage)
 	{
-		[NoTranslate]
-		public string roleId;
-
-		public override Trigger MakeTrigger(LordJob_Ritual ritual, TargetInfo spot, IEnumerable<TargetInfo> foci, RitualStage stage)
+		if (ritual.Ritual.behavior.def.roles.FirstOrDefault((RitualRole r) => r.id == roleId) == null)
 		{
-			if (ritual.Ritual.behavior.def.roles.FirstOrDefault((RitualRole r) => r.id == roleId) == null)
-			{
-				return null;
-			}
-			Pawn pawn = ritual.assignments.FirstAssignedPawn(roleId);
-			if (pawn == null)
-			{
-				return null;
-			}
-			return new Trigger_TickCondition(() => pawn.Downed);
+			return null;
 		}
-
-		public override void ExposeData()
+		Pawn pawn = ritual.assignments.FirstAssignedPawn(roleId);
+		if (pawn == null)
 		{
-			Scribe_Values.Look(ref roleId, "roleId");
+			return null;
 		}
+		return new Trigger_TickCondition(() => pawn.Downed);
+	}
+
+	public override void ExposeData()
+	{
+		Scribe_Values.Look(ref roleId, "roleId");
 	}
 }

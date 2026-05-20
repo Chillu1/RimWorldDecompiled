@@ -1,13 +1,12 @@
-namespace RimWorld
+namespace RimWorld;
+
+public interface IStoreSettingsParent
 {
-	public interface IStoreSettingsParent
-	{
-		bool StorageTabVisible { get; }
+	bool StorageTabVisible { get; }
 
-		StorageSettings GetStoreSettings();
+	StorageSettings GetStoreSettings();
 
-		StorageSettings GetParentStoreSettings();
+	StorageSettings GetParentStoreSettings();
 
-		void Notify_SettingsChanged();
-	}
+	void Notify_SettingsChanged();
 }

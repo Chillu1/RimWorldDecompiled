@@ -1,17 +1,16 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_HediffWithTarget : ThoughtWorker_Hediff
 {
-	public class ThoughtWorker_HediffWithTarget : ThoughtWorker_Hediff
+	protected override ThoughtState CurrentSocialStateInternal(Pawn p, Pawn other)
 	{
-		protected override ThoughtState CurrentSocialStateInternal(Pawn p, Pawn other)
+		HediffWithTarget hediffWithTarget = (HediffWithTarget)p.health.hediffSet.GetFirstHediffOfDef(def.hediff);
+		if (hediffWithTarget == null || hediffWithTarget.target != other)
 		{
-			HediffWithTarget hediffWithTarget = (HediffWithTarget)p.health.hediffSet.GetFirstHediffOfDef(def.hediff);
-			if (hediffWithTarget == null || hediffWithTarget.target != other)
-			{
-				return ThoughtState.Inactive;
-			}
-			return CurrentStateInternal(p);
+			return ThoughtState.Inactive;
 		}
+		return CurrentStateInternal(p);
 	}
 }

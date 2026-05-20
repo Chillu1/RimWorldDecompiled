@@ -1,51 +1,50 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class DrugTakeRecord : IExposable
 {
-	public class DrugTakeRecord : IExposable
+	public ThingDef drug;
+
+	public int lastTakenTicks;
+
+	private int timesTakenThisDayInt;
+
+	private int thisDay;
+
+	public int LastTakenDays => GenDate.DaysPassedAt(lastTakenTicks);
+
+	public int TimesTakenThisDay
 	{
-		public ThingDef drug;
-
-		public int lastTakenTicks;
-
-		private int timesTakenThisDayInt;
-
-		private int thisDay;
-
-		public int LastTakenDays => GenDate.DaysPassedAt(lastTakenTicks);
-
-		public int TimesTakenThisDay
+		get
 		{
-			get
+			if (thisDay != GenDate.DaysPassed)
 			{
-				if (thisDay != GenDate.DaysPassed)
-				{
-					return 0;
-				}
-				return timesTakenThisDayInt;
+				return 0;
 			}
-			set
-			{
-				timesTakenThisDayInt = value;
-				thisDay = GenDate.DaysPassed;
-			}
+			return timesTakenThisDayInt;
 		}
-
-		public void ExposeData()
+		set
 		{
-			Scribe_Defs.Look(ref drug, "drug");
-			Scribe_Values.Look(ref lastTakenTicks, "lastTakenTicks", 0);
-			Scribe_Values.Look(ref timesTakenThisDayInt, "timesTakenThisDay", 0);
-			Scribe_Values.Look(ref thisDay, "thisDay", 0);
+			timesTakenThisDayInt = value;
+			thisDay = GenDate.DaysPassed;
 		}
+	}
 
-		public void Notify_LeftSuspension(int suspendedTicks)
+	public void ExposeData()
+	{
+		Scribe_Defs.Look(ref drug, "drug");
+		Scribe_Values.Look(ref lastTakenTicks, "lastTakenTicks", 0);
+		Scribe_Values.Look(ref timesTakenThisDayInt, "timesTakenThisDay", 0);
+		Scribe_Values.Look(ref thisDay, "thisDay", 0);
+	}
+
+	public void Notify_LeftSuspension(int suspendedTicks)
+	{
+		lastTakenTicks += suspendedTicks;
+		if (GenDate.DaysPassedAt(Find.TickManager.TicksGame - suspendedTicks) == thisDay)
 		{
-			lastTakenTicks += suspendedTicks;
-			if (GenDate.DaysPassedAt(Find.TickManager.TicksGame - suspendedTicks) == thisDay)
-			{
-				thisDay = GenDate.DaysPassed;
-			}
+			thisDay = GenDate.DaysPassed;
 		}
 	}
 }

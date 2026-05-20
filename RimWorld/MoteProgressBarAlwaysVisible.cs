@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class MoteProgressBarAlwaysVisible : MoteProgressBar
 {
-	public class MoteProgressBarAlwaysVisible : MoteProgressBar
-	{
-		protected override bool OnlyShowForClosestZoom => false;
-	}
+	protected override bool OnlyShowForClosestZoom => false;
 }

@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_Precept_OutdoorBlindingLight : ThoughtWorker_Precept
 {
-	public class ThoughtWorker_Precept_OutdoorBlindingLight : ThoughtWorker_Precept
+	protected override ThoughtState ShouldHaveThought(Pawn p)
 	{
-		protected override ThoughtState ShouldHaveThought(Pawn p)
+		if (!p.Awake() || PawnUtility.IsBiologicallyOrArtificiallyBlind(p))
 		{
-			if (!p.Awake() || PawnUtility.IsBiologicallyOrArtificiallyBlind(p))
-			{
-				return false;
-			}
-			return p.Map.glowGrid.PsychGlowAt(p.Position) == PsychGlow.Overlit && !p.Position.Roofed(p.Map);
+			return false;
 		}
+		return p.Map.glowGrid.PsychGlowAt(p.Position) == PsychGlow.Overlit && !p.Position.Roofed(p.Map);
 	}
 }

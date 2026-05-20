@@ -1,27 +1,26 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum ColonyMakerFlag
 {
-	public enum ColonyMakerFlag
-	{
-		Animals,
-		ConduitGrid,
-		PowerPlants,
-		Batteries,
-		WorkTables,
-		AllBuildings,
-		ItemsWall,
-		AllItems,
-		ItemsRawFood,
-		Filth,
-		Fire,
-		ColonistOne,
-		ColonistsMany,
-		ColonistsHungry,
-		ColonistsTired,
-		ColonistsInjured,
-		ColonistsDiseased,
-		Stockpiles,
-		GrowingZones,
-		Beds,
-		AllAncientJunk
-	}
+	Animals,
+	ConduitGrid,
+	PowerPlants,
+	Batteries,
+	WorkTables,
+	AllBuildings,
+	ItemsWall,
+	AllItems,
+	ItemsRawFood,
+	Filth,
+	Fire,
+	ColonistOne,
+	ColonistsMany,
+	ColonistsHungry,
+	ColonistsTired,
+	ColonistsInjured,
+	ColonistsDiseased,
+	Stockpiles,
+	GrowingZones,
+	Beds,
+	AllAncientJunk
 }

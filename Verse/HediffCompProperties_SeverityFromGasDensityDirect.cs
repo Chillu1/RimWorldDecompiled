@@ -1,38 +1,37 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_SeverityFromGasDensityDirect : HediffCompProperties
 {
-	public class HediffCompProperties_SeverityFromGasDensityDirect : HediffCompProperties
+	public GasType gasType;
+
+	public int intervalTicks = 60;
+
+	public List<float> densityStages = new List<float>();
+
+	public HediffCompProperties_SeverityFromGasDensityDirect()
 	{
-		public GasType gasType;
+		compClass = typeof(HediffComp_SeverityFromGasDensityDirect);
+	}
 
-		public int intervalTicks = 60;
-
-		public List<float> densityStages = new List<float>();
-
-		public HediffCompProperties_SeverityFromGasDensityDirect()
+	public override IEnumerable<string> ConfigErrors(HediffDef parentDef)
+	{
+		foreach (string item in base.ConfigErrors(parentDef))
 		{
-			compClass = typeof(HediffComp_SeverityFromGasDensityDirect);
+			yield return item;
 		}
-
-		public override IEnumerable<string> ConfigErrors(HediffDef parentDef)
+		if (densityStages.NullOrEmpty())
 		{
-			foreach (string item in base.ConfigErrors(parentDef))
-			{
-				yield return item;
-			}
-			if (densityStages.NullOrEmpty())
-			{
-				yield return "densityStages is empty";
-			}
-			else if (parentDef.stages.NullOrEmpty())
-			{
-				yield return "has no stages";
-			}
-			else if (densityStages.Count != parentDef.stages.Count)
-			{
-				yield return "densityStages count doesn't match stages count";
-			}
+			yield return "densityStages is empty";
+		}
+		else if (parentDef.stages.NullOrEmpty())
+		{
+			yield return "has no stages";
+		}
+		else if (densityStages.Count != parentDef.stages.Count)
+		{
+			yield return "densityStages count doesn't match stages count";
 		}
 	}
 }

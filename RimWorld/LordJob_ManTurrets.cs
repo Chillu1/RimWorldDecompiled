@@ -1,15 +1,14 @@
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class LordJob_ManTurrets : LordJob
 {
-	public class LordJob_ManTurrets : LordJob
+	public override StateGraph CreateGraph()
 	{
-		public override StateGraph CreateGraph()
+		return new StateGraph
 		{
-			return new StateGraph
-			{
-				StartingToil = new LordToil_ManClosestTurrets()
-			};
-		}
+			StartingToil = new LordToil_ManClosestTurrets()
+		};
 	}
 }

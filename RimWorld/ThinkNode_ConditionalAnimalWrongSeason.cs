@@ -1,17 +1,16 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThinkNode_ConditionalAnimalWrongSeason : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalAnimalWrongSeason : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
+		if (pawn.IsAnimal)
 		{
-			if (pawn.IsAnimal)
-			{
-				return !pawn.Map.mapTemperature.SeasonAcceptableFor(pawn.def);
-			}
-			return false;
+			return !pawn.Map.mapTemperature.SeasonAcceptableFor(pawn.def);
 		}
+		return false;
 	}
 }

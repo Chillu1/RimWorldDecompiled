@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_DeadMansApparel : ThoughtWorker_ApparelThought
 {
-	public class ThoughtWorker_DeadMansApparel : ThoughtWorker_ApparelThought
+	protected override bool ApparelCounts(Apparel apparel)
 	{
-		protected override bool ApparelCounts(Apparel apparel)
-		{
-			return apparel.WornByCorpse;
-		}
+		return apparel.WornByCorpse;
 	}
 }

@@ -1,21 +1,20 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class WorkGiverUtility
 {
-	public static class WorkGiverUtility
+	public static Job HaulStuffOffBillGiverJob(Pawn pawn, IBillGiver giver, Thing thingToIgnore)
 	{
-		public static Job HaulStuffOffBillGiverJob(Pawn pawn, IBillGiver giver, Thing thingToIgnore)
+		foreach (IntVec3 ingredientStackCell in giver.IngredientStackCells)
 		{
-			foreach (IntVec3 ingredientStackCell in giver.IngredientStackCells)
+			Thing thing = pawn.Map.thingGrid.ThingAt(ingredientStackCell, ThingCategory.Item);
+			if (thing != null && thing != thingToIgnore)
 			{
-				Thing thing = pawn.Map.thingGrid.ThingAt(ingredientStackCell, ThingCategory.Item);
-				if (thing != null && thing != thingToIgnore)
-				{
-					return HaulAIUtility.HaulAsideJobFor(pawn, thing);
-				}
+				return HaulAIUtility.HaulAsideJobFor(pawn, thing);
 			}
-			return null;
 		}
+		return null;
 	}
 }

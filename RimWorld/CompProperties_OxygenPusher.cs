@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_OxygenPusher : CompProperties
 {
-	public class CompProperties_OxygenPusher : CompProperties
+	public bool requiresPower = true;
+
+	public float airPerSecondPerHundredCells = 0.1f;
+
+	public CompProperties_OxygenPusher()
 	{
-		public bool requiresPower = true;
-
-		public float airPerSecondPerHundredCells = 0.1f;
-
-		public CompProperties_OxygenPusher()
-		{
-			compClass = typeof(CompOxygenPusher);
-		}
+		compClass = typeof(CompOxygenPusher);
 	}
 }

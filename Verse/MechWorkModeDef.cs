@@ -1,46 +1,45 @@
 using System;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class MechWorkModeDef : Def
 {
-	public class MechWorkModeDef : Def
+	[NoTranslate]
+	public string iconPath;
+
+	public Texture2D uiIcon;
+
+	public int uiOrder;
+
+	public bool ignoreGroupChargeLimits;
+
+	public Type workerClass = typeof(WorkModeDrawer);
+
+	[Unsaved(false)]
+	private WorkModeDrawer workerInt;
+
+	public WorkModeDrawer Worker
 	{
-		[NoTranslate]
-		public string iconPath;
-
-		public Texture2D uiIcon;
-
-		public int uiOrder;
-
-		public bool ignoreGroupChargeLimits;
-
-		public Type workerClass = typeof(WorkModeDrawer);
-
-		[Unsaved(false)]
-		private WorkModeDrawer workerInt;
-
-		public WorkModeDrawer Worker
+		get
 		{
-			get
+			if (workerInt == null)
 			{
-				if (workerInt == null)
-				{
-					workerInt = (WorkModeDrawer)Activator.CreateInstance(workerClass);
-					workerInt.def = this;
-				}
-				return workerInt;
+				workerInt = (WorkModeDrawer)Activator.CreateInstance(workerClass);
+				workerInt.def = this;
 			}
+			return workerInt;
 		}
+	}
 
-		public override void PostLoad()
+	public override void PostLoad()
+	{
+		if (!string.IsNullOrEmpty(iconPath))
 		{
-			if (!string.IsNullOrEmpty(iconPath))
+			LongEventHandler.ExecuteWhenFinished(delegate
 			{
-				LongEventHandler.ExecuteWhenFinished(delegate
-				{
-					uiIcon = ContentFinder<Texture2D>.Get(iconPath);
-				});
-			}
+				uiIcon = ContentFinder<Texture2D>.Get(iconPath);
+			});
 		}
 	}
 }

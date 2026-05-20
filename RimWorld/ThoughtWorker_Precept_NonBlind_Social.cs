@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_Precept_NonBlind_Social : ThoughtWorker_Precept_Social
 {
-	public class ThoughtWorker_Precept_NonBlind_Social : ThoughtWorker_Precept_Social
+	protected override ThoughtState ShouldHaveThought(Pawn p, Pawn otherPawn)
 	{
-		protected override ThoughtState ShouldHaveThought(Pawn p, Pawn otherPawn)
-		{
-			return !PawnUtility.IsBiologicallyBlind(otherPawn);
-		}
+		return !PawnUtility.IsBiologicallyBlind(otherPawn);
 	}
 }

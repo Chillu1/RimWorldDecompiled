@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum TradeAction : byte
 {
-	public enum TradeAction : byte
-	{
-		None,
-		PlayerBuys,
-		PlayerSells
-	}
+	None,
+	PlayerBuys,
+	PlayerSells
 }

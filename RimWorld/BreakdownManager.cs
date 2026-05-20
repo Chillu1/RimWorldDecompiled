@@ -1,55 +1,54 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class BreakdownManager : MapComponent
 {
-	public class BreakdownManager : MapComponent
+	private List<CompBreakdownable> comps = new List<CompBreakdownable>();
+
+	public HashSet<Thing> brokenDownThings = new HashSet<Thing>();
+
+	public const int CheckIntervalTicks = 1041;
+
+	public BreakdownManager(Map map)
+		: base(map)
 	{
-		private List<CompBreakdownable> comps = new List<CompBreakdownable>();
+	}
 
-		public HashSet<Thing> brokenDownThings = new HashSet<Thing>();
-
-		public const int CheckIntervalTicks = 1041;
-
-		public BreakdownManager(Map map)
-			: base(map)
+	public void Register(CompBreakdownable c)
+	{
+		comps.Add(c);
+		if (c.BrokenDown)
 		{
+			brokenDownThings.Add(c.parent);
 		}
+	}
 
-		public void Register(CompBreakdownable c)
+	public void Deregister(CompBreakdownable c)
+	{
+		comps.Remove(c);
+		brokenDownThings.Remove(c.parent);
+	}
+
+	public override void MapComponentTick()
+	{
+		if (Find.TickManager.TicksGame % 1041 == 0)
 		{
-			comps.Add(c);
-			if (c.BrokenDown)
+			for (int i = 0; i < comps.Count; i++)
 			{
-				brokenDownThings.Add(c.parent);
+				comps[i].CheckForBreakdown();
 			}
 		}
+	}
 
-		public void Deregister(CompBreakdownable c)
-		{
-			comps.Remove(c);
-			brokenDownThings.Remove(c.parent);
-		}
+	public void Notify_BrokenDown(Thing thing)
+	{
+		brokenDownThings.Add(thing);
+	}
 
-		public override void MapComponentTick()
-		{
-			if (Find.TickManager.TicksGame % 1041 == 0)
-			{
-				for (int i = 0; i < comps.Count; i++)
-				{
-					comps[i].CheckForBreakdown();
-				}
-			}
-		}
-
-		public void Notify_BrokenDown(Thing thing)
-		{
-			brokenDownThings.Add(thing);
-		}
-
-		public void Notify_Repaired(Thing thing)
-		{
-			brokenDownThings.Remove(thing);
-		}
+	public void Notify_Repaired(Thing thing)
+	{
+		brokenDownThings.Remove(thing);
 	}
 }

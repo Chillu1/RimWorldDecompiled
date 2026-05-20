@@ -1,70 +1,69 @@
 using RimWorld;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+internal class SectionLayer_Zones : SectionLayer
 {
-	internal class SectionLayer_Zones : SectionLayer
+	public override bool Visible
 	{
-		public override bool Visible
+		get
 		{
-			get
+			if (DebugViewSettings.drawWorldOverlays)
 			{
-				if (DebugViewSettings.drawWorldOverlays)
+				if (!WorldComponent_GravshipController.CutsceneInProgress)
 				{
-					if (!WorldComponent_GravshipController.CutsceneInProgress)
-					{
-						return !WorldComponent_GravshipController.GravshipRenderInProgess;
-					}
-					return false;
+					return !WorldComponent_GravshipController.GravshipRenderInProgess;
 				}
 				return false;
 			}
+			return false;
 		}
+	}
 
-		public SectionLayer_Zones(Section section)
-			: base(section)
+	public SectionLayer_Zones(Section section)
+		: base(section)
+	{
+		relevantChangeTypes = MapMeshFlagDefOf.Zone;
+	}
+
+	public override void DrawLayer()
+	{
+		if (OverlayDrawHandler.ShouldDrawZones)
 		{
-			relevantChangeTypes = MapMeshFlagDefOf.Zone;
+			base.DrawLayer();
 		}
+	}
 
-		public override void DrawLayer()
+	public override void Regenerate()
+	{
+		float y = AltitudeLayer.Zone.AltitudeFor();
+		ZoneManager zoneManager = base.Map.zoneManager;
+		CellRect cellRect = new CellRect(section.botLeft.x, section.botLeft.z, 17, 17);
+		cellRect.ClipInsideMap(base.Map);
+		ClearSubMeshes(MeshParts.All);
+		for (int i = cellRect.minX; i <= cellRect.maxX; i++)
 		{
-			if (OverlayDrawHandler.ShouldDrawZones)
+			for (int j = cellRect.minZ; j <= cellRect.maxZ; j++)
 			{
-				base.DrawLayer();
-			}
-		}
-
-		public override void Regenerate()
-		{
-			float y = AltitudeLayer.Zone.AltitudeFor();
-			ZoneManager zoneManager = base.Map.zoneManager;
-			CellRect cellRect = new CellRect(section.botLeft.x, section.botLeft.z, 17, 17);
-			cellRect.ClipInsideMap(base.Map);
-			ClearSubMeshes(MeshParts.All);
-			for (int i = cellRect.minX; i <= cellRect.maxX; i++)
-			{
-				for (int j = cellRect.minZ; j <= cellRect.maxZ; j++)
+				Zone zone = zoneManager.ZoneAt(new IntVec3(i, 0, j));
+				if (zone != null && !zone.Hidden)
 				{
-					Zone zone = zoneManager.ZoneAt(new IntVec3(i, 0, j));
-					if (zone != null && !zone.Hidden)
-					{
-						LayerSubMesh subMesh = GetSubMesh(zone.Material);
-						int count = subMesh.verts.Count;
-						subMesh.verts.Add(new Vector3(i, y, j));
-						subMesh.verts.Add(new Vector3(i, y, j + 1));
-						subMesh.verts.Add(new Vector3(i + 1, y, j + 1));
-						subMesh.verts.Add(new Vector3(i + 1, y, j));
-						subMesh.tris.Add(count);
-						subMesh.tris.Add(count + 1);
-						subMesh.tris.Add(count + 2);
-						subMesh.tris.Add(count);
-						subMesh.tris.Add(count + 2);
-						subMesh.tris.Add(count + 3);
-					}
+					LayerSubMesh subMesh = GetSubMesh(zone.Material);
+					int count = subMesh.verts.Count;
+					subMesh.verts.Add(new Vector3(i, y, j));
+					subMesh.verts.Add(new Vector3(i, y, j + 1));
+					subMesh.verts.Add(new Vector3(i + 1, y, j + 1));
+					subMesh.verts.Add(new Vector3(i + 1, y, j));
+					subMesh.tris.Add(count);
+					subMesh.tris.Add(count + 1);
+					subMesh.tris.Add(count + 2);
+					subMesh.tris.Add(count);
+					subMesh.tris.Add(count + 2);
+					subMesh.tris.Add(count + 3);
 				}
 			}
-			FinalizeMesh(MeshParts.Verts | MeshParts.Tris);
 		}
+		FinalizeMesh(MeshParts.Verts | MeshParts.Tris);
 	}
 }

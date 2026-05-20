@@ -1,21 +1,20 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class GameCondition_GillRot : GameCondition
 {
-	public class GameCondition_GillRot : GameCondition
+	public float fishPopulationOffsetFactorPerDay;
+
+	public override void Init()
 	{
-		public float fishPopulationOffsetFactorPerDay;
+		base.Init();
+		fishPopulationOffsetFactorPerDay = def.fishPopulationOffsetPerDay;
+	}
 
-		public override void Init()
-		{
-			base.Init();
-			fishPopulationOffsetFactorPerDay = def.fishPopulationOffsetPerDay;
-		}
-
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_Values.Look(ref fishPopulationOffsetFactorPerDay, "fishPopulationOffsetFactorPerDay", 0f);
-		}
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Values.Look(ref fishPopulationOffsetFactorPerDay, "fishPopulationOffsetFactorPerDay", 0f);
 	}
 }

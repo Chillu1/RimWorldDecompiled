@@ -1,7 +1,6 @@
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public abstract class TransitionAction
 {
-	public abstract class TransitionAction
-	{
-		public abstract void DoAction(Transition trans);
-	}
+	public abstract void DoAction(Transition trans);
 }

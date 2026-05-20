@@ -1,28 +1,27 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class SpecialThingFilterWorker_AllowBookSkill : SpecialThingFilterWorker
 {
-	public abstract class SpecialThingFilterWorker_AllowBookSkill : SpecialThingFilterWorker
+	private readonly SkillDef skill;
+
+	protected SpecialThingFilterWorker_AllowBookSkill(SkillDef skill)
 	{
-		private readonly SkillDef skill;
+		this.skill = skill;
+	}
 
-		protected SpecialThingFilterWorker_AllowBookSkill(SkillDef skill)
+	public override bool Matches(Thing t)
+	{
+		if (t is Book book && book.BookComp.TryGetDoer<BookOutcomeDoerGainSkillExp>(out var doer))
 		{
-			this.skill = skill;
+			return doer.Values.ContainsKey(skill);
 		}
+		return false;
+	}
 
-		public override bool Matches(Thing t)
-		{
-			if (t is Book book && book.BookComp.TryGetDoer<BookOutcomeDoerGainSkillExp>(out var doer))
-			{
-				return doer.Values.ContainsKey(skill);
-			}
-			return false;
-		}
-
-		public override bool CanEverMatch(ThingDef def)
-		{
-			return def.HasComp<CompBook>();
-		}
+	public override bool CanEverMatch(ThingDef def)
+	{
+		return def.HasComp<CompBook>();
 	}
 }

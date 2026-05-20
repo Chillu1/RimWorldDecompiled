@@ -1,8 +1,7 @@
-namespace LudeonTK
+namespace LudeonTK;
+
+public enum DebugMenuOptionMode : byte
 {
-	public enum DebugMenuOptionMode : byte
-	{
-		Action,
-		Tool
-	}
+	Action,
+	Tool
 }

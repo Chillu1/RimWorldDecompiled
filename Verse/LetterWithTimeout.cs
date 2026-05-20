@@ -1,74 +1,73 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public abstract class LetterWithTimeout : Letter
 {
-	public abstract class LetterWithTimeout : Letter
+	public int disappearAtTick = -1;
+
+	public bool TimeoutActive => disappearAtTick >= 0;
+
+	public bool TimeoutPassed
 	{
-		public int disappearAtTick = -1;
-
-		public bool TimeoutActive => disappearAtTick >= 0;
-
-		public bool TimeoutPassed
+		get
 		{
-			get
-			{
-				if (TimeoutActive)
-				{
-					return Find.TickManager.TicksGame >= disappearAtTick;
-				}
-				return false;
-			}
-		}
-
-		public virtual bool LastTickBeforeTimeout
-		{
-			get
-			{
-				if (TimeoutActive)
-				{
-					return disappearAtTick <= Find.TickManager.TicksGame + 1;
-				}
-				return false;
-			}
-		}
-
-		public override bool ShouldAutomaticallyOpenLetter => LastTickBeforeTimeout;
-
-		public override bool CanShowInLetterStack
-		{
-			get
-			{
-				if (!base.CanShowInLetterStack)
-				{
-					return false;
-				}
-				if (TimeoutPassed)
-				{
-					return false;
-				}
-				return true;
-			}
-		}
-
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_Values.Look(ref disappearAtTick, "disappearAtTick", -1);
-		}
-
-		public void StartTimeout(int duration)
-		{
-			disappearAtTick = Find.TickManager.TicksGame + duration;
-		}
-
-		protected override string PostProcessedLabel()
-		{
-			string text = base.PostProcessedLabel();
 			if (TimeoutActive)
 			{
-				text += " (" + Mathf.RoundToInt((float)(disappearAtTick - Find.TickManager.TicksGame) / 2500f) + "LetterHour".Translate() + ")";
+				return Find.TickManager.TicksGame >= disappearAtTick;
 			}
-			return text;
+			return false;
 		}
+	}
+
+	public virtual bool LastTickBeforeTimeout
+	{
+		get
+		{
+			if (TimeoutActive)
+			{
+				return disappearAtTick <= Find.TickManager.TicksGame + 1;
+			}
+			return false;
+		}
+	}
+
+	public override bool ShouldAutomaticallyOpenLetter => LastTickBeforeTimeout;
+
+	public override bool CanShowInLetterStack
+	{
+		get
+		{
+			if (!base.CanShowInLetterStack)
+			{
+				return false;
+			}
+			if (TimeoutPassed)
+			{
+				return false;
+			}
+			return true;
+		}
+	}
+
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Values.Look(ref disappearAtTick, "disappearAtTick", -1);
+	}
+
+	public void StartTimeout(int duration)
+	{
+		disappearAtTick = Find.TickManager.TicksGame + duration;
+	}
+
+	protected override string PostProcessedLabel()
+	{
+		string text = base.PostProcessedLabel();
+		if (TimeoutActive)
+		{
+			text += " (" + Mathf.RoundToInt((float)(disappearAtTick - Find.TickManager.TicksGame) / 2500f) + "LetterHour".Translate() + ")";
+		}
+		return text;
 	}
 }

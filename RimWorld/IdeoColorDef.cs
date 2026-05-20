@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class IdeoColorDef : IdeoSymbolPartDef
 {
-	public class IdeoColorDef : IdeoSymbolPartDef
-	{
-		public ColorDef colorDef;
-	}
+	public ColorDef colorDef;
 }

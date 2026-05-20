@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_PlantCut_Designated : JobDriver_PlantCut
 {
-	public class JobDriver_PlantCut_Designated : JobDriver_PlantCut
-	{
-		protected override DesignationDef RequiredDesignation => DesignationDefOf.CutPlant;
-	}
+	protected override DesignationDef RequiredDesignation => DesignationDefOf.CutPlant;
 }

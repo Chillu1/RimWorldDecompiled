@@ -1,11 +1,10 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum FoodPoisonCause
 {
-	public enum FoodPoisonCause
-	{
-		Unknown,
-		IncompetentCook,
-		FilthyKitchen,
-		Rotten,
-		DangerousFoodType
-	}
+	Unknown,
+	IncompetentCook,
+	FilthyKitchen,
+	Rotten,
+	DangerousFoodType
 }

@@ -1,33 +1,32 @@
 using RimWorld;
 
-namespace Verse.AI
+namespace Verse.AI;
+
+public class MentalState_CocoonDisturbed : MentalState
 {
-	public class MentalState_CocoonDisturbed : MentalState
+	public override bool ForceHostileTo(Thing t)
 	{
-		public override bool ForceHostileTo(Thing t)
+		if (t is Pawn pawn)
 		{
-			if (t is Pawn pawn)
+			if (pawn.RaceProps.Insect)
 			{
-				if (pawn.RaceProps.Insect)
-				{
-					return false;
-				}
-				if (pawn.RaceProps.Animal && (pawn.Roamer || pawn.Faction == null))
-				{
-					return false;
-				}
+				return false;
 			}
-			return true;
+			if (pawn.RaceProps.Animal && (pawn.Roamer || pawn.Faction == null))
+			{
+				return false;
+			}
 		}
+		return true;
+	}
 
-		public override bool ForceHostileTo(Faction f)
-		{
-			return true;
-		}
+	public override bool ForceHostileTo(Faction f)
+	{
+		return true;
+	}
 
-		public override RandomSocialMode SocialModeMax()
-		{
-			return RandomSocialMode.Off;
-		}
+	public override RandomSocialMode SocialModeMax()
+	{
+		return RandomSocialMode.Off;
 	}
 }

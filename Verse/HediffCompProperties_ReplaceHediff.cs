@@ -1,56 +1,55 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_ReplaceHediff : HediffCompProperties
 {
-	public class HediffCompProperties_ReplaceHediff : HediffCompProperties
+	public class TriggeredHediff
 	{
-		public class TriggeredHediff
+		public HediffDef hediff;
+
+		public IntRange countRange = new IntRange(1, 1);
+
+		public List<BodyPartDef> partsToAffect;
+
+		public FloatRange severityRange = FloatRange.Zero;
+
+		public void ApplyTo(Pawn pawn, List<Hediff> outAddedHediffs = null)
 		{
-			public HediffDef hediff;
-
-			public IntRange countRange = new IntRange(1, 1);
-
-			public List<BodyPartDef> partsToAffect;
-
-			public FloatRange severityRange = FloatRange.Zero;
-
-			public void ApplyTo(Pawn pawn, List<Hediff> outAddedHediffs = null)
+			List<Hediff> list = new List<Hediff>();
+			HediffGiverUtility.TryApply(pawn, hediff, partsToAffect, canAffectAnyLivePart: false, countRange.RandomInRange, list, useCoverage: false);
+			if (severityRange != FloatRange.Zero)
 			{
-				List<Hediff> list = new List<Hediff>();
-				HediffGiverUtility.TryApply(pawn, hediff, partsToAffect, canAffectAnyLivePart: false, countRange.RandomInRange, list, useCoverage: false);
-				if (severityRange != FloatRange.Zero)
+				foreach (Hediff item in list)
 				{
-					foreach (Hediff item in list)
-					{
-						item.Severity = severityRange.RandomInRange;
-					}
+					item.Severity = severityRange.RandomInRange;
 				}
-				outAddedHediffs?.AddRange(list);
 			}
+			outAddedHediffs?.AddRange(list);
 		}
+	}
 
-		public float severity = 1f;
+	public float severity = 1f;
 
-		public bool manuallyTriggered;
+	public bool manuallyTriggered;
 
-		[MustTranslate]
-		public string message;
+	[MustTranslate]
+	public string message;
 
-		public MessageTypeDef messageDef;
+	public MessageTypeDef messageDef;
 
-		[MustTranslate]
-		public string letterLabel;
+	[MustTranslate]
+	public string letterLabel;
 
-		[MustTranslate]
-		public string letterDesc;
+	[MustTranslate]
+	public string letterDesc;
 
-		public LetterDef letterDef;
+	public LetterDef letterDef;
 
-		public List<TriggeredHediff> hediffs = new List<TriggeredHediff>();
+	public List<TriggeredHediff> hediffs = new List<TriggeredHediff>();
 
-		public HediffCompProperties_ReplaceHediff()
-		{
-			compClass = typeof(HediffComp_ReplaceHediff);
-		}
+	public HediffCompProperties_ReplaceHediff()
+	{
+		compClass = typeof(HediffComp_ReplaceHediff);
 	}
 }

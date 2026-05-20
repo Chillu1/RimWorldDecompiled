@@ -1,103 +1,102 @@
 using System;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public readonly struct TextBlock : IDisposable
 {
-	public readonly struct TextBlock : IDisposable
+	private readonly GameFont oldFont;
+
+	private readonly TextAnchor oldAnchor;
+
+	private readonly bool oldWordWrap;
+
+	private readonly Color oldColor;
+
+	public TextBlock(GameFont newFont)
+		: this(newFont, null, null, null)
 	{
-		private readonly GameFont oldFont;
+	}
 
-		private readonly TextAnchor oldAnchor;
+	public TextBlock(TextAnchor newAnchor)
+		: this(null, newAnchor, null, null)
+	{
+	}
 
-		private readonly bool oldWordWrap;
+	public TextBlock(bool newWordWrap)
+		: this(null, null, newWordWrap, null)
+	{
+	}
 
-		private readonly Color oldColor;
+	public TextBlock(Color newColor, TextAnchor newAnchor, bool newWordWrap)
+		: this(null, newAnchor, newWordWrap, newColor)
+	{
+	}
 
-		public TextBlock(GameFont newFont)
-			: this(newFont, null, null, null)
+	public TextBlock(Color newColor)
+		: this(null, null, null, newColor)
+	{
+	}
+
+	public TextBlock(TextAnchor newAnchor, Color newColor)
+		: this(null, newAnchor, null, newColor)
+	{
+	}
+
+	public TextBlock(GameFont newFont, TextAnchor newAnchor)
+		: this(newFont, newAnchor, null, null)
+	{
+	}
+
+	public TextBlock(GameFont newFont, Color newColor)
+		: this(newFont, null, null, newColor)
+	{
+	}
+
+	public TextBlock(GameFont? newFont, TextAnchor? newAnchor, Color? newColor)
+		: this(newFont, newAnchor, null, newColor)
+	{
+	}
+
+	public TextBlock(GameFont? newFont, TextAnchor? newAnchor, bool? newWordWrap)
+		: this(newFont, newAnchor, newWordWrap, null)
+	{
+	}
+
+	public TextBlock(GameFont? newFont, TextAnchor? newAnchor, bool? newWordWrap, Color? newColor)
+	{
+		oldFont = Text.Font;
+		oldAnchor = Text.Anchor;
+		oldWordWrap = Text.WordWrap;
+		oldColor = GUI.color;
+		if (newFont.HasValue)
 		{
+			Text.Font = newFont.Value;
 		}
-
-		public TextBlock(TextAnchor newAnchor)
-			: this(null, newAnchor, null, null)
+		if (newAnchor.HasValue)
 		{
+			Text.Anchor = newAnchor.Value;
 		}
-
-		public TextBlock(bool newWordWrap)
-			: this(null, null, newWordWrap, null)
+		if (newWordWrap.HasValue)
 		{
+			Text.WordWrap = newWordWrap.Value;
 		}
-
-		public TextBlock(Color newColor, TextAnchor newAnchor, bool newWordWrap)
-			: this(null, newAnchor, newWordWrap, newColor)
+		if (newColor.HasValue)
 		{
+			GUI.color = newColor.Value;
 		}
+	}
 
-		public TextBlock(Color newColor)
-			: this(null, null, null, newColor)
-		{
-		}
+	public static TextBlock Default()
+	{
+		return new TextBlock(GameFont.Small, TextAnchor.UpperLeft, true, Color.white);
+	}
 
-		public TextBlock(TextAnchor newAnchor, Color newColor)
-			: this(null, newAnchor, null, newColor)
-		{
-		}
-
-		public TextBlock(GameFont newFont, TextAnchor newAnchor)
-			: this(newFont, newAnchor, null, null)
-		{
-		}
-
-		public TextBlock(GameFont newFont, Color newColor)
-			: this(newFont, null, null, newColor)
-		{
-		}
-
-		public TextBlock(GameFont? newFont, TextAnchor? newAnchor, Color? newColor)
-			: this(newFont, newAnchor, null, newColor)
-		{
-		}
-
-		public TextBlock(GameFont? newFont, TextAnchor? newAnchor, bool? newWordWrap)
-			: this(newFont, newAnchor, newWordWrap, null)
-		{
-		}
-
-		public TextBlock(GameFont? newFont, TextAnchor? newAnchor, bool? newWordWrap, Color? newColor)
-		{
-			oldFont = Text.Font;
-			oldAnchor = Text.Anchor;
-			oldWordWrap = Text.WordWrap;
-			oldColor = GUI.color;
-			if (newFont.HasValue)
-			{
-				Text.Font = newFont.Value;
-			}
-			if (newAnchor.HasValue)
-			{
-				Text.Anchor = newAnchor.Value;
-			}
-			if (newWordWrap.HasValue)
-			{
-				Text.WordWrap = newWordWrap.Value;
-			}
-			if (newColor.HasValue)
-			{
-				GUI.color = newColor.Value;
-			}
-		}
-
-		public static TextBlock Default()
-		{
-			return new TextBlock(GameFont.Small, TextAnchor.UpperLeft, true, Color.white);
-		}
-
-		public void Dispose()
-		{
-			Text.Font = oldFont;
-			Text.Anchor = oldAnchor;
-			Text.WordWrap = oldWordWrap;
-			GUI.color = oldColor;
-		}
+	public void Dispose()
+	{
+		Text.Font = oldFont;
+		Text.Anchor = oldAnchor;
+		Text.WordWrap = oldWordWrap;
+		GUI.color = oldColor;
 	}
 }

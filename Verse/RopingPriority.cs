@@ -1,8 +1,7 @@
-namespace Verse
+namespace Verse;
+
+public enum RopingPriority
 {
-	public enum RopingPriority
-	{
-		Closest,
-		Balanced
-	}
+	Closest,
+	Balanced
 }

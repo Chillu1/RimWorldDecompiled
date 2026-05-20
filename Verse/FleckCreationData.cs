@@ -1,41 +1,40 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public struct FleckCreationData
 {
-	public struct FleckCreationData
-	{
-		public FleckDef def;
+	public FleckDef def;
 
-		public Vector3 spawnPosition;
+	public Vector3 spawnPosition;
 
-		public float rotation;
+	public float rotation;
 
-		public float scale;
+	public float scale;
 
-		public Vector3? exactScale;
+	public Vector3? exactScale;
 
-		public Color? instanceColor;
+	public Color? instanceColor;
 
-		public float velocityAngle;
+	public float velocityAngle;
 
-		public float velocitySpeed;
+	public float velocitySpeed;
 
-		public Vector3? velocity;
+	public Vector3? velocity;
 
-		public float rotationRate;
+	public float rotationRate;
 
-		public float? solidTimeOverride;
+	public float? solidTimeOverride;
 
-		public float? airTimeLeft;
+	public float? airTimeLeft;
 
-		public int ageTicksOverride;
+	public int ageTicksOverride;
 
-		public FleckAttachLink link;
+	public FleckAttachLink link;
 
-		public float targetSize;
+	public float targetSize;
 
-		public float orbitSpeed;
+	public float orbitSpeed;
 
-		public float orbitSnapStrength;
-	}
+	public float orbitSnapStrength;
 }

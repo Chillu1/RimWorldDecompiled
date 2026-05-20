@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum EditTreeNodeType : byte
 {
-	public enum EditTreeNodeType : byte
-	{
-		ComplexObject,
-		ListRoot,
-		TerminalValue
-	}
+	ComplexObject,
+	ListRoot,
+	TerminalValue
 }

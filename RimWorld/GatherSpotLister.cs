@@ -1,25 +1,24 @@
 using System.Collections.Generic;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class GatherSpotLister
 {
-	public class GatherSpotLister
+	public List<CompGatherSpot> activeSpots = new List<CompGatherSpot>();
+
+	public void RegisterActivated(CompGatherSpot spot)
 	{
-		public List<CompGatherSpot> activeSpots = new List<CompGatherSpot>();
-
-		public void RegisterActivated(CompGatherSpot spot)
+		if (!activeSpots.Contains(spot))
 		{
-			if (!activeSpots.Contains(spot))
-			{
-				activeSpots.Add(spot);
-			}
+			activeSpots.Add(spot);
 		}
+	}
 
-		public void RegisterDeactivated(CompGatherSpot spot)
+	public void RegisterDeactivated(CompGatherSpot spot)
+	{
+		if (activeSpots.Contains(spot))
 		{
-			if (activeSpots.Contains(spot))
-			{
-				activeSpots.Remove(spot);
-			}
+			activeSpots.Remove(spot);
 		}
 	}
 }

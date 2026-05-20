@@ -1,28 +1,27 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Alert_Custom : Alert
 {
-	public class Alert_Custom : Alert
+	public string label;
+
+	public string explanation;
+
+	public AlertReport report;
+
+	public override string GetLabel()
 	{
-		public string label;
+		return label;
+	}
 
-		public string explanation;
+	public override TaggedString GetExplanation()
+	{
+		return explanation;
+	}
 
-		public AlertReport report;
-
-		public override string GetLabel()
-		{
-			return label;
-		}
-
-		public override TaggedString GetExplanation()
-		{
-			return explanation;
-		}
-
-		public override AlertReport GetReport()
-		{
-			return report;
-		}
+	public override AlertReport GetReport()
+	{
+		return report;
 	}
 }

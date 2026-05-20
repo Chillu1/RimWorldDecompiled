@@ -1,47 +1,46 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class TransportShipManager : IExposable
 {
-	public class TransportShipManager : IExposable
+	private List<TransportShip> ships = new List<TransportShip>();
+
+	public List<TransportShip> AllTransportShips => ships;
+
+	public void RegisterShipObject(TransportShip s)
 	{
-		private List<TransportShip> ships = new List<TransportShip>();
+		ships.Add(s);
+	}
 
-		public List<TransportShip> AllTransportShips => ships;
-
-		public void RegisterShipObject(TransportShip s)
+	public void DeregisterShipObject(TransportShip s)
+	{
+		if (s != null)
 		{
-			ships.Add(s);
+			s.EndCurrentJob();
+			ships.Remove(s);
 		}
+	}
 
-		public void DeregisterShipObject(TransportShip s)
+	public void ShipObjectsTick()
+	{
+		for (int num = ships.Count - 1; num >= 0; num--)
 		{
-			if (s != null)
-			{
-				s.EndCurrentJob();
-				ships.Remove(s);
-			}
+			ships[num].Tick();
 		}
+	}
 
-		public void ShipObjectsTick()
+	public void ExposeData()
+	{
+		Scribe_Collections.Look(ref ships, "ships", LookMode.Deep);
+		if (Scribe.mode == LoadSaveMode.PostLoadInit)
 		{
-			for (int num = ships.Count - 1; num >= 0; num--)
+			if (ships.RemoveAll((TransportShip x) => x == null) != 0)
 			{
-				ships[num].Tick();
+				Log.Error("Removed some null ship objects.");
 			}
-		}
-
-		public void ExposeData()
-		{
-			Scribe_Collections.Look(ref ships, "ships", LookMode.Deep);
-			if (Scribe.mode == LoadSaveMode.PostLoadInit)
-			{
-				if (ships.RemoveAll((TransportShip x) => x == null) != 0)
-				{
-					Log.Error("Removed some null ship objects.");
-				}
-				ships.RemoveAll((TransportShip x) => x.shipThing == null);
-			}
+			ships.RemoveAll((TransportShip x) => x.shipThing == null);
 		}
 	}
 }

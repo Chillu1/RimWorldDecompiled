@@ -1,11 +1,10 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class RoomPart_ThingDef : RoomPartDef
-	{
-		public ThingDef thingDef;
+namespace RimWorld;
 
-		public ThingDef stuffDef;
-	}
+public class RoomPart_ThingDef : RoomPartDef
+{
+	public ThingDef thingDef;
+
+	public ThingDef stuffDef;
 }

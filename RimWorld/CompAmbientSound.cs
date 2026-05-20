@@ -1,63 +1,62 @@
 using Verse;
 using Verse.Sound;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompAmbientSound : ThingComp
 {
-	public class CompAmbientSound : ThingComp
+	private Sustainer sustainer;
+
+	private CompProperties_AmbientSound Props => (CompProperties_AmbientSound)props;
+
+	public override void PostSpawnSetup(bool respawningAfterLoad)
 	{
-		private Sustainer sustainer;
+		LongEventHandler.ExecuteWhenFinished(StartSustanier);
+	}
 
-		private CompProperties_AmbientSound Props => (CompProperties_AmbientSound)props;
+	public override void CompTick()
+	{
+		sustainer?.Maintain();
+	}
 
-		public override void PostSpawnSetup(bool respawningAfterLoad)
+	public override void ReceiveCompSignal(string signal)
+	{
+		if (Props.disableOnHacked && signal == "Hacked")
 		{
-			LongEventHandler.ExecuteWhenFinished(StartSustanier);
+			EndSustainer();
 		}
-
-		public override void CompTick()
+		if (Props.disabledOnUnpowered && signal == "PowerTurnedOff")
 		{
-			sustainer?.Maintain();
+			EndSustainer();
 		}
-
-		public override void ReceiveCompSignal(string signal)
+		if (Props.disabledOnUnpowered && signal == "PowerTurnedOn")
 		{
-			if (Props.disableOnHacked && signal == "Hacked")
-			{
-				EndSustainer();
-			}
-			if (Props.disabledOnUnpowered && signal == "PowerTurnedOff")
-			{
-				EndSustainer();
-			}
-			if (Props.disabledOnUnpowered && signal == "PowerTurnedOn")
-			{
-				StartSustanier();
-			}
-			if (Props.disableOnInteracted && signal == "Interacted")
-			{
-				EndSustainer();
-			}
+			StartSustanier();
 		}
-
-		public void StartSustanier()
+		if (Props.disableOnInteracted && signal == "Interacted")
 		{
-			if (sustainer == null)
-			{
-				sustainer = Props.sound.TrySpawnSustainer(SoundInfo.InMap(parent));
-			}
+			EndSustainer();
 		}
+	}
 
-		public void EndSustainer()
+	public void StartSustanier()
+	{
+		if (sustainer == null)
 		{
-			sustainer?.End();
-			sustainer = null;
+			sustainer = Props.sound.TrySpawnSustainer(SoundInfo.InMap(parent));
 		}
+	}
 
-		public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
-		{
-			base.PostDeSpawn(map, mode);
-			sustainer?.End();
-			sustainer = null;
-		}
+	public void EndSustainer()
+	{
+		sustainer?.End();
+		sustainer = null;
+	}
+
+	public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
+	{
+		base.PostDeSpawn(map, mode);
+		sustainer?.End();
+		sustainer = null;
 	}
 }

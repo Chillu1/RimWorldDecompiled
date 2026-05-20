@@ -1,11 +1,10 @@
-namespace Verse
+namespace Verse;
+
+public class PawnRenderNodeProperties_NociosphereSegmentOutline : PawnRenderNodeProperties
 {
-	public class PawnRenderNodeProperties_NociosphereSegmentOutline : PawnRenderNodeProperties
+	public PawnRenderNodeProperties_NociosphereSegmentOutline()
 	{
-		public PawnRenderNodeProperties_NociosphereSegmentOutline()
-		{
-			debugLabel = "Outline";
-			baseLayer = -2f;
-		}
+		debugLabel = "Outline";
+		baseLayer = -2f;
 	}
 }

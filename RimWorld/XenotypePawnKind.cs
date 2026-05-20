@@ -1,11 +1,10 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class XenotypePawnKind
-	{
-		public XenotypeDef xenotype;
+namespace RimWorld;
 
-		public PawnKindDef pawnKind;
-	}
+public class XenotypePawnKind
+{
+	public XenotypeDef xenotype;
+
+	public PawnKindDef pawnKind;
 }

@@ -1,11 +1,10 @@
 using System.Collections.Generic;
 
-namespace RimWorld
-{
-	public class PreceptsWithNoneChance
-	{
-		public List<PreceptThingPair> preceptThingPairs;
+namespace RimWorld;
 
-		public float noneChance;
-	}
+public class PreceptsWithNoneChance
+{
+	public List<PreceptThingPair> preceptThingPairs;
+
+	public float noneChance;
 }

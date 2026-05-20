@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public interface IAbilityVerb
 {
-	public interface IAbilityVerb
-	{
-		Ability Ability { get; set; }
-	}
+	Ability Ability { get; set; }
 }

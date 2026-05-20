@@ -1,15 +1,14 @@
-namespace Verse
+namespace Verse;
+
+public abstract class GenStep
 {
-	public abstract class GenStep
+	public GenStepDef def;
+
+	public abstract int SeedPart { get; }
+
+	public abstract void Generate(Map map, GenStepParams parms);
+
+	public virtual void PostMapInitialized(Map map, GenStepParams parms)
 	{
-		public GenStepDef def;
-
-		public abstract int SeedPart { get; }
-
-		public abstract void Generate(Map map, GenStepParams parms);
-
-		public virtual void PostMapInitialized(Map map, GenStepParams parms)
-		{
-		}
 	}
 }

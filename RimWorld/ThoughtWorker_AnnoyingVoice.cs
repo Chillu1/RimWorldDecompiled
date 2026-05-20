@@ -1,28 +1,27 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_AnnoyingVoice : ThoughtWorker
 {
-	public class ThoughtWorker_AnnoyingVoice : ThoughtWorker
+	protected override ThoughtState CurrentSocialStateInternal(Pawn pawn, Pawn other)
 	{
-		protected override ThoughtState CurrentSocialStateInternal(Pawn pawn, Pawn other)
+		if (!other.RaceProps.Humanlike || !RelationsUtility.PawnsKnowEachOther(pawn, other))
 		{
-			if (!other.RaceProps.Humanlike || !RelationsUtility.PawnsKnowEachOther(pawn, other))
-			{
-				return false;
-			}
-			if (!other.story.traits.HasTrait(TraitDefOf.AnnoyingVoice))
-			{
-				return false;
-			}
-			if (!pawn.health.capacities.CapableOf(PawnCapacityDefOf.Hearing))
-			{
-				return false;
-			}
-			if (pawn.story.traits.HasTrait(TraitDefOf.Kind))
-			{
-				return false;
-			}
-			return true;
+			return false;
 		}
+		if (!other.story.traits.HasTrait(TraitDefOf.AnnoyingVoice))
+		{
+			return false;
+		}
+		if (!pawn.health.capacities.CapableOf(PawnCapacityDefOf.Hearing))
+		{
+			return false;
+		}
+		if (pawn.story.traits.HasTrait(TraitDefOf.Kind))
+		{
+			return false;
+		}
+		return true;
 	}
 }

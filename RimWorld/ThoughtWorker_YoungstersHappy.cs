@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_YoungstersHappy : ThoughtWorker_YoungstersMoodBase
 {
-	public class ThoughtWorker_YoungstersHappy : ThoughtWorker_YoungstersMoodBase
+	protected override FloatRange MoodRange()
 	{
-		protected override FloatRange MoodRange()
-		{
-			return ThoughtWorker_MyChildHappy.HappyMoodRange;
-		}
+		return ThoughtWorker_MyChildHappy.HappyMoodRange;
 	}
 }

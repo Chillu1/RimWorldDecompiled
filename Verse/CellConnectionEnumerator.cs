@@ -2,54 +2,53 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public struct CellConnectionEnumerator : IEnumerator<CellConnection>, IEnumerator, IDisposable
 {
-	public struct CellConnectionEnumerator : IEnumerator<CellConnection>, IEnumerator, IDisposable
+	private readonly CellConnection bitmask;
+
+	private CellConnection current;
+
+	private int index;
+
+	private int end;
+
+	public CellConnection Current => current;
+
+	object IEnumerator.Current => current;
+
+	internal CellConnectionEnumerator(CellConnection bitmask)
 	{
-		private readonly CellConnection bitmask;
+		this.bitmask = bitmask;
+		current = CellConnection.Self;
+		index = bitmask.BitIndex();
+		end = bitmask.BitLoopEndIndex();
+	}
 
-		private CellConnection current;
+	public void Dispose()
+	{
+	}
 
-		private int index;
-
-		private int end;
-
-		public CellConnection Current => current;
-
-		object IEnumerator.Current => current;
-
-		internal CellConnectionEnumerator(CellConnection bitmask)
+	public bool MoveNext()
+	{
+		while (index < end)
 		{
-			this.bitmask = bitmask;
-			current = CellConnection.Self;
-			index = bitmask.BitIndex();
-			end = bitmask.BitLoopEndIndex();
-		}
-
-		public void Dispose()
-		{
-		}
-
-		public bool MoveNext()
-		{
-			while (index < end)
+			CellConnection testFlag = CellConnectionExtensions.FlagFromBitIndex[index++];
+			if (bitmask.HasBit(testFlag))
 			{
-				CellConnection testFlag = CellConnectionExtensions.FlagFromBitIndex[index++];
-				if (bitmask.HasBit(testFlag))
-				{
-					current = testFlag;
-					return true;
-				}
+				current = testFlag;
+				return true;
 			}
-			current = CellConnection.Self;
-			return false;
 		}
+		current = CellConnection.Self;
+		return false;
+	}
 
-		void IEnumerator.Reset()
-		{
-			current = CellConnection.Self;
-			index = bitmask.BitIndex();
-			end = bitmask.BitLoopEndIndex();
-		}
+	void IEnumerator.Reset()
+	{
+		current = CellConnection.Self;
+		index = bitmask.BitIndex();
+		end = bitmask.BitLoopEndIndex();
 	}
 }

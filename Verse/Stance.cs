@@ -1,23 +1,22 @@
-namespace Verse
+namespace Verse;
+
+public abstract class Stance : IExposable
 {
-	public abstract class Stance : IExposable
+	public Pawn_StanceTracker stanceTracker;
+
+	public virtual bool StanceBusy => false;
+
+	protected Pawn Pawn => stanceTracker.pawn;
+
+	public virtual void StanceTick()
 	{
-		public Pawn_StanceTracker stanceTracker;
+	}
 
-		public virtual bool StanceBusy => false;
+	public virtual void StanceDraw()
+	{
+	}
 
-		protected Pawn Pawn => stanceTracker.pawn;
-
-		public virtual void StanceTick()
-		{
-		}
-
-		public virtual void StanceDraw()
-		{
-		}
-
-		public virtual void ExposeData()
-		{
-		}
+	public virtual void ExposeData()
+	{
 	}
 }

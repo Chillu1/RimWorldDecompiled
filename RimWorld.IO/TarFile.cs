@@ -2,85 +2,84 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace RimWorld.IO
+namespace RimWorld.IO;
+
+internal class TarFile : VirtualFile
 {
-	internal class TarFile : VirtualFile
+	public static readonly TarFile NotFound = new TarFile();
+
+	public byte[] data;
+
+	public string fullPath;
+
+	public string name;
+
+	public override string Name => name;
+
+	public override string FullPath => fullPath;
+
+	public override bool Exists => data != null;
+
+	public override long Length => data.Length;
+
+	public TarFile(byte[] data, string fullPath, string name)
 	{
-		public static readonly TarFile NotFound = new TarFile();
+		this.data = data;
+		this.fullPath = fullPath;
+		this.name = name;
+	}
 
-		public byte[] data;
+	private TarFile()
+	{
+	}
 
-		public string fullPath;
-
-		public string name;
-
-		public override string Name => name;
-
-		public override string FullPath => fullPath;
-
-		public override bool Exists => data != null;
-
-		public override long Length => data.Length;
-
-		public TarFile(byte[] data, string fullPath, string name)
+	private void CheckAccess()
+	{
+		if (data == null)
 		{
-			this.data = data;
-			this.fullPath = fullPath;
-			this.name = name;
+			throw new FileNotFoundException();
 		}
+	}
 
-		private TarFile()
-		{
-		}
+	public override Stream CreateReadStream()
+	{
+		CheckAccess();
+		return new MemoryStream(ReadAllBytes());
+	}
 
-		private void CheckAccess()
-		{
-			if (data == null)
-			{
-				throw new FileNotFoundException();
-			}
-		}
+	public override byte[] ReadAllBytes()
+	{
+		CheckAccess();
+		byte[] array = new byte[data.Length];
+		Buffer.BlockCopy(data, 0, array, 0, data.Length);
+		return array;
+	}
 
-		public override Stream CreateReadStream()
+	public override string[] ReadAllLines()
+	{
+		CheckAccess();
+		List<string> list = new List<string>();
+		using (MemoryStream stream = new MemoryStream(data))
 		{
-			CheckAccess();
-			return new MemoryStream(ReadAllBytes());
-		}
-
-		public override byte[] ReadAllBytes()
-		{
-			CheckAccess();
-			byte[] array = new byte[data.Length];
-			Buffer.BlockCopy(data, 0, array, 0, data.Length);
-			return array;
-		}
-
-		public override string[] ReadAllLines()
-		{
-			CheckAccess();
-			List<string> list = new List<string>();
-			using (MemoryStream stream = new MemoryStream(data))
-			{
-				using StreamReader streamReader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
-				while (!streamReader.EndOfStream)
-				{
-					list.Add(streamReader.ReadLine());
-				}
-			}
-			return list.ToArray();
-		}
-
-		public override string ReadAllText()
-		{
-			CheckAccess();
-			using MemoryStream stream = new MemoryStream(data);
 			using StreamReader streamReader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
-			return streamReader.ReadToEnd();
+			while (!streamReader.EndOfStream)
+			{
+				list.Add(streamReader.ReadLine());
+			}
 		}
+		return list.ToArray();
+	}
 
-		public override string ToString()
-		{
-			return $"TarFile [{fullPath}], Length {data.Length.ToString()}";
-		}
+	public override string ReadAllText()
+	{
+		CheckAccess();
+		using MemoryStream stream = new MemoryStream(data);
+		using StreamReader streamReader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
+		return streamReader.ReadToEnd();
+	}
+
+	public override string ToString()
+	{
+		return $"TarFile [{fullPath}], Length {data.Length.ToString()}";
 	}
 }

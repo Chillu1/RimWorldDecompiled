@@ -1,28 +1,27 @@
-namespace RimWorld
+namespace RimWorld;
+
+[DefOf]
+public static class MainButtonDefOf
 {
-	[DefOf]
-	public static class MainButtonDefOf
+	public static MainButtonDef Inspect;
+
+	public static MainButtonDef Architect;
+
+	public static MainButtonDef Research;
+
+	public static MainButtonDef Menu;
+
+	public static MainButtonDef World;
+
+	public static MainButtonDef Quests;
+
+	public static MainButtonDef Factions;
+
+	[MayRequireIdeology]
+	public static MainButtonDef Ideos;
+
+	static MainButtonDefOf()
 	{
-		public static MainButtonDef Inspect;
-
-		public static MainButtonDef Architect;
-
-		public static MainButtonDef Research;
-
-		public static MainButtonDef Menu;
-
-		public static MainButtonDef World;
-
-		public static MainButtonDef Quests;
-
-		public static MainButtonDef Factions;
-
-		[MayRequireIdeology]
-		public static MainButtonDef Ideos;
-
-		static MainButtonDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(MainButtonDefOf));
-		}
+		DefOfHelper.EnsureInitializedInCtor(typeof(MainButtonDefOf));
 	}
 }

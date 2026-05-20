@@ -1,26 +1,25 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class StageEndTrigger_DuelEnded : StageEndTrigger_AnyPawnDead
 {
-	public class StageEndTrigger_DuelEnded : StageEndTrigger_AnyPawnDead
+	protected override bool Trigger(LordJob_Ritual ritual)
 	{
-		protected override bool Trigger(LordJob_Ritual ritual)
+		if (base.Trigger(ritual))
 		{
-			if (base.Trigger(ritual))
+			return true;
+		}
+		foreach (string roleId in roleIds)
+		{
+			foreach (Pawn item in ritual.assignments.AssignedPawns(roleId))
 			{
-				return true;
-			}
-			foreach (string roleId in roleIds)
-			{
-				foreach (Pawn item in ritual.assignments.AssignedPawns(roleId))
+				if (item.Downed)
 				{
-					if (item.Downed)
-					{
-						return true;
-					}
+					return true;
 				}
 			}
-			return false;
 		}
+		return false;
 	}
 }

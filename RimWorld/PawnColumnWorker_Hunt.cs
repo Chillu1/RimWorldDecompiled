@@ -1,29 +1,28 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class PawnColumnWorker_Hunt : PawnColumnWorker_Designator
 {
-	public class PawnColumnWorker_Hunt : PawnColumnWorker_Designator
+	protected override DesignationDef DesignationType => DesignationDefOf.Hunt;
+
+	protected override string GetTip(Pawn pawn)
 	{
-		protected override DesignationDef DesignationType => DesignationDefOf.Hunt;
+		return "DesignatorHuntDesc".Translate();
+	}
 
-		protected override string GetTip(Pawn pawn)
+	protected override bool HasCheckbox(Pawn pawn)
+	{
+		if (pawn.AnimalOrWildMan() && pawn.RaceProps.IsFlesh && (pawn.Faction == null || !pawn.Faction.def.humanlikeFaction))
 		{
-			return "DesignatorHuntDesc".Translate();
+			return pawn.SpawnedOrAnyParentSpawned;
 		}
+		return false;
+	}
 
-		protected override bool HasCheckbox(Pawn pawn)
-		{
-			if (pawn.AnimalOrWildMan() && pawn.RaceProps.IsFlesh && (pawn.Faction == null || !pawn.Faction.def.humanlikeFaction))
-			{
-				return pawn.SpawnedOrAnyParentSpawned;
-			}
-			return false;
-		}
-
-		protected override void Notify_DesignationAdded(Pawn pawn)
-		{
-			pawn.MapHeld.designationManager.TryRemoveDesignationOn(pawn, DesignationDefOf.Tame);
-			Designator_Hunt.ShowDesignationWarnings(pawn);
-		}
+	protected override void Notify_DesignationAdded(Pawn pawn)
+	{
+		pawn.MapHeld.designationManager.TryRemoveDesignationOn(pawn, DesignationDefOf.Tame);
+		Designator_Hunt.ShowDesignationWarnings(pawn);
 	}
 }

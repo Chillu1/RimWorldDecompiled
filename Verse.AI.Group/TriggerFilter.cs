@@ -1,7 +1,6 @@
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public abstract class TriggerFilter
 {
-	public abstract class TriggerFilter
-	{
-		public abstract bool AllowActivation(Lord lord, TriggerSignal signal);
-	}
+	public abstract bool AllowActivation(Lord lord, TriggerSignal signal);
 }

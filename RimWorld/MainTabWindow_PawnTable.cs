@@ -3,69 +3,68 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class MainTabWindow_PawnTable : MainTabWindow
 {
-	public abstract class MainTabWindow_PawnTable : MainTabWindow
+	private PawnTable table;
+
+	protected virtual float ExtraBottomSpace => 53f;
+
+	protected virtual float ExtraTopSpace => 0f;
+
+	protected abstract PawnTableDef PawnTableDef { get; }
+
+	protected override float Margin => 6f;
+
+	public override Vector2 RequestedTabSize
 	{
-		private PawnTable table;
-
-		protected virtual float ExtraBottomSpace => 53f;
-
-		protected virtual float ExtraTopSpace => 0f;
-
-		protected abstract PawnTableDef PawnTableDef { get; }
-
-		protected override float Margin => 6f;
-
-		public override Vector2 RequestedTabSize
+		get
 		{
-			get
-			{
-				if (table == null)
-				{
-					return Vector2.zero;
-				}
-				return new Vector2(table.Size.x + Margin * 2f, table.Size.y + ExtraBottomSpace + ExtraTopSpace + Margin * 2f);
-			}
-		}
-
-		protected virtual IEnumerable<Pawn> Pawns => Find.CurrentMap.mapPawns.FreeColonists;
-
-		public override void PostOpen()
-		{
-			base.PostOpen();
 			if (table == null)
 			{
-				table = CreateTable();
+				return Vector2.zero;
 			}
-			SetDirty();
+			return new Vector2(table.Size.x + Margin * 2f, table.Size.y + ExtraBottomSpace + ExtraTopSpace + Margin * 2f);
 		}
+	}
 
-		public override void DoWindowContents(Rect rect)
-		{
-			table.PawnTableOnGUI(new Vector2(rect.x, rect.y + ExtraTopSpace));
-		}
+	protected virtual IEnumerable<Pawn> Pawns => Find.CurrentMap.mapPawns.FreeColonists;
 
-		public void Notify_PawnsChanged()
-		{
-			SetDirty();
-		}
-
-		public override void Notify_ResolutionChanged()
+	public override void PostOpen()
+	{
+		base.PostOpen();
+		if (table == null)
 		{
 			table = CreateTable();
-			base.Notify_ResolutionChanged();
 		}
+		SetDirty();
+	}
 
-		private PawnTable CreateTable()
-		{
-			return (PawnTable)Activator.CreateInstance(PawnTableDef.workerClass, PawnTableDef, (Func<IEnumerable<Pawn>>)(() => Pawns), UI.screenWidth - (int)(Margin * 2f), (int)((float)(UI.screenHeight - 35) - ExtraBottomSpace - ExtraTopSpace - Margin * 2f));
-		}
+	public override void DoWindowContents(Rect rect)
+	{
+		table.PawnTableOnGUI(new Vector2(rect.x, rect.y + ExtraTopSpace));
+	}
 
-		protected void SetDirty()
-		{
-			table.SetDirty();
-			SetInitialSizeAndPosition();
-		}
+	public void Notify_PawnsChanged()
+	{
+		SetDirty();
+	}
+
+	public override void Notify_ResolutionChanged()
+	{
+		table = CreateTable();
+		base.Notify_ResolutionChanged();
+	}
+
+	private PawnTable CreateTable()
+	{
+		return (PawnTable)Activator.CreateInstance(PawnTableDef.workerClass, PawnTableDef, (Func<IEnumerable<Pawn>>)(() => Pawns), UI.screenWidth - (int)(Margin * 2f), (int)((float)(UI.screenHeight - 35) - ExtraBottomSpace - ExtraTopSpace - Margin * 2f));
+	}
+
+	protected void SetDirty()
+	{
+		table.SetDirty();
+		SetInitialSizeAndPosition();
 	}
 }

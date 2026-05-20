@@ -1,13 +1,12 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public interface ICellBoolGiver
 {
-	public interface ICellBoolGiver
-	{
-		Color Color { get; }
+	Color Color { get; }
 
-		bool GetCellBool(int index);
+	bool GetCellBool(int index);
 
-		Color GetCellExtraColor(int index);
-	}
+	Color GetCellExtraColor(int index);
 }

@@ -1,26 +1,25 @@
 using UnityEngine;
 
-namespace Verse.Sound
-{
-	public static class SoundFilterUtility
-	{
-		public static void DisableAllFiltersOn(AudioSource source)
-		{
-			DisableFilterOn<AudioLowPassFilter>(source);
-			DisableFilterOn<AudioHighPassFilter>(source);
-			DisableFilterOn<AudioEchoFilter>(source);
-			DisableFilterOn<AudioReverbFilter>(source);
-			DisableFilterOn<AudioDistortionFilter>(source);
-			DisableFilterOn<AudioChorusFilter>(source);
-		}
+namespace Verse.Sound;
 
-		private static void DisableFilterOn<T>(AudioSource source) where T : Behaviour
+public static class SoundFilterUtility
+{
+	public static void DisableAllFiltersOn(AudioSource source)
+	{
+		DisableFilterOn<AudioLowPassFilter>(source);
+		DisableFilterOn<AudioHighPassFilter>(source);
+		DisableFilterOn<AudioEchoFilter>(source);
+		DisableFilterOn<AudioReverbFilter>(source);
+		DisableFilterOn<AudioDistortionFilter>(source);
+		DisableFilterOn<AudioChorusFilter>(source);
+	}
+
+	private static void DisableFilterOn<T>(AudioSource source) where T : Behaviour
+	{
+		T component = source.GetComponent<T>();
+		if (component != null)
 		{
-			T component = source.GetComponent<T>();
-			if (component != null)
-			{
-				component.enabled = false;
-			}
+			component.enabled = false;
 		}
 	}
 }

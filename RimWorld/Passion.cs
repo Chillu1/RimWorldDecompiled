@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum Passion : byte
 {
-	public enum Passion : byte
-	{
-		None,
-		Minor,
-		Major
-	}
+	None,
+	Minor,
+	Major
 }

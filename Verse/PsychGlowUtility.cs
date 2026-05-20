@@ -1,18 +1,17 @@
 using System;
 
-namespace Verse
+namespace Verse;
+
+public static class PsychGlowUtility
 {
-	public static class PsychGlowUtility
+	public static string GetLabel(this PsychGlow gl)
 	{
-		public static string GetLabel(this PsychGlow gl)
+		return gl switch
 		{
-			return gl switch
-			{
-				PsychGlow.Dark => "Dark".Translate(), 
-				PsychGlow.Lit => "Lit".Translate(), 
-				PsychGlow.Overlit => "LitBrightly".Translate(), 
-				_ => throw new ArgumentException(), 
-			};
-		}
+			PsychGlow.Dark => "Dark".Translate(), 
+			PsychGlow.Lit => "Lit".Translate(), 
+			PsychGlow.Overlit => "LitBrightly".Translate(), 
+			_ => throw new ArgumentException(), 
+		};
 	}
 }

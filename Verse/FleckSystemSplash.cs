@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public class FleckSystemSplash : FleckSystemBase<FleckSplash>
 {
-	public class FleckSystemSplash : FleckSystemBase<FleckSplash>
+	public FleckSystemSplash(FleckManager parent)
+		: base(parent)
 	{
-		public FleckSystemSplash(FleckManager parent)
-			: base(parent)
-		{
-		}
 	}
 }

@@ -1,6 +1,5 @@
-namespace RimWorld.BaseGen
+namespace RimWorld.BaseGen;
+
+public class SymbolResolver_WorkSite_Logging : SymbolResolver_WorkSite
 {
-	public class SymbolResolver_WorkSite_Logging : SymbolResolver_WorkSite
-	{
-	}
 }

@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class CompProperties_EntityHolder : CompProperties
 {
-	public abstract class CompProperties_EntityHolder : CompProperties
-	{
-		public float containmentFactor = 1f;
-	}
+	public float containmentFactor = 1f;
 }

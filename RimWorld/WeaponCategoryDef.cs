@@ -1,8 +1,7 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WeaponCategoryDef : Def
 {
-	public class WeaponCategoryDef : Def
-	{
-	}
 }

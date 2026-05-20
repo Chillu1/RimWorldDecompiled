@@ -1,35 +1,34 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_RemoveFloor : JobDriver_AffectFloor
 {
-	public class JobDriver_RemoveFloor : JobDriver_AffectFloor
+	protected override int BaseWorkAmount => 200;
+
+	protected override DesignationDef DesDef => DesignationDefOf.RemoveFloor;
+
+	protected override StatDef SpeedStat => StatDefOf.ConstructionSpeed;
+
+	public JobDriver_RemoveFloor()
 	{
-		protected override int BaseWorkAmount => 200;
+		clearSnow = true;
+	}
 
-		protected override DesignationDef DesDef => DesignationDefOf.RemoveFloor;
-
-		protected override StatDef SpeedStat => StatDefOf.ConstructionSpeed;
-
-		public JobDriver_RemoveFloor()
+	protected override void DoEffect(IntVec3 c)
+	{
+		if (base.Map.terrainGrid.CanRemoveTopLayerAt(c))
 		{
-			clearSnow = true;
-		}
-
-		protected override void DoEffect(IntVec3 c)
-		{
-			if (base.Map.terrainGrid.CanRemoveTopLayerAt(c))
+			TerrainDef terrainDef = base.Map.terrainGrid.TempTerrainAt(c);
+			if (terrainDef != null && terrainDef.Removable)
 			{
-				TerrainDef terrainDef = base.Map.terrainGrid.TempTerrainAt(c);
-				if (terrainDef != null && terrainDef.Removable)
-				{
-					base.Map.terrainGrid.RemoveTempTerrain(c);
-				}
-				else
-				{
-					base.Map.terrainGrid.RemoveTopLayer(base.TargetLocA);
-				}
-				FilthMaker.RemoveAllFilth(c, base.Map);
+				base.Map.terrainGrid.RemoveTempTerrain(c);
 			}
+			else
+			{
+				base.Map.terrainGrid.RemoveTopLayer(base.TargetLocA);
+			}
+			FilthMaker.RemoveAllFilth(c, base.Map);
 		}
 	}
 }

@@ -1,12 +1,11 @@
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public enum Hilliness : byte
 {
-	public enum Hilliness : byte
-	{
-		Undefined,
-		Flat,
-		SmallHills,
-		LargeHills,
-		Mountainous,
-		Impassable
-	}
+	Undefined,
+	Flat,
+	SmallHills,
+	LargeHills,
+	Mountainous,
+	Impassable
 }

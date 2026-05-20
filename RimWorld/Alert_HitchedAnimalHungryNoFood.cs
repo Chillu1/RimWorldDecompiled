@@ -2,46 +2,45 @@ using System.Collections.Generic;
 using RimWorld.Planet;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Alert_HitchedAnimalHungryNoFood : Alert
 {
-	public class Alert_HitchedAnimalHungryNoFood : Alert
+	private List<GlobalTargetInfo> targets = new List<GlobalTargetInfo>();
+
+	private List<string> animalNames = new List<string>();
+
+	public Alert_HitchedAnimalHungryNoFood()
 	{
-		private List<GlobalTargetInfo> targets = new List<GlobalTargetInfo>();
+		defaultLabel = "AlertHitchedAnimalHungryNoFood".Translate();
+	}
 
-		private List<string> animalNames = new List<string>();
-
-		public Alert_HitchedAnimalHungryNoFood()
+	private void CalculateTargets()
+	{
+		targets.Clear();
+		foreach (Pawn item in PawnsFinder.AllMaps_SpawnedPawnsInFaction(Faction.OfPlayer))
 		{
-			defaultLabel = "AlertHitchedAnimalHungryNoFood".Translate();
-		}
-
-		private void CalculateTargets()
-		{
-			targets.Clear();
-			foreach (Pawn item in PawnsFinder.AllMaps_SpawnedPawnsInFaction(Faction.OfPlayer))
+			Pawn_RopeTracker roping = item.roping;
+			if (roping != null && roping.IsRopedToHitchingPost && item.needs.food.TicksStarving > 2500)
 			{
-				Pawn_RopeTracker roping = item.roping;
-				if (roping != null && roping.IsRopedToHitchingPost && item.needs.food.TicksStarving > 2500)
-				{
-					targets.Add(item);
-				}
+				targets.Add(item);
 			}
 		}
+	}
 
-		public override TaggedString GetExplanation()
+	public override TaggedString GetExplanation()
+	{
+		animalNames.Clear();
+		foreach (GlobalTargetInfo target in targets)
 		{
-			animalNames.Clear();
-			foreach (GlobalTargetInfo target in targets)
-			{
-				animalNames.Add(((Pawn)target.Thing).NameShortColored.Resolve());
-			}
-			return "AlertHitchedAnimalHungryNoFoodDesc".Translate(animalNames.ToLineList("  - "));
+			animalNames.Add(((Pawn)target.Thing).NameShortColored.Resolve());
 		}
+		return "AlertHitchedAnimalHungryNoFoodDesc".Translate(animalNames.ToLineList("  - "));
+	}
 
-		public override AlertReport GetReport()
-		{
-			CalculateTargets();
-			return AlertReport.CulpritsAre(targets);
-		}
+	public override AlertReport GetReport()
+	{
+		CalculateTargets();
+		return AlertReport.CulpritsAre(targets);
 	}
 }

@@ -1,23 +1,22 @@
 using UnityEngine;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Building_TurretRocket : Building_TurretGun
 {
-	public class Building_TurretRocket : Building_TurretGun
+	protected override bool CanSetForcedTarget => true;
+
+	protected override bool HideForceTargetGizmo => true;
+
+	public override Material TurretTopMaterial
 	{
-		protected override bool CanSetForcedTarget => true;
-
-		protected override bool HideForceTargetGizmo => true;
-
-		public override Material TurretTopMaterial
+		get
 		{
-			get
+			if (refuelableComp.IsFull)
 			{
-				if (refuelableComp.IsFull)
-				{
-					return def.building.turretGunDef.building.turretTopLoadedMat;
-				}
-				return def.building.turretTopMat;
+				return def.building.turretGunDef.building.turretTopLoadedMat;
 			}
+			return def.building.turretTopMat;
 		}
 	}
 }

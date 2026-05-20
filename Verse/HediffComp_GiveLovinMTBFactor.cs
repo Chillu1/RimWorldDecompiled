@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public class HediffComp_GiveLovinMTBFactor : HediffComp
 {
-	public class HediffComp_GiveLovinMTBFactor : HediffComp
-	{
-		public HediffCompProperties_GiveLovinMTBFactor Props => (HediffCompProperties_GiveLovinMTBFactor)props;
-	}
+	public HediffCompProperties_GiveLovinMTBFactor Props => (HediffCompProperties_GiveLovinMTBFactor)props;
 }

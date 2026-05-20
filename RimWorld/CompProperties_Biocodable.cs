@@ -1,14 +1,13 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class CompProperties_Biocodable : CompProperties
-	{
-		public bool biocodeOnEquip;
+namespace RimWorld;
 
-		public CompProperties_Biocodable()
-		{
-			compClass = typeof(CompBiocodable);
-		}
+public class CompProperties_Biocodable : CompProperties
+{
+	public bool biocodeOnEquip;
+
+	public CompProperties_Biocodable()
+	{
+		compClass = typeof(CompBiocodable);
 	}
 }

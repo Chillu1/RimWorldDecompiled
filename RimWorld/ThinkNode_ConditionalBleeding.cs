@@ -1,13 +1,12 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThinkNode_ConditionalBleeding : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalBleeding : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
-		{
-			return pawn.health.hediffSet.BleedRateTotal > 0.001f;
-		}
+		return pawn.health.hediffSet.BleedRateTotal > 0.001f;
 	}
 }

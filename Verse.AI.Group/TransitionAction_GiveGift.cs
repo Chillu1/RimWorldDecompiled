@@ -1,19 +1,18 @@
 using System.Collections.Generic;
 using RimWorld;
 
-namespace Verse.AI.Group
-{
-	public class TransitionAction_GiveGift : TransitionAction
-	{
-		public List<Thing> gifts;
+namespace Verse.AI.Group;
 
-		public override void DoAction(Transition trans)
+public class TransitionAction_GiveGift : TransitionAction
+{
+	public List<Thing> gifts;
+
+	public override void DoAction(Transition trans)
+	{
+		if (!gifts.NullOrEmpty())
 		{
-			if (!gifts.NullOrEmpty())
-			{
-				VisitorGiftForPlayerUtility.GiveGift(trans.target.lord.ownedPawns, trans.target.lord.faction, gifts);
-				gifts.Clear();
-			}
+			VisitorGiftForPlayerUtility.GiveGift(trans.target.lord.ownedPawns, trans.target.lord.faction, gifts);
+			gifts.Clear();
 		}
 	}
 }

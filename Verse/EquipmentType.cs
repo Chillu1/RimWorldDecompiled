@@ -1,8 +1,7 @@
-namespace Verse
+namespace Verse;
+
+public enum EquipmentType : byte
 {
-	public enum EquipmentType : byte
-	{
-		None,
-		Primary
-	}
+	None,
+	Primary
 }

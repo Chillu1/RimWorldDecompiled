@@ -1,19 +1,18 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class AnomalyPlaystyleDef : Def
 {
-	public class AnomalyPlaystyleDef : Def
-	{
-		public bool displayThreatFractionSliders = true;
+	public bool displayThreatFractionSliders = true;
 
-		public bool overrideThreatFraction;
+	public bool overrideThreatFraction;
 
-		public bool displayStudyFactorSlider = true;
+	public bool displayStudyFactorSlider = true;
 
-		public bool generateMonolith = true;
+	public bool generateMonolith = true;
 
-		public bool enableAnomalyContent = true;
+	public bool enableAnomalyContent = true;
 
-		public bool alwaysShowCodex;
-	}
+	public bool alwaysShowCodex;
 }

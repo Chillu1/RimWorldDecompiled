@@ -1,6 +1,5 @@
-namespace Verse.Steam
+namespace Verse.Steam;
+
+public class WorkshopItem_Downloading : WorkshopItem
 {
-	public class WorkshopItem_Downloading : WorkshopItem
-	{
-	}
 }

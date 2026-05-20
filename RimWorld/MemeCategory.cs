@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum MemeCategory : byte
 {
-	public enum MemeCategory : byte
-	{
-		Normal,
-		Structure
-	}
+	Normal,
+	Structure
 }

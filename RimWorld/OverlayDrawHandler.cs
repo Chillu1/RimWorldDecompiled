@@ -1,40 +1,39 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class OverlayDrawHandler
 {
-	public static class OverlayDrawHandler
+	private static int lastPowerGridDrawFrame;
+
+	private static int lastZoneDrawFrame;
+
+	public static bool ShouldDrawPowerGrid => lastPowerGridDrawFrame + 1 >= Time.frameCount;
+
+	public static bool ShouldDrawZones
 	{
-		private static int lastPowerGridDrawFrame;
-
-		private static int lastZoneDrawFrame;
-
-		public static bool ShouldDrawPowerGrid => lastPowerGridDrawFrame + 1 >= Time.frameCount;
-
-		public static bool ShouldDrawZones
+		get
 		{
-			get
+			if (Find.PlaySettings.showZones)
 			{
-				if (Find.PlaySettings.showZones)
-				{
-					return true;
-				}
-				if (Time.frameCount <= lastZoneDrawFrame + 1)
-				{
-					return true;
-				}
-				return false;
+				return true;
 			}
+			if (Time.frameCount <= lastZoneDrawFrame + 1)
+			{
+				return true;
+			}
+			return false;
 		}
+	}
 
-		public static void DrawPowerGridOverlayThisFrame()
-		{
-			lastPowerGridDrawFrame = Time.frameCount;
-		}
+	public static void DrawPowerGridOverlayThisFrame()
+	{
+		lastPowerGridDrawFrame = Time.frameCount;
+	}
 
-		public static void DrawZonesThisFrame()
-		{
-			lastZoneDrawFrame = Time.frameCount;
-		}
+	public static void DrawZonesThisFrame()
+	{
+		lastZoneDrawFrame = Time.frameCount;
 	}
 }

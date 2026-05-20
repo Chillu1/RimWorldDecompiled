@@ -1,16 +1,15 @@
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class Gene_Bloodfeeder : Gene
 {
-	public class Gene_Bloodfeeder : Gene
+	public override void PostAdd()
 	{
-		public override void PostAdd()
+		base.PostAdd();
+		if (pawn.IsPrisonerOfColony && pawn.guest != null && pawn.guest.HasInteractionWith((PrisonerInteractionModeDef interaction) => interaction.hideIfNoBloodfeeders))
 		{
-			base.PostAdd();
-			if (pawn.IsPrisonerOfColony && pawn.guest != null && pawn.guest.HasInteractionWith((PrisonerInteractionModeDef interaction) => interaction.hideIfNoBloodfeeders))
-			{
-				pawn.guest.SetNoInteraction();
-			}
+			pawn.guest.SetNoInteraction();
 		}
 	}
 }

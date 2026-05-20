@@ -2,43 +2,42 @@ using System.Collections.Generic;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
-{
-	public class JobDriver_GoForWalk : JobDriver
-	{
-		public override bool TryMakePreToilReservations(bool errorOnFailed)
-		{
-			return true;
-		}
+namespace RimWorld;
 
-		protected override IEnumerable<Toil> MakeNewToils()
+public class JobDriver_GoForWalk : JobDriver
+{
+	public override bool TryMakePreToilReservations(bool errorOnFailed)
+	{
+		return true;
+	}
+
+	protected override IEnumerable<Toil> MakeNewToils()
+	{
+		this.FailOn(() => !JoyUtility.EnjoyableOutsideNow(pawn));
+		Toil goToil = Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.OnCell);
+		goToil.tickIntervalAction = delegate(int delta)
 		{
-			this.FailOn(() => !JoyUtility.EnjoyableOutsideNow(pawn));
-			Toil goToil = Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.OnCell);
-			goToil.tickIntervalAction = delegate(int delta)
+			if (Find.TickManager.TicksGame > startTick + job.def.joyDuration)
 			{
-				if (Find.TickManager.TicksGame > startTick + job.def.joyDuration)
-				{
-					EndJobWith(JobCondition.Succeeded);
-				}
-				else
-				{
-					JoyUtility.JoyTickCheckEnd(pawn, delta);
-				}
-			};
-			yield return goToil;
-			Toil toil = ToilMaker.MakeToil("MakeNewToils");
-			toil.initAction = delegate
+				EndJobWith(JobCondition.Succeeded);
+			}
+			else
 			{
-				if (job.targetQueueA.Count > 0)
-				{
-					LocalTargetInfo targetA = job.targetQueueA[0];
-					job.targetQueueA.RemoveAt(0);
-					job.targetA = targetA;
-					JumpToToil(goToil);
-				}
-			};
-			yield return toil;
-		}
+				JoyUtility.JoyTickCheckEnd(pawn, delta);
+			}
+		};
+		yield return goToil;
+		Toil toil = ToilMaker.MakeToil("MakeNewToils");
+		toil.initAction = delegate
+		{
+			if (job.targetQueueA.Count > 0)
+			{
+				LocalTargetInfo targetA = job.targetQueueA[0];
+				job.targetQueueA.RemoveAt(0);
+				job.targetA = targetA;
+				JumpToToil(goToil);
+			}
+		};
+		yield return toil;
 	}
 }

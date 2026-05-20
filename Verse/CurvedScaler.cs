@@ -1,15 +1,14 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class CurvedScaler
 {
-	public class CurvedScaler
-	{
-		public SimpleCurve curve;
+	public SimpleCurve curve;
 
-		public Vector3 axisMask = Vector3.one;
+	public Vector3 axisMask = Vector3.one;
 
-		public FloatRange scaleAmt;
+	public FloatRange scaleAmt;
 
-		public FloatRange scaleTime;
-	}
+	public FloatRange scaleTime;
 }

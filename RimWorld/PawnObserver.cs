@@ -1,116 +1,115 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class PawnObserver
 {
-	public class PawnObserver
+	private Pawn pawn;
+
+	private int intervalsUntilObserve;
+
+	private List<Thought_MemoryObservationTerror> terrorThoughts = new List<Thought_MemoryObservationTerror>();
+
+	private const int IntervalsBetweenObservations = 4;
+
+	private const float ObservationRadius = 5f;
+
+	public PawnObserver(Pawn pawn)
 	{
-		private Pawn pawn;
+		this.pawn = pawn;
+		intervalsUntilObserve = 0;
+	}
 
-		private int intervalsUntilObserve;
-
-		private List<Thought_MemoryObservationTerror> terrorThoughts = new List<Thought_MemoryObservationTerror>();
-
-		private const int IntervalsBetweenObservations = 4;
-
-		private const float ObservationRadius = 5f;
-
-		public PawnObserver(Pawn pawn)
+	public void ObserverInterval()
+	{
+		if (pawn.Spawned)
 		{
-			this.pawn = pawn;
-			intervalsUntilObserve = 0;
-		}
-
-		public void ObserverInterval()
-		{
-			if (pawn.Spawned)
+			intervalsUntilObserve--;
+			if (intervalsUntilObserve <= 0)
 			{
-				intervalsUntilObserve--;
-				if (intervalsUntilObserve <= 0)
-				{
-					ObserveSurroundingThings();
-					intervalsUntilObserve = 4 + Rand.RangeInclusive(-1, 1);
-				}
+				ObserveSurroundingThings();
+				intervalsUntilObserve = 4 + Rand.RangeInclusive(-1, 1);
 			}
 		}
+	}
 
-		private void ObserveSurroundingThings()
+	private void ObserveSurroundingThings()
+	{
+		TerrorUtility.RemoveAllTerrorThoughts(pawn);
+		terrorThoughts.Clear();
+		if (PawnUtility.IsBiologicallyOrArtificiallyBlind(pawn) || !pawn.Awake() || pawn.needs.mood == null)
 		{
-			TerrorUtility.RemoveAllTerrorThoughts(pawn);
-			terrorThoughts.Clear();
-			if (PawnUtility.IsBiologicallyOrArtificiallyBlind(pawn) || !pawn.Awake() || pawn.needs.mood == null)
+			return;
+		}
+		RegionTraverser.BreadthFirstTraverse(pawn.Position, pawn.Map, (Region from, Region to) => pawn.Position.InHorDistOf(to.extentsClose.ClosestCellTo(pawn.Position), 5f), delegate(Region reg)
+		{
+			foreach (Thing item in reg.ListerThings.ThingsInGroup(ThingRequestGroup.Corpse))
 			{
-				return;
-			}
-			RegionTraverser.BreadthFirstTraverse(pawn.Position, pawn.Map, (Region from, Region to) => pawn.Position.InHorDistOf(to.extentsClose.ClosestCellTo(pawn.Position), 5f), delegate(Region reg)
-			{
-				foreach (Thing item in reg.ListerThings.ThingsInGroup(ThingRequestGroup.Corpse))
+				if (PossibleToObserve(item))
 				{
-					if (PossibleToObserve(item))
-					{
-						TryCreateObservedThought(item);
-						TryCreateObservedHistoryEvent(item);
-					}
-				}
-				foreach (Thing item2 in reg.ListerThings.ThingsInGroup(ThingRequestGroup.Pawn))
-				{
-					if (PossibleToObserve(item2))
-					{
-						TryCreateObservedThought(item2);
-						TryCreateObservedHistoryEvent(item2);
-					}
-				}
-				foreach (Thing item3 in reg.ListerThings.ThingsInGroup(ThingRequestGroup.BuildingArtificial))
-				{
-					if (PossibleToObserve(item3))
-					{
-						TryCreateObservedThought(item3);
-						TryCreateObservedHistoryEvent(item3);
-					}
-				}
-				return true;
-			});
-			foreach (Thought_MemoryObservationTerror item4 in TerrorUtility.TakeTopTerrorThoughts(terrorThoughts))
-			{
-				pawn.needs.mood.thoughts.memories.TryGainMemory(item4);
-			}
-			terrorThoughts.Clear();
-			void TryCreateObservedHistoryEvent(Thing thing)
-			{
-				if (thing is IObservedThoughtGiver observedThoughtGiver)
-				{
-					HistoryEventDef historyEventDef = observedThoughtGiver.GiveObservedHistoryEvent(pawn);
-					if (historyEventDef != null)
-					{
-						HistoryEvent historyEvent = new HistoryEvent(historyEventDef, pawn.Named(HistoryEventArgsNames.Doer), thing.Named(HistoryEventArgsNames.Subject));
-						Find.HistoryEventsManager.RecordEvent(historyEvent);
-					}
+					TryCreateObservedThought(item);
+					TryCreateObservedHistoryEvent(item);
 				}
 			}
-			void TryCreateObservedThought(Thing thing)
+			foreach (Thing item2 in reg.ListerThings.ThingsInGroup(ThingRequestGroup.Pawn))
 			{
-				if (TerrorUtility.TryCreateTerrorThought(thing, out var thought))
+				if (PossibleToObserve(item2))
 				{
-					terrorThoughts.Add(thought);
+					TryCreateObservedThought(item2);
+					TryCreateObservedHistoryEvent(item2);
 				}
-				if (thing is IObservedThoughtGiver observedThoughtGiver)
+			}
+			foreach (Thing item3 in reg.ListerThings.ThingsInGroup(ThingRequestGroup.BuildingArtificial))
+			{
+				if (PossibleToObserve(item3))
 				{
-					Thought_Memory thought_Memory = observedThoughtGiver.GiveObservedThought(pawn);
-					if (thought_Memory != null)
-					{
-						pawn.needs.mood.thoughts.memories.TryGainMemory(thought_Memory);
-					}
+					TryCreateObservedThought(item3);
+					TryCreateObservedHistoryEvent(item3);
+				}
+			}
+			return true;
+		});
+		foreach (Thought_MemoryObservationTerror item4 in TerrorUtility.TakeTopTerrorThoughts(terrorThoughts))
+		{
+			pawn.needs.mood.thoughts.memories.TryGainMemory(item4);
+		}
+		terrorThoughts.Clear();
+		void TryCreateObservedHistoryEvent(Thing thing)
+		{
+			if (thing is IObservedThoughtGiver observedThoughtGiver)
+			{
+				HistoryEventDef historyEventDef = observedThoughtGiver.GiveObservedHistoryEvent(pawn);
+				if (historyEventDef != null)
+				{
+					HistoryEvent historyEvent = new HistoryEvent(historyEventDef, pawn.Named(HistoryEventArgsNames.Doer), thing.Named(HistoryEventArgsNames.Subject));
+					Find.HistoryEventsManager.RecordEvent(historyEvent);
 				}
 			}
 		}
-
-		private bool PossibleToObserve(Thing thing)
+		void TryCreateObservedThought(Thing thing)
 		{
-			if (thing.Position.InHorDistOf(pawn.Position, 5f))
+			if (TerrorUtility.TryCreateTerrorThought(thing, out var thought))
 			{
-				return GenSight.LineOfSight(thing.Position, pawn.Position, pawn.Map, skipFirstCell: true);
+				terrorThoughts.Add(thought);
 			}
-			return false;
+			if (thing is IObservedThoughtGiver observedThoughtGiver)
+			{
+				Thought_Memory thought_Memory = observedThoughtGiver.GiveObservedThought(pawn);
+				if (thought_Memory != null)
+				{
+					pawn.needs.mood.thoughts.memories.TryGainMemory(thought_Memory);
+				}
+			}
 		}
+	}
+
+	private bool PossibleToObserve(Thing thing)
+	{
+		if (thing.Position.InHorDistOf(pawn.Position, 5f))
+		{
+			return GenSight.LineOfSight(thing.Position, pawn.Position, pawn.Map, skipFirstCell: true);
+		}
+		return false;
 	}
 }

@@ -5,83 +5,82 @@ using System.Xml.Serialization;
 using System.Xml.XPath;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public static class LayerLoader
 {
-	public static class LayerLoader
+	public static void LoadFileIntoList(TextAsset ass, List<DiaNodeMold> NodeListToFill, List<DiaNodeList> ListListToFill, DiaNodeType NodesType)
 	{
-		public static void LoadFileIntoList(TextAsset ass, List<DiaNodeMold> NodeListToFill, List<DiaNodeList> ListListToFill, DiaNodeType NodesType)
+		XPathNavigator xPathNavigator = new XPathDocument(new StringReader(ass.text)).CreateNavigator();
+		xPathNavigator.MoveToFirst();
+		xPathNavigator.MoveToFirstChild();
+		foreach (XPathNavigator item2 in xPathNavigator.Select("Node"))
 		{
-			XPathNavigator xPathNavigator = new XPathDocument(new StringReader(ass.text)).CreateNavigator();
-			xPathNavigator.MoveToFirst();
-			xPathNavigator.MoveToFirstChild();
-			foreach (XPathNavigator item2 in xPathNavigator.Select("Node"))
+			try
 			{
-				try
-				{
-					TextReader textReader = new StringReader(item2.OuterXml);
-					DiaNodeMold diaNodeMold = (DiaNodeMold)new XmlSerializer(typeof(DiaNodeMold)).Deserialize(textReader);
-					diaNodeMold.nodeType = NodesType;
-					NodeListToFill.Add(diaNodeMold);
-					textReader.Dispose();
-				}
-				catch (Exception ex)
-				{
-					Log.Message("Exception deserializing " + item2.OuterXml + ":\n" + ex.InnerException);
-				}
+				TextReader textReader = new StringReader(item2.OuterXml);
+				DiaNodeMold diaNodeMold = (DiaNodeMold)new XmlSerializer(typeof(DiaNodeMold)).Deserialize(textReader);
+				diaNodeMold.nodeType = NodesType;
+				NodeListToFill.Add(diaNodeMold);
+				textReader.Dispose();
 			}
-			foreach (XPathNavigator item3 in xPathNavigator.Select("NodeList"))
+			catch (Exception ex)
 			{
-				try
-				{
-					TextReader textReader2 = new StringReader(item3.OuterXml);
-					DiaNodeList item = (DiaNodeList)new XmlSerializer(typeof(DiaNodeList)).Deserialize(textReader2);
-					ListListToFill.Add(item);
-				}
-				catch (Exception ex2)
-				{
-					Log.Message("Exception deserializing " + item3.OuterXml + ":\n" + ex2.InnerException);
-				}
+				Log.Message("Exception deserializing " + item2.OuterXml + ":\n" + ex.InnerException);
 			}
 		}
-
-		public static void MarkNonRootNodes(List<DiaNodeMold> NodeList)
+		foreach (XPathNavigator item3 in xPathNavigator.Select("NodeList"))
 		{
-			foreach (DiaNodeMold Node in NodeList)
+			try
 			{
-				RecursiveSetIsRootFalse(Node);
+				TextReader textReader2 = new StringReader(item3.OuterXml);
+				DiaNodeList item = (DiaNodeList)new XmlSerializer(typeof(DiaNodeList)).Deserialize(textReader2);
+				ListListToFill.Add(item);
 			}
-			foreach (DiaNodeMold Node2 in NodeList)
+			catch (Exception ex2)
 			{
-				foreach (DiaNodeMold Node3 in NodeList)
+				Log.Message("Exception deserializing " + item3.OuterXml + ":\n" + ex2.InnerException);
+			}
+		}
+	}
+
+	public static void MarkNonRootNodes(List<DiaNodeMold> NodeList)
+	{
+		foreach (DiaNodeMold Node in NodeList)
+		{
+			RecursiveSetIsRootFalse(Node);
+		}
+		foreach (DiaNodeMold Node2 in NodeList)
+		{
+			foreach (DiaNodeMold Node3 in NodeList)
+			{
+				foreach (DiaOptionMold option in Node3.optionList)
 				{
-					foreach (DiaOptionMold option in Node3.optionList)
+					bool flag = false;
+					foreach (string childNodeName in option.ChildNodeNames)
 					{
-						bool flag = false;
-						foreach (string childNodeName in option.ChildNodeNames)
+						if (childNodeName == Node2.name)
 						{
-							if (childNodeName == Node2.name)
-							{
-								flag = true;
-							}
+							flag = true;
 						}
-						if (flag)
-						{
-							Node2.isRoot = false;
-						}
+					}
+					if (flag)
+					{
+						Node2.isRoot = false;
 					}
 				}
 			}
 		}
+	}
 
-		private static void RecursiveSetIsRootFalse(DiaNodeMold d)
+	private static void RecursiveSetIsRootFalse(DiaNodeMold d)
+	{
+		foreach (DiaOptionMold option in d.optionList)
 		{
-			foreach (DiaOptionMold option in d.optionList)
+			foreach (DiaNodeMold childNode in option.ChildNodes)
 			{
-				foreach (DiaNodeMold childNode in option.ChildNodes)
-				{
-					childNode.isRoot = false;
-					RecursiveSetIsRootFalse(childNode);
-				}
+				childNode.isRoot = false;
+				RecursiveSetIsRootFalse(childNode);
 			}
 		}
 	}

@@ -3,133 +3,132 @@ using LudeonTK;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public class WorldFeature : IExposable, ILoadReferenceable
 {
-	public class WorldFeature : IExposable, ILoadReferenceable
+	public int uniqueID;
+
+	public FeatureDef def;
+
+	public PlanetLayer layer;
+
+	public string name;
+
+	public Vector3 drawCenter;
+
+	public float drawAngle;
+
+	public float maxDrawSizeInTiles;
+
+	public float alpha;
+
+	protected static SimpleCurve EffectiveDrawSizeCurve = new SimpleCurve
 	{
-		public int uniqueID;
+		new CurvePoint(10f, 15f),
+		new CurvePoint(25f, 40f),
+		new CurvePoint(50f, 90f),
+		new CurvePoint(100f, 150f),
+		new CurvePoint(200f, 200f)
+	};
 
-		public FeatureDef def;
+	[TweakValue("Interface.World", 0f, 40f)]
+	protected static float FeatureSizePoint10 = 15f;
 
-		public PlanetLayer layer;
+	[TweakValue("Interface.World", 0f, 100f)]
+	protected static float FeatureSizePoint25 = 40f;
 
-		public string name;
+	[TweakValue("Interface.World", 0f, 200f)]
+	protected static float FeatureSizePoint50 = 90f;
 
-		public Vector3 drawCenter;
+	[TweakValue("Interface.World", 0f, 400f)]
+	protected static float FeatureSizePoint100 = 150f;
 
-		public float drawAngle;
+	[TweakValue("Interface.World", 0f, 800f)]
+	protected static float FeatureSizePoint200 = 200f;
 
-		public float maxDrawSizeInTiles;
+	public float EffectiveDrawSize => EffectiveDrawSizeCurve.Evaluate(maxDrawSizeInTiles);
 
-		public float alpha;
-
-		protected static SimpleCurve EffectiveDrawSizeCurve = new SimpleCurve
+	public IEnumerable<int> Tiles
+	{
+		get
 		{
-			new CurvePoint(10f, 15f),
-			new CurvePoint(25f, 40f),
-			new CurvePoint(50f, 90f),
-			new CurvePoint(100f, 150f),
-			new CurvePoint(200f, 200f)
-		};
-
-		[TweakValue("Interface.World", 0f, 40f)]
-		protected static float FeatureSizePoint10 = 15f;
-
-		[TweakValue("Interface.World", 0f, 100f)]
-		protected static float FeatureSizePoint25 = 40f;
-
-		[TweakValue("Interface.World", 0f, 200f)]
-		protected static float FeatureSizePoint50 = 90f;
-
-		[TweakValue("Interface.World", 0f, 400f)]
-		protected static float FeatureSizePoint100 = 150f;
-
-		[TweakValue("Interface.World", 0f, 800f)]
-		protected static float FeatureSizePoint200 = 200f;
-
-		public float EffectiveDrawSize => EffectiveDrawSizeCurve.Evaluate(maxDrawSizeInTiles);
-
-		public IEnumerable<int> Tiles
-		{
-			get
+			WorldGrid worldGrid = Find.WorldGrid;
+			int tilesCount = worldGrid.TilesCount;
+			for (int i = 0; i < tilesCount; i++)
 			{
-				WorldGrid worldGrid = Find.WorldGrid;
-				int tilesCount = worldGrid.TilesCount;
-				for (int i = 0; i < tilesCount; i++)
+				if (worldGrid[i].feature == this)
 				{
-					if (worldGrid[i].feature == this)
-					{
-						yield return i;
-					}
+					yield return i;
 				}
 			}
 		}
+	}
 
-		protected static void FeatureSizePoint10_Changed()
-		{
-			TweakChanged();
-		}
+	protected static void FeatureSizePoint10_Changed()
+	{
+		TweakChanged();
+	}
 
-		protected static void FeatureSizePoint25_Changed()
-		{
-			TweakChanged();
-		}
+	protected static void FeatureSizePoint25_Changed()
+	{
+		TweakChanged();
+	}
 
-		protected static void FeatureSizePoint50_Changed()
-		{
-			TweakChanged();
-		}
+	protected static void FeatureSizePoint50_Changed()
+	{
+		TweakChanged();
+	}
 
-		protected static void FeatureSizePoint100_Changed()
-		{
-			TweakChanged();
-		}
+	protected static void FeatureSizePoint100_Changed()
+	{
+		TweakChanged();
+	}
 
-		protected static void FeatureSizePoint200_Changed()
-		{
-			TweakChanged();
-		}
+	protected static void FeatureSizePoint200_Changed()
+	{
+		TweakChanged();
+	}
 
-		private static void TweakChanged()
-		{
-			Find.WorldFeatures.textsCreated = false;
-			EffectiveDrawSizeCurve[0] = new CurvePoint(EffectiveDrawSizeCurve[0].x, FeatureSizePoint10);
-			EffectiveDrawSizeCurve[1] = new CurvePoint(EffectiveDrawSizeCurve[1].x, FeatureSizePoint25);
-			EffectiveDrawSizeCurve[2] = new CurvePoint(EffectiveDrawSizeCurve[2].x, FeatureSizePoint50);
-			EffectiveDrawSizeCurve[3] = new CurvePoint(EffectiveDrawSizeCurve[3].x, FeatureSizePoint100);
-			EffectiveDrawSizeCurve[4] = new CurvePoint(EffectiveDrawSizeCurve[4].x, FeatureSizePoint200);
-		}
+	private static void TweakChanged()
+	{
+		Find.WorldFeatures.textsCreated = false;
+		EffectiveDrawSizeCurve[0] = new CurvePoint(EffectiveDrawSizeCurve[0].x, FeatureSizePoint10);
+		EffectiveDrawSizeCurve[1] = new CurvePoint(EffectiveDrawSizeCurve[1].x, FeatureSizePoint25);
+		EffectiveDrawSizeCurve[2] = new CurvePoint(EffectiveDrawSizeCurve[2].x, FeatureSizePoint50);
+		EffectiveDrawSizeCurve[3] = new CurvePoint(EffectiveDrawSizeCurve[3].x, FeatureSizePoint100);
+		EffectiveDrawSizeCurve[4] = new CurvePoint(EffectiveDrawSizeCurve[4].x, FeatureSizePoint200);
+	}
 
-		public WorldFeature()
-		{
-		}
+	public WorldFeature()
+	{
+	}
 
-		public WorldFeature(FeatureDef def, PlanetLayer layer)
-		{
-			this.def = def;
-			this.layer = layer;
-			uniqueID = Find.UniqueIDsManager.GetNextWorldFeatureID();
-		}
+	public WorldFeature(FeatureDef def, PlanetLayer layer)
+	{
+		this.def = def;
+		this.layer = layer;
+		uniqueID = Find.UniqueIDsManager.GetNextWorldFeatureID();
+	}
 
-		public void ExposeData()
+	public void ExposeData()
+	{
+		Scribe_Defs.Look(ref def, "def");
+		Scribe_Values.Look(ref uniqueID, "uniqueID", 0);
+		Scribe_Values.Look(ref name, "name");
+		Scribe_Values.Look(ref drawCenter, "drawCenter");
+		Scribe_Values.Look(ref drawAngle, "drawAngle", 0f);
+		Scribe_Values.Look(ref maxDrawSizeInTiles, "maxDrawSizeInTiles", 0f);
+		Scribe_References.Look(ref layer, "layer");
+		if (Scribe.mode == LoadSaveMode.PostLoadInit && layer == null)
 		{
-			Scribe_Defs.Look(ref def, "def");
-			Scribe_Values.Look(ref uniqueID, "uniqueID", 0);
-			Scribe_Values.Look(ref name, "name");
-			Scribe_Values.Look(ref drawCenter, "drawCenter");
-			Scribe_Values.Look(ref drawAngle, "drawAngle", 0f);
-			Scribe_Values.Look(ref maxDrawSizeInTiles, "maxDrawSizeInTiles", 0f);
-			Scribe_References.Look(ref layer, "layer");
-			if (Scribe.mode == LoadSaveMode.PostLoadInit && layer == null)
-			{
-				layer = Find.WorldGrid.Surface;
-			}
-			BackCompatibility.PostExposeData(this);
+			layer = Find.WorldGrid.Surface;
 		}
+		BackCompatibility.PostExposeData(this);
+	}
 
-		public string GetUniqueLoadID()
-		{
-			return "WorldFeature_" + uniqueID;
-		}
+	public string GetUniqueLoadID()
+	{
+		return "WorldFeature_" + uniqueID;
 	}
 }

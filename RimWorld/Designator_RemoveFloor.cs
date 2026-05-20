@@ -1,67 +1,66 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Designator_RemoveFloor : Designator_Cells
 {
-	public class Designator_RemoveFloor : Designator_Cells
+	public override bool DragDrawMeasurements => true;
+
+	public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Floors;
+
+	public Designator_RemoveFloor()
 	{
-		public override bool DragDrawMeasurements => true;
+		defaultLabel = "DesignatorRemoveFloor".Translate();
+		defaultDesc = "DesignatorRemoveFloorDesc".Translate();
+		icon = ContentFinder<Texture2D>.Get("UI/Designators/RemoveFloor");
+		useMouseIcon = true;
+		soundDragSustain = SoundDefOf.Designate_DragStandard;
+		soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
+		soundSucceeded = SoundDefOf.Designate_RemoveFloor;
+		hotKey = KeyBindingDefOf.Misc1;
+	}
 
-		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Floors;
-
-		public Designator_RemoveFloor()
+	public override AcceptanceReport CanDesignateCell(IntVec3 c)
+	{
+		if (!c.InBounds(base.Map) || c.Fogged(base.Map))
 		{
-			defaultLabel = "DesignatorRemoveFloor".Translate();
-			defaultDesc = "DesignatorRemoveFloorDesc".Translate();
-			icon = ContentFinder<Texture2D>.Get("UI/Designators/RemoveFloor");
-			useMouseIcon = true;
-			soundDragSustain = SoundDefOf.Designate_DragStandard;
-			soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
-			soundSucceeded = SoundDefOf.Designate_RemoveFloor;
-			hotKey = KeyBindingDefOf.Misc1;
+			return false;
 		}
-
-		public override AcceptanceReport CanDesignateCell(IntVec3 c)
+		if (base.Map.designationManager.DesignationAt(c, DesignationDefOf.RemoveFloor) != null)
 		{
-			if (!c.InBounds(base.Map) || c.Fogged(base.Map))
-			{
-				return false;
-			}
-			if (base.Map.designationManager.DesignationAt(c, DesignationDefOf.RemoveFloor) != null)
-			{
-				return false;
-			}
-			Building edifice = c.GetEdifice(base.Map);
-			if (edifice != null && edifice.def.Fillage == FillCategory.Full && edifice.def.passability == Traversability.Impassable)
-			{
-				return false;
-			}
-			if (!base.Map.terrainGrid.CanRemoveTopLayerAt(c))
-			{
-				return "TerrainMustBeRemovable".Translate();
-			}
-			if (WorkGiver_ConstructRemoveFloor.AnyBuildingBlockingFloorRemoval(c, base.Map))
-			{
-				return false;
-			}
-			return AcceptanceReport.WasAccepted;
+			return false;
 		}
-
-		public override void DesignateSingleCell(IntVec3 c)
+		Building edifice = c.GetEdifice(base.Map);
+		if (edifice != null && edifice.def.Fillage == FillCategory.Full && edifice.def.passability == Traversability.Impassable)
 		{
-			if (DebugSettings.godMode)
-			{
-				base.Map.terrainGrid.RemoveTopLayer(c);
-			}
-			else
-			{
-				base.Map.designationManager.AddDesignation(new Designation(c, DesignationDefOf.RemoveFloor));
-			}
+			return false;
 		}
-
-		public override void SelectedUpdate()
+		if (!base.Map.terrainGrid.CanRemoveTopLayerAt(c))
 		{
-			GenUI.RenderMouseoverBracket();
+			return "TerrainMustBeRemovable".Translate();
 		}
+		if (WorkGiver_ConstructRemoveFloor.AnyBuildingBlockingFloorRemoval(c, base.Map))
+		{
+			return false;
+		}
+		return AcceptanceReport.WasAccepted;
+	}
+
+	public override void DesignateSingleCell(IntVec3 c)
+	{
+		if (DebugSettings.godMode)
+		{
+			base.Map.terrainGrid.RemoveTopLayer(c);
+		}
+		else
+		{
+			base.Map.designationManager.AddDesignation(new Designation(c, DesignationDefOf.RemoveFloor));
+		}
+	}
+
+	public override void SelectedUpdate()
+	{
+		GenUI.RenderMouseoverBracket();
 	}
 }

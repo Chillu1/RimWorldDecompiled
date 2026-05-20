@@ -1,18 +1,17 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_DisruptorFlare : CompProperties
 {
-	public class CompProperties_DisruptorFlare : CompProperties
+	public float radius;
+
+	public EffecterDef destroyWarningEffecterDef;
+
+	public EffecterDef effecterDef;
+
+	public CompProperties_DisruptorFlare()
 	{
-		public float radius;
-
-		public EffecterDef destroyWarningEffecterDef;
-
-		public EffecterDef effecterDef;
-
-		public CompProperties_DisruptorFlare()
-		{
-			compClass = typeof(CompDisruptorFlare);
-		}
+		compClass = typeof(CompDisruptorFlare);
 	}
 }

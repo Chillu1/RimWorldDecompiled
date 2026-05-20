@@ -1,37 +1,36 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class StorytellerComp_ShipChunkDrop : StorytellerComp
 {
-	public class StorytellerComp_ShipChunkDrop : StorytellerComp
+	private static readonly SimpleCurve ShipChunkDropMTBDaysCurve = new SimpleCurve
 	{
-		private static readonly SimpleCurve ShipChunkDropMTBDaysCurve = new SimpleCurve
-		{
-			new CurvePoint(0f, 20f),
-			new CurvePoint(1f, 40f),
-			new CurvePoint(2f, 80f),
-			new CurvePoint(2.75f, 135f)
-		};
+		new CurvePoint(0f, 20f),
+		new CurvePoint(1f, 40f),
+		new CurvePoint(2f, 80f),
+		new CurvePoint(2.75f, 135f)
+	};
 
-		private float ShipChunkDropMTBDays
+	private float ShipChunkDropMTBDays
+	{
+		get
 		{
-			get
-			{
-				float x = (float)Find.TickManager.TicksGame / 3600000f;
-				return ShipChunkDropMTBDaysCurve.Evaluate(x);
-			}
+			float x = (float)Find.TickManager.TicksGame / 3600000f;
+			return ShipChunkDropMTBDaysCurve.Evaluate(x);
 		}
+	}
 
-		public override IEnumerable<FiringIncident> MakeIntervalIncidents(IIncidentTarget target)
+	public override IEnumerable<FiringIncident> MakeIntervalIncidents(IIncidentTarget target)
+	{
+		if (Rand.MTBEventOccurs(ShipChunkDropMTBDays, 60000f, 1000f))
 		{
-			if (Rand.MTBEventOccurs(ShipChunkDropMTBDays, 60000f, 1000f))
+			IncidentDef shipChunkDrop = IncidentDefOf.ShipChunkDrop;
+			IncidentParms parms = GenerateParms(shipChunkDrop.category, target);
+			if (shipChunkDrop.Worker.CanFireNow(parms))
 			{
-				IncidentDef shipChunkDrop = IncidentDefOf.ShipChunkDrop;
-				IncidentParms parms = GenerateParms(shipChunkDrop.category, target);
-				if (shipChunkDrop.Worker.CanFireNow(parms))
-				{
-					yield return new FiringIncident(shipChunkDrop, this, parms);
-				}
+				yield return new FiringIncident(shipChunkDrop, this, parms);
 			}
 		}
 	}

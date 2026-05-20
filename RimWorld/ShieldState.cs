@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum ShieldState : byte
 {
-	public enum ShieldState : byte
-	{
-		Active,
-		Resetting,
-		Disabled
-	}
+	Active,
+	Resetting,
+	Disabled
 }

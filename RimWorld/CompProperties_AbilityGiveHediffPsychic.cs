@@ -1,6 +1,5 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_AbilityGiveHediffPsychic : CompProperties_AbilityGiveHediff
 {
-	public class CompProperties_AbilityGiveHediffPsychic : CompProperties_AbilityGiveHediff
-	{
-	}
 }

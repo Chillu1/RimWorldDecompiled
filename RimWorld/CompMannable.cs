@@ -2,81 +2,80 @@ using System.Collections.Generic;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompMannable : ThingComp
 {
-	public class CompMannable : ThingComp
+	private int lastManTick = -1;
+
+	private Pawn lastManPawn;
+
+	public bool MannedNow
 	{
-		private int lastManTick = -1;
-
-		private Pawn lastManPawn;
-
-		public bool MannedNow
+		get
 		{
-			get
+			if (Find.TickManager.TicksGame - lastManTick <= 1 && lastManPawn != null)
 			{
-				if (Find.TickManager.TicksGame - lastManTick <= 1 && lastManPawn != null)
-				{
-					return lastManPawn.Spawned;
-				}
-				return false;
+				return lastManPawn.Spawned;
+			}
+			return false;
+		}
+	}
+
+	public Pawn ManningPawn
+	{
+		get
+		{
+			if (!MannedNow)
+			{
+				return null;
+			}
+			return lastManPawn;
+		}
+	}
+
+	public CompProperties_Mannable Props => (CompProperties_Mannable)props;
+
+	public void ManForATick(Pawn pawn)
+	{
+		lastManTick = Find.TickManager.TicksGame;
+		lastManPawn = pawn;
+		pawn.mindState.lastMannedThing = parent;
+	}
+
+	public override string CompInspectStringExtra()
+	{
+		if (parent.Spawned && !Props.planetLayerWhitelist.NullOrEmpty() && !Props.planetLayerWhitelist.Contains(parent.Map.Tile.LayerDef))
+		{
+			return "CannotFunctionOnLayer".Translate(parent.Map.Tile.LayerDef.label).CapitalizeFirst().Colorize(ColoredText.WarningColor);
+		}
+		return null;
+	}
+
+	public override IEnumerable<FloatMenuOption> CompFloatMenuOptions(Pawn pawn)
+	{
+		if (!pawn.RaceProps.ToolUser || !pawn.CanReserveAndReach(parent, PathEndMode.InteractionCell, Danger.Deadly))
+		{
+			yield break;
+		}
+		if (Props.manWorkType != WorkTags.None && pawn.WorkTagIsDisabled(Props.manWorkType))
+		{
+			if (Props.manWorkType == WorkTags.Violent)
+			{
+				yield return new FloatMenuOption("CannotManThing".Translate(parent.LabelShort, parent) + " (" + "IsIncapableOfViolenceLower".Translate(pawn.LabelShort, pawn) + ")", null);
 			}
 		}
-
-		public Pawn ManningPawn
+		else if (!Props.planetLayerWhitelist.NullOrEmpty() && !Props.planetLayerWhitelist.Contains(pawn.Map.Tile.LayerDef))
 		{
-			get
-			{
-				if (!MannedNow)
-				{
-					return null;
-				}
-				return lastManPawn;
-			}
+			yield return new FloatMenuOption("CannotManThing".Translate(parent.LabelShort, parent) + " (" + "CannotFunctionOnLayer".Translate(pawn.Map.Tile.LayerDef.label) + ")", null);
 		}
-
-		public CompProperties_Mannable Props => (CompProperties_Mannable)props;
-
-		public void ManForATick(Pawn pawn)
+		else
 		{
-			lastManTick = Find.TickManager.TicksGame;
-			lastManPawn = pawn;
-			pawn.mindState.lastMannedThing = parent;
-		}
-
-		public override string CompInspectStringExtra()
-		{
-			if (parent.Spawned && !Props.planetLayerWhitelist.NullOrEmpty() && !Props.planetLayerWhitelist.Contains(parent.Map.Tile.LayerDef))
+			yield return new FloatMenuOption("OrderManThing".Translate(parent.LabelShort, parent), delegate
 			{
-				return "CannotFunctionOnLayer".Translate(parent.Map.Tile.LayerDef.label).CapitalizeFirst().Colorize(ColoredText.WarningColor);
-			}
-			return null;
-		}
-
-		public override IEnumerable<FloatMenuOption> CompFloatMenuOptions(Pawn pawn)
-		{
-			if (!pawn.RaceProps.ToolUser || !pawn.CanReserveAndReach(parent, PathEndMode.InteractionCell, Danger.Deadly))
-			{
-				yield break;
-			}
-			if (Props.manWorkType != WorkTags.None && pawn.WorkTagIsDisabled(Props.manWorkType))
-			{
-				if (Props.manWorkType == WorkTags.Violent)
-				{
-					yield return new FloatMenuOption("CannotManThing".Translate(parent.LabelShort, parent) + " (" + "IsIncapableOfViolenceLower".Translate(pawn.LabelShort, pawn) + ")", null);
-				}
-			}
-			else if (!Props.planetLayerWhitelist.NullOrEmpty() && !Props.planetLayerWhitelist.Contains(pawn.Map.Tile.LayerDef))
-			{
-				yield return new FloatMenuOption("CannotManThing".Translate(parent.LabelShort, parent) + " (" + "CannotFunctionOnLayer".Translate(pawn.Map.Tile.LayerDef.label) + ")", null);
-			}
-			else
-			{
-				yield return new FloatMenuOption("OrderManThing".Translate(parent.LabelShort, parent), delegate
-				{
-					Job job = JobMaker.MakeJob(JobDefOf.ManTurret, parent);
-					pawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
-				});
-			}
+				Job job = JobMaker.MakeJob(JobDefOf.ManTurret, parent);
+				pawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
+			});
 		}
 	}
 }

@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_PlantPreventCutting : CompProperties
 {
-	public class CompProperties_PlantPreventCutting : CompProperties
+	public CompProperties_PlantPreventCutting()
 	{
-		public CompProperties_PlantPreventCutting()
-		{
-			compClass = typeof(CompPlantPreventCutting);
-		}
+		compClass = typeof(CompPlantPreventCutting);
 	}
 }

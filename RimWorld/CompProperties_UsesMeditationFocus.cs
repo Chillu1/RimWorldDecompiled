@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_UsesMeditationFocus : CompProperties
 {
-	public class CompProperties_UsesMeditationFocus : CompProperties
+	public CompProperties_UsesMeditationFocus()
 	{
-		public CompProperties_UsesMeditationFocus()
-		{
-			compClass = typeof(CompUsesMeditationFocus);
-		}
+		compClass = typeof(CompUsesMeditationFocus);
 	}
 }

@@ -1,13 +1,12 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public interface IApparelSource : IThingHolder
 {
-	public interface IApparelSource : IThingHolder
-	{
-		Map Map { get; }
+	Map Map { get; }
 
-		bool ApparelSourceEnabled { get; }
+	bool ApparelSourceEnabled { get; }
 
-		bool RemoveApparel(Apparel apparel);
-	}
+	bool RemoveApparel(Apparel apparel);
 }

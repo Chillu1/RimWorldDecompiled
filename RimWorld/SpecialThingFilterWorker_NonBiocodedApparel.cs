@@ -1,21 +1,20 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class SpecialThingFilterWorker_NonBiocodedApparel : SpecialThingFilterWorker
-	{
-		public override bool Matches(Thing t)
-		{
-			if (!t.def.IsApparel)
-			{
-				return false;
-			}
-			return !CompBiocodable.IsBiocoded(t);
-		}
+namespace RimWorld;
 
-		public override bool CanEverMatch(ThingDef def)
+public class SpecialThingFilterWorker_NonBiocodedApparel : SpecialThingFilterWorker
+{
+	public override bool Matches(Thing t)
+	{
+		if (!t.def.IsApparel)
 		{
-			return def.IsApparel;
+			return false;
 		}
+		return !CompBiocodable.IsBiocoded(t);
+	}
+
+	public override bool CanEverMatch(ThingDef def)
+	{
+		return def.IsApparel;
 	}
 }

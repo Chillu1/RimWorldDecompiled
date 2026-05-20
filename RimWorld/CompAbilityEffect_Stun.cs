@@ -1,18 +1,17 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompAbilityEffect_Stun : CompAbilityEffect_WithDuration
 {
-	public class CompAbilityEffect_Stun : CompAbilityEffect_WithDuration
+	public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
 	{
-		public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
+		if (target.HasThing)
 		{
-			if (target.HasThing)
+			base.Apply(target, dest);
+			if (target.Thing is Pawn pawn)
 			{
-				base.Apply(target, dest);
-				if (target.Thing is Pawn pawn)
-				{
-					pawn.stances.stunner.StunFor(GetDurationSeconds(pawn).SecondsToTicks(), parent.pawn, addBattleLog: false);
-				}
+				pawn.stances.stunner.StunFor(GetDurationSeconds(pawn).SecondsToTicks(), parent.pawn, addBattleLog: false);
 			}
 		}
 	}

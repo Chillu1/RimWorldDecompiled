@@ -1,21 +1,20 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public interface IWindowDrawing
 {
-	public interface IWindowDrawing
-	{
-		GUIStyle EmptyStyle { get; }
+	GUIStyle EmptyStyle { get; }
 
-		void DoWindowBackground(Rect rect);
+	void DoWindowBackground(Rect rect);
 
-		bool DoCloseButton(Rect rect, string text);
+	bool DoCloseButton(Rect rect, string text);
 
-		bool DoClostButtonSmall(Rect rect);
+	bool DoClostButtonSmall(Rect rect);
 
-		void BeginGroup(Rect rect);
+	void BeginGroup(Rect rect);
 
-		void EndGroup();
+	void EndGroup();
 
-		void DoGrayOut(Rect rect);
-	}
+	void DoGrayOut(Rect rect);
 }

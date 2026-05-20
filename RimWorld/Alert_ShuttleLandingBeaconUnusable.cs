@@ -2,44 +2,43 @@ using System.Collections.Generic;
 using RimWorld.Planet;
 using Verse;
 
-namespace RimWorld
-{
-	public class Alert_ShuttleLandingBeaconUnusable : Alert
-	{
-		private List<GlobalTargetInfo> targets = new List<GlobalTargetInfo>();
+namespace RimWorld;
 
-		private List<GlobalTargetInfo> Targets
+public class Alert_ShuttleLandingBeaconUnusable : Alert
+{
+	private List<GlobalTargetInfo> targets = new List<GlobalTargetInfo>();
+
+	private List<GlobalTargetInfo> Targets
+	{
+		get
 		{
-			get
+			targets.Clear();
+			List<Map> maps = Find.Maps;
+			for (int i = 0; i < maps.Count; i++)
 			{
-				targets.Clear();
-				List<Map> maps = Find.Maps;
-				for (int i = 0; i < maps.Count; i++)
+				List<Thing> list = maps[i].listerThings.ThingsOfDef(ThingDefOf.ShipLandingBeacon);
+				for (int j = 0; j < list.Count; j++)
 				{
-					List<Thing> list = maps[i].listerThings.ThingsOfDef(ThingDefOf.ShipLandingBeacon);
-					for (int j = 0; j < list.Count; j++)
+					CompShipLandingBeacon compShipLandingBeacon = list[j].TryGetComp<CompShipLandingBeacon>();
+					if (compShipLandingBeacon != null && compShipLandingBeacon.Active && !compShipLandingBeacon.LandingAreas.Any())
 					{
-						CompShipLandingBeacon compShipLandingBeacon = list[j].TryGetComp<CompShipLandingBeacon>();
-						if (compShipLandingBeacon != null && compShipLandingBeacon.Active && !compShipLandingBeacon.LandingAreas.Any())
-						{
-							targets.Add(list[j]);
-						}
+						targets.Add(list[j]);
 					}
 				}
-				return targets;
 			}
+			return targets;
 		}
+	}
 
-		public Alert_ShuttleLandingBeaconUnusable()
-		{
-			defaultLabel = "ShipLandingBeaconUnusable".Translate();
-			defaultExplanation = "ShipLandingBeaconUnusableDesc".Translate();
-			requireRoyalty = true;
-		}
+	public Alert_ShuttleLandingBeaconUnusable()
+	{
+		defaultLabel = "ShipLandingBeaconUnusable".Translate();
+		defaultExplanation = "ShipLandingBeaconUnusableDesc".Translate();
+		requireRoyalty = true;
+	}
 
-		public override AlertReport GetReport()
-		{
-			return AlertReport.CulpritsAre(Targets);
-		}
+	public override AlertReport GetReport()
+	{
+		return AlertReport.CulpritsAre(Targets);
 	}
 }

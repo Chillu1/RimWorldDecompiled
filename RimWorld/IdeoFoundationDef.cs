@@ -1,10 +1,9 @@
 using System;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class IdeoFoundationDef : Def
 {
-	public class IdeoFoundationDef : Def
-	{
-		public Type foundationClass = typeof(IdeoFoundation);
-	}
+	public Type foundationClass = typeof(IdeoFoundation);
 }

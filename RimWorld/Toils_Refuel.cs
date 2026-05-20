@@ -3,28 +3,27 @@ using System.Linq;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Toils_Refuel
 {
-	public class Toils_Refuel
+	public static Toil FinalizeRefueling(TargetIndex refuelableInd, TargetIndex fuelInd)
 	{
-		public static Toil FinalizeRefueling(TargetIndex refuelableInd, TargetIndex fuelInd)
+		Toil toil = ToilMaker.MakeToil("FinalizeRefueling");
+		toil.initAction = delegate
 		{
-			Toil toil = ToilMaker.MakeToil("FinalizeRefueling");
-			toil.initAction = delegate
+			Job curJob = toil.actor.CurJob;
+			Thing thing = curJob.GetTarget(refuelableInd).Thing;
+			if (toil.actor.CurJob.placedThings.NullOrEmpty())
 			{
-				Job curJob = toil.actor.CurJob;
-				Thing thing = curJob.GetTarget(refuelableInd).Thing;
-				if (toil.actor.CurJob.placedThings.NullOrEmpty())
-				{
-					thing.TryGetComp<CompRefuelable>().Refuel(new List<Thing> { curJob.GetTarget(fuelInd).Thing });
-				}
-				else
-				{
-					thing.TryGetComp<CompRefuelable>().Refuel(toil.actor.CurJob.placedThings.Select((ThingCountClass p) => p.thing).ToList());
-				}
-			};
-			toil.defaultCompleteMode = ToilCompleteMode.Instant;
-			return toil;
-		}
+				thing.TryGetComp<CompRefuelable>().Refuel(new List<Thing> { curJob.GetTarget(fuelInd).Thing });
+			}
+			else
+			{
+				thing.TryGetComp<CompRefuelable>().Refuel(toil.actor.CurJob.placedThings.Select((ThingCountClass p) => p.thing).ToList());
+			}
+		};
+		toil.defaultCompleteMode = ToilCompleteMode.Instant;
+		return toil;
 	}
 }

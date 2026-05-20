@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum ActivityState
 {
-	public enum ActivityState
-	{
-		Passive,
-		Active
-	}
+	Passive,
+	Active
 }

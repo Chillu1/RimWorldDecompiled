@@ -1,24 +1,23 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class DamageWatcher : IExposable
 {
-	public class DamageWatcher : IExposable
+	private float everDamage;
+
+	public float DamageTakenEver => everDamage;
+
+	public void Notify_DamageTaken(Thing damagee, float amount)
 	{
-		private float everDamage;
-
-		public float DamageTakenEver => everDamage;
-
-		public void Notify_DamageTaken(Thing damagee, float amount)
+		if (damagee.Faction == Faction.OfPlayer)
 		{
-			if (damagee.Faction == Faction.OfPlayer)
-			{
-				everDamage += amount;
-			}
+			everDamage += amount;
 		}
+	}
 
-		public void ExposeData()
-		{
-			Scribe_Values.Look(ref everDamage, "everDamage", 0f);
-		}
+	public void ExposeData()
+	{
+		Scribe_Values.Look(ref everDamage, "everDamage", 0f);
 	}
 }

@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_RitualSeat : CompProperties
 {
-	public class CompProperties_RitualSeat : CompProperties
+	public CompProperties_RitualSeat()
 	{
-		public CompProperties_RitualSeat()
-		{
-			compClass = typeof(CompRitualSeat);
-		}
+		compClass = typeof(CompRitualSeat);
 	}
 }

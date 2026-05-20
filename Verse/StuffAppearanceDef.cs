@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public class StuffAppearanceDef : Def
 {
-	public class StuffAppearanceDef : Def
-	{
-		public string pathPrefix;
-	}
+	public string pathPrefix;
 }

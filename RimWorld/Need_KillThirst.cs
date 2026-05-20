@@ -1,58 +1,57 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Need_KillThirst : Need
 {
-	public class Need_KillThirst : Need
+	public const float FallPerDay = 1f / 30f;
+
+	private const float MinAgeForNeed = 13f;
+
+	protected override bool IsFrozen
 	{
-		public const float FallPerDay = 1f / 30f;
-
-		private const float MinAgeForNeed = 13f;
-
-		protected override bool IsFrozen
+		get
 		{
-			get
+			if ((float)pawn.ageTracker.AgeBiologicalYears < 13f)
 			{
-				if ((float)pawn.ageTracker.AgeBiologicalYears < 13f)
-				{
-					return true;
-				}
-				return base.IsFrozen;
+				return true;
 			}
+			return base.IsFrozen;
 		}
+	}
 
-		public override bool ShowOnNeedList
+	public override bool ShowOnNeedList
+	{
+		get
 		{
-			get
+			if ((float)pawn.ageTracker.AgeBiologicalYears < 13f)
 			{
-				if ((float)pawn.ageTracker.AgeBiologicalYears < 13f)
-				{
-					return false;
-				}
-				return base.ShowOnNeedList;
+				return false;
 			}
+			return base.ShowOnNeedList;
 		}
+	}
 
-		public Need_KillThirst(Pawn newPawn)
-			: base(newPawn)
+	public Need_KillThirst(Pawn newPawn)
+		: base(newPawn)
+	{
+		threshPercents = new List<float> { 0.3f };
+	}
+
+	public override void NeedInterval()
+	{
+		if (!IsFrozen)
 		{
-			threshPercents = new List<float> { 0.3f };
+			CurLevel -= 8.333333E-05f;
 		}
+	}
 
-		public override void NeedInterval()
+	public void Notify_KilledPawn(DamageInfo? dinfo)
+	{
+		if (dinfo.HasValue && (dinfo?.WeaponBodyPartGroup != null || dinfo?.WeaponLinkedHediff != null || (dinfo.Value.Weapon != null && dinfo.Value.Weapon.IsMeleeWeapon)))
 		{
-			if (!IsFrozen)
-			{
-				CurLevel -= 8.333333E-05f;
-			}
-		}
-
-		public void Notify_KilledPawn(DamageInfo? dinfo)
-		{
-			if (dinfo.HasValue && (dinfo?.WeaponBodyPartGroup != null || dinfo?.WeaponLinkedHediff != null || (dinfo.Value.Weapon != null && dinfo.Value.Weapon.IsMeleeWeapon)))
-			{
-				CurLevel = 1f;
-			}
+			CurLevel = 1f;
 		}
 	}
 }

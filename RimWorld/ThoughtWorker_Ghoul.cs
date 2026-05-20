@@ -1,24 +1,23 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_Ghoul : ThoughtWorker
 {
-	public class ThoughtWorker_Ghoul : ThoughtWorker
+	protected override ThoughtState CurrentSocialStateInternal(Pawn p, Pawn other)
 	{
-		protected override ThoughtState CurrentSocialStateInternal(Pawn p, Pawn other)
+		if (!ModsConfig.AnomalyActive)
 		{
-			if (!ModsConfig.AnomalyActive)
-			{
-				return false;
-			}
-			if (!p.RaceProps.Humanlike)
-			{
-				return false;
-			}
-			if (!RelationsUtility.PawnsKnowEachOther(p, other))
-			{
-				return false;
-			}
-			return other.IsGhoul;
+			return false;
 		}
+		if (!p.RaceProps.Humanlike)
+		{
+			return false;
+		}
+		if (!RelationsUtility.PawnsKnowEachOther(p, other))
+		{
+			return false;
+		}
+		return other.IsGhoul;
 	}
 }

@@ -1,17 +1,16 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThinkNode_ConditionalHiveCanReproduce : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalHiveCanReproduce : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
+		if (pawn.mindState.duty.focus.Thing is Hive hive)
 		{
-			if (pawn.mindState.duty.focus.Thing is Hive hive)
-			{
-				return hive.GetComp<CompSpawnerHives>().canSpawnHives;
-			}
-			return false;
+			return hive.GetComp<CompSpawnerHives>().canSpawnHives;
 		}
+		return false;
 	}
 }

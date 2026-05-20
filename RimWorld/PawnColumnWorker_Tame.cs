@@ -1,29 +1,28 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class PawnColumnWorker_Tame : PawnColumnWorker_Designator
 {
-	public class PawnColumnWorker_Tame : PawnColumnWorker_Designator
+	protected override DesignationDef DesignationType => DesignationDefOf.Tame;
+
+	protected override string GetTip(Pawn pawn)
 	{
-		protected override DesignationDef DesignationType => DesignationDefOf.Tame;
+		return "DesignatorTameDesc".Translate();
+	}
 
-		protected override string GetTip(Pawn pawn)
+	protected override bool HasCheckbox(Pawn pawn)
+	{
+		if (TameUtility.CanTame(pawn))
 		{
-			return "DesignatorTameDesc".Translate();
+			return pawn.SpawnedOrAnyParentSpawned;
 		}
+		return false;
+	}
 
-		protected override bool HasCheckbox(Pawn pawn)
-		{
-			if (TameUtility.CanTame(pawn))
-			{
-				return pawn.SpawnedOrAnyParentSpawned;
-			}
-			return false;
-		}
-
-		protected override void Notify_DesignationAdded(Pawn pawn)
-		{
-			pawn.MapHeld.designationManager.TryRemoveDesignationOn(pawn, DesignationDefOf.Hunt);
-			TameUtility.ShowDesignationWarnings(pawn);
-		}
+	protected override void Notify_DesignationAdded(Pawn pawn)
+	{
+		pawn.MapHeld.designationManager.TryRemoveDesignationOn(pawn, DesignationDefOf.Hunt);
+		TameUtility.ShowDesignationWarnings(pawn);
 	}
 }

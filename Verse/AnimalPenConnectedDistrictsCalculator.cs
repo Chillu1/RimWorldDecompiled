@@ -1,72 +1,71 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Verse
+namespace Verse;
+
+public class AnimalPenConnectedDistrictsCalculator : AnimalPenEnclosureCalculator
 {
-	public class AnimalPenConnectedDistrictsCalculator : AnimalPenEnclosureCalculator
+	private readonly List<District> districtsTmp = new List<District>();
+
+	private static readonly Dictionary<District, List<District>> connectedDistrictsForRootCached = new Dictionary<District, List<District>>();
+
+	private static int connectedDistrictsForRootCachedTick = -1;
+
+	protected override void VisitDirectlyConnectedRegion(Region r)
 	{
-		private readonly List<District> districtsTmp = new List<District>();
+		AddDistrict(r);
+	}
 
-		private static readonly Dictionary<District, List<District>> connectedDistrictsForRootCached = new Dictionary<District, List<District>>();
+	protected override void VisitIndirectlyDirectlyConnectedRegion(Region r)
+	{
+		AddDistrict(r);
+	}
 
-		private static int connectedDistrictsForRootCachedTick = -1;
+	protected override void VisitPassableDoorway(Region r)
+	{
+		AddDistrict(r);
+	}
 
-		protected override void VisitDirectlyConnectedRegion(Region r)
+	private void AddDistrict(Region r)
+	{
+		District district = r.District;
+		if (!districtsTmp.Contains(district))
 		{
-			AddDistrict(r);
+			districtsTmp.Add(district);
 		}
+	}
 
-		protected override void VisitIndirectlyDirectlyConnectedRegion(Region r)
-		{
-			AddDistrict(r);
-		}
+	public static void InvalidateDistrictCache(District district)
+	{
+		connectedDistrictsForRootCached.Remove(district);
+	}
 
-		protected override void VisitPassableDoorway(Region r)
+	public List<District> CalculateConnectedDistricts(IntVec3 position, Map map)
+	{
+		District district = position.GetDistrict(map);
+		if (Find.TickManager.TicksGame == connectedDistrictsForRootCachedTick)
 		{
-			AddDistrict(r);
-		}
-
-		private void AddDistrict(Region r)
-		{
-			District district = r.District;
-			if (!districtsTmp.Contains(district))
+			if (connectedDistrictsForRootCached.ContainsKey(district))
 			{
-				districtsTmp.Add(district);
+				return connectedDistrictsForRootCached[district];
 			}
 		}
-
-		public static void InvalidateDistrictCache(District district)
+		else
 		{
-			connectedDistrictsForRootCached.Remove(district);
+			connectedDistrictsForRootCached.Clear();
+			connectedDistrictsForRootCachedTick = Find.TickManager.TicksGame;
 		}
-
-		public List<District> CalculateConnectedDistricts(IntVec3 position, Map map)
-		{
-			District district = position.GetDistrict(map);
-			if (Find.TickManager.TicksGame == connectedDistrictsForRootCachedTick)
-			{
-				if (connectedDistrictsForRootCached.ContainsKey(district))
-				{
-					return connectedDistrictsForRootCached[district];
-				}
-			}
-			else
-			{
-				connectedDistrictsForRootCached.Clear();
-				connectedDistrictsForRootCachedTick = Find.TickManager.TicksGame;
-			}
-			districtsTmp.Clear();
-			if (!VisitPen(position, map))
-			{
-				districtsTmp.Clear();
-			}
-			connectedDistrictsForRootCached[district] = districtsTmp.ToList();
-			return districtsTmp;
-		}
-
-		public void Reset()
+		districtsTmp.Clear();
+		if (!VisitPen(position, map))
 		{
 			districtsTmp.Clear();
 		}
+		connectedDistrictsForRootCached[district] = districtsTmp.ToList();
+		return districtsTmp;
+	}
+
+	public void Reset()
+	{
+		districtsTmp.Clear();
 	}
 }

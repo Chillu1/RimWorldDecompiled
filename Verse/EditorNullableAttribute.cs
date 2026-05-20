@@ -1,9 +1,8 @@
 using System;
 
-namespace Verse
+namespace Verse;
+
+[AttributeUsage(AttributeTargets.Field)]
+public class EditorNullableAttribute : Attribute
 {
-	[AttributeUsage(AttributeTargets.Field)]
-	public class EditorNullableAttribute : Attribute
-	{
-	}
 }

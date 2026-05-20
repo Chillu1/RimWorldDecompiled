@@ -1,16 +1,15 @@
-namespace RimWorld
+namespace RimWorld;
+
+[DefOf]
+public static class PlanetLayerDefOf
 {
-	[DefOf]
-	public static class PlanetLayerDefOf
+	public static PlanetLayerDef Surface;
+
+	[MayRequireOdyssey]
+	public static PlanetLayerDef Orbit;
+
+	static PlanetLayerDefOf()
 	{
-		public static PlanetLayerDef Surface;
-
-		[MayRequireOdyssey]
-		public static PlanetLayerDef Orbit;
-
-		static PlanetLayerDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(PlanetLayerDefOf));
-		}
+		DefOfHelper.EnsureInitializedInCtor(typeof(PlanetLayerDefOf));
 	}
 }

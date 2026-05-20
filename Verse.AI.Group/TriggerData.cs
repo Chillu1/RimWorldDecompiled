@@ -1,7 +1,6 @@
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public abstract class TriggerData : IExposable
 {
-	public abstract class TriggerData : IExposable
-	{
-		public abstract void ExposeData();
-	}
+	public abstract void ExposeData();
 }

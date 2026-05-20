@@ -1,21 +1,20 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Designator_AreaHomeExpand : Designator_AreaHome
 {
-	public class Designator_AreaHomeExpand : Designator_AreaHome
+	public Designator_AreaHomeExpand()
+		: base(DesignateMode.Add)
 	{
-		public Designator_AreaHomeExpand()
-			: base(DesignateMode.Add)
-		{
-			defaultLabel = "DesignatorAreaHomeExpand".Translate();
-			defaultDesc = "DesignatorAreaHomeExpandDesc".Translate();
-			icon = ContentFinder<Texture2D>.Get("UI/Designators/HomeAreaOn");
-			soundDragSustain = SoundDefOf.Designate_DragAreaAdd;
-			soundDragChanged = SoundDefOf.Designate_DragZone_Changed;
-			soundSucceeded = SoundDefOf.Designate_ZoneAdd;
-			tutorTag = "AreaHomeExpand";
-			hotKey = KeyBindingDefOf.Misc4;
-		}
+		defaultLabel = "DesignatorAreaHomeExpand".Translate();
+		defaultDesc = "DesignatorAreaHomeExpandDesc".Translate();
+		icon = ContentFinder<Texture2D>.Get("UI/Designators/HomeAreaOn");
+		soundDragSustain = SoundDefOf.Designate_DragAreaAdd;
+		soundDragChanged = SoundDefOf.Designate_DragZone_Changed;
+		soundSucceeded = SoundDefOf.Designate_ZoneAdd;
+		tutorTag = "AreaHomeExpand";
+		hotKey = KeyBindingDefOf.Misc4;
 	}
 }

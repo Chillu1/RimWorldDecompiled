@@ -1,36 +1,35 @@
 using System;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class GoodwillSituationDef : Def
 {
-	public class GoodwillSituationDef : Def
+	public Type workerClass = typeof(GoodwillSituationWorker);
+
+	public int baseMaxGoodwill = 100;
+
+	public MemeDef meme;
+
+	public MemeDef otherMeme;
+
+	public int naturalGoodwillOffset;
+
+	public bool versusAll;
+
+	[Unsaved(false)]
+	private GoodwillSituationWorker workerInt;
+
+	public GoodwillSituationWorker Worker
 	{
-		public Type workerClass = typeof(GoodwillSituationWorker);
-
-		public int baseMaxGoodwill = 100;
-
-		public MemeDef meme;
-
-		public MemeDef otherMeme;
-
-		public int naturalGoodwillOffset;
-
-		public bool versusAll;
-
-		[Unsaved(false)]
-		private GoodwillSituationWorker workerInt;
-
-		public GoodwillSituationWorker Worker
+		get
 		{
-			get
+			if (workerInt == null)
 			{
-				if (workerInt == null)
-				{
-					workerInt = (GoodwillSituationWorker)Activator.CreateInstance(workerClass);
-					workerInt.def = this;
-				}
-				return workerInt;
+				workerInt = (GoodwillSituationWorker)Activator.CreateInstance(workerClass);
+				workerInt.def = this;
 			}
+			return workerInt;
 		}
 	}
 }

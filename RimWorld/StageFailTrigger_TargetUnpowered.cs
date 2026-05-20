@@ -1,29 +1,28 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class StageFailTrigger_TargetUnpowered : StageFailTrigger
 {
-	public class StageFailTrigger_TargetUnpowered : StageFailTrigger
+	public ThingDef onlyIfTargetIsOfDef;
+
+	public override bool Failed(LordJob_Ritual ritual, TargetInfo spot, TargetInfo focus)
 	{
-		public ThingDef onlyIfTargetIsOfDef;
-
-		public override bool Failed(LordJob_Ritual ritual, TargetInfo spot, TargetInfo focus)
+		if (onlyIfTargetIsOfDef != null && ritual.selectedTarget.Thing?.def != onlyIfTargetIsOfDef)
 		{
-			if (onlyIfTargetIsOfDef != null && ritual.selectedTarget.Thing?.def != onlyIfTargetIsOfDef)
-			{
-				return false;
-			}
-			CompPowerTrader compPowerTrader = ritual.selectedTarget.Thing?.TryGetComp<CompPowerTrader>();
-			if (compPowerTrader != null)
-			{
-				return !compPowerTrader.PowerOn;
-			}
-			return true;
+			return false;
 		}
-
-		public override void ExposeData()
+		CompPowerTrader compPowerTrader = ritual.selectedTarget.Thing?.TryGetComp<CompPowerTrader>();
+		if (compPowerTrader != null)
 		{
-			base.ExposeData();
-			Scribe_Defs.Look(ref onlyIfTargetIsOfDef, "onlyIfTargetIsOfDef");
+			return !compPowerTrader.PowerOn;
 		}
+		return true;
+	}
+
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Defs.Look(ref onlyIfTargetIsOfDef, "onlyIfTargetIsOfDef");
 	}
 }

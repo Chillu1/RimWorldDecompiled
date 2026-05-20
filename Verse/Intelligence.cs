@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum Intelligence : byte
 {
-	public enum Intelligence : byte
-	{
-		Animal,
-		ToolUser,
-		Humanlike
-	}
+	Animal,
+	ToolUser,
+	Humanlike
 }

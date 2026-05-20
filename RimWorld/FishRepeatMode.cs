@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum FishRepeatMode
 {
-	public enum FishRepeatMode
-	{
-		RepeatCount,
-		TargetCount,
-		DoForever
-	}
+	RepeatCount,
+	TargetCount,
+	DoForever
 }

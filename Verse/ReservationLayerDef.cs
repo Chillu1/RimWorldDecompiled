@@ -1,6 +1,5 @@
-namespace Verse
+namespace Verse;
+
+public class ReservationLayerDef : Def
 {
-	public class ReservationLayerDef : Def
-	{
-	}
 }

@@ -1,13 +1,12 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class MiscDamage
 {
-	public class MiscDamage
-	{
-		public DamageDef damage;
+	public DamageDef damage;
 
-		public List<BodyPartGroupDef> groups = new List<BodyPartGroupDef>();
+	public List<BodyPartGroupDef> groups = new List<BodyPartGroupDef>();
 
-		public float? chance;
-	}
+	public float? chance;
 }

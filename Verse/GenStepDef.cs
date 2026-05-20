@@ -1,22 +1,21 @@
 using System.Collections.Generic;
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class GenStepDef : Def
 {
-	public class GenStepDef : Def
+	public SitePartDef linkWithSite;
+
+	public float order;
+
+	public GenStep genStep;
+
+	public List<GenStepDef> preventsGenSteps;
+
+	public override void PostLoad()
 	{
-		public SitePartDef linkWithSite;
-
-		public float order;
-
-		public GenStep genStep;
-
-		public List<GenStepDef> preventsGenSteps;
-
-		public override void PostLoad()
-		{
-			base.PostLoad();
-			genStep.def = this;
-		}
+		base.PostLoad();
+		genStep.def = this;
 	}
 }

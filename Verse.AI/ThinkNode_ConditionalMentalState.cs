@@ -1,24 +1,23 @@
-namespace Verse.AI
+namespace Verse.AI;
+
+public class ThinkNode_ConditionalMentalState : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalMentalState : ThinkNode_Conditional
+	public MentalStateDef state;
+
+	public override ThinkNode DeepCopy(bool resolve = true)
 	{
-		public MentalStateDef state;
+		ThinkNode_ConditionalMentalState obj = (ThinkNode_ConditionalMentalState)base.DeepCopy(resolve);
+		obj.state = state;
+		return obj;
+	}
 
-		public override ThinkNode DeepCopy(bool resolve = true)
+	protected override bool Satisfied(Pawn pawn)
+	{
+		MentalStateDef mentalStateDef = pawn.MentalStateDef;
+		if (mentalStateDef != null)
 		{
-			ThinkNode_ConditionalMentalState obj = (ThinkNode_ConditionalMentalState)base.DeepCopy(resolve);
-			obj.state = state;
-			return obj;
+			return mentalStateDef == state;
 		}
-
-		protected override bool Satisfied(Pawn pawn)
-		{
-			MentalStateDef mentalStateDef = pawn.MentalStateDef;
-			if (mentalStateDef != null)
-			{
-				return mentalStateDef == state;
-			}
-			return false;
-		}
+		return false;
 	}
 }

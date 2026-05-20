@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_RitualSignalSender : CompProperties
 {
-	public class CompProperties_RitualSignalSender : CompProperties
+	public CompProperties_RitualSignalSender()
 	{
-		public CompProperties_RitualSignalSender()
-		{
-			compClass = typeof(CompRitualSignalSender);
-		}
+		compClass = typeof(CompRitualSignalSender);
 	}
 }

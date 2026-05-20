@@ -1,15 +1,14 @@
 using RimWorld.BaseGen;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class GenStep_AncientComplex_Mechanitor : GenStep_AncientComplex
 {
-	public class GenStep_AncientComplex_Mechanitor : GenStep_AncientComplex
+	protected override void GenerateComplex(Map map, ResolveParams parms)
 	{
-		protected override void GenerateComplex(Map map, ResolveParams parms)
-		{
-			RimWorld.BaseGen.BaseGen.globalSettings.map = map;
-			RimWorld.BaseGen.BaseGen.symbolStack.Push("ancientMechanitorComplex", parms);
-			RimWorld.BaseGen.BaseGen.Generate();
-		}
+		RimWorld.BaseGen.BaseGen.globalSettings.map = map;
+		RimWorld.BaseGen.BaseGen.symbolStack.Push("ancientMechanitorComplex", parms);
+		RimWorld.BaseGen.BaseGen.Generate();
 	}
 }

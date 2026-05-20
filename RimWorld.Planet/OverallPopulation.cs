@@ -1,13 +1,12 @@
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public enum OverallPopulation
 {
-	public enum OverallPopulation
-	{
-		AlmostNone,
-		Little,
-		LittleBitLess,
-		Normal,
-		LittleBitMore,
-		High,
-		VeryHigh
-	}
+	AlmostNone,
+	Little,
+	LittleBitLess,
+	Normal,
+	LittleBitMore,
+	High,
+	VeryHigh
 }

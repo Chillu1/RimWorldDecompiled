@@ -1,9 +1,8 @@
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public enum CaravanEnterMode
 {
-	public enum CaravanEnterMode
-	{
-		None,
-		Edge,
-		Center
-	}
+	None,
+	Edge,
+	Center
 }

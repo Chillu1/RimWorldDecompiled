@@ -1,20 +1,19 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_WatchTelevision : JobDriver_WatchBuilding
 {
-	public class JobDriver_WatchTelevision : JobDriver_WatchBuilding
+	protected override void WatchTickAction(int delta)
 	{
-		protected override void WatchTickAction(int delta)
+		if (!((Building)base.TargetA.Thing).TryGetComp<CompPowerTrader>().PowerOn)
 		{
-			if (!((Building)base.TargetA.Thing).TryGetComp<CompPowerTrader>().PowerOn)
-			{
-				EndJobWith(JobCondition.Incompletable);
-			}
-			else
-			{
-				base.WatchTickAction(delta);
-			}
+			EndJobWith(JobCondition.Incompletable);
+		}
+		else
+		{
+			base.WatchTickAction(delta);
 		}
 	}
 }

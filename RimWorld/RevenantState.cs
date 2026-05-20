@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum RevenantState
 {
-	public enum RevenantState
-	{
-		Wander,
-		Attack,
-		Escape,
-		Sleep
-	}
+	Wander,
+	Attack,
+	Escape,
+	Sleep
 }

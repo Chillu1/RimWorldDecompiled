@@ -1,44 +1,43 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class StatPart_WorkTableOutdoors : StatPart
 {
-	public class StatPart_WorkTableOutdoors : StatPart
+	public const float WorkRateFactor = 0.8f;
+
+	public override void TransformValue(StatRequest req, ref float val)
 	{
-		public const float WorkRateFactor = 0.8f;
-
-		public override void TransformValue(StatRequest req, ref float val)
+		if (req.HasThing && Applies(req.Thing))
 		{
-			if (req.HasThing && Applies(req.Thing))
-			{
-				val *= 0.8f;
-			}
+			val *= 0.8f;
 		}
+	}
 
-		public override string ExplanationPart(StatRequest req)
+	public override string ExplanationPart(StatRequest req)
+	{
+		if (req.HasThing && Applies(req.Thing))
 		{
-			if (req.HasThing && Applies(req.Thing))
-			{
-				return "Outdoors".Translate().CapitalizeFirst() + ": x" + 0.8f.ToStringPercent();
-			}
-			return null;
+			return "Outdoors".Translate().CapitalizeFirst() + ": x" + 0.8f.ToStringPercent();
 		}
+		return null;
+	}
 
-		public static bool Applies(Thing t)
-		{
-			return Applies(t.def, t.Map, t.Position);
-		}
+	public static bool Applies(Thing t)
+	{
+		return Applies(t.def, t.Map, t.Position);
+	}
 
-		public static bool Applies(ThingDef def, Map map, IntVec3 c)
+	public static bool Applies(ThingDef def, Map map, IntVec3 c)
+	{
+		if (def.building == null)
 		{
-			if (def.building == null)
-			{
-				return false;
-			}
-			if (map == null)
-			{
-				return false;
-			}
-			return c.GetRoom(map)?.PsychologicallyOutdoors ?? false;
+			return false;
 		}
+		if (map == null)
+		{
+			return false;
+		}
+		return c.GetRoom(map)?.PsychologicallyOutdoors ?? false;
 	}
 }

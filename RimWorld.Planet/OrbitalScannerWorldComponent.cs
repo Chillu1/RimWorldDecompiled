@@ -1,59 +1,58 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public class OrbitalScannerWorldComponent : WorldComponent
 {
-	public class OrbitalScannerWorldComponent : WorldComponent
+	private int lastFoundSignal = -1;
+
+	private List<CompOrbitalScanner> workingScanners = new List<CompOrbitalScanner>();
+
+	private const int FindSignalMTBTicks = 60000;
+
+	private const int FindSignalCooldownTicks = 1080000;
+
+	private bool OnCooldown
 	{
-		private int lastFoundSignal = -1;
-
-		private List<CompOrbitalScanner> workingScanners = new List<CompOrbitalScanner>();
-
-		private const int FindSignalMTBTicks = 60000;
-
-		private const int FindSignalCooldownTicks = 1080000;
-
-		private bool OnCooldown
+		get
 		{
-			get
+			if (lastFoundSignal > 0)
 			{
-				if (lastFoundSignal > 0)
-				{
-					return Find.TickManager.TicksGame < lastFoundSignal + 1080000;
-				}
-				return false;
+				return Find.TickManager.TicksGame < lastFoundSignal + 1080000;
 			}
+			return false;
 		}
+	}
 
-		public OrbitalScannerWorldComponent(World world)
-			: base(world)
-		{
-		}
+	public OrbitalScannerWorldComponent(World world)
+		: base(world)
+	{
+	}
 
-		public override void ExposeData()
-		{
-			Scribe_Values.Look(ref lastFoundSignal, "lastFoundSignal", 0);
-		}
+	public override void ExposeData()
+	{
+		Scribe_Values.Look(ref lastFoundSignal, "lastFoundSignal", 0);
+	}
 
-		public override void WorldComponentTick()
+	public override void WorldComponentTick()
+	{
+		if (!OnCooldown && !workingScanners.Empty())
 		{
-			if (!OnCooldown && !workingScanners.Empty())
+			if (Rand.MTBEventOccurs(60000f, 1f, 1f))
 			{
-				if (Rand.MTBEventOccurs(60000f, 1f, 1f))
-				{
-					workingScanners.RandomElement().ReceiveSignal();
-					lastFoundSignal = Find.TickManager.TicksGame;
-				}
-				workingScanners.Clear();
+				workingScanners.RandomElement().ReceiveSignal();
+				lastFoundSignal = Find.TickManager.TicksGame;
 			}
+			workingScanners.Clear();
 		}
+	}
 
-		public void Notify_ScannerWorking(CompOrbitalScanner scanner)
+	public void Notify_ScannerWorking(CompOrbitalScanner scanner)
+	{
+		if (!OnCooldown)
 		{
-			if (!OnCooldown)
-			{
-				workingScanners.Add(scanner);
-			}
+			workingScanners.Add(scanner);
 		}
 	}
 }

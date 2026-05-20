@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_Precept_IsApostate_Social : ThoughtWorker_Precept_Social
 {
-	public class ThoughtWorker_Precept_IsApostate_Social : ThoughtWorker_Precept_Social
+	protected override ThoughtState ShouldHaveThought(Pawn p, Pawn otherPawn)
 	{
-		protected override ThoughtState ShouldHaveThought(Pawn p, Pawn otherPawn)
-		{
-			return otherPawn.ideo != null && otherPawn.Ideo != p.Ideo && otherPawn.ideo.PreviousIdeos.Contains(p.Ideo);
-		}
+		return otherPawn.ideo != null && otherPawn.Ideo != p.Ideo && otherPawn.ideo.PreviousIdeos.Contains(p.Ideo);
 	}
 }

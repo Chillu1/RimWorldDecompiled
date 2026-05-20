@@ -2,68 +2,67 @@ using System.Linq;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_GetAnimalToHunt : QuestNode
 {
-	public class QuestNode_GetAnimalToHunt : QuestNode
+	[NoTranslate]
+	public SlateRef<string> storeAnimalToHuntAs;
+
+	[NoTranslate]
+	public SlateRef<string> storeCountToHuntAs;
+
+	public SlateRef<SimpleCurve> pointsToAnimalsToHuntCountCurve;
+
+	public SlateRef<SimpleCurve> pointsToAnimalDifficultyCurve;
+
+	public SlateRef<FloatRange?> animalsToHuntCountRandomFactorRange;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		[NoTranslate]
-		public SlateRef<string> storeAnimalToHuntAs;
+		return DoWork(slate);
+	}
 
-		[NoTranslate]
-		public SlateRef<string> storeCountToHuntAs;
+	protected override void RunInt()
+	{
+		DoWork(QuestGen.slate);
+	}
 
-		public SlateRef<SimpleCurve> pointsToAnimalsToHuntCountCurve;
-
-		public SlateRef<SimpleCurve> pointsToAnimalDifficultyCurve;
-
-		public SlateRef<FloatRange?> animalsToHuntCountRandomFactorRange;
-
-		protected override bool TestRunInt(Slate slate)
+	private bool DoWork(Slate slate)
+	{
+		Map map = slate.Get<Map>("map");
+		if (map == null)
 		{
-			return DoWork(slate);
+			return false;
 		}
-
-		protected override void RunInt()
+		float x = slate.Get("points", 0f);
+		float animalDifficultyFromPoints = pointsToAnimalDifficultyCurve.GetValue(slate).Evaluate(x);
+		if (!map.Biome.AllWildAnimals.Where((PawnKindDef pawnKindDef) => map.mapTemperature.SeasonAndOutdoorTemperatureAcceptableFor(pawnKindDef.race) && map.listerThings.ThingsOfDef(pawnKindDef.race).Any((Thing p) => p.Faction == null)).TryRandomElementByWeight((PawnKindDef animalKind) => AnimalCommonalityByDifficulty(animalKind, animalDifficultyFromPoints), out var result))
 		{
-			DoWork(QuestGen.slate);
+			return false;
 		}
-
-		private bool DoWork(Slate slate)
+		int num = 0;
+		for (int num2 = 0; num2 < map.mapPawns.AllPawnsSpawned.Count; num2++)
 		{
-			Map map = slate.Get<Map>("map");
-			if (map == null)
+			Pawn pawn = map.mapPawns.AllPawnsSpawned[num2];
+			if (pawn.def == result.race && !pawn.IsQuestLodger() && pawn.Faction == null)
 			{
-				return false;
+				num++;
 			}
-			float x = slate.Get("points", 0f);
-			float animalDifficultyFromPoints = pointsToAnimalDifficultyCurve.GetValue(slate).Evaluate(x);
-			if (!map.Biome.AllWildAnimals.Where((PawnKindDef pawnKindDef) => map.mapTemperature.SeasonAndOutdoorTemperatureAcceptableFor(pawnKindDef.race) && map.listerThings.ThingsOfDef(pawnKindDef.race).Any((Thing p) => p.Faction == null)).TryRandomElementByWeight((PawnKindDef animalKind) => AnimalCommonalityByDifficulty(animalKind, animalDifficultyFromPoints), out var result))
-			{
-				return false;
-			}
-			int num = 0;
-			for (int num2 = 0; num2 < map.mapPawns.AllPawnsSpawned.Count; num2++)
-			{
-				Pawn pawn = map.mapPawns.AllPawnsSpawned[num2];
-				if (pawn.def == result.race && !pawn.IsQuestLodger() && pawn.Faction == null)
-				{
-					num++;
-				}
-			}
-			SimpleCurve value = pointsToAnimalsToHuntCountCurve.GetValue(slate);
-			float randomInRange = (animalsToHuntCountRandomFactorRange.GetValue(slate) ?? FloatRange.One).RandomInRange;
-			int a = Mathf.RoundToInt(value.Evaluate(x) * randomInRange);
-			a = Mathf.Min(a, num);
-			a = Mathf.Max(a, 1);
-			slate.Set(storeAnimalToHuntAs.GetValue(slate), result.race);
-			slate.Set(storeCountToHuntAs.GetValue(slate), a);
-			return true;
 		}
+		SimpleCurve value = pointsToAnimalsToHuntCountCurve.GetValue(slate);
+		float randomInRange = (animalsToHuntCountRandomFactorRange.GetValue(slate) ?? FloatRange.One).RandomInRange;
+		int a = Mathf.RoundToInt(value.Evaluate(x) * randomInRange);
+		a = Mathf.Min(a, num);
+		a = Mathf.Max(a, 1);
+		slate.Set(storeAnimalToHuntAs.GetValue(slate), result.race);
+		slate.Set(storeCountToHuntAs.GetValue(slate), a);
+		return true;
+	}
 
-		private float AnimalCommonalityByDifficulty(PawnKindDef animalKind, float animalDifficultyFromPoints)
-		{
-			float num = Mathf.Abs(animalKind.GetAnimalPointsToHuntOrSlaughter() - animalDifficultyFromPoints);
-			return 1f / num;
-		}
+	private float AnimalCommonalityByDifficulty(PawnKindDef animalKind, float animalDifficultyFromPoints)
+	{
+		float num = Mathf.Abs(animalKind.GetAnimalPointsToHuntOrSlaughter() - animalDifficultyFromPoints);
+		return 1f / num;
 	}
 }

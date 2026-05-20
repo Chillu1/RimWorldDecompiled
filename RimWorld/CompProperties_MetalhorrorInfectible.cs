@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_MetalhorrorInfectible : CompProperties
 {
-	public class CompProperties_MetalhorrorInfectible : CompProperties
+	public CompProperties_MetalhorrorInfectible()
 	{
-		public CompProperties_MetalhorrorInfectible()
-		{
-			compClass = typeof(CompMetalhorrorInfectible);
-		}
+		compClass = typeof(CompMetalhorrorInfectible);
 	}
 }

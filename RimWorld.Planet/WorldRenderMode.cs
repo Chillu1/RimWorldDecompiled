@@ -1,9 +1,8 @@
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public enum WorldRenderMode
 {
-	public enum WorldRenderMode
-	{
-		None,
-		Planet,
-		Background
-	}
+	None,
+	Planet,
+	Background
 }

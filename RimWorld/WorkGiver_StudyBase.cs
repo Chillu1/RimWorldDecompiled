@@ -1,30 +1,29 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class WorkGiver_StudyBase : WorkGiver_Scanner
 {
-	public abstract class WorkGiver_StudyBase : WorkGiver_Scanner
+	public override bool Prioritized => true;
+
+	public override IEnumerable<Thing> PotentialWorkThingsGlobal(Pawn pawn)
 	{
-		public override bool Prioritized => true;
+		return Find.StudyManager.GetStudiableThingsAndPlatforms(pawn.Map);
+	}
 
-		public override IEnumerable<Thing> PotentialWorkThingsGlobal(Pawn pawn)
+	public override float GetPriority(Pawn pawn, TargetInfo t)
+	{
+		Thing thing = t.Thing;
+		if (ModsConfig.AnomalyActive && thing is Building_HoldingPlatform building_HoldingPlatform)
 		{
-			return Find.StudyManager.GetStudiableThingsAndPlatforms(pawn.Map);
+			thing = building_HoldingPlatform.HeldPawn;
 		}
-
-		public override float GetPriority(Pawn pawn, TargetInfo t)
+		if (thing == null)
 		{
-			Thing thing = t.Thing;
-			if (ModsConfig.AnomalyActive && thing is Building_HoldingPlatform building_HoldingPlatform)
-			{
-				thing = building_HoldingPlatform.HeldPawn;
-			}
-			if (thing == null)
-			{
-				return 0f;
-			}
-			CompStudiable compStudiable = thing.TryGetComp<CompStudiable>();
-			return Find.TickManager.TicksGame - compStudiable.lastStudiedTick;
+			return 0f;
 		}
+		CompStudiable compStudiable = thing.TryGetComp<CompStudiable>();
+		return Find.TickManager.TicksGame - compStudiable.lastStudiedTick;
 	}
 }

@@ -2,18 +2,17 @@ using Verse;
 using Verse.AI;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThinkNode_ConditionalHasVoluntarilyJoinableLord : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalHasVoluntarilyJoinableLord : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
+		Lord lord = pawn.GetLord();
+		if (lord != null)
 		{
-			Lord lord = pawn.GetLord();
-			if (lord != null)
-			{
-				return lord.LordJob is LordJob_VoluntarilyJoinable;
-			}
-			return false;
+			return lord.LordJob is LordJob_VoluntarilyJoinable;
 		}
+		return false;
 	}
 }

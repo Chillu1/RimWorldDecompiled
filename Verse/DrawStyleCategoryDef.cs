@@ -1,9 +1,8 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class DrawStyleCategoryDef : Def
 {
-	public class DrawStyleCategoryDef : Def
-	{
-		public List<DrawStyleDef> styles = new List<DrawStyleDef>();
-	}
+	public List<DrawStyleDef> styles = new List<DrawStyleDef>();
 }

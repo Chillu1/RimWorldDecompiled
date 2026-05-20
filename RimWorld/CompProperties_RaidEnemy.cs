@@ -1,15 +1,14 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_RaidEnemy : CompProperties_EffectWithDest
 {
-	public class CompProperties_RaidEnemy : CompProperties_EffectWithDest
-	{
-		public PawnGroupKindDef pawnGroupKindDef;
+	public PawnGroupKindDef pawnGroupKindDef;
 
-		public FactionDef factionDef;
+	public FactionDef factionDef;
 
-		public RaidStrategyDef raidStrategyDef;
+	public RaidStrategyDef raidStrategyDef;
 
-		public PawnsArrivalModeDef pawnArrivalModeDef;
+	public PawnsArrivalModeDef pawnArrivalModeDef;
 
-		public float points;
-	}
+	public float points;
 }

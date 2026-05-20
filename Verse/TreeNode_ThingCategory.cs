@@ -1,45 +1,44 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class TreeNode_ThingCategory : TreeNode
 {
-	public class TreeNode_ThingCategory : TreeNode
+	public ThingCategoryDef catDef;
+
+	public string Label => catDef.label;
+
+	public string LabelCap => Label.CapitalizeFirst();
+
+	public IEnumerable<TreeNode_ThingCategory> ChildCategoryNodesAndThis
 	{
-		public ThingCategoryDef catDef;
-
-		public string Label => catDef.label;
-
-		public string LabelCap => Label.CapitalizeFirst();
-
-		public IEnumerable<TreeNode_ThingCategory> ChildCategoryNodesAndThis
+		get
 		{
-			get
+			foreach (ThingCategoryDef thisAndChildCategoryDef in catDef.ThisAndChildCategoryDefs)
 			{
-				foreach (ThingCategoryDef thisAndChildCategoryDef in catDef.ThisAndChildCategoryDefs)
-				{
-					yield return thisAndChildCategoryDef.treeNode;
-				}
+				yield return thisAndChildCategoryDef.treeNode;
 			}
 		}
+	}
 
-		public IEnumerable<TreeNode_ThingCategory> ChildCategoryNodes
+	public IEnumerable<TreeNode_ThingCategory> ChildCategoryNodes
+	{
+		get
 		{
-			get
+			foreach (ThingCategoryDef childCategory in catDef.childCategories)
 			{
-				foreach (ThingCategoryDef childCategory in catDef.childCategories)
-				{
-					yield return childCategory.treeNode;
-				}
+				yield return childCategory.treeNode;
 			}
 		}
+	}
 
-		public TreeNode_ThingCategory(ThingCategoryDef def)
-		{
-			catDef = def;
-		}
+	public TreeNode_ThingCategory(ThingCategoryDef def)
+	{
+		catDef = def;
+	}
 
-		public override string ToString()
-		{
-			return catDef.defName;
-		}
+	public override string ToString()
+	{
+		return catDef.defName;
 	}
 }

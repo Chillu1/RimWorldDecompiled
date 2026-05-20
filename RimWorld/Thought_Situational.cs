@@ -1,77 +1,76 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Thought_Situational : Thought
 {
-	public class Thought_Situational : Thought
+	private int curStageIndex = -1;
+
+	protected string reason;
+
+	public bool Active => curStageIndex >= 0;
+
+	public override int CurStageIndex => curStageIndex;
+
+	public override string LabelCap
 	{
-		private int curStageIndex = -1;
-
-		protected string reason;
-
-		public bool Active => curStageIndex >= 0;
-
-		public override int CurStageIndex => curStageIndex;
-
-		public override string LabelCap
+		get
 		{
-			get
+			if (!reason.NullOrEmpty())
 			{
-				if (!reason.NullOrEmpty())
+				string text = base.CurStage.label.Formatted(reason.Named("REASON"), pawn.Named("PAWN")).CapitalizeFirst();
+				if (def.Worker != null)
 				{
-					string text = base.CurStage.label.Formatted(reason.Named("REASON"), pawn.Named("PAWN")).CapitalizeFirst();
-					if (def.Worker != null)
-					{
-						text = def.Worker.PostProcessLabel(pawn, text);
-					}
-					return text;
+					text = def.Worker.PostProcessLabel(pawn, text);
 				}
-				return base.LabelCap;
+				return text;
 			}
+			return base.LabelCap;
 		}
+	}
 
-		public void RecalculateState()
+	public void RecalculateState()
+	{
+		bool active = Active;
+		ThoughtState thoughtState = CurrentStateInternal();
+		if (thoughtState.ActiveFor(def))
 		{
-			bool active = Active;
-			ThoughtState thoughtState = CurrentStateInternal();
-			if (thoughtState.ActiveFor(def))
-			{
-				curStageIndex = thoughtState.StageIndexFor(def);
-				reason = thoughtState.Reason;
-			}
-			else
-			{
-				curStageIndex = -1;
-			}
-			bool active2 = Active;
-			if (active && !active2)
-			{
-				Notify_BecameInactive();
-			}
-			if (!active && active2)
-			{
-				Notify_BecameActive();
-			}
+			curStageIndex = thoughtState.StageIndexFor(def);
+			reason = thoughtState.Reason;
 		}
+		else
+		{
+			curStageIndex = -1;
+		}
+		bool active2 = Active;
+		if (active && !active2)
+		{
+			Notify_BecameInactive();
+		}
+		if (!active && active2)
+		{
+			Notify_BecameActive();
+		}
+	}
 
-		protected virtual void Notify_BecameActive()
+	protected virtual void Notify_BecameActive()
+	{
+		if (def.producesMemoryThought != null)
 		{
-			if (def.producesMemoryThought != null)
-			{
-				pawn.needs?.mood?.thoughts.memories.RemoveMemoriesOfDef(def.producesMemoryThought);
-			}
+			pawn.needs?.mood?.thoughts.memories.RemoveMemoriesOfDef(def.producesMemoryThought);
 		}
+	}
 
-		protected virtual void Notify_BecameInactive()
+	protected virtual void Notify_BecameInactive()
+	{
+		if (def.producesMemoryThought != null)
 		{
-			if (def.producesMemoryThought != null)
-			{
-				pawn.needs?.mood?.thoughts.memories.TryGainMemory(def.producesMemoryThought, null, sourcePrecept);
-			}
+			pawn.needs?.mood?.thoughts.memories.TryGainMemory(def.producesMemoryThought, null, sourcePrecept);
 		}
+	}
 
-		protected virtual ThoughtState CurrentStateInternal()
-		{
-			return def.Worker.CurrentState(pawn);
-		}
+	protected virtual ThoughtState CurrentStateInternal()
+	{
+		return def.Worker.CurrentState(pawn);
 	}
 }

@@ -1,30 +1,29 @@
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class CompTemperatureDamaged : ThingComp
 {
-	public class CompTemperatureDamaged : ThingComp
+	public CompProperties_TemperatureDamaged Props => (CompProperties_TemperatureDamaged)props;
+
+	public override void CompTick()
 	{
-		public CompProperties_TemperatureDamaged Props => (CompProperties_TemperatureDamaged)props;
-
-		public override void CompTick()
-		{
-			if (Find.TickManager.TicksGame % 250 == 0)
-			{
-				CheckTakeDamage();
-			}
-		}
-
-		public override void CompTickRare()
+		if (Find.TickManager.TicksGame % 250 == 0)
 		{
 			CheckTakeDamage();
 		}
+	}
 
-		private void CheckTakeDamage()
+	public override void CompTickRare()
+	{
+		CheckTakeDamage();
+	}
+
+	private void CheckTakeDamage()
+	{
+		if (!Props.safeTemperatureRange.Includes(parent.AmbientTemperature))
 		{
-			if (!Props.safeTemperatureRange.Includes(parent.AmbientTemperature))
-			{
-				parent.TakeDamage(new DamageInfo(DamageDefOf.Deterioration, Props.damagePerTickRare));
-			}
+			parent.TakeDamage(new DamageInfo(DamageDefOf.Deterioration, Props.damagePerTickRare));
 		}
 	}
 }

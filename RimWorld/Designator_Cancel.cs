@@ -3,165 +3,164 @@ using System.Linq;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Designator_Cancel : Designator
 {
-	public class Designator_Cancel : Designator
+	private static HashSet<Thing> seenThings = new HashSet<Thing>();
+
+	public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Cancel;
+
+	public Designator_Cancel()
 	{
-		private static HashSet<Thing> seenThings = new HashSet<Thing>();
+		defaultLabel = "DesignatorCancel".Translate();
+		defaultDesc = "DesignatorCancelDesc".Translate();
+		icon = ContentFinder<Texture2D>.Get("UI/Designators/Cancel");
+		useMouseIcon = true;
+		soundDragSustain = SoundDefOf.Designate_DragStandard;
+		soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
+		soundSucceeded = SoundDefOf.Designate_Cancel;
+		hotKey = KeyBindingDefOf.Designator_Cancel;
+		tutorTag = "Cancel";
+	}
 
-		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Cancel;
-
-		public Designator_Cancel()
+	public override AcceptanceReport CanDesignateCell(IntVec3 c)
+	{
+		if (!c.InBounds(base.Map))
 		{
-			defaultLabel = "DesignatorCancel".Translate();
-			defaultDesc = "DesignatorCancelDesc".Translate();
-			icon = ContentFinder<Texture2D>.Get("UI/Designators/Cancel");
-			useMouseIcon = true;
-			soundDragSustain = SoundDefOf.Designate_DragStandard;
-			soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
-			soundSucceeded = SoundDefOf.Designate_Cancel;
-			hotKey = KeyBindingDefOf.Designator_Cancel;
-			tutorTag = "Cancel";
+			return false;
 		}
-
-		public override AcceptanceReport CanDesignateCell(IntVec3 c)
+		if (CancelableDesignationsAt(c).Any())
 		{
-			if (!c.InBounds(base.Map))
-			{
-				return false;
-			}
-			if (CancelableDesignationsAt(c).Any())
+			return true;
+		}
+		List<Thing> thingList = c.GetThingList(base.Map);
+		for (int i = 0; i < thingList.Count; i++)
+		{
+			if (CanDesignateThing(thingList[i]).Accepted)
 			{
 				return true;
 			}
-			List<Thing> thingList = c.GetThingList(base.Map);
-			for (int i = 0; i < thingList.Count; i++)
+		}
+		return false;
+	}
+
+	public override void DesignateSingleCell(IntVec3 c)
+	{
+		foreach (Designation item in CancelableDesignationsAt(c).ToList())
+		{
+			if (item.def == DesignationDefOf.MineVein)
 			{
-				if (CanDesignateThing(thingList[i]).Accepted)
+				Designator_MineVein.RemoveContiguousDesignations(c, base.Map, c.GetEdifice(base.Map).def);
+			}
+			if (item.def.designateCancelable)
+			{
+				base.Map.designationManager.RemoveDesignation(item);
+			}
+		}
+		List<Thing> thingList = c.GetThingList(base.Map);
+		for (int num = thingList.Count - 1; num >= 0; num--)
+		{
+			if (CanDesignateThing(thingList[num]).Accepted)
+			{
+				DesignateThing(thingList[num]);
+			}
+		}
+	}
+
+	public override AcceptanceReport CanDesignateThing(Thing t)
+	{
+		if (base.Map.designationManager.DesignationOn(t) != null)
+		{
+			foreach (Designation item in base.Map.designationManager.AllDesignationsOn(t))
+			{
+				if (item.def.designateCancelable)
 				{
 					return true;
 				}
 			}
-			return false;
 		}
-
-		public override void DesignateSingleCell(IntVec3 c)
+		if (t.def.mineable && base.Map.designationManager.DesignationAt(t.Position, DesignationDefOf.Mine) != null)
 		{
-			foreach (Designation item in CancelableDesignationsAt(c).ToList())
-			{
-				if (item.def == DesignationDefOf.MineVein)
-				{
-					Designator_MineVein.RemoveContiguousDesignations(c, base.Map, c.GetEdifice(base.Map).def);
-				}
-				if (item.def.designateCancelable)
-				{
-					base.Map.designationManager.RemoveDesignation(item);
-				}
-			}
-			List<Thing> thingList = c.GetThingList(base.Map);
-			for (int num = thingList.Count - 1; num >= 0; num--)
-			{
-				if (CanDesignateThing(thingList[num]).Accepted)
-				{
-					DesignateThing(thingList[num]);
-				}
-			}
+			return true;
 		}
-
-		public override AcceptanceReport CanDesignateThing(Thing t)
+		if (t.def.mineable && base.Map.designationManager.DesignationAt(t.Position, DesignationDefOf.MineVein) != null)
 		{
-			if (base.Map.designationManager.DesignationOn(t) != null)
-			{
-				foreach (Designation item in base.Map.designationManager.AllDesignationsOn(t))
-				{
-					if (item.def.designateCancelable)
-					{
-						return true;
-					}
-				}
-			}
-			if (t.def.mineable && base.Map.designationManager.DesignationAt(t.Position, DesignationDefOf.Mine) != null)
-			{
-				return true;
-			}
-			if (t.def.mineable && base.Map.designationManager.DesignationAt(t.Position, DesignationDefOf.MineVein) != null)
-			{
-				return true;
-			}
-			if (t.def.IsSmoothable && base.Map.designationManager.DesignationAt(t.Position, DesignationDefOf.SmoothWall) != null)
-			{
-				return true;
-			}
-			return t.Faction == Faction.OfPlayer && (t is Frame || t is Blueprint);
+			return true;
 		}
-
-		public override void DesignateThing(Thing t)
+		if (t.def.IsSmoothable && base.Map.designationManager.DesignationAt(t.Position, DesignationDefOf.SmoothWall) != null)
 		{
-			if (t is Frame || t is Blueprint)
-			{
-				t.Destroy(DestroyMode.Cancel);
-				return;
-			}
-			base.Map.designationManager.RemoveAllDesignationsOn(t, standardCanceling: true);
-			if (t.def.mineable)
-			{
-				Designation designation = base.Map.designationManager.DesignationAt(t.Position, DesignationDefOf.Mine);
-				if (designation != null)
-				{
-					base.Map.designationManager.RemoveDesignation(designation);
-				}
-				if (base.Map.designationManager.DesignationAt(t.Position, DesignationDefOf.MineVein) != null)
-				{
-					Designator_MineVein.RemoveContiguousDesignations(t.Position, base.Map, t.def);
-				}
-			}
-			if (t.def.IsSmoothable)
-			{
-				Designation designation2 = base.Map.designationManager.DesignationAt(t.Position, DesignationDefOf.SmoothWall);
-				if (designation2 != null)
-				{
-					base.Map.designationManager.RemoveDesignation(designation2);
-				}
-			}
+			return true;
 		}
+		return t.Faction == Faction.OfPlayer && (t is Frame || t is Blueprint);
+	}
 
-		public override void SelectedUpdate()
+	public override void DesignateThing(Thing t)
+	{
+		if (t is Frame || t is Blueprint)
 		{
-			GenUI.RenderMouseoverBracket();
+			t.Destroy(DestroyMode.Cancel);
+			return;
 		}
-
-		private IEnumerable<Designation> CancelableDesignationsAt(IntVec3 c)
+		base.Map.designationManager.RemoveAllDesignationsOn(t, standardCanceling: true);
+		if (t.def.mineable)
 		{
-			return base.Map.designationManager.AllDesignationsAt(c);
-		}
-
-		public override void RenderHighlight(List<IntVec3> dragCells)
-		{
-			seenThings.Clear();
-			foreach (IntVec3 dragCell in dragCells)
+			Designation designation = base.Map.designationManager.DesignationAt(t.Position, DesignationDefOf.Mine);
+			if (designation != null)
 			{
-				if (base.Map.designationManager.HasMapDesignationAt(dragCell))
+				base.Map.designationManager.RemoveDesignation(designation);
+			}
+			if (base.Map.designationManager.DesignationAt(t.Position, DesignationDefOf.MineVein) != null)
+			{
+				Designator_MineVein.RemoveContiguousDesignations(t.Position, base.Map, t.def);
+			}
+		}
+		if (t.def.IsSmoothable)
+		{
+			Designation designation2 = base.Map.designationManager.DesignationAt(t.Position, DesignationDefOf.SmoothWall);
+			if (designation2 != null)
+			{
+				base.Map.designationManager.RemoveDesignation(designation2);
+			}
+		}
+	}
+
+	public override void SelectedUpdate()
+	{
+		GenUI.RenderMouseoverBracket();
+	}
+
+	private IEnumerable<Designation> CancelableDesignationsAt(IntVec3 c)
+	{
+		return base.Map.designationManager.AllDesignationsAt(c);
+	}
+
+	public override void RenderHighlight(List<IntVec3> dragCells)
+	{
+		seenThings.Clear();
+		foreach (IntVec3 dragCell in dragCells)
+		{
+			if (base.Map.designationManager.HasMapDesignationAt(dragCell))
+			{
+				Graphics.DrawMesh(MeshPool.plane10, dragCell.ToVector3ShiftedWithAltitude(AltitudeLayer.MetaOverlays.AltitudeFor()), Quaternion.identity, DesignatorUtility.DragHighlightCellMat, 0);
+				if (base.Map.designationManager.DesignationAt(dragCell, DesignationDefOf.Mine) != null)
 				{
-					Graphics.DrawMesh(MeshPool.plane10, dragCell.ToVector3ShiftedWithAltitude(AltitudeLayer.MetaOverlays.AltitudeFor()), Quaternion.identity, DesignatorUtility.DragHighlightCellMat, 0);
-					if (base.Map.designationManager.DesignationAt(dragCell, DesignationDefOf.Mine) != null)
-					{
-						continue;
-					}
-				}
-				List<Thing> thingList = dragCell.GetThingList(base.Map);
-				for (int i = 0; i < thingList.Count; i++)
-				{
-					Thing thing = thingList[i];
-					if (!seenThings.Contains(thing) && CanDesignateThing(thing).Accepted)
-					{
-						Vector3 drawPos = thing.DrawPos;
-						drawPos.y = AltitudeLayer.MetaOverlays.AltitudeFor();
-						Graphics.DrawMesh(MeshPool.plane10, drawPos, Quaternion.identity, DesignatorUtility.DragHighlightThingMat, 0);
-						seenThings.Add(thing);
-					}
+					continue;
 				}
 			}
-			seenThings.Clear();
+			List<Thing> thingList = dragCell.GetThingList(base.Map);
+			for (int i = 0; i < thingList.Count; i++)
+			{
+				Thing thing = thingList[i];
+				if (!seenThings.Contains(thing) && CanDesignateThing(thing).Accepted)
+				{
+					Vector3 drawPos = thing.DrawPos;
+					drawPos.y = AltitudeLayer.MetaOverlays.AltitudeFor();
+					Graphics.DrawMesh(MeshPool.plane10, drawPos, Quaternion.identity, DesignatorUtility.DragHighlightThingMat, 0);
+					seenThings.Add(thing);
+				}
+			}
 		}
+		seenThings.Clear();
 	}
 }

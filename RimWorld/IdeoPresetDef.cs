@@ -2,35 +2,34 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class IdeoPresetDef : Def
 {
-	public class IdeoPresetDef : Def
+	public IdeoPresetCategoryDef categoryDef;
+
+	public List<MemeDef> memes = new List<MemeDef>();
+
+	[NoTranslate]
+	public string iconPath;
+
+	public bool classicPlus;
+
+	private Texture2D cachedIcon;
+
+	public Texture2D Icon
 	{
-		public IdeoPresetCategoryDef categoryDef;
-
-		public List<MemeDef> memes = new List<MemeDef>();
-
-		[NoTranslate]
-		public string iconPath;
-
-		public bool classicPlus;
-
-		private Texture2D cachedIcon;
-
-		public Texture2D Icon
+		get
 		{
-			get
+			if (iconPath.NullOrEmpty())
 			{
-				if (iconPath.NullOrEmpty())
-				{
-					return null;
-				}
-				if (cachedIcon == null)
-				{
-					cachedIcon = ContentFinder<Texture2D>.Get(iconPath);
-				}
-				return cachedIcon;
+				return null;
 			}
+			if (cachedIcon == null)
+			{
+				cachedIcon = ContentFinder<Texture2D>.Get(iconPath);
+			}
+			return cachedIcon;
 		}
 	}
 }

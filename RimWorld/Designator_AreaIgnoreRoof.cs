@@ -1,50 +1,49 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Designator_AreaIgnoreRoof : Designator_Cells
 {
-	public class Designator_AreaIgnoreRoof : Designator_Cells
+	public override bool DragDrawMeasurements => true;
+
+	public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Areas;
+
+	public Designator_AreaIgnoreRoof()
 	{
-		public override bool DragDrawMeasurements => true;
+		defaultLabel = "DesignatorAreaIgnoreRoofExpand".Translate();
+		defaultDesc = "DesignatorAreaIgnoreRoofExpandDesc".Translate();
+		icon = ContentFinder<Texture2D>.Get("UI/Designators/IgnoreRoofArea");
+		hotKey = KeyBindingDefOf.Misc11;
+		soundDragSustain = SoundDefOf.Designate_DragAreaAdd;
+		soundDragChanged = null;
+		soundSucceeded = SoundDefOf.Designate_ZoneAdd;
+		useMouseIcon = true;
+	}
 
-		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Areas;
-
-		public Designator_AreaIgnoreRoof()
+	public override AcceptanceReport CanDesignateCell(IntVec3 c)
+	{
+		if (!c.InBounds(base.Map))
 		{
-			defaultLabel = "DesignatorAreaIgnoreRoofExpand".Translate();
-			defaultDesc = "DesignatorAreaIgnoreRoofExpandDesc".Translate();
-			icon = ContentFinder<Texture2D>.Get("UI/Designators/IgnoreRoofArea");
-			hotKey = KeyBindingDefOf.Misc11;
-			soundDragSustain = SoundDefOf.Designate_DragAreaAdd;
-			soundDragChanged = null;
-			soundSucceeded = SoundDefOf.Designate_ZoneAdd;
-			useMouseIcon = true;
+			return false;
 		}
-
-		public override AcceptanceReport CanDesignateCell(IntVec3 c)
+		if (c.Fogged(base.Map))
 		{
-			if (!c.InBounds(base.Map))
-			{
-				return false;
-			}
-			if (c.Fogged(base.Map))
-			{
-				return false;
-			}
-			return base.Map.areaManager.BuildRoof[c] || base.Map.areaManager.NoRoof[c];
+			return false;
 		}
+		return base.Map.areaManager.BuildRoof[c] || base.Map.areaManager.NoRoof[c];
+	}
 
-		public override void DesignateSingleCell(IntVec3 c)
-		{
-			base.Map.areaManager.BuildRoof[c] = false;
-			base.Map.areaManager.NoRoof[c] = false;
-		}
+	public override void DesignateSingleCell(IntVec3 c)
+	{
+		base.Map.areaManager.BuildRoof[c] = false;
+		base.Map.areaManager.NoRoof[c] = false;
+	}
 
-		public override void SelectedUpdate()
-		{
-			GenUI.RenderMouseoverBracket();
-			base.Map.areaManager.NoRoof.MarkForDraw();
-			base.Map.areaManager.BuildRoof.MarkForDraw();
-		}
+	public override void SelectedUpdate()
+	{
+		GenUI.RenderMouseoverBracket();
+		base.Map.areaManager.NoRoof.MarkForDraw();
+		base.Map.areaManager.BuildRoof.MarkForDraw();
 	}
 }

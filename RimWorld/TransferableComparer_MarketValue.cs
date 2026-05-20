@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class TransferableComparer_MarketValue : TransferableComparer
 {
-	public class TransferableComparer_MarketValue : TransferableComparer
+	public override int Compare(Transferable lhs, Transferable rhs)
 	{
-		public override int Compare(Transferable lhs, Transferable rhs)
-		{
-			return lhs.AnyThing.MarketValue.CompareTo(rhs.AnyThing.MarketValue);
-		}
+		return lhs.AnyThing.MarketValue.CompareTo(rhs.AnyThing.MarketValue);
 	}
 }

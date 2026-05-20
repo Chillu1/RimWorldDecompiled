@@ -1,15 +1,14 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class SpawnedPawnParams
 {
-	public class SpawnedPawnParams
-	{
-		public bool aggressive;
+	public bool aggressive;
 
-		public Thing spawnerThing;
+	public Thing spawnerThing;
 
-		public float defendRadius;
+	public float defendRadius;
 
-		public IntVec3 defSpot;
-	}
+	public IntVec3 defSpot;
 }

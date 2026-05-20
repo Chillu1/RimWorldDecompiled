@@ -1,14 +1,13 @@
 using System;
 
-namespace Verse
+namespace Verse;
+
+[Flags]
+public enum LinkDirections : byte
 {
-	[Flags]
-	public enum LinkDirections : byte
-	{
-		None = 0,
-		Up = 1,
-		Right = 2,
-		Down = 4,
-		Left = 8
-	}
+	None = 0,
+	Up = 1,
+	Right = 2,
+	Down = 4,
+	Left = 8
 }

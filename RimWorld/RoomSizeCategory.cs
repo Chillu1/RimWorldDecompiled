@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum RoomSizeCategory : byte
 {
-	public enum RoomSizeCategory : byte
-	{
-		VeryCramped,
-		Cramped,
-		Normal,
-		Spacious
-	}
+	VeryCramped,
+	Cramped,
+	Normal,
+	Spacious
 }

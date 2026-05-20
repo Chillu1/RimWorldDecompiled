@@ -1,11 +1,10 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class CompProperties_DryadCocoon : CompProperties
-	{
-		public float daysToComplete = 6f;
+namespace RimWorld;
 
-		public bool drawContents;
-	}
+public class CompProperties_DryadCocoon : CompProperties
+{
+	public float daysToComplete = 6f;
+
+	public bool drawContents;
 }

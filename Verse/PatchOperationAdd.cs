@@ -1,43 +1,42 @@
 using System.Xml;
 
-namespace Verse
+namespace Verse;
+
+public class PatchOperationAdd : PatchOperationPathed
 {
-	public class PatchOperationAdd : PatchOperationPathed
+	private enum Order
 	{
-		private enum Order
+		Append,
+		Prepend
+	}
+
+	private XmlContainer value;
+
+	private Order order;
+
+	protected override bool ApplyWorker(XmlDocument xml)
+	{
+		XmlNode node = value.node;
+		bool result = false;
+		foreach (object item in xml.SelectNodes(xpath))
 		{
-			Append,
-			Prepend
-		}
-
-		private XmlContainer value;
-
-		private Order order;
-
-		protected override bool ApplyWorker(XmlDocument xml)
-		{
-			XmlNode node = value.node;
-			bool result = false;
-			foreach (object item in xml.SelectNodes(xpath))
+			result = true;
+			XmlNode xmlNode = item as XmlNode;
+			if (order == Order.Append)
 			{
-				result = true;
-				XmlNode xmlNode = item as XmlNode;
-				if (order == Order.Append)
+				foreach (XmlNode childNode in node.ChildNodes)
 				{
-					foreach (XmlNode childNode in node.ChildNodes)
-					{
-						xmlNode.AppendChild(xmlNode.OwnerDocument.ImportNode(childNode, deep: true));
-					}
-				}
-				else if (order == Order.Prepend)
-				{
-					for (int num = node.ChildNodes.Count - 1; num >= 0; num--)
-					{
-						xmlNode.PrependChild(xmlNode.OwnerDocument.ImportNode(node.ChildNodes[num], deep: true));
-					}
+					xmlNode.AppendChild(xmlNode.OwnerDocument.ImportNode(childNode, deep: true));
 				}
 			}
-			return result;
+			else if (order == Order.Prepend)
+			{
+				for (int num = node.ChildNodes.Count - 1; num >= 0; num--)
+				{
+					xmlNode.PrependChild(xmlNode.OwnerDocument.ImportNode(node.ChildNodes[num], deep: true));
+				}
+			}
 		}
+		return result;
 	}
 }

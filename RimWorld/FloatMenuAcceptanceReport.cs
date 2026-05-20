@@ -1,69 +1,68 @@
-namespace RimWorld
+namespace RimWorld;
+
+public struct FloatMenuAcceptanceReport
 {
-	public struct FloatMenuAcceptanceReport
+	private string failMessageInt;
+
+	private string failReasonInt;
+
+	private bool acceptedInt;
+
+	public bool Accepted => acceptedInt;
+
+	public string FailMessage => failMessageInt;
+
+	public string FailReason => failReasonInt;
+
+	public static FloatMenuAcceptanceReport WasAccepted => new FloatMenuAcceptanceReport
 	{
-		private string failMessageInt;
+		acceptedInt = true
+	};
 
-		private string failReasonInt;
+	public static FloatMenuAcceptanceReport WasRejected => new FloatMenuAcceptanceReport
+	{
+		acceptedInt = false
+	};
 
-		private bool acceptedInt;
-
-		public bool Accepted => acceptedInt;
-
-		public string FailMessage => failMessageInt;
-
-		public string FailReason => failReasonInt;
-
-		public static FloatMenuAcceptanceReport WasAccepted => new FloatMenuAcceptanceReport
+	public static implicit operator FloatMenuAcceptanceReport(bool value)
+	{
+		if (value)
 		{
-			acceptedInt = true
+			return WasAccepted;
+		}
+		return WasRejected;
+	}
+
+	public static implicit operator bool(FloatMenuAcceptanceReport rep)
+	{
+		return rep.Accepted;
+	}
+
+	public static FloatMenuAcceptanceReport WithFailReason(string failReason)
+	{
+		return new FloatMenuAcceptanceReport
+		{
+			acceptedInt = false,
+			failReasonInt = failReason
 		};
+	}
 
-		public static FloatMenuAcceptanceReport WasRejected => new FloatMenuAcceptanceReport
+	public static FloatMenuAcceptanceReport WithFailMessage(string failMessage)
+	{
+		return new FloatMenuAcceptanceReport
 		{
-			acceptedInt = false
+			acceptedInt = false,
+			failMessageInt = failMessage
 		};
+	}
 
-		public static implicit operator FloatMenuAcceptanceReport(bool value)
+	public static FloatMenuAcceptanceReport WithFailReasonAndMessage(string failReason, string failMessage)
+	{
+		return new FloatMenuAcceptanceReport
 		{
-			if (value)
-			{
-				return WasAccepted;
-			}
-			return WasRejected;
-		}
-
-		public static implicit operator bool(FloatMenuAcceptanceReport rep)
-		{
-			return rep.Accepted;
-		}
-
-		public static FloatMenuAcceptanceReport WithFailReason(string failReason)
-		{
-			return new FloatMenuAcceptanceReport
-			{
-				acceptedInt = false,
-				failReasonInt = failReason
-			};
-		}
-
-		public static FloatMenuAcceptanceReport WithFailMessage(string failMessage)
-		{
-			return new FloatMenuAcceptanceReport
-			{
-				acceptedInt = false,
-				failMessageInt = failMessage
-			};
-		}
-
-		public static FloatMenuAcceptanceReport WithFailReasonAndMessage(string failReason, string failMessage)
-		{
-			return new FloatMenuAcceptanceReport
-			{
-				acceptedInt = false,
-				failReasonInt = failReason,
-				failMessageInt = failMessage
-			};
-		}
+			acceptedInt = false,
+			failReasonInt = failReason,
+			failMessageInt = failMessage
+		};
 	}
 }

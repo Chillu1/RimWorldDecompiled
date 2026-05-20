@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum DrawPhase
 {
-	public enum DrawPhase
-	{
-		EnsureInitialized,
-		ParallelPreDraw,
-		Draw
-	}
+	EnsureInitialized,
+	ParallelPreDraw,
+	Draw
 }

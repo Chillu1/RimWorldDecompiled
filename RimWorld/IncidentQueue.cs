@@ -3,95 +3,94 @@ using System.Collections.Generic;
 using System.Text;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class IncidentQueue : IExposable
 {
-	public class IncidentQueue : IExposable
+	private List<QueuedIncident> queuedIncidents = new List<QueuedIncident>();
+
+	public int Count => queuedIncidents.Count;
+
+	public string DebugQueueReadout
 	{
-		private List<QueuedIncident> queuedIncidents = new List<QueuedIncident>();
-
-		public int Count => queuedIncidents.Count;
-
-		public string DebugQueueReadout
+		get
 		{
-			get
-			{
-				StringBuilder stringBuilder = new StringBuilder();
-				foreach (QueuedIncident queuedIncident in queuedIncidents)
-				{
-					stringBuilder.AppendLine(queuedIncident.ToString() + " (in " + (queuedIncident.FireTick - Find.TickManager.TicksGame) + " ticks)");
-				}
-				return stringBuilder.ToString();
-			}
-		}
-
-		public IEnumerator GetEnumerator()
-		{
+			StringBuilder stringBuilder = new StringBuilder();
 			foreach (QueuedIncident queuedIncident in queuedIncidents)
 			{
-				yield return queuedIncident;
+				stringBuilder.AppendLine(queuedIncident.ToString() + " (in " + (queuedIncident.FireTick - Find.TickManager.TicksGame) + " ticks)");
 			}
+			return stringBuilder.ToString();
 		}
+	}
 
-		public void Clear()
+	public IEnumerator GetEnumerator()
+	{
+		foreach (QueuedIncident queuedIncident in queuedIncidents)
 		{
-			queuedIncidents.Clear();
+			yield return queuedIncident;
 		}
+	}
 
-		public void ExposeData()
-		{
-			Scribe_Collections.Look(ref queuedIncidents, "queuedIncidents", LookMode.Deep);
-		}
+	public void Clear()
+	{
+		queuedIncidents.Clear();
+	}
 
-		public bool Add(QueuedIncident qi)
-		{
-			queuedIncidents.Add(qi);
-			queuedIncidents.Sort((QueuedIncident a, QueuedIncident b) => a.FireTick.CompareTo(b.FireTick));
-			return true;
-		}
+	public void ExposeData()
+	{
+		Scribe_Collections.Look(ref queuedIncidents, "queuedIncidents", LookMode.Deep);
+	}
 
-		public bool Add(IncidentDef def, int fireTick, IncidentParms parms = null, int retryDurationTicks = 0)
-		{
-			QueuedIncident qi = new QueuedIncident(new FiringIncident(def, null, parms), fireTick, retryDurationTicks);
-			Add(qi);
-			return true;
-		}
+	public bool Add(QueuedIncident qi)
+	{
+		queuedIncidents.Add(qi);
+		queuedIncidents.Sort((QueuedIncident a, QueuedIncident b) => a.FireTick.CompareTo(b.FireTick));
+		return true;
+	}
 
-		public void IncidentQueueTick()
+	public bool Add(IncidentDef def, int fireTick, IncidentParms parms = null, int retryDurationTicks = 0)
+	{
+		QueuedIncident qi = new QueuedIncident(new FiringIncident(def, null, parms), fireTick, retryDurationTicks);
+		Add(qi);
+		return true;
+	}
+
+	public void IncidentQueueTick()
+	{
+		for (int num = queuedIncidents.Count - 1; num >= 0; num--)
 		{
-			for (int num = queuedIncidents.Count - 1; num >= 0; num--)
+			QueuedIncident queuedIncident = queuedIncidents[num];
+			if (!queuedIncident.TriedToFire)
 			{
-				QueuedIncident queuedIncident = queuedIncidents[num];
-				if (!queuedIncident.TriedToFire)
+				if (queuedIncident.FireTick <= Find.TickManager.TicksGame)
 				{
-					if (queuedIncident.FireTick <= Find.TickManager.TicksGame)
-					{
-						bool num2 = Find.Storyteller.TryFire(queuedIncident.FiringIncident, queued: true);
-						queuedIncident.Notify_TriedToFire();
-						if (num2 || queuedIncident.RetryDurationTicks == 0)
-						{
-							queuedIncidents.Remove(queuedIncident);
-						}
-					}
-				}
-				else if (queuedIncident.FireTick + queuedIncident.RetryDurationTicks <= Find.TickManager.TicksGame)
-				{
-					queuedIncidents.Remove(queuedIncident);
-				}
-				else if (Find.TickManager.TicksGame % 833 == Rand.RangeSeeded(0, 833, queuedIncident.FireTick))
-				{
-					bool num3 = Find.Storyteller.TryFire(queuedIncident.FiringIncident, queued: true);
+					bool num2 = Find.Storyteller.TryFire(queuedIncident.FiringIncident, queued: true);
 					queuedIncident.Notify_TriedToFire();
-					if (num3)
+					if (num2 || queuedIncident.RetryDurationTicks == 0)
 					{
 						queuedIncidents.Remove(queuedIncident);
 					}
 				}
 			}
+			else if (queuedIncident.FireTick + queuedIncident.RetryDurationTicks <= Find.TickManager.TicksGame)
+			{
+				queuedIncidents.Remove(queuedIncident);
+			}
+			else if (Find.TickManager.TicksGame % 833 == Rand.RangeSeeded(0, 833, queuedIncident.FireTick))
+			{
+				bool num3 = Find.Storyteller.TryFire(queuedIncident.FiringIncident, queued: true);
+				queuedIncident.Notify_TriedToFire();
+				if (num3)
+				{
+					queuedIncidents.Remove(queuedIncident);
+				}
+			}
 		}
+	}
 
-		public void Notify_MapRemoved(Map map)
-		{
-			queuedIncidents.RemoveAll((QueuedIncident x) => x.FiringIncident.parms.target == map);
-		}
+	public void Notify_MapRemoved(Map map)
+	{
+		queuedIncidents.RemoveAll((QueuedIncident x) => x.FiringIncident.parms.target == map);
 	}
 }

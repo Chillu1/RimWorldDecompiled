@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class HediffCompProperties_DestroyOrgan : HediffCompProperties
 {
-	public class HediffCompProperties_DestroyOrgan : HediffCompProperties
+	public string messageText;
+
+	public DamageDef damageType;
+
+	public HediffCompProperties_DestroyOrgan()
 	{
-		public string messageText;
-
-		public DamageDef damageType;
-
-		public HediffCompProperties_DestroyOrgan()
-		{
-			compClass = typeof(HediffComp_DestroyOrgan);
-		}
+		compClass = typeof(HediffComp_DestroyOrgan);
 	}
 }

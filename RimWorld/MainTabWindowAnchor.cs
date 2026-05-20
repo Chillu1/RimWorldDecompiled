@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum MainTabWindowAnchor
 {
-	public enum MainTabWindowAnchor
-	{
-		Left,
-		Right
-	}
+	Left,
+	Right
 }

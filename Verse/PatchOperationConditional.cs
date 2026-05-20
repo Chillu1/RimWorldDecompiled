@@ -1,31 +1,30 @@
 using System.Xml;
 
-namespace Verse
+namespace Verse;
+
+public class PatchOperationConditional : PatchOperationPathed
 {
-	public class PatchOperationConditional : PatchOperationPathed
+	private PatchOperation match;
+
+	private PatchOperation nomatch;
+
+	protected override bool ApplyWorker(XmlDocument xml)
 	{
-		private PatchOperation match;
-
-		private PatchOperation nomatch;
-
-		protected override bool ApplyWorker(XmlDocument xml)
+		if (xml.SelectSingleNode(xpath) != null)
 		{
-			if (xml.SelectSingleNode(xpath) != null)
+			if (match != null)
 			{
-				if (match != null)
-				{
-					return match.Apply(xml);
-				}
+				return match.Apply(xml);
 			}
-			else if (nomatch != null)
-			{
-				return nomatch.Apply(xml);
-			}
-			if (match == null)
-			{
-				return nomatch != null;
-			}
-			return true;
 		}
+		else if (nomatch != null)
+		{
+			return nomatch.Apply(xml);
+		}
+		if (match == null)
+		{
+			return nomatch != null;
+		}
+		return true;
 	}
 }

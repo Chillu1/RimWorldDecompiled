@@ -1,13 +1,12 @@
-namespace RimWorld
-{
-	[DefOf]
-	public static class BeardDefOf
-	{
-		public static BeardDef NoBeard;
+namespace RimWorld;
 
-		static BeardDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(BeardDefOf));
-		}
+[DefOf]
+public static class BeardDefOf
+{
+	public static BeardDef NoBeard;
+
+	static BeardDefOf()
+	{
+		DefOfHelper.EnsureInitializedInCtor(typeof(BeardDefOf));
 	}
 }

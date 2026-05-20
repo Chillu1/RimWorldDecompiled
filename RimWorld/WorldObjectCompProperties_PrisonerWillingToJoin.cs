@@ -1,12 +1,11 @@
 using RimWorld.Planet;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WorldObjectCompProperties_PrisonerWillingToJoin : WorldObjectCompProperties
 {
-	public class WorldObjectCompProperties_PrisonerWillingToJoin : WorldObjectCompProperties
+	public WorldObjectCompProperties_PrisonerWillingToJoin()
 	{
-		public WorldObjectCompProperties_PrisonerWillingToJoin()
-		{
-			compClass = typeof(PrisonerWillingToJoinComp);
-		}
+		compClass = typeof(PrisonerWillingToJoinComp);
 	}
 }

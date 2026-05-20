@@ -2,117 +2,116 @@ using System.Text;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public static class VirtualPlantsUtility
 {
-	public static class VirtualPlantsUtility
+	private static readonly FloatRange VirtualPlantNutritionRandomFactor = new FloatRange(0.7f, 1f);
+
+	public static bool CanEverEatVirtualPlants(Pawn p)
 	{
-		private static readonly FloatRange VirtualPlantNutritionRandomFactor = new FloatRange(0.7f, 1f);
+		return p.RaceProps.Eats(FoodTypeFlags.Plant);
+	}
 
-		public static bool CanEverEatVirtualPlants(Pawn p)
+	public static bool CanEatVirtualPlantsNow(Pawn p)
+	{
+		return CanEatVirtualPlants(p, GenTicks.TicksAbs);
+	}
+
+	public static bool CanEatVirtualPlants(Pawn p, int ticksAbs)
+	{
+		if (p.Tile.Valid && !p.Dead && p.IsWorldPawn() && CanEverEatVirtualPlants(p))
 		{
-			return p.RaceProps.Eats(FoodTypeFlags.Plant);
+			return EnvironmentAllowsEatingVirtualPlantsAt(p.Tile, ticksAbs);
 		}
+		return false;
+	}
 
-		public static bool CanEatVirtualPlantsNow(Pawn p)
-		{
-			return CanEatVirtualPlants(p, GenTicks.TicksAbs);
-		}
+	public static bool EnvironmentAllowsEatingVirtualPlantsNowAt(PlanetTile tile)
+	{
+		return EnvironmentAllowsEatingVirtualPlantsAt(tile, GenTicks.TicksAbs);
+	}
 
-		public static bool CanEatVirtualPlants(Pawn p, int ticksAbs)
+	public static bool EnvironmentAllowsEatingVirtualPlantsAt(PlanetTile tile, int ticksAbs)
+	{
+		if (!Find.WorldGrid[tile].PrimaryBiome.hasVirtualPlants)
 		{
-			if (p.Tile.Valid && !p.Dead && p.IsWorldPawn() && CanEverEatVirtualPlants(p))
-			{
-				return EnvironmentAllowsEatingVirtualPlantsAt(p.Tile, ticksAbs);
-			}
 			return false;
 		}
-
-		public static bool EnvironmentAllowsEatingVirtualPlantsNowAt(PlanetTile tile)
+		if (GenTemperature.GetTemperatureFromSeasonAtTile(ticksAbs, tile) < 0f)
 		{
-			return EnvironmentAllowsEatingVirtualPlantsAt(tile, GenTicks.TicksAbs);
+			return false;
 		}
+		return true;
+	}
 
-		public static bool EnvironmentAllowsEatingVirtualPlantsAt(PlanetTile tile, int ticksAbs)
+	public static void EatVirtualPlants(Pawn p)
+	{
+		float num = ThingDefOf.Plant_Grass.GetStatValueAbstract(StatDefOf.Nutrition) * VirtualPlantNutritionRandomFactor.RandomInRange;
+		p.needs.food.CurLevel += num;
+	}
+
+	public static string GetVirtualPlantsStatusExplanationAt(PlanetTile tile, int ticksAbs)
+	{
+		StringBuilder stringBuilder = new StringBuilder();
+		if (ticksAbs == GenTicks.TicksAbs)
+		{
+			stringBuilder.Append("AnimalsCanGrazeNow".Translate());
+		}
+		else if (ticksAbs > GenTicks.TicksAbs)
+		{
+			stringBuilder.Append("AnimalsWillBeAbleToGraze".Translate());
+		}
+		else
+		{
+			stringBuilder.Append("AnimalsCanGraze".Translate());
+		}
+		stringBuilder.Append(": ");
+		bool flag = EnvironmentAllowsEatingVirtualPlantsAt(tile, ticksAbs);
+		stringBuilder.Append(flag ? "Yes".Translate() : "No".Translate());
+		if (flag)
+		{
+			float? approxDaysUntilPossibleToGraze = GetApproxDaysUntilPossibleToGraze(tile, ticksAbs, untilNoLongerPossibleToGraze: true);
+			if (approxDaysUntilPossibleToGraze.HasValue)
+			{
+				stringBuilder.Append("\n" + "PossibleToGrazeFor".Translate(approxDaysUntilPossibleToGraze.Value.ToString("0.#")));
+			}
+			else
+			{
+				stringBuilder.Append("\n" + "PossibleToGrazeForever".Translate());
+			}
+		}
+		else
 		{
 			if (!Find.WorldGrid[tile].PrimaryBiome.hasVirtualPlants)
 			{
-				return false;
+				stringBuilder.Append("\n" + "CantGrazeBecauseOfBiome".Translate(Find.WorldGrid[tile].PrimaryBiome.label));
 			}
-			if (GenTemperature.GetTemperatureFromSeasonAtTile(ticksAbs, tile) < 0f)
+			float? approxDaysUntilPossibleToGraze2 = GetApproxDaysUntilPossibleToGraze(tile, ticksAbs);
+			if (approxDaysUntilPossibleToGraze2.HasValue)
 			{
-				return false;
+				stringBuilder.Append("\n" + "CantGrazeBecauseOfTemp".Translate(approxDaysUntilPossibleToGraze2.Value.ToString("0.#")));
 			}
-			return true;
 		}
+		return stringBuilder.ToString();
+	}
 
-		public static void EatVirtualPlants(Pawn p)
+	public static float? GetApproxDaysUntilPossibleToGraze(PlanetTile tile, int ticksAbs, bool untilNoLongerPossibleToGraze = false)
+	{
+		if (!untilNoLongerPossibleToGraze && !Find.WorldGrid[tile].PrimaryBiome.hasVirtualPlants)
 		{
-			float num = ThingDefOf.Plant_Grass.GetStatValueAbstract(StatDefOf.Nutrition) * VirtualPlantNutritionRandomFactor.RandomInRange;
-			p.needs.food.CurLevel += num;
-		}
-
-		public static string GetVirtualPlantsStatusExplanationAt(PlanetTile tile, int ticksAbs)
-		{
-			StringBuilder stringBuilder = new StringBuilder();
-			if (ticksAbs == GenTicks.TicksAbs)
-			{
-				stringBuilder.Append("AnimalsCanGrazeNow".Translate());
-			}
-			else if (ticksAbs > GenTicks.TicksAbs)
-			{
-				stringBuilder.Append("AnimalsWillBeAbleToGraze".Translate());
-			}
-			else
-			{
-				stringBuilder.Append("AnimalsCanGraze".Translate());
-			}
-			stringBuilder.Append(": ");
-			bool flag = EnvironmentAllowsEatingVirtualPlantsAt(tile, ticksAbs);
-			stringBuilder.Append(flag ? "Yes".Translate() : "No".Translate());
-			if (flag)
-			{
-				float? approxDaysUntilPossibleToGraze = GetApproxDaysUntilPossibleToGraze(tile, ticksAbs, untilNoLongerPossibleToGraze: true);
-				if (approxDaysUntilPossibleToGraze.HasValue)
-				{
-					stringBuilder.Append("\n" + "PossibleToGrazeFor".Translate(approxDaysUntilPossibleToGraze.Value.ToString("0.#")));
-				}
-				else
-				{
-					stringBuilder.Append("\n" + "PossibleToGrazeForever".Translate());
-				}
-			}
-			else
-			{
-				if (!Find.WorldGrid[tile].PrimaryBiome.hasVirtualPlants)
-				{
-					stringBuilder.Append("\n" + "CantGrazeBecauseOfBiome".Translate(Find.WorldGrid[tile].PrimaryBiome.label));
-				}
-				float? approxDaysUntilPossibleToGraze2 = GetApproxDaysUntilPossibleToGraze(tile, ticksAbs);
-				if (approxDaysUntilPossibleToGraze2.HasValue)
-				{
-					stringBuilder.Append("\n" + "CantGrazeBecauseOfTemp".Translate(approxDaysUntilPossibleToGraze2.Value.ToString("0.#")));
-				}
-			}
-			return stringBuilder.ToString();
-		}
-
-		public static float? GetApproxDaysUntilPossibleToGraze(PlanetTile tile, int ticksAbs, bool untilNoLongerPossibleToGraze = false)
-		{
-			if (!untilNoLongerPossibleToGraze && !Find.WorldGrid[tile].PrimaryBiome.hasVirtualPlants)
-			{
-				return null;
-			}
-			float num = 0f;
-			for (int i = 0; i < Mathf.CeilToInt(133.33334f); i++)
-			{
-				bool flag = EnvironmentAllowsEatingVirtualPlantsAt(tile, ticksAbs + (int)(num * 60000f));
-				if ((!untilNoLongerPossibleToGraze && flag) || (untilNoLongerPossibleToGraze && !flag))
-				{
-					return num;
-				}
-				num += 0.45f;
-			}
 			return null;
 		}
+		float num = 0f;
+		for (int i = 0; i < Mathf.CeilToInt(133.33334f); i++)
+		{
+			bool flag = EnvironmentAllowsEatingVirtualPlantsAt(tile, ticksAbs + (int)(num * 60000f));
+			if ((!untilNoLongerPossibleToGraze && flag) || (untilNoLongerPossibleToGraze && !flag))
+			{
+				return num;
+			}
+			num += 0.45f;
+		}
+		return null;
 	}
 }

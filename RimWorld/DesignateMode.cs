@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum DesignateMode : byte
 {
-	public enum DesignateMode : byte
-	{
-		Add,
-		Remove
-	}
+	Add,
+	Remove
 }

@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class QuestPart_RequirementsToAcceptNoOngoingBestowingCeremony : QuestPart_RequirementsToAccept
 {
-	public class QuestPart_RequirementsToAcceptNoOngoingBestowingCeremony : QuestPart_RequirementsToAccept
+	public override AcceptanceReport CanAccept()
 	{
-		public override AcceptanceReport CanAccept()
+		if (Find.QuestManager.QuestsListForReading.Any((Quest q) => q.State == QuestState.Ongoing && q.root == QuestScriptDefOf.BestowingCeremony))
 		{
-			if (Find.QuestManager.QuestsListForReading.Any((Quest q) => q.State == QuestState.Ongoing && q.root == QuestScriptDefOf.BestowingCeremony))
-			{
-				return new AcceptanceReport("QuestCanNotStartUntilBestowingCeremonyFinished".Translate());
-			}
-			return true;
+			return new AcceptanceReport("QuestCanNotStartUntilBestowingCeremonyFinished".Translate());
 		}
+		return true;
 	}
 }

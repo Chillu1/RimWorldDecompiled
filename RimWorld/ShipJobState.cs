@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum ShipJobState
 {
-	public enum ShipJobState
-	{
-		Uninitialized,
-		Working,
-		Ended
-	}
+	Uninitialized,
+	Working,
+	Ended
 }

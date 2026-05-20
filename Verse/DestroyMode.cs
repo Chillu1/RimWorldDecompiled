@@ -1,15 +1,14 @@
-namespace Verse
+namespace Verse;
+
+public enum DestroyMode : byte
 {
-	public enum DestroyMode : byte
-	{
-		Vanish,
-		WillReplace,
-		KillFinalize,
-		KillFinalizeLeavingsOnly,
-		Deconstruct,
-		FailConstruction,
-		Cancel,
-		Refund,
-		QuestLogic
-	}
+	Vanish,
+	WillReplace,
+	KillFinalize,
+	KillFinalizeLeavingsOnly,
+	Deconstruct,
+	FailConstruction,
+	Cancel,
+	Refund,
+	QuestLogic
 }

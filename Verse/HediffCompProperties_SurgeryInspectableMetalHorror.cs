@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_SurgeryInspectableMetalHorror : HediffCompProperties_SurgeryInspectable
 {
-	public class HediffCompProperties_SurgeryInspectableMetalHorror : HediffCompProperties_SurgeryInspectable
+	public HediffCompProperties_SurgeryInspectableMetalHorror()
 	{
-		public HediffCompProperties_SurgeryInspectableMetalHorror()
-		{
-			compClass = typeof(HediffComp_SurgeryInspectableMetalhorror);
-		}
+		compClass = typeof(HediffComp_SurgeryInspectableMetalhorror);
 	}
 }

@@ -2,25 +2,24 @@ using Verse;
 using Verse.AI;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobGiver_PrepareCaravan_CollectPawns : JobGiver_PrepareCaravan_RopePawns
 {
-	public class JobGiver_PrepareCaravan_CollectPawns : JobGiver_PrepareCaravan_RopePawns
+	protected override JobDef RopeJobDef => JobDefOf.PrepareCaravan_CollectAnimals;
+
+	protected override bool AnimalNeedsGathering(Pawn pawn, Pawn animal)
 	{
-		protected override JobDef RopeJobDef => JobDefOf.PrepareCaravan_CollectAnimals;
+		return DoesAnimalNeedGathering(pawn, animal);
+	}
 
-		protected override bool AnimalNeedsGathering(Pawn pawn, Pawn animal)
+	public static bool DoesAnimalNeedGathering(Pawn pawn, Pawn animal)
+	{
+		IntVec3 cell = pawn.mindState.duty.focus.Cell;
+		if (AnimalPenUtility.NeedsToBeManagedByRope(animal) && !GatherAnimalsAndSlavesForCaravanUtility.IsRopedByCaravanPawn(animal) && pawn.GetLord() == animal.GetLord() && GatherAnimalsAndSlavesForCaravanUtility.CanRoperTakeAnimalToDest(pawn, animal, cell))
 		{
-			return DoesAnimalNeedGathering(pawn, animal);
+			return pawn.CanReserve(animal);
 		}
-
-		public static bool DoesAnimalNeedGathering(Pawn pawn, Pawn animal)
-		{
-			IntVec3 cell = pawn.mindState.duty.focus.Cell;
-			if (AnimalPenUtility.NeedsToBeManagedByRope(animal) && !GatherAnimalsAndSlavesForCaravanUtility.IsRopedByCaravanPawn(animal) && pawn.GetLord() == animal.GetLord() && GatherAnimalsAndSlavesForCaravanUtility.CanRoperTakeAnimalToDest(pawn, animal, cell))
-			{
-				return pawn.CanReserve(animal);
-			}
-			return false;
-		}
+		return false;
 	}
 }

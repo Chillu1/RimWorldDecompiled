@@ -1,19 +1,18 @@
-namespace Verse
+namespace Verse;
+
+public class RoofDef : Def
 {
-	public class RoofDef : Def
-	{
-		public bool isNatural;
+	public bool isNatural;
 
-		public bool isThickRoof;
+	public bool isThickRoof;
 
-		public ThingDef collapseLeavingThingDef;
+	public ThingDef collapseLeavingThingDef;
 
-		public ThingDef filthLeaving;
+	public ThingDef filthLeaving;
 
-		public SoundDef soundPunchThrough;
+	public SoundDef soundPunchThrough;
 
-		public bool canCollapse = true;
+	public bool canCollapse = true;
 
-		public bool VanishOnCollapse => !isThickRoof;
-	}
+	public bool VanishOnCollapse => !isThickRoof;
 }

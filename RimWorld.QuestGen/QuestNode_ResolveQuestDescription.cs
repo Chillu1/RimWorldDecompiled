@@ -1,35 +1,34 @@
 using Verse.Grammar;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_ResolveQuestDescription : QuestNode
 {
-	public class QuestNode_ResolveQuestDescription : QuestNode
+	public SlateRef<RulePack> rules;
+
+	public const string TextRoot = "questDescription";
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		public SlateRef<RulePack> rules;
+		return true;
+	}
 
-		public const string TextRoot = "questDescription";
-
-		protected override bool TestRunInt(Slate slate)
+	protected override void RunInt()
+	{
+		if (rules.GetValue(QuestGen.slate) != null)
 		{
-			return true;
+			QuestGen.AddQuestDescriptionRules(rules.GetValue(QuestGen.slate));
 		}
+		Resolve();
+	}
 
-		protected override void RunInt()
+	public static void Resolve()
+	{
+		if (!QuestGen.slate.TryGet<string>("resolvedQuestDescription", out var var) && !QuestGen.quest.hidden)
 		{
-			if (rules.GetValue(QuestGen.slate) != null)
-			{
-				QuestGen.AddQuestDescriptionRules(rules.GetValue(QuestGen.slate));
-			}
-			Resolve();
+			var = QuestGenUtility.ResolveAbsoluteText(QuestGen.QuestDescriptionRulesReadOnly, QuestGen.QuestDescriptionConstantsReadOnly, "questDescription");
+			QuestGen.slate.Set("resolvedQuestDescription", var);
 		}
-
-		public static void Resolve()
-		{
-			if (!QuestGen.slate.TryGet<string>("resolvedQuestDescription", out var var) && !QuestGen.quest.hidden)
-			{
-				var = QuestGenUtility.ResolveAbsoluteText(QuestGen.QuestDescriptionRulesReadOnly, QuestGen.QuestDescriptionConstantsReadOnly, "questDescription");
-				QuestGen.slate.Set("resolvedQuestDescription", var);
-			}
-			QuestGen.quest.description = var;
-		}
+		QuestGen.quest.description = var;
 	}
 }

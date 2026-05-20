@@ -1,75 +1,74 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Designator_Haul : Designator
 {
-	public class Designator_Haul : Designator
+	protected override DesignationDef Designation => DesignationDefOf.Haul;
+
+	public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.FilledRectangle;
+
+	public Designator_Haul()
 	{
-		protected override DesignationDef Designation => DesignationDefOf.Haul;
+		defaultLabel = "DesignatorHaulThings".Translate();
+		icon = ContentFinder<Texture2D>.Get("UI/Designators/Haul");
+		defaultDesc = "DesignatorHaulThingsDesc".Translate();
+		soundDragSustain = SoundDefOf.Designate_DragStandard;
+		soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
+		useMouseIcon = true;
+		soundSucceeded = SoundDefOf.Designate_Haul;
+		hotKey = KeyBindingDefOf.Misc12;
+	}
 
-		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.FilledRectangle;
-
-		public Designator_Haul()
+	public override AcceptanceReport CanDesignateCell(IntVec3 c)
+	{
+		if (!c.InBounds(base.Map) || c.Fogged(base.Map))
 		{
-			defaultLabel = "DesignatorHaulThings".Translate();
-			icon = ContentFinder<Texture2D>.Get("UI/Designators/Haul");
-			defaultDesc = "DesignatorHaulThingsDesc".Translate();
-			soundDragSustain = SoundDefOf.Designate_DragStandard;
-			soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
-			useMouseIcon = true;
-			soundSucceeded = SoundDefOf.Designate_Haul;
-			hotKey = KeyBindingDefOf.Misc12;
+			return false;
 		}
-
-		public override AcceptanceReport CanDesignateCell(IntVec3 c)
+		Thing firstHaulable = c.GetFirstHaulable(base.Map);
+		if (firstHaulable == null)
 		{
-			if (!c.InBounds(base.Map) || c.Fogged(base.Map))
-			{
-				return false;
-			}
-			Thing firstHaulable = c.GetFirstHaulable(base.Map);
-			if (firstHaulable == null)
-			{
-				return "MessageMustDesignateHaulable".Translate();
-			}
-			AcceptanceReport result = CanDesignateThing(firstHaulable);
-			if (!result.Accepted)
-			{
-				return result;
-			}
-			return true;
+			return "MessageMustDesignateHaulable".Translate();
 		}
-
-		public override void DesignateSingleCell(IntVec3 c)
+		AcceptanceReport result = CanDesignateThing(firstHaulable);
+		if (!result.Accepted)
 		{
-			DesignateThing(c.GetFirstHaulable(base.Map));
+			return result;
 		}
+		return true;
+	}
 
-		public override AcceptanceReport CanDesignateThing(Thing t)
-		{
-			if (!t.def.designateHaulable)
-			{
-				return false;
-			}
-			if (base.Map.designationManager.DesignationOn(t, Designation) != null)
-			{
-				return false;
-			}
-			if (t.IsInValidStorage())
-			{
-				return "MessageAlreadyInStorage".Translate();
-			}
-			return true;
-		}
+	public override void DesignateSingleCell(IntVec3 c)
+	{
+		DesignateThing(c.GetFirstHaulable(base.Map));
+	}
 
-		public override void DesignateThing(Thing t)
+	public override AcceptanceReport CanDesignateThing(Thing t)
+	{
+		if (!t.def.designateHaulable)
 		{
-			base.Map.designationManager.AddDesignation(new Designation(t, Designation));
+			return false;
 		}
+		if (base.Map.designationManager.DesignationOn(t, Designation) != null)
+		{
+			return false;
+		}
+		if (t.IsInValidStorage())
+		{
+			return "MessageAlreadyInStorage".Translate();
+		}
+		return true;
+	}
 
-		public override void SelectedUpdate()
-		{
-			GenUI.RenderMouseoverBracket();
-		}
+	public override void DesignateThing(Thing t)
+	{
+		base.Map.designationManager.AddDesignation(new Designation(t, Designation));
+	}
+
+	public override void SelectedUpdate()
+	{
+		GenUI.RenderMouseoverBracket();
 	}
 }

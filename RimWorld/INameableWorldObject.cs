@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public interface INameableWorldObject
 {
-	public interface INameableWorldObject
-	{
-		string Name { get; set; }
-	}
+	string Name { get; set; }
 }

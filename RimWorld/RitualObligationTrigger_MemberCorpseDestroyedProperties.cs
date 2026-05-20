@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class RitualObligationTrigger_MemberCorpseDestroyedProperties : RitualObligationTriggerProperties
 {
-	public class RitualObligationTrigger_MemberCorpseDestroyedProperties : RitualObligationTriggerProperties
+	public RitualObligationTrigger_MemberCorpseDestroyedProperties()
 	{
-		public RitualObligationTrigger_MemberCorpseDestroyedProperties()
-		{
-			triggerClass = typeof(RitualObligationTrigger_MemberCorpseDestroyed);
-		}
+		triggerClass = typeof(RitualObligationTrigger_MemberCorpseDestroyed);
 	}
 }

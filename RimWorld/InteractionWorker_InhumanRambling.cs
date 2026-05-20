@@ -1,22 +1,21 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class InteractionWorker_InhumanRambling : InteractionWorker
-	{
-		private const float SelectionWeight_HumanityBreak = 999f;
+namespace RimWorld;
 
-		public override float RandomSelectionWeight(Pawn initiator, Pawn recipient)
+public class InteractionWorker_InhumanRambling : InteractionWorker
+{
+	private const float SelectionWeight_HumanityBreak = 999f;
+
+	public override float RandomSelectionWeight(Pawn initiator, Pawn recipient)
+	{
+		if (!ModsConfig.AnomalyActive)
 		{
-			if (!ModsConfig.AnomalyActive)
-			{
-				return 0f;
-			}
-			if (initiator.MentalStateDef != MentalStateDefOf.HumanityBreak)
-			{
-				return 0f;
-			}
-			return 999f;
+			return 0f;
 		}
+		if (initiator.MentalStateDef != MentalStateDefOf.HumanityBreak)
+		{
+			return 0f;
+		}
+		return 999f;
 	}
 }

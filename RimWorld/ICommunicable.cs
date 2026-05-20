@@ -1,17 +1,16 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public interface ICommunicable
 {
-	public interface ICommunicable
-	{
-		string GetCallLabel();
+	string GetCallLabel();
 
-		string GetInfoText();
+	string GetInfoText();
 
-		void TryOpenComms(Pawn negotiator);
+	void TryOpenComms(Pawn negotiator);
 
-		Faction GetFaction();
+	Faction GetFaction();
 
-		FloatMenuOption CommFloatMenuOption(Building_CommsConsole console, Pawn negotiator);
-	}
+	FloatMenuOption CommFloatMenuOption(Building_CommsConsole console, Pawn negotiator);
 }

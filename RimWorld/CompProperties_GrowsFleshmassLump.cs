@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_GrowsFleshmassLump : CompProperties
 {
-	public class CompProperties_GrowsFleshmassLump : CompProperties
+	public IntRange maxFleshmassRange;
+
+	public IntRange ticksBetweenFleshmassRange;
+
+	public CompProperties_GrowsFleshmassLump()
 	{
-		public IntRange maxFleshmassRange;
-
-		public IntRange ticksBetweenFleshmassRange;
-
-		public CompProperties_GrowsFleshmassLump()
-		{
-			compClass = typeof(CompGrowsFleshmassLump);
-		}
+		compClass = typeof(CompGrowsFleshmassLump);
 	}
 }

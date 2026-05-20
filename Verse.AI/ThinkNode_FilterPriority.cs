@@ -1,31 +1,30 @@
-namespace Verse.AI
+namespace Verse.AI;
+
+public class ThinkNode_FilterPriority : ThinkNode
 {
-	public class ThinkNode_FilterPriority : ThinkNode
+	public float minPriority = 0.5f;
+
+	public override ThinkNode DeepCopy(bool resolve = true)
 	{
-		public float minPriority = 0.5f;
+		ThinkNode_FilterPriority obj = (ThinkNode_FilterPriority)base.DeepCopy(resolve);
+		obj.minPriority = minPriority;
+		return obj;
+	}
 
-		public override ThinkNode DeepCopy(bool resolve = true)
+	public override ThinkResult TryIssueJobPackage(Pawn pawn, JobIssueParams jobParams)
+	{
+		int count = subNodes.Count;
+		for (int i = 0; i < count; i++)
 		{
-			ThinkNode_FilterPriority obj = (ThinkNode_FilterPriority)base.DeepCopy(resolve);
-			obj.minPriority = minPriority;
-			return obj;
-		}
-
-		public override ThinkResult TryIssueJobPackage(Pawn pawn, JobIssueParams jobParams)
-		{
-			int count = subNodes.Count;
-			for (int i = 0; i < count; i++)
+			if (subNodes[i].GetPriority(pawn) > minPriority)
 			{
-				if (subNodes[i].GetPriority(pawn) > minPriority)
+				ThinkResult result = subNodes[i].TryIssueJobPackage(pawn, jobParams);
+				if (result.IsValid)
 				{
-					ThinkResult result = subNodes[i].TryIssueJobPackage(pawn, jobParams);
-					if (result.IsValid)
-					{
-						return result;
-					}
+					return result;
 				}
 			}
-			return ThinkResult.NoJob;
 		}
+		return ThinkResult.NoJob;
 	}
 }

@@ -1,17 +1,16 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_HasSources : CompProperties
 {
-	public class CompProperties_HasSources : CompProperties
+	public bool affectLabel = true;
+
+	[MustTranslate]
+	public string inspectStringLabel;
+
+	public CompProperties_HasSources()
 	{
-		public bool affectLabel = true;
-
-		[MustTranslate]
-		public string inspectStringLabel;
-
-		public CompProperties_HasSources()
-		{
-			compClass = typeof(CompHasSources);
-		}
+		compClass = typeof(CompHasSources);
 	}
 }

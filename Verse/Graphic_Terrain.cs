@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public class Graphic_Terrain : Graphic_Single
 {
-	public class Graphic_Terrain : Graphic_Single
+	public override string ToString()
 	{
-		public override string ToString()
-		{
-			return $"Terrain(path={path}, shader={base.Shader}, color={color})";
-		}
+		return $"Terrain(path={path}, shader={base.Shader}, color={color})";
 	}
 }

@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompLetterOnRevealed : ThingComp
 {
-	public class CompLetterOnRevealed : ThingComp
-	{
-		public CompProperties_LetterOnRevealed Props => (CompProperties_LetterOnRevealed)props;
-	}
+	public CompProperties_LetterOnRevealed Props => (CompProperties_LetterOnRevealed)props;
 }

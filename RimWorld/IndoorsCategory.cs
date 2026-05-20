@@ -1,12 +1,11 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum IndoorsCategory : byte
 {
-	public enum IndoorsCategory : byte
-	{
-		ComfortablyIndoors,
-		JustOutdoors,
-		Outdoors,
-		LongOutdoors,
-		VeryLongOutdoors,
-		BrutalOutdoors
-	}
+	ComfortablyIndoors,
+	JustOutdoors,
+	Outdoors,
+	LongOutdoors,
+	VeryLongOutdoors,
+	BrutalOutdoors
 }

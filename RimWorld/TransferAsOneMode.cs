@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum TransferAsOneMode
 {
-	public enum TransferAsOneMode
-	{
-		Normal,
-		PodsOrCaravanPacking,
-		InactiveTradeable
-	}
+	Normal,
+	PodsOrCaravanPacking,
+	InactiveTradeable
 }

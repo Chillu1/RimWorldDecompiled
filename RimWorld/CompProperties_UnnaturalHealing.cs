@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_UnnaturalHealing : CompProperties_AbilityEffect
 {
-	public class CompProperties_UnnaturalHealing : CompProperties_AbilityEffect
+	public CompProperties_UnnaturalHealing()
 	{
-		public CompProperties_UnnaturalHealing()
-		{
-			compClass = typeof(CompAbilityEffect_UnnaturalHealing);
-		}
+		compClass = typeof(CompAbilityEffect_UnnaturalHealing);
 	}
 }

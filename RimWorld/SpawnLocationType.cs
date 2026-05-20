@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum SpawnLocationType
 {
-	public enum SpawnLocationType
-	{
-		Anywhere,
-		Indoors,
-		Outdoors
-	}
+	Anywhere,
+	Indoors,
+	Outdoors
 }

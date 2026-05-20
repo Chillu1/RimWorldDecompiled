@@ -1,39 +1,38 @@
 using System.Text;
 
-namespace Verse
+namespace Verse;
+
+public abstract class GameComponent : IExposable
 {
-	public abstract class GameComponent : IExposable
+	public virtual void GameComponentUpdate()
 	{
-		public virtual void GameComponentUpdate()
-		{
-		}
+	}
 
-		public virtual void GameComponentTick()
-		{
-		}
+	public virtual void GameComponentTick()
+	{
+	}
 
-		public virtual void GameComponentOnGUI()
-		{
-		}
+	public virtual void GameComponentOnGUI()
+	{
+	}
 
-		public virtual void ExposeData()
-		{
-		}
+	public virtual void ExposeData()
+	{
+	}
 
-		public virtual void FinalizeInit()
-		{
-		}
+	public virtual void FinalizeInit()
+	{
+	}
 
-		public virtual void StartedNewGame()
-		{
-		}
+	public virtual void StartedNewGame()
+	{
+	}
 
-		public virtual void LoadedGame()
-		{
-		}
+	public virtual void LoadedGame()
+	{
+	}
 
-		public virtual void AppendDebugString(StringBuilder sb)
-		{
-		}
+	public virtual void AppendDebugString(StringBuilder sb)
+	{
 	}
 }

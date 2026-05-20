@@ -1,8 +1,7 @@
-namespace Verse.Sound
+namespace Verse.Sound;
+
+public enum SoundParamUpdateMode : byte
 {
-	public enum SoundParamUpdateMode : byte
-	{
-		Constant,
-		OncePerSample
-	}
+	Constant,
+	OncePerSample
 }

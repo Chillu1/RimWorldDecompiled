@@ -1,13 +1,12 @@
-namespace RimWorld
-{
-	[DefOf]
-	public static class StyleItemCategoryDefOf
-	{
-		public static StyleItemCategoryDef Misc;
+namespace RimWorld;
 
-		static StyleItemCategoryDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(StyleItemCategoryDefOf));
-		}
+[DefOf]
+public static class StyleItemCategoryDefOf
+{
+	public static StyleItemCategoryDef Misc;
+
+	static StyleItemCategoryDefOf()
+	{
+		DefOfHelper.EnsureInitializedInCtor(typeof(StyleItemCategoryDefOf));
 	}
 }

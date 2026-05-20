@@ -1,11 +1,10 @@
 using UnityEngine;
 
-namespace RimWorld
-{
-	public class AttachPoint
-	{
-		public Vector3 offset;
+namespace RimWorld;
 
-		public AttachPointType type;
-	}
+public class AttachPoint
+{
+	public Vector3 offset;
+
+	public AttachPointType type;
 }

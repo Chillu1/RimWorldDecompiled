@@ -1,11 +1,10 @@
-namespace Ionic.Zlib
+namespace Ionic.Zlib;
+
+public enum FlushType
 {
-	public enum FlushType
-	{
-		None,
-		Partial,
-		Sync,
-		Full,
-		Finish
-	}
+	None,
+	Partial,
+	Sync,
+	Full,
+	Finish
 }

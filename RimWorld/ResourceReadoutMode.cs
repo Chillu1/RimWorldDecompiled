@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum ResourceReadoutMode : byte
 {
-	public enum ResourceReadoutMode : byte
-	{
-		Simple,
-		Categorized
-	}
+	Simple,
+	Categorized
 }

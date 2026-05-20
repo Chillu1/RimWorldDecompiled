@@ -1,9 +1,8 @@
-namespace Verse.Steam
+namespace Verse.Steam;
+
+public enum WorkshopInteractStage
 {
-	public enum WorkshopInteractStage
-	{
-		None,
-		CreatingItem,
-		SubmittingItem
-	}
+	None,
+	CreatingItem,
+	SubmittingItem
 }

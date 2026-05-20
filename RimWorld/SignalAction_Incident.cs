@@ -1,26 +1,25 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class SignalAction_Incident : SignalAction
 {
-	public class SignalAction_Incident : SignalAction
+	public IncidentDef incident;
+
+	public IncidentParms incidentParms;
+
+	protected override void DoAction(SignalArgs args)
 	{
-		public IncidentDef incident;
-
-		public IncidentParms incidentParms;
-
-		protected override void DoAction(SignalArgs args)
+		if (incident.Worker.CanFireNow(incidentParms))
 		{
-			if (incident.Worker.CanFireNow(incidentParms))
-			{
-				incident.Worker.TryExecute(incidentParms);
-			}
+			incident.Worker.TryExecute(incidentParms);
 		}
+	}
 
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_Defs.Look(ref incident, "incident");
-			Scribe_Deep.Look(ref incidentParms, "incidentParms");
-		}
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Defs.Look(ref incident, "incident");
+		Scribe_Deep.Look(ref incidentParms, "incidentParms");
 	}
 }

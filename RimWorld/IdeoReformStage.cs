@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum IdeoReformStage
 {
-	public enum IdeoReformStage
-	{
-		MemesAndStyles,
-		PreceptsNarrativeAndDeities
-	}
+	MemesAndStyles,
+	PreceptsNarrativeAndDeities
 }

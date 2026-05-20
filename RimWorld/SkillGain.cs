@@ -1,21 +1,20 @@
 using System.Xml;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class SkillGain
 {
-	public class SkillGain
+	public SkillDef skill;
+
+	public int amount;
+
+	public void LoadDataFromXmlCustom(XmlNode xmlRoot)
 	{
-		public SkillDef skill;
-
-		public int amount;
-
-		public void LoadDataFromXmlCustom(XmlNode xmlRoot)
+		DirectXmlCrossRefLoader.RegisterObjectWantsCrossRef(this, "skill", xmlRoot.Name);
+		if (xmlRoot.HasChildNodes)
 		{
-			DirectXmlCrossRefLoader.RegisterObjectWantsCrossRef(this, "skill", xmlRoot.Name);
-			if (xmlRoot.HasChildNodes)
-			{
-				amount = ParseHelper.FromString<int>(xmlRoot.FirstChild.Value);
-			}
+			amount = ParseHelper.FromString<int>(xmlRoot.FirstChild.Value);
 		}
 	}
 }

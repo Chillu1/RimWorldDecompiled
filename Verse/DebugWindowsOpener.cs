@@ -4,197 +4,196 @@ using RimWorld;
 using UnityEngine;
 using Verse.Sound;
 
-namespace Verse
+namespace Verse;
+
+public class DebugWindowsOpener
 {
-	public class DebugWindowsOpener
+	private Action drawButtonsCached;
+
+	private WidgetRow widgetRow = new WidgetRow();
+
+	private float widgetRowFinalX;
+
+	public DebugWindowsOpener()
 	{
-		private Action drawButtonsCached;
+		drawButtonsCached = DrawButtons;
+	}
 
-		private WidgetRow widgetRow = new WidgetRow();
-
-		private float widgetRowFinalX;
-
-		public DebugWindowsOpener()
+	public void DevToolStarterOnGUI()
+	{
+		if (Prefs.DevMode)
 		{
-			drawButtonsCached = DrawButtons;
-		}
-
-		public void DevToolStarterOnGUI()
-		{
-			if (Prefs.DevMode)
-			{
-				Vector2 vector = new Vector2((float)UI.screenWidth * 0.5f - widgetRowFinalX * 0.5f, 3f);
-				float height = 25f;
-				Find.WindowStack.ImmediateWindow(1593759361, new Rect(vector.x, vector.y, widgetRowFinalX, height).Rounded(), WindowLayer.GameUI, drawButtonsCached, doBackground: false, absorbInputAroundWindow: false, 0f);
-				if (KeyBindingDefOf.Dev_ToggleDebugLog.KeyDownEvent)
-				{
-					ToggleLogWindow();
-					Event.current.Use();
-				}
-				if (KeyBindingDefOf.Dev_ToggleDebugActionsMenu.KeyDownEvent)
-				{
-					ToggleDebugActionsMenu();
-					Event.current.Use();
-				}
-				if (KeyBindingDefOf.Dev_ToggleDebugLogMenu.KeyDownEvent)
-				{
-					ToggleDebugLogMenu();
-					Event.current.Use();
-				}
-				if (KeyBindingDefOf.Dev_ToggleDebugSettingsMenu.KeyDownEvent)
-				{
-					ToggleDebugSettingsMenu();
-					Event.current.Use();
-				}
-				if (KeyBindingDefOf.Dev_ToggleDevPalette.KeyDownEvent && Current.ProgramState == ProgramState.Playing)
-				{
-					DebugSettings.devPalette = !DebugSettings.devPalette;
-					TryOpenOrClosePalette();
-					Event.current.Use();
-				}
-				if (KeyBindingDefOf.Dev_ToggleDebugInspector.KeyDownEvent)
-				{
-					ToggleDebugInspector();
-					Event.current.Use();
-				}
-				if (Current.ProgramState == ProgramState.Playing && KeyBindingDefOf.Dev_ToggleGodMode.KeyDownEvent)
-				{
-					ToggleGodMode();
-					Event.current.Use();
-				}
-			}
-		}
-
-		private void DrawButtons()
-		{
-			widgetRow.Init(0f, 0f);
-			if (widgetRow.ButtonIcon(TexButton.ToggleLog, "Open the debug log."))
+			Vector2 vector = new Vector2((float)UI.screenWidth * 0.5f - widgetRowFinalX * 0.5f, 3f);
+			float height = 25f;
+			Find.WindowStack.ImmediateWindow(1593759361, new Rect(vector.x, vector.y, widgetRowFinalX, height).Rounded(), WindowLayer.GameUI, drawButtonsCached, doBackground: false, absorbInputAroundWindow: false, 0f);
+			if (KeyBindingDefOf.Dev_ToggleDebugLog.KeyDownEvent)
 			{
 				ToggleLogWindow();
+				Event.current.Use();
 			}
-			if (widgetRow.ButtonIcon(TexButton.ToggleTweak, "Open tweakvalues menu.\n\nThis lets you change internal values."))
-			{
-				ToggleTweakValuesMenu();
-			}
-			if (widgetRow.ButtonIcon(TexButton.OpenDebugActionsMenu, "Open debug actions menu.\n\nThis lets you spawn items and force various events."))
+			if (KeyBindingDefOf.Dev_ToggleDebugActionsMenu.KeyDownEvent)
 			{
 				ToggleDebugActionsMenu();
+				Event.current.Use();
 			}
-			if (widgetRow.ButtonIcon(TexButton.OpenInspectSettings, "Open the view settings.\n\nThis lets you see special debug visuals."))
-			{
-				ToggleDebugSettingsMenu();
-			}
-			if (widgetRow.ButtonIcon(TexButton.OpenDebugActionsMenu, "Open debug logging menu."))
+			if (KeyBindingDefOf.Dev_ToggleDebugLogMenu.KeyDownEvent)
 			{
 				ToggleDebugLogMenu();
+				Event.current.Use();
 			}
-			if (widgetRow.ButtonIcon(TexButton.OpenInspector, "Open the inspector.\n\nThis lets you inspect what's happening in the game, down to individual variables."))
+			if (KeyBindingDefOf.Dev_ToggleDebugSettingsMenu.KeyDownEvent)
+			{
+				ToggleDebugSettingsMenu();
+				Event.current.Use();
+			}
+			if (KeyBindingDefOf.Dev_ToggleDevPalette.KeyDownEvent && Current.ProgramState == ProgramState.Playing)
+			{
+				DebugSettings.devPalette = !DebugSettings.devPalette;
+				TryOpenOrClosePalette();
+				Event.current.Use();
+			}
+			if (KeyBindingDefOf.Dev_ToggleDebugInspector.KeyDownEvent)
 			{
 				ToggleDebugInspector();
+				Event.current.Use();
 			}
-			if (Current.ProgramState == ProgramState.Playing)
+			if (Current.ProgramState == ProgramState.Playing && KeyBindingDefOf.Dev_ToggleGodMode.KeyDownEvent)
 			{
-				bool toggleable = DebugSettings.devPalette;
-				widgetRow.ToggleableIcon(ref toggleable, TexButton.ToggleDevPalette, "Toggle the dev palette.\n\nAllows you to setup a palette of debug actions for ease of use.");
-				if (toggleable != DebugSettings.devPalette)
-				{
-					DebugSettings.devPalette = toggleable;
-					TryOpenOrClosePalette();
-				}
-				if (widgetRow.ButtonIcon(DebugSettings.godMode ? TexButton.GodModeEnabled : TexButton.GodModeDisabled, "Toggle god mode.\n\nWhen god mode is on, you can build stuff instantly, for free, and sell things that aren't yours."))
-				{
-					ToggleGodMode();
-				}
-			}
-			widgetRowFinalX = widgetRow.FinalX;
-		}
-
-		private void ToggleLogWindow()
-		{
-			if (!Find.WindowStack.TryRemove(typeof(EditWindow_Log)))
-			{
-				Find.WindowStack.Add(new EditWindow_Log());
+				ToggleGodMode();
+				Event.current.Use();
 			}
 		}
+	}
 
-		private void ToggleDebugSettingsMenu()
+	private void DrawButtons()
+	{
+		widgetRow.Init(0f, 0f);
+		if (widgetRow.ButtonIcon(TexButton.ToggleLog, "Open the debug log."))
 		{
-			Dialog_Debug dialog_Debug = Find.WindowStack.WindowOfType<Dialog_Debug>();
-			if (dialog_Debug == null)
+			ToggleLogWindow();
+		}
+		if (widgetRow.ButtonIcon(TexButton.ToggleTweak, "Open tweakvalues menu.\n\nThis lets you change internal values."))
+		{
+			ToggleTweakValuesMenu();
+		}
+		if (widgetRow.ButtonIcon(TexButton.OpenDebugActionsMenu, "Open debug actions menu.\n\nThis lets you spawn items and force various events."))
+		{
+			ToggleDebugActionsMenu();
+		}
+		if (widgetRow.ButtonIcon(TexButton.OpenInspectSettings, "Open the view settings.\n\nThis lets you see special debug visuals."))
+		{
+			ToggleDebugSettingsMenu();
+		}
+		if (widgetRow.ButtonIcon(TexButton.OpenDebugActionsMenu, "Open debug logging menu."))
+		{
+			ToggleDebugLogMenu();
+		}
+		if (widgetRow.ButtonIcon(TexButton.OpenInspector, "Open the inspector.\n\nThis lets you inspect what's happening in the game, down to individual variables."))
+		{
+			ToggleDebugInspector();
+		}
+		if (Current.ProgramState == ProgramState.Playing)
+		{
+			bool toggleable = DebugSettings.devPalette;
+			widgetRow.ToggleableIcon(ref toggleable, TexButton.ToggleDevPalette, "Toggle the dev palette.\n\nAllows you to setup a palette of debug actions for ease of use.");
+			if (toggleable != DebugSettings.devPalette)
 			{
-				Find.WindowStack.Add(new Dialog_Debug(DebugTabMenuDefOf.Settings));
+				DebugSettings.devPalette = toggleable;
+				TryOpenOrClosePalette();
 			}
-			else
+			if (widgetRow.ButtonIcon(DebugSettings.godMode ? TexButton.GodModeEnabled : TexButton.GodModeDisabled, "Toggle god mode.\n\nWhen god mode is on, you can build stuff instantly, for free, and sell things that aren't yours."))
 			{
-				dialog_Debug.SwitchTab(DebugTabMenuDefOf.Settings);
+				ToggleGodMode();
 			}
 		}
+		widgetRowFinalX = widgetRow.FinalX;
+	}
 
-		private void ToggleDebugActionsMenu()
+	private void ToggleLogWindow()
+	{
+		if (!Find.WindowStack.TryRemove(typeof(EditWindow_Log)))
 		{
-			Dialog_Debug dialog_Debug = Find.WindowStack.WindowOfType<Dialog_Debug>();
-			if (dialog_Debug == null)
-			{
-				Find.WindowStack.Add(new Dialog_Debug(DebugTabMenuDefOf.Actions));
-			}
-			else
-			{
-				dialog_Debug.SwitchTab(DebugTabMenuDefOf.Actions);
-			}
+			Find.WindowStack.Add(new EditWindow_Log());
 		}
+	}
 
-		private void ToggleTweakValuesMenu()
+	private void ToggleDebugSettingsMenu()
+	{
+		Dialog_Debug dialog_Debug = Find.WindowStack.WindowOfType<Dialog_Debug>();
+		if (dialog_Debug == null)
 		{
-			if (!Find.WindowStack.TryRemove(typeof(EditWindow_TweakValues)))
-			{
-				Find.WindowStack.Add(new EditWindow_TweakValues());
-			}
+			Find.WindowStack.Add(new Dialog_Debug(DebugTabMenuDefOf.Settings));
 		}
-
-		private void ToggleDebugLogMenu()
+		else
 		{
-			Dialog_Debug dialog_Debug = Find.WindowStack.WindowOfType<Dialog_Debug>();
-			if (dialog_Debug == null)
-			{
-				Find.WindowStack.Add(new Dialog_Debug(DebugTabMenuDefOf.Output));
-			}
-			else
-			{
-				dialog_Debug.SwitchTab(DebugTabMenuDefOf.Output);
-			}
+			dialog_Debug.SwitchTab(DebugTabMenuDefOf.Settings);
 		}
+	}
 
-		private void ToggleDebugInspector()
+	private void ToggleDebugActionsMenu()
+	{
+		Dialog_Debug dialog_Debug = Find.WindowStack.WindowOfType<Dialog_Debug>();
+		if (dialog_Debug == null)
 		{
-			if (!Find.WindowStack.TryRemove(typeof(EditWindow_DebugInspector)))
-			{
-				Find.WindowStack.Add(new EditWindow_DebugInspector());
-			}
+			Find.WindowStack.Add(new Dialog_Debug(DebugTabMenuDefOf.Actions));
 		}
-
-		private void ToggleGodMode()
+		else
 		{
-			DebugSettings.godMode = !DebugSettings.godMode;
-			if (DebugSettings.godMode)
-			{
-				SoundDefOf.Checkbox_TurnedOn.PlayOneShotOnCamera();
-			}
-			else
-			{
-				SoundDefOf.Checkbox_TurnedOff.PlayOneShotOnCamera();
-			}
+			dialog_Debug.SwitchTab(DebugTabMenuDefOf.Actions);
 		}
+	}
 
-		public void TryOpenOrClosePalette()
+	private void ToggleTweakValuesMenu()
+	{
+		if (!Find.WindowStack.TryRemove(typeof(EditWindow_TweakValues)))
 		{
-			if (DebugSettings.devPalette)
-			{
-				Find.WindowStack.Add(new Dialog_DevPalette());
-			}
-			else
-			{
-				Find.WindowStack.TryRemove(typeof(Dialog_DevPalette));
-			}
+			Find.WindowStack.Add(new EditWindow_TweakValues());
+		}
+	}
+
+	private void ToggleDebugLogMenu()
+	{
+		Dialog_Debug dialog_Debug = Find.WindowStack.WindowOfType<Dialog_Debug>();
+		if (dialog_Debug == null)
+		{
+			Find.WindowStack.Add(new Dialog_Debug(DebugTabMenuDefOf.Output));
+		}
+		else
+		{
+			dialog_Debug.SwitchTab(DebugTabMenuDefOf.Output);
+		}
+	}
+
+	private void ToggleDebugInspector()
+	{
+		if (!Find.WindowStack.TryRemove(typeof(EditWindow_DebugInspector)))
+		{
+			Find.WindowStack.Add(new EditWindow_DebugInspector());
+		}
+	}
+
+	private void ToggleGodMode()
+	{
+		DebugSettings.godMode = !DebugSettings.godMode;
+		if (DebugSettings.godMode)
+		{
+			SoundDefOf.Checkbox_TurnedOn.PlayOneShotOnCamera();
+		}
+		else
+		{
+			SoundDefOf.Checkbox_TurnedOff.PlayOneShotOnCamera();
+		}
+	}
+
+	public void TryOpenOrClosePalette()
+	{
+		if (DebugSettings.devPalette)
+		{
+			Find.WindowStack.Add(new Dialog_DevPalette());
+		}
+		else
+		{
+			Find.WindowStack.TryRemove(typeof(Dialog_DevPalette));
 		}
 	}
 }

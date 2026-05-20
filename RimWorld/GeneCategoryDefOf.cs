@@ -1,18 +1,17 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+[DefOf]
+public static class GeneCategoryDefOf
 {
-	[DefOf]
-	public static class GeneCategoryDefOf
+	[MayRequireBiotech]
+	public static GeneCategoryDef Archite;
+
+	public static GeneCategoryDef Miscellaneous;
+
+	static GeneCategoryDefOf()
 	{
-		[MayRequireBiotech]
-		public static GeneCategoryDef Archite;
-
-		public static GeneCategoryDef Miscellaneous;
-
-		static GeneCategoryDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(GeneCategoryDefOf));
-		}
+		DefOfHelper.EnsureInitializedInCtor(typeof(GeneCategoryDefOf));
 	}
 }

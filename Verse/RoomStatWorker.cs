@@ -1,9 +1,8 @@
-namespace Verse
-{
-	public abstract class RoomStatWorker
-	{
-		public RoomStatDef def;
+namespace Verse;
 
-		public abstract float GetScore(Room room);
-	}
+public abstract class RoomStatWorker
+{
+	public RoomStatDef def;
+
+	public abstract float GetScore(Room room);
 }

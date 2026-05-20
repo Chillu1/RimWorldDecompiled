@@ -1,41 +1,40 @@
 using RimWorld;
 using Verse.AI.Group;
 
-namespace Verse
+namespace Verse;
+
+public class Hediff_PsychicTrance : HediffWithComps
 {
-	public class Hediff_PsychicTrance : HediffWithComps
+	public override bool ShouldRemove
 	{
-		public override bool ShouldRemove
+		get
 		{
-			get
+			if (base.ShouldRemove)
 			{
-				if (base.ShouldRemove)
-				{
-					return true;
-				}
-				if (pawn.mindState.duty != null && pawn.mindState.duty.def == DutyDefOf.PerformHateChant)
-				{
-					return false;
-				}
-				Lord lord = pawn.GetLord();
-				if (lord != null && lord.LordJob is LordJob_PsychicRitual)
-				{
-					return false;
-				}
 				return true;
 			}
+			if (pawn.mindState.duty != null && pawn.mindState.duty.def == DutyDefOf.PerformHateChant)
+			{
+				return false;
+			}
+			Lord lord = pawn.GetLord();
+			if (lord != null && lord.LordJob is LordJob_PsychicRitual)
+			{
+				return false;
+			}
+			return true;
 		}
+	}
 
-		public override void PostAdd(DamageInfo? dinfo)
+	public override void PostAdd(DamageInfo? dinfo)
+	{
+		if (!ModLister.CheckAnomaly("Psychic trance"))
 		{
-			if (!ModLister.CheckAnomaly("Psychic trance"))
-			{
-				pawn.health.RemoveHediff(this);
-			}
-			else
-			{
-				base.PostAdd(dinfo);
-			}
+			pawn.health.RemoveHediff(this);
+		}
+		else
+		{
+			base.PostAdd(dinfo);
 		}
 	}
 }

@@ -1,9 +1,8 @@
-namespace RimWorld
-{
-	public class CachedRebellionMtb
-	{
-		public int gameTick;
+namespace RimWorld;
 
-		public float mtb;
-	}
+public class CachedRebellionMtb
+{
+	public int gameTick;
+
+	public float mtb;
 }

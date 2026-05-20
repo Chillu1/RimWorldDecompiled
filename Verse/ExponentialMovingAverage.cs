@@ -1,40 +1,39 @@
-namespace Verse
+namespace Verse;
+
+public class ExponentialMovingAverage
 {
-	public class ExponentialMovingAverage
+	private readonly float alpha;
+
+	private float average;
+
+	private bool initialized;
+
+	public ExponentialMovingAverage(float alpha)
 	{
-		private readonly float alpha;
+		this.alpha = alpha;
+	}
 
-		private float average;
-
-		private bool initialized;
-
-		public ExponentialMovingAverage(float alpha)
+	public void AddValue(float value)
+	{
+		if (!initialized)
 		{
-			this.alpha = alpha;
+			average = value;
+			initialized = true;
 		}
-
-		public void AddValue(float value)
+		else
 		{
-			if (!initialized)
-			{
-				average = value;
-				initialized = true;
-			}
-			else
-			{
-				average = alpha * value + (1f - alpha) * average;
-			}
+			average = alpha * value + (1f - alpha) * average;
 		}
+	}
 
-		public float GetAverage()
-		{
-			return average;
-		}
+	public float GetAverage()
+	{
+		return average;
+	}
 
-		public void Reset()
-		{
-			initialized = false;
-			average = 0f;
-		}
+	public void Reset()
+	{
+		initialized = false;
+		average = 0f;
 	}
 }

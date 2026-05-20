@@ -1,20 +1,19 @@
 using RimWorld;
 
-namespace Verse
-{
-	public class HediffComp_EntropyLink : HediffComp
-	{
-		public HediffCompProperties_EntropyLink Props => (HediffCompProperties_EntropyLink)props;
+namespace Verse;
 
-		public override void Notify_EntropyGained(float baseAmount, float finalAmount, Thing source = null)
+public class HediffComp_EntropyLink : HediffComp
+{
+	public HediffCompProperties_EntropyLink Props => (HediffCompProperties_EntropyLink)props;
+
+	public override void Notify_EntropyGained(float baseAmount, float finalAmount, Thing source = null)
+	{
+		base.Notify_EntropyGained(baseAmount, finalAmount, source);
+		HediffComp_Link hediffComp_Link = parent.TryGetComp<HediffComp_Link>();
+		if (hediffComp_Link != null && hediffComp_Link.other != source && hediffComp_Link.OtherPawn.psychicEntropy != null)
 		{
-			base.Notify_EntropyGained(baseAmount, finalAmount, source);
-			HediffComp_Link hediffComp_Link = parent.TryGetComp<HediffComp_Link>();
-			if (hediffComp_Link != null && hediffComp_Link.other != source && hediffComp_Link.OtherPawn.psychicEntropy != null)
-			{
-				hediffComp_Link.OtherPawn.psychicEntropy.TryAddEntropy(baseAmount * Props.entropyTransferAmount, parent.pawn, scale: false);
-				MoteMaker.MakeInteractionOverlay(ThingDefOf.Mote_PsychicLinkPulse, parent.pawn, hediffComp_Link.other);
-			}
+			hediffComp_Link.OtherPawn.psychicEntropy.TryAddEntropy(baseAmount * Props.entropyTransferAmount, parent.pawn, scale: false);
+			MoteMaker.MakeInteractionOverlay(ThingDefOf.Mote_PsychicLinkPulse, parent.pawn, hediffComp_Link.other);
 		}
 	}
 }

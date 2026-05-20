@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class HistoryAutoRecorderWorker
 {
-	public class HistoryAutoRecorderWorker
+	public virtual float PullRecord()
 	{
-		public virtual float PullRecord()
-		{
-			return 0f;
-		}
+		return 0f;
 	}
 }

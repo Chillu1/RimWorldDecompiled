@@ -1,25 +1,24 @@
-namespace Verse
+namespace Verse;
+
+public class HediffWithTarget : HediffWithComps
 {
-	public class HediffWithTarget : HediffWithComps
+	public Thing target;
+
+	public override bool ShouldRemove
 	{
-		public Thing target;
-
-		public override bool ShouldRemove
+		get
 		{
-			get
+			if (target != null && !(target is Pawn { Dead: not false }))
 			{
-				if (target != null && !(target is Pawn { Dead: not false }))
-				{
-					return base.ShouldRemove;
-				}
-				return true;
+				return base.ShouldRemove;
 			}
+			return true;
 		}
+	}
 
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_References.Look(ref target, "target");
-		}
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_References.Look(ref target, "target");
 	}
 }

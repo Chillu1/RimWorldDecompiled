@@ -2,34 +2,33 @@ using System.Collections.Generic;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_Ignite : JobDriver
 {
-	public class JobDriver_Ignite : JobDriver
+	public const TargetIndex TargetInd = TargetIndex.A;
+
+	public Thing TargetThing => job.GetTarget(TargetIndex.A).Thing;
+
+	public override bool TryMakePreToilReservations(bool errorOnFailed)
 	{
-		public const TargetIndex TargetInd = TargetIndex.A;
+		return true;
+	}
 
-		public Thing TargetThing => job.GetTarget(TargetIndex.A).Thing;
-
-		public override bool TryMakePreToilReservations(bool errorOnFailed)
+	protected override IEnumerable<Toil> MakeNewToils()
+	{
+		this.FailOnDespawnedOrNull(TargetIndex.A);
+		Toil toil = Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch).FailOnBurningImmobile(TargetIndex.A);
+		if (job.ensureReachable)
 		{
-			return true;
+			toil.FailOnCannotReach(TargetIndex.A, PathEndMode.Touch);
 		}
-
-		protected override IEnumerable<Toil> MakeNewToils()
+		yield return toil;
+		Toil toil2 = ToilMaker.MakeToil("MakeNewToils");
+		toil2.initAction = delegate
 		{
-			this.FailOnDespawnedOrNull(TargetIndex.A);
-			Toil toil = Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch).FailOnBurningImmobile(TargetIndex.A);
-			if (job.ensureReachable)
-			{
-				toil.FailOnCannotReach(TargetIndex.A, PathEndMode.Touch);
-			}
-			yield return toil;
-			Toil toil2 = ToilMaker.MakeToil("MakeNewToils");
-			toil2.initAction = delegate
-			{
-				pawn.natives.TryStartIgnite(TargetThing);
-			};
-			yield return toil2;
-		}
+			pawn.natives.TryStartIgnite(TargetThing);
+		};
+		yield return toil2;
 	}
 }

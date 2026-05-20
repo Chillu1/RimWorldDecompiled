@@ -3,39 +3,38 @@ using Verse;
 using Verse.AI;
 using Verse.AI.Group;
 
-namespace RimWorld
-{
-	public class WorkGiver_HelpGatheringItemsForCaravan : WorkGiver
-	{
-		public override Job NonScanJob(Pawn pawn)
-		{
-			List<Lord> lords = pawn.Map.lordManager.lords;
-			for (int i = 0; i < lords.Count; i++)
-			{
-				if (lords[i].LordJob is LordJob_FormAndSendCaravan { GatheringItemsNow: not false })
-				{
-					Thing thing = GatherItemsForCaravanUtility.FindThingToHaul(pawn, lords[i]);
-					if (thing != null && AnyReachableCarrierOrColonist(pawn, lords[i]))
-					{
-						Job job = JobMaker.MakeJob(JobDefOf.PrepareCaravan_GatherItems, thing);
-						job.lord = lords[i];
-						return job;
-					}
-				}
-			}
-			return null;
-		}
+namespace RimWorld;
 
-		private bool AnyReachableCarrierOrColonist(Pawn forPawn, Lord lord)
+public class WorkGiver_HelpGatheringItemsForCaravan : WorkGiver
+{
+	public override Job NonScanJob(Pawn pawn)
+	{
+		List<Lord> lords = pawn.Map.lordManager.lords;
+		for (int i = 0; i < lords.Count; i++)
 		{
-			for (int i = 0; i < lord.ownedPawns.Count; i++)
+			if (lords[i].LordJob is LordJob_FormAndSendCaravan { GatheringItemsNow: not false })
 			{
-				if (JobDriver_PrepareCaravan_GatherItems.IsUsableCarrier(lord.ownedPawns[i], forPawn, allowColonists: false) && !lord.ownedPawns[i].IsForbidden(forPawn) && forPawn.CanReach(lord.ownedPawns[i], PathEndMode.Touch, Danger.Deadly))
+				Thing thing = GatherItemsForCaravanUtility.FindThingToHaul(pawn, lords[i]);
+				if (thing != null && AnyReachableCarrierOrColonist(pawn, lords[i]))
 				{
-					return true;
+					Job job = JobMaker.MakeJob(JobDefOf.PrepareCaravan_GatherItems, thing);
+					job.lord = lords[i];
+					return job;
 				}
 			}
-			return false;
 		}
+		return null;
+	}
+
+	private bool AnyReachableCarrierOrColonist(Pawn forPawn, Lord lord)
+	{
+		for (int i = 0; i < lord.ownedPawns.Count; i++)
+		{
+			if (JobDriver_PrepareCaravan_GatherItems.IsUsableCarrier(lord.ownedPawns[i], forPawn, allowColonists: false) && !lord.ownedPawns[i].IsForbidden(forPawn) && forPawn.CanReach(lord.ownedPawns[i], PathEndMode.Touch, Danger.Deadly))
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 }

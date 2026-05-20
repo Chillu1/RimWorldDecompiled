@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+internal enum DefInjectionPathPartKind
 {
-	internal enum DefInjectionPathPartKind
-	{
-		Field,
-		ListIndex,
-		ListHandle,
-		ListHandleWithIndex
-	}
+	Field,
+	ListIndex,
+	ListHandle,
+	ListHandleWithIndex
 }

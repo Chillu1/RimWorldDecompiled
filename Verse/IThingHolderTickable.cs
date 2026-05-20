@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public interface IThingHolderTickable : IThingHolder
 {
-	public interface IThingHolderTickable : IThingHolder
-	{
-		bool ShouldTickContents { get; }
-	}
+	bool ShouldTickContents { get; }
 }

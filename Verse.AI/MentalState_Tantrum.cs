@@ -1,32 +1,31 @@
 using RimWorld;
 
-namespace Verse.AI
+namespace Verse.AI;
+
+public abstract class MentalState_Tantrum : MentalState
 {
-	public abstract class MentalState_Tantrum : MentalState
+	public Thing target;
+
+	protected bool hitTargetAtLeastOnce;
+
+	public override void ExposeData()
 	{
-		public Thing target;
+		base.ExposeData();
+		Scribe_References.Look(ref target, "target");
+		Scribe_Values.Look(ref hitTargetAtLeastOnce, "hitTargetAtLeastOnce", defaultValue: false);
+	}
 
-		protected bool hitTargetAtLeastOnce;
+	public override RandomSocialMode SocialModeMax()
+	{
+		return RandomSocialMode.Off;
+	}
 
-		public override void ExposeData()
+	public override void Notify_AttackedTarget(LocalTargetInfo hitTarget)
+	{
+		base.Notify_AttackedTarget(hitTarget);
+		if (target != null && hitTarget.Thing == target)
 		{
-			base.ExposeData();
-			Scribe_References.Look(ref target, "target");
-			Scribe_Values.Look(ref hitTargetAtLeastOnce, "hitTargetAtLeastOnce", defaultValue: false);
-		}
-
-		public override RandomSocialMode SocialModeMax()
-		{
-			return RandomSocialMode.Off;
-		}
-
-		public override void Notify_AttackedTarget(LocalTargetInfo hitTarget)
-		{
-			base.Notify_AttackedTarget(hitTarget);
-			if (target != null && hitTarget.Thing == target)
-			{
-				hitTargetAtLeastOnce = true;
-			}
+			hitTargetAtLeastOnce = true;
 		}
 	}
 }

@@ -1,8 +1,7 @@
-namespace Verse
+namespace Verse;
+
+public enum SpanDirection : byte
 {
-	public enum SpanDirection : byte
-	{
-		North,
-		East
-	}
+	North,
+	East
 }

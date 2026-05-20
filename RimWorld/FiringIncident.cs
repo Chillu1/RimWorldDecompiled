@@ -1,53 +1,52 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class FiringIncident : IExposable
 {
-	public class FiringIncident : IExposable
+	public IncidentDef def;
+
+	public IncidentParms parms = new IncidentParms();
+
+	public StorytellerComp source;
+
+	public QuestPart sourceQuestPart;
+
+	public FiringIncident()
 	{
-		public IncidentDef def;
+	}
 
-		public IncidentParms parms = new IncidentParms();
-
-		public StorytellerComp source;
-
-		public QuestPart sourceQuestPart;
-
-		public FiringIncident()
+	public FiringIncident(IncidentDef def, StorytellerComp source, IncidentParms parms = null)
+	{
+		this.def = def;
+		if (parms != null)
 		{
+			this.parms = parms;
 		}
+		this.source = source;
+	}
 
-		public FiringIncident(IncidentDef def, StorytellerComp source, IncidentParms parms = null)
-		{
-			this.def = def;
-			if (parms != null)
-			{
-				this.parms = parms;
-			}
-			this.source = source;
-		}
+	public void ExposeData()
+	{
+		Scribe_Defs.Look(ref def, "def");
+		Scribe_Deep.Look(ref parms, "parms");
+	}
 
-		public void ExposeData()
+	public override string ToString()
+	{
+		string text = def.defName;
+		if (parms != null)
 		{
-			Scribe_Defs.Look(ref def, "def");
-			Scribe_Deep.Look(ref parms, "parms");
+			text = text + ", parms=(" + parms.ToString() + ")";
 		}
-
-		public override string ToString()
+		if (source != null)
 		{
-			string text = def.defName;
-			if (parms != null)
-			{
-				text = text + ", parms=(" + parms.ToString() + ")";
-			}
-			if (source != null)
-			{
-				text = text + ", source=" + source;
-			}
-			if (sourceQuestPart != null)
-			{
-				text = text + ", sourceQuestPart=" + sourceQuestPart;
-			}
-			return text;
+			text = text + ", source=" + source;
 		}
+		if (sourceQuestPart != null)
+		{
+			text = text + ", sourceQuestPart=" + sourceQuestPart;
+		}
+		return text;
 	}
 }

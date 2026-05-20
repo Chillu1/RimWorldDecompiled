@@ -2,27 +2,26 @@ using System.Collections.Generic;
 using System.Linq;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_StatOffsetBase : CompProperties
 {
-	public class CompProperties_StatOffsetBase : CompProperties
+	public StatDef statDef;
+
+	public List<FocusStrengthOffset> offsets = new List<FocusStrengthOffset>();
+
+	public virtual IEnumerable<string> GetExplanationAbstract(ThingDef def)
 	{
-		public StatDef statDef;
+		return Enumerable.Empty<string>();
+	}
 
-		public List<FocusStrengthOffset> offsets = new List<FocusStrengthOffset>();
-
-		public virtual IEnumerable<string> GetExplanationAbstract(ThingDef def)
+	public virtual float GetMaxOffset(Thing parent = null)
+	{
+		float num = 0f;
+		for (int i = 0; i < offsets.Count; i++)
 		{
-			return Enumerable.Empty<string>();
+			num += offsets[i].MaxOffset(parent);
 		}
-
-		public virtual float GetMaxOffset(Thing parent = null)
-		{
-			float num = 0f;
-			for (int i = 0; i < offsets.Count; i++)
-			{
-				num += offsets[i].MaxOffset(parent);
-			}
-			return num;
-		}
+		return num;
 	}
 }

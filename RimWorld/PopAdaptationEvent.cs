@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum PopAdaptationEvent
 {
-	public enum PopAdaptationEvent
-	{
-		GainedColonist
-	}
+	GainedColonist
 }

@@ -1,8 +1,7 @@
-namespace Verse
+namespace Verse;
+
+public enum HighlightStyleMode : byte
 {
-	public enum HighlightStyleMode : byte
-	{
-		Dots,
-		Silhouettes
-	}
+	Dots,
+	Silhouettes
 }

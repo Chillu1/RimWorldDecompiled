@@ -1,34 +1,33 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_GetHivesCountFromPoints : QuestNode
 {
-	public class QuestNode_GetHivesCountFromPoints : QuestNode
+	[NoTranslate]
+	public SlateRef<string> storeAs;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		[NoTranslate]
-		public SlateRef<string> storeAs;
+		SetVars(slate);
+		return true;
+	}
 
-		protected override bool TestRunInt(Slate slate)
-		{
-			SetVars(slate);
-			return true;
-		}
+	protected override void RunInt()
+	{
+		SetVars(QuestGen.slate);
+	}
 
-		protected override void RunInt()
+	private void SetVars(Slate slate)
+	{
+		float num = slate.Get("points", 0f);
+		num *= IncidentWorker_Infestation.PointsFactorCurve.Evaluate(num);
+		int num2 = Mathf.RoundToInt(num / 220f);
+		if (num2 < 1)
 		{
-			SetVars(QuestGen.slate);
+			num2 = 1;
 		}
-
-		private void SetVars(Slate slate)
-		{
-			float num = slate.Get("points", 0f);
-			num *= IncidentWorker_Infestation.PointsFactorCurve.Evaluate(num);
-			int num2 = Mathf.RoundToInt(num / 220f);
-			if (num2 < 1)
-			{
-				num2 = 1;
-			}
-			slate.Set(storeAs.GetValue(slate), num2);
-		}
+		slate.Set(storeAs.GetValue(slate), num2);
 	}
 }

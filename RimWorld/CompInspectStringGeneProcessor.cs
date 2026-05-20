@@ -1,16 +1,15 @@
 using System.Text;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompInspectStringGeneProcessor : CompInspectString
 {
-	public class CompInspectStringGeneProcessor : CompInspectString
+	public override string CompInspectStringExtra()
 	{
-		public override string CompInspectStringExtra()
-		{
-			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.Append(base.Props.inspectString);
-			stringBuilder.Append(": +");
-			stringBuilder.Append(parent.GetStatValue(StatDefOf.GeneticComplexityIncrease));
-			return stringBuilder.ToString();
-		}
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.Append(base.Props.inspectString);
+		stringBuilder.Append(": +");
+		stringBuilder.Append(parent.GetStatValue(StatDefOf.GeneticComplexityIncrease));
+		return stringBuilder.ToString();
 	}
 }

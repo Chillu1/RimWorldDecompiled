@@ -1,40 +1,39 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Verb_FirefoamPop : Verb
 {
-	public class Verb_FirefoamPop : Verb
+	private CompExplosive Explosive => base.EquipmentSource.GetComp<CompExplosive>();
+
+	private CompApparelReloadable Reloadable => base.EquipmentSource.GetComp<CompApparelReloadable>();
+
+	private float Radius => Explosive.ExplosiveRadius();
+
+	protected override bool TryCastShot()
 	{
-		private CompExplosive Explosive => base.EquipmentSource.GetComp<CompExplosive>();
+		return Pop(caster, Explosive, Reloadable);
+	}
 
-		private CompApparelReloadable Reloadable => base.EquipmentSource.GetComp<CompApparelReloadable>();
+	public override float HighlightFieldRadiusAroundTarget(out bool needLOSToCenter)
+	{
+		needLOSToCenter = true;
+		return Radius;
+	}
 
-		private float Radius => Explosive.ExplosiveRadius();
+	public override void DrawHighlight(LocalTargetInfo target)
+	{
+		DrawHighlightFieldRadiusAroundTarget(caster);
+	}
 
-		protected override bool TryCastShot()
+	public static bool Pop(Thing caster, CompExplosive explosive, CompApparelReloadable reloadable)
+	{
+		if (reloadable == null || explosive == null || !reloadable.CanBeUsed(out var _))
 		{
-			return Pop(caster, Explosive, Reloadable);
+			return false;
 		}
-
-		public override float HighlightFieldRadiusAroundTarget(out bool needLOSToCenter)
-		{
-			needLOSToCenter = true;
-			return Radius;
-		}
-
-		public override void DrawHighlight(LocalTargetInfo target)
-		{
-			DrawHighlightFieldRadiusAroundTarget(caster);
-		}
-
-		public static bool Pop(Thing caster, CompExplosive explosive, CompApparelReloadable reloadable)
-		{
-			if (reloadable == null || explosive == null || !reloadable.CanBeUsed(out var _))
-			{
-				return false;
-			}
-			explosive.StartWick(caster);
-			reloadable.UsedOnce();
-			return true;
-		}
+		explosive.StartWick(caster);
+		reloadable.UsedOnce();
+		return true;
 	}
 }

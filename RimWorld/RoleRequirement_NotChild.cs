@@ -1,19 +1,18 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RoleRequirement_NotChild : RoleRequirement
 {
-	public class RoleRequirement_NotChild : RoleRequirement
+	public static readonly RoleRequirement_NotChild Requirement = new RoleRequirement_NotChild();
+
+	public override string GetLabel(Precept_Role role)
 	{
-		public static readonly RoleRequirement_NotChild Requirement = new RoleRequirement_NotChild();
+		return "RoleRequirementCannotBe".Translate();
+	}
 
-		public override string GetLabel(Precept_Role role)
-		{
-			return "RoleRequirementCannotBe".Translate();
-		}
-
-		public override bool Met(Pawn p, Precept_Role role)
-		{
-			return !p.DevelopmentalStage.Juvenile();
-		}
+	public override bool Met(Pawn p, Precept_Role role)
+	{
+		return !p.DevelopmentalStage.Juvenile();
 	}
 }

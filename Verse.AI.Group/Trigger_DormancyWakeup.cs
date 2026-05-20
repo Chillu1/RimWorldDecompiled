@@ -1,10 +1,9 @@
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public class Trigger_DormancyWakeup : Trigger
 {
-	public class Trigger_DormancyWakeup : Trigger
+	public override bool ActivateOn(Lord lord, TriggerSignal signal)
 	{
-		public override bool ActivateOn(Lord lord, TriggerSignal signal)
-		{
-			return signal.type == TriggerSignalType.DormancyWakeup;
-		}
+		return signal.type == TriggerSignalType.DormancyWakeup;
 	}
 }

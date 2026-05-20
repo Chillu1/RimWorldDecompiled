@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum PawnBioType
 {
-	public enum PawnBioType
-	{
-		Undefined,
-		BackstoryInGame,
-		PirateKing
-	}
+	Undefined,
+	BackstoryInGame,
+	PirateKing
 }

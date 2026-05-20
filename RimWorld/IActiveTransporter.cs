@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public interface IActiveTransporter : IThingHolder
 {
-	public interface IActiveTransporter : IThingHolder
-	{
-		ActiveTransporterInfo Contents { get; }
-	}
+	ActiveTransporterInfo Contents { get; }
 }

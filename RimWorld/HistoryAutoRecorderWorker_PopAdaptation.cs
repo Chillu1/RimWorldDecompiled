@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class HistoryAutoRecorderWorker_PopAdaptation : HistoryAutoRecorderWorker
 {
-	public class HistoryAutoRecorderWorker_PopAdaptation : HistoryAutoRecorderWorker
+	public override float PullRecord()
 	{
-		public override float PullRecord()
-		{
-			return Find.StoryWatcher.watcherPopAdaptation.AdaptDays;
-		}
+		return Find.StoryWatcher.watcherPopAdaptation.AdaptDays;
 	}
 }

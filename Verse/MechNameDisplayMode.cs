@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum MechNameDisplayMode : byte
 {
-	public enum MechNameDisplayMode : byte
-	{
-		None,
-		WhileDrafted,
-		Always
-	}
+	None,
+	WhileDrafted,
+	Always
 }

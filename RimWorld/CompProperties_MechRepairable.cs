@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_MechRepairable : CompProperties
 {
-	public class CompProperties_MechRepairable : CompProperties
+	public CompProperties_MechRepairable()
 	{
-		public CompProperties_MechRepairable()
-		{
-			compClass = typeof(CompMechRepairable);
-		}
+		compClass = typeof(CompMechRepairable);
 	}
 }

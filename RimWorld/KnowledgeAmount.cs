@@ -1,15 +1,14 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum KnowledgeAmount : byte
 {
-	public enum KnowledgeAmount : byte
-	{
-		None,
-		FrameDisplayed,
-		FrameInteraction,
-		TinyInteraction,
-		SmallInteraction,
-		SpecificInteraction,
-		Total,
-		NoteClosed,
-		NoteTaught
-	}
+	None,
+	FrameDisplayed,
+	FrameInteraction,
+	TinyInteraction,
+	SmallInteraction,
+	SpecificInteraction,
+	Total,
+	NoteClosed,
+	NoteTaught
 }

@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_Precept_Bloodfeeder_Social : ThoughtWorker_Precept_Social
 {
-	public class ThoughtWorker_Precept_Bloodfeeder_Social : ThoughtWorker_Precept_Social
+	protected override ThoughtState ShouldHaveThought(Pawn p, Pawn otherPawn)
 	{
-		protected override ThoughtState ShouldHaveThought(Pawn p, Pawn otherPawn)
+		if (!ModsConfig.BiotechActive || !ModsConfig.IdeologyActive)
 		{
-			if (!ModsConfig.BiotechActive || !ModsConfig.IdeologyActive)
-			{
-				return ThoughtState.Inactive;
-			}
-			return otherPawn.IsBloodfeeder();
+			return ThoughtState.Inactive;
 		}
+		return otherPawn.IsBloodfeeder();
 	}
 }

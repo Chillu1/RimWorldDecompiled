@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_ChangeableProjectile : CompProperties
 {
-	public class CompProperties_ChangeableProjectile : CompProperties
+	public CompProperties_ChangeableProjectile()
 	{
-		public CompProperties_ChangeableProjectile()
-		{
-			compClass = typeof(CompChangeableProjectile);
-		}
+		compClass = typeof(CompChangeableProjectile);
 	}
 }

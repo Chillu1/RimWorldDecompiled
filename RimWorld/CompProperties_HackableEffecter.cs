@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_HackableEffecter : CompProperties_EffecterBase
 {
-	public class CompProperties_HackableEffecter : CompProperties_EffecterBase
+	public CompProperties_HackableEffecter()
 	{
-		public CompProperties_HackableEffecter()
-		{
-			compClass = typeof(CompHackableEffecter);
-		}
+		compClass = typeof(CompHackableEffecter);
 	}
 }

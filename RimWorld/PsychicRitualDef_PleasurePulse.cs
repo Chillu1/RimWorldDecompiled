@@ -3,22 +3,21 @@ using UnityEngine;
 using Verse;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class PsychicRitualDef_PleasurePulse : PsychicRitualDef_InvocationCircle
 {
-	public class PsychicRitualDef_PleasurePulse : PsychicRitualDef_InvocationCircle
+	public SimpleCurve durationDaysFromQualityCurve;
+
+	public override List<PsychicRitualToil> CreateToils(PsychicRitual psychicRitual, PsychicRitualGraph graph)
 	{
-		public SimpleCurve durationDaysFromQualityCurve;
+		List<PsychicRitualToil> list = base.CreateToils(psychicRitual, graph);
+		list.Add(new PsychicRitualToil_PleasurePulse(InvokerRole));
+		return list;
+	}
 
-		public override List<PsychicRitualToil> CreateToils(PsychicRitual psychicRitual, PsychicRitualGraph graph)
-		{
-			List<PsychicRitualToil> list = base.CreateToils(psychicRitual, graph);
-			list.Add(new PsychicRitualToil_PleasurePulse(InvokerRole));
-			return list;
-		}
-
-		public override TaggedString OutcomeDescription(FloatRange qualityRange, string qualityNumber, PsychicRitualRoleAssignments assignments)
-		{
-			return outcomeDescription.Formatted(Mathf.FloorToInt(durationDaysFromQualityCurve.Evaluate(qualityRange.min) * 60000f).ToStringTicksToDays());
-		}
+	public override TaggedString OutcomeDescription(FloatRange qualityRange, string qualityNumber, PsychicRitualRoleAssignments assignments)
+	{
+		return outcomeDescription.Formatted(Mathf.FloorToInt(durationDaysFromQualityCurve.Evaluate(qualityRange.min) * 60000f).ToStringTicksToDays());
 	}
 }

@@ -2,77 +2,76 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class GeneGizmo_Resource : Gizmo_Slider
 {
-	public abstract class GeneGizmo_Resource : Gizmo_Slider
+	protected Gene_Resource gene;
+
+	protected List<IGeneResourceDrain> drainGenes;
+
+	protected override Color BarColor { get; }
+
+	protected override Color BarHighlightColor { get; }
+
+	protected override bool IsDraggable
 	{
-		protected Gene_Resource gene;
-
-		protected List<IGeneResourceDrain> drainGenes;
-
-		protected override Color BarColor { get; }
-
-		protected override Color BarHighlightColor { get; }
-
-		protected override bool IsDraggable
+		get
 		{
-			get
+			if (!gene.pawn.IsColonistPlayerControlled)
 			{
-				if (!gene.pawn.IsColonistPlayerControlled)
-				{
-					return gene.pawn.IsPrisonerOfColony;
-				}
-				return true;
+				return gene.pawn.IsPrisonerOfColony;
 			}
+			return true;
 		}
+	}
 
-		protected override string BarLabel => $"{gene.ValueForDisplay} / {gene.MaxForDisplay}";
+	protected override string BarLabel => $"{gene.ValueForDisplay} / {gene.MaxForDisplay}";
 
-		protected override int Increments => gene.MaxForDisplay / 10;
+	protected override int Increments => gene.MaxForDisplay / 10;
 
-		protected override float ValuePercent => gene.ValuePercent;
+	protected override float ValuePercent => gene.ValuePercent;
 
-		protected override FloatRange DragRange => new FloatRange(0f, gene.Max);
+	protected override FloatRange DragRange => new FloatRange(0f, gene.Max);
 
-		protected override float Target
+	protected override float Target
+	{
+		get
 		{
-			get
-			{
-				return gene.targetValue / gene.Max;
-			}
-			set
-			{
-				gene.SetTargetValuePct(value);
-			}
+			return gene.targetValue / gene.Max;
 		}
-
-		protected override string Title
+		set
 		{
-			get
-			{
-				string text = gene.ResourceLabel.CapitalizeFirst();
-				if (Find.Selector.SelectedPawns.Count != 1)
-				{
-					text = text + " (" + gene.pawn.LabelShort + ")";
-				}
-				return text;
-			}
+			gene.SetTargetValuePct(value);
 		}
+	}
 
-		public GeneGizmo_Resource(Gene_Resource gene, List<IGeneResourceDrain> drainGenes, Color barColor, Color barHighlightColor)
+	protected override string Title
+	{
+		get
 		{
-			this.gene = gene;
-			this.drainGenes = drainGenes;
-			BarColor = barColor;
-			BarHighlightColor = barHighlightColor;
-		}
-
-		protected override IEnumerable<float> GetBarThresholds()
-		{
-			for (int i = 0; i < gene.def.resourceGizmoThresholds.Count; i++)
+			string text = gene.ResourceLabel.CapitalizeFirst();
+			if (Find.Selector.SelectedPawns.Count != 1)
 			{
-				yield return gene.def.resourceGizmoThresholds[i];
+				text = text + " (" + gene.pawn.LabelShort + ")";
 			}
+			return text;
+		}
+	}
+
+	public GeneGizmo_Resource(Gene_Resource gene, List<IGeneResourceDrain> drainGenes, Color barColor, Color barHighlightColor)
+	{
+		this.gene = gene;
+		this.drainGenes = drainGenes;
+		BarColor = barColor;
+		BarHighlightColor = barHighlightColor;
+	}
+
+	protected override IEnumerable<float> GetBarThresholds()
+	{
+		for (int i = 0; i < gene.def.resourceGizmoThresholds.Count; i++)
+		{
+			yield return gene.def.resourceGizmoThresholds[i];
 		}
 	}
 }

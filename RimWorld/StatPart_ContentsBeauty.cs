@@ -1,22 +1,21 @@
-namespace RimWorld
-{
-	public class StatPart_ContentsBeauty : StatPart
-	{
-		public override void TransformValue(StatRequest req, ref float val)
-		{
-			if (req.Thing is IBeautyContainer beautyContainer)
-			{
-				val += beautyContainer.BeautyOffset;
-			}
-		}
+namespace RimWorld;
 
-		public override string ExplanationPart(StatRequest req)
+public class StatPart_ContentsBeauty : StatPart
+{
+	public override void TransformValue(StatRequest req, ref float val)
+	{
+		if (req.Thing is IBeautyContainer beautyContainer)
 		{
-			if (req.Thing is IBeautyContainer beautyContainer)
-			{
-				return beautyContainer.BeautyOffsetExplanation;
-			}
-			return null;
+			val += beautyContainer.BeautyOffset;
 		}
+	}
+
+	public override string ExplanationPart(StatRequest req)
+	{
+		if (req.Thing is IBeautyContainer beautyContainer)
+		{
+			return beautyContainer.BeautyOffsetExplanation;
+		}
+		return null;
 	}
 }

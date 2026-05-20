@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum GasType : short
 {
-	public enum GasType : short
-	{
-		BlindSmoke = 0,
-		ToxGas = 8,
-		RotStink = 16,
-		DeadlifeDust = 24
-	}
+	BlindSmoke = 0,
+	ToxGas = 8,
+	RotStink = 16,
+	DeadlifeDust = 24
 }

@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum Pollution
 {
-	public enum Pollution
-	{
-		CleanOnly,
-		PollutedOnly,
-		Any
-	}
+	CleanOnly,
+	PollutedOnly,
+	Any
 }

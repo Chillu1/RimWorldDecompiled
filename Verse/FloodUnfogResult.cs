@@ -1,11 +1,10 @@
-namespace Verse
+namespace Verse;
+
+public struct FloodUnfogResult
 {
-	public struct FloodUnfogResult
-	{
-		public bool mechanoidFound;
+	public bool mechanoidFound;
 
-		public bool allOnScreen;
+	public bool allOnScreen;
 
-		public int cellsUnfogged;
-	}
+	public int cellsUnfogged;
 }

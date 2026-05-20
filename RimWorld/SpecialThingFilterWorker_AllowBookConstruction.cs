@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class SpecialThingFilterWorker_AllowBookConstruction : SpecialThingFilterWorker_AllowBookSkill
 {
-	public class SpecialThingFilterWorker_AllowBookConstruction : SpecialThingFilterWorker_AllowBookSkill
+	public SpecialThingFilterWorker_AllowBookConstruction()
+		: base(SkillDefOf.Construction)
 	{
-		public SpecialThingFilterWorker_AllowBookConstruction()
-			: base(SkillDefOf.Construction)
-		{
-		}
 	}
 }

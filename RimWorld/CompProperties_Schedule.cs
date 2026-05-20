@@ -1,19 +1,18 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_Schedule : CompProperties
 {
-	public class CompProperties_Schedule : CompProperties
+	public float startTime;
+
+	public float endTime = 1f;
+
+	[MustTranslate]
+	public string offMessage;
+
+	public CompProperties_Schedule()
 	{
-		public float startTime;
-
-		public float endTime = 1f;
-
-		[MustTranslate]
-		public string offMessage;
-
-		public CompProperties_Schedule()
-		{
-			compClass = typeof(CompSchedule);
-		}
+		compClass = typeof(CompSchedule);
 	}
 }

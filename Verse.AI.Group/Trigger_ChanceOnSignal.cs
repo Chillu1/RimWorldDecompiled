@@ -1,24 +1,23 @@
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public class Trigger_ChanceOnSignal : Trigger
 {
-	public class Trigger_ChanceOnSignal : Trigger
+	private TriggerSignalType signalType;
+
+	private float chance;
+
+	public Trigger_ChanceOnSignal(TriggerSignalType signalType, float chance)
 	{
-		private TriggerSignalType signalType;
+		this.signalType = signalType;
+		this.chance = chance;
+	}
 
-		private float chance;
-
-		public Trigger_ChanceOnSignal(TriggerSignalType signalType, float chance)
+	public override bool ActivateOn(Lord lord, TriggerSignal signal)
+	{
+		if (signal.type == signalType)
 		{
-			this.signalType = signalType;
-			this.chance = chance;
+			return Rand.Value < chance;
 		}
-
-		public override bool ActivateOn(Lord lord, TriggerSignal signal)
-		{
-			if (signal.type == signalType)
-			{
-				return Rand.Value < chance;
-			}
-			return false;
-		}
+		return false;
 	}
 }

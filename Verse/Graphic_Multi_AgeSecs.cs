@@ -1,29 +1,28 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class Graphic_Multi_AgeSecs : Graphic_Multi
 {
-	public class Graphic_Multi_AgeSecs : Graphic_Multi
+	public MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+
+	public float AgeSecs(Thing thing)
 	{
-		public MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+		return (float)(Find.TickManager.TicksGame - thing.TickSpawned) / 60f;
+	}
 
-		public float AgeSecs(Thing thing)
+	public override void DrawWorker(Vector3 loc, Rot4 rot, ThingDef thingDef, Thing thing, float extraRotation)
+	{
+		Material material = MatAt(rot, thing);
+		if (thing != null)
 		{
-			return (float)(Find.TickManager.TicksGame - thing.TickSpawned) / 60f;
+			material.SetFloat(ShaderPropertyIDs.AgeSecs, AgeSecs(thing));
 		}
+		base.DrawWorker(loc, rot, thingDef, thing, extraRotation);
+	}
 
-		public override void DrawWorker(Vector3 loc, Rot4 rot, ThingDef thingDef, Thing thing, float extraRotation)
-		{
-			Material material = MatAt(rot, thing);
-			if (thing != null)
-			{
-				material.SetFloat(ShaderPropertyIDs.AgeSecs, AgeSecs(thing));
-			}
-			base.DrawWorker(loc, rot, thingDef, thing, extraRotation);
-		}
-
-		protected override void DrawMeshInt(Mesh mesh, Vector3 loc, Quaternion quat, Material mat)
-		{
-			Graphics.DrawMesh(mesh, loc, quat, mat, 0, null, 0, propertyBlock);
-		}
+	protected override void DrawMeshInt(Mesh mesh, Vector3 loc, Quaternion quat, Material mat)
+	{
+		Graphics.DrawMesh(mesh, loc, quat, mat, 0, null, 0, propertyBlock);
 	}
 }

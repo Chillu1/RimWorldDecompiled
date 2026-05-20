@@ -1,9 +1,8 @@
-namespace Verse.AI
+namespace Verse.AI;
+
+public enum ThinkTreeDutyHook
 {
-	public enum ThinkTreeDutyHook
-	{
-		None,
-		HighPriority,
-		MediumPriority
-	}
+	None,
+	HighPriority,
+	MediumPriority
 }

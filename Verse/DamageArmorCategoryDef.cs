@@ -1,11 +1,10 @@
 using RimWorld;
 
-namespace Verse
-{
-	public class DamageArmorCategoryDef : Def
-	{
-		public StatDef multStat;
+namespace Verse;
 
-		public StatDef armorRatingStat;
-	}
+public class DamageArmorCategoryDef : Def
+{
+	public StatDef multStat;
+
+	public StatDef armorRatingStat;
 }

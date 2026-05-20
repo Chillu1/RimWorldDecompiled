@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum MarriageNameChange
 {
-	public enum MarriageNameChange
-	{
-		NoChange,
-		WomansName,
-		MansName
-	}
+	NoChange,
+	WomansName,
+	MansName
 }

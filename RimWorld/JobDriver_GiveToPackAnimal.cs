@@ -4,98 +4,97 @@ using UnityEngine;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_GiveToPackAnimal : JobDriver
 {
-	public class JobDriver_GiveToPackAnimal : JobDriver
+	private const TargetIndex ItemInd = TargetIndex.A;
+
+	private const TargetIndex AnimalInd = TargetIndex.B;
+
+	private Thing Item => job.GetTarget(TargetIndex.A).Thing;
+
+	private Pawn Animal => (Pawn)job.GetTarget(TargetIndex.B).Thing;
+
+	public override bool TryMakePreToilReservations(bool errorOnFailed)
 	{
-		private const TargetIndex ItemInd = TargetIndex.A;
+		return pawn.Reserve(Item, job, 1, -1, null, errorOnFailed);
+	}
 
-		private const TargetIndex AnimalInd = TargetIndex.B;
+	protected override IEnumerable<Toil> MakeNewToils()
+	{
+		yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.ClosestTouch);
+		yield return Toils_Haul.StartCarryThing(TargetIndex.A);
+		Toil findNearestCarrier = FindCarrierToil();
+		yield return findNearestCarrier;
+		yield return Toils_Goto.GotoThing(TargetIndex.B, PathEndMode.Touch).FailOnDespawnedNullOrForbidden(TargetIndex.B).JumpIf(() => !CanCarryAtLeastOne(Animal), findNearestCarrier);
+		yield return GiveToCarrierAsMuchAsPossibleToil();
+		yield return Toils_Jump.JumpIf(findNearestCarrier, () => pawn.carryTracker.CarriedThing != null);
+	}
 
-		private Thing Item => job.GetTarget(TargetIndex.A).Thing;
-
-		private Pawn Animal => (Pawn)job.GetTarget(TargetIndex.B).Thing;
-
-		public override bool TryMakePreToilReservations(bool errorOnFailed)
+	private Toil FindCarrierToil()
+	{
+		Toil toil = ToilMaker.MakeToil("FindCarrierToil");
+		toil.initAction = delegate
 		{
-			return pawn.Reserve(Item, job, 1, -1, null, errorOnFailed);
-		}
-
-		protected override IEnumerable<Toil> MakeNewToils()
-		{
-			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.ClosestTouch);
-			yield return Toils_Haul.StartCarryThing(TargetIndex.A);
-			Toil findNearestCarrier = FindCarrierToil();
-			yield return findNearestCarrier;
-			yield return Toils_Goto.GotoThing(TargetIndex.B, PathEndMode.Touch).FailOnDespawnedNullOrForbidden(TargetIndex.B).JumpIf(() => !CanCarryAtLeastOne(Animal), findNearestCarrier);
-			yield return GiveToCarrierAsMuchAsPossibleToil();
-			yield return Toils_Jump.JumpIf(findNearestCarrier, () => pawn.carryTracker.CarriedThing != null);
-		}
-
-		private Toil FindCarrierToil()
-		{
-			Toil toil = ToilMaker.MakeToil("FindCarrierToil");
-			toil.initAction = delegate
+			Pawn pawn = FindCarrier();
+			if (pawn == null)
 			{
-				Pawn pawn = FindCarrier();
-				if (pawn == null)
-				{
-					base.pawn.jobs.EndCurrentJob(JobCondition.Incompletable);
-				}
-				else
-				{
-					job.SetTarget(TargetIndex.B, pawn);
-				}
-			};
-			return toil;
-		}
-
-		private Pawn FindCarrier()
-		{
-			IEnumerable<Pawn> enumerable = GiveToPackAnimalUtility.CarrierCandidatesFor(base.pawn);
-			Pawn animal = Animal;
-			if (animal != null && enumerable.Contains(animal) && animal.RaceProps.packAnimal && CanCarryAtLeastOne(animal))
-			{
-				return animal;
+				base.pawn.jobs.EndCurrentJob(JobCondition.Incompletable);
 			}
-			Pawn pawn = null;
-			float num = -1f;
-			foreach (Pawn item in enumerable)
+			else
 			{
-				if (item.RaceProps.packAnimal && CanCarryAtLeastOne(item))
+				job.SetTarget(TargetIndex.B, pawn);
+			}
+		};
+		return toil;
+	}
+
+	private Pawn FindCarrier()
+	{
+		IEnumerable<Pawn> enumerable = GiveToPackAnimalUtility.CarrierCandidatesFor(base.pawn);
+		Pawn animal = Animal;
+		if (animal != null && enumerable.Contains(animal) && animal.RaceProps.packAnimal && CanCarryAtLeastOne(animal))
+		{
+			return animal;
+		}
+		Pawn pawn = null;
+		float num = -1f;
+		foreach (Pawn item in enumerable)
+		{
+			if (item.RaceProps.packAnimal && CanCarryAtLeastOne(item))
+			{
+				float num2 = item.Position.DistanceToSquared(base.pawn.Position);
+				if (pawn == null || num2 < num)
 				{
-					float num2 = item.Position.DistanceToSquared(base.pawn.Position);
-					if (pawn == null || num2 < num)
-					{
-						pawn = item;
-						num = num2;
-					}
+					pawn = item;
+					num = num2;
 				}
 			}
-			return pawn;
 		}
+		return pawn;
+	}
 
-		private bool CanCarryAtLeastOne(Pawn carrier)
-		{
-			return !MassUtility.WillBeOverEncumberedAfterPickingUp(carrier, Item, 1);
-		}
+	private bool CanCarryAtLeastOne(Pawn carrier)
+	{
+		return !MassUtility.WillBeOverEncumberedAfterPickingUp(carrier, Item, 1);
+	}
 
-		private Toil GiveToCarrierAsMuchAsPossibleToil()
+	private Toil GiveToCarrierAsMuchAsPossibleToil()
+	{
+		Toil toil = ToilMaker.MakeToil("GiveToCarrierAsMuchAsPossibleToil");
+		toil.initAction = delegate
 		{
-			Toil toil = ToilMaker.MakeToil("GiveToCarrierAsMuchAsPossibleToil");
-			toil.initAction = delegate
+			if (Item == null)
 			{
-				if (Item == null)
-				{
-					pawn.jobs.EndCurrentJob(JobCondition.Incompletable);
-				}
-				else
-				{
-					int count = Mathf.Min(MassUtility.CountToPickUpUntilOverEncumbered(Animal, Item), Item.stackCount);
-					pawn.carryTracker.innerContainer.TryTransferToContainer(Item, Animal.inventory.innerContainer, count);
-				}
-			};
-			return toil;
-		}
+				pawn.jobs.EndCurrentJob(JobCondition.Incompletable);
+			}
+			else
+			{
+				int count = Mathf.Min(MassUtility.CountToPickUpUntilOverEncumbered(Animal, Item), Item.stackCount);
+				pawn.carryTracker.innerContainer.TryTransferToContainer(Item, Animal.inventory.innerContainer, count);
+			}
+		};
+		return toil;
 	}
 }

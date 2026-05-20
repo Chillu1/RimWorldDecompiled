@@ -2,72 +2,71 @@ using System;
 using System.Xml;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class LayerConnection : IEquatable<LayerConnection>, IExposable
 {
-	public class LayerConnection : IEquatable<LayerConnection>, IExposable
+	public enum ZoomMode : byte
 	{
-		public enum ZoomMode : byte
+		None,
+		ZoomIn,
+		ZoomOut
+	}
+
+	public string tag;
+
+	public float fuelCost;
+
+	public ZoomMode zoomMode;
+
+	public void LoadDataFromXmlCustom(XmlNode xmlRoot)
+	{
+		XmlHelper.ParseElements(this, xmlRoot, "tag", "fuelCost");
+	}
+
+	public bool Equals(LayerConnection other)
+	{
+		if (other == null)
 		{
-			None,
-			ZoomIn,
-			ZoomOut
-		}
-
-		public string tag;
-
-		public float fuelCost;
-
-		public ZoomMode zoomMode;
-
-		public void LoadDataFromXmlCustom(XmlNode xmlRoot)
-		{
-			XmlHelper.ParseElements(this, xmlRoot, "tag", "fuelCost");
-		}
-
-		public bool Equals(LayerConnection other)
-		{
-			if (other == null)
-			{
-				return false;
-			}
-			if (this == other)
-			{
-				return true;
-			}
-			if (tag == other.tag && fuelCost.Equals(other.fuelCost))
-			{
-				return zoomMode == other.zoomMode;
-			}
 			return false;
 		}
-
-		public override bool Equals(object obj)
+		if (this == other)
 		{
-			if (obj == null)
-			{
-				return false;
-			}
-			if (this == obj)
-			{
-				return true;
-			}
-			if (obj.GetType() != GetType())
-			{
-				return false;
-			}
-			return Equals((LayerConnection)obj);
+			return true;
 		}
-
-		public override int GetHashCode()
+		if (tag == other.tag && fuelCost.Equals(other.fuelCost))
 		{
-			return HashCode.Combine(tag, fuelCost, zoomMode);
+			return zoomMode == other.zoomMode;
 		}
+		return false;
+	}
 
-		public void ExposeData()
+	public override bool Equals(object obj)
+	{
+		if (obj == null)
 		{
-			Scribe_Values.Look(ref tag, "tag");
-			Scribe_Values.Look(ref fuelCost, "fuelCost", 0f);
-			Scribe_Values.Look(ref zoomMode, "zoomMode", ZoomMode.None);
+			return false;
 		}
+		if (this == obj)
+		{
+			return true;
+		}
+		if (obj.GetType() != GetType())
+		{
+			return false;
+		}
+		return Equals((LayerConnection)obj);
+	}
+
+	public override int GetHashCode()
+	{
+		return HashCode.Combine(tag, fuelCost, zoomMode);
+	}
+
+	public void ExposeData()
+	{
+		Scribe_Values.Look(ref tag, "tag");
+		Scribe_Values.Look(ref fuelCost, "fuelCost", 0f);
+		Scribe_Values.Look(ref zoomMode, "zoomMode", ZoomMode.None);
 	}
 }

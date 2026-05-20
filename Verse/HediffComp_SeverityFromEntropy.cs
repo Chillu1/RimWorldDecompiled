@@ -1,24 +1,23 @@
-namespace Verse
+namespace Verse;
+
+public class HediffComp_SeverityFromEntropy : HediffComp
 {
-	public class HediffComp_SeverityFromEntropy : HediffComp
+	private float EntropyAmount
 	{
-		private float EntropyAmount
+		get
 		{
-			get
+			if (base.Pawn.psychicEntropy != null)
 			{
-				if (base.Pawn.psychicEntropy != null)
-				{
-					return base.Pawn.psychicEntropy.EntropyRelativeValue;
-				}
-				return 0f;
+				return base.Pawn.psychicEntropy.EntropyRelativeValue;
 			}
+			return 0f;
 		}
+	}
 
-		public override bool CompShouldRemove => EntropyAmount < float.Epsilon;
+	public override bool CompShouldRemove => EntropyAmount < float.Epsilon;
 
-		public override void CompPostTick(ref float severityAdjustment)
-		{
-			parent.Severity = EntropyAmount;
-		}
+	public override void CompPostTick(ref float severityAdjustment)
+	{
+		parent.Severity = EntropyAmount;
 	}
 }

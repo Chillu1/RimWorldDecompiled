@@ -1,8 +1,7 @@
-namespace Verse.Sound
+namespace Verse.Sound;
+
+public enum LowPassFilterProperty : byte
 {
-	public enum LowPassFilterProperty : byte
-	{
-		Cutoff,
-		Resonance
-	}
+	Cutoff,
+	Resonance
 }

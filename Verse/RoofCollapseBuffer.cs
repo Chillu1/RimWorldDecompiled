@@ -1,29 +1,28 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class RoofCollapseBuffer
 {
-	public class RoofCollapseBuffer
+	private List<IntVec3> cellsToCollapse = new List<IntVec3>();
+
+	public List<IntVec3> CellsMarkedToCollapse => cellsToCollapse;
+
+	public bool IsMarkedToCollapse(IntVec3 c)
 	{
-		private List<IntVec3> cellsToCollapse = new List<IntVec3>();
+		return cellsToCollapse.Contains(c);
+	}
 
-		public List<IntVec3> CellsMarkedToCollapse => cellsToCollapse;
-
-		public bool IsMarkedToCollapse(IntVec3 c)
+	public void MarkToCollapse(IntVec3 c)
+	{
+		if (!cellsToCollapse.Contains(c))
 		{
-			return cellsToCollapse.Contains(c);
+			cellsToCollapse.Add(c);
 		}
+	}
 
-		public void MarkToCollapse(IntVec3 c)
-		{
-			if (!cellsToCollapse.Contains(c))
-			{
-				cellsToCollapse.Add(c);
-			}
-		}
-
-		public void Clear()
-		{
-			cellsToCollapse.Clear();
-		}
+	public void Clear()
+	{
+		cellsToCollapse.Clear();
 	}
 }

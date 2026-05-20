@@ -1,26 +1,25 @@
 using UnityEngine;
 
-namespace Verse.Sound
+namespace Verse.Sound;
+
+public class AudioSourcePool
 {
-	public class AudioSourcePool
+	public AudioSourcePoolCamera sourcePoolCamera;
+
+	public AudioSourcePoolWorld sourcePoolWorld;
+
+	public AudioSourcePool()
 	{
-		public AudioSourcePoolCamera sourcePoolCamera;
+		sourcePoolCamera = new AudioSourcePoolCamera();
+		sourcePoolWorld = new AudioSourcePoolWorld();
+	}
 
-		public AudioSourcePoolWorld sourcePoolWorld;
-
-		public AudioSourcePool()
+	public AudioSource GetSource(bool onCamera)
+	{
+		if (onCamera)
 		{
-			sourcePoolCamera = new AudioSourcePoolCamera();
-			sourcePoolWorld = new AudioSourcePoolWorld();
+			return sourcePoolCamera.GetSourceCamera();
 		}
-
-		public AudioSource GetSource(bool onCamera)
-		{
-			if (onCamera)
-			{
-				return sourcePoolCamera.GetSourceCamera();
-			}
-			return sourcePoolWorld.GetSourceWorld();
-		}
+		return sourcePoolWorld.GetSourceWorld();
 	}
 }

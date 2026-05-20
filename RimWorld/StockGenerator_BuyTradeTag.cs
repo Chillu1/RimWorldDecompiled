@@ -3,33 +3,32 @@ using System.Linq;
 using RimWorld.Planet;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class StockGenerator_BuyTradeTag : StockGenerator
 {
-	public class StockGenerator_BuyTradeTag : StockGenerator
+	public string tag;
+
+	public override IEnumerable<Thing> GenerateThings(PlanetTile forTile, Faction faction = null)
 	{
-		public string tag;
+		return Enumerable.Empty<Thing>();
+	}
 
-		public override IEnumerable<Thing> GenerateThings(PlanetTile forTile, Faction faction = null)
+	public override bool HandlesThingDef(ThingDef thingDef)
+	{
+		if (thingDef.tradeTags != null)
 		{
-			return Enumerable.Empty<Thing>();
+			return thingDef.tradeTags.Contains(tag);
 		}
+		return false;
+	}
 
-		public override bool HandlesThingDef(ThingDef thingDef)
+	public override Tradeability TradeabilityFor(ThingDef thingDef)
+	{
+		if (thingDef.tradeability == Tradeability.None || !HandlesThingDef(thingDef))
 		{
-			if (thingDef.tradeTags != null)
-			{
-				return thingDef.tradeTags.Contains(tag);
-			}
-			return false;
+			return Tradeability.None;
 		}
-
-		public override Tradeability TradeabilityFor(ThingDef thingDef)
-		{
-			if (thingDef.tradeability == Tradeability.None || !HandlesThingDef(thingDef))
-			{
-				return Tradeability.None;
-			}
-			return Tradeability.Sellable;
-		}
+		return Tradeability.Sellable;
 	}
 }

@@ -1,13 +1,12 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public interface ISelectable
 {
-	public interface ISelectable
-	{
-		IEnumerable<Gizmo> GetGizmos();
+	IEnumerable<Gizmo> GetGizmos();
 
-		string GetInspectString();
+	string GetInspectString();
 
-		IEnumerable<InspectTabBase> GetInspectTabs();
-	}
+	IEnumerable<InspectTabBase> GetInspectTabs();
 }

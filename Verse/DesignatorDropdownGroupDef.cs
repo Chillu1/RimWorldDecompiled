@@ -1,27 +1,26 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Verse
+namespace Verse;
+
+public class DesignatorDropdownGroupDef : Def
 {
-	public class DesignatorDropdownGroupDef : Def
+	public enum IconSource : byte
 	{
-		public enum IconSource : byte
-		{
-			Cost,
-			Placed
-		}
+		Cost,
+		Placed
+	}
 
-		public IconSource iconSource;
+	public IconSource iconSource;
 
-		public bool useGridMenu;
+	public bool useGridMenu;
 
-		public bool includeEyeDropperTool;
+	public bool includeEyeDropperTool;
 
-		public IEnumerable<BuildableDef> BuildablesWithoutDefaultDesignators()
-		{
-			return from x in ((IEnumerable<BuildableDef>)DefDatabase<ThingDef>.AllDefs).Concat((IEnumerable<BuildableDef>)DefDatabase<TerrainDef>.AllDefs)
-				where x.designatorDropdown == this && !x.canGenerateDefaultDesignator
-				select x;
-		}
+	public IEnumerable<BuildableDef> BuildablesWithoutDefaultDesignators()
+	{
+		return from x in ((IEnumerable<BuildableDef>)DefDatabase<ThingDef>.AllDefs).Concat((IEnumerable<BuildableDef>)DefDatabase<TerrainDef>.AllDefs)
+			where x.designatorDropdown == this && !x.canGenerateDefaultDesignator
+			select x;
 	}
 }

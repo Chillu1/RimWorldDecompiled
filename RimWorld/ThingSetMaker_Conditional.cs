@@ -1,50 +1,49 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class ThingSetMaker_Conditional : ThingSetMaker
 {
-	public abstract class ThingSetMaker_Conditional : ThingSetMaker
+	public ThingSetMaker thingSetMaker;
+
+	protected override bool CanGenerateSub(ThingSetMakerParams parms)
 	{
-		public ThingSetMaker thingSetMaker;
-
-		protected override bool CanGenerateSub(ThingSetMakerParams parms)
+		if (Condition(parms))
 		{
-			if (Condition(parms))
-			{
-				return thingSetMaker.CanGenerate(parms);
-			}
-			return false;
+			return thingSetMaker.CanGenerate(parms);
 		}
+		return false;
+	}
 
-		protected override void Generate(ThingSetMakerParams parms, List<Thing> outThings)
+	protected override void Generate(ThingSetMakerParams parms, List<Thing> outThings)
+	{
+		outThings.AddRange(thingSetMaker.Generate(parms));
+	}
+
+	protected override IEnumerable<ThingDef> AllGeneratableThingsDebugSub(ThingSetMakerParams parms)
+	{
+		return thingSetMaker.AllGeneratableThingsDebug(parms);
+	}
+
+	public override void ResolveReferences()
+	{
+		base.ResolveReferences();
+		thingSetMaker.ResolveReferences();
+	}
+
+	protected abstract bool Condition(ThingSetMakerParams parms);
+
+	public override IEnumerable<string> ConfigErrors()
+	{
+		if (thingSetMaker == null)
 		{
-			outThings.AddRange(thingSetMaker.Generate(parms));
+			yield return "thingSetMaker is null.";
+			yield break;
 		}
-
-		protected override IEnumerable<ThingDef> AllGeneratableThingsDebugSub(ThingSetMakerParams parms)
+		foreach (string item in thingSetMaker.ConfigErrors())
 		{
-			return thingSetMaker.AllGeneratableThingsDebug(parms);
-		}
-
-		public override void ResolveReferences()
-		{
-			base.ResolveReferences();
-			thingSetMaker.ResolveReferences();
-		}
-
-		protected abstract bool Condition(ThingSetMakerParams parms);
-
-		public override IEnumerable<string> ConfigErrors()
-		{
-			if (thingSetMaker == null)
-			{
-				yield return "thingSetMaker is null.";
-				yield break;
-			}
-			foreach (string item in thingSetMaker.ConfigErrors())
-			{
-				yield return item;
-			}
+			yield return item;
 		}
 	}
 }

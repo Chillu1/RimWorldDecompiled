@@ -1,81 +1,80 @@
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public class TimeoutComp : WorldObjectComp
 {
-	public class TimeoutComp : WorldObjectComp
+	private int timeoutEndTick = -1;
+
+	public bool Active => timeoutEndTick != -1;
+
+	public bool Passed
 	{
-		private int timeoutEndTick = -1;
-
-		public bool Active => timeoutEndTick != -1;
-
-		public bool Passed
+		get
 		{
-			get
+			if (Active)
 			{
-				if (Active)
-				{
-					return Find.TickManager.TicksGame >= timeoutEndTick;
-				}
-				return false;
+				return Find.TickManager.TicksGame >= timeoutEndTick;
 			}
+			return false;
 		}
+	}
 
-		private bool ShouldRemoveWorldObjectNow
+	private bool ShouldRemoveWorldObjectNow
+	{
+		get
 		{
-			get
+			if (Passed)
 			{
-				if (Passed)
-				{
-					return !base.ParentHasMap;
-				}
-				return false;
+				return !base.ParentHasMap;
 			}
+			return false;
 		}
+	}
 
-		public int TicksLeft
+	public int TicksLeft
+	{
+		get
 		{
-			get
+			if (!Active)
 			{
-				if (!Active)
-				{
-					return 0;
-				}
-				return timeoutEndTick - Find.TickManager.TicksGame;
+				return 0;
 			}
+			return timeoutEndTick - Find.TickManager.TicksGame;
 		}
+	}
 
-		public void StartTimeout(int ticks)
-		{
-			timeoutEndTick = Find.TickManager.TicksGame + ticks;
-		}
+	public void StartTimeout(int ticks)
+	{
+		timeoutEndTick = Find.TickManager.TicksGame + ticks;
+	}
 
-		public void StopTimeout()
-		{
-			timeoutEndTick = -1;
-		}
+	public void StopTimeout()
+	{
+		timeoutEndTick = -1;
+	}
 
-		public override void CompTickInterval(int delta)
+	public override void CompTickInterval(int delta)
+	{
+		base.CompTickInterval(delta);
+		if (ShouldRemoveWorldObjectNow)
 		{
-			base.CompTickInterval(delta);
-			if (ShouldRemoveWorldObjectNow)
-			{
-				parent.Destroy();
-			}
+			parent.Destroy();
 		}
+	}
 
-		public override void PostExposeData()
-		{
-			base.PostExposeData();
-			Scribe_Values.Look(ref timeoutEndTick, "timeoutEndTick", 0);
-		}
+	public override void PostExposeData()
+	{
+		base.PostExposeData();
+		Scribe_Values.Look(ref timeoutEndTick, "timeoutEndTick", 0);
+	}
 
-		public override string CompInspectStringExtra()
+	public override string CompInspectStringExtra()
+	{
+		if (Active && !base.ParentHasMap)
 		{
-			if (Active && !base.ParentHasMap)
-			{
-				return "WorldObjectTimeout".Translate(TicksLeft.ToStringTicksToPeriod());
-			}
-			return null;
+			return "WorldObjectTimeout".Translate(TicksLeft.ToStringTicksToPeriod());
 		}
+		return null;
 	}
 }

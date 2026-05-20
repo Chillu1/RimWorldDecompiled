@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum BoolUnknown : byte
 {
-	public enum BoolUnknown : byte
-	{
-		True,
-		False,
-		Unknown
-	}
+	True,
+	False,
+	Unknown
 }

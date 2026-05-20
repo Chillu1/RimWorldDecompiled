@@ -2,35 +2,34 @@ using System.Collections.Generic;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_GetReimplanted : JobDriver
 {
-	public class JobDriver_GetReimplanted : JobDriver
+	public Pawn Target => job.targetA.Thing as Pawn;
+
+	public override bool TryMakePreToilReservations(bool errorOnFailed)
 	{
-		public Pawn Target => job.targetA.Thing as Pawn;
+		return pawn.Reserve(Target, job, 1, -1, null, errorOnFailed);
+	}
 
-		public override bool TryMakePreToilReservations(bool errorOnFailed)
+	protected override IEnumerable<Toil> MakeNewToils()
+	{
+		if (!ModLister.CheckBiotech("xenogerm reimplanting"))
 		{
-			return pawn.Reserve(Target, job, 1, -1, null, errorOnFailed);
+			yield break;
 		}
-
-		protected override IEnumerable<Toil> MakeNewToils()
+		this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
+		this.FailOnDowned(TargetIndex.A);
+		this.FailOn(() => pawn.genes == null || Target.genes == null || GeneUtility.SameXenotype(Target, pawn));
+		yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
+		yield return Toils_General.Do(delegate
 		{
-			if (!ModLister.CheckBiotech("xenogerm reimplanting"))
+			Ability ability = Target.abilities.abilities.FirstOrFallback((Ability x) => x.def == AbilityDefOf.ReimplantXenogerm);
+			if (ability != null)
 			{
-				yield break;
+				Target.jobs.TryTakeOrderedJob(ability.GetJob(pawn, pawn), JobTag.Misc);
 			}
-			this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
-			this.FailOnDowned(TargetIndex.A);
-			this.FailOn(() => pawn.genes == null || Target.genes == null || GeneUtility.SameXenotype(Target, pawn));
-			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
-			yield return Toils_General.Do(delegate
-			{
-				Ability ability = Target.abilities.abilities.FirstOrFallback((Ability x) => x.def == AbilityDefOf.ReimplantXenogerm);
-				if (ability != null)
-				{
-					Target.jobs.TryTakeOrderedJob(ability.GetJob(pawn, pawn), JobTag.Misc);
-				}
-			});
-		}
+		});
 	}
 }

@@ -1,10 +1,9 @@
-namespace Verse.Sound
+namespace Verse.Sound;
+
+public enum EchoFilterProperty : byte
 {
-	public enum EchoFilterProperty : byte
-	{
-		Delay,
-		DecayRatio,
-		WetMix,
-		DryMix
-	}
+	Delay,
+	DecayRatio,
+	WetMix,
+	DryMix
 }

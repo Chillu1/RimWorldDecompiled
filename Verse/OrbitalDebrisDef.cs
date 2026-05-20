@@ -1,20 +1,19 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class OrbitalDebrisDef : Def
 {
-	public class OrbitalDebrisDef : Def
+	public class DebrisGraphic
 	{
-		public class DebrisGraphic
-		{
-			public GraphicData graphicData;
+		public GraphicData graphicData;
 
-			public float weighting = 1f;
+		public float weighting = 1f;
 
-			public int order;
+		public int order;
 
-			public float parallaxPer10Cells = 1f;
-		}
-
-		public List<DebrisGraphic> graphics = new List<DebrisGraphic>();
+		public float parallaxPer10Cells = 1f;
 	}
+
+	public List<DebrisGraphic> graphics = new List<DebrisGraphic>();
 }

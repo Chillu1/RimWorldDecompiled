@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_Infestation : CompProperties_EffectWithDest
 {
-	public class CompProperties_Infestation : CompProperties_EffectWithDest
-	{
-		public float points;
-	}
+	public float points;
 }

@@ -2,24 +2,23 @@ using System.Collections.Generic;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_RepairMechRemote : JobDriver_RepairMech
 {
-	public class JobDriver_RepairMechRemote : JobDriver_RepairMech
+	protected override bool Remote => true;
+
+	public override bool TryMakePreToilReservations(bool errorOnFailed)
 	{
-		protected override bool Remote => true;
+		return true;
+	}
 
-		public override bool TryMakePreToilReservations(bool errorOnFailed)
+	protected override IEnumerable<Toil> MakeNewToils()
+	{
+		this.FailOn(() => base.Mech.Position.DistanceTo(pawn.Position) > pawn.GetStatValue(StatDefOf.MechRemoteRepairDistance));
+		foreach (Toil item in base.MakeNewToils())
 		{
-			return true;
-		}
-
-		protected override IEnumerable<Toil> MakeNewToils()
-		{
-			this.FailOn(() => base.Mech.Position.DistanceTo(pawn.Position) > pawn.GetStatValue(StatDefOf.MechRemoteRepairDistance));
-			foreach (Toil item in base.MakeNewToils())
-			{
-				yield return item;
-			}
+			yield return item;
 		}
 	}
 }

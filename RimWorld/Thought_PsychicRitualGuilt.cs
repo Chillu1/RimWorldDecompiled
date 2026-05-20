@@ -1,55 +1,54 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Thought_PsychicRitualGuilt : Thought_Memory
 {
-	public class Thought_PsychicRitualGuilt : Thought_Memory
+	public PsychicRitualDef ritualDef;
+
+	public override string LabelCap => base.CurStage.label.Formatted(ritualDef.label.Named("RITUAL")).CapitalizeFirst();
+
+	public override int CurStageIndex
 	{
-		public PsychicRitualDef ritualDef;
-
-		public override string LabelCap => base.CurStage.label.Formatted(ritualDef.label.Named("RITUAL")).CapitalizeFirst();
-
-		public override int CurStageIndex
+		get
 		{
-			get
+			if (!ModsConfig.IdeologyActive)
 			{
-				if (!ModsConfig.IdeologyActive)
-				{
-					return 0;
-				}
-				if (pawn.Ideo.HasPrecept(PreceptDefOf.PsychicRituals_Disapproved))
-				{
-					return 1;
-				}
-				if (pawn.Ideo.HasPrecept(PreceptDefOf.PsychicRituals_Abhorrent))
-				{
-					return 2;
-				}
 				return 0;
 			}
-		}
-
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_Defs.Look(ref ritualDef, "ritualDef");
-		}
-
-		public override void CopyFrom(Thought_Memory m)
-		{
-			base.CopyFrom(m);
-			if (m is Thought_PsychicRitualGuilt thought_PsychicRitualGuilt)
+			if (pawn.Ideo.HasPrecept(PreceptDefOf.PsychicRituals_Disapproved))
 			{
-				ritualDef = thought_PsychicRitualGuilt.ritualDef;
+				return 1;
 			}
-		}
-
-		public override bool GroupsWith(Thought other)
-		{
-			if (base.GroupsWith(other) && other is Thought_PsychicRitualGuilt thought_PsychicRitualGuilt)
+			if (pawn.Ideo.HasPrecept(PreceptDefOf.PsychicRituals_Abhorrent))
 			{
-				return ritualDef == thought_PsychicRitualGuilt.ritualDef;
+				return 2;
 			}
-			return false;
+			return 0;
 		}
+	}
+
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Defs.Look(ref ritualDef, "ritualDef");
+	}
+
+	public override void CopyFrom(Thought_Memory m)
+	{
+		base.CopyFrom(m);
+		if (m is Thought_PsychicRitualGuilt thought_PsychicRitualGuilt)
+		{
+			ritualDef = thought_PsychicRitualGuilt.ritualDef;
+		}
+	}
+
+	public override bool GroupsWith(Thought other)
+	{
+		if (base.GroupsWith(other) && other is Thought_PsychicRitualGuilt thought_PsychicRitualGuilt)
+		{
+			return ritualDef == thought_PsychicRitualGuilt.ritualDef;
+		}
+		return false;
 	}
 }

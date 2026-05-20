@@ -1,23 +1,22 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtMemory_Inhumanized : Thought_Memory
 {
-	public class ThoughtMemory_Inhumanized : Thought_Memory
+	public override int CurStageIndex
 	{
-		public override int CurStageIndex
+		get
 		{
-			get
+			if (!ModsConfig.AnomalyActive)
 			{
-				if (!ModsConfig.AnomalyActive)
-				{
-					return 0;
-				}
-				if (!pawn.Inhumanized())
-				{
-					return 0;
-				}
-				return 1;
+				return 0;
 			}
+			if (!pawn.Inhumanized())
+			{
+				return 0;
+			}
+			return 1;
 		}
 	}
 }

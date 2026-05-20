@@ -1,11 +1,10 @@
-namespace RimWorld
+namespace RimWorld;
+
+public interface IOpenable
 {
-	public interface IOpenable
-	{
-		bool CanOpen { get; }
+	bool CanOpen { get; }
 
-		int OpenTicks { get; }
+	int OpenTicks { get; }
 
-		void Open();
-	}
+	void Open();
 }

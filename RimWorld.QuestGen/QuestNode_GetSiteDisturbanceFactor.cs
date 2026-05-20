@@ -1,38 +1,37 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_GetSiteDisturbanceFactor : QuestNode
 {
-	public class QuestNode_GetSiteDisturbanceFactor : QuestNode
+	[NoTranslate]
+	public SlateRef<string> storeAs;
+
+	public SlateRef<IEnumerable<SitePartDef>> sitePartDefs;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		[NoTranslate]
-		public SlateRef<string> storeAs;
+		SetVars(slate);
+		return true;
+	}
 
-		public SlateRef<IEnumerable<SitePartDef>> sitePartDefs;
+	protected override void RunInt()
+	{
+		SetVars(QuestGen.slate);
+	}
 
-		protected override bool TestRunInt(Slate slate)
+	private void SetVars(Slate slate)
+	{
+		float num = 1f;
+		IEnumerable<SitePartDef> value = sitePartDefs.GetValue(slate);
+		if (value != null)
 		{
-			SetVars(slate);
-			return true;
-		}
-
-		protected override void RunInt()
-		{
-			SetVars(QuestGen.slate);
-		}
-
-		private void SetVars(Slate slate)
-		{
-			float num = 1f;
-			IEnumerable<SitePartDef> value = sitePartDefs.GetValue(slate);
-			if (value != null)
+			foreach (SitePartDef item in value)
 			{
-				foreach (SitePartDef item in value)
-				{
-					num *= item.activeThreatDisturbanceFactor;
-				}
+				num *= item.activeThreatDisturbanceFactor;
 			}
-			slate.Set(storeAs.GetValue(slate), num);
 		}
+		slate.Set(storeAs.GetValue(slate), num);
 	}
 }

@@ -1,10 +1,9 @@
-namespace RimWorld.BaseGen
+namespace RimWorld.BaseGen;
+
+public class SymbolResolver_WorkSite : SymbolResolver
 {
-	public class SymbolResolver_WorkSite : SymbolResolver
+	public override void Resolve(ResolveParams rp)
 	{
-		public override void Resolve(ResolveParams rp)
-		{
-			BaseGen.symbolStack.Push("storage", rp);
-		}
+		BaseGen.symbolStack.Push("storage", rp);
 	}
 }

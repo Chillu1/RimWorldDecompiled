@@ -1,11 +1,10 @@
-namespace Verse.AI
+namespace Verse.AI;
+
+public enum LocomotionUrgency : byte
 {
-	public enum LocomotionUrgency : byte
-	{
-		None,
-		Amble,
-		Walk,
-		Jog,
-		Sprint
-	}
+	None,
+	Amble,
+	Walk,
+	Jog,
+	Sprint
 }

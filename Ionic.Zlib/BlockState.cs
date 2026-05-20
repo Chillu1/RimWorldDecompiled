@@ -1,10 +1,9 @@
-namespace Ionic.Zlib
+namespace Ionic.Zlib;
+
+internal enum BlockState
 {
-	internal enum BlockState
-	{
-		NeedMore,
-		BlockDone,
-		FinishStarted,
-		FinishDone
-	}
+	NeedMore,
+	BlockDone,
+	FinishStarted,
+	FinishDone
 }

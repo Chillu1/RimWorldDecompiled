@@ -4,68 +4,67 @@ using Verse;
 using Verse.AI;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_EatAtCannibalPlatter : JobDriver, IEatingDriver
 {
-	public class JobDriver_EatAtCannibalPlatter : JobDriver, IEatingDriver
+	private Toil eating;
+
+	private const TargetIndex PlatterIndex = TargetIndex.A;
+
+	private const TargetIndex CellIndex = TargetIndex.B;
+
+	private const int BloodFilthIntervalTick = 40;
+
+	private const float ChanceToProduceBloodFilth = 0.25f;
+
+	public bool GainingNutritionNow => base.CurToil == eating;
+
+	public override bool TryMakePreToilReservations(bool errorOnFailed)
 	{
-		private Toil eating;
+		return pawn.ReserveSittableOrSpot(job.targetB.Cell, job, errorOnFailed);
+	}
 
-		private const TargetIndex PlatterIndex = TargetIndex.A;
-
-		private const TargetIndex CellIndex = TargetIndex.B;
-
-		private const int BloodFilthIntervalTick = 40;
-
-		private const float ChanceToProduceBloodFilth = 0.25f;
-
-		public bool GainingNutritionNow => base.CurToil == eating;
-
-		public override bool TryMakePreToilReservations(bool errorOnFailed)
+	protected override IEnumerable<Toil> MakeNewToils()
+	{
+		if (!ModLister.CheckIdeology("Cannibal eat job"))
 		{
-			return pawn.ReserveSittableOrSpot(job.targetB.Cell, job, errorOnFailed);
+			yield break;
 		}
-
-		protected override IEnumerable<Toil> MakeNewToils()
+		this.EndOnDespawnedOrNull(TargetIndex.A);
+		yield return Toils_Goto.Goto(TargetIndex.B, PathEndMode.OnCell);
+		float totalBuildingNutrition = base.TargetA.Thing.def.CostList.Sum((ThingDefCountClass x) => x.thingDef.GetStatValueAbstract(StatDefOf.Nutrition) * (float)x.count);
+		eating = ToilMaker.MakeToil("MakeNewToils");
+		eating.tickIntervalAction = delegate(int delta)
 		{
-			if (!ModLister.CheckIdeology("Cannibal eat job"))
+			pawn.rotationTracker.FaceCell(base.TargetA.Thing.OccupiedRect().ClosestCellTo(pawn.Position));
+			pawn.GainComfortFromCellIfPossible(delta);
+			if (pawn.needs.food != null)
 			{
-				yield break;
+				pawn.needs.food.CurLevel += totalBuildingNutrition / (float)pawn.GetLord().ownedPawns.Count / (float)eating.defaultDuration * (float)delta;
 			}
-			this.EndOnDespawnedOrNull(TargetIndex.A);
-			yield return Toils_Goto.Goto(TargetIndex.B, PathEndMode.OnCell);
-			float totalBuildingNutrition = base.TargetA.Thing.def.CostList.Sum((ThingDefCountClass x) => x.thingDef.GetStatValueAbstract(StatDefOf.Nutrition) * (float)x.count);
-			eating = ToilMaker.MakeToil("MakeNewToils");
-			eating.tickIntervalAction = delegate(int delta)
+			if (pawn.IsHashIntervalTick(40, delta) && Rand.Value < 0.25f)
 			{
-				pawn.rotationTracker.FaceCell(base.TargetA.Thing.OccupiedRect().ClosestCellTo(pawn.Position));
-				pawn.GainComfortFromCellIfPossible(delta);
-				if (pawn.needs.food != null)
+				IntVec3 c = (Rand.Bool ? pawn.Position : pawn.RandomAdjacentCellCardinal());
+				if (c.InBounds(pawn.Map))
 				{
-					pawn.needs.food.CurLevel += totalBuildingNutrition / (float)pawn.GetLord().ownedPawns.Count / (float)eating.defaultDuration * (float)delta;
+					FilthMaker.TryMakeFilth(c, pawn.Map, ThingDefOf.Human.race.BloodDef);
 				}
-				if (pawn.IsHashIntervalTick(40, delta) && Rand.Value < 0.25f)
-				{
-					IntVec3 c = (Rand.Bool ? pawn.Position : pawn.RandomAdjacentCellCardinal());
-					if (c.InBounds(pawn.Map))
-					{
-						FilthMaker.TryMakeFilth(c, pawn.Map, ThingDefOf.Human.race.BloodDef);
-					}
-				}
-			};
-			eating.AddFinishAction(delegate
+			}
+		};
+		eating.AddFinishAction(delegate
+		{
+			if (pawn.mindState != null)
 			{
-				if (pawn.mindState != null)
-				{
-					pawn.mindState.lastHumanMeatIngestedTick = Find.TickManager.TicksGame;
-				}
-				Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.AteHumanMeat, pawn.Named(HistoryEventArgsNames.Doer)));
-			});
-			eating.WithEffect(EffecterDefOf.EatMeat, TargetIndex.A);
-			eating.PlaySustainerOrSound(SoundDefOf.RawMeat_Eat);
-			eating.handlingFacing = true;
-			eating.defaultCompleteMode = ToilCompleteMode.Delay;
-			eating.defaultDuration = (job.doUntilGatheringEnded ? job.expiryInterval : job.def.joyDuration);
-			yield return eating;
-		}
+				pawn.mindState.lastHumanMeatIngestedTick = Find.TickManager.TicksGame;
+			}
+			Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.AteHumanMeat, pawn.Named(HistoryEventArgsNames.Doer)));
+		});
+		eating.WithEffect(EffecterDefOf.EatMeat, TargetIndex.A);
+		eating.PlaySustainerOrSound(SoundDefOf.RawMeat_Eat);
+		eating.handlingFacing = true;
+		eating.defaultCompleteMode = ToilCompleteMode.Delay;
+		eating.defaultDuration = (job.doUntilGatheringEnded ? job.expiryInterval : job.def.joyDuration);
+		yield return eating;
 	}
 }

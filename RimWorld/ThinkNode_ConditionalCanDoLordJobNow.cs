@@ -1,33 +1,32 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThinkNode_ConditionalCanDoLordJobNow : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalCanDoLordJobNow : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
+		if (pawn.IsBurning())
 		{
-			if (pawn.IsBurning())
-			{
-				return false;
-			}
-			if (pawn.InMentalState)
-			{
-				return false;
-			}
-			if (pawn.Drafted)
-			{
-				return false;
-			}
-			if (!pawn.Awake())
-			{
-				return false;
-			}
-			if (pawn.Downed && !pawn.DutyActiveWhenDown())
-			{
-				return false;
-			}
-			return true;
+			return false;
 		}
+		if (pawn.InMentalState)
+		{
+			return false;
+		}
+		if (pawn.Drafted)
+		{
+			return false;
+		}
+		if (!pawn.Awake())
+		{
+			return false;
+		}
+		if (pawn.Downed && !pawn.DutyActiveWhenDown())
+		{
+			return false;
+		}
+		return true;
 	}
 }

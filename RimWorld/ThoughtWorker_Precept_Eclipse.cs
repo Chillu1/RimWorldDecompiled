@@ -1,25 +1,24 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_Precept_Eclipse : ThoughtWorker_Precept
 {
-	public class ThoughtWorker_Precept_Eclipse : ThoughtWorker_Precept
+	protected override ThoughtState ShouldHaveThought(Pawn p)
 	{
-		protected override ThoughtState ShouldHaveThought(Pawn p)
+		if (!p.Spawned)
 		{
-			if (!p.Spawned)
-			{
-				return false;
-			}
-			if (!p.Awake() || PawnUtility.IsBiologicallyOrArtificiallyBlind(p))
-			{
-				return false;
-			}
-			Room room = p.GetRoom();
-			if (room != null && !room.PsychologicallyOutdoors)
-			{
-				return false;
-			}
-			return p.Map.GameConditionManager.ConditionIsActive(GameConditionDefOf.Eclipse);
+			return false;
 		}
+		if (!p.Awake() || PawnUtility.IsBiologicallyOrArtificiallyBlind(p))
+		{
+			return false;
+		}
+		Room room = p.GetRoom();
+		if (room != null && !room.PsychologicallyOutdoors)
+		{
+			return false;
+		}
+		return p.Map.GameConditionManager.ConditionIsActive(GameConditionDefOf.Eclipse);
 	}
 }

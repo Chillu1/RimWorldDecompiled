@@ -1,27 +1,26 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class PawnColumnWorker_ManhunterOnTameFailChance : PawnColumnWorker_Text
 {
-	public class PawnColumnWorker_ManhunterOnTameFailChance : PawnColumnWorker_Text
+	protected override string GetTextFor(Pawn pawn)
 	{
-		protected override string GetTextFor(Pawn pawn)
+		float manhunterOnTameFailChance = PawnUtility.GetManhunterOnTameFailChance(pawn);
+		if (manhunterOnTameFailChance == 0f)
 		{
-			float manhunterOnTameFailChance = PawnUtility.GetManhunterOnTameFailChance(pawn);
-			if (manhunterOnTameFailChance == 0f)
-			{
-				return "-";
-			}
-			return manhunterOnTameFailChance.ToStringPercent();
+			return "-";
 		}
+		return manhunterOnTameFailChance.ToStringPercent();
+	}
 
-		protected override string GetTip(Pawn pawn)
-		{
-			return PawnUtility.GetManhunterOnTameFailChanceExplanation(pawn.def, pawn);
-		}
+	protected override string GetTip(Pawn pawn)
+	{
+		return PawnUtility.GetManhunterOnTameFailChanceExplanation(pawn.def, pawn);
+	}
 
-		public override int Compare(Pawn a, Pawn b)
-		{
-			return PawnUtility.GetManhunterOnTameFailChance(a).CompareTo(PawnUtility.GetManhunterOnTameFailChance(b));
-		}
+	public override int Compare(Pawn a, Pawn b)
+	{
+		return PawnUtility.GetManhunterOnTameFailChance(a).CompareTo(PawnUtility.GetManhunterOnTameFailChance(b));
 	}
 }

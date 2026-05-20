@@ -3,40 +3,39 @@ using System.Collections.Generic;
 using RimWorld.Planet;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public struct ThingSetMakerParams
 {
-	public struct ThingSetMakerParams
-	{
-		public TechLevel? techLevel;
+	public TechLevel? techLevel;
 
-		public IntRange? countRange;
+	public IntRange? countRange;
 
-		public ThingFilter filter;
+	public ThingFilter filter;
 
-		public Predicate<ThingDef> validator;
+	public Predicate<ThingDef> validator;
 
-		public QualityGenerator? qualityGenerator;
+	public QualityGenerator? qualityGenerator;
 
-		public float? maxTotalMass;
+	public float? maxTotalMass;
 
-		public float? maxThingMarketValue;
+	public float? maxThingMarketValue;
 
-		public bool? allowNonStackableDuplicates;
+	public bool? allowNonStackableDuplicates;
 
-		public float? minSingleItemMarketValuePct;
+	public float? minSingleItemMarketValuePct;
 
-		public FloatRange? totalMarketValueRange;
+	public FloatRange? totalMarketValueRange;
 
-		public FloatRange? totalNutritionRange;
+	public FloatRange? totalNutritionRange;
 
-		public PodContentsType? podContentsType;
+	public PodContentsType? podContentsType;
 
-		public Faction makingFaction;
+	public Faction makingFaction;
 
-		public TraderKindDef traderDef;
+	public TraderKindDef traderDef;
 
-		public PlanetTile? tile;
+	public PlanetTile? tile;
 
-		public Dictionary<string, object> custom;
-	}
+	public Dictionary<string, object> custom;
 }

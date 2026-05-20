@@ -2,43 +2,42 @@ using UnityEngine;
 using Verse;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Trigger_FractionColonyDamageTaken : Trigger
 {
-	public class Trigger_FractionColonyDamageTaken : Trigger
+	private float desiredColonyDamageFraction;
+
+	private float minDamage;
+
+	private TriggerData_FractionColonyDamageTaken Data => (TriggerData_FractionColonyDamageTaken)data;
+
+	public Trigger_FractionColonyDamageTaken(float desiredColonyDamageFraction, float minDamage = float.MaxValue)
 	{
-		private float desiredColonyDamageFraction;
+		data = new TriggerData_FractionColonyDamageTaken();
+		this.desiredColonyDamageFraction = desiredColonyDamageFraction;
+		this.minDamage = minDamage;
+	}
 
-		private float minDamage;
-
-		private TriggerData_FractionColonyDamageTaken Data => (TriggerData_FractionColonyDamageTaken)data;
-
-		public Trigger_FractionColonyDamageTaken(float desiredColonyDamageFraction, float minDamage = float.MaxValue)
+	public override void SourceToilBecameActive(Transition transition, LordToil previousToil)
+	{
+		if (!transition.sources.Contains(previousToil))
 		{
-			data = new TriggerData_FractionColonyDamageTaken();
-			this.desiredColonyDamageFraction = desiredColonyDamageFraction;
-			this.minDamage = minDamage;
+			Data.startColonyDamage = transition.Map.damageWatcher.DamageTakenEver;
 		}
+	}
 
-		public override void SourceToilBecameActive(Transition transition, LordToil previousToil)
+	public override bool ActivateOn(Lord lord, TriggerSignal signal)
+	{
+		if (signal.type == TriggerSignalType.Tick)
 		{
-			if (!transition.sources.Contains(previousToil))
+			if (data == null || !(data is TriggerData_FractionColonyDamageTaken))
 			{
-				Data.startColonyDamage = transition.Map.damageWatcher.DamageTakenEver;
+				BackCompatibility.TriggerDataFractionColonyDamageTakenNull(this, lord.Map);
 			}
+			float num = Mathf.Max((float)lord.initialColonyHealthTotal * desiredColonyDamageFraction, minDamage);
+			return lord.Map.damageWatcher.DamageTakenEver > Data.startColonyDamage + num;
 		}
-
-		public override bool ActivateOn(Lord lord, TriggerSignal signal)
-		{
-			if (signal.type == TriggerSignalType.Tick)
-			{
-				if (data == null || !(data is TriggerData_FractionColonyDamageTaken))
-				{
-					BackCompatibility.TriggerDataFractionColonyDamageTakenNull(this, lord.Map);
-				}
-				float num = Mathf.Max((float)lord.initialColonyHealthTotal * desiredColonyDamageFraction, minDamage);
-				return lord.Map.damageWatcher.DamageTakenEver > Data.startColonyDamage + num;
-			}
-			return false;
-		}
+		return false;
 	}
 }

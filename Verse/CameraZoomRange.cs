@@ -1,11 +1,10 @@
-namespace Verse
+namespace Verse;
+
+public enum CameraZoomRange : byte
 {
-	public enum CameraZoomRange : byte
-	{
-		Closest,
-		Close,
-		Middle,
-		Far,
-		Furthest
-	}
+	Closest,
+	Close,
+	Middle,
+	Far,
+	Furthest
 }

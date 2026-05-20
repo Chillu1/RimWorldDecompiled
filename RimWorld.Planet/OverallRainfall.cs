@@ -1,13 +1,12 @@
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public enum OverallRainfall
 {
-	public enum OverallRainfall
-	{
-		AlmostNone,
-		Little,
-		LittleBitLess,
-		Normal,
-		LittleBitMore,
-		High,
-		VeryHigh
-	}
+	AlmostNone,
+	Little,
+	LittleBitLess,
+	Normal,
+	LittleBitMore,
+	High,
+	VeryHigh
 }

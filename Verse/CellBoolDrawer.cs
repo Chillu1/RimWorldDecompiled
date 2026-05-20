@@ -2,210 +2,209 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class CellBoolDrawer
 {
-	public class CellBoolDrawer
+	private bool wantDraw;
+
+	private Material material;
+
+	private bool materialCaresAboutVertexColors;
+
+	private bool dirty = true;
+
+	private List<Mesh> meshes = new List<Mesh>();
+
+	private int mapSizeX;
+
+	private int mapSizeZ;
+
+	private float opacity = 0.33f;
+
+	private int renderQueue = 3600;
+
+	private Func<Color> colorGetter;
+
+	private Func<int, Color> extraColorGetter;
+
+	private Func<int, bool> cellBoolGetter;
+
+	private static List<Vector3> verts = new List<Vector3>();
+
+	private static List<int> tris = new List<int>();
+
+	private static List<Color> colors = new List<Color>();
+
+	private const float DefaultOpacity = 0.33f;
+
+	private const int MaxCellsPerMesh = 16383;
+
+	private CellBoolDrawer(int mapSizeX, int mapSizeZ, float opacity = 0.33f)
 	{
-		private bool wantDraw;
+		this.mapSizeX = mapSizeX;
+		this.mapSizeZ = mapSizeZ;
+		this.opacity = opacity;
+	}
 
-		private Material material;
+	public CellBoolDrawer(ICellBoolGiver giver, int mapSizeX, int mapSizeZ, float opacity = 0.33f)
+		: this(mapSizeX, mapSizeZ, opacity)
+	{
+		colorGetter = () => giver.Color;
+		extraColorGetter = giver.GetCellExtraColor;
+		cellBoolGetter = giver.GetCellBool;
+	}
 
-		private bool materialCaresAboutVertexColors;
+	public CellBoolDrawer(ICellBoolGiver giver, int mapSizeX, int mapSizeZ, int renderQueue, float opacity = 0.33f)
+		: this(giver, mapSizeX, mapSizeZ, opacity)
+	{
+		this.renderQueue = renderQueue;
+	}
 
-		private bool dirty = true;
+	public CellBoolDrawer(Func<int, bool> cellBoolGetter, Func<Color> colorGetter, Func<int, Color> extraColorGetter, int mapSizeX, int mapSizeZ, float opacity = 0.33f)
+		: this(mapSizeX, mapSizeZ, opacity)
+	{
+		this.colorGetter = colorGetter;
+		this.extraColorGetter = extraColorGetter;
+		this.cellBoolGetter = cellBoolGetter;
+	}
 
-		private List<Mesh> meshes = new List<Mesh>();
+	public CellBoolDrawer(Func<int, bool> cellBoolGetter, Func<Color> colorGetter, Func<int, Color> extraColorGetter, int mapSizeX, int mapSizeZ, int renderQueue, float opacity = 0.33f)
+		: this(cellBoolGetter, colorGetter, extraColorGetter, mapSizeX, mapSizeZ, opacity)
+	{
+		this.renderQueue = renderQueue;
+	}
 
-		private int mapSizeX;
+	public void MarkForDraw()
+	{
+		wantDraw = true;
+	}
 
-		private int mapSizeZ;
-
-		private float opacity = 0.33f;
-
-		private int renderQueue = 3600;
-
-		private Func<Color> colorGetter;
-
-		private Func<int, Color> extraColorGetter;
-
-		private Func<int, bool> cellBoolGetter;
-
-		private static List<Vector3> verts = new List<Vector3>();
-
-		private static List<int> tris = new List<int>();
-
-		private static List<Color> colors = new List<Color>();
-
-		private const float DefaultOpacity = 0.33f;
-
-		private const int MaxCellsPerMesh = 16383;
-
-		private CellBoolDrawer(int mapSizeX, int mapSizeZ, float opacity = 0.33f)
+	public void CellBoolDrawerUpdate()
+	{
+		if (wantDraw)
 		{
-			this.mapSizeX = mapSizeX;
-			this.mapSizeZ = mapSizeZ;
-			this.opacity = opacity;
+			ActuallyDraw();
+			wantDraw = false;
 		}
+	}
 
-		public CellBoolDrawer(ICellBoolGiver giver, int mapSizeX, int mapSizeZ, float opacity = 0.33f)
-			: this(mapSizeX, mapSizeZ, opacity)
+	private void ActuallyDraw()
+	{
+		if (dirty)
 		{
-			colorGetter = () => giver.Color;
-			extraColorGetter = giver.GetCellExtraColor;
-			cellBoolGetter = giver.GetCellBool;
+			RegenerateMesh();
 		}
-
-		public CellBoolDrawer(ICellBoolGiver giver, int mapSizeX, int mapSizeZ, int renderQueue, float opacity = 0.33f)
-			: this(giver, mapSizeX, mapSizeZ, opacity)
+		for (int i = 0; i < meshes.Count; i++)
 		{
-			this.renderQueue = renderQueue;
+			Graphics.DrawMesh(meshes[i], Vector3.zero, Quaternion.identity, material, 0);
 		}
+	}
 
-		public CellBoolDrawer(Func<int, bool> cellBoolGetter, Func<Color> colorGetter, Func<int, Color> extraColorGetter, int mapSizeX, int mapSizeZ, float opacity = 0.33f)
-			: this(mapSizeX, mapSizeZ, opacity)
+	public void SetDirty()
+	{
+		dirty = true;
+	}
+
+	public void RegenerateMesh()
+	{
+		for (int i = 0; i < meshes.Count; i++)
 		{
-			this.colorGetter = colorGetter;
-			this.extraColorGetter = extraColorGetter;
-			this.cellBoolGetter = cellBoolGetter;
+			meshes[i].Clear();
 		}
-
-		public CellBoolDrawer(Func<int, bool> cellBoolGetter, Func<Color> colorGetter, Func<int, Color> extraColorGetter, int mapSizeX, int mapSizeZ, int renderQueue, float opacity = 0.33f)
-			: this(cellBoolGetter, colorGetter, extraColorGetter, mapSizeX, mapSizeZ, opacity)
+		int num = 0;
+		int num2 = 0;
+		if (meshes.Count < 1)
 		{
-			this.renderQueue = renderQueue;
-		}
-
-		public void MarkForDraw()
-		{
-			wantDraw = true;
-		}
-
-		public void CellBoolDrawerUpdate()
-		{
-			if (wantDraw)
+			Mesh item = new Mesh
 			{
-				ActuallyDraw();
-				wantDraw = false;
-			}
+				name = "CellBoolDrawer"
+			};
+			meshes.Add(item);
 		}
-
-		private void ActuallyDraw()
+		Mesh mesh = meshes[num];
+		CellRect cellRect = new CellRect(0, 0, mapSizeX, mapSizeZ);
+		float y = AltitudeLayer.MapDataOverlay.AltitudeFor();
+		bool careAboutVertexColors = false;
+		for (int j = cellRect.minX; j <= cellRect.maxX; j++)
 		{
-			if (dirty)
+			for (int k = cellRect.minZ; k <= cellRect.maxZ; k++)
 			{
-				RegenerateMesh();
-			}
-			for (int i = 0; i < meshes.Count; i++)
-			{
-				Graphics.DrawMesh(meshes[i], Vector3.zero, Quaternion.identity, material, 0);
-			}
-		}
-
-		public void SetDirty()
-		{
-			dirty = true;
-		}
-
-		public void RegenerateMesh()
-		{
-			for (int i = 0; i < meshes.Count; i++)
-			{
-				meshes[i].Clear();
-			}
-			int num = 0;
-			int num2 = 0;
-			if (meshes.Count < 1)
-			{
-				Mesh item = new Mesh
+				int arg = CellIndicesUtility.CellToIndex(j, k, mapSizeX);
+				if (!cellBoolGetter(arg))
 				{
-					name = "CellBoolDrawer"
-				};
-				meshes.Add(item);
-			}
-			Mesh mesh = meshes[num];
-			CellRect cellRect = new CellRect(0, 0, mapSizeX, mapSizeZ);
-			float y = AltitudeLayer.MapDataOverlay.AltitudeFor();
-			bool careAboutVertexColors = false;
-			for (int j = cellRect.minX; j <= cellRect.maxX; j++)
-			{
-				for (int k = cellRect.minZ; k <= cellRect.maxZ; k++)
+					continue;
+				}
+				verts.Add(new Vector3(j, y, k));
+				verts.Add(new Vector3(j, y, k + 1));
+				verts.Add(new Vector3(j + 1, y, k + 1));
+				verts.Add(new Vector3(j + 1, y, k));
+				Color color = extraColorGetter(arg);
+				colors.Add(color);
+				colors.Add(color);
+				colors.Add(color);
+				colors.Add(color);
+				if (color != Color.white)
 				{
-					int arg = CellIndicesUtility.CellToIndex(j, k, mapSizeX);
-					if (!cellBoolGetter(arg))
+					careAboutVertexColors = true;
+				}
+				int count = verts.Count;
+				tris.Add(count - 4);
+				tris.Add(count - 3);
+				tris.Add(count - 2);
+				tris.Add(count - 4);
+				tris.Add(count - 2);
+				tris.Add(count - 1);
+				num2++;
+				if (num2 >= 16383)
+				{
+					FinalizeWorkingDataIntoMesh(mesh);
+					num++;
+					if (meshes.Count < num + 1)
 					{
-						continue;
-					}
-					verts.Add(new Vector3(j, y, k));
-					verts.Add(new Vector3(j, y, k + 1));
-					verts.Add(new Vector3(j + 1, y, k + 1));
-					verts.Add(new Vector3(j + 1, y, k));
-					Color color = extraColorGetter(arg);
-					colors.Add(color);
-					colors.Add(color);
-					colors.Add(color);
-					colors.Add(color);
-					if (color != Color.white)
-					{
-						careAboutVertexColors = true;
-					}
-					int count = verts.Count;
-					tris.Add(count - 4);
-					tris.Add(count - 3);
-					tris.Add(count - 2);
-					tris.Add(count - 4);
-					tris.Add(count - 2);
-					tris.Add(count - 1);
-					num2++;
-					if (num2 >= 16383)
-					{
-						FinalizeWorkingDataIntoMesh(mesh);
-						num++;
-						if (meshes.Count < num + 1)
+						Mesh item2 = new Mesh
 						{
-							Mesh item2 = new Mesh
-							{
-								name = "CellBoolDrawer"
-							};
-							meshes.Add(item2);
-						}
-						mesh = meshes[num];
-						num2 = 0;
+							name = "CellBoolDrawer"
+						};
+						meshes.Add(item2);
 					}
+					mesh = meshes[num];
+					num2 = 0;
 				}
 			}
-			FinalizeWorkingDataIntoMesh(mesh);
-			CreateMaterialIfNeeded(careAboutVertexColors);
-			dirty = false;
 		}
+		FinalizeWorkingDataIntoMesh(mesh);
+		CreateMaterialIfNeeded(careAboutVertexColors);
+		dirty = false;
+	}
 
-		private void FinalizeWorkingDataIntoMesh(Mesh mesh)
+	private void FinalizeWorkingDataIntoMesh(Mesh mesh)
+	{
+		if (verts.Count > 0)
 		{
-			if (verts.Count > 0)
-			{
-				mesh.SetVertices(verts);
-				verts.Clear();
-				mesh.SetTriangles(tris, 0);
-				tris.Clear();
-				mesh.SetColors(colors);
-				colors.Clear();
-			}
+			mesh.SetVertices(verts);
+			verts.Clear();
+			mesh.SetTriangles(tris, 0);
+			tris.Clear();
+			mesh.SetColors(colors);
+			colors.Clear();
 		}
+	}
 
-		private void CreateMaterialIfNeeded(bool careAboutVertexColors)
+	private void CreateMaterialIfNeeded(bool careAboutVertexColors)
+	{
+		if (material == null || materialCaresAboutVertexColors != careAboutVertexColors)
 		{
-			if (material == null || materialCaresAboutVertexColors != careAboutVertexColors)
-			{
-				Color color = colorGetter();
-				material = SolidColorMaterials.SimpleSolidColorMaterial(new Color(color.r, color.g, color.b, opacity * color.a), careAboutVertexColors);
-				materialCaresAboutVertexColors = careAboutVertexColors;
-				material.renderQueue = renderQueue;
-			}
+			Color color = colorGetter();
+			material = SolidColorMaterials.SimpleSolidColorMaterial(new Color(color.r, color.g, color.b, opacity * color.a), careAboutVertexColors);
+			materialCaresAboutVertexColors = careAboutVertexColors;
+			material.renderQueue = renderQueue;
 		}
+	}
 
-		public void Notify_ColorChanged()
-		{
-			material = null;
-			SetDirty();
-		}
+	public void Notify_ColorChanged()
+	{
+		material = null;
+		SetDirty();
 	}
 }

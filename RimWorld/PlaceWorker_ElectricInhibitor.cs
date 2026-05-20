@@ -2,27 +2,26 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class PlaceWorker_ElectricInhibitor : PlaceWorker
 {
-	public class PlaceWorker_ElectricInhibitor : PlaceWorker
+	private static readonly List<IntVec3> tmpCells = new List<IntVec3>();
+
+	public override void DrawGhost(ThingDef def, IntVec3 center, Rot4 rot, Color ghostCol, Thing thing = null)
 	{
-		private static readonly List<IntVec3> tmpCells = new List<IntVec3>();
+		tmpCells.Clear();
+		tmpCells.AddRange(ContainmentUtility.GetInhibitorAffectedCells(def, center, rot, Find.CurrentMap));
+		GenDraw.DrawFieldEdges(tmpCells, Color.white);
+		tmpCells.Clear();
+	}
 
-		public override void DrawGhost(ThingDef def, IntVec3 center, Rot4 rot, Color ghostCol, Thing thing = null)
+	public override AcceptanceReport AllowsPlacing(BuildableDef checkingDef, IntVec3 loc, Rot4 rot, Map map, Thing thingToIgnore = null, Thing thing = null)
+	{
+		if (checkingDef is ThingDef def && ContainmentUtility.IsLinearBuildingBlocked(def, loc, rot, map, thingToIgnore))
 		{
-			tmpCells.Clear();
-			tmpCells.AddRange(ContainmentUtility.GetInhibitorAffectedCells(def, center, rot, Find.CurrentMap));
-			GenDraw.DrawFieldEdges(tmpCells, Color.white);
-			tmpCells.Clear();
+			return new AcceptanceReport("InhibitorSpaceOccupied".Translate());
 		}
-
-		public override AcceptanceReport AllowsPlacing(BuildableDef checkingDef, IntVec3 loc, Rot4 rot, Map map, Thing thingToIgnore = null, Thing thing = null)
-		{
-			if (checkingDef is ThingDef def && ContainmentUtility.IsLinearBuildingBlocked(def, loc, rot, map, thingToIgnore))
-			{
-				return new AcceptanceReport("InhibitorSpaceOccupied".Translate());
-			}
-			return AcceptanceReport.WasAccepted;
-		}
+		return AcceptanceReport.WasAccepted;
 	}
 }

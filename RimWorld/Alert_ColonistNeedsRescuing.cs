@@ -3,78 +3,77 @@ using System.Text;
 using Verse;
 using Verse.Steam;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Alert_ColonistNeedsRescuing : Alert_Critical
 {
-	public class Alert_ColonistNeedsRescuing : Alert_Critical
+	private List<Pawn> colonistsNeedingRescueResult = new List<Pawn>();
+
+	private List<Pawn> ColonistsNeedingRescue
 	{
-		private List<Pawn> colonistsNeedingRescueResult = new List<Pawn>();
-
-		private List<Pawn> ColonistsNeedingRescue
+		get
 		{
-			get
+			colonistsNeedingRescueResult.Clear();
+			foreach (Pawn item in PawnsFinder.AllMaps_FreeColonistsSpawned)
 			{
-				colonistsNeedingRescueResult.Clear();
-				foreach (Pawn item in PawnsFinder.AllMaps_FreeColonistsSpawned)
+				if (NeedsRescue(item))
 				{
-					if (NeedsRescue(item))
-					{
-						colonistsNeedingRescueResult.Add(item);
-					}
+					colonistsNeedingRescueResult.Add(item);
 				}
-				foreach (Pawn item2 in PawnsFinder.AllMaps_ColonySubhumansSpawnedPlayerControlled)
+			}
+			foreach (Pawn item2 in PawnsFinder.AllMaps_ColonySubhumansSpawnedPlayerControlled)
+			{
+				if (NeedsRescue(item2))
 				{
-					if (NeedsRescue(item2))
-					{
-						colonistsNeedingRescueResult.Add(item2);
-					}
+					colonistsNeedingRescueResult.Add(item2);
 				}
-				return colonistsNeedingRescueResult;
 			}
+			return colonistsNeedingRescueResult;
 		}
+	}
 
-		public static bool NeedsRescue(Pawn p)
+	public static bool NeedsRescue(Pawn p)
+	{
+		if (p.Downed && HealthAIUtility.WantsToBeRescued(p) && !p.InBed() && !(p.ParentHolder is Pawn_CarryTracker))
 		{
-			if (p.Downed && HealthAIUtility.WantsToBeRescued(p) && !p.InBed() && !(p.ParentHolder is Pawn_CarryTracker))
+			if (p.jobs?.jobQueue != null && p.jobs.jobQueue.Count > 0 && p.jobs.jobQueue.Peek().job.CanBeginNow(p))
 			{
-				if (p.jobs?.jobQueue != null && p.jobs.jobQueue.Count > 0 && p.jobs.jobQueue.Peek().job.CanBeginNow(p))
-				{
-					return false;
-				}
-				if (ChildcareUtility.BabyBeingPlayedWith(p))
-				{
-					return false;
-				}
-				return true;
+				return false;
 			}
-			return false;
+			if (ChildcareUtility.BabyBeingPlayedWith(p))
+			{
+				return false;
+			}
+			return true;
 		}
+		return false;
+	}
 
-		public override string GetLabel()
+	public override string GetLabel()
+	{
+		if (colonistsNeedingRescueResult.Count == 1)
 		{
-			if (colonistsNeedingRescueResult.Count == 1)
-			{
-				return "ColonistNeedsRescue".Translate();
-			}
-			return "ColonistsNeedRescue".Translate();
+			return "ColonistNeedsRescue".Translate();
 		}
+		return "ColonistsNeedRescue".Translate();
+	}
 
-		public override TaggedString GetExplanation()
+	public override TaggedString GetExplanation()
+	{
+		StringBuilder stringBuilder = new StringBuilder();
+		foreach (Pawn item in colonistsNeedingRescueResult)
 		{
-			StringBuilder stringBuilder = new StringBuilder();
-			foreach (Pawn item in colonistsNeedingRescueResult)
-			{
-				stringBuilder.AppendLine("  - " + item.NameShortColored.Resolve());
-			}
-			if (SteamDeck.IsSteamDeckInNonKeyboardMode)
-			{
-				return "ColonistsNeedRescueDescController".Translate(stringBuilder.ToString());
-			}
-			return "ColonistsNeedRescueDesc".Translate(stringBuilder.ToString());
+			stringBuilder.AppendLine("  - " + item.NameShortColored.Resolve());
 		}
+		if (SteamDeck.IsSteamDeckInNonKeyboardMode)
+		{
+			return "ColonistsNeedRescueDescController".Translate(stringBuilder.ToString());
+		}
+		return "ColonistsNeedRescueDesc".Translate(stringBuilder.ToString());
+	}
 
-		public override AlertReport GetReport()
-		{
-			return AlertReport.CulpritsAre(ColonistsNeedingRescue);
-		}
+	public override AlertReport GetReport()
+	{
+		return AlertReport.CulpritsAre(ColonistsNeedingRescue);
 	}
 }

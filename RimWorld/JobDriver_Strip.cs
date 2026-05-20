@@ -2,54 +2,53 @@ using System.Collections.Generic;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_Strip : JobDriver
 {
-	public class JobDriver_Strip : JobDriver
+	private const int StripTicks = 60;
+
+	public override bool TryMakePreToilReservations(bool errorOnFailed)
 	{
-		private const int StripTicks = 60;
+		return pawn.Reserve(job.targetA, job, 1, -1, null, errorOnFailed);
+	}
 
-		public override bool TryMakePreToilReservations(bool errorOnFailed)
+	protected override IEnumerable<Toil> MakeNewToils()
+	{
+		this.FailOnDespawnedOrNull(TargetIndex.A);
+		this.FailOnAggroMentalState(TargetIndex.A);
+		this.FailOn(() => !StrippableUtility.CanBeStrippedByColony(base.TargetThingA));
+		Toil toil = ToilMaker.MakeToil("MakeNewToils");
+		toil.initAction = delegate
 		{
-			return pawn.Reserve(job.targetA, job, 1, -1, null, errorOnFailed);
-		}
+			pawn.pather.StartPath(base.TargetThingA, PathEndMode.ClosestTouch);
+		};
+		toil.defaultCompleteMode = ToilCompleteMode.PatherArrival;
+		toil.FailOnDespawnedNullOrForbidden(TargetIndex.A);
+		yield return toil;
+		yield return Toils_General.Wait(60).WithProgressBarToilDelay(TargetIndex.A);
+		Toil toil2 = ToilMaker.MakeToil("MakeNewToils");
+		toil2.initAction = delegate
+		{
+			Thing thing = job.targetA.Thing;
+			base.Map.designationManager.DesignationOn(thing, DesignationDefOf.Strip)?.Delete();
+			if (thing is IStrippable strippable)
+			{
+				strippable.Strip();
+			}
+			pawn.records.Increment(RecordDefOf.BodiesStripped);
+		};
+		toil2.defaultCompleteMode = ToilCompleteMode.Instant;
+		yield return toil2;
+	}
 
-		protected override IEnumerable<Toil> MakeNewToils()
+	public override object[] TaleParameters()
+	{
+		Corpse corpse = base.TargetA.Thing as Corpse;
+		return new object[2]
 		{
-			this.FailOnDespawnedOrNull(TargetIndex.A);
-			this.FailOnAggroMentalState(TargetIndex.A);
-			this.FailOn(() => !StrippableUtility.CanBeStrippedByColony(base.TargetThingA));
-			Toil toil = ToilMaker.MakeToil("MakeNewToils");
-			toil.initAction = delegate
-			{
-				pawn.pather.StartPath(base.TargetThingA, PathEndMode.ClosestTouch);
-			};
-			toil.defaultCompleteMode = ToilCompleteMode.PatherArrival;
-			toil.FailOnDespawnedNullOrForbidden(TargetIndex.A);
-			yield return toil;
-			yield return Toils_General.Wait(60).WithProgressBarToilDelay(TargetIndex.A);
-			Toil toil2 = ToilMaker.MakeToil("MakeNewToils");
-			toil2.initAction = delegate
-			{
-				Thing thing = job.targetA.Thing;
-				base.Map.designationManager.DesignationOn(thing, DesignationDefOf.Strip)?.Delete();
-				if (thing is IStrippable strippable)
-				{
-					strippable.Strip();
-				}
-				pawn.records.Increment(RecordDefOf.BodiesStripped);
-			};
-			toil2.defaultCompleteMode = ToilCompleteMode.Instant;
-			yield return toil2;
-		}
-
-		public override object[] TaleParameters()
-		{
-			Corpse corpse = base.TargetA.Thing as Corpse;
-			return new object[2]
-			{
-				pawn,
-				(corpse != null) ? corpse.InnerPawn : base.TargetA.Thing
-			};
-		}
+			pawn,
+			(corpse != null) ? corpse.InnerPawn : base.TargetA.Thing
+		};
 	}
 }

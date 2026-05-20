@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public class MessageTypeDef : Def
 {
-	public class MessageTypeDef : Def
-	{
-		public SoundDef sound;
-	}
+	public SoundDef sound;
 }

@@ -1,12 +1,11 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class ColorGenerator_White : ColorGenerator
 {
-	public class ColorGenerator_White : ColorGenerator
+	public override Color NewRandomizedColor()
 	{
-		public override Color NewRandomizedColor()
-		{
-			return Color.white;
-		}
+		return Color.white;
 	}
 }

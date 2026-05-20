@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum AutofeedMode
 {
-	public enum AutofeedMode
-	{
-		Never,
-		Childcare,
-		Urgent
-	}
+	Never,
+	Childcare,
+	Urgent
 }

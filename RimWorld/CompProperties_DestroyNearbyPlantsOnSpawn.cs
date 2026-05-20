@@ -1,14 +1,13 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class CompProperties_DestroyNearbyPlantsOnSpawn : CompProperties
-	{
-		public int radius;
+namespace RimWorld;
 
-		public CompProperties_DestroyNearbyPlantsOnSpawn()
-		{
-			compClass = typeof(CompDestroyNearbyPlantsOnSpawn);
-		}
+public class CompProperties_DestroyNearbyPlantsOnSpawn : CompProperties
+{
+	public int radius;
+
+	public CompProperties_DestroyNearbyPlantsOnSpawn()
+	{
+		compClass = typeof(CompDestroyNearbyPlantsOnSpawn);
 	}
 }

@@ -1,13 +1,12 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public struct BulletImpactData
 {
-	public struct BulletImpactData
-	{
-		public IntVec3 impactPosition;
+	public IntVec3 impactPosition;
 
-		public Bullet bullet;
+	public Bullet bullet;
 
-		public Thing hitThing;
-	}
+	public Thing hitThing;
 }

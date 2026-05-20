@@ -1,44 +1,43 @@
 using System.Collections.Generic;
 using System.Xml;
 
-namespace Verse
+namespace Verse;
+
+public class PatchOperationFindMod : PatchOperation
 {
-	public class PatchOperationFindMod : PatchOperation
+	private List<string> mods;
+
+	private PatchOperation match;
+
+	private PatchOperation nomatch;
+
+	protected override bool ApplyWorker(XmlDocument xml)
 	{
-		private List<string> mods;
-
-		private PatchOperation match;
-
-		private PatchOperation nomatch;
-
-		protected override bool ApplyWorker(XmlDocument xml)
+		bool flag = false;
+		for (int i = 0; i < mods.Count; i++)
 		{
-			bool flag = false;
-			for (int i = 0; i < mods.Count; i++)
+			if (ModLister.HasActiveModWithName(mods[i]))
 			{
-				if (ModLister.HasActiveModWithName(mods[i]))
-				{
-					flag = true;
-					break;
-				}
+				flag = true;
+				break;
 			}
-			if (flag)
-			{
-				if (match != null)
-				{
-					return match.Apply(xml);
-				}
-			}
-			else if (nomatch != null)
-			{
-				return nomatch.Apply(xml);
-			}
-			return true;
 		}
-
-		public override string ToString()
+		if (flag)
 		{
-			return $"{base.ToString()}({mods.ToCommaList()})";
+			if (match != null)
+			{
+				return match.Apply(xml);
+			}
 		}
+		else if (nomatch != null)
+		{
+			return nomatch.Apply(xml);
+		}
+		return true;
+	}
+
+	public override string ToString()
+	{
+		return $"{base.ToString()}({mods.ToCommaList()})";
 	}
 }

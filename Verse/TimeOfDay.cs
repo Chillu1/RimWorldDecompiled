@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum TimeOfDay : byte
 {
-	public enum TimeOfDay : byte
-	{
-		Night,
-		Day,
-		Any
-	}
+	Night,
+	Day,
+	Any
 }

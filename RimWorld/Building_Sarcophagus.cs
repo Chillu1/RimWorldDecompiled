@@ -1,44 +1,43 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Building_Sarcophagus : Building_Grave
 {
-	public class Building_Sarcophagus : Building_Grave
+	private bool everNonEmpty;
+
+	private bool thisIsFirstBodyEver;
+
+	public override void ExposeData()
 	{
-		private bool everNonEmpty;
+		base.ExposeData();
+		Scribe_Values.Look(ref everNonEmpty, "everNonEmpty", defaultValue: false);
+	}
 
-		private bool thisIsFirstBodyEver;
-
-		public override void ExposeData()
+	public override bool TryAcceptThing(Thing thing, bool allowSpecialEffects = true)
+	{
+		if (base.TryAcceptThing(thing, allowSpecialEffects))
 		{
-			base.ExposeData();
-			Scribe_Values.Look(ref everNonEmpty, "everNonEmpty", defaultValue: false);
+			thisIsFirstBodyEver = !everNonEmpty;
+			everNonEmpty = true;
+			return true;
 		}
+		return false;
+	}
 
-		public override bool TryAcceptThing(Thing thing, bool allowSpecialEffects = true)
+	public override void Notify_HauledTo(Pawn hauler, Thing thing, int count)
+	{
+		base.Notify_HauledTo(hauler, thing, count);
+		if (!thisIsFirstBodyEver || !hauler.IsColonist || !base.Corpse.InnerPawn.def.race.Humanlike || base.Corpse.everBuriedInSarcophagus)
 		{
-			if (base.TryAcceptThing(thing, allowSpecialEffects))
-			{
-				thisIsFirstBodyEver = !everNonEmpty;
-				everNonEmpty = true;
-				return true;
-			}
-			return false;
+			return;
 		}
-
-		public override void Notify_HauledTo(Pawn hauler, Thing thing, int count)
+		base.Corpse.everBuriedInSarcophagus = true;
+		foreach (Pawn freeColonist in base.Map.mapPawns.FreeColonists)
 		{
-			base.Notify_HauledTo(hauler, thing, count);
-			if (!thisIsFirstBodyEver || !hauler.IsColonist || !base.Corpse.InnerPawn.def.race.Humanlike || base.Corpse.everBuriedInSarcophagus)
+			if (freeColonist.needs.mood != null)
 			{
-				return;
-			}
-			base.Corpse.everBuriedInSarcophagus = true;
-			foreach (Pawn freeColonist in base.Map.mapPawns.FreeColonists)
-			{
-				if (freeColonist.needs.mood != null)
-				{
-					freeColonist.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.KnowBuriedInSarcophagus);
-				}
+				freeColonist.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.KnowBuriedInSarcophagus);
 			}
 		}
 	}

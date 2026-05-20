@@ -1,35 +1,34 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_TurretGun : CompProperties
 {
-	public class CompProperties_TurretGun : CompProperties
+	public ThingDef turretDef;
+
+	public float angleOffset;
+
+	public bool autoAttack = true;
+
+	public List<PawnRenderNodeProperties> renderNodeProperties;
+
+	public CompProperties_TurretGun()
 	{
-		public ThingDef turretDef;
+		compClass = typeof(CompTurretGun);
+	}
 
-		public float angleOffset;
-
-		public bool autoAttack = true;
-
-		public List<PawnRenderNodeProperties> renderNodeProperties;
-
-		public CompProperties_TurretGun()
+	public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+	{
+		if (renderNodeProperties.NullOrEmpty())
 		{
-			compClass = typeof(CompTurretGun);
+			yield break;
 		}
-
-		public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+		foreach (PawnRenderNodeProperties renderNodeProperty in renderNodeProperties)
 		{
-			if (renderNodeProperties.NullOrEmpty())
+			if (!typeof(PawnRenderNode_TurretGun).IsAssignableFrom(renderNodeProperty.nodeClass))
 			{
-				yield break;
-			}
-			foreach (PawnRenderNodeProperties renderNodeProperty in renderNodeProperties)
-			{
-				if (!typeof(PawnRenderNode_TurretGun).IsAssignableFrom(renderNodeProperty.nodeClass))
-				{
-					yield return "contains nodeClass which is not PawnRenderNode_TurretGun or subclass thereof.";
-				}
+				yield return "contains nodeClass which is not PawnRenderNode_TurretGun or subclass thereof.";
 			}
 		}
 	}

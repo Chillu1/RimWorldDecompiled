@@ -1,42 +1,41 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class QuestPartCanDisable : QuestPart
 {
-	public abstract class QuestPartCanDisable : QuestPart
+	public string inSignalDisable;
+
+	public QuestPartState state = QuestPartState.Enabled;
+
+	public override void Notify_QuestSignalReceived(Signal signal)
 	{
-		public string inSignalDisable;
-
-		public QuestPartState state = QuestPartState.Enabled;
-
-		public override void Notify_QuestSignalReceived(Signal signal)
+		if (state == QuestPartState.Enabled)
 		{
-			if (state == QuestPartState.Enabled)
+			if (signal.tag == inSignalDisable)
 			{
-				if (signal.tag == inSignalDisable)
-				{
-					Disable();
-				}
-				else
-				{
-					ProcessQuestSignal(signal);
-				}
+				Disable();
+			}
+			else
+			{
+				ProcessQuestSignal(signal);
 			}
 		}
+	}
 
-		protected virtual void ProcessQuestSignal(Signal signal)
-		{
-		}
+	protected virtual void ProcessQuestSignal(Signal signal)
+	{
+	}
 
-		public void Disable()
-		{
-			state = QuestPartState.Disabled;
-		}
+	public void Disable()
+	{
+		state = QuestPartState.Disabled;
+	}
 
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_Values.Look(ref inSignalDisable, "inSignalDisable");
-			Scribe_Values.Look(ref state, "state", QuestPartState.NeverEnabled);
-		}
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Values.Look(ref inSignalDisable, "inSignalDisable");
+		Scribe_Values.Look(ref state, "state", QuestPartState.NeverEnabled);
 	}
 }

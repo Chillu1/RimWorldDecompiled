@@ -1,32 +1,31 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class PawnRenderTreeDef : Def
 {
-	public class PawnRenderTreeDef : Def
+	public PawnRenderNodeProperties root;
+
+	public override IEnumerable<string> ConfigErrors()
 	{
-		public PawnRenderNodeProperties root;
-
-		public override IEnumerable<string> ConfigErrors()
+		foreach (string item in base.ConfigErrors())
 		{
-			foreach (string item in base.ConfigErrors())
-			{
-				yield return item;
-			}
-			if (root == null)
-			{
-				yield return "root is null.";
-				yield break;
-			}
-			foreach (string item2 in root.ConfigErrors())
-			{
-				yield return item2;
-			}
+			yield return item;
 		}
-
-		public override void ResolveReferences()
+		if (root == null)
 		{
-			base.ResolveReferences();
-			root?.ResolveReferencesRecursive();
+			yield return "root is null.";
+			yield break;
 		}
+		foreach (string item2 in root.ConfigErrors())
+		{
+			yield return item2;
+		}
+	}
+
+	public override void ResolveReferences()
+	{
+		base.ResolveReferences();
+		root?.ResolveReferencesRecursive();
 	}
 }

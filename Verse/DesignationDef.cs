@@ -1,30 +1,29 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class DesignationDef : Def
 {
-	public class DesignationDef : Def
+	[NoTranslate]
+	public string texturePath;
+
+	public TargetType targetType;
+
+	public bool removeIfBuildingDespawned;
+
+	public bool designateCancelable = true;
+
+	public bool shouldBatchDraw = true;
+
+	[Unsaved(false)]
+	public Material iconMat;
+
+	public override void ResolveReferences()
 	{
-		[NoTranslate]
-		public string texturePath;
-
-		public TargetType targetType;
-
-		public bool removeIfBuildingDespawned;
-
-		public bool designateCancelable = true;
-
-		public bool shouldBatchDraw = true;
-
-		[Unsaved(false)]
-		public Material iconMat;
-
-		public override void ResolveReferences()
+		base.ResolveReferences();
+		LongEventHandler.ExecuteWhenFinished(delegate
 		{
-			base.ResolveReferences();
-			LongEventHandler.ExecuteWhenFinished(delegate
-			{
-				iconMat = MaterialPool.MatFrom(texturePath, ShaderDatabase.MetaOverlay);
-			});
-		}
+			iconMat = MaterialPool.MatFrom(texturePath, ShaderDatabase.MetaOverlay);
+		});
 	}
 }

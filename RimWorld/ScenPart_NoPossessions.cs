@@ -1,6 +1,5 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class ScenPart_NoPossessions : ScenPart
 {
-	public class ScenPart_NoPossessions : ScenPart
-	{
-	}
 }

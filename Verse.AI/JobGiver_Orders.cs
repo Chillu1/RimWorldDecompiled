@@ -1,16 +1,15 @@
 using RimWorld;
 
-namespace Verse.AI
+namespace Verse.AI;
+
+public class JobGiver_Orders : ThinkNode_JobGiver
 {
-	public class JobGiver_Orders : ThinkNode_JobGiver
+	protected override Job TryGiveJob(Pawn pawn)
 	{
-		protected override Job TryGiveJob(Pawn pawn)
+		if (pawn.Drafted)
 		{
-			if (pawn.Drafted)
-			{
-				return JobMaker.MakeJob(JobDefOf.Wait_Combat, pawn.Position);
-			}
-			return null;
+			return JobMaker.MakeJob(JobDefOf.Wait_Combat, pawn.Position);
 		}
+		return null;
 	}
 }

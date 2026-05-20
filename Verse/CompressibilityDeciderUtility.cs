@@ -1,53 +1,52 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public static class CompressibilityDeciderUtility
 {
-	public static class CompressibilityDeciderUtility
+	public static bool IsSaveCompressible(this Thing t)
 	{
-		public static bool IsSaveCompressible(this Thing t)
+		if (Scribe.saver.savingForDebug)
 		{
-			if (Scribe.saver.savingForDebug)
+			return false;
+		}
+		if (!t.def.saveCompressible)
+		{
+			return false;
+		}
+		if (t.def.useHitPoints && t.HitPoints != t.MaxHitPoints)
+		{
+			return false;
+		}
+		if (!t.Spawned)
+		{
+			return false;
+		}
+		if (t.Position.GetMaxItemsAllowedInCell(t.Map) > 1 && t.def.category == ThingCategory.Item)
+		{
+			return false;
+		}
+		if (t is Building { canChangeTerrainOnDestroyed: false })
+		{
+			return false;
+		}
+		bool flag = false;
+		List<Map> maps = Find.Maps;
+		for (int i = 0; i < maps.Count; i++)
+		{
+			if (maps[i].compressor != null)
 			{
-				return false;
-			}
-			if (!t.def.saveCompressible)
-			{
-				return false;
-			}
-			if (t.def.useHitPoints && t.HitPoints != t.MaxHitPoints)
-			{
-				return false;
-			}
-			if (!t.Spawned)
-			{
-				return false;
-			}
-			if (t.Position.GetMaxItemsAllowedInCell(t.Map) > 1 && t.def.category == ThingCategory.Item)
-			{
-				return false;
-			}
-			if (t is Building { canChangeTerrainOnDestroyed: false })
-			{
-				return false;
-			}
-			bool flag = false;
-			List<Map> maps = Find.Maps;
-			for (int i = 0; i < maps.Count; i++)
-			{
-				if (maps[i].compressor != null)
+				flag = true;
+				if (maps[i].compressor.compressibilityDecider.IsReferenced(t))
 				{
-					flag = true;
-					if (maps[i].compressor.compressibilityDecider.IsReferenced(t))
-					{
-						return false;
-					}
+					return false;
 				}
 			}
-			if (!flag)
-			{
-				Log.ErrorOnce("Called IsSaveCompressible but there are no maps with compressor != null. This should never happen. It probably means that we're not saving any map at the moment?", 1935111328);
-			}
-			return true;
 		}
+		if (!flag)
+		{
+			Log.ErrorOnce("Called IsSaveCompressible but there are no maps with compressor != null. This should never happen. It probably means that we're not saving any map at the moment?", 1935111328);
+		}
+		return true;
 	}
 }

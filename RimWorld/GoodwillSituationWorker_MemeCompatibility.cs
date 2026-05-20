@@ -1,61 +1,60 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class GoodwillSituationWorker_MemeCompatibility : GoodwillSituationWorker
 {
-	public class GoodwillSituationWorker_MemeCompatibility : GoodwillSituationWorker
+	public override string GetPostProcessedLabel(Faction other)
 	{
-		public override string GetPostProcessedLabel(Faction other)
+		if (def.otherMeme == null)
 		{
-			if (def.otherMeme == null)
+			if (Applies(Faction.OfPlayer, other))
 			{
-				if (Applies(Faction.OfPlayer, other))
-				{
-					return "MemeGoodwillImpact_Player".Translate(base.GetPostProcessedLabel(other));
-				}
-				return "MemeGoodwillImpact_Other".Translate(base.GetPostProcessedLabel(other));
+				return "MemeGoodwillImpact_Player".Translate(base.GetPostProcessedLabel(other));
 			}
-			return base.GetPostProcessedLabel(other);
+			return "MemeGoodwillImpact_Other".Translate(base.GetPostProcessedLabel(other));
 		}
+		return base.GetPostProcessedLabel(other);
+	}
 
-		public override int GetNaturalGoodwillOffset(Faction other)
+	public override int GetNaturalGoodwillOffset(Faction other)
+	{
+		if (!Applies(other))
 		{
-			if (!Applies(other))
-			{
-				return 0;
-			}
-			return def.naturalGoodwillOffset;
+			return 0;
 		}
+		return def.naturalGoodwillOffset;
+	}
 
-		private bool Applies(Faction other)
+	private bool Applies(Faction other)
+	{
+		if (!Applies(Faction.OfPlayer, other))
 		{
-			if (!Applies(Faction.OfPlayer, other))
-			{
-				return Applies(other, Faction.OfPlayer);
-			}
-			return true;
+			return Applies(other, Faction.OfPlayer);
 		}
+		return true;
+	}
 
-		private bool Applies(Faction a, Faction b)
+	private bool Applies(Faction a, Faction b)
+	{
+		Ideo primaryIdeo = a.ideos.PrimaryIdeo;
+		if (primaryIdeo == null)
 		{
-			Ideo primaryIdeo = a.ideos.PrimaryIdeo;
-			if (primaryIdeo == null)
-			{
-				return false;
-			}
-			if (def.versusAll)
-			{
-				return primaryIdeo.memes.Contains(def.meme);
-			}
-			Ideo primaryIdeo2 = b.ideos.PrimaryIdeo;
-			if (primaryIdeo2 == null)
-			{
-				return false;
-			}
-			if (primaryIdeo.memes.Contains(def.meme))
-			{
-				return primaryIdeo2.memes.Contains(def.otherMeme);
-			}
 			return false;
 		}
+		if (def.versusAll)
+		{
+			return primaryIdeo.memes.Contains(def.meme);
+		}
+		Ideo primaryIdeo2 = b.ideos.PrimaryIdeo;
+		if (primaryIdeo2 == null)
+		{
+			return false;
+		}
+		if (primaryIdeo.memes.Contains(def.meme))
+		{
+			return primaryIdeo2.memes.Contains(def.otherMeme);
+		}
+		return false;
 	}
 }

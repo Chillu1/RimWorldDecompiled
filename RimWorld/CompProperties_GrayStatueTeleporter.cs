@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_GrayStatueTeleporter : CompProperties_GrayStatue
 {
-	public class CompProperties_GrayStatueTeleporter : CompProperties_GrayStatue
+	public CompProperties_GrayStatueTeleporter()
 	{
-		public CompProperties_GrayStatueTeleporter()
-		{
-			compClass = typeof(CompGrayStatueTeleporter);
-		}
+		compClass = typeof(CompGrayStatueTeleporter);
 	}
 }

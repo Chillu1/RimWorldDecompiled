@@ -1,8 +1,7 @@
-namespace Verse
+namespace Verse;
+
+public enum VerbState : byte
 {
-	public enum VerbState : byte
-	{
-		Idle,
-		Bursting
-	}
+	Idle,
+	Bursting
 }

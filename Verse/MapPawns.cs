@@ -5,962 +5,961 @@ using RimWorld;
 using RimWorld.Planet;
 using Verse.AI;
 
-namespace Verse
+namespace Verse;
+
+public sealed class MapPawns
 {
-	public sealed class MapPawns
+	private class FactionDictionary
 	{
-		private class FactionDictionary
+		private Dictionary<Faction, List<Pawn>> pawnList = new Dictionary<Faction, List<Pawn>>(16);
+
+		private List<Pawn> nullFactionPawns = new List<Pawn>(32);
+
+		public List<Pawn> GetPawnList(Faction faction)
 		{
-			private Dictionary<Faction, List<Pawn>> pawnList = new Dictionary<Faction, List<Pawn>>(16);
-
-			private List<Pawn> nullFactionPawns = new List<Pawn>(32);
-
-			public List<Pawn> GetPawnList(Faction faction)
+			AssertMainThread();
+			List<Pawn> value;
+			List<Pawn> list = ((faction == null) ? nullFactionPawns : (pawnList.TryGetValue(faction, out value) ? value : (pawnList[faction] = new List<Pawn>(32))));
+			if (list.Count > 0)
 			{
-				AssertMainThread();
-				List<Pawn> value;
-				List<Pawn> list = ((faction == null) ? nullFactionPawns : (pawnList.TryGetValue(faction, out value) ? value : (pawnList[faction] = new List<Pawn>(32))));
-				if (list.Count > 0)
+				for (int num = list.Count - 1; num >= 0; num--)
 				{
-					for (int num = list.Count - 1; num >= 0; num--)
+					if (list[num] == null)
 					{
-						if (list[num] == null)
-						{
-							list.RemoveAt(num);
-						}
+						list.RemoveAt(num);
 					}
 				}
-				return list;
 			}
-
-			public IEnumerable<Faction> KnownFactions()
-			{
-				return pawnList.Keys.Concat(null);
-			}
+			return list;
 		}
 
-		private Map map;
-
-		private List<Pawn> pawnsSpawned = new List<Pawn>();
-
-		private FactionDictionary pawnsInFactionSpawned = new FactionDictionary();
-
-		private List<Pawn> prisonersOfColonySpawned = new List<Pawn>();
-
-		private List<Pawn> slavesOfColonySpawned = new List<Pawn>();
-
-		private List<Thing> tmpThings = new List<Thing>();
-
-		private List<Pawn> allPawnsResult = new List<Pawn>();
-
-		private List<Pawn> allPawnsUnspawnedResult = new List<Pawn>();
-
-		private List<Pawn> prisonersOfColonyResult = new List<Pawn>();
-
-		private List<Pawn> humanlikePawnsResult = new List<Pawn>();
-
-		private List<Pawn> humanlikeSpawnedPawnsResult = new List<Pawn>();
-
-		private List<Pawn> freeColonistsAndPrisonersResult = new List<Pawn>();
-
-		private readonly List<Pawn> freeAdultColonistsSpawnedResult = new List<Pawn>();
-
-		private List<Pawn> freeColonistsAndPrisonersSpawnedResult = new List<Pawn>();
-
-		private List<Pawn> spawnedPawnsWithAnyHediffResult = new List<Pawn>();
-
-		private List<Pawn> spawnedHumanlikesWithAnyHediffResult = new List<Pawn>();
-
-		private List<Pawn> spawnedAnimalsWithAnyHediffResult = new List<Pawn>();
-
-		private List<Pawn> spawnedHungryPawnsResult = new List<Pawn>();
-
-		private List<Pawn> spawnedPawnsWithMiscNeedsResult = new List<Pawn>();
-
-		private List<Pawn> colonyAnimalsResult = new List<Pawn>();
-
-		private List<Pawn> spawnedColonyAnimalsResult = new List<Pawn>();
-
-		private List<Pawn> spawnedColonyMechsResult = new List<Pawn>();
-
-		private List<Pawn> colonySubhumansResult = new List<Pawn>();
-
-		private List<Pawn> spawnedColonySubhumansResult = new List<Pawn>();
-
-		private List<Pawn> spawnedDownedPawnsResult = new List<Pawn>();
-
-		private List<Pawn> spawnedPawnsWhoShouldHaveSurgeryDoneNowResult = new List<Pawn>();
-
-		private List<Pawn> spawnedPawnsWhoShouldHaveInventoryUnloadedResult = new List<Pawn>();
-
-		private List<Pawn> slavesAndPrisonersOfColonySpawnedResult = new List<Pawn>();
-
-		private List<Faction> tmpFactionsOnMap = new List<Faction>(16);
-
-		private FactionDictionary pawnsInFactionResult = new FactionDictionary();
-
-		private FactionDictionary freeHumanlikesOfFactionResult = new FactionDictionary();
-
-		private FactionDictionary freeHumanlikesSpawnedOfFactionResult = new FactionDictionary();
-
-		private FactionDictionary spawnedBabiesInFactionResult = new FactionDictionary();
-
-		private List<Pawn> shamblersSpawned = new List<Pawn>();
-
-		public List<Pawn> AllPawns
+		public IEnumerable<Faction> KnownFactions()
 		{
-			get
-			{
-				List<Pawn> allPawnsUnspawned = AllPawnsUnspawned;
-				if (allPawnsUnspawned.Count == 0)
-				{
-					return pawnsSpawned;
-				}
-				allPawnsResult.Clear();
-				allPawnsResult.AddRange(pawnsSpawned);
-				allPawnsResult.AddRange(allPawnsUnspawned);
-				return allPawnsResult;
-			}
+			return pawnList.Keys.Concat(null);
 		}
+	}
 
-		public List<Pawn> AllPawnsUnspawned
+	private Map map;
+
+	private List<Pawn> pawnsSpawned = new List<Pawn>();
+
+	private FactionDictionary pawnsInFactionSpawned = new FactionDictionary();
+
+	private List<Pawn> prisonersOfColonySpawned = new List<Pawn>();
+
+	private List<Pawn> slavesOfColonySpawned = new List<Pawn>();
+
+	private List<Thing> tmpThings = new List<Thing>();
+
+	private List<Pawn> allPawnsResult = new List<Pawn>();
+
+	private List<Pawn> allPawnsUnspawnedResult = new List<Pawn>();
+
+	private List<Pawn> prisonersOfColonyResult = new List<Pawn>();
+
+	private List<Pawn> humanlikePawnsResult = new List<Pawn>();
+
+	private List<Pawn> humanlikeSpawnedPawnsResult = new List<Pawn>();
+
+	private List<Pawn> freeColonistsAndPrisonersResult = new List<Pawn>();
+
+	private readonly List<Pawn> freeAdultColonistsSpawnedResult = new List<Pawn>();
+
+	private List<Pawn> freeColonistsAndPrisonersSpawnedResult = new List<Pawn>();
+
+	private List<Pawn> spawnedPawnsWithAnyHediffResult = new List<Pawn>();
+
+	private List<Pawn> spawnedHumanlikesWithAnyHediffResult = new List<Pawn>();
+
+	private List<Pawn> spawnedAnimalsWithAnyHediffResult = new List<Pawn>();
+
+	private List<Pawn> spawnedHungryPawnsResult = new List<Pawn>();
+
+	private List<Pawn> spawnedPawnsWithMiscNeedsResult = new List<Pawn>();
+
+	private List<Pawn> colonyAnimalsResult = new List<Pawn>();
+
+	private List<Pawn> spawnedColonyAnimalsResult = new List<Pawn>();
+
+	private List<Pawn> spawnedColonyMechsResult = new List<Pawn>();
+
+	private List<Pawn> colonySubhumansResult = new List<Pawn>();
+
+	private List<Pawn> spawnedColonySubhumansResult = new List<Pawn>();
+
+	private List<Pawn> spawnedDownedPawnsResult = new List<Pawn>();
+
+	private List<Pawn> spawnedPawnsWhoShouldHaveSurgeryDoneNowResult = new List<Pawn>();
+
+	private List<Pawn> spawnedPawnsWhoShouldHaveInventoryUnloadedResult = new List<Pawn>();
+
+	private List<Pawn> slavesAndPrisonersOfColonySpawnedResult = new List<Pawn>();
+
+	private List<Faction> tmpFactionsOnMap = new List<Faction>(16);
+
+	private FactionDictionary pawnsInFactionResult = new FactionDictionary();
+
+	private FactionDictionary freeHumanlikesOfFactionResult = new FactionDictionary();
+
+	private FactionDictionary freeHumanlikesSpawnedOfFactionResult = new FactionDictionary();
+
+	private FactionDictionary spawnedBabiesInFactionResult = new FactionDictionary();
+
+	private List<Pawn> shamblersSpawned = new List<Pawn>();
+
+	public List<Pawn> AllPawns
+	{
+		get
 		{
-			get
+			List<Pawn> allPawnsUnspawned = AllPawnsUnspawned;
+			if (allPawnsUnspawned.Count == 0)
 			{
-				AssertMainThread();
-				allPawnsUnspawnedResult.Clear();
-				ThingOwnerUtility.GetAllThingsRecursively(map, ThingRequest.ForGroup(ThingRequestGroup.Pawn), allPawnsUnspawnedResult, allowUnreal: true, null, alsoGetSpawnedThings: false);
-				for (int num = allPawnsUnspawnedResult.Count - 1; num >= 0; num--)
-				{
-					if (allPawnsUnspawnedResult[num].Dead)
-					{
-						allPawnsUnspawnedResult.RemoveAt(num);
-					}
-				}
-				return allPawnsUnspawnedResult;
+				return pawnsSpawned;
 			}
+			allPawnsResult.Clear();
+			allPawnsResult.AddRange(pawnsSpawned);
+			allPawnsResult.AddRange(allPawnsUnspawned);
+			return allPawnsResult;
 		}
+	}
 
-		public List<Pawn> FreeColonists => FreeHumanlikesOfFaction(Faction.OfPlayer);
-
-		public List<Pawn> PrisonersOfColony
+	public List<Pawn> AllPawnsUnspawned
+	{
+		get
 		{
-			get
+			AssertMainThread();
+			allPawnsUnspawnedResult.Clear();
+			ThingOwnerUtility.GetAllThingsRecursively(map, ThingRequest.ForGroup(ThingRequestGroup.Pawn), allPawnsUnspawnedResult, allowUnreal: true, null, alsoGetSpawnedThings: false);
+			for (int num = allPawnsUnspawnedResult.Count - 1; num >= 0; num--)
 			{
-				prisonersOfColonyResult.Clear();
-				List<Pawn> allPawns = AllPawns;
-				for (int i = 0; i < allPawns.Count; i++)
+				if (allPawnsUnspawnedResult[num].Dead)
 				{
-					if (allPawns[i].IsPrisonerOfColony)
-					{
-						prisonersOfColonyResult.Add(allPawns[i]);
-					}
+					allPawnsUnspawnedResult.RemoveAt(num);
 				}
-				return prisonersOfColonyResult;
 			}
+			return allPawnsUnspawnedResult;
 		}
+	}
 
-		public List<Pawn> AllHumanlike
+	public List<Pawn> FreeColonists => FreeHumanlikesOfFaction(Faction.OfPlayer);
+
+	public List<Pawn> PrisonersOfColony
+	{
+		get
 		{
-			get
+			prisonersOfColonyResult.Clear();
+			List<Pawn> allPawns = AllPawns;
+			for (int i = 0; i < allPawns.Count; i++)
 			{
-				humanlikePawnsResult.Clear();
-				List<Pawn> allPawns = AllPawns;
-				for (int i = 0; i < allPawns.Count; i++)
+				if (allPawns[i].IsPrisonerOfColony)
 				{
-					if (allPawns[i].RaceProps.Humanlike)
-					{
-						humanlikePawnsResult.Add(allPawns[i]);
-					}
+					prisonersOfColonyResult.Add(allPawns[i]);
 				}
-				return humanlikePawnsResult;
 			}
+			return prisonersOfColonyResult;
 		}
+	}
 
-		public List<Pawn> AllHumanlikeSpawned
+	public List<Pawn> AllHumanlike
+	{
+		get
 		{
-			get
+			humanlikePawnsResult.Clear();
+			List<Pawn> allPawns = AllPawns;
+			for (int i = 0; i < allPawns.Count; i++)
 			{
-				humanlikeSpawnedPawnsResult.Clear();
-				IReadOnlyList<Pawn> allPawnsSpawned = AllPawnsSpawned;
-				for (int i = 0; i < allPawnsSpawned.Count; i++)
+				if (allPawns[i].RaceProps.Humanlike)
 				{
-					if (allPawnsSpawned[i].RaceProps.Humanlike)
-					{
-						humanlikeSpawnedPawnsResult.Add(allPawnsSpawned[i]);
-					}
+					humanlikePawnsResult.Add(allPawns[i]);
 				}
-				return humanlikeSpawnedPawnsResult;
 			}
+			return humanlikePawnsResult;
 		}
+	}
 
-		public List<Pawn> FreeColonistsAndPrisoners
+	public List<Pawn> AllHumanlikeSpawned
+	{
+		get
 		{
-			get
+			humanlikeSpawnedPawnsResult.Clear();
+			IReadOnlyList<Pawn> allPawnsSpawned = AllPawnsSpawned;
+			for (int i = 0; i < allPawnsSpawned.Count; i++)
 			{
-				List<Pawn> freeColonists = FreeColonists;
-				List<Pawn> prisonersOfColony = PrisonersOfColony;
-				if (prisonersOfColony.Count == 0)
+				if (allPawnsSpawned[i].RaceProps.Humanlike)
 				{
-					return freeColonists;
+					humanlikeSpawnedPawnsResult.Add(allPawnsSpawned[i]);
 				}
-				freeColonistsAndPrisonersResult.Clear();
-				freeColonistsAndPrisonersResult.AddRange(freeColonists);
-				freeColonistsAndPrisonersResult.AddRange(prisonersOfColony);
-				return freeColonistsAndPrisonersResult;
 			}
+			return humanlikeSpawnedPawnsResult;
 		}
+	}
 
-		public int ColonistCount
+	public List<Pawn> FreeColonistsAndPrisoners
+	{
+		get
 		{
-			get
+			List<Pawn> freeColonists = FreeColonists;
+			List<Pawn> prisonersOfColony = PrisonersOfColony;
+			if (prisonersOfColony.Count == 0)
 			{
-				if (Current.ProgramState != ProgramState.Playing)
-				{
-					Log.Error("ColonistCount while not playing. This should get the starting player pawn count.");
-					return 3;
-				}
-				int num = 0;
-				List<Pawn> allPawns = AllPawns;
-				for (int i = 0; i < allPawns.Count; i++)
-				{
-					if (allPawns[i].IsColonist)
-					{
-						num++;
-					}
-				}
-				return num;
+				return freeColonists;
 			}
+			freeColonistsAndPrisonersResult.Clear();
+			freeColonistsAndPrisonersResult.AddRange(freeColonists);
+			freeColonistsAndPrisonersResult.AddRange(prisonersOfColony);
+			return freeColonistsAndPrisonersResult;
 		}
+	}
 
-		public int AllPawnsCount => AllPawns.Count;
-
-		public int AllPawnsUnspawnedCount => AllPawnsUnspawned.Count;
-
-		public int FreeColonistsCount => FreeColonists.Count;
-
-		public int PrisonersOfColonyCount => PrisonersOfColony.Count;
-
-		public int FreeColonistsAndPrisonersCount => FreeColonistsCount + PrisonersOfColonyCount;
-
-		public bool AnyPawnBlockingMapRemoval
+	public int ColonistCount
+	{
+		get
 		{
-			get
+			if (Current.ProgramState != ProgramState.Playing)
 			{
-				Faction ofPlayer = Faction.OfPlayer;
-				foreach (Pawn item in pawnsSpawned)
+				Log.Error("ColonistCount while not playing. This should get the starting player pawn count.");
+				return 3;
+			}
+			int num = 0;
+			List<Pawn> allPawns = AllPawns;
+			for (int i = 0; i < allPawns.Count; i++)
+			{
+				if (allPawns[i].IsColonist)
 				{
-					if (IsValidColonyPawn(item))
+					num++;
+				}
+			}
+			return num;
+		}
+	}
+
+	public int AllPawnsCount => AllPawns.Count;
+
+	public int AllPawnsUnspawnedCount => AllPawnsUnspawned.Count;
+
+	public int FreeColonistsCount => FreeColonists.Count;
+
+	public int PrisonersOfColonyCount => PrisonersOfColony.Count;
+
+	public int FreeColonistsAndPrisonersCount => FreeColonistsCount + PrisonersOfColonyCount;
+
+	public bool AnyPawnBlockingMapRemoval
+	{
+		get
+		{
+			Faction ofPlayer = Faction.OfPlayer;
+			foreach (Pawn item in pawnsSpawned)
+			{
+				if (IsValidColonyPawn(item))
+				{
+					return true;
+				}
+				if (item.relations?.relativeInvolvedInRescueQuest != null)
+				{
+					return true;
+				}
+				if (item.Faction == ofPlayer || item.HostFaction == ofPlayer)
+				{
+					Job curJob = item.CurJob;
+					if (curJob != null && curJob.exitMapOnArrival)
 					{
 						return true;
 					}
-					if (item.relations?.relativeInvolvedInRescueQuest != null)
-					{
-						return true;
-					}
-					if (item.Faction == ofPlayer || item.HostFaction == ofPlayer)
-					{
-						Job curJob = item.CurJob;
-						if (curJob != null && curJob.exitMapOnArrival)
-						{
-							return true;
-						}
-						if (item.health.hediffSet.InLabor())
-						{
-							return true;
-						}
-					}
-					if (CaravanExitMapUtility.FindCaravanToJoinFor(item) != null && !item.Downed)
-					{
-						return true;
-					}
-					if (ModsConfig.BiotechActive && item.IsColonyMechPlayerControlled && !item.Downed && item.GetOverseer() != null)
+					if (item.health.hediffSet.InLabor())
 					{
 						return true;
 					}
 				}
-				foreach (Pawn item2 in AllPawnsUnspawned)
+				if (CaravanExitMapUtility.FindCaravanToJoinFor(item) != null && !item.Downed)
 				{
-					if (item2.SpawnedOrAnyParentSpawned && IsValidColonyPawn(item2))
-					{
-						return true;
-					}
+					return true;
 				}
-				foreach (Thing item3 in map.listerThings.ThingsInGroup(ThingRequestGroup.Corpse))
+				if (ModsConfig.BiotechActive && item.IsColonyMechPlayerControlled && !item.Downed && item.GetOverseer() != null)
 				{
-					if (item3 is Corpse corpse && IsValidColonyPawn(corpse.InnerPawn))
-					{
-						return true;
-					}
+					return true;
 				}
-				List<Thing> list = map.listerThings.ThingsInGroup(ThingRequestGroup.ThingHolder);
-				for (int i = 0; i < list.Count; i++)
+			}
+			foreach (Pawn item2 in AllPawnsUnspawned)
+			{
+				if (item2.SpawnedOrAnyParentSpawned && IsValidColonyPawn(item2))
 				{
-					IThingHolder thingHolder = PlayerEjectablePodHolder(list[i], includeCryptosleepCaskets: false);
-					if (thingHolder == null)
-					{
-						continue;
-					}
-					tmpThings.Clear();
-					ThingOwnerUtility.GetAllThingsRecursively(thingHolder, tmpThings);
-					for (int j = 0; j < tmpThings.Count; j++)
-					{
-						if (tmpThings[j] is Pawn { Dead: false, Downed: false } pawn && (pawn.IsColonist || pawn.IsColonyMech))
-						{
-							tmpThings.Clear();
-							return true;
-						}
-					}
+					return true;
 				}
-				foreach (Map childPocketMap in map.ChildPocketMaps)
+			}
+			foreach (Thing item3 in map.listerThings.ThingsInGroup(ThingRequestGroup.Corpse))
+			{
+				if (item3 is Corpse corpse && IsValidColonyPawn(corpse.InnerPawn))
 				{
-					if (childPocketMap.mapPawns.AnyPawnBlockingMapRemoval)
-					{
-						return true;
-					}
+					return true;
+				}
+			}
+			List<Thing> list = map.listerThings.ThingsInGroup(ThingRequestGroup.ThingHolder);
+			for (int i = 0; i < list.Count; i++)
+			{
+				IThingHolder thingHolder = PlayerEjectablePodHolder(list[i], includeCryptosleepCaskets: false);
+				if (thingHolder == null)
+				{
+					continue;
 				}
 				tmpThings.Clear();
-				return false;
-			}
-		}
-
-		public IReadOnlyList<Pawn> AllPawnsSpawned => pawnsSpawned;
-
-		public List<Pawn> FreeColonistsSpawned => FreeHumanlikesSpawnedOfFaction(Faction.OfPlayer);
-
-		public List<Pawn> FreeAdultColonistsSpawned
-		{
-			get
-			{
-				freeAdultColonistsSpawnedResult.Clear();
-				foreach (Pawn item in FreeColonistsSpawned)
+				ThingOwnerUtility.GetAllThingsRecursively(thingHolder, tmpThings);
+				for (int j = 0; j < tmpThings.Count; j++)
 				{
-					if (item.DevelopmentalStage.Adult())
+					if (tmpThings[j] is Pawn { Dead: false, Downed: false } pawn && (pawn.IsColonist || pawn.IsColonyMech))
 					{
-						freeAdultColonistsSpawnedResult.Add(item);
+						tmpThings.Clear();
+						return true;
 					}
 				}
-				return freeAdultColonistsSpawnedResult;
 			}
-		}
-
-		public List<Pawn> PrisonersOfColonySpawned => prisonersOfColonySpawned;
-
-		public List<Pawn> SlavesOfColonySpawned => slavesOfColonySpawned;
-
-		public List<Pawn> FreeColonistsAndPrisonersSpawned
-		{
-			get
+			foreach (Map childPocketMap in map.ChildPocketMaps)
 			{
-				AssertMainThread();
-				List<Pawn> freeColonistsSpawned = FreeColonistsSpawned;
-				List<Pawn> list = PrisonersOfColonySpawned;
-				if (list.Count == 0)
+				if (childPocketMap.mapPawns.AnyPawnBlockingMapRemoval)
 				{
-					return freeColonistsSpawned;
+					return true;
 				}
-				freeColonistsAndPrisonersSpawnedResult.Clear();
-				freeColonistsAndPrisonersSpawnedResult.AddRange(freeColonistsSpawned);
-				freeColonistsAndPrisonersSpawnedResult.AddRange(list);
-				return freeColonistsAndPrisonersSpawnedResult;
 			}
+			tmpThings.Clear();
+			return false;
 		}
+	}
 
-		public List<Pawn> SpawnedPawnsWithAnyHediff
+	public IReadOnlyList<Pawn> AllPawnsSpawned => pawnsSpawned;
+
+	public List<Pawn> FreeColonistsSpawned => FreeHumanlikesSpawnedOfFaction(Faction.OfPlayer);
+
+	public List<Pawn> FreeAdultColonistsSpawned
+	{
+		get
 		{
-			get
+			freeAdultColonistsSpawnedResult.Clear();
+			foreach (Pawn item in FreeColonistsSpawned)
 			{
-				spawnedPawnsWithAnyHediffResult.Clear();
-				IReadOnlyList<Pawn> allPawnsSpawned = AllPawnsSpawned;
-				for (int i = 0; i < allPawnsSpawned.Count; i++)
+				if (item.DevelopmentalStage.Adult())
 				{
-					if (allPawnsSpawned[i].health.hediffSet.hediffs.Count != 0)
-					{
-						spawnedPawnsWithAnyHediffResult.Add(allPawnsSpawned[i]);
-					}
+					freeAdultColonistsSpawnedResult.Add(item);
 				}
-				return spawnedPawnsWithAnyHediffResult;
 			}
+			return freeAdultColonistsSpawnedResult;
 		}
+	}
 
-		public List<Pawn> SpawnedHumanlikesWithAnyHediff
+	public List<Pawn> PrisonersOfColonySpawned => prisonersOfColonySpawned;
+
+	public List<Pawn> SlavesOfColonySpawned => slavesOfColonySpawned;
+
+	public List<Pawn> FreeColonistsAndPrisonersSpawned
+	{
+		get
 		{
-			get
+			AssertMainThread();
+			List<Pawn> freeColonistsSpawned = FreeColonistsSpawned;
+			List<Pawn> list = PrisonersOfColonySpawned;
+			if (list.Count == 0)
 			{
-				spawnedHumanlikesWithAnyHediffResult.Clear();
-				List<Pawn> allHumanlikeSpawned = AllHumanlikeSpawned;
-				for (int i = 0; i < allHumanlikeSpawned.Count; i++)
-				{
-					if (allHumanlikeSpawned[i].health.hediffSet.hediffs.Count != 0)
-					{
-						spawnedHumanlikesWithAnyHediffResult.Add(allHumanlikeSpawned[i]);
-					}
-				}
-				return spawnedHumanlikesWithAnyHediffResult;
+				return freeColonistsSpawned;
 			}
+			freeColonistsAndPrisonersSpawnedResult.Clear();
+			freeColonistsAndPrisonersSpawnedResult.AddRange(freeColonistsSpawned);
+			freeColonistsAndPrisonersSpawnedResult.AddRange(list);
+			return freeColonistsAndPrisonersSpawnedResult;
 		}
+	}
 
-		public List<Pawn> SpawnedAnimalsWithAnyHediff
+	public List<Pawn> SpawnedPawnsWithAnyHediff
+	{
+		get
 		{
-			get
+			spawnedPawnsWithAnyHediffResult.Clear();
+			IReadOnlyList<Pawn> allPawnsSpawned = AllPawnsSpawned;
+			for (int i = 0; i < allPawnsSpawned.Count; i++)
 			{
-				spawnedAnimalsWithAnyHediffResult.Clear();
-				IReadOnlyList<Pawn> allPawnsSpawned = AllPawnsSpawned;
-				for (int i = 0; i < allPawnsSpawned.Count; i++)
+				if (allPawnsSpawned[i].health.hediffSet.hediffs.Count != 0)
 				{
-					if (allPawnsSpawned[i].IsAnimal && allPawnsSpawned[i].health.hediffSet.hediffs.Count != 0)
-					{
-						spawnedAnimalsWithAnyHediffResult.Add(allPawnsSpawned[i]);
-					}
+					spawnedPawnsWithAnyHediffResult.Add(allPawnsSpawned[i]);
 				}
-				return spawnedAnimalsWithAnyHediffResult;
 			}
+			return spawnedPawnsWithAnyHediffResult;
 		}
+	}
 
-		public List<Pawn> SpawnedHungryPawns
+	public List<Pawn> SpawnedHumanlikesWithAnyHediff
+	{
+		get
 		{
-			get
+			spawnedHumanlikesWithAnyHediffResult.Clear();
+			List<Pawn> allHumanlikeSpawned = AllHumanlikeSpawned;
+			for (int i = 0; i < allHumanlikeSpawned.Count; i++)
 			{
-				spawnedHungryPawnsResult.Clear();
-				IReadOnlyList<Pawn> allPawnsSpawned = AllPawnsSpawned;
-				for (int i = 0; i < allPawnsSpawned.Count; i++)
+				if (allHumanlikeSpawned[i].health.hediffSet.hediffs.Count != 0)
 				{
-					if (FeedPatientUtility.IsHungry(allPawnsSpawned[i]))
-					{
-						spawnedHungryPawnsResult.Add(allPawnsSpawned[i]);
-					}
+					spawnedHumanlikesWithAnyHediffResult.Add(allHumanlikeSpawned[i]);
 				}
-				return spawnedHungryPawnsResult;
 			}
+			return spawnedHumanlikesWithAnyHediffResult;
 		}
+	}
 
-		public List<Pawn> SpawnedPawnsWithMiscNeeds
+	public List<Pawn> SpawnedAnimalsWithAnyHediff
+	{
+		get
 		{
-			get
+			spawnedAnimalsWithAnyHediffResult.Clear();
+			IReadOnlyList<Pawn> allPawnsSpawned = AllPawnsSpawned;
+			for (int i = 0; i < allPawnsSpawned.Count; i++)
 			{
-				spawnedPawnsWithMiscNeedsResult.Clear();
-				IReadOnlyList<Pawn> allPawnsSpawned = AllPawnsSpawned;
-				for (int i = 0; i < allPawnsSpawned.Count; i++)
+				if (allPawnsSpawned[i].IsAnimal && allPawnsSpawned[i].health.hediffSet.hediffs.Count != 0)
 				{
-					if (!allPawnsSpawned[i].needs.MiscNeeds.NullOrEmpty())
-					{
-						spawnedPawnsWithMiscNeedsResult.Add(allPawnsSpawned[i]);
-					}
+					spawnedAnimalsWithAnyHediffResult.Add(allPawnsSpawned[i]);
 				}
-				return spawnedPawnsWithMiscNeedsResult;
 			}
+			return spawnedAnimalsWithAnyHediffResult;
 		}
+	}
 
-		public List<Pawn> ColonyAnimals
+	public List<Pawn> SpawnedHungryPawns
+	{
+		get
 		{
-			get
+			spawnedHungryPawnsResult.Clear();
+			IReadOnlyList<Pawn> allPawnsSpawned = AllPawnsSpawned;
+			for (int i = 0; i < allPawnsSpawned.Count; i++)
 			{
-				colonyAnimalsResult.Clear();
-				List<Pawn> list = PawnsInFaction(Faction.OfPlayer);
-				for (int i = 0; i < list.Count; i++)
+				if (FeedPatientUtility.IsHungry(allPawnsSpawned[i]))
 				{
-					if (list[i].IsAnimal)
-					{
-						colonyAnimalsResult.Add(list[i]);
-					}
+					spawnedHungryPawnsResult.Add(allPawnsSpawned[i]);
 				}
-				return colonyAnimalsResult;
 			}
+			return spawnedHungryPawnsResult;
 		}
+	}
 
-		public List<Pawn> SpawnedColonyAnimals
+	public List<Pawn> SpawnedPawnsWithMiscNeeds
+	{
+		get
 		{
-			get
+			spawnedPawnsWithMiscNeedsResult.Clear();
+			IReadOnlyList<Pawn> allPawnsSpawned = AllPawnsSpawned;
+			for (int i = 0; i < allPawnsSpawned.Count; i++)
 			{
-				spawnedColonyAnimalsResult.Clear();
-				List<Pawn> list = SpawnedPawnsInFaction(Faction.OfPlayer);
-				for (int i = 0; i < list.Count; i++)
+				if (!allPawnsSpawned[i].needs.MiscNeeds.NullOrEmpty())
 				{
-					if (list[i].IsAnimal)
-					{
-						spawnedColonyAnimalsResult.Add(list[i]);
-					}
+					spawnedPawnsWithMiscNeedsResult.Add(allPawnsSpawned[i]);
 				}
-				return spawnedColonyAnimalsResult;
 			}
+			return spawnedPawnsWithMiscNeedsResult;
 		}
+	}
 
-		public List<Pawn> SpawnedColonyMechs
+	public List<Pawn> ColonyAnimals
+	{
+		get
 		{
-			get
+			colonyAnimalsResult.Clear();
+			List<Pawn> list = PawnsInFaction(Faction.OfPlayer);
+			for (int i = 0; i < list.Count; i++)
 			{
-				spawnedColonyMechsResult.Clear();
-				List<Pawn> list = SpawnedPawnsInFaction(Faction.OfPlayer);
-				for (int i = 0; i < list.Count; i++)
+				if (list[i].IsAnimal)
 				{
-					if (list[i].IsColonyMech)
-					{
-						spawnedColonyMechsResult.Add(list[i]);
-					}
+					colonyAnimalsResult.Add(list[i]);
 				}
-				return spawnedColonyMechsResult;
 			}
+			return colonyAnimalsResult;
 		}
+	}
 
-		public List<Pawn> ColonySubhumansControllable
+	public List<Pawn> SpawnedColonyAnimals
+	{
+		get
 		{
-			get
+			spawnedColonyAnimalsResult.Clear();
+			List<Pawn> list = SpawnedPawnsInFaction(Faction.OfPlayer);
+			for (int i = 0; i < list.Count; i++)
 			{
-				colonySubhumansResult.Clear();
-				List<Pawn> list = PawnsInFaction(Faction.OfPlayer);
-				for (int i = 0; i < list.Count; i++)
+				if (list[i].IsAnimal)
 				{
-					if (list[i].IsColonySubhuman && list[i].mutant.Def.canBeDrafted)
-					{
-						colonySubhumansResult.Add(list[i]);
-					}
+					spawnedColonyAnimalsResult.Add(list[i]);
 				}
-				return colonySubhumansResult;
 			}
+			return spawnedColonyAnimalsResult;
 		}
+	}
 
-		public List<Pawn> SpawnedColonySubhumansPlayerControlled
+	public List<Pawn> SpawnedColonyMechs
+	{
+		get
 		{
-			get
+			spawnedColonyMechsResult.Clear();
+			List<Pawn> list = SpawnedPawnsInFaction(Faction.OfPlayer);
+			for (int i = 0; i < list.Count; i++)
 			{
-				spawnedColonySubhumansResult.Clear();
-				List<Pawn> list = SpawnedPawnsInFaction(Faction.OfPlayer);
-				for (int i = 0; i < list.Count; i++)
+				if (list[i].IsColonyMech)
 				{
-					if (list[i].IsColonySubhumanPlayerControlled)
-					{
-						spawnedColonySubhumansResult.Add(list[i]);
-					}
+					spawnedColonyMechsResult.Add(list[i]);
 				}
-				return spawnedColonySubhumansResult;
 			}
+			return spawnedColonyMechsResult;
 		}
+	}
 
-		public List<Pawn> SpawnedDownedPawns
+	public List<Pawn> ColonySubhumansControllable
+	{
+		get
 		{
-			get
+			colonySubhumansResult.Clear();
+			List<Pawn> list = PawnsInFaction(Faction.OfPlayer);
+			for (int i = 0; i < list.Count; i++)
 			{
-				spawnedDownedPawnsResult.Clear();
-				IReadOnlyList<Pawn> allPawnsSpawned = AllPawnsSpawned;
-				for (int i = 0; i < allPawnsSpawned.Count; i++)
+				if (list[i].IsColonySubhuman && list[i].mutant.Def.canBeDrafted)
 				{
-					if (allPawnsSpawned[i].Downed)
-					{
-						spawnedDownedPawnsResult.Add(allPawnsSpawned[i]);
-					}
+					colonySubhumansResult.Add(list[i]);
 				}
-				return spawnedDownedPawnsResult;
 			}
+			return colonySubhumansResult;
 		}
+	}
 
-		public List<Pawn> SpawnedPawnsWhoShouldHaveSurgeryDoneNow
+	public List<Pawn> SpawnedColonySubhumansPlayerControlled
+	{
+		get
 		{
-			get
+			spawnedColonySubhumansResult.Clear();
+			List<Pawn> list = SpawnedPawnsInFaction(Faction.OfPlayer);
+			for (int i = 0; i < list.Count; i++)
 			{
-				spawnedPawnsWhoShouldHaveSurgeryDoneNowResult.Clear();
-				IReadOnlyList<Pawn> allPawnsSpawned = AllPawnsSpawned;
-				for (int i = 0; i < allPawnsSpawned.Count; i++)
+				if (list[i].IsColonySubhumanPlayerControlled)
 				{
-					if (HealthAIUtility.ShouldHaveSurgeryDoneNow(allPawnsSpawned[i]))
-					{
-						spawnedPawnsWhoShouldHaveSurgeryDoneNowResult.Add(allPawnsSpawned[i]);
-					}
+					spawnedColonySubhumansResult.Add(list[i]);
 				}
-				return spawnedPawnsWhoShouldHaveSurgeryDoneNowResult;
 			}
+			return spawnedColonySubhumansResult;
 		}
+	}
 
-		public List<Pawn> SpawnedPawnsWhoShouldHaveInventoryUnloaded
+	public List<Pawn> SpawnedDownedPawns
+	{
+		get
 		{
-			get
+			spawnedDownedPawnsResult.Clear();
+			IReadOnlyList<Pawn> allPawnsSpawned = AllPawnsSpawned;
+			for (int i = 0; i < allPawnsSpawned.Count; i++)
 			{
-				spawnedPawnsWhoShouldHaveInventoryUnloadedResult.Clear();
-				IReadOnlyList<Pawn> allPawnsSpawned = AllPawnsSpawned;
-				for (int i = 0; i < allPawnsSpawned.Count; i++)
+				if (allPawnsSpawned[i].Downed)
 				{
-					if (allPawnsSpawned[i].inventory.UnloadEverything)
-					{
-						spawnedPawnsWhoShouldHaveInventoryUnloadedResult.Add(allPawnsSpawned[i]);
-					}
+					spawnedDownedPawnsResult.Add(allPawnsSpawned[i]);
 				}
-				return spawnedPawnsWhoShouldHaveInventoryUnloadedResult;
 			}
+			return spawnedDownedPawnsResult;
 		}
+	}
 
-		public int AllPawnsSpawnedCount => pawnsSpawned.Count;
-
-		public int FreeColonistsSpawnedCount => FreeColonistsSpawned.Count;
-
-		public int FreeAdultColonistsSpawnedCount => FreeAdultColonistsSpawned.Count;
-
-		public int PrisonersOfColonySpawnedCount => PrisonersOfColonySpawned.Count;
-
-		public int FreeColonistsAndPrisonersSpawnedCount => FreeColonistsAndPrisonersSpawned.Count;
-
-		public int ColonistsSpawnedCount
+	public List<Pawn> SpawnedPawnsWhoShouldHaveSurgeryDoneNow
+	{
+		get
 		{
-			get
+			spawnedPawnsWhoShouldHaveSurgeryDoneNowResult.Clear();
+			IReadOnlyList<Pawn> allPawnsSpawned = AllPawnsSpawned;
+			for (int i = 0; i < allPawnsSpawned.Count; i++)
 			{
-				int num = 0;
-				List<Pawn> list = SpawnedPawnsInFaction(Faction.OfPlayer);
-				for (int i = 0; i < list.Count; i++)
+				if (HealthAIUtility.ShouldHaveSurgeryDoneNow(allPawnsSpawned[i]))
 				{
-					if (list[i].IsColonist)
-					{
-						num++;
-					}
+					spawnedPawnsWhoShouldHaveSurgeryDoneNowResult.Add(allPawnsSpawned[i]);
 				}
-				return num;
 			}
+			return spawnedPawnsWhoShouldHaveSurgeryDoneNowResult;
 		}
+	}
 
-		public int FreeColonistsSpawnedOrInPlayerEjectablePodsCount
+	public List<Pawn> SpawnedPawnsWhoShouldHaveInventoryUnloaded
+	{
+		get
 		{
-			get
+			spawnedPawnsWhoShouldHaveInventoryUnloadedResult.Clear();
+			IReadOnlyList<Pawn> allPawnsSpawned = AllPawnsSpawned;
+			for (int i = 0; i < allPawnsSpawned.Count; i++)
 			{
-				int num = 0;
-				for (int i = 0; i < pawnsSpawned.Count; i++)
+				if (allPawnsSpawned[i].inventory.UnloadEverything)
 				{
-					if (pawnsSpawned[i].IsFreeColonist)
-					{
-						num++;
-					}
+					spawnedPawnsWhoShouldHaveInventoryUnloadedResult.Add(allPawnsSpawned[i]);
 				}
-				List<Thing> list = map.listerThings.ThingsInGroup(ThingRequestGroup.ThingHolder);
-				for (int j = 0; j < list.Count; j++)
+			}
+			return spawnedPawnsWhoShouldHaveInventoryUnloadedResult;
+		}
+	}
+
+	public int AllPawnsSpawnedCount => pawnsSpawned.Count;
+
+	public int FreeColonistsSpawnedCount => FreeColonistsSpawned.Count;
+
+	public int FreeAdultColonistsSpawnedCount => FreeAdultColonistsSpawned.Count;
+
+	public int PrisonersOfColonySpawnedCount => PrisonersOfColonySpawned.Count;
+
+	public int FreeColonistsAndPrisonersSpawnedCount => FreeColonistsAndPrisonersSpawned.Count;
+
+	public int ColonistsSpawnedCount
+	{
+		get
+		{
+			int num = 0;
+			List<Pawn> list = SpawnedPawnsInFaction(Faction.OfPlayer);
+			for (int i = 0; i < list.Count; i++)
+			{
+				if (list[i].IsColonist)
 				{
-					IThingHolder thingHolder = PlayerEjectablePodHolder(list[j]);
-					if (thingHolder == null)
-					{
-						continue;
-					}
-					tmpThings.Clear();
-					ThingOwnerUtility.GetAllThingsRecursively(thingHolder, tmpThings);
-					for (int k = 0; k < tmpThings.Count; k++)
-					{
-						if (tmpThings[k] is Pawn { Dead: false, IsFreeColonist: not false })
-						{
-							num++;
-						}
-					}
+					num++;
+				}
+			}
+			return num;
+		}
+	}
+
+	public int FreeColonistsSpawnedOrInPlayerEjectablePodsCount
+	{
+		get
+		{
+			int num = 0;
+			for (int i = 0; i < pawnsSpawned.Count; i++)
+			{
+				if (pawnsSpawned[i].IsFreeColonist)
+				{
+					num++;
+				}
+			}
+			List<Thing> list = map.listerThings.ThingsInGroup(ThingRequestGroup.ThingHolder);
+			for (int j = 0; j < list.Count; j++)
+			{
+				IThingHolder thingHolder = PlayerEjectablePodHolder(list[j]);
+				if (thingHolder == null)
+				{
+					continue;
 				}
 				tmpThings.Clear();
-				return num;
-			}
-		}
-
-		public int SlavesAndPrisonersOfColonySpawnedCount => SlavesAndPrisonersOfColonySpawned.Count;
-
-		public bool AnyColonistSpawned
-		{
-			get
-			{
-				List<Pawn> list = SpawnedPawnsInFaction(Faction.OfPlayer);
-				for (int i = 0; i < list.Count; i++)
+				ThingOwnerUtility.GetAllThingsRecursively(thingHolder, tmpThings);
+				for (int k = 0; k < tmpThings.Count; k++)
 				{
-					if (list[i].IsColonist)
+					if (tmpThings[k] is Pawn { Dead: false, IsFreeColonist: not false })
 					{
-						return true;
+						num++;
 					}
 				}
-				return false;
 			}
+			tmpThings.Clear();
+			return num;
 		}
+	}
 
-		public bool AnyFreeColonistSpawned
+	public int SlavesAndPrisonersOfColonySpawnedCount => SlavesAndPrisonersOfColonySpawned.Count;
+
+	public bool AnyColonistSpawned
+	{
+		get
 		{
-			get
+			List<Pawn> list = SpawnedPawnsInFaction(Faction.OfPlayer);
+			for (int i = 0; i < list.Count; i++)
 			{
-				List<Pawn> list = SpawnedPawnsInFaction(Faction.OfPlayer);
-				for (int i = 0; i < list.Count; i++)
+				if (list[i].IsColonist)
 				{
-					if (list[i].IsFreeColonist)
-					{
-						return true;
-					}
+					return true;
 				}
-				return false;
-			}
-		}
-
-		public List<Pawn> SlavesAndPrisonersOfColonySpawned
-		{
-			get
-			{
-				slavesAndPrisonersOfColonySpawnedResult.Clear();
-				slavesAndPrisonersOfColonySpawnedResult.AddRange(prisonersOfColonySpawned);
-				slavesAndPrisonersOfColonySpawnedResult.AddRange(slavesOfColonySpawned);
-				return slavesAndPrisonersOfColonySpawnedResult;
-			}
-		}
-
-		public List<Pawn> SpawnedShamblers => shamblersSpawned;
-
-		private static bool IsValidColonyPawn(Pawn pawn)
-		{
-			if ((!pawn.Dead || pawn.HasDeathRefusalOrResurrecting) && pawn.IsColonist)
-			{
-				return true;
-			}
-			if ((!pawn.Dead || pawn.HasDeathRefusalOrResurrecting) && pawn.IsColonySubhuman && pawn.mutant.Def.canTravelInCaravan)
-			{
-				return true;
 			}
 			return false;
 		}
+	}
 
-		private static void AssertMainThread()
+	public bool AnyFreeColonistSpawned
+	{
+		get
 		{
-			if (!UnityData.IsInMainThread && !LongEventHandler.AnyEventNowOrWaiting)
+			List<Pawn> list = SpawnedPawnsInFaction(Faction.OfPlayer);
+			for (int i = 0; i < list.Count; i++)
 			{
-				throw new Exception("Accessing map pawns off main thread - this is never allowed due to list pooling and will result in modification exceptions elsewhere in code.");
-			}
-		}
-
-		private static IThingHolder PlayerEjectablePodHolder(Thing thing, bool includeCryptosleepCaskets = true)
-		{
-			Building_CryptosleepCasket building_CryptosleepCasket = thing as Building_CryptosleepCasket;
-			CompTransporter compTransporter = thing.TryGetComp<CompTransporter>();
-			CompBiosculpterPod compBiosculpterPod = thing.TryGetComp<CompBiosculpterPod>();
-			if ((includeCryptosleepCaskets && building_CryptosleepCasket != null && building_CryptosleepCasket.def.building.isPlayerEjectable) || thing is IActiveTransporter || thing is PawnFlyer || thing is Building_Enterable || compTransporter != null || compBiosculpterPod != null)
-			{
-				IThingHolder thingHolder = compTransporter;
-				object obj = thingHolder;
-				if (obj == null)
+				if (list[i].IsFreeColonist)
 				{
-					thingHolder = compBiosculpterPod;
-					obj = thingHolder ?? (thing as IThingHolder);
-				}
-				return (IThingHolder)obj;
-			}
-			return null;
-		}
-
-		public MapPawns(Map map)
-		{
-			this.map = map;
-		}
-
-		private void EnsureFactionsListsInit()
-		{
-			List<Faction> allFactionsListForReading = Find.FactionManager.AllFactionsListForReading;
-			for (int i = 0; i < allFactionsListForReading.Count; i++)
-			{
-				pawnsInFactionSpawned.GetPawnList(allFactionsListForReading[i]);
-			}
-		}
-
-		public List<Faction> FactionsOnMap()
-		{
-			tmpFactionsOnMap.Clear();
-			foreach (Faction item in pawnsInFactionResult.KnownFactions())
-			{
-				if (pawnsInFactionResult.GetPawnList(item).Count > 0)
-				{
-					tmpFactionsOnMap.Add(item);
+					return true;
 				}
 			}
-			return tmpFactionsOnMap;
+			return false;
 		}
+	}
 
-		public List<Pawn> PawnsInFaction(Faction faction)
+	public List<Pawn> SlavesAndPrisonersOfColonySpawned
+	{
+		get
 		{
-			List<Pawn> pawnList = pawnsInFactionResult.GetPawnList(faction);
-			pawnList.Clear();
-			List<Pawn> allPawns = AllPawns;
-			for (int i = 0; i < allPawns.Count; i++)
+			slavesAndPrisonersOfColonySpawnedResult.Clear();
+			slavesAndPrisonersOfColonySpawnedResult.AddRange(prisonersOfColonySpawned);
+			slavesAndPrisonersOfColonySpawnedResult.AddRange(slavesOfColonySpawned);
+			return slavesAndPrisonersOfColonySpawnedResult;
+		}
+	}
+
+	public List<Pawn> SpawnedShamblers => shamblersSpawned;
+
+	private static bool IsValidColonyPawn(Pawn pawn)
+	{
+		if ((!pawn.Dead || pawn.HasDeathRefusalOrResurrecting) && pawn.IsColonist)
+		{
+			return true;
+		}
+		if ((!pawn.Dead || pawn.HasDeathRefusalOrResurrecting) && pawn.IsColonySubhuman && pawn.mutant.Def.canTravelInCaravan)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	private static void AssertMainThread()
+	{
+		if (!UnityData.IsInMainThread && !LongEventHandler.AnyEventNowOrWaiting)
+		{
+			throw new Exception("Accessing map pawns off main thread - this is never allowed due to list pooling and will result in modification exceptions elsewhere in code.");
+		}
+	}
+
+	private static IThingHolder PlayerEjectablePodHolder(Thing thing, bool includeCryptosleepCaskets = true)
+	{
+		Building_CryptosleepCasket building_CryptosleepCasket = thing as Building_CryptosleepCasket;
+		CompTransporter compTransporter = thing.TryGetComp<CompTransporter>();
+		CompBiosculpterPod compBiosculpterPod = thing.TryGetComp<CompBiosculpterPod>();
+		if ((includeCryptosleepCaskets && building_CryptosleepCasket != null && building_CryptosleepCasket.def.building.isPlayerEjectable) || thing is IActiveTransporter || thing is PawnFlyer || thing is Building_Enterable || compTransporter != null || compBiosculpterPod != null)
+		{
+			IThingHolder thingHolder = compTransporter;
+			object obj = thingHolder;
+			if (obj == null)
 			{
-				if (allPawns[i].Faction == faction)
-				{
-					pawnList.Add(allPawns[i]);
-				}
+				thingHolder = compBiosculpterPod;
+				obj = thingHolder ?? (thing as IThingHolder);
 			}
-			return pawnList;
+			return (IThingHolder)obj;
 		}
+		return null;
+	}
 
-		public List<Pawn> SpawnedPawnsInFaction(Faction faction)
+	public MapPawns(Map map)
+	{
+		this.map = map;
+	}
+
+	private void EnsureFactionsListsInit()
+	{
+		List<Faction> allFactionsListForReading = Find.FactionManager.AllFactionsListForReading;
+		for (int i = 0; i < allFactionsListForReading.Count; i++)
 		{
+			pawnsInFactionSpawned.GetPawnList(allFactionsListForReading[i]);
+		}
+	}
+
+	public List<Faction> FactionsOnMap()
+	{
+		tmpFactionsOnMap.Clear();
+		foreach (Faction item in pawnsInFactionResult.KnownFactions())
+		{
+			if (pawnsInFactionResult.GetPawnList(item).Count > 0)
+			{
+				tmpFactionsOnMap.Add(item);
+			}
+		}
+		return tmpFactionsOnMap;
+	}
+
+	public List<Pawn> PawnsInFaction(Faction faction)
+	{
+		List<Pawn> pawnList = pawnsInFactionResult.GetPawnList(faction);
+		pawnList.Clear();
+		List<Pawn> allPawns = AllPawns;
+		for (int i = 0; i < allPawns.Count; i++)
+		{
+			if (allPawns[i].Faction == faction)
+			{
+				pawnList.Add(allPawns[i]);
+			}
+		}
+		return pawnList;
+	}
+
+	public List<Pawn> SpawnedPawnsInFaction(Faction faction)
+	{
+		EnsureFactionsListsInit();
+		return pawnsInFactionSpawned.GetPawnList(faction);
+	}
+
+	public List<Pawn> FreeHumanlikesOfFaction(Faction faction)
+	{
+		List<Pawn> pawnList = freeHumanlikesOfFactionResult.GetPawnList(faction);
+		pawnList.Clear();
+		List<Pawn> allPawns = AllPawns;
+		for (int i = 0; i < allPawns.Count; i++)
+		{
+			if ((!ModsConfig.AnomalyActive || !allPawns[i].IsSubhuman) && allPawns[i].Faction == faction && (allPawns[i].HostFaction == null || allPawns[i].IsSlave) && allPawns[i].RaceProps.Humanlike)
+			{
+				pawnList.Add(allPawns[i]);
+			}
+		}
+		return pawnList;
+	}
+
+	public List<Pawn> FreeHumanlikesSpawnedOfFaction(Faction faction)
+	{
+		List<Pawn> pawnList = freeHumanlikesSpawnedOfFactionResult.GetPawnList(faction);
+		pawnList.Clear();
+		List<Pawn> list = SpawnedPawnsInFaction(faction);
+		for (int i = 0; i < list.Count; i++)
+		{
+			if ((!ModsConfig.AnomalyActive || !list[i].IsSubhuman) && list[i].HostFaction == null && list[i].RaceProps.Humanlike)
+			{
+				pawnList.Add(list[i]);
+			}
+		}
+		return pawnList;
+	}
+
+	public List<Pawn> SpawnedBabiesInFaction(Faction faction)
+	{
+		List<Pawn> pawnList = spawnedBabiesInFactionResult.GetPawnList(faction);
+		pawnList.Clear();
+		List<Pawn> list = SpawnedPawnsInFaction(faction);
+		for (int i = 0; i < list.Count; i++)
+		{
+			if (list[i].DevelopmentalStage.Baby())
+			{
+				pawnList.Add(list[i]);
+			}
+		}
+		return pawnList;
+	}
+
+	public void RegisterPawn(Pawn p)
+	{
+		if (p.Dead)
+		{
+			Log.Warning("Tried to register dead pawn " + p?.ToString() + " in " + GetType()?.ToString() + ".");
+		}
+		else if (!p.Spawned)
+		{
+			Log.Warning("Tried to register despawned pawn " + p?.ToString() + " in " + GetType()?.ToString() + ".");
+		}
+		else if (p.Map != map)
+		{
+			Log.Warning("Tried to register pawn " + p?.ToString() + " but his Map is not this one.");
+		}
+		else
+		{
+			if (!p.mindState.Active)
+			{
+				return;
+			}
 			EnsureFactionsListsInit();
-			return pawnsInFactionSpawned.GetPawnList(faction);
-		}
-
-		public List<Pawn> FreeHumanlikesOfFaction(Faction faction)
-		{
-			List<Pawn> pawnList = freeHumanlikesOfFactionResult.GetPawnList(faction);
-			pawnList.Clear();
-			List<Pawn> allPawns = AllPawns;
-			for (int i = 0; i < allPawns.Count; i++)
+			if (!pawnsSpawned.Contains(p))
 			{
-				if ((!ModsConfig.AnomalyActive || !allPawns[i].IsSubhuman) && allPawns[i].Faction == faction && (allPawns[i].HostFaction == null || allPawns[i].IsSlave) && allPawns[i].RaceProps.Humanlike)
-				{
-					pawnList.Add(allPawns[i]);
-				}
+				pawnsSpawned.Add(p);
 			}
-			return pawnList;
-		}
-
-		public List<Pawn> FreeHumanlikesSpawnedOfFaction(Faction faction)
-		{
-			List<Pawn> pawnList = freeHumanlikesSpawnedOfFactionResult.GetPawnList(faction);
-			pawnList.Clear();
-			List<Pawn> list = SpawnedPawnsInFaction(faction);
-			for (int i = 0; i < list.Count; i++)
+			if (p.Faction != null)
 			{
-				if ((!ModsConfig.AnomalyActive || !list[i].IsSubhuman) && list[i].HostFaction == null && list[i].RaceProps.Humanlike)
+				List<Pawn> pawnList = pawnsInFactionSpawned.GetPawnList(p.Faction);
+				if (!pawnList.Contains(p))
 				{
-					pawnList.Add(list[i]);
-				}
-			}
-			return pawnList;
-		}
-
-		public List<Pawn> SpawnedBabiesInFaction(Faction faction)
-		{
-			List<Pawn> pawnList = spawnedBabiesInFactionResult.GetPawnList(faction);
-			pawnList.Clear();
-			List<Pawn> list = SpawnedPawnsInFaction(faction);
-			for (int i = 0; i < list.Count; i++)
-			{
-				if (list[i].DevelopmentalStage.Baby())
-				{
-					pawnList.Add(list[i]);
-				}
-			}
-			return pawnList;
-		}
-
-		public void RegisterPawn(Pawn p)
-		{
-			if (p.Dead)
-			{
-				Log.Warning("Tried to register dead pawn " + p?.ToString() + " in " + GetType()?.ToString() + ".");
-			}
-			else if (!p.Spawned)
-			{
-				Log.Warning("Tried to register despawned pawn " + p?.ToString() + " in " + GetType()?.ToString() + ".");
-			}
-			else if (p.Map != map)
-			{
-				Log.Warning("Tried to register pawn " + p?.ToString() + " but his Map is not this one.");
-			}
-			else
-			{
-				if (!p.mindState.Active)
-				{
-					return;
-				}
-				EnsureFactionsListsInit();
-				if (!pawnsSpawned.Contains(p))
-				{
-					pawnsSpawned.Add(p);
-				}
-				if (p.Faction != null)
-				{
-					List<Pawn> pawnList = pawnsInFactionSpawned.GetPawnList(p.Faction);
-					if (!pawnList.Contains(p))
+					pawnList.Add(p);
+					if (p.Faction == Faction.OfPlayer)
 					{
-						pawnList.Add(p);
-						if (p.Faction == Faction.OfPlayer)
+						pawnList.InsertionSort(delegate(Pawn a, Pawn b)
 						{
-							pawnList.InsertionSort(delegate(Pawn a, Pawn b)
-							{
-								int num = a.playerSettings?.joinTick ?? 0;
-								int value = b.playerSettings?.joinTick ?? 0;
-								return num.CompareTo(value);
-							});
-						}
+							int num = a.playerSettings?.joinTick ?? 0;
+							int value = b.playerSettings?.joinTick ?? 0;
+							return num.CompareTo(value);
+						});
 					}
 				}
-				if (p.IsPrisonerOfColony && !prisonersOfColonySpawned.Contains(p))
-				{
-					prisonersOfColonySpawned.Add(p);
-				}
-				if (p.IsSlaveOfColony && !slavesOfColonySpawned.Contains(p))
-				{
-					slavesOfColonySpawned.Add(p);
-				}
-				DoListChangedNotifications();
 			}
-		}
-
-		public void DeRegisterPawn(Pawn p)
-		{
-			EnsureFactionsListsInit();
-			pawnsSpawned.Remove(p);
-			List<Faction> allFactionsListForReading = Find.FactionManager.AllFactionsListForReading;
-			for (int i = 0; i < allFactionsListForReading.Count; i++)
+			if (p.IsPrisonerOfColony && !prisonersOfColonySpawned.Contains(p))
 			{
-				Faction faction = allFactionsListForReading[i];
-				pawnsInFactionSpawned.GetPawnList(faction).Remove(p);
+				prisonersOfColonySpawned.Add(p);
 			}
-			prisonersOfColonySpawned.Remove(p);
-			slavesOfColonySpawned.Remove(p);
-			DoListChangedNotifications();
-		}
-
-		public void UpdateRegistryForPawn(Pawn p)
-		{
-			DeRegisterPawn(p);
-			if (p.Spawned && p.Map == map)
+			if (p.IsSlaveOfColony && !slavesOfColonySpawned.Contains(p))
 			{
-				RegisterPawn(p);
+				slavesOfColonySpawned.Add(p);
 			}
 			DoListChangedNotifications();
 		}
+	}
 
-		public void RegisterShambler(Pawn p)
+	public void DeRegisterPawn(Pawn p)
+	{
+		EnsureFactionsListsInit();
+		pawnsSpawned.Remove(p);
+		List<Faction> allFactionsListForReading = Find.FactionManager.AllFactionsListForReading;
+		for (int i = 0; i < allFactionsListForReading.Count; i++)
 		{
-			if (ModLister.CheckAnomaly("Shambler registration") && !shamblersSpawned.Contains(p))
+			Faction faction = allFactionsListForReading[i];
+			pawnsInFactionSpawned.GetPawnList(faction).Remove(p);
+		}
+		prisonersOfColonySpawned.Remove(p);
+		slavesOfColonySpawned.Remove(p);
+		DoListChangedNotifications();
+	}
+
+	public void UpdateRegistryForPawn(Pawn p)
+	{
+		DeRegisterPawn(p);
+		if (p.Spawned && p.Map == map)
+		{
+			RegisterPawn(p);
+		}
+		DoListChangedNotifications();
+	}
+
+	public void RegisterShambler(Pawn p)
+	{
+		if (ModLister.CheckAnomaly("Shambler registration") && !shamblersSpawned.Contains(p))
+		{
+			shamblersSpawned.Add(p);
+		}
+	}
+
+	public void DeregisterShambler(Pawn p)
+	{
+		if (ModLister.CheckAnomaly("Shambler deregistration"))
+		{
+			shamblersSpawned.Remove(p);
+		}
+	}
+
+	private void DoListChangedNotifications()
+	{
+		MainTabWindowUtility.NotifyAllPawnTables_PawnsChanged();
+		if (Find.ColonistBar != null)
+		{
+			Find.ColonistBar.MarkColonistsDirty();
+		}
+	}
+
+	public void LogListedPawns()
+	{
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.AppendLine("MapPawns:");
+		stringBuilder.AppendLine("pawnsSpawned");
+		foreach (Pawn item in pawnsSpawned)
+		{
+			stringBuilder.AppendLine("    " + item);
+		}
+		stringBuilder.AppendLine("AllPawnsUnspawned");
+		foreach (Pawn item2 in AllPawnsUnspawned)
+		{
+			stringBuilder.AppendLine("    " + item2);
+		}
+		foreach (Faction item3 in pawnsInFactionSpawned.KnownFactions())
+		{
+			stringBuilder.AppendLine("pawnsInFactionSpawned[" + item3.ToStringSafe() + "]");
+			foreach (Pawn pawn in pawnsInFactionSpawned.GetPawnList(item3))
 			{
-				shamblersSpawned.Add(p);
+				stringBuilder.AppendLine("    " + pawn);
 			}
 		}
-
-		public void DeregisterShambler(Pawn p)
+		stringBuilder.AppendLine("prisonersOfColonySpawned");
+		foreach (Pawn item4 in prisonersOfColonySpawned)
 		{
-			if (ModLister.CheckAnomaly("Shambler deregistration"))
-			{
-				shamblersSpawned.Remove(p);
-			}
+			stringBuilder.AppendLine("    " + item4);
 		}
-
-		private void DoListChangedNotifications()
-		{
-			MainTabWindowUtility.NotifyAllPawnTables_PawnsChanged();
-			if (Find.ColonistBar != null)
-			{
-				Find.ColonistBar.MarkColonistsDirty();
-			}
-		}
-
-		public void LogListedPawns()
-		{
-			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.AppendLine("MapPawns:");
-			stringBuilder.AppendLine("pawnsSpawned");
-			foreach (Pawn item in pawnsSpawned)
-			{
-				stringBuilder.AppendLine("    " + item);
-			}
-			stringBuilder.AppendLine("AllPawnsUnspawned");
-			foreach (Pawn item2 in AllPawnsUnspawned)
-			{
-				stringBuilder.AppendLine("    " + item2);
-			}
-			foreach (Faction item3 in pawnsInFactionSpawned.KnownFactions())
-			{
-				stringBuilder.AppendLine("pawnsInFactionSpawned[" + item3.ToStringSafe() + "]");
-				foreach (Pawn pawn in pawnsInFactionSpawned.GetPawnList(item3))
-				{
-					stringBuilder.AppendLine("    " + pawn);
-				}
-			}
-			stringBuilder.AppendLine("prisonersOfColonySpawned");
-			foreach (Pawn item4 in prisonersOfColonySpawned)
-			{
-				stringBuilder.AppendLine("    " + item4);
-			}
-			Log.Message(stringBuilder.ToString());
-		}
+		Log.Message(stringBuilder.ToString());
 	}
 }

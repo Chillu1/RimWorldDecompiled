@@ -1,9 +1,8 @@
-namespace RimWorld
-{
-	public interface IWaitForItemsLordToil
-	{
-		int CountRemaining { get; }
+namespace RimWorld;
 
-		bool HasAllRequestedItems { get; }
-	}
+public interface IWaitForItemsLordToil
+{
+	int CountRemaining { get; }
+
+	bool HasAllRequestedItems { get; }
 }

@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Building_AncientCommsConsole : Building
 {
-	public class Building_AncientCommsConsole : Building
+	public override string GetInspectString()
 	{
-		public override string GetInspectString()
-		{
-			return base.GetInspectString() + ("\n" + "LinkedTo".Translate() + ": " + "SupplySatellite".Translate());
-		}
+		return base.GetInspectString() + ("\n" + "LinkedTo".Translate() + ": " + "SupplySatellite".Translate());
 	}
 }

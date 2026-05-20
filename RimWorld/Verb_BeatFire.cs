@@ -1,27 +1,26 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Verb_BeatFire : Verb
 {
-	public class Verb_BeatFire : Verb
+	private const int DamageAmount = 32;
+
+	public Verb_BeatFire()
 	{
-		private const int DamageAmount = 32;
+		verbProps = NativeVerbPropertiesDatabase.VerbWithCategory(VerbCategory.BeatFire);
+	}
 
-		public Verb_BeatFire()
+	protected override bool TryCastShot()
+	{
+		Fire fire = (Fire)currentTarget.Thing;
+		Pawn casterPawn = CasterPawn;
+		if (casterPawn.stances.FullBodyBusy || fire.TicksSinceSpawn == 0)
 		{
-			verbProps = NativeVerbPropertiesDatabase.VerbWithCategory(VerbCategory.BeatFire);
+			return false;
 		}
-
-		protected override bool TryCastShot()
-		{
-			Fire fire = (Fire)currentTarget.Thing;
-			Pawn casterPawn = CasterPawn;
-			if (casterPawn.stances.FullBodyBusy || fire.TicksSinceSpawn == 0)
-			{
-				return false;
-			}
-			fire.TakeDamage(new DamageInfo(DamageDefOf.Extinguish, 32f, 0f, -1f, caster));
-			casterPawn.Drawer.Notify_MeleeAttackOn(fire);
-			return true;
-		}
+		fire.TakeDamage(new DamageInfo(DamageDefOf.Extinguish, 32f, 0f, -1f, caster));
+		casterPawn.Drawer.Notify_MeleeAttackOn(fire);
+		return true;
 	}
 }

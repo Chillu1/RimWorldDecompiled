@@ -1,11 +1,10 @@
-namespace Verse
+namespace Verse;
+
+public interface IRenameable
 {
-	public interface IRenameable
-	{
-		string RenamableLabel { get; set; }
+	string RenamableLabel { get; set; }
 
-		string BaseLabel { get; }
+	string BaseLabel { get; }
 
-		string InspectLabel { get; }
-	}
+	string InspectLabel { get; }
 }

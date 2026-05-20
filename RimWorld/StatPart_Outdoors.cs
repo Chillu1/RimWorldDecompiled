@@ -1,56 +1,55 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class StatPart_Outdoors : StatPart
 {
-	public class StatPart_Outdoors : StatPart
+	private float factorIndoors = 1f;
+
+	private float factorOutdoors = 1f;
+
+	public override void TransformValue(StatRequest req, ref float val)
 	{
-		private float factorIndoors = 1f;
+		val *= OutdoorsFactor(req);
+	}
 
-		private float factorOutdoors = 1f;
-
-		public override void TransformValue(StatRequest req, ref float val)
+	public override string ExplanationPart(StatRequest req)
+	{
+		if (req.HasThing && req.Thing.GetRoom() != null)
 		{
-			val *= OutdoorsFactor(req);
+			string text = ((!ConsideredOutdoors(req)) ? ((string)"Indoors".Translate()) : ((string)"Outdoors".Translate().CapitalizeFirst()));
+			return text + ": x" + OutdoorsFactor(req).ToStringPercent();
 		}
+		return null;
+	}
 
-		public override string ExplanationPart(StatRequest req)
+	private float OutdoorsFactor(StatRequest req)
+	{
+		if (ConsideredOutdoors(req))
 		{
-			if (req.HasThing && req.Thing.GetRoom() != null)
-			{
-				string text = ((!ConsideredOutdoors(req)) ? ((string)"Indoors".Translate()) : ((string)"Outdoors".Translate().CapitalizeFirst()));
-				return text + ": x" + OutdoorsFactor(req).ToStringPercent();
-			}
-			return null;
+			return factorOutdoors;
 		}
+		return factorIndoors;
+	}
 
-		private float OutdoorsFactor(StatRequest req)
+	private bool ConsideredOutdoors(StatRequest req)
+	{
+		if (req.HasThing)
 		{
-			if (ConsideredOutdoors(req))
+			Room room = req.Thing.GetRoom();
+			if (room != null)
 			{
-				return factorOutdoors;
-			}
-			return factorIndoors;
-		}
-
-		private bool ConsideredOutdoors(StatRequest req)
-		{
-			if (req.HasThing)
-			{
-				Room room = req.Thing.GetRoom();
-				if (room != null)
+				if (room.OutdoorsForWork)
 				{
-					if (room.OutdoorsForWork)
-					{
-						return true;
-					}
-					if (req.HasThing && req.Thing.Spawned && !req.Thing.Map.roofGrid.Roofed(req.Thing.Position))
-					{
-						return true;
-					}
-					return false;
+					return true;
 				}
+				if (req.HasThing && req.Thing.Spawned && !req.Thing.Map.roofGrid.Roofed(req.Thing.Position))
+				{
+					return true;
+				}
+				return false;
 			}
-			return false;
 		}
+		return false;
 	}
 }

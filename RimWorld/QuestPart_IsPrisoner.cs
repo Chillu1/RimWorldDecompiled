@@ -3,57 +3,56 @@ using System.Linq;
 using RimWorld.Planet;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class QuestPart_IsPrisoner : QuestPartActivable
 {
-	public class QuestPart_IsPrisoner : QuestPartActivable
+	public Pawn pawn;
+
+	public override IEnumerable<GlobalTargetInfo> QuestLookTargets
 	{
-		public Pawn pawn;
-
-		public override IEnumerable<GlobalTargetInfo> QuestLookTargets
+		get
 		{
-			get
+			foreach (GlobalTargetInfo questLookTarget in base.QuestLookTargets)
 			{
-				foreach (GlobalTargetInfo questLookTarget in base.QuestLookTargets)
-				{
-					yield return questLookTarget;
-				}
-				if (pawn != null)
-				{
-					yield return pawn;
-				}
+				yield return questLookTarget;
+			}
+			if (pawn != null)
+			{
+				yield return pawn;
 			}
 		}
+	}
 
-		public override void QuestPartTick()
+	public override void QuestPartTick()
+	{
+		base.QuestPartTick();
+		if (pawn != null && pawn.IsPrisoner)
 		{
-			base.QuestPartTick();
-			if (pawn != null && pawn.IsPrisoner)
-			{
-				Complete(pawn.Named("SUBJECT"));
-			}
+			Complete(pawn.Named("SUBJECT"));
 		}
+	}
 
-		public override void ExposeData()
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_References.Look(ref pawn, "pawn");
+	}
+
+	public override void AssignDebugData()
+	{
+		base.AssignDebugData();
+		if (Find.AnyPlayerHomeMap != null)
 		{
-			base.ExposeData();
-			Scribe_References.Look(ref pawn, "pawn");
+			pawn = Find.RandomPlayerHomeMap.mapPawns.FreeColonists.FirstOrDefault();
 		}
+	}
 
-		public override void AssignDebugData()
+	public override void ReplacePawnReferences(Pawn replace, Pawn with)
+	{
+		if (pawn == replace)
 		{
-			base.AssignDebugData();
-			if (Find.AnyPlayerHomeMap != null)
-			{
-				pawn = Find.RandomPlayerHomeMap.mapPawns.FreeColonists.FirstOrDefault();
-			}
-		}
-
-		public override void ReplacePawnReferences(Pawn replace, Pawn with)
-		{
-			if (pawn == replace)
-			{
-				pawn = with;
-			}
+			pawn = with;
 		}
 	}
 }

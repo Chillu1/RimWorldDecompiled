@@ -1,14 +1,13 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class IncidentWorker_LavaEmergence : IncidentWorker
 {
-	public class IncidentWorker_LavaEmergence : IncidentWorker
+	protected override bool TryExecuteWorker(IncidentParms parms)
 	{
-		protected override bool TryExecuteWorker(IncidentParms parms)
-		{
-			Map map = (Map)parms.target;
-			GenSpawn.Spawn(ThingDefOf.LavaEmergence, map.Center, map);
-			return true;
-		}
+		Map map = (Map)parms.target;
+		GenSpawn.Spawn(ThingDefOf.LavaEmergence, map.Center, map);
+		return true;
 	}
 }

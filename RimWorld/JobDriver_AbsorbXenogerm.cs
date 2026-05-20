@@ -2,37 +2,36 @@ using System.Collections.Generic;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_AbsorbXenogerm : JobDriver
 {
-	public class JobDriver_AbsorbXenogerm : JobDriver
+	public const int TicksToAbsorb = 60;
+
+	public Pawn Target => job.targetA.Thing as Pawn;
+
+	public override bool TryMakePreToilReservations(bool errorOnFailed)
 	{
-		public const int TicksToAbsorb = 60;
+		return pawn.Reserve(Target, job, 1, -1, null, errorOnFailed);
+	}
 
-		public Pawn Target => job.targetA.Thing as Pawn;
-
-		public override bool TryMakePreToilReservations(bool errorOnFailed)
+	protected override IEnumerable<Toil> MakeNewToils()
+	{
+		if (!ModLister.CheckBiotech("xenogerm absorbing"))
 		{
-			return pawn.Reserve(Target, job, 1, -1, null, errorOnFailed);
+			yield break;
 		}
-
-		protected override IEnumerable<Toil> MakeNewToils()
+		this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
+		yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
+		yield return Toils_General.WaitWith(TargetIndex.A, 60, useProgressBar: true);
+		yield return Toils_General.Do(delegate
 		{
-			if (!ModLister.CheckBiotech("xenogerm absorbing"))
+			if (Target.HomeFaction != null && pawn.Faction == Faction.OfPlayer)
 			{
-				yield break;
+				Faction.OfPlayer.TryAffectGoodwillWith(Target.HomeFaction, -50, canSendMessage: true, !Target.HomeFaction.temporary, HistoryEventDefOf.AbsorbedXenogerm);
 			}
-			this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
-			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
-			yield return Toils_General.WaitWith(TargetIndex.A, 60, useProgressBar: true);
-			yield return Toils_General.Do(delegate
-			{
-				if (Target.HomeFaction != null && pawn.Faction == Faction.OfPlayer)
-				{
-					Faction.OfPlayer.TryAffectGoodwillWith(Target.HomeFaction, -50, canSendMessage: true, !Target.HomeFaction.temporary, HistoryEventDefOf.AbsorbedXenogerm);
-				}
-				QuestUtility.SendQuestTargetSignals(Target.questTags, "XenogermAbsorbed", Target.Named("SUBJECT"));
-				GeneUtility.ReimplantXenogerm(Target, pawn);
-			});
-		}
+			QuestUtility.SendQuestTargetSignals(Target.questTags, "XenogermAbsorbed", Target.Named("SUBJECT"));
+			GeneUtility.ReimplantXenogerm(Target, pawn);
+		});
 	}
 }

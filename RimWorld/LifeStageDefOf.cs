@@ -1,12 +1,11 @@
-namespace RimWorld
+namespace RimWorld;
+
+[DefOf]
+public static class LifeStageDefOf
 {
-	[DefOf]
-	public static class LifeStageDefOf
-	{
-		public static LifeStageDef HumanlikeBaby;
+	public static LifeStageDef HumanlikeBaby;
 
-		public static LifeStageDef HumanlikeChild;
+	public static LifeStageDef HumanlikeChild;
 
-		public static LifeStageDef HumanlikeAdult;
-	}
+	public static LifeStageDef HumanlikeAdult;
 }

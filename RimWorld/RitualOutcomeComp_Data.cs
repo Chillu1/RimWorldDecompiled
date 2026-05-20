@@ -1,15 +1,14 @@
 using Verse;
 
-namespace RimWorld
-{
-	public abstract class RitualOutcomeComp_Data : IExposable
-	{
-		public virtual void Reset()
-		{
-		}
+namespace RimWorld;
 
-		public virtual void ExposeData()
-		{
-		}
+public abstract class RitualOutcomeComp_Data : IExposable
+{
+	public virtual void Reset()
+	{
+	}
+
+	public virtual void ExposeData()
+	{
 	}
 }

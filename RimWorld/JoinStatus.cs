@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum JoinStatus
 {
-	public enum JoinStatus
-	{
-		Undefined,
-		JoinAsColonist,
-		JoinAsSlave
-	}
+	Undefined,
+	JoinAsColonist,
+	JoinAsSlave
 }

@@ -1,26 +1,25 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public abstract class TransportersArrivalAction : IExposable
 {
-	public abstract class TransportersArrivalAction : IExposable
+	public abstract bool GeneratesMap { get; }
+
+	public virtual FloatMenuAcceptanceReport StillValid(IEnumerable<IThingHolder> pods, PlanetTile destinationTile)
 	{
-		public abstract bool GeneratesMap { get; }
+		return true;
+	}
 
-		public virtual FloatMenuAcceptanceReport StillValid(IEnumerable<IThingHolder> pods, PlanetTile destinationTile)
-		{
-			return true;
-		}
+	public virtual bool ShouldUseLongEvent(List<ActiveTransporterInfo> pods, PlanetTile tile)
+	{
+		return false;
+	}
 
-		public virtual bool ShouldUseLongEvent(List<ActiveTransporterInfo> pods, PlanetTile tile)
-		{
-			return false;
-		}
+	public abstract void Arrived(List<ActiveTransporterInfo> transporters, PlanetTile tile);
 
-		public abstract void Arrived(List<ActiveTransporterInfo> transporters, PlanetTile tile);
-
-		public virtual void ExposeData()
-		{
-		}
+	public virtual void ExposeData()
+	{
 	}
 }

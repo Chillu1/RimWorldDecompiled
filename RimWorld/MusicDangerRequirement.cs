@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum MusicDangerRequirement
 {
-	public enum MusicDangerRequirement
-	{
-		None,
-		RequiresDanger,
-		RequiresNoDanger
-	}
+	None,
+	RequiresDanger,
+	RequiresNoDanger
 }

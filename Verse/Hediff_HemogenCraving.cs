@@ -1,17 +1,16 @@
-namespace Verse
+namespace Verse;
+
+public class Hediff_HemogenCraving : HediffWithComps
 {
-	public class Hediff_HemogenCraving : HediffWithComps
+	public override string SeverityLabel
 	{
-		public override string SeverityLabel
+		get
 		{
-			get
+			if (Severity == 0f)
 			{
-				if (Severity == 0f)
-				{
-					return null;
-				}
-				return Severity.ToStringPercent();
+				return null;
 			}
+			return Severity.ToStringPercent();
 		}
 	}
 }

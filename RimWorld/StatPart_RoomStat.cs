@@ -1,47 +1,46 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class StatPart_RoomStat : StatPart
 {
-	public class StatPart_RoomStat : StatPart
+	private RoomStatDef roomStat;
+
+	[MustTranslate]
+	private string customLabel;
+
+	[Unsaved(false)]
+	[TranslationHandle(Priority = 100)]
+	public string untranslatedCustomLabel;
+
+	public void PostLoad()
 	{
-		private RoomStatDef roomStat;
+		untranslatedCustomLabel = customLabel;
+	}
 
-		[MustTranslate]
-		private string customLabel;
-
-		[Unsaved(false)]
-		[TranslationHandle(Priority = 100)]
-		public string untranslatedCustomLabel;
-
-		public void PostLoad()
+	public override void TransformValue(StatRequest req, ref float val)
+	{
+		if (req.HasThing)
 		{
-			untranslatedCustomLabel = customLabel;
-		}
-
-		public override void TransformValue(StatRequest req, ref float val)
-		{
-			if (req.HasThing)
+			Room room = req.Thing.GetRoom();
+			if (room != null)
 			{
-				Room room = req.Thing.GetRoom();
-				if (room != null)
-				{
-					val *= room.GetStat(roomStat);
-				}
+				val *= room.GetStat(roomStat);
 			}
 		}
+	}
 
-		public override string ExplanationPart(StatRequest req)
+	public override string ExplanationPart(StatRequest req)
+	{
+		if (req.HasThing)
 		{
-			if (req.HasThing)
+			Room room = req.Thing.GetRoom();
+			if (room != null)
 			{
-				Room room = req.Thing.GetRoom();
-				if (room != null)
-				{
-					string text = (customLabel.NullOrEmpty() ? ((string)roomStat.LabelCap) : customLabel);
-					return text + ": x" + room.GetStat(roomStat).ToStringPercent();
-				}
+				string text = (customLabel.NullOrEmpty() ? ((string)roomStat.LabelCap) : customLabel);
+				return text + ": x" + room.GetStat(roomStat).ToStringPercent();
 			}
-			return null;
 		}
+		return null;
 	}
 }

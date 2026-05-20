@@ -1,20 +1,19 @@
 using System;
 
-namespace LudeonTK
+namespace LudeonTK;
+
+public struct DebugMenuOption
 {
-	public struct DebugMenuOption
+	public DebugMenuOptionMode mode;
+
+	public string label;
+
+	public Action method;
+
+	public DebugMenuOption(string label, DebugMenuOptionMode mode, Action method)
 	{
-		public DebugMenuOptionMode mode;
-
-		public string label;
-
-		public Action method;
-
-		public DebugMenuOption(string label, DebugMenuOptionMode mode, Action method)
-		{
-			this.label = label;
-			this.method = method;
-			this.mode = mode;
-		}
+		this.label = label;
+		this.method = method;
+		this.mode = mode;
 	}
 }

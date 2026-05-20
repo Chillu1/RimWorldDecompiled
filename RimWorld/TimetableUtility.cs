@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class TimetableUtility
 {
-	public static class TimetableUtility
+	public static TimeAssignmentDef GetTimeAssignment(this Pawn pawn)
 	{
-		public static TimeAssignmentDef GetTimeAssignment(this Pawn pawn)
+		if (pawn.timetable == null)
 		{
-			if (pawn.timetable == null)
-			{
-				return TimeAssignmentDefOf.Anything;
-			}
-			return pawn.timetable.CurrentAssignment;
+			return TimeAssignmentDefOf.Anything;
 		}
+		return pawn.timetable.CurrentAssignment;
 	}
 }

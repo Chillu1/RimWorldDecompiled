@@ -1,14 +1,13 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WickMessage
 {
-	public class WickMessage
-	{
-		[NoTranslate]
-		public string wickMessagekey;
+	[NoTranslate]
+	public string wickMessagekey;
 
-		public MessageTypeDef messageType;
+	public MessageTypeDef messageType;
 
-		public int ticksLeft;
-	}
+	public int ticksLeft;
 }

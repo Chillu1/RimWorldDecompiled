@@ -1,17 +1,16 @@
-namespace Verse
+namespace Verse;
+
+public class MissingPart
 {
-	public class MissingPart
-	{
-		private BodyPartDef bodyPart;
+	private BodyPartDef bodyPart;
 
-		private HediffDef injury;
+	private HediffDef injury;
 
-		private float? chance;
+	private float? chance;
 
-		public BodyPartDef BodyPart => bodyPart;
+	public BodyPartDef BodyPart => bodyPart;
 
-		public HediffDef Injury => injury;
+	public HediffDef Injury => injury;
 
-		public float? Chance => chance;
-	}
+	public float? Chance => chance;
 }

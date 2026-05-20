@@ -1,60 +1,59 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class PawnGroupMaker
 {
-	public class PawnGroupMaker
+	public PawnGroupKindDef kindDef;
+
+	public float commonality = 100f;
+
+	public List<RaidStrategyDef> disallowedStrategies;
+
+	public float maxTotalPoints = 9999999f;
+
+	public List<PawnGenOption> options = new List<PawnGenOption>();
+
+	public List<PawnGenOption> traders = new List<PawnGenOption>();
+
+	public List<PawnGenOption> carriers = new List<PawnGenOption>();
+
+	public List<PawnGenOption> guards = new List<PawnGenOption>();
+
+	public float MinPointsToGenerateAnything(FactionDef faction, PawnGroupMakerParms parms = null)
 	{
-		public PawnGroupKindDef kindDef;
+		return kindDef.Worker.MinPointsToGenerateAnything(this, faction, parms);
+	}
 
-		public float commonality = 100f;
+	public IEnumerable<Pawn> GeneratePawns(PawnGroupMakerParms parms, bool errorOnZeroResults = true)
+	{
+		return kindDef.Worker.GeneratePawns(parms, this, errorOnZeroResults);
+	}
 
-		public List<RaidStrategyDef> disallowedStrategies;
+	public IEnumerable<PawnKindDef> GeneratePawnKindsExample(PawnGroupMakerParms parms)
+	{
+		return kindDef.Worker.GeneratePawnKindsExample(parms, this);
+	}
 
-		public float maxTotalPoints = 9999999f;
-
-		public List<PawnGenOption> options = new List<PawnGenOption>();
-
-		public List<PawnGenOption> traders = new List<PawnGenOption>();
-
-		public List<PawnGenOption> carriers = new List<PawnGenOption>();
-
-		public List<PawnGenOption> guards = new List<PawnGenOption>();
-
-		public float MinPointsToGenerateAnything(FactionDef faction, PawnGroupMakerParms parms = null)
+	public bool CanGenerateFrom(PawnGroupMakerParms parms)
+	{
+		if (parms.points > maxTotalPoints)
 		{
-			return kindDef.Worker.MinPointsToGenerateAnything(this, faction, parms);
+			return false;
 		}
-
-		public IEnumerable<Pawn> GeneratePawns(PawnGroupMakerParms parms, bool errorOnZeroResults = true)
+		if (disallowedStrategies != null && disallowedStrategies.Contains(parms.raidStrategy))
 		{
-			return kindDef.Worker.GeneratePawns(parms, this, errorOnZeroResults);
+			return false;
 		}
-
-		public IEnumerable<PawnKindDef> GeneratePawnKindsExample(PawnGroupMakerParms parms)
+		if (parms.points < MinPointsToGenerateAnything(parms.faction.def, parms))
 		{
-			return kindDef.Worker.GeneratePawnKindsExample(parms, this);
+			return false;
 		}
-
-		public bool CanGenerateFrom(PawnGroupMakerParms parms)
+		if (parms.raidStrategy != null && parms.raidStrategy.Worker is RaidStrategyWorker_WithRequiredPawnKinds raidStrategyWorker_WithRequiredPawnKinds && !raidStrategyWorker_WithRequiredPawnKinds.CanUseWithGroupMaker(this))
 		{
-			if (parms.points > maxTotalPoints)
-			{
-				return false;
-			}
-			if (disallowedStrategies != null && disallowedStrategies.Contains(parms.raidStrategy))
-			{
-				return false;
-			}
-			if (parms.points < MinPointsToGenerateAnything(parms.faction.def, parms))
-			{
-				return false;
-			}
-			if (parms.raidStrategy != null && parms.raidStrategy.Worker is RaidStrategyWorker_WithRequiredPawnKinds raidStrategyWorker_WithRequiredPawnKinds && !raidStrategyWorker_WithRequiredPawnKinds.CanUseWithGroupMaker(this))
-			{
-				return false;
-			}
-			return kindDef.Worker.CanGenerateFrom(parms, this);
+			return false;
 		}
+		return kindDef.Worker.CanGenerateFrom(parms, this);
 	}
 }

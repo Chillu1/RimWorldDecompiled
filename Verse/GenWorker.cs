@@ -1,33 +1,32 @@
 using System;
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public static class GenWorker<T>
 {
-	public static class GenWorker<T>
+	private static readonly Dictionary<Type, T> Workers = new Dictionary<Type, T>();
+
+	private static T Get<D>() where D : T
 	{
-		private static readonly Dictionary<Type, T> Workers = new Dictionary<Type, T>();
+		return Get(typeof(D));
+	}
 
-		private static T Get<D>() where D : T
+	public static T Get(Type type)
+	{
+		if (!Workers.TryGetValue(type, out var value))
 		{
-			return Get(typeof(D));
+			value = (Workers[type] = (T)Activator.CreateInstance(type));
 		}
+		return value;
+	}
 
-		public static T Get(Type type)
+	public static T Get(Type type, params object[] args)
+	{
+		if (!Workers.TryGetValue(type, out var value))
 		{
-			if (!Workers.TryGetValue(type, out var value))
-			{
-				value = (Workers[type] = (T)Activator.CreateInstance(type));
-			}
-			return value;
+			value = (Workers[type] = (T)Activator.CreateInstance(type, args));
 		}
-
-		public static T Get(Type type, params object[] args)
-		{
-			if (!Workers.TryGetValue(type, out var value))
-			{
-				value = (Workers[type] = (T)Activator.CreateInstance(type, args));
-			}
-			return value;
-		}
+		return value;
 	}
 }

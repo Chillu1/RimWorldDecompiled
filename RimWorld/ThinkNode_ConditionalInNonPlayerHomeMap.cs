@@ -1,17 +1,16 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThinkNode_ConditionalInNonPlayerHomeMap : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalInNonPlayerHomeMap : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
+		if (pawn.MapHeld != null)
 		{
-			if (pawn.MapHeld != null)
-			{
-				return !pawn.MapHeld.IsPlayerHome;
-			}
-			return false;
+			return !pawn.MapHeld.IsPlayerHome;
 		}
+		return false;
 	}
 }

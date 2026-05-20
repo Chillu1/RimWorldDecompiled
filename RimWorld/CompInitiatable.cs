@@ -1,54 +1,53 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompInitiatable : ThingComp
 {
-	public class CompInitiatable : ThingComp
+	public int initiationDelayTicksOverride;
+
+	public bool Initiated
 	{
-		public int initiationDelayTicksOverride;
-
-		public bool Initiated
+		get
 		{
-			get
+			if (Delay > 0)
 			{
-				if (Delay > 0)
+				if (parent.spawnedTick >= 0)
 				{
-					if (parent.spawnedTick >= 0)
-					{
-						return Find.TickManager.TicksGame >= parent.spawnedTick + Delay;
-					}
-					return false;
+					return Find.TickManager.TicksGame >= parent.spawnedTick + Delay;
 				}
-				return true;
+				return false;
 			}
+			return true;
 		}
+	}
 
-		private int Delay
+	private int Delay
+	{
+		get
 		{
-			get
+			if (initiationDelayTicksOverride <= 0)
 			{
-				if (initiationDelayTicksOverride <= 0)
-				{
-					return Props.initiationDelayTicks;
-				}
-				return initiationDelayTicksOverride;
+				return Props.initiationDelayTicks;
 			}
+			return initiationDelayTicksOverride;
 		}
+	}
 
-		private CompProperties_Initiatable Props => (CompProperties_Initiatable)props;
+	private CompProperties_Initiatable Props => (CompProperties_Initiatable)props;
 
-		public override string CompInspectStringExtra()
+	public override string CompInspectStringExtra()
+	{
+		if (!Initiated)
 		{
-			if (!Initiated)
-			{
-				return "InitiatesIn".Translate() + ": " + (parent.spawnedTick + Delay - Find.TickManager.TicksGame).ToStringTicksToPeriod();
-			}
-			return base.CompInspectStringExtra();
+			return "InitiatesIn".Translate() + ": " + (parent.spawnedTick + Delay - Find.TickManager.TicksGame).ToStringTicksToPeriod();
 		}
+		return base.CompInspectStringExtra();
+	}
 
-		public override void PostExposeData()
-		{
-			base.PostExposeData();
-			Scribe_Values.Look(ref initiationDelayTicksOverride, "initiationDelayTicksOverride", 0);
-		}
+	public override void PostExposeData()
+	{
+		base.PostExposeData();
+		Scribe_Values.Look(ref initiationDelayTicksOverride, "initiationDelayTicksOverride", 0);
 	}
 }

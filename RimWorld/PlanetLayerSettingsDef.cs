@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class PlanetLayerSettingsDef : Def
 {
-	public class PlanetLayerSettingsDef : Def
-	{
-		public PlanetLayerSettings settings;
-	}
+	public PlanetLayerSettings settings;
 }

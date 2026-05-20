@@ -1,24 +1,23 @@
 using System;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class LandingOutcomeDef : Def
 {
-	public class LandingOutcomeDef : Def
-	{
-		public float weight;
+	public float weight;
 
-		[MustTranslate]
-		public string letterLabel;
+	[MustTranslate]
+	public string letterLabel;
 
-		[MustTranslate]
-		public string letterText;
+	[MustTranslate]
+	public string letterText;
 
-		public LetterDef letterDef;
+	public LetterDef letterDef;
 
-		public Type workerClass;
+	public Type workerClass;
 
-		private LandingOutcomeWorker worker;
+	private LandingOutcomeWorker worker;
 
-		public LandingOutcomeWorker Worker => worker ?? (worker = (LandingOutcomeWorker)Activator.CreateInstance(workerClass, this));
-	}
+	public LandingOutcomeWorker Worker => worker ?? (worker = (LandingOutcomeWorker)Activator.CreateInstance(workerClass, this));
 }

@@ -1,100 +1,99 @@
 using RimWorld;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class ModDependency : ModRequirement
 {
-	public class ModDependency : ModRequirement
+	public string downloadUrl;
+
+	public string steamWorkshopUrl;
+
+	public override string RequirementTypeLabel => "ModDependsOn".Translate("");
+
+	public override bool IsSatisfied
 	{
-		public string downloadUrl;
-
-		public string steamWorkshopUrl;
-
-		public override string RequirementTypeLabel => "ModDependsOn".Translate("");
-
-		public override bool IsSatisfied
+		get
 		{
-			get
+			if (ModLister.GetActiveModWithIdentifier(packageId, ignorePostfix: true) == null)
 			{
-				if (ModLister.GetActiveModWithIdentifier(packageId, ignorePostfix: true) == null)
-				{
-					return alternativePackageIds?.Any((string id) => ModLister.GetActiveModWithIdentifier(id, ignorePostfix: true) != null) ?? false;
-				}
-				return true;
+				return alternativePackageIds?.Any((string id) => ModLister.GetActiveModWithIdentifier(id, ignorePostfix: true) != null) ?? false;
 			}
+			return true;
 		}
+	}
 
-		private ModMetaData Mod
+	private ModMetaData Mod
+	{
+		get
 		{
-			get
+			ModMetaData modWithIdentifier = ModLister.GetModWithIdentifier(packageId, ignorePostfix: true);
+			if (modWithIdentifier != null)
 			{
-				ModMetaData modWithIdentifier = ModLister.GetModWithIdentifier(packageId, ignorePostfix: true);
+				return modWithIdentifier;
+			}
+			if (alternativePackageIds.NullOrEmpty())
+			{
+				return null;
+			}
+			foreach (string alternativePackageId in alternativePackageIds)
+			{
+				modWithIdentifier = ModLister.GetModWithIdentifier(alternativePackageId, ignorePostfix: true);
 				if (modWithIdentifier != null)
 				{
 					return modWithIdentifier;
 				}
-				if (alternativePackageIds.NullOrEmpty())
-				{
-					return null;
-				}
-				foreach (string alternativePackageId in alternativePackageIds)
-				{
-					modWithIdentifier = ModLister.GetModWithIdentifier(alternativePackageId, ignorePostfix: true);
-					if (modWithIdentifier != null)
-					{
-						return modWithIdentifier;
-					}
-				}
-				return null;
 			}
+			return null;
 		}
+	}
 
-		public override Texture2D StatusIcon
-		{
-			get
-			{
-				if (Mod == null)
-				{
-					return ModRequirement.NotInstalled;
-				}
-				if (!Mod.Active)
-				{
-					return ModRequirement.Installed;
-				}
-				return ModRequirement.Resolved;
-			}
-		}
-
-		public override string Tooltip
-		{
-			get
-			{
-				if (Mod == null)
-				{
-					return base.Tooltip + "\n" + "ContentNotInstalled".Translate() + "\n\n" + "ModClickToGoToWebsite".Translate();
-				}
-				if (!Mod.Active)
-				{
-					return base.Tooltip + "\n" + "ContentInstalledButNotActive".Translate() + "\n\n" + "ModClickToSelect".Translate();
-				}
-				return base.Tooltip;
-			}
-		}
-
-		public string Url => steamWorkshopUrl ?? downloadUrl;
-
-		public override void OnClicked(Page_ModsConfig window)
+	public override Texture2D StatusIcon
+	{
+		get
 		{
 			if (Mod == null)
 			{
-				if (!Url.NullOrEmpty())
-				{
-					SteamUtility.OpenUrl(Url);
-				}
+				return ModRequirement.NotInstalled;
 			}
-			else if (!Mod.Active)
+			if (!Mod.Active)
 			{
-				window.SelectMod(Mod);
+				return ModRequirement.Installed;
 			}
+			return ModRequirement.Resolved;
+		}
+	}
+
+	public override string Tooltip
+	{
+		get
+		{
+			if (Mod == null)
+			{
+				return base.Tooltip + "\n" + "ContentNotInstalled".Translate() + "\n\n" + "ModClickToGoToWebsite".Translate();
+			}
+			if (!Mod.Active)
+			{
+				return base.Tooltip + "\n" + "ContentInstalledButNotActive".Translate() + "\n\n" + "ModClickToSelect".Translate();
+			}
+			return base.Tooltip;
+		}
+	}
+
+	public string Url => steamWorkshopUrl ?? downloadUrl;
+
+	public override void OnClicked(Page_ModsConfig window)
+	{
+		if (Mod == null)
+		{
+			if (!Url.NullOrEmpty())
+			{
+				SteamUtility.OpenUrl(Url);
+			}
+		}
+		else if (!Mod.Active)
+		{
+			window.SelectMod(Mod);
 		}
 	}
 }

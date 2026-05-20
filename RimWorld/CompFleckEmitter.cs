@@ -1,54 +1,53 @@
 using Verse;
 using Verse.Sound;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompFleckEmitter : ThingComp
 {
-	public class CompFleckEmitter : ThingComp
+	public int ticksSinceLastEmitted;
+
+	private CompProperties_FleckEmitter Props => (CompProperties_FleckEmitter)props;
+
+	public override void CompTick()
 	{
-		public int ticksSinceLastEmitted;
-
-		private CompProperties_FleckEmitter Props => (CompProperties_FleckEmitter)props;
-
-		public override void CompTick()
+		CompPowerTrader comp = parent.GetComp<CompPowerTrader>();
+		if (comp != null && !comp.PowerOn)
 		{
-			CompPowerTrader comp = parent.GetComp<CompPowerTrader>();
-			if (comp != null && !comp.PowerOn)
+			return;
+		}
+		CompSendSignalOnCountdown comp2 = parent.GetComp<CompSendSignalOnCountdown>();
+		if (comp2 != null && comp2.ticksLeft <= 0)
+		{
+			return;
+		}
+		CompInitiatable comp3 = parent.GetComp<CompInitiatable>();
+		if ((comp3 == null || comp3.Initiated) && Props.emissionInterval != -1)
+		{
+			if (ticksSinceLastEmitted >= Props.emissionInterval)
 			{
-				return;
+				Emit();
+				ticksSinceLastEmitted = 0;
 			}
-			CompSendSignalOnCountdown comp2 = parent.GetComp<CompSendSignalOnCountdown>();
-			if (comp2 != null && comp2.ticksLeft <= 0)
+			else
 			{
-				return;
-			}
-			CompInitiatable comp3 = parent.GetComp<CompInitiatable>();
-			if ((comp3 == null || comp3.Initiated) && Props.emissionInterval != -1)
-			{
-				if (ticksSinceLastEmitted >= Props.emissionInterval)
-				{
-					Emit();
-					ticksSinceLastEmitted = 0;
-				}
-				else
-				{
-					ticksSinceLastEmitted++;
-				}
+				ticksSinceLastEmitted++;
 			}
 		}
+	}
 
-		protected void Emit()
+	protected void Emit()
+	{
+		FleckMaker.Static(parent.DrawPos + Props.offset, parent.MapHeld, Props.fleck);
+		if (!Props.soundOnEmission.NullOrUndefined())
 		{
-			FleckMaker.Static(parent.DrawPos + Props.offset, parent.MapHeld, Props.fleck);
-			if (!Props.soundOnEmission.NullOrUndefined())
-			{
-				Props.soundOnEmission.PlayOneShot(SoundInfo.InMap(parent));
-			}
+			Props.soundOnEmission.PlayOneShot(SoundInfo.InMap(parent));
 		}
+	}
 
-		public override void PostExposeData()
-		{
-			base.PostExposeData();
-			Scribe_Values.Look(ref ticksSinceLastEmitted, ((Props.saveKeysPrefix != null) ? (Props.saveKeysPrefix + "_") : "") + "ticksSinceLastEmitted", 0);
-		}
+	public override void PostExposeData()
+	{
+		base.PostExposeData();
+		Scribe_Values.Look(ref ticksSinceLastEmitted, ((Props.saveKeysPrefix != null) ? (Props.saveKeysPrefix + "_") : "") + "ticksSinceLastEmitted", 0);
 	}
 }

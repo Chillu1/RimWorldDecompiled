@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RecordWorker_TimeHauling : RecordWorker
 {
-	public class RecordWorker_TimeHauling : RecordWorker
+	public override bool ShouldMeasureTimeNow(Pawn pawn)
 	{
-		public override bool ShouldMeasureTimeNow(Pawn pawn)
+		if (!pawn.Dead)
 		{
-			if (!pawn.Dead)
-			{
-				return pawn.carryTracker.CarriedThing != null;
-			}
-			return false;
+			return pawn.carryTracker.CarriedThing != null;
 		}
+		return false;
 	}
 }

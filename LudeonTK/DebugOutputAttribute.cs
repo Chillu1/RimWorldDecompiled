@@ -1,29 +1,28 @@
 using System;
 
-namespace LudeonTK
+namespace LudeonTK;
+
+[AttributeUsage(AttributeTargets.Method)]
+public class DebugOutputAttribute : Attribute
 {
-	[AttributeUsage(AttributeTargets.Method)]
-	public class DebugOutputAttribute : Attribute
+	public string name;
+
+	public string category = "General";
+
+	public bool onlyWhenPlaying;
+
+	public DebugOutputAttribute()
 	{
-		public string name;
+	}
 
-		public string category = "General";
+	public DebugOutputAttribute(bool onlyWhenPlaying)
+	{
+		this.onlyWhenPlaying = onlyWhenPlaying;
+	}
 
-		public bool onlyWhenPlaying;
-
-		public DebugOutputAttribute()
-		{
-		}
-
-		public DebugOutputAttribute(bool onlyWhenPlaying)
-		{
-			this.onlyWhenPlaying = onlyWhenPlaying;
-		}
-
-		public DebugOutputAttribute(string category, bool onlyWhenPlaying = false)
-			: this(onlyWhenPlaying)
-		{
-			this.category = category;
-		}
+	public DebugOutputAttribute(string category, bool onlyWhenPlaying = false)
+		: this(onlyWhenPlaying)
+	{
+		this.category = category;
 	}
 }

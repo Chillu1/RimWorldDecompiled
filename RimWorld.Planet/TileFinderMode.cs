@@ -1,9 +1,8 @@
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public enum TileFinderMode
 {
-	public enum TileFinderMode
-	{
-		Random,
-		Near,
-		Furthest
-	}
+	Random,
+	Near,
+	Furthest
 }

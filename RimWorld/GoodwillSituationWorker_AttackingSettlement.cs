@@ -1,28 +1,27 @@
 using RimWorld.Planet;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class GoodwillSituationWorker_AttackingSettlement : GoodwillSituationWorker
 {
-	public class GoodwillSituationWorker_AttackingSettlement : GoodwillSituationWorker
+	private const int MaxGoodwill = -80;
+
+	public override int GetMaxGoodwill(Faction other)
 	{
-		private const int MaxGoodwill = -80;
-
-		public override int GetMaxGoodwill(Faction other)
+		if (!IsAttackingSettlement(other))
 		{
-			if (!IsAttackingSettlement(other))
-			{
-				return 100;
-			}
-			return -80;
+			return 100;
 		}
+		return -80;
+	}
 
-		private bool IsAttackingSettlement(Faction other)
+	private bool IsAttackingSettlement(Faction other)
+	{
+		if (Current.ProgramState == ProgramState.Entry)
 		{
-			if (Current.ProgramState == ProgramState.Entry)
-			{
-				return false;
-			}
-			return SettlementUtility.IsPlayerAttackingAnySettlementOf(other);
+			return false;
 		}
+		return SettlementUtility.IsPlayerAttackingAnySettlementOf(other);
 	}
 }

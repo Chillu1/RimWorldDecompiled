@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_PlantHarvest_Designated : JobDriver_PlantHarvest
 {
-	public class JobDriver_PlantHarvest_Designated : JobDriver_PlantHarvest
-	{
-		protected override DesignationDef RequiredDesignation => DesignationDefOf.HarvestPlant;
-	}
+	protected override DesignationDef RequiredDesignation => DesignationDefOf.HarvestPlant;
 }

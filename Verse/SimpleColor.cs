@@ -1,14 +1,13 @@
-namespace Verse
+namespace Verse;
+
+public enum SimpleColor
 {
-	public enum SimpleColor
-	{
-		White,
-		Red,
-		Green,
-		Blue,
-		Magenta,
-		Yellow,
-		Cyan,
-		Orange
-	}
+	White,
+	Red,
+	Green,
+	Blue,
+	Magenta,
+	Yellow,
+	Cyan,
+	Orange
 }

@@ -1,13 +1,12 @@
-namespace Verse
+namespace Verse;
+
+public class ThingStyleChance
 {
-	public class ThingStyleChance
-	{
-		private ThingStyleDef styleDef;
+	private ThingStyleDef styleDef;
 
-		private float chance = 1f;
+	private float chance = 1f;
 
-		public ThingStyleDef StyleDef => styleDef;
+	public ThingStyleDef StyleDef => styleDef;
 
-		public float Chance => chance;
-	}
+	public float Chance => chance;
 }

@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_AnimalPenMarker : CompProperties
 {
-	public class CompProperties_AnimalPenMarker : CompProperties
+	public CompProperties_AnimalPenMarker()
 	{
-		public CompProperties_AnimalPenMarker()
-		{
-			compClass = typeof(CompAnimalPenMarker);
-		}
+		compClass = typeof(CompAnimalPenMarker);
 	}
 }

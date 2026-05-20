@@ -1,27 +1,26 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class InteractionWorker_DeepTalk : InteractionWorker
 {
-	public class InteractionWorker_DeepTalk : InteractionWorker
+	private const float BaseSelectionWeight = 0.075f;
+
+	private static readonly SimpleCurve CompatibilityFactorCurve = new SimpleCurve
 	{
-		private const float BaseSelectionWeight = 0.075f;
+		new CurvePoint(-1.5f, 0f),
+		new CurvePoint(-0.5f, 0.1f),
+		new CurvePoint(0.5f, 1f),
+		new CurvePoint(1f, 1.8f),
+		new CurvePoint(2f, 3f)
+	};
 
-		private static readonly SimpleCurve CompatibilityFactorCurve = new SimpleCurve
+	public override float RandomSelectionWeight(Pawn initiator, Pawn recipient)
+	{
+		if (initiator.Inhumanized())
 		{
-			new CurvePoint(-1.5f, 0f),
-			new CurvePoint(-0.5f, 0.1f),
-			new CurvePoint(0.5f, 1f),
-			new CurvePoint(1f, 1.8f),
-			new CurvePoint(2f, 3f)
-		};
-
-		public override float RandomSelectionWeight(Pawn initiator, Pawn recipient)
-		{
-			if (initiator.Inhumanized())
-			{
-				return 0f;
-			}
-			return 0.075f * CompatibilityFactorCurve.Evaluate(initiator.relations.CompatibilityWith(recipient));
+			return 0f;
 		}
+		return 0.075f * CompatibilityFactorCurve.Evaluate(initiator.relations.CompatibilityWith(recipient));
 	}
 }

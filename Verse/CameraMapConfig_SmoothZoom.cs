@@ -1,11 +1,10 @@
-namespace Verse
+namespace Verse;
+
+public class CameraMapConfig_SmoothZoom : CameraMapConfig
 {
-	public class CameraMapConfig_SmoothZoom : CameraMapConfig
+	public CameraMapConfig_SmoothZoom()
 	{
-		public CameraMapConfig_SmoothZoom()
-		{
-			smoothZoom = true;
-			sizeRange.min = 8.2f;
-		}
+		smoothZoom = true;
+		sizeRange.min = 8.2f;
 	}
 }

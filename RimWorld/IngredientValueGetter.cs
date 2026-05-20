@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class IngredientValueGetter
 {
-	public abstract class IngredientValueGetter
+	public abstract float ValuePerUnitOf(ThingDef t);
+
+	public abstract string BillRequirementsDescription(RecipeDef r, IngredientCount ing);
+
+	public virtual string ExtraDescriptionLine(RecipeDef r)
 	{
-		public abstract float ValuePerUnitOf(ThingDef t);
-
-		public abstract string BillRequirementsDescription(RecipeDef r, IngredientCount ing);
-
-		public virtual string ExtraDescriptionLine(RecipeDef r)
-		{
-			return null;
-		}
+		return null;
 	}
 }

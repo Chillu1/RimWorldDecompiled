@@ -1,98 +1,97 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Hediff_Addiction : HediffWithComps
 {
-	public class Hediff_Addiction : HediffWithComps
+	private const int DefaultStageIndex = 0;
+
+	private const int WithdrawalStageIndex = 1;
+
+	public Need_Chemical Need
 	{
-		private const int DefaultStageIndex = 0;
-
-		private const int WithdrawalStageIndex = 1;
-
-		public Need_Chemical Need
+		get
 		{
-			get
+			if (pawn.Dead)
 			{
-				if (pawn.Dead)
-				{
-					return null;
-				}
-				if (pawn.needs.TryGetNeed(def.chemicalNeed, out var need))
-				{
-					return (Need_Chemical)need;
-				}
 				return null;
 			}
-		}
-
-		public ChemicalDef Chemical
-		{
-			get
+			if (pawn.needs.TryGetNeed(def.chemicalNeed, out var need))
 			{
-				List<ChemicalDef> allDefsListForReading = DefDatabase<ChemicalDef>.AllDefsListForReading;
-				for (int i = 0; i < allDefsListForReading.Count; i++)
-				{
-					if (allDefsListForReading[i].addictionHediff == def)
-					{
-						return allDefsListForReading[i];
-					}
-				}
-				return null;
+				return (Need_Chemical)need;
 			}
+			return null;
 		}
+	}
 
-		public override string LabelInBrackets
+	public ChemicalDef Chemical
+	{
+		get
 		{
-			get
+			List<ChemicalDef> allDefsListForReading = DefDatabase<ChemicalDef>.AllDefsListForReading;
+			for (int i = 0; i < allDefsListForReading.Count; i++)
 			{
-				string labelInBrackets = base.LabelInBrackets;
-				string text = (1f - Severity).ToStringPercent("F0");
-				if (def.CompProps<HediffCompProperties_SeverityPerDay>() != null)
+				if (allDefsListForReading[i].addictionHediff == def)
 				{
-					if (!labelInBrackets.NullOrEmpty())
-					{
-						return labelInBrackets + " " + text;
-					}
-					return text;
+					return allDefsListForReading[i];
 				}
-				return labelInBrackets;
 			}
+			return null;
 		}
+	}
 
-		public override string TipStringExtra
+	public override string LabelInBrackets
+	{
+		get
 		{
-			get
+			string labelInBrackets = base.LabelInBrackets;
+			string text = (1f - Severity).ToStringPercent("F0");
+			if (def.CompProps<HediffCompProperties_SeverityPerDay>() != null)
 			{
-				string text = base.TipStringExtra;
-				Need_Chemical need = Need;
-				if (need != null)
+				if (!labelInBrackets.NullOrEmpty())
 				{
-					if (!text.NullOrEmpty())
-					{
-						text += "\n";
-					}
-					text += "CreatesNeed".Translate() + ": " + need.LabelCap + " (" + need.CurLevelPercentage.ToStringPercent("F0") + ")";
+					return labelInBrackets + " " + text;
 				}
 				return text;
 			}
+			return labelInBrackets;
 		}
+	}
 
-		public override int CurStageIndex
+	public override string TipStringExtra
+	{
+		get
 		{
-			get
+			string text = base.TipStringExtra;
+			Need_Chemical need = Need;
+			if (need != null)
 			{
-				Need_Chemical need = Need;
-				if (need == null || need.CurCategory != DrugDesireCategory.Withdrawal)
+				if (!text.NullOrEmpty())
 				{
-					return 0;
+					text += "\n";
 				}
-				return 1;
+				text += "CreatesNeed".Translate() + ": " + need.LabelCap + " (" + need.CurLevelPercentage.ToStringPercent("F0") + ")";
 			}
+			return text;
 		}
+	}
 
-		public void Notify_NeedCategoryChanged()
+	public override int CurStageIndex
+	{
+		get
 		{
-			pawn.health.Notify_HediffChanged(this);
+			Need_Chemical need = Need;
+			if (need == null || need.CurCategory != DrugDesireCategory.Withdrawal)
+			{
+				return 0;
+			}
+			return 1;
 		}
+	}
+
+	public void Notify_NeedCategoryChanged()
+	{
+		pawn.health.Notify_HediffChanged(this);
 	}
 }

@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum AnimalType
 {
-	public enum AnimalType
-	{
-		None,
-		Canine,
-		Dryad
-	}
+	None,
+	Canine,
+	Dryad
 }

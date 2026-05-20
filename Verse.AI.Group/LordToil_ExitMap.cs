@@ -1,39 +1,38 @@
 using RimWorld;
 
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public class LordToil_ExitMap : LordToil
 {
-	public class LordToil_ExitMap : LordToil
+	public override bool AllowSatisfyLongNeeds => false;
+
+	public override bool AllowSelfTend => false;
+
+	public virtual DutyDef ExitDuty => DutyDefOf.ExitMapBest;
+
+	protected LordToilData_ExitMap Data => (LordToilData_ExitMap)data;
+
+	public LordToil_ExitMap(LocomotionUrgency locomotion = LocomotionUrgency.None, bool canDig = false, bool interruptCurrentJob = false)
 	{
-		public override bool AllowSatisfyLongNeeds => false;
+		data = new LordToilData_ExitMap();
+		Data.locomotion = locomotion;
+		Data.canDig = canDig;
+		Data.interruptCurrentJob = interruptCurrentJob;
+	}
 
-		public override bool AllowSelfTend => false;
-
-		public virtual DutyDef ExitDuty => DutyDefOf.ExitMapBest;
-
-		protected LordToilData_ExitMap Data => (LordToilData_ExitMap)data;
-
-		public LordToil_ExitMap(LocomotionUrgency locomotion = LocomotionUrgency.None, bool canDig = false, bool interruptCurrentJob = false)
+	public override void UpdateAllDuties()
+	{
+		LordToilData_ExitMap lordToilData_ExitMap = Data;
+		for (int i = 0; i < lord.ownedPawns.Count; i++)
 		{
-			data = new LordToilData_ExitMap();
-			Data.locomotion = locomotion;
-			Data.canDig = canDig;
-			Data.interruptCurrentJob = interruptCurrentJob;
-		}
-
-		public override void UpdateAllDuties()
-		{
-			LordToilData_ExitMap lordToilData_ExitMap = Data;
-			for (int i = 0; i < lord.ownedPawns.Count; i++)
+			PawnDuty pawnDuty = new PawnDuty(ExitDuty);
+			pawnDuty.locomotion = lordToilData_ExitMap.locomotion;
+			pawnDuty.canDig = lordToilData_ExitMap.canDig;
+			Pawn pawn = lord.ownedPawns[i];
+			pawn.mindState.duty = pawnDuty;
+			if (Data.interruptCurrentJob && pawn.jobs.curJob != null)
 			{
-				PawnDuty pawnDuty = new PawnDuty(ExitDuty);
-				pawnDuty.locomotion = lordToilData_ExitMap.locomotion;
-				pawnDuty.canDig = lordToilData_ExitMap.canDig;
-				Pawn pawn = lord.ownedPawns[i];
-				pawn.mindState.duty = pawnDuty;
-				if (Data.interruptCurrentJob && pawn.jobs.curJob != null)
-				{
-					pawn.jobs.EndCurrentJob(JobCondition.InterruptForced);
-				}
+				pawn.jobs.EndCurrentJob(JobCondition.InterruptForced);
 			}
 		}
 	}

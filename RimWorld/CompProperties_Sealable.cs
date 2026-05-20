@@ -1,48 +1,47 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_Sealable : CompProperties
 {
-	public class CompProperties_Sealable : CompProperties
+	[NoTranslate]
+	public string sealTexPath;
+
+	[MustTranslate]
+	public string sealCommandLabel;
+
+	[MustTranslate]
+	public string sealCommandDesc;
+
+	[MustTranslate]
+	public string cannotSealLabel;
+
+	[MustTranslate]
+	public string confirmSealText;
+
+	[MustTranslate]
+	public string sealedInspectString;
+
+	[MustTranslate]
+	public string cannotEnterLabel;
+
+	public bool destroyPortal;
+
+	public CompProperties_Sealable()
 	{
-		[NoTranslate]
-		public string sealTexPath;
+		compClass = typeof(CompSealable);
+	}
 
-		[MustTranslate]
-		public string sealCommandLabel;
-
-		[MustTranslate]
-		public string sealCommandDesc;
-
-		[MustTranslate]
-		public string cannotSealLabel;
-
-		[MustTranslate]
-		public string confirmSealText;
-
-		[MustTranslate]
-		public string sealedInspectString;
-
-		[MustTranslate]
-		public string cannotEnterLabel;
-
-		public bool destroyPortal;
-
-		public CompProperties_Sealable()
+	public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+	{
+		foreach (string item in base.ConfigErrors(parentDef))
 		{
-			compClass = typeof(CompSealable);
+			yield return item;
 		}
-
-		public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+		if (!typeof(MapPortal).IsAssignableFrom(parentDef.thingClass))
 		{
-			foreach (string item in base.ConfigErrors(parentDef))
-			{
-				yield return item;
-			}
-			if (!typeof(MapPortal).IsAssignableFrom(parentDef.thingClass))
-			{
-				yield return "has CompSealable, but its ThingClass is not MapPortal";
-			}
+			yield return "has CompSealable, but its ThingClass is not MapPortal";
 		}
 	}
 }

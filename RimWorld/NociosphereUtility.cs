@@ -4,80 +4,79 @@ using UnityEngine;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class NociosphereUtility
 {
-	public static class NociosphereUtility
+	public const float NociosphereLOS = 24.9f;
+
+	public static readonly int NociosphereLOSSqr = Mathf.FloorToInt(620.01f);
+
+	private static readonly List<Thing> targetsTmp = new List<Thing>();
+
+	public static Thing FindTarget(Pawn pawn)
 	{
-		public const float NociosphereLOS = 24.9f;
-
-		public static readonly int NociosphereLOSSqr = Mathf.FloorToInt(620.01f);
-
-		private static readonly List<Thing> targetsTmp = new List<Thing>();
-
-		public static Thing FindTarget(Pawn pawn)
+		List<Thing> source = pawn.Map.listerThings.ThingsInGroup(ThingRequestGroup.Pawn);
+		CheckForTargets(pawn, source, targetsTmp, IsPawnTarget);
+		if (targetsTmp.Empty())
 		{
-			List<Thing> source = pawn.Map.listerThings.ThingsInGroup(ThingRequestGroup.Pawn);
-			CheckForTargets(pawn, source, targetsTmp, IsPawnTarget);
-			if (targetsTmp.Empty())
-			{
-				List<Thing> source2 = pawn.Map.listerThings.ThingsInGroup(ThingRequestGroup.BuildingArtificial);
-				CheckForTargets(pawn, source2, targetsTmp, IsBuildingTarget);
-			}
-			Thing result = null;
-			if (targetsTmp.Any())
-			{
-				result = targetsTmp.RandomElement();
-			}
-			targetsTmp.Clear();
-			return result;
+			List<Thing> source2 = pawn.Map.listerThings.ThingsInGroup(ThingRequestGroup.BuildingArtificial);
+			CheckForTargets(pawn, source2, targetsTmp, IsBuildingTarget);
 		}
-
-		public static void SkipTo(Pawn pawn, IntVec3 cell)
+		Thing result = null;
+		if (targetsTmp.Any())
 		{
-			Ability ability = pawn.abilities.GetAbility(AbilityDefOf.EntitySkip);
-			ability.ResetCooldown();
-			if (pawn.IsOnHoldingPlatform)
-			{
-				Building_HoldingPlatform building_HoldingPlatform = (Building_HoldingPlatform)pawn.ParentHolder;
-				building_HoldingPlatform.innerContainer.TryDrop(pawn, building_HoldingPlatform.Position, building_HoldingPlatform.Map, ThingPlaceMode.Direct, 1, out var _);
-				CompHoldingPlatformTarget compHoldingPlatformTarget = pawn.TryGetComp<CompHoldingPlatformTarget>();
-				if (compHoldingPlatformTarget != null)
-				{
-					compHoldingPlatformTarget.targetHolder = null;
-				}
-			}
-			Job job = ability.GetJob(pawn, cell);
-			pawn.jobs.StartJob(job, JobCondition.InterruptForced);
+			result = targetsTmp.RandomElement();
 		}
+		targetsTmp.Clear();
+		return result;
+	}
 
-		private static void CheckForTargets(Pawn pawn, List<Thing> source, List<Thing> output, Func<Thing, bool> validator)
+	public static void SkipTo(Pawn pawn, IntVec3 cell)
+	{
+		Ability ability = pawn.abilities.GetAbility(AbilityDefOf.EntitySkip);
+		ability.ResetCooldown();
+		if (pawn.IsOnHoldingPlatform)
 		{
-			output.Clear();
-			for (int i = 0; i < source.Count; i++)
+			Building_HoldingPlatform building_HoldingPlatform = (Building_HoldingPlatform)pawn.ParentHolder;
+			building_HoldingPlatform.innerContainer.TryDrop(pawn, building_HoldingPlatform.Position, building_HoldingPlatform.Map, ThingPlaceMode.Direct, 1, out var _);
+			CompHoldingPlatformTarget compHoldingPlatformTarget = pawn.TryGetComp<CompHoldingPlatformTarget>();
+			if (compHoldingPlatformTarget != null)
 			{
-				if (pawn.Position.DistanceToSquared(source[i].Position) <= NociosphereLOSSqr && validator(source[i]) && GenSight.LineOfSightToThing(pawn.Position, source[i], pawn.Map, skipFirstCell: true))
-				{
-					output.Add(source[i]);
-				}
+				compHoldingPlatformTarget.targetHolder = null;
 			}
 		}
+		Job job = ability.GetJob(pawn, cell);
+		pawn.jobs.StartJob(job, JobCondition.InterruptForced);
+	}
 
-		private static bool IsPawnTarget(Thing thing)
+	private static void CheckForTargets(Pawn pawn, List<Thing> source, List<Thing> output, Func<Thing, bool> validator)
+	{
+		output.Clear();
+		for (int i = 0; i < source.Count; i++)
 		{
-			if (thing is Pawn { Downed: false } pawn)
+			if (pawn.Position.DistanceToSquared(source[i].Position) <= NociosphereLOSSqr && validator(source[i]) && GenSight.LineOfSightToThing(pawn.Position, source[i], pawn.Map, skipFirstCell: true))
 			{
-				return pawn.kindDef != PawnKindDefOf.Nociosphere;
+				output.Add(source[i]);
 			}
-			return false;
 		}
+	}
 
-		private static bool IsBuildingTarget(Thing thing)
+	private static bool IsPawnTarget(Thing thing)
+	{
+		if (thing is Pawn { Downed: false } pawn)
 		{
-			if (thing is Building building)
-			{
-				return building.def.building.IsTurret;
-			}
-			return false;
+			return pawn.kindDef != PawnKindDefOf.Nociosphere;
 		}
+		return false;
+	}
+
+	private static bool IsBuildingTarget(Thing thing)
+	{
+		if (thing is Building building)
+		{
+			return building.def.building.IsTurret;
+		}
+		return false;
 	}
 }

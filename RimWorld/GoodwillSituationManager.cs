@@ -3,141 +3,140 @@ using System.Text;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class GoodwillSituationManager
 {
-	public class GoodwillSituationManager
+	public struct CachedSituation
 	{
-		public struct CachedSituation
+		public GoodwillSituationDef def;
+
+		public int maxGoodwill;
+
+		public int naturalGoodwillOffset;
+	}
+
+	private Dictionary<Faction, List<CachedSituation>> cachedData = new Dictionary<Faction, List<CachedSituation>>();
+
+	private const int RecacheEveryTicks = 1000;
+
+	public List<CachedSituation> GetSituations(Faction other)
+	{
+		if (other == null || other.IsPlayer)
 		{
-			public GoodwillSituationDef def;
-
-			public int maxGoodwill;
-
-			public int naturalGoodwillOffset;
+			Log.Error("Called GetSituations() for faction " + other);
+			return null;
 		}
-
-		private Dictionary<Faction, List<CachedSituation>> cachedData = new Dictionary<Faction, List<CachedSituation>>();
-
-		private const int RecacheEveryTicks = 1000;
-
-		public List<CachedSituation> GetSituations(Faction other)
+		if (cachedData.TryGetValue(other, out var value))
 		{
-			if (other == null || other.IsPlayer)
-			{
-				Log.Error("Called GetSituations() for faction " + other);
-				return null;
-			}
-			if (cachedData.TryGetValue(other, out var value))
-			{
-				return value;
-			}
-			Recalculate(other, canSendHostilityChangedLetter: true);
-			return cachedData[other];
+			return value;
 		}
+		Recalculate(other, canSendHostilityChangedLetter: true);
+		return cachedData[other];
+	}
 
-		public int GetMaxGoodwill(Faction other)
+	public int GetMaxGoodwill(Faction other)
+	{
+		List<CachedSituation> situations = GetSituations(other);
+		int num = 100;
+		for (int i = 0; i < situations.Count; i++)
 		{
-			List<CachedSituation> situations = GetSituations(other);
-			int num = 100;
-			for (int i = 0; i < situations.Count; i++)
-			{
-				num = Mathf.Min(num, situations[i].maxGoodwill);
-			}
-			return num;
+			num = Mathf.Min(num, situations[i].maxGoodwill);
 		}
+		return num;
+	}
 
-		public int GetNaturalGoodwill(Faction other)
+	public int GetNaturalGoodwill(Faction other)
+	{
+		List<CachedSituation> situations = GetSituations(other);
+		int num = 0;
+		for (int i = 0; i < situations.Count; i++)
 		{
-			List<CachedSituation> situations = GetSituations(other);
-			int num = 0;
-			for (int i = 0; i < situations.Count; i++)
-			{
-				num += situations[i].naturalGoodwillOffset;
-			}
-			return num;
+			num += situations[i].naturalGoodwillOffset;
 		}
+		return num;
+	}
 
-		public string GetExplanation(Faction other)
+	public string GetExplanation(Faction other)
+	{
+		if (other == null || other == Faction.OfPlayer)
 		{
-			if (other == null || other == Faction.OfPlayer)
-			{
-				Log.Error("Tried to get CachedGoodwillData explanation for faction " + other);
-				return null;
-			}
-			StringBuilder stringBuilder = new StringBuilder();
-			List<CachedSituation> situations = GetSituations(other);
-			for (int i = 0; i < situations.Count; i++)
-			{
-				stringBuilder.AppendInNewLine(situations[i].def.LabelCap);
-			}
-			return stringBuilder.ToString();
+			Log.Error("Tried to get CachedGoodwillData explanation for faction " + other);
+			return null;
 		}
-
-		public void GoodwillManagerTick()
+		StringBuilder stringBuilder = new StringBuilder();
+		List<CachedSituation> situations = GetSituations(other);
+		for (int i = 0; i < situations.Count; i++)
 		{
-			if (Find.TickManager.TicksGame % 1000 == 0)
+			stringBuilder.AppendInNewLine(situations[i].def.LabelCap);
+		}
+		return stringBuilder.ToString();
+	}
+
+	public void GoodwillManagerTick()
+	{
+		if (Find.TickManager.TicksGame % 1000 == 0)
+		{
+			RecalculateAll(canSendHostilityChangedLetter: true);
+		}
+	}
+
+	public void RecalculateAll(bool canSendHostilityChangedLetter)
+	{
+		List<Faction> allFactionsListForReading = Find.FactionManager.AllFactionsListForReading;
+		for (int i = 0; i < allFactionsListForReading.Count; i++)
+		{
+			if (allFactionsListForReading[i] != Faction.OfPlayer && allFactionsListForReading[i].HasGoodwill)
 			{
-				RecalculateAll(canSendHostilityChangedLetter: true);
+				Recalculate(allFactionsListForReading[i], canSendHostilityChangedLetter);
 			}
 		}
+	}
 
-		public void RecalculateAll(bool canSendHostilityChangedLetter)
+	private void Recalculate(Faction other, bool canSendHostilityChangedLetter)
+	{
+		if (cachedData.TryGetValue(other, out var value))
 		{
-			List<Faction> allFactionsListForReading = Find.FactionManager.AllFactionsListForReading;
-			for (int i = 0; i < allFactionsListForReading.Count; i++)
+			Recalculate(other, value);
+		}
+		else
+		{
+			List<CachedSituation> list = new List<CachedSituation>();
+			Recalculate(other, list);
+			cachedData.Add(other, list);
+		}
+		CheckHostilityChanged(other, canSendHostilityChangedLetter);
+	}
+
+	private void Recalculate(Faction other, List<CachedSituation> outSituations)
+	{
+		outSituations.Clear();
+		if (!other.HasGoodwill)
+		{
+			return;
+		}
+		List<GoodwillSituationDef> allDefsListForReading = DefDatabase<GoodwillSituationDef>.AllDefsListForReading;
+		for (int i = 0; i < allDefsListForReading.Count; i++)
+		{
+			int maxGoodwill = allDefsListForReading[i].Worker.GetMaxGoodwill(other);
+			int naturalGoodwillOffset = allDefsListForReading[i].Worker.GetNaturalGoodwillOffset(other);
+			if (maxGoodwill < 100 || naturalGoodwillOffset != 0)
 			{
-				if (allFactionsListForReading[i] != Faction.OfPlayer && allFactionsListForReading[i].HasGoodwill)
+				outSituations.Add(new CachedSituation
 				{
-					Recalculate(allFactionsListForReading[i], canSendHostilityChangedLetter);
-				}
+					def = allDefsListForReading[i],
+					maxGoodwill = maxGoodwill,
+					naturalGoodwillOffset = naturalGoodwillOffset
+				});
 			}
 		}
+	}
 
-		private void Recalculate(Faction other, bool canSendHostilityChangedLetter)
+	private void CheckHostilityChanged(Faction other, bool canSendHostilityChangedLetter)
+	{
+		if (Current.ProgramState != ProgramState.Entry && other.HasGoodwill)
 		{
-			if (cachedData.TryGetValue(other, out var value))
-			{
-				Recalculate(other, value);
-			}
-			else
-			{
-				List<CachedSituation> list = new List<CachedSituation>();
-				Recalculate(other, list);
-				cachedData.Add(other, list);
-			}
-			CheckHostilityChanged(other, canSendHostilityChangedLetter);
-		}
-
-		private void Recalculate(Faction other, List<CachedSituation> outSituations)
-		{
-			outSituations.Clear();
-			if (!other.HasGoodwill)
-			{
-				return;
-			}
-			List<GoodwillSituationDef> allDefsListForReading = DefDatabase<GoodwillSituationDef>.AllDefsListForReading;
-			for (int i = 0; i < allDefsListForReading.Count; i++)
-			{
-				int maxGoodwill = allDefsListForReading[i].Worker.GetMaxGoodwill(other);
-				int naturalGoodwillOffset = allDefsListForReading[i].Worker.GetNaturalGoodwillOffset(other);
-				if (maxGoodwill < 100 || naturalGoodwillOffset != 0)
-				{
-					outSituations.Add(new CachedSituation
-					{
-						def = allDefsListForReading[i],
-						maxGoodwill = maxGoodwill,
-						naturalGoodwillOffset = naturalGoodwillOffset
-					});
-				}
-			}
-		}
-
-		private void CheckHostilityChanged(Faction other, bool canSendHostilityChangedLetter)
-		{
-			if (Current.ProgramState != ProgramState.Entry && other.HasGoodwill)
-			{
-				Faction.OfPlayer.Notify_GoodwillSituationsChanged(other, canSendHostilityChangedLetter, null, null);
-			}
+			Faction.OfPlayer.Notify_GoodwillSituationsChanged(other, canSendHostilityChangedLetter, null, null);
 		}
 	}
 }

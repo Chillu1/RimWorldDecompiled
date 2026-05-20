@@ -1,14 +1,13 @@
 using RimWorld;
 using RimWorld.Planet;
 
-namespace Verse
+namespace Verse;
+
+public struct GenStepParams
 {
-	public struct GenStepParams
-	{
-		public SitePart sitePart;
+	public SitePart sitePart;
 
-		public Gravship gravship;
+	public Gravship gravship;
 
-		public LayoutDef layout;
-	}
+	public LayoutDef layout;
 }

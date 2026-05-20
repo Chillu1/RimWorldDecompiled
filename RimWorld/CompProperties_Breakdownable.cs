@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_Breakdownable : CompProperties
 {
-	public class CompProperties_Breakdownable : CompProperties
+	public CompProperties_Breakdownable()
 	{
-		public CompProperties_Breakdownable()
-		{
-			compClass = typeof(CompBreakdownable);
-		}
+		compClass = typeof(CompBreakdownable);
 	}
 }

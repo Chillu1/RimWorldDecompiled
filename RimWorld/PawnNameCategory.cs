@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum PawnNameCategory : byte
 {
-	public enum PawnNameCategory : byte
-	{
-		NoName,
-		HumanStandard
-	}
+	NoName,
+	HumanStandard
 }

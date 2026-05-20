@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum FactionRelationKind
 {
-	public enum FactionRelationKind
-	{
-		Hostile,
-		Neutral,
-		Ally
-	}
+	Hostile,
+	Neutral,
+	Ally
 }

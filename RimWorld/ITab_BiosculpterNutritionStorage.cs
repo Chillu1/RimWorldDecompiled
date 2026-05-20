@@ -1,12 +1,11 @@
-namespace RimWorld
-{
-	public class ITab_BiosculpterNutritionStorage : ITab_Storage
-	{
-		protected override bool IsPrioritySettingVisible => false;
+namespace RimWorld;
 
-		public ITab_BiosculpterNutritionStorage()
-		{
-			labelKey = "Nutrition";
-		}
+public class ITab_BiosculpterNutritionStorage : ITab_Storage
+{
+	protected override bool IsPrioritySettingVisible => false;
+
+	public ITab_BiosculpterNutritionStorage()
+	{
+		labelKey = "Nutrition";
 	}
 }

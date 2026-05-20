@@ -1,11 +1,10 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum StyleGender : byte
 {
-	public enum StyleGender : byte
-	{
-		Male,
-		MaleUsually,
-		Any,
-		FemaleUsually,
-		Female
-	}
+	Male,
+	MaleUsually,
+	Any,
+	FemaleUsually,
+	Female
 }

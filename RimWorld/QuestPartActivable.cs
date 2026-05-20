@@ -2,267 +2,266 @@ using System.Collections.Generic;
 using RimWorld.Planet;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class QuestPartActivable : QuestPart
 {
-	public abstract class QuestPartActivable : QuestPart
+	public string inSignalEnable;
+
+	public string inSignalDisable;
+
+	public bool reactivatable;
+
+	public List<string> outSignalsCompleted = new List<string>();
+
+	public QuestEndOutcome outcomeCompletedSignalArg;
+
+	private QuestPartState state;
+
+	protected int enableTick = -1;
+
+	private Alert cachedAlert;
+
+	public QuestPartState State => state;
+
+	public int EnableTick
 	{
-		public string inSignalEnable;
-
-		public string inSignalDisable;
-
-		public bool reactivatable;
-
-		public List<string> outSignalsCompleted = new List<string>();
-
-		public QuestEndOutcome outcomeCompletedSignalArg;
-
-		private QuestPartState state;
-
-		protected int enableTick = -1;
-
-		private Alert cachedAlert;
-
-		public QuestPartState State => state;
-
-		public int EnableTick
+		get
 		{
-			get
+			if (State != QuestPartState.Enabled)
 			{
-				if (State != QuestPartState.Enabled)
+				return -1;
+			}
+			return enableTick;
+		}
+	}
+
+	public string OutSignalEnabled => "Quest" + quest.id + ".Part" + base.Index + ".Enabled";
+
+	public string OutSignalCompleted => "Quest" + quest.id + ".Part" + base.Index + ".Completed";
+
+	public virtual string ExpiryInfoPart { get; }
+
+	public virtual string ExpiryInfoPartTip { get; }
+
+	public virtual AlertReport AlertReport => AlertReport.Inactive;
+
+	public virtual string AlertLabel => null;
+
+	public virtual string AlertExplanation => null;
+
+	public virtual bool AlertCritical => false;
+
+	public virtual GlobalTargetInfo? AlertCulpritTarget => null;
+
+	public bool AlertDirty
+	{
+		get
+		{
+			if (cachedAlert == null)
+			{
+				return false;
+			}
+			if (!AlertCritical || cachedAlert is Alert_CustomCritical)
+			{
+				if (!AlertCritical)
 				{
-					return -1;
+					return !(cachedAlert is Alert_Custom);
 				}
-				return enableTick;
+				return false;
 			}
+			return true;
 		}
+	}
 
-		public string OutSignalEnabled => "Quest" + quest.id + ".Part" + base.Index + ".Enabled";
-
-		public string OutSignalCompleted => "Quest" + quest.id + ".Part" + base.Index + ".Completed";
-
-		public virtual string ExpiryInfoPart { get; }
-
-		public virtual string ExpiryInfoPartTip { get; }
-
-		public virtual AlertReport AlertReport => AlertReport.Inactive;
-
-		public virtual string AlertLabel => null;
-
-		public virtual string AlertExplanation => null;
-
-		public virtual bool AlertCritical => false;
-
-		public virtual GlobalTargetInfo? AlertCulpritTarget => null;
-
-		public bool AlertDirty
+	public Alert CachedAlert
+	{
+		get
 		{
-			get
+			AlertReport alertReport = AlertReport;
+			if (cachedAlert == null)
 			{
-				if (cachedAlert == null)
+				if (!alertReport.active)
 				{
-					return false;
+					return null;
 				}
-				if (!AlertCritical || cachedAlert is Alert_CustomCritical)
+				if (AlertCritical)
 				{
-					if (!AlertCritical)
-					{
-						return !(cachedAlert is Alert_Custom);
-					}
-					return false;
-				}
-				return true;
-			}
-		}
-
-		public Alert CachedAlert
-		{
-			get
-			{
-				AlertReport alertReport = AlertReport;
-				if (cachedAlert == null)
-				{
-					if (!alertReport.active)
-					{
-						return null;
-					}
-					if (AlertCritical)
-					{
-						cachedAlert = new Alert_CustomCritical();
-					}
-					else
-					{
-						cachedAlert = new Alert_Custom();
-					}
-				}
-				if (cachedAlert is Alert_Custom alert_Custom)
-				{
-					if (alertReport.active)
-					{
-						alert_Custom.label = AlertLabel;
-						alert_Custom.explanation = AlertExplanation;
-						alertReport.culpritTarget = AlertCulpritTarget;
-					}
-					alert_Custom.report = alertReport;
-				}
-				if (cachedAlert is Alert_CustomCritical alert_CustomCritical)
-				{
-					if (alertReport.active)
-					{
-						alert_CustomCritical.label = AlertLabel;
-						alert_CustomCritical.explanation = AlertExplanation;
-					}
-					alert_CustomCritical.report = alertReport;
-				}
-				return cachedAlert;
-			}
-		}
-
-		public virtual void QuestPartTick()
-		{
-		}
-
-		public virtual string ExtraInspectString(ISelectable target)
-		{
-			return null;
-		}
-
-		public virtual IEnumerable<Gizmo> ExtraGizmos(ISelectable target)
-		{
-			return null;
-		}
-
-		public void ClearCachedAlert()
-		{
-			cachedAlert = null;
-		}
-
-		protected virtual void Enable(SignalArgs receivedArgs)
-		{
-			if (state == QuestPartState.Enabled)
-			{
-				Log.Error("Tried to enable QuestPart while already enabled. part=" + this);
-				return;
-			}
-			state = QuestPartState.Enabled;
-			enableTick = Find.TickManager.TicksGame;
-			Find.SignalManager.SendSignal(new Signal(OutSignalEnabled));
-		}
-
-		protected void Complete()
-		{
-			Complete(default(SignalArgs));
-		}
-
-		protected void Complete(NamedArgument signalArg1)
-		{
-			Complete(new SignalArgs(signalArg1));
-		}
-
-		protected void Complete(NamedArgument signalArg1, NamedArgument signalArg2)
-		{
-			Complete(new SignalArgs(signalArg1, signalArg2));
-		}
-
-		protected void Complete(NamedArgument signalArg1, NamedArgument signalArg2, NamedArgument signalArg3)
-		{
-			Complete(new SignalArgs(signalArg1, signalArg2, signalArg3));
-		}
-
-		protected void Complete(NamedArgument signalArg1, NamedArgument signalArg2, NamedArgument signalArg3, NamedArgument signalArg4)
-		{
-			Complete(new SignalArgs(signalArg1, signalArg2, signalArg3, signalArg4));
-		}
-
-		protected void Complete(params NamedArgument[] signalArgs)
-		{
-			Complete(new SignalArgs(signalArgs));
-		}
-
-		protected virtual void Complete(SignalArgs signalArgs)
-		{
-			if (state != QuestPartState.Enabled)
-			{
-				Log.Error("Tried to end QuestPart but its state is not Active. part=" + this);
-				return;
-			}
-			state = QuestPartState.Disabled;
-			if (outcomeCompletedSignalArg != QuestEndOutcome.Unknown)
-			{
-				signalArgs.Add(outcomeCompletedSignalArg.Named("OUTCOME"));
-			}
-			Find.SignalManager.SendSignal(new Signal(OutSignalCompleted, signalArgs));
-			if (outSignalsCompleted.NullOrEmpty())
-			{
-				return;
-			}
-			for (int i = 0; i < outSignalsCompleted.Count; i++)
-			{
-				if (!outSignalsCompleted[i].NullOrEmpty())
-				{
-					Find.SignalManager.SendSignal(new Signal(outSignalsCompleted[i], signalArgs));
-				}
-			}
-		}
-
-		protected virtual void Disable()
-		{
-			if (state != QuestPartState.Enabled)
-			{
-				Log.Error("Tried to disable QuestPart but its state is not enabled. part=" + this);
-			}
-			else
-			{
-				state = QuestPartState.Disabled;
-			}
-		}
-
-		public override void Notify_QuestSignalReceived(Signal signal)
-		{
-			if (signal.tag == inSignalEnable && (state == QuestPartState.NeverEnabled || (state == QuestPartState.Disabled && reactivatable)))
-			{
-				Enable(signal.args);
-			}
-			else if (state == QuestPartState.Enabled)
-			{
-				if (signal.tag == inSignalDisable)
-				{
-					Disable();
+					cachedAlert = new Alert_CustomCritical();
 				}
 				else
 				{
-					ProcessQuestSignal(signal);
+					cachedAlert = new Alert_Custom();
 				}
 			}
-		}
-
-		protected virtual void ProcessQuestSignal(Signal signal)
-		{
-		}
-
-		public override void AssignDebugData()
-		{
-			base.AssignDebugData();
-			inSignalEnable = quest.InitiateSignal;
-		}
-
-		public void DebugForceComplete()
-		{
-			Complete();
-		}
-
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_Values.Look(ref inSignalEnable, "inSignalEnable");
-			Scribe_Values.Look(ref inSignalDisable, "inSignalDisable");
-			Scribe_Values.Look(ref reactivatable, "reactivatable", defaultValue: false);
-			if (Scribe.mode != LoadSaveMode.Saving || !outSignalsCompleted.NullOrEmpty())
+			if (cachedAlert is Alert_Custom alert_Custom)
 			{
-				Scribe_Collections.Look(ref outSignalsCompleted, "outSignalsCompleted", LookMode.Value);
+				if (alertReport.active)
+				{
+					alert_Custom.label = AlertLabel;
+					alert_Custom.explanation = AlertExplanation;
+					alertReport.culpritTarget = AlertCulpritTarget;
+				}
+				alert_Custom.report = alertReport;
 			}
-			Scribe_Values.Look(ref outcomeCompletedSignalArg, "outcomeCompletedSignalArg", QuestEndOutcome.Unknown);
-			Scribe_Values.Look(ref state, "state", QuestPartState.NeverEnabled);
-			Scribe_Values.Look(ref enableTick, "enableTick", -1);
+			if (cachedAlert is Alert_CustomCritical alert_CustomCritical)
+			{
+				if (alertReport.active)
+				{
+					alert_CustomCritical.label = AlertLabel;
+					alert_CustomCritical.explanation = AlertExplanation;
+				}
+				alert_CustomCritical.report = alertReport;
+			}
+			return cachedAlert;
 		}
+	}
+
+	public virtual void QuestPartTick()
+	{
+	}
+
+	public virtual string ExtraInspectString(ISelectable target)
+	{
+		return null;
+	}
+
+	public virtual IEnumerable<Gizmo> ExtraGizmos(ISelectable target)
+	{
+		return null;
+	}
+
+	public void ClearCachedAlert()
+	{
+		cachedAlert = null;
+	}
+
+	protected virtual void Enable(SignalArgs receivedArgs)
+	{
+		if (state == QuestPartState.Enabled)
+		{
+			Log.Error("Tried to enable QuestPart while already enabled. part=" + this);
+			return;
+		}
+		state = QuestPartState.Enabled;
+		enableTick = Find.TickManager.TicksGame;
+		Find.SignalManager.SendSignal(new Signal(OutSignalEnabled));
+	}
+
+	protected void Complete()
+	{
+		Complete(default(SignalArgs));
+	}
+
+	protected void Complete(NamedArgument signalArg1)
+	{
+		Complete(new SignalArgs(signalArg1));
+	}
+
+	protected void Complete(NamedArgument signalArg1, NamedArgument signalArg2)
+	{
+		Complete(new SignalArgs(signalArg1, signalArg2));
+	}
+
+	protected void Complete(NamedArgument signalArg1, NamedArgument signalArg2, NamedArgument signalArg3)
+	{
+		Complete(new SignalArgs(signalArg1, signalArg2, signalArg3));
+	}
+
+	protected void Complete(NamedArgument signalArg1, NamedArgument signalArg2, NamedArgument signalArg3, NamedArgument signalArg4)
+	{
+		Complete(new SignalArgs(signalArg1, signalArg2, signalArg3, signalArg4));
+	}
+
+	protected void Complete(params NamedArgument[] signalArgs)
+	{
+		Complete(new SignalArgs(signalArgs));
+	}
+
+	protected virtual void Complete(SignalArgs signalArgs)
+	{
+		if (state != QuestPartState.Enabled)
+		{
+			Log.Error("Tried to end QuestPart but its state is not Active. part=" + this);
+			return;
+		}
+		state = QuestPartState.Disabled;
+		if (outcomeCompletedSignalArg != QuestEndOutcome.Unknown)
+		{
+			signalArgs.Add(outcomeCompletedSignalArg.Named("OUTCOME"));
+		}
+		Find.SignalManager.SendSignal(new Signal(OutSignalCompleted, signalArgs));
+		if (outSignalsCompleted.NullOrEmpty())
+		{
+			return;
+		}
+		for (int i = 0; i < outSignalsCompleted.Count; i++)
+		{
+			if (!outSignalsCompleted[i].NullOrEmpty())
+			{
+				Find.SignalManager.SendSignal(new Signal(outSignalsCompleted[i], signalArgs));
+			}
+		}
+	}
+
+	protected virtual void Disable()
+	{
+		if (state != QuestPartState.Enabled)
+		{
+			Log.Error("Tried to disable QuestPart but its state is not enabled. part=" + this);
+		}
+		else
+		{
+			state = QuestPartState.Disabled;
+		}
+	}
+
+	public override void Notify_QuestSignalReceived(Signal signal)
+	{
+		if (signal.tag == inSignalEnable && (state == QuestPartState.NeverEnabled || (state == QuestPartState.Disabled && reactivatable)))
+		{
+			Enable(signal.args);
+		}
+		else if (state == QuestPartState.Enabled)
+		{
+			if (signal.tag == inSignalDisable)
+			{
+				Disable();
+			}
+			else
+			{
+				ProcessQuestSignal(signal);
+			}
+		}
+	}
+
+	protected virtual void ProcessQuestSignal(Signal signal)
+	{
+	}
+
+	public override void AssignDebugData()
+	{
+		base.AssignDebugData();
+		inSignalEnable = quest.InitiateSignal;
+	}
+
+	public void DebugForceComplete()
+	{
+		Complete();
+	}
+
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Values.Look(ref inSignalEnable, "inSignalEnable");
+		Scribe_Values.Look(ref inSignalDisable, "inSignalDisable");
+		Scribe_Values.Look(ref reactivatable, "reactivatable", defaultValue: false);
+		if (Scribe.mode != LoadSaveMode.Saving || !outSignalsCompleted.NullOrEmpty())
+		{
+			Scribe_Collections.Look(ref outSignalsCompleted, "outSignalsCompleted", LookMode.Value);
+		}
+		Scribe_Values.Look(ref outcomeCompletedSignalArg, "outcomeCompletedSignalArg", QuestEndOutcome.Unknown);
+		Scribe_Values.Look(ref state, "state", QuestPartState.NeverEnabled);
+		Scribe_Values.Look(ref enableTick, "enableTick", -1);
 	}
 }

@@ -1,20 +1,19 @@
 using System;
 using Unity.Jobs;
 
-namespace Gilzoide.ManagedJobs
+namespace Gilzoide.ManagedJobs;
+
+public struct DisposeJob<TDisposable> : IJob where TDisposable : struct, IDisposable
 {
-	public struct DisposeJob<TDisposable> : IJob where TDisposable : struct, IDisposable
+	public TDisposable Disposable { get; }
+
+	public DisposeJob(TDisposable disposable)
 	{
-		public TDisposable Disposable { get; }
+		Disposable = disposable;
+	}
 
-		public DisposeJob(TDisposable disposable)
-		{
-			Disposable = disposable;
-		}
-
-		public void Execute()
-		{
-			Disposable.Dispose();
-		}
+	public void Execute()
+	{
+		Disposable.Dispose();
 	}
 }

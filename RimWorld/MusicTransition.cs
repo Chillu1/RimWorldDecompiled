@@ -1,28 +1,27 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class MusicTransition
 {
-	public class MusicTransition
+	public MusicTransitionDef def { get; private set; }
+
+	public MusicManagerPlay musicManager { get; private set; }
+
+	public void InitializeWorker(MusicTransitionDef def, MusicManagerPlay musicManager)
 	{
-		public MusicTransitionDef def { get; private set; }
+		this.def = def;
+		this.musicManager = musicManager;
+	}
 
-		public MusicManagerPlay musicManager { get; private set; }
-
-		public void InitializeWorker(MusicTransitionDef def, MusicManagerPlay musicManager)
+	public virtual bool IsTransitionSatisfied()
+	{
+		if (def.dangerRequirement == MusicDangerRequirement.RequiresDanger && !musicManager.DangerMusicMode)
 		{
-			this.def = def;
-			this.musicManager = musicManager;
+			return false;
 		}
-
-		public virtual bool IsTransitionSatisfied()
+		if (def.dangerRequirement == MusicDangerRequirement.RequiresNoDanger && musicManager.DangerMusicMode)
 		{
-			if (def.dangerRequirement == MusicDangerRequirement.RequiresDanger && !musicManager.DangerMusicMode)
-			{
-				return false;
-			}
-			if (def.dangerRequirement == MusicDangerRequirement.RequiresNoDanger && musicManager.DangerMusicMode)
-			{
-				return false;
-			}
-			return true;
+			return false;
 		}
+		return true;
 	}
 }

@@ -1,8 +1,7 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Building_GeothermalVent : Building
 {
-	public class Building_GeothermalVent : Building
-	{
-	}
 }

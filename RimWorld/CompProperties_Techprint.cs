@@ -2,39 +2,38 @@ using System.Collections.Generic;
 using System.Linq;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_Techprint : CompProperties
 {
-	public class CompProperties_Techprint : CompProperties
+	public ResearchProjectDef project;
+
+	public CompProperties_Techprint()
 	{
-		public ResearchProjectDef project;
+		compClass = typeof(CompTechprint);
+	}
 
-		public CompProperties_Techprint()
+	public override void ResolveReferences(ThingDef parentDef)
+	{
+		if (parentDef.descriptionHyperlinks == null)
 		{
-			compClass = typeof(CompTechprint);
+			parentDef.descriptionHyperlinks = new List<DefHyperlink>();
 		}
-
-		public override void ResolveReferences(ThingDef parentDef)
+		List<Def> unlockedDefs = project.UnlockedDefs;
+		for (int i = 0; i < unlockedDefs.Count; i++)
 		{
-			if (parentDef.descriptionHyperlinks == null)
+			if (unlockedDefs[i] is ThingDef thingDef)
 			{
-				parentDef.descriptionHyperlinks = new List<DefHyperlink>();
+				parentDef.descriptionHyperlinks.Add(thingDef);
 			}
-			List<Def> unlockedDefs = project.UnlockedDefs;
-			for (int i = 0; i < unlockedDefs.Count; i++)
+			else if (unlockedDefs[i] is RecipeDef recipeDef && !recipeDef.products.NullOrEmpty())
 			{
-				if (unlockedDefs[i] is ThingDef thingDef)
+				for (int j = 0; j < recipeDef.products.Count; j++)
 				{
-					parentDef.descriptionHyperlinks.Add(thingDef);
-				}
-				else if (unlockedDefs[i] is RecipeDef recipeDef && !recipeDef.products.NullOrEmpty())
-				{
-					for (int j = 0; j < recipeDef.products.Count; j++)
-					{
-						parentDef.descriptionHyperlinks.Add(recipeDef.products[j].thingDef);
-					}
+					parentDef.descriptionHyperlinks.Add(recipeDef.products[j].thingDef);
 				}
 			}
-			parentDef.description += "\n\n" + "Unlocks".Translate() + ": " + project.UnlockedDefs.Select((Def x) => x.label).ToCommaList().CapitalizeFirst();
 		}
+		parentDef.description += "\n\n" + "Unlocks".Translate() + ": " + project.UnlockedDefs.Select((Def x) => x.label).ToCommaList().CapitalizeFirst();
 	}
 }

@@ -1,21 +1,20 @@
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public class Trigger_Memo : Trigger
 {
-	public class Trigger_Memo : Trigger
+	private string memo;
+
+	public Trigger_Memo(string memo)
 	{
-		private string memo;
+		this.memo = memo;
+	}
 
-		public Trigger_Memo(string memo)
+	public override bool ActivateOn(Lord lord, TriggerSignal signal)
+	{
+		if (signal.type == TriggerSignalType.Memo)
 		{
-			this.memo = memo;
+			return signal.memo == memo;
 		}
-
-		public override bool ActivateOn(Lord lord, TriggerSignal signal)
-		{
-			if (signal.type == TriggerSignalType.Memo)
-			{
-				return signal.memo == memo;
-			}
-			return false;
-		}
+		return false;
 	}
 }

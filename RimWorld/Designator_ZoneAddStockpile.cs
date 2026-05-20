@@ -1,68 +1,67 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class Designator_ZoneAddStockpile : Designator_ZoneAdd
 {
-	public abstract class Designator_ZoneAddStockpile : Designator_ZoneAdd
+	protected StorageSettingsPreset preset;
+
+	protected override string NewZoneLabel => preset.PresetName();
+
+	protected virtual bool ShowRightClickHideOptions => true;
+
+	public override IEnumerable<FloatMenuOption> RightClickFloatMenuOptions
 	{
-		protected StorageSettingsPreset preset;
-
-		protected override string NewZoneLabel => preset.PresetName();
-
-		protected virtual bool ShowRightClickHideOptions => true;
-
-		public override IEnumerable<FloatMenuOption> RightClickFloatMenuOptions
+		get
 		{
-			get
+			if (!ShowRightClickHideOptions)
 			{
-				if (!ShowRightClickHideOptions)
-				{
-					yield break;
-				}
-				foreach (FloatMenuOption hideOption in Command_Hide_ZoneStockpile.GetHideOptions())
-				{
-					yield return hideOption;
-				}
+				yield break;
+			}
+			foreach (FloatMenuOption hideOption in Command_Hide_ZoneStockpile.GetHideOptions())
+			{
+				yield return hideOption;
 			}
 		}
+	}
 
-		protected override Zone MakeNewZone()
+	protected override Zone MakeNewZone()
+	{
+		return new Zone_Stockpile(preset, Find.CurrentMap.zoneManager);
+	}
+
+	public Designator_ZoneAddStockpile()
+	{
+		zoneTypeToPlace = typeof(Zone_Stockpile);
+		soundSucceeded = SoundDefOf.Designate_ZoneAdd_Stockpile;
+	}
+
+	public override AcceptanceReport CanDesignateCell(IntVec3 c)
+	{
+		AcceptanceReport result = base.CanDesignateCell(c);
+		if (!result.Accepted)
 		{
-			return new Zone_Stockpile(preset, Find.CurrentMap.zoneManager);
+			return result;
 		}
-
-		public Designator_ZoneAddStockpile()
+		if (c.GetTerrain(base.Map).passability == Traversability.Impassable)
 		{
-			zoneTypeToPlace = typeof(Zone_Stockpile);
-			soundSucceeded = SoundDefOf.Designate_ZoneAdd_Stockpile;
+			return false;
 		}
-
-		public override AcceptanceReport CanDesignateCell(IntVec3 c)
+		List<Thing> list = base.Map.thingGrid.ThingsListAt(c);
+		for (int i = 0; i < list.Count; i++)
 		{
-			AcceptanceReport result = base.CanDesignateCell(c);
-			if (!result.Accepted)
-			{
-				return result;
-			}
-			if (c.GetTerrain(base.Map).passability == Traversability.Impassable)
+			if (!list[i].def.CanOverlapZones)
 			{
 				return false;
 			}
-			List<Thing> list = base.Map.thingGrid.ThingsListAt(c);
-			for (int i = 0; i < list.Count; i++)
-			{
-				if (!list[i].def.CanOverlapZones)
-				{
-					return false;
-				}
-			}
-			return true;
 		}
+		return true;
+	}
 
-		protected override void FinalizeDesignationSucceeded()
-		{
-			base.FinalizeDesignationSucceeded();
-			PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.Stockpiles, KnowledgeAmount.Total);
-		}
+	protected override void FinalizeDesignationSucceeded()
+	{
+		base.FinalizeDesignationSucceeded();
+		PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.Stockpiles, KnowledgeAmount.Total);
 	}
 }

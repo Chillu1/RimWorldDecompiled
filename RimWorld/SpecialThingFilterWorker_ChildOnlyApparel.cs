@@ -1,26 +1,25 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class SpecialThingFilterWorker_ChildOnlyApparel : SpecialThingFilterWorker
 {
-	public class SpecialThingFilterWorker_ChildOnlyApparel : SpecialThingFilterWorker
+	public override bool AlwaysMatches(ThingDef def)
 	{
-		public override bool AlwaysMatches(ThingDef def)
+		if (def.IsApparel)
 		{
-			if (def.IsApparel)
-			{
-				return def.apparel.developmentalStageFilter == DevelopmentalStage.Child;
-			}
-			return false;
+			return def.apparel.developmentalStageFilter == DevelopmentalStage.Child;
 		}
+		return false;
+	}
 
-		public override bool Matches(Thing t)
-		{
-			return AlwaysMatches(t.def);
-		}
+	public override bool Matches(Thing t)
+	{
+		return AlwaysMatches(t.def);
+	}
 
-		public override bool CanEverMatch(ThingDef def)
-		{
-			return AlwaysMatches(def);
-		}
+	public override bool CanEverMatch(ThingDef def)
+	{
+		return AlwaysMatches(def);
 	}
 }

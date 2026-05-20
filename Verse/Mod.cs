@@ -1,51 +1,50 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public abstract class Mod
 {
-	public abstract class Mod
+	private ModSettings modSettings;
+
+	private ModContentPack intContent;
+
+	public ModContentPack Content => intContent;
+
+	public Mod(ModContentPack content)
 	{
-		private ModSettings modSettings;
+		intContent = content;
+	}
 
-		private ModContentPack intContent;
-
-		public ModContentPack Content => intContent;
-
-		public Mod(ModContentPack content)
+	public T GetSettings<T>() where T : ModSettings, new()
+	{
+		if (modSettings != null && modSettings.GetType() != typeof(T))
 		{
-			intContent = content;
+			Log.Error($"Mod {Content.Name} attempted to read two different settings classes (was {modSettings.GetType()}, is now {typeof(T)})");
+			return null;
 		}
-
-		public T GetSettings<T>() where T : ModSettings, new()
+		if (modSettings != null)
 		{
-			if (modSettings != null && modSettings.GetType() != typeof(T))
-			{
-				Log.Error($"Mod {Content.Name} attempted to read two different settings classes (was {modSettings.GetType()}, is now {typeof(T)})");
-				return null;
-			}
-			if (modSettings != null)
-			{
-				return (T)modSettings;
-			}
-			modSettings = LoadedModManager.ReadModSettings<T>(intContent.FolderName, GetType().Name);
-			modSettings.Mod = this;
-			return modSettings as T;
+			return (T)modSettings;
 		}
+		modSettings = LoadedModManager.ReadModSettings<T>(intContent.FolderName, GetType().Name);
+		modSettings.Mod = this;
+		return modSettings as T;
+	}
 
-		public virtual void WriteSettings()
+	public virtual void WriteSettings()
+	{
+		if (modSettings != null)
 		{
-			if (modSettings != null)
-			{
-				modSettings.Write();
-			}
+			modSettings.Write();
 		}
+	}
 
-		public virtual void DoSettingsWindowContents(Rect inRect)
-		{
-		}
+	public virtual void DoSettingsWindowContents(Rect inRect)
+	{
+	}
 
-		public virtual string SettingsCategory()
-		{
-			return "";
-		}
+	public virtual string SettingsCategory()
+	{
+		return "";
 	}
 }

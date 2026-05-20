@@ -1,15 +1,14 @@
-namespace RimWorld
+namespace RimWorld;
+
+[DefOf]
+public static class ScenarioDefOf
 {
-	[DefOf]
-	public static class ScenarioDefOf
+	public static ScenarioDef Crashlanded;
+
+	public static ScenarioDef Tutorial;
+
+	static ScenarioDefOf()
 	{
-		public static ScenarioDef Crashlanded;
-
-		public static ScenarioDef Tutorial;
-
-		static ScenarioDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(ScenarioDefOf));
-		}
+		DefOfHelper.EnsureInitializedInCtor(typeof(ScenarioDefOf));
 	}
 }

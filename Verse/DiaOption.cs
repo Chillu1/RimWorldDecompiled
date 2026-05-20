@@ -3,122 +3,121 @@ using RimWorld;
 using UnityEngine;
 using Verse.Sound;
 
-namespace Verse
+namespace Verse;
+
+public class DiaOption
 {
-	public class DiaOption
+	public Window dialog;
+
+	protected string text;
+
+	public DiaNode link;
+
+	public Func<DiaNode> linkLateBind;
+
+	public bool resolveTree;
+
+	public Action action;
+
+	public bool disabled;
+
+	public string disabledReason;
+
+	public SoundDef clickSound = SoundDefOf.PageChange;
+
+	public Dialog_InfoCard.Hyperlink hyperlink;
+
+	protected readonly Color DisabledOptionColor = new Color(0.5f, 0.5f, 0.5f);
+
+	public static DiaOption DefaultOK => new DiaOption("OK".Translate())
 	{
-		public Window dialog;
+		resolveTree = true
+	};
 
-		protected string text;
+	protected Dialog_NodeTree OwningDialog => (Dialog_NodeTree)dialog;
 
-		public DiaNode link;
+	public DiaOption()
+	{
+		text = "OK".Translate();
+	}
 
-		public Func<DiaNode> linkLateBind;
+	public DiaOption(string text)
+	{
+		this.text = text;
+	}
 
-		public bool resolveTree;
+	public DiaOption(Dialog_InfoCard.Hyperlink hyperlink)
+	{
+		this.hyperlink = hyperlink;
+		text = "ViewHyperlink".Translate(hyperlink.Label);
+	}
 
-		public Action action;
-
-		public bool disabled;
-
-		public string disabledReason;
-
-		public SoundDef clickSound = SoundDefOf.PageChange;
-
-		public Dialog_InfoCard.Hyperlink hyperlink;
-
-		protected readonly Color DisabledOptionColor = new Color(0.5f, 0.5f, 0.5f);
-
-		public static DiaOption DefaultOK => new DiaOption("OK".Translate())
+	public DiaOption(DiaOptionMold def)
+	{
+		text = def.Text;
+		DiaNodeMold diaNodeMold = def.RandomLinkNode();
+		if (diaNodeMold != null)
 		{
-			resolveTree = true
-		};
-
-		protected Dialog_NodeTree OwningDialog => (Dialog_NodeTree)dialog;
-
-		public DiaOption()
-		{
-			text = "OK".Translate();
+			link = new DiaNode(diaNodeMold);
 		}
+	}
 
-		public DiaOption(string text)
+	public void Disable(string newDisabledReason)
+	{
+		disabled = true;
+		disabledReason = newDisabledReason;
+	}
+
+	public void SetText(string newText)
+	{
+		text = newText;
+	}
+
+	public float OptOnGUI(Rect rect, bool active = true)
+	{
+		Color textColor = Widgets.NormalOptionColor;
+		string text = this.text;
+		if (disabled)
 		{
-			this.text = text;
+			textColor = DisabledOptionColor;
+			if (disabledReason != null)
+			{
+				text = text + " (" + disabledReason + ")";
+			}
 		}
-
-		public DiaOption(Dialog_InfoCard.Hyperlink hyperlink)
+		rect.height = Text.CalcHeight(text, rect.width);
+		if (hyperlink.def != null)
 		{
-			this.hyperlink = hyperlink;
-			text = "ViewHyperlink".Translate(hyperlink.Label);
+			Widgets.HyperlinkWithIcon(rect, hyperlink, text);
 		}
-
-		public DiaOption(DiaOptionMold def)
+		else if (Widgets.ButtonText(rect, text, drawBackground: false, !disabled, textColor, active && !disabled))
 		{
-			text = def.Text;
-			DiaNodeMold diaNodeMold = def.RandomLinkNode();
-			if (diaNodeMold != null)
-			{
-				link = new DiaNode(diaNodeMold);
-			}
+			Activate();
 		}
+		return rect.height;
+	}
 
-		public void Disable(string newDisabledReason)
+	protected void Activate()
+	{
+		if (clickSound != null && !resolveTree)
 		{
-			disabled = true;
-			disabledReason = newDisabledReason;
+			clickSound.PlayOneShotOnCamera();
 		}
-
-		public void SetText(string newText)
+		if (resolveTree)
 		{
-			text = newText;
+			OwningDialog.Close();
 		}
-
-		public float OptOnGUI(Rect rect, bool active = true)
+		if (action != null)
 		{
-			Color textColor = Widgets.NormalOptionColor;
-			string text = this.text;
-			if (disabled)
-			{
-				textColor = DisabledOptionColor;
-				if (disabledReason != null)
-				{
-					text = text + " (" + disabledReason + ")";
-				}
-			}
-			rect.height = Text.CalcHeight(text, rect.width);
-			if (hyperlink.def != null)
-			{
-				Widgets.HyperlinkWithIcon(rect, hyperlink, text);
-			}
-			else if (Widgets.ButtonText(rect, text, drawBackground: false, !disabled, textColor, active && !disabled))
-			{
-				Activate();
-			}
-			return rect.height;
+			action();
 		}
-
-		protected void Activate()
+		if (linkLateBind != null)
 		{
-			if (clickSound != null && !resolveTree)
-			{
-				clickSound.PlayOneShotOnCamera();
-			}
-			if (resolveTree)
-			{
-				OwningDialog.Close();
-			}
-			if (action != null)
-			{
-				action();
-			}
-			if (linkLateBind != null)
-			{
-				OwningDialog.GotoNode(linkLateBind());
-			}
-			else if (link != null)
-			{
-				OwningDialog.GotoNode(link);
-			}
+			OwningDialog.GotoNode(linkLateBind());
+		}
+		else if (link != null)
+		{
+			OwningDialog.GotoNode(link);
 		}
 	}
 }

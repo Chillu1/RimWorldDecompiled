@@ -1,10 +1,9 @@
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public class WorldCameraConfig_SmoothZoom : WorldCameraConfig
 {
-	public class WorldCameraConfig_SmoothZoom : WorldCameraConfig
+	public WorldCameraConfig_SmoothZoom()
 	{
-		public WorldCameraConfig_SmoothZoom()
-		{
-			smoothZoom = true;
-		}
+		smoothZoom = true;
 	}
 }

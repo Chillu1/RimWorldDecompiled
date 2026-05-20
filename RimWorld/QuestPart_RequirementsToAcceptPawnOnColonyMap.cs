@@ -1,36 +1,35 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class QuestPart_RequirementsToAcceptPawnOnColonyMap : QuestPart_RequirementsToAccept
 {
-	public class QuestPart_RequirementsToAcceptPawnOnColonyMap : QuestPart_RequirementsToAccept
+	public Pawn pawn;
+
+	public override IEnumerable<Dialog_InfoCard.Hyperlink> Hyperlinks
 	{
-		public Pawn pawn;
-
-		public override IEnumerable<Dialog_InfoCard.Hyperlink> Hyperlinks
+		get
 		{
-			get
+			if (pawn != null)
 			{
-				if (pawn != null)
-				{
-					yield return new Dialog_InfoCard.Hyperlink(pawn);
-				}
+				yield return new Dialog_InfoCard.Hyperlink(pawn);
 			}
 		}
+	}
 
-		public override AcceptanceReport CanAccept()
+	public override AcceptanceReport CanAccept()
+	{
+		if (pawn != null && pawn.Map != null && pawn.Map.IsPlayerHome)
 		{
-			if (pawn != null && pawn.Map != null && pawn.Map.IsPlayerHome)
-			{
-				return true;
-			}
-			return new AcceptanceReport("QuestPawnNotOnColonyMap".Translate(pawn.Named("PAWN")));
+			return true;
 		}
+		return new AcceptanceReport("QuestPawnNotOnColonyMap".Translate(pawn.Named("PAWN")));
+	}
 
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_References.Look(ref pawn, "pawn");
-		}
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_References.Look(ref pawn, "pawn");
 	}
 }

@@ -1,47 +1,46 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompShearable : CompHasGatherableBodyResource
 {
-	public class CompShearable : CompHasGatherableBodyResource
+	protected override int GatherResourcesIntervalDays => Props.shearIntervalDays;
+
+	protected override int ResourceAmount => Props.woolAmount;
+
+	protected override ThingDef ResourceDef => Props.woolDef;
+
+	protected override string SaveKey => "woolGrowth";
+
+	public CompProperties_Shearable Props => (CompProperties_Shearable)props;
+
+	protected override bool Active
 	{
-		protected override int GatherResourcesIntervalDays => Props.shearIntervalDays;
-
-		protected override int ResourceAmount => Props.woolAmount;
-
-		protected override ThingDef ResourceDef => Props.woolDef;
-
-		protected override string SaveKey => "woolGrowth";
-
-		public CompProperties_Shearable Props => (CompProperties_Shearable)props;
-
-		protected override bool Active
+		get
 		{
-			get
+			if (!base.Active)
 			{
-				if (!base.Active)
-				{
-					return false;
-				}
-				Pawn pawn = parent as Pawn;
-				if (pawn != null && !pawn.ageTracker.CurLifeStage.shearable)
-				{
-					return false;
-				}
-				if (ModsConfig.AnomalyActive && pawn.IsShambler)
-				{
-					return false;
-				}
-				return true;
+				return false;
 			}
+			Pawn pawn = parent as Pawn;
+			if (pawn != null && !pawn.ageTracker.CurLifeStage.shearable)
+			{
+				return false;
+			}
+			if (ModsConfig.AnomalyActive && pawn.IsShambler)
+			{
+				return false;
+			}
+			return true;
 		}
+	}
 
-		public override string CompInspectStringExtra()
+	public override string CompInspectStringExtra()
+	{
+		if (!Active)
 		{
-			if (!Active)
-			{
-				return null;
-			}
-			return "WoolGrowth".Translate() + ": " + base.Fullness.ToStringPercent();
+			return null;
 		}
+		return "WoolGrowth".Translate() + ": " + base.Fullness.ToStringPercent();
 	}
 }

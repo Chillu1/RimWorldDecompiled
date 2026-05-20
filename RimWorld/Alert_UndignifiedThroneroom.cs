@@ -3,69 +3,68 @@ using System.Linq;
 using System.Text;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Alert_UndignifiedThroneroom : Alert
 {
-	public class Alert_UndignifiedThroneroom : Alert
+	private List<Pawn> targetsResult = new List<Pawn>();
+
+	private StringBuilder sb = new StringBuilder();
+
+	public List<Pawn> Targets
 	{
-		private List<Pawn> targetsResult = new List<Pawn>();
-
-		private StringBuilder sb = new StringBuilder();
-
-		public List<Pawn> Targets
+		get
 		{
-			get
+			targetsResult.Clear();
+			List<Map> maps = Find.Maps;
+			for (int i = 0; i < maps.Count; i++)
 			{
-				targetsResult.Clear();
-				List<Map> maps = Find.Maps;
-				for (int i = 0; i < maps.Count; i++)
+				foreach (Pawn item in maps[i].mapPawns.FreeColonistsSpawned)
 				{
-					foreach (Pawn item in maps[i].mapPawns.FreeColonistsSpawned)
+					if (item.royalty != null && !item.Suspended && item.royalty.AnyUnmetThroneroomRequirements())
 					{
-						if (item.royalty != null && !item.Suspended && item.royalty.AnyUnmetThroneroomRequirements())
-						{
-							targetsResult.Add(item);
-						}
+						targetsResult.Add(item);
 					}
 				}
-				return targetsResult;
 			}
+			return targetsResult;
 		}
+	}
 
-		public Alert_UndignifiedThroneroom()
-		{
-			defaultLabel = "UndignifiedThroneroom".Translate();
-			defaultExplanation = "UndignifiedThroneroomDesc".Translate();
-			requireRoyalty = true;
-		}
+	public Alert_UndignifiedThroneroom()
+	{
+		defaultLabel = "UndignifiedThroneroom".Translate();
+		defaultExplanation = "UndignifiedThroneroomDesc".Translate();
+		requireRoyalty = true;
+	}
 
-		public override AlertReport GetReport()
-		{
-			return AlertReport.CulpritsAre(Targets);
-		}
+	public override AlertReport GetReport()
+	{
+		return AlertReport.CulpritsAre(Targets);
+	}
 
-		public override TaggedString GetExplanation()
+	public override TaggedString GetExplanation()
+	{
+		return defaultExplanation + "\n" + targetsResult.Select(delegate(Pawn t)
 		{
-			return defaultExplanation + "\n" + targetsResult.Select(delegate(Pawn t)
+			RoyalTitle royalTitle = t.royalty.HighestTitleWithThroneRoomRequirements();
+			RoyalTitleDef royalTitleDef = (royalTitle.RoomRequirementGracePeriodActive(t) ? royalTitle.def.GetPreviousTitle(royalTitle.faction) : royalTitle.def);
+			string[] array = t.royalty.GetUnmetThroneroomRequirements(includeOnGracePeriod: false).ToArray();
+			string[] array2 = t.royalty.GetUnmetThroneroomRequirements(includeOnGracePeriod: true, onlyOnGracePeriod: true).ToArray();
+			sb.Length = 0;
+			if (array.Length != 0)
 			{
-				RoyalTitle royalTitle = t.royalty.HighestTitleWithThroneRoomRequirements();
-				RoyalTitleDef royalTitleDef = (royalTitle.RoomRequirementGracePeriodActive(t) ? royalTitle.def.GetPreviousTitle(royalTitle.faction) : royalTitle.def);
-				string[] array = t.royalty.GetUnmetThroneroomRequirements(includeOnGracePeriod: false).ToArray();
-				string[] array2 = t.royalty.GetUnmetThroneroomRequirements(includeOnGracePeriod: true, onlyOnGracePeriod: true).ToArray();
-				sb.Length = 0;
+				sb.Append(t.LabelShort + " (" + royalTitleDef.GetLabelFor(t.gender) + "):\n" + array.ToLineList("  - "));
+			}
+			if (array2.Length != 0)
+			{
 				if (array.Length != 0)
 				{
-					sb.Append(t.LabelShort + " (" + royalTitleDef.GetLabelFor(t.gender) + "):\n" + array.ToLineList("  - "));
+					sb.Append("\n\n");
 				}
-				if (array2.Length != 0)
-				{
-					if (array.Length != 0)
-					{
-						sb.Append("\n\n");
-					}
-					sb.Append(t.LabelShort + " (" + royalTitle.def.GetLabelFor(t.gender) + ", " + "RoomRequirementGracePeriodDesc".Translate(royalTitle.RoomRequirementGracePeriodDaysLeft.ToString("0.0")) + ")" + ":\n" + array2.ToLineList("  - "));
-				}
-				return sb.ToString();
-			}).ToLineList("\n");
-		}
+				sb.Append(t.LabelShort + " (" + royalTitle.def.GetLabelFor(t.gender) + ", " + "RoomRequirementGracePeriodDesc".Translate(royalTitle.RoomRequirementGracePeriodDaysLeft.ToString("0.0")) + ")" + ":\n" + array2.ToLineList("  - "));
+			}
+			return sb.ToString();
+		}).ToLineList("\n");
 	}
 }

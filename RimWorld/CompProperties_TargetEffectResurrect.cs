@@ -1,18 +1,17 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_TargetEffectResurrect : CompProperties
 {
-	public class CompProperties_TargetEffectResurrect : CompProperties
+	public ThingDef moteDef;
+
+	public bool withSideEffects = true;
+
+	public HediffDef addsHediff;
+
+	public CompProperties_TargetEffectResurrect()
 	{
-		public ThingDef moteDef;
-
-		public bool withSideEffects = true;
-
-		public HediffDef addsHediff;
-
-		public CompProperties_TargetEffectResurrect()
-		{
-			compClass = typeof(CompTargetEffect_Resurrect);
-		}
+		compClass = typeof(CompTargetEffect_Resurrect);
 	}
 }

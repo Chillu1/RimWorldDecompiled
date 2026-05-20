@@ -1,50 +1,49 @@
 using System;
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class SpecialThingFilterDef : Def
 {
-	public class SpecialThingFilterDef : Def
+	public ThingCategoryDef parentCategory;
+
+	public string saveKey;
+
+	public bool allowedByDefault;
+
+	public bool configurable = true;
+
+	public Type workerClass;
+
+	[Unsaved(false)]
+	private SpecialThingFilterWorker workerInt;
+
+	public SpecialThingFilterWorker Worker
 	{
-		public ThingCategoryDef parentCategory;
-
-		public string saveKey;
-
-		public bool allowedByDefault;
-
-		public bool configurable = true;
-
-		public Type workerClass;
-
-		[Unsaved(false)]
-		private SpecialThingFilterWorker workerInt;
-
-		public SpecialThingFilterWorker Worker
+		get
 		{
-			get
+			if (workerInt == null)
 			{
-				if (workerInt == null)
-				{
-					workerInt = (SpecialThingFilterWorker)Activator.CreateInstance(workerClass);
-				}
-				return workerInt;
+				workerInt = (SpecialThingFilterWorker)Activator.CreateInstance(workerClass);
 			}
+			return workerInt;
 		}
+	}
 
-		public override IEnumerable<string> ConfigErrors()
+	public override IEnumerable<string> ConfigErrors()
+	{
+		foreach (string item in base.ConfigErrors())
 		{
-			foreach (string item in base.ConfigErrors())
-			{
-				yield return item;
-			}
-			if (workerClass == null)
-			{
-				yield return "SpecialThingFilterDef " + defName + " has no worker class.";
-			}
+			yield return item;
 		}
+		if (workerClass == null)
+		{
+			yield return "SpecialThingFilterDef " + defName + " has no worker class.";
+		}
+	}
 
-		public static SpecialThingFilterDef Named(string defName)
-		{
-			return DefDatabase<SpecialThingFilterDef>.GetNamed(defName);
-		}
+	public static SpecialThingFilterDef Named(string defName)
+	{
+		return DefDatabase<SpecialThingFilterDef>.GetNamed(defName);
 	}
 }

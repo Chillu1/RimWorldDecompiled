@@ -1,13 +1,12 @@
-namespace Verse
+namespace Verse;
+
+public class ThingDefStyle
 {
-	public class ThingDefStyle
-	{
-		private ThingDef thingDef;
+	private ThingDef thingDef;
 
-		private ThingStyleDef styleDef;
+	private ThingStyleDef styleDef;
 
-		public ThingDef ThingDef => thingDef;
+	public ThingDef ThingDef => thingDef;
 
-		public ThingStyleDef StyleDef => styleDef;
-	}
+	public ThingStyleDef StyleDef => styleDef;
 }

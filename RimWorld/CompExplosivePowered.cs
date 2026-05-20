@@ -1,20 +1,19 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompExplosivePowered : CompExplosive
 {
-	public class CompExplosivePowered : CompExplosive
+	protected override bool CanEverExplodeFromDamage
 	{
-		protected override bool CanEverExplodeFromDamage
+		get
 		{
-			get
+			CompMechPowerCell compMechPowerCell = parent.TryGetComp<CompMechPowerCell>();
+			if (compMechPowerCell != null && compMechPowerCell.depleted)
 			{
-				CompMechPowerCell compMechPowerCell = parent.TryGetComp<CompMechPowerCell>();
-				if (compMechPowerCell != null && compMechPowerCell.depleted)
-				{
-					return false;
-				}
-				return base.CanEverExplodeFromDamage;
+				return false;
 			}
+			return base.CanEverExplodeFromDamage;
 		}
 	}
 }

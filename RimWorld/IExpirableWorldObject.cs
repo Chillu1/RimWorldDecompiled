@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public interface IExpirableWorldObject
 {
-	public interface IExpirableWorldObject
-	{
-		int ExpireAtTicks { get; set; }
-	}
+	int ExpireAtTicks { get; set; }
 }

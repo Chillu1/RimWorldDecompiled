@@ -3,67 +3,66 @@ using UnityEngine;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WorkGiver_RemoveRoof : WorkGiver_Scanner
 {
-	public class WorkGiver_RemoveRoof : WorkGiver_Scanner
+	public override bool Prioritized => true;
+
+	public override PathEndMode PathEndMode => PathEndMode.ClosestTouch;
+
+	public override IEnumerable<IntVec3> PotentialWorkCellsGlobal(Pawn pawn)
 	{
-		public override bool Prioritized => true;
+		return pawn.Map.areaManager.NoRoof.ActiveCells;
+	}
 
-		public override PathEndMode PathEndMode => PathEndMode.ClosestTouch;
+	public override bool ShouldSkip(Pawn pawn, bool forced = false)
+	{
+		return pawn.Map.areaManager.NoRoof.TrueCount == 0;
+	}
 
-		public override IEnumerable<IntVec3> PotentialWorkCellsGlobal(Pawn pawn)
+	public override bool HasJobOnCell(Pawn pawn, IntVec3 c, bool forced = false)
+	{
+		if (!pawn.Map.areaManager.NoRoof[c])
 		{
-			return pawn.Map.areaManager.NoRoof.ActiveCells;
+			return false;
 		}
-
-		public override bool ShouldSkip(Pawn pawn, bool forced = false)
+		if (!c.Roofed(pawn.Map))
 		{
-			return pawn.Map.areaManager.NoRoof.TrueCount == 0;
+			return false;
 		}
-
-		public override bool HasJobOnCell(Pawn pawn, IntVec3 c, bool forced = false)
+		if (!pawn.CanReserve(c, 1, -1, ReservationLayerDefOf.Ceiling, forced))
 		{
-			if (!pawn.Map.areaManager.NoRoof[c])
-			{
-				return false;
-			}
-			if (!c.Roofed(pawn.Map))
-			{
-				return false;
-			}
-			if (!pawn.CanReserve(c, 1, -1, ReservationLayerDefOf.Ceiling, forced))
-			{
-				return false;
-			}
-			return true;
+			return false;
 		}
+		return true;
+	}
 
-		public override Job JobOnCell(Pawn pawn, IntVec3 c, bool forced = false)
-		{
-			return JobMaker.MakeJob(JobDefOf.RemoveRoof, c, c);
-		}
+	public override Job JobOnCell(Pawn pawn, IntVec3 c, bool forced = false)
+	{
+		return JobMaker.MakeJob(JobDefOf.RemoveRoof, c, c);
+	}
 
-		public override float GetPriority(Pawn pawn, TargetInfo t)
+	public override float GetPriority(Pawn pawn, TargetInfo t)
+	{
+		IntVec3 cell = t.Cell;
+		int num = 0;
+		for (int i = 0; i < 8; i++)
 		{
-			IntVec3 cell = t.Cell;
-			int num = 0;
-			for (int i = 0; i < 8; i++)
+			IntVec3 c = cell + GenAdj.AdjacentCells[i];
+			if (c.InBounds(t.Map))
 			{
-				IntVec3 c = cell + GenAdj.AdjacentCells[i];
-				if (c.InBounds(t.Map))
+				Building edifice = c.GetEdifice(t.Map);
+				if (edifice != null && edifice.def.holdsRoof)
 				{
-					Building edifice = c.GetEdifice(t.Map);
-					if (edifice != null && edifice.def.holdsRoof)
-					{
-						return -60f;
-					}
-					if (c.Roofed(pawn.Map))
-					{
-						num++;
-					}
+					return -60f;
+				}
+				if (c.Roofed(pawn.Map))
+				{
+					num++;
 				}
 			}
-			return -Mathf.Min(num, 3);
 		}
+		return -Mathf.Min(num, 3);
 	}
 }

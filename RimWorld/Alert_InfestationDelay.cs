@@ -1,42 +1,41 @@
 using RimWorld.Planet;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Alert_InfestationDelay : Alert_ActionDelay
 {
-	public class Alert_InfestationDelay : Alert_ActionDelay
+	private SignalAction_Infestation infestationAction;
+
+	public Alert_InfestationDelay()
 	{
-		private SignalAction_Infestation infestationAction;
+	}
 
-		public Alert_InfestationDelay()
-		{
-		}
+	public Alert_InfestationDelay(SignalAction_Infestation infestationAction)
+	{
+		this.infestationAction = infestationAction;
+	}
 
-		public Alert_InfestationDelay(SignalAction_Infestation infestationAction)
+	public override AlertReport GetReport()
+	{
+		if (infestationAction == null)
 		{
-			this.infestationAction = infestationAction;
+			return AlertReport.Inactive;
 		}
+		if (infestationAction.overrideLoc.HasValue)
+		{
+			return AlertReport.CulpritIs(new GlobalTargetInfo(infestationAction.overrideLoc.Value, infestationAction.Map));
+		}
+		return AlertReport.Active;
+	}
 
-		public override AlertReport GetReport()
-		{
-			if (infestationAction == null)
-			{
-				return AlertReport.Inactive;
-			}
-			if (infestationAction.overrideLoc.HasValue)
-			{
-				return AlertReport.CulpritIs(new GlobalTargetInfo(infestationAction.overrideLoc.Value, infestationAction.Map));
-			}
-			return AlertReport.Active;
-		}
+	public override string GetLabel()
+	{
+		return "AlertInfestationArriving".Translate(infestationAction.delayTicks.ToStringTicksToPeriodVerbose());
+	}
 
-		public override string GetLabel()
-		{
-			return "AlertInfestationArriving".Translate(infestationAction.delayTicks.ToStringTicksToPeriodVerbose());
-		}
-
-		public override TaggedString GetExplanation()
-		{
-			return "AlertInfestationArrivingDesc".Translate();
-		}
+	public override TaggedString GetExplanation()
+	{
+		return "AlertInfestationArrivingDesc".Translate();
 	}
 }

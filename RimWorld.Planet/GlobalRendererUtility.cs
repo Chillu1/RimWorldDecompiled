@@ -1,13 +1,12 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public static class GlobalRendererUtility
 {
-	public static class GlobalRendererUtility
+	public static void UpdateGlobalShadersParams()
 	{
-		public static void UpdateGlobalShadersParams()
-		{
-			Shader.SetGlobalFloat(ShaderPropertyIDs.GameTime, ((float?)Find.TickManager?.TicksGame / 60f).GetValueOrDefault());
-		}
+		Shader.SetGlobalFloat(ShaderPropertyIDs.GameTime, ((float?)Find.TickManager?.TicksGame / 60f).GetValueOrDefault());
 	}
 }

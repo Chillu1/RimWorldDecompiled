@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum JoyTickFullJoyAction
 {
-	public enum JoyTickFullJoyAction
-	{
-		EndJob,
-		GoToNextToil,
-		None
-	}
+	EndJob,
+	GoToNextToil,
+	None
 }

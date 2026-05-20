@@ -1,9 +1,8 @@
-namespace UnityStandardAssets.ImageEffects
+namespace UnityStandardAssets.ImageEffects;
+
+public enum HDRBloomMode
 {
-	public enum HDRBloomMode
-	{
-		Auto,
-		On,
-		Off
-	}
+	Auto,
+	On,
+	Off
 }

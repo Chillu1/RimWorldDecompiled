@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum AutomaticPauseMode : byte
 {
-	public enum AutomaticPauseMode : byte
-	{
-		Never,
-		MajorThreat,
-		AnyThreat,
-		AnyLetter
-	}
+	Never,
+	MajorThreat,
+	AnyThreat,
+	AnyLetter
 }

@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum CheckJobOverrideOnDamageMode
 {
-	public enum CheckJobOverrideOnDamageMode
-	{
-		Never,
-		OnlyIfInstigatorNotJobTarget,
-		Always
-	}
+	Never,
+	OnlyIfInstigatorNotJobTarget,
+	Always
 }

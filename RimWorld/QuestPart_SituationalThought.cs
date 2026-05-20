@@ -3,55 +3,54 @@ using System.Linq;
 using RimWorld.Planet;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class QuestPart_SituationalThought : QuestPartActivable
 {
-	public class QuestPart_SituationalThought : QuestPartActivable
+	public ThoughtDef def;
+
+	public Pawn pawn;
+
+	public int stage;
+
+	public int delayTicks;
+
+	public override IEnumerable<GlobalTargetInfo> QuestLookTargets
 	{
-		public ThoughtDef def;
-
-		public Pawn pawn;
-
-		public int stage;
-
-		public int delayTicks;
-
-		public override IEnumerable<GlobalTargetInfo> QuestLookTargets
+		get
 		{
-			get
+			foreach (GlobalTargetInfo questLookTarget in base.QuestLookTargets)
 			{
-				foreach (GlobalTargetInfo questLookTarget in base.QuestLookTargets)
-				{
-					yield return questLookTarget;
-				}
-				if (pawn != null)
-				{
-					yield return pawn;
-				}
+				yield return questLookTarget;
+			}
+			if (pawn != null)
+			{
+				yield return pawn;
 			}
 		}
+	}
 
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_Defs.Look(ref def, "def");
-			Scribe_References.Look(ref pawn, "pawn");
-			Scribe_Values.Look(ref stage, "stage", 0);
-			Scribe_Values.Look(ref delayTicks, "delayTicks", 0);
-		}
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Defs.Look(ref def, "def");
+		Scribe_References.Look(ref pawn, "pawn");
+		Scribe_Values.Look(ref stage, "stage", 0);
+		Scribe_Values.Look(ref delayTicks, "delayTicks", 0);
+	}
 
-		public override void AssignDebugData()
-		{
-			base.AssignDebugData();
-			def = ThoughtDefOf.DecreeUnmet;
-			pawn = PawnsFinder.AllMaps_FreeColonists.FirstOrDefault();
-		}
+	public override void AssignDebugData()
+	{
+		base.AssignDebugData();
+		def = ThoughtDefOf.DecreeUnmet;
+		pawn = PawnsFinder.AllMaps_FreeColonists.FirstOrDefault();
+	}
 
-		public override void ReplacePawnReferences(Pawn replace, Pawn with)
+	public override void ReplacePawnReferences(Pawn replace, Pawn with)
+	{
+		if (pawn == replace)
 		{
-			if (pawn == replace)
-			{
-				pawn = with;
-			}
+			pawn = with;
 		}
 	}
 }

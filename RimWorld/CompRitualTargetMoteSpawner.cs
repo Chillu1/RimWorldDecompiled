@@ -1,33 +1,32 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompRitualTargetMoteSpawner : CompRitualEffectSpawner
 {
-	public class CompRitualTargetMoteSpawner : CompRitualEffectSpawner
+	private Mote mote;
+
+	private CompProperties_RitualTargetMoteSpawner Props => (CompProperties_RitualTargetMoteSpawner)props;
+
+	protected override void Tick_InRitual(LordJob_Ritual ritual)
 	{
-		private Mote mote;
+		mote?.Maintain();
+	}
 
-		private CompProperties_RitualTargetMoteSpawner Props => (CompProperties_RitualTargetMoteSpawner)props;
-
-		protected override void Tick_InRitual(LordJob_Ritual ritual)
+	protected override void Tick_InRitualInterval(LordJob_Ritual ritual)
+	{
+		if (mote == null || mote.Destroyed)
 		{
-			mote?.Maintain();
+			mote = MoteMaker.MakeStaticMote(parent.Position.ToVector3Shifted(), parent.Map, Props.mote);
 		}
+	}
 
-		protected override void Tick_InRitualInterval(LordJob_Ritual ritual)
+	protected override void Tick_OutOfRitualInterval()
+	{
+		if (mote != null && !mote.Destroyed)
 		{
-			if (mote == null || mote.Destroyed)
-			{
-				mote = MoteMaker.MakeStaticMote(parent.Position.ToVector3Shifted(), parent.Map, Props.mote);
-			}
+			mote?.Destroy();
 		}
-
-		protected override void Tick_OutOfRitualInterval()
-		{
-			if (mote != null && !mote.Destroyed)
-			{
-				mote?.Destroy();
-			}
-			mote = null;
-		}
+		mote = null;
 	}
 }

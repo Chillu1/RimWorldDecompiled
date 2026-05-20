@@ -1,8 +1,7 @@
-namespace Verse.Sound
+namespace Verse.Sound;
+
+public enum TimeType : byte
 {
-	public enum TimeType : byte
-	{
-		Ticks,
-		RealtimeSeconds
-	}
+	Ticks,
+	RealtimeSeconds
 }

@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum RotationDirection : byte
 {
-	public enum RotationDirection : byte
-	{
-		None,
-		Clockwise,
-		Opposite,
-		Counterclockwise
-	}
+	None,
+	Clockwise,
+	Opposite,
+	Counterclockwise
 }

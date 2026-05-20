@@ -1,19 +1,18 @@
 using System;
 
-namespace Verse
+namespace Verse;
+
+public class CreepJoinerRejectionDef : CreepJoinerBaseDef
 {
-	public class CreepJoinerRejectionDef : CreepJoinerBaseDef
-	{
-		public bool hasLetter;
+	public bool hasLetter;
 
-		[MustTranslate]
-		public string letterLabel;
+	[MustTranslate]
+	public string letterLabel;
 
-		[MustTranslate]
-		public string letterDesc;
+	[MustTranslate]
+	public string letterDesc;
 
-		public LetterDef letterDef;
+	public LetterDef letterDef;
 
-		public Type workerType;
-	}
+	public Type workerType;
 }

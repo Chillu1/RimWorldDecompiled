@@ -1,150 +1,149 @@
 using UnityEngine;
 using Verse.Sound;
 
-namespace Verse
+namespace Verse;
+
+public class MoteThrown : Mote
 {
-	public class MoteThrown : Mote
+	public float airTimeLeft = 999999f;
+
+	protected Vector3 velocity = Vector3.zero;
+
+	protected bool Flying => airTimeLeft > 0f;
+
+	protected bool Skidding
 	{
-		public float airTimeLeft = 999999f;
-
-		protected Vector3 velocity = Vector3.zero;
-
-		protected bool Flying => airTimeLeft > 0f;
-
-		protected bool Skidding
+		get
 		{
-			get
+			if (!Flying)
 			{
-				if (!Flying)
-				{
-					return Speed > 0.01f;
-				}
-				return false;
+				return Speed > 0.01f;
 			}
+			return false;
 		}
+	}
 
-		public Vector3 Velocity
+	public Vector3 Velocity
+	{
+		get
 		{
-			get
-			{
-				return velocity;
-			}
-			set
-			{
-				velocity = value;
-			}
+			return velocity;
 		}
-
-		public float MoveAngle
+		set
 		{
-			get
-			{
-				return velocity.AngleFlat();
-			}
-			set
-			{
-				SetVelocity(value, Speed);
-			}
+			velocity = value;
 		}
+	}
 
-		public float Speed
+	public float MoveAngle
+	{
+		get
 		{
-			get
-			{
-				return velocity.MagnitudeHorizontal();
-			}
-			set
-			{
-				if (value == 0f)
-				{
-					velocity = Vector3.zero;
-				}
-				else if (velocity == Vector3.zero)
-				{
-					velocity = new Vector3(value, 0f, 0f);
-				}
-				else
-				{
-					velocity = velocity.normalized * value;
-				}
-			}
+			return velocity.AngleFlat();
 		}
-
-		protected override void TimeInterval(float deltaTime)
+		set
 		{
-			base.TimeInterval(deltaTime);
-			if (base.Destroyed || (!Flying && !Skidding))
+			SetVelocity(value, Speed);
+		}
+	}
+
+	public float Speed
+	{
+		get
+		{
+			return velocity.MagnitudeHorizontal();
+		}
+		set
+		{
+			if (value == 0f)
 			{
-				return;
+				velocity = Vector3.zero;
 			}
-			Vector3 v = NextExactPosition(deltaTime);
-			IntVec3 intVec = new IntVec3(v);
-			if (intVec != base.Position)
+			else if (velocity == Vector3.zero)
 			{
-				if (!intVec.InBounds(base.Map))
-				{
-					Destroy();
-					return;
-				}
-				if (def.mote.collide && intVec.Filled(base.Map))
-				{
-					WallHit();
-					return;
-				}
-			}
-			base.Position = intVec;
-			exactPosition = v;
-			if (def.mote.rotateTowardsMoveDirection && velocity != default(Vector3))
-			{
-				exactRotation = velocity.AngleFlat();
+				velocity = new Vector3(value, 0f, 0f);
 			}
 			else
 			{
-				exactRotation += rotationRate * deltaTime;
-			}
-			velocity += def.mote.acceleration * deltaTime;
-			if (def.mote.speedPerTime != 0f)
-			{
-				Speed = Mathf.Max(Speed + def.mote.speedPerTime * deltaTime, 0f);
-			}
-			if (airTimeLeft > 0f)
-			{
-				airTimeLeft -= deltaTime;
-				if (airTimeLeft < 0f)
-				{
-					airTimeLeft = 0f;
-				}
-				if (airTimeLeft <= 0f && !def.mote.landSound.NullOrUndefined())
-				{
-					def.mote.landSound.PlayOneShot(new TargetInfo(base.Position, base.Map));
-				}
-			}
-			if (Skidding)
-			{
-				Speed *= skidSpeedMultiplierPerTick;
-				rotationRate *= skidSpeedMultiplierPerTick;
-				if (Speed < 0.02f)
-				{
-					Speed = 0f;
-				}
+				velocity = velocity.normalized * value;
 			}
 		}
+	}
 
-		protected virtual Vector3 NextExactPosition(float deltaTime)
+	protected override void TimeInterval(float deltaTime)
+	{
+		base.TimeInterval(deltaTime);
+		if (base.Destroyed || (!Flying && !Skidding))
 		{
-			return exactPosition + velocity * deltaTime;
+			return;
 		}
+		Vector3 v = NextExactPosition(deltaTime);
+		IntVec3 intVec = new IntVec3(v);
+		if (intVec != base.Position)
+		{
+			if (!intVec.InBounds(base.Map))
+			{
+				Destroy();
+				return;
+			}
+			if (def.mote.collide && intVec.Filled(base.Map))
+			{
+				WallHit();
+				return;
+			}
+		}
+		base.Position = intVec;
+		exactPosition = v;
+		if (def.mote.rotateTowardsMoveDirection && velocity != default(Vector3))
+		{
+			exactRotation = velocity.AngleFlat();
+		}
+		else
+		{
+			exactRotation += rotationRate * deltaTime;
+		}
+		velocity += def.mote.acceleration * deltaTime;
+		if (def.mote.speedPerTime != 0f)
+		{
+			Speed = Mathf.Max(Speed + def.mote.speedPerTime * deltaTime, 0f);
+		}
+		if (airTimeLeft > 0f)
+		{
+			airTimeLeft -= deltaTime;
+			if (airTimeLeft < 0f)
+			{
+				airTimeLeft = 0f;
+			}
+			if (airTimeLeft <= 0f && !def.mote.landSound.NullOrUndefined())
+			{
+				def.mote.landSound.PlayOneShot(new TargetInfo(base.Position, base.Map));
+			}
+		}
+		if (Skidding)
+		{
+			Speed *= skidSpeedMultiplierPerTick;
+			rotationRate *= skidSpeedMultiplierPerTick;
+			if (Speed < 0.02f)
+			{
+				Speed = 0f;
+			}
+		}
+	}
 
-		public void SetVelocity(float angle, float speed)
-		{
-			velocity = Quaternion.AngleAxis(angle, Vector3.up) * Vector3.forward * speed;
-		}
+	protected virtual Vector3 NextExactPosition(float deltaTime)
+	{
+		return exactPosition + velocity * deltaTime;
+	}
 
-		protected virtual void WallHit()
-		{
-			airTimeLeft = 0f;
-			Speed = 0f;
-			rotationRate = 0f;
-		}
+	public void SetVelocity(float angle, float speed)
+	{
+		velocity = Quaternion.AngleAxis(angle, Vector3.up) * Vector3.forward * speed;
+	}
+
+	protected virtual void WallHit()
+	{
+		airTimeLeft = 0f;
+		Speed = 0f;
+		rotationRate = 0f;
 	}
 }

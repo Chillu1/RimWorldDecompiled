@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum DeathrestStartReason
 {
-	public enum DeathrestStartReason
-	{
-		PlayerForced,
-		LethalDamage
-	}
+	PlayerForced,
+	LethalDamage
 }

@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public abstract class ResearchMod
 {
-	public abstract class ResearchMod
-	{
-		public abstract void Apply();
-	}
+	public abstract void Apply();
 }

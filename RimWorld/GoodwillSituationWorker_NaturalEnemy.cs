@@ -1,14 +1,13 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class GoodwillSituationWorker_NaturalEnemy : GoodwillSituationWorker
 {
-	public class GoodwillSituationWorker_NaturalEnemy : GoodwillSituationWorker
+	public override int GetNaturalGoodwillOffset(Faction other)
 	{
-		public override int GetNaturalGoodwillOffset(Faction other)
+		if (!other.def.naturalEnemy)
 		{
-			if (!other.def.naturalEnemy)
-			{
-				return 0;
-			}
-			return -130;
+			return 0;
 		}
+		return -130;
 	}
 }

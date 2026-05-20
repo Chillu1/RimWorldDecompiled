@@ -1,20 +1,19 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
-{
-	public class ThinkNode_ConditionalSentryDroneMode : ThinkNode_Conditional
-	{
-		public CompSentryDrone.SentryDroneMode mode;
+namespace RimWorld;
 
-		protected override bool Satisfied(Pawn pawn)
+public class ThinkNode_ConditionalSentryDroneMode : ThinkNode_Conditional
+{
+	public CompSentryDrone.SentryDroneMode mode;
+
+	protected override bool Satisfied(Pawn pawn)
+	{
+		CompSentryDrone compSentryDrone = pawn.TryGetComp<CompSentryDrone>();
+		if (compSentryDrone != null)
 		{
-			CompSentryDrone compSentryDrone = pawn.TryGetComp<CompSentryDrone>();
-			if (compSentryDrone != null)
-			{
-				return compSentryDrone.Mode == mode;
-			}
-			return false;
+			return compSentryDrone.Mode == mode;
 		}
+		return false;
 	}
 }

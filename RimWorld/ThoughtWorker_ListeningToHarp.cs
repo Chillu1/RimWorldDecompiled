@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_ListeningToHarp : ThoughtWorker_MusicalInstrumentListeningBase
 {
-	public class ThoughtWorker_ListeningToHarp : ThoughtWorker_MusicalInstrumentListeningBase
-	{
-		protected override ThingDef InstrumentDef => ThingDefOf.Harp;
-	}
+	protected override ThingDef InstrumentDef => ThingDefOf.Harp;
 }

@@ -1,32 +1,31 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class DeathActionProperties_Divide : DeathActionProperties
 {
-	public class DeathActionProperties_Divide : DeathActionProperties
+	public List<PawnKindDef> dividePawnKindOptions = new List<PawnKindDef>();
+
+	public int dividePawnCount;
+
+	public List<PawnKindDef> dividePawnKindAdditionalForced = new List<PawnKindDef>();
+
+	public IntRange divideBloodFilthCountRange;
+
+	public DeathActionProperties_Divide()
 	{
-		public List<PawnKindDef> dividePawnKindOptions = new List<PawnKindDef>();
+		workerClass = typeof(DeathActionWorker_Divide);
+	}
 
-		public int dividePawnCount;
-
-		public List<PawnKindDef> dividePawnKindAdditionalForced = new List<PawnKindDef>();
-
-		public IntRange divideBloodFilthCountRange;
-
-		public DeathActionProperties_Divide()
+	public override IEnumerable<string> ConfigErrors()
+	{
+		if (dividePawnCount <= 0 && dividePawnKindAdditionalForced.NullOrEmpty())
 		{
-			workerClass = typeof(DeathActionWorker_Divide);
+			yield return "deathActionWorkerClass is DeathActionWorker_Divide or subclass, but dividePawnCount <= 0.";
 		}
-
-		public override IEnumerable<string> ConfigErrors()
+		if (dividePawnKindOptions.NullOrEmpty() && dividePawnKindAdditionalForced.NullOrEmpty())
 		{
-			if (dividePawnCount <= 0 && dividePawnKindAdditionalForced.NullOrEmpty())
-			{
-				yield return "deathActionWorkerClass is DeathActionWorker_Divide or subclass, but dividePawnCount <= 0.";
-			}
-			if (dividePawnKindOptions.NullOrEmpty() && dividePawnKindAdditionalForced.NullOrEmpty())
-			{
-				yield return "deathActionWorkerClass is DeathActionWorker_Divide or subclass, but dividePawnKindOptions is null or empty.";
-			}
+			yield return "deathActionWorkerClass is DeathActionWorker_Divide or subclass, but dividePawnKindOptions is null or empty.";
 		}
 	}
 }

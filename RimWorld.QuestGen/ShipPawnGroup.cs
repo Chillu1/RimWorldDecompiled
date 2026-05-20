@@ -1,9 +1,8 @@
 using System.Collections.Generic;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class ShipPawnGroup
 {
-	public class ShipPawnGroup
-	{
-		public List<ShipPawnOption> options;
-	}
+	public List<ShipPawnOption> options;
 }

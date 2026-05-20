@@ -1,11 +1,10 @@
-namespace Verse
+namespace Verse;
+
+public class RandomGenStepSelectorOption
 {
-	public class RandomGenStepSelectorOption
-	{
-		public GenStepDef def;
+	public GenStepDef def;
 
-		public GenStep genStep;
+	public GenStep genStep;
 
-		public float weight = 10f;
-	}
+	public float weight = 10f;
 }

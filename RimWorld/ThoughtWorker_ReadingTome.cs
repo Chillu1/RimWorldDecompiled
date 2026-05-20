@@ -1,20 +1,19 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_ReadingTome : ThoughtWorker
 {
-	public class ThoughtWorker_ReadingTome : ThoughtWorker
+	protected override ThoughtState CurrentStateInternal(Pawn p)
 	{
-		protected override ThoughtState CurrentStateInternal(Pawn p)
+		if (!ModsConfig.AnomalyActive)
 		{
-			if (!ModsConfig.AnomalyActive)
-			{
-				return false;
-			}
-			if (p.CurJobDef != JobDefOf.Reading)
-			{
-				return false;
-			}
-			return p.CurJob.targetA.Thing.def == ThingDefOf.Tome;
+			return false;
 		}
+		if (p.CurJobDef != JobDefOf.Reading)
+		{
+			return false;
+		}
+		return p.CurJob.targetA.Thing.def == ThingDefOf.Tome;
 	}
 }

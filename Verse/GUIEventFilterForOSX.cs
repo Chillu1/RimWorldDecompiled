@@ -1,51 +1,50 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public static class GUIEventFilterForOSX
 {
-	public static class GUIEventFilterForOSX
+	private static List<Event> eventsThisFrame = new List<Event>();
+
+	private static int lastRecordedFrame = -1;
+
+	public static void CheckRejectGUIEvent()
 	{
-		private static List<Event> eventsThisFrame = new List<Event>();
-
-		private static int lastRecordedFrame = -1;
-
-		public static void CheckRejectGUIEvent()
+		if (UnityData.platform != RuntimePlatform.OSXPlayer || (Event.current.type != EventType.MouseDown && Event.current.type != EventType.MouseUp))
 		{
-			if (UnityData.platform != RuntimePlatform.OSXPlayer || (Event.current.type != EventType.MouseDown && Event.current.type != EventType.MouseUp))
-			{
-				return;
-			}
-			if (Time.frameCount != lastRecordedFrame)
-			{
-				eventsThisFrame.Clear();
-				lastRecordedFrame = Time.frameCount;
-			}
-			for (int i = 0; i < eventsThisFrame.Count; i++)
-			{
-				if (EventsAreEquivalent(eventsThisFrame[i], Event.current))
-				{
-					RejectEvent();
-				}
-			}
-			eventsThisFrame.Add(Event.current);
+			return;
 		}
-
-		private static bool EventsAreEquivalent(Event A, Event B)
+		if (Time.frameCount != lastRecordedFrame)
 		{
-			if (A.button == B.button && A.keyCode == B.keyCode)
-			{
-				return A.type == B.type;
-			}
-			return false;
+			eventsThisFrame.Clear();
+			lastRecordedFrame = Time.frameCount;
 		}
-
-		private static void RejectEvent()
+		for (int i = 0; i < eventsThisFrame.Count; i++)
 		{
-			if (DebugViewSettings.logInput)
+			if (EventsAreEquivalent(eventsThisFrame[i], Event.current))
 			{
-				Log.Message("Frame " + Time.frameCount + ": REJECTED " + Event.current.ToStringFull());
+				RejectEvent();
 			}
-			Event.current.Use();
 		}
+		eventsThisFrame.Add(Event.current);
+	}
+
+	private static bool EventsAreEquivalent(Event A, Event B)
+	{
+		if (A.button == B.button && A.keyCode == B.keyCode)
+		{
+			return A.type == B.type;
+		}
+		return false;
+	}
+
+	private static void RejectEvent()
+	{
+		if (DebugViewSettings.logInput)
+		{
+			Log.Message("Frame " + Time.frameCount + ": REJECTED " + Event.current.ToStringFull());
+		}
+		Event.current.Use();
 	}
 }

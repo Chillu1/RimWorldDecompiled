@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class BillStoreModeDef : Def
 {
-	public class BillStoreModeDef : Def
-	{
-		public int listOrder;
-	}
+	public int listOrder;
 }

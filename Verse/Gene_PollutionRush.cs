@@ -1,17 +1,16 @@
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class Gene_PollutionRush : Gene
 {
-	public class Gene_PollutionRush : Gene
+	public override void PostRemove()
 	{
-		public override void PostRemove()
+		Hediff firstHediffOfDef = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.PollutionStimulus);
+		if (firstHediffOfDef != null)
 		{
-			Hediff firstHediffOfDef = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.PollutionStimulus);
-			if (firstHediffOfDef != null)
-			{
-				pawn.health.RemoveHediff(firstHediffOfDef);
-			}
-			base.PostRemove();
+			pawn.health.RemoveHediff(firstHediffOfDef);
 		}
+		base.PostRemove();
 	}
 }

@@ -1,32 +1,31 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_RopeRoamerToUnenclosedPen : JobDriver_RopeToPen
 {
-	public class JobDriver_RopeRoamerToUnenclosedPen : JobDriver_RopeToPen
+	protected override bool HasRopeeArrived(Pawn ropee, bool roperWaitingAtDest)
 	{
-		protected override bool HasRopeeArrived(Pawn ropee, bool roperWaitingAtDest)
-		{
-			return roperWaitingAtDest;
-		}
+		return roperWaitingAtDest;
+	}
 
-		protected override void ProcessArrivedRopee(Pawn ropee)
-		{
-			RoamingMentalState(ropee)?.RecoverFromState();
-		}
+	protected override void ProcessArrivedRopee(Pawn ropee)
+	{
+		RoamingMentalState(ropee)?.RecoverFromState();
+	}
 
-		protected override bool ShouldOpportunisticallyRopeAnimal(Pawn animal, CompAnimalPenMarker targetPenMarker)
+	protected override bool ShouldOpportunisticallyRopeAnimal(Pawn animal, CompAnimalPenMarker targetPenMarker)
+	{
+		if (targetPenMarker == base.DestinationMarker)
 		{
-			if (targetPenMarker == base.DestinationMarker)
-			{
-				return RoamingMentalState(animal) != null;
-			}
-			return false;
+			return RoamingMentalState(animal) != null;
 		}
+		return false;
+	}
 
-		private static MentalState_Roaming RoamingMentalState(Pawn ropee)
-		{
-			return ropee.MentalState as MentalState_Roaming;
-		}
+	private static MentalState_Roaming RoamingMentalState(Pawn ropee)
+	{
+		return ropee.MentalState as MentalState_Roaming;
 	}
 }

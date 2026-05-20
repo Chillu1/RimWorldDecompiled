@@ -1,15 +1,14 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public interface IFleck
 {
-	public interface IFleck
-	{
-		void Setup(FleckCreationData creationData);
+	void Setup(FleckCreationData creationData);
 
-		bool TimeInterval(float deltaTime, Map map);
+	bool TimeInterval(float deltaTime, Map map);
 
-		void Draw(DrawBatch batch);
+	void Draw(DrawBatch batch);
 
-		Vector3 GetPosition();
-	}
+	Vector3 GetPosition();
 }

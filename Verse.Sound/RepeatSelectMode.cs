@@ -1,9 +1,8 @@
-namespace Verse.Sound
+namespace Verse.Sound;
+
+public enum RepeatSelectMode : byte
 {
-	public enum RepeatSelectMode : byte
-	{
-		Any,
-		NeverTwice,
-		NeverLastHalf
-	}
+	Any,
+	NeverTwice,
+	NeverLastHalf
 }

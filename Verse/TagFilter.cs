@@ -1,26 +1,25 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class TagFilter
 {
-	public class TagFilter
+	public List<string> tags = new List<string>();
+
+	public bool whitelist = true;
+
+	public bool Allows(List<string> otherTags)
 	{
-		public List<string> tags = new List<string>();
-
-		public bool whitelist = true;
-
-		public bool Allows(List<string> otherTags)
+		if (otherTags != null)
 		{
-			if (otherTags != null)
+			for (int i = 0; i < otherTags.Count; i++)
 			{
-				for (int i = 0; i < otherTags.Count; i++)
+				if (tags.Contains(otherTags[i]))
 				{
-					if (tags.Contains(otherTags[i]))
-					{
-						return whitelist;
-					}
+					return whitelist;
 				}
 			}
-			return !whitelist;
 		}
+		return !whitelist;
 	}
 }

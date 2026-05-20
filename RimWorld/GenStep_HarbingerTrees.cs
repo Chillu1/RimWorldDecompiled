@@ -1,21 +1,20 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class GenStep_HarbingerTrees : GenStep_SpecialTrees
 {
-	public class GenStep_HarbingerTrees : GenStep_SpecialTrees
+	private const float Growth = 1f;
+
+	public override int SeedPart => 786491238;
+
+	protected override float GetGrowth()
 	{
-		private const float Growth = 1f;
+		return 1f;
+	}
 
-		public override int SeedPart => 786491238;
-
-		protected override float GetGrowth()
-		{
-			return 1f;
-		}
-
-		public override int DesiredTreeCountForMap(Map map)
-		{
-			return Find.Anomaly.LevelDef.desiredHarbingerTreeCount;
-		}
+	public override int DesiredTreeCountForMap(Map map)
+	{
+		return Find.Anomaly.LevelDef.desiredHarbingerTreeCount;
 	}
 }

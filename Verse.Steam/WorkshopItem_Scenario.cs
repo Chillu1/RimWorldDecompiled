@@ -3,43 +3,42 @@ using System.Linq;
 using RimWorld;
 using Steamworks;
 
-namespace Verse.Steam
+namespace Verse.Steam;
+
+public class WorkshopItem_Scenario : WorkshopItem
 {
-	public class WorkshopItem_Scenario : WorkshopItem
+	private Scenario cachedScenario;
+
+	public override PublishedFileId_t PublishedFileId
 	{
-		private Scenario cachedScenario;
-
-		public override PublishedFileId_t PublishedFileId
+		get
 		{
-			get
+			return base.PublishedFileId;
+		}
+		set
+		{
+			base.PublishedFileId = value;
+			if (cachedScenario != null)
 			{
-				return base.PublishedFileId;
-			}
-			set
-			{
-				base.PublishedFileId = value;
-				if (cachedScenario != null)
-				{
-					cachedScenario.SetPublishedFileId(value);
-				}
+				cachedScenario.SetPublishedFileId(value);
 			}
 		}
+	}
 
-		public Scenario GetScenario()
+	public Scenario GetScenario()
+	{
+		if (cachedScenario == null)
 		{
-			if (cachedScenario == null)
-			{
-				LoadScenario();
-			}
-			return cachedScenario;
+			LoadScenario();
 		}
+		return cachedScenario;
+	}
 
-		private void LoadScenario()
+	private void LoadScenario()
+	{
+		if (GameDataSaveLoader.TryLoadScenario(base.Directory.GetFiles("*.rsc").First((FileInfo fi) => fi.Extension == ".rsc").FullName, ScenarioCategory.SteamWorkshop, out cachedScenario))
 		{
-			if (GameDataSaveLoader.TryLoadScenario(base.Directory.GetFiles("*.rsc").First((FileInfo fi) => fi.Extension == ".rsc").FullName, ScenarioCategory.SteamWorkshop, out cachedScenario))
-			{
-				cachedScenario.SetPublishedFileId(PublishedFileId);
-			}
+			cachedScenario.SetPublishedFileId(PublishedFileId);
 		}
 	}
 }

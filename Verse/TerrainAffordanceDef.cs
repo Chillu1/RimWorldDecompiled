@@ -1,15 +1,14 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class TerrainAffordanceDef : Def
 {
-	public class TerrainAffordanceDef : Def
-	{
-		public int order;
+	public int order;
 
-		public bool visualizeOnAffordanceOverlay;
+	public bool visualizeOnAffordanceOverlay;
 
-		public Color affordanceOverlayColor = Color.white;
+	public Color affordanceOverlayColor = Color.white;
 
-		public bool blockAffordanceOverlay;
-	}
+	public bool blockAffordanceOverlay;
 }

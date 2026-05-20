@@ -1,30 +1,29 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class CompFireOverlayBase : ThingComp
 {
-	public abstract class CompFireOverlayBase : ThingComp
+	protected int startedGrowingAtTick = -1;
+
+	public CompProperties_FireOverlay Props => (CompProperties_FireOverlay)props;
+
+	public float FireSize
 	{
-		protected int startedGrowingAtTick = -1;
-
-		public CompProperties_FireOverlay Props => (CompProperties_FireOverlay)props;
-
-		public float FireSize
+		get
 		{
-			get
+			if (startedGrowingAtTick < 0)
 			{
-				if (startedGrowingAtTick < 0)
-				{
-					return Props.fireSize;
-				}
-				return Mathf.Lerp(Props.fireSize, Props.finalFireSize, (float)(GenTicks.TicksAbs - startedGrowingAtTick) / Props.fireGrowthDurationTicks);
+				return Props.fireSize;
 			}
+			return Mathf.Lerp(Props.fireSize, Props.finalFireSize, (float)(GenTicks.TicksAbs - startedGrowingAtTick) / Props.fireGrowthDurationTicks);
 		}
+	}
 
-		public override void PostExposeData()
-		{
-			base.PostExposeData();
-			Scribe_Values.Look(ref startedGrowingAtTick, "startedGrowingAtTick", -1);
-		}
+	public override void PostExposeData()
+	{
+		base.PostExposeData();
+		Scribe_Values.Look(ref startedGrowingAtTick, "startedGrowingAtTick", -1);
 	}
 }

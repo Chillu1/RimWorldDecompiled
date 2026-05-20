@@ -1,11 +1,10 @@
 using System.Collections.Generic;
 
-namespace Verse
-{
-	public interface IRenderNodePropertiesParent
-	{
-		bool HasDefinedGraphicProperties { get; }
+namespace Verse;
 
-		List<PawnRenderNodeProperties> RenderNodeProperties { get; }
-	}
+public interface IRenderNodePropertiesParent
+{
+	bool HasDefinedGraphicProperties { get; }
+
+	List<PawnRenderNodeProperties> RenderNodeProperties { get; }
 }

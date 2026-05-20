@@ -1,30 +1,29 @@
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class PawnRenderNodeWorker_OverlayShambler : PawnRenderNodeWorker_Overlay
 {
-	public class PawnRenderNodeWorker_OverlayShambler : PawnRenderNodeWorker_Overlay
+	protected override PawnOverlayDrawer OverlayDrawer(Pawn pawn)
 	{
-		protected override PawnOverlayDrawer OverlayDrawer(Pawn pawn)
-		{
-			return pawn.Drawer.renderer.ShamblerScarDrawer;
-		}
+		return pawn.Drawer.renderer.ShamblerScarDrawer;
+	}
 
-		public override bool ShouldListOnGraph(PawnRenderNode node, PawnDrawParms parms)
-		{
-			return parms.pawn.IsShambler;
-		}
+	public override bool ShouldListOnGraph(PawnRenderNode node, PawnDrawParms parms)
+	{
+		return parms.pawn.IsShambler;
+	}
 
-		public override bool CanDrawNow(PawnRenderNode node, PawnDrawParms parms)
+	public override bool CanDrawNow(PawnRenderNode node, PawnDrawParms parms)
+	{
+		if (base.CanDrawNow(node, parms) && parms.pawn.IsShambler)
 		{
-			if (base.CanDrawNow(node, parms) && parms.pawn.IsShambler)
+			if (parms.pawn.mutant != null)
 			{
-				if (parms.pawn.mutant != null)
-				{
-					return parms.pawn.mutant.HasTurned;
-				}
-				return true;
+				return parms.pawn.mutant.HasTurned;
 			}
-			return false;
+			return true;
 		}
+		return false;
 	}
 }

@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_AbilityWaterskip : CompProperties_AbilityEffect
 {
-	public class CompProperties_AbilityWaterskip : CompProperties_AbilityEffect
+	public CompProperties_AbilityWaterskip()
 	{
-		public CompProperties_AbilityWaterskip()
-		{
-			compClass = typeof(CompAbilityEffect_Waterskip);
-		}
+		compClass = typeof(CompAbilityEffect_Waterskip);
 	}
 }

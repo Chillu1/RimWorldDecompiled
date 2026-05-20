@@ -1,10 +1,9 @@
-namespace LudeonTK
+namespace LudeonTK;
+
+public enum DebugActionType
 {
-	public enum DebugActionType
-	{
-		Action,
-		ToolMap,
-		ToolMapForPawns,
-		ToolWorld
-	}
+	Action,
+	ToolMap,
+	ToolMapForPawns,
+	ToolWorld
 }

@@ -1,13 +1,12 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class IngestibleModifiers
 {
-	public class IngestibleModifiers
-	{
-		public ThingDef ingestible;
+	public ThingDef ingestible;
 
-		public float optimalityOffset;
+	public float optimalityOffset;
 
-		public float poisonChanceOverride;
-	}
+	public float poisonChanceOverride;
 }

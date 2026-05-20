@@ -1,97 +1,96 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtStage
 {
-	public class ThoughtStage
+	[MustTranslate]
+	public string label;
+
+	[MustTranslate]
+	public string labelSocial;
+
+	[MustTranslate]
+	public string labelAbstract;
+
+	[MustTranslate]
+	public string description;
+
+	public float baseMoodEffect;
+
+	public float baseOpinionOffset;
+
+	public bool visible = true;
+
+	[Unsaved(false)]
+	private string cachedLabelCap;
+
+	[Unsaved(false)]
+	private string cachedLabelSocialCap;
+
+	[Unsaved(false)]
+	private string cachedLabelAbstractCap;
+
+	[Unsaved(false)]
+	[TranslationHandle(Priority = 100)]
+	public string untranslatedLabel;
+
+	[Unsaved(false)]
+	[TranslationHandle]
+	public string untranslatedLabelSocial;
+
+	public string LabelCap
 	{
-		[MustTranslate]
-		public string label;
-
-		[MustTranslate]
-		public string labelSocial;
-
-		[MustTranslate]
-		public string labelAbstract;
-
-		[MustTranslate]
-		public string description;
-
-		public float baseMoodEffect;
-
-		public float baseOpinionOffset;
-
-		public bool visible = true;
-
-		[Unsaved(false)]
-		private string cachedLabelCap;
-
-		[Unsaved(false)]
-		private string cachedLabelSocialCap;
-
-		[Unsaved(false)]
-		private string cachedLabelAbstractCap;
-
-		[Unsaved(false)]
-		[TranslationHandle(Priority = 100)]
-		public string untranslatedLabel;
-
-		[Unsaved(false)]
-		[TranslationHandle]
-		public string untranslatedLabelSocial;
-
-		public string LabelCap
+		get
 		{
-			get
+			if (cachedLabelCap == null)
 			{
-				if (cachedLabelCap == null)
-				{
-					cachedLabelCap = label.CapitalizeFirst();
-				}
-				return cachedLabelCap;
+				cachedLabelCap = label.CapitalizeFirst();
 			}
+			return cachedLabelCap;
 		}
+	}
 
-		public string LabelSocialCap
+	public string LabelSocialCap
+	{
+		get
 		{
-			get
+			if (cachedLabelSocialCap == null)
 			{
-				if (cachedLabelSocialCap == null)
-				{
-					cachedLabelSocialCap = labelSocial.CapitalizeFirst();
-				}
-				return cachedLabelSocialCap;
+				cachedLabelSocialCap = labelSocial.CapitalizeFirst();
 			}
+			return cachedLabelSocialCap;
 		}
+	}
 
-		public string LabelAbstractCap
+	public string LabelAbstractCap
+	{
+		get
 		{
-			get
+			if (cachedLabelAbstractCap == null)
 			{
-				if (cachedLabelAbstractCap == null)
-				{
-					cachedLabelAbstractCap = ((labelAbstract != null) ? labelAbstract.CapitalizeFirst() : label.CapitalizeFirst());
-				}
-				return cachedLabelAbstractCap;
+				cachedLabelAbstractCap = ((labelAbstract != null) ? labelAbstract.CapitalizeFirst() : label.CapitalizeFirst());
 			}
+			return cachedLabelAbstractCap;
 		}
+	}
 
-		public void PostLoad()
+	public void PostLoad()
+	{
+		untranslatedLabel = label;
+		untranslatedLabelSocial = labelSocial;
+	}
+
+	public IEnumerable<string> ConfigErrors()
+	{
+		if (!labelSocial.NullOrEmpty() && labelSocial == label)
 		{
-			untranslatedLabel = label;
-			untranslatedLabelSocial = labelSocial;
+			yield return "labelSocial is the same as label. labelSocial is unnecessary in this case";
 		}
-
-		public IEnumerable<string> ConfigErrors()
+		if (baseMoodEffect != 0f && description.NullOrEmpty())
 		{
-			if (!labelSocial.NullOrEmpty() && labelSocial == label)
-			{
-				yield return "labelSocial is the same as label. labelSocial is unnecessary in this case";
-			}
-			if (baseMoodEffect != 0f && description.NullOrEmpty())
-			{
-				yield return "affects mood but doesn't have a description";
-			}
+			yield return "affects mood but doesn't have a description";
 		}
 	}
 }

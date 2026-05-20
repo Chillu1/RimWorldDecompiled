@@ -2,40 +2,39 @@ using System;
 using System.IO;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class DevModePermanentlyDisabledUtility
 {
-	public static class DevModePermanentlyDisabledUtility
+	private static bool initialized;
+
+	private static bool disabled;
+
+	public static bool Disabled
 	{
-		private static bool initialized;
-
-		private static bool disabled;
-
-		public static bool Disabled
+		get
 		{
-			get
+			if (!initialized)
 			{
-				if (!initialized)
-				{
-					initialized = true;
-					disabled = File.Exists(GenFilePaths.DevModePermanentlyDisabledFilePath);
-				}
-				return disabled;
+				initialized = true;
+				disabled = File.Exists(GenFilePaths.DevModePermanentlyDisabledFilePath);
 			}
+			return disabled;
 		}
+	}
 
-		public static void Disable()
+	public static void Disable()
+	{
+		try
 		{
-			try
-			{
-				File.Create(GenFilePaths.DevModePermanentlyDisabledFilePath).Dispose();
-			}
-			catch (Exception ex)
-			{
-				Log.Error("Could not permanently disable dev mode: " + ex);
-				return;
-			}
-			disabled = true;
-			Prefs.DevMode = false;
+			File.Create(GenFilePaths.DevModePermanentlyDisabledFilePath).Dispose();
 		}
+		catch (Exception ex)
+		{
+			Log.Error("Could not permanently disable dev mode: " + ex);
+			return;
+		}
+		disabled = true;
+		Prefs.DevMode = false;
 	}
 }

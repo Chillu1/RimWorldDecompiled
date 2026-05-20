@@ -1,51 +1,50 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ListerArtificialBuildingsForMeditation
 {
-	public class ListerArtificialBuildingsForMeditation
+	private Map map;
+
+	private Dictionary<CellWithRadius, List<Thing>> artificialBuildingsPerCell = new Dictionary<CellWithRadius, List<Thing>>();
+
+	public ListerArtificialBuildingsForMeditation(Map map)
 	{
-		private Map map;
+		this.map = map;
+	}
 
-		private Dictionary<CellWithRadius, List<Thing>> artificialBuildingsPerCell = new Dictionary<CellWithRadius, List<Thing>>();
-
-		public ListerArtificialBuildingsForMeditation(Map map)
+	public void Notify_BuildingSpawned(Building b)
+	{
+		if (MeditationUtility.CountsAsArtificialBuilding(b))
 		{
-			this.map = map;
+			artificialBuildingsPerCell.Clear();
 		}
+	}
 
-		public void Notify_BuildingSpawned(Building b)
+	public void Notify_BuildingDeSpawned(Building b)
+	{
+		if (MeditationUtility.CountsAsArtificialBuilding(b))
 		{
-			if (MeditationUtility.CountsAsArtificialBuilding(b))
-			{
-				artificialBuildingsPerCell.Clear();
-			}
+			artificialBuildingsPerCell.Clear();
 		}
+	}
 
-		public void Notify_BuildingDeSpawned(Building b)
+	public List<Thing> GetForCell(IntVec3 cell, float radius)
+	{
+		CellWithRadius key = new CellWithRadius(cell, radius);
+		if (!artificialBuildingsPerCell.TryGetValue(key, out var value))
 		{
-			if (MeditationUtility.CountsAsArtificialBuilding(b))
+			value = new List<Thing>();
+			foreach (Thing item in GenRadial.RadialDistinctThingsAround(cell, map, radius, useCenter: false))
 			{
-				artificialBuildingsPerCell.Clear();
-			}
-		}
-
-		public List<Thing> GetForCell(IntVec3 cell, float radius)
-		{
-			CellWithRadius key = new CellWithRadius(cell, radius);
-			if (!artificialBuildingsPerCell.TryGetValue(key, out var value))
-			{
-				value = new List<Thing>();
-				foreach (Thing item in GenRadial.RadialDistinctThingsAround(cell, map, radius, useCenter: false))
+				if (MeditationUtility.CountsAsArtificialBuilding(item))
 				{
-					if (MeditationUtility.CountsAsArtificialBuilding(item))
-					{
-						value.Add(item);
-					}
+					value.Add(item);
 				}
-				artificialBuildingsPerCell[key] = value;
 			}
-			return value;
+			artificialBuildingsPerCell[key] = value;
 		}
+		return value;
 	}
 }

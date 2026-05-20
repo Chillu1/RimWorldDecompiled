@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum RotStage : byte
 {
-	public enum RotStage : byte
-	{
-		Fresh,
-		Rotting,
-		Dessicated
-	}
+	Fresh,
+	Rotting,
+	Dessicated
 }

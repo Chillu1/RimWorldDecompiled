@@ -1,65 +1,64 @@
 using System;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class PawnFlyerProperties
 {
-	public class PawnFlyerProperties
+	private Type workerClass = typeof(PawnFlyerWorker);
+
+	private SimpleCurve progressCurve;
+
+	[NoTranslate]
+	private string shadowTexPath = "Things/Skyfaller/SkyfallerShadowCircle";
+
+	public float flightDurationMin = 0.5f;
+
+	public float flightSpeed = 12f;
+
+	public float heightFactor = 2f;
+
+	public IntRange stunDurationTicksRange = IntRange.Zero;
+
+	private PawnFlyerWorker workerInt;
+
+	private AnimationCurve progressCurveInt;
+
+	private Material cachedShadowMaterial;
+
+	public PawnFlyerWorker Worker
 	{
-		private Type workerClass = typeof(PawnFlyerWorker);
-
-		private SimpleCurve progressCurve;
-
-		[NoTranslate]
-		private string shadowTexPath = "Things/Skyfaller/SkyfallerShadowCircle";
-
-		public float flightDurationMin = 0.5f;
-
-		public float flightSpeed = 12f;
-
-		public float heightFactor = 2f;
-
-		public IntRange stunDurationTicksRange = IntRange.Zero;
-
-		private PawnFlyerWorker workerInt;
-
-		private AnimationCurve progressCurveInt;
-
-		private Material cachedShadowMaterial;
-
-		public PawnFlyerWorker Worker
+		get
 		{
-			get
+			if (workerInt == null)
 			{
-				if (workerInt == null)
-				{
-					workerInt = (PawnFlyerWorker)Activator.CreateInstance(workerClass, this);
-				}
-				return workerInt;
+				workerInt = (PawnFlyerWorker)Activator.CreateInstance(workerClass, this);
 			}
+			return workerInt;
 		}
+	}
 
-		public AnimationCurve ProgressCurve
+	public AnimationCurve ProgressCurve
+	{
+		get
 		{
-			get
+			if (progressCurveInt == null && progressCurve != null)
 			{
-				if (progressCurveInt == null && progressCurve != null)
-				{
-					progressCurveInt = progressCurve.ToAnimationCurve();
-				}
-				return progressCurveInt;
+				progressCurveInt = progressCurve.ToAnimationCurve();
 			}
+			return progressCurveInt;
 		}
+	}
 
-		public Material ShadowMaterial
+	public Material ShadowMaterial
+	{
+		get
 		{
-			get
+			if (cachedShadowMaterial == null && !shadowTexPath.NullOrEmpty())
 			{
-				if (cachedShadowMaterial == null && !shadowTexPath.NullOrEmpty())
-				{
-					cachedShadowMaterial = MaterialPool.MatFrom(shadowTexPath, ShaderDatabase.Transparent);
-				}
-				return cachedShadowMaterial;
+				cachedShadowMaterial = MaterialPool.MatFrom(shadowTexPath, ShaderDatabase.Transparent);
 			}
+			return cachedShadowMaterial;
 		}
 	}
 }

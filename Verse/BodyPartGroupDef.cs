@@ -1,41 +1,40 @@
-namespace Verse
+namespace Verse;
+
+public class BodyPartGroupDef : Def
 {
-	public class BodyPartGroupDef : Def
+	[MustTranslate]
+	public string labelShort;
+
+	public int listOrder;
+
+	[Unsaved(false)]
+	private string cachedLabelShortCap;
+
+	public string LabelShort
 	{
-		[MustTranslate]
-		public string labelShort;
-
-		public int listOrder;
-
-		[Unsaved(false)]
-		private string cachedLabelShortCap;
-
-		public string LabelShort
+		get
 		{
-			get
+			if (!labelShort.NullOrEmpty())
 			{
-				if (!labelShort.NullOrEmpty())
-				{
-					return labelShort;
-				}
-				return label;
+				return labelShort;
 			}
+			return label;
 		}
+	}
 
-		public string LabelShortCap
+	public string LabelShortCap
+	{
+		get
 		{
-			get
+			if (labelShort.NullOrEmpty())
 			{
-				if (labelShort.NullOrEmpty())
-				{
-					return LabelCap;
-				}
-				if (cachedLabelShortCap == null)
-				{
-					cachedLabelShortCap = labelShort.CapitalizeFirst();
-				}
-				return cachedLabelShortCap;
+				return LabelCap;
 			}
+			if (cachedLabelShortCap == null)
+			{
+				cachedLabelShortCap = labelShort.CapitalizeFirst();
+			}
+			return cachedLabelShortCap;
 		}
 	}
 }

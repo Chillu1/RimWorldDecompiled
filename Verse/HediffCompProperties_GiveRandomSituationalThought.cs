@@ -1,27 +1,26 @@
 using System.Collections.Generic;
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_GiveRandomSituationalThought : HediffCompProperties
 {
-	public class HediffCompProperties_GiveRandomSituationalThought : HediffCompProperties
+	public List<ThoughtDef> thoughtDefs;
+
+	public HediffCompProperties_GiveRandomSituationalThought()
 	{
-		public List<ThoughtDef> thoughtDefs;
+		compClass = typeof(HediffComp_GiveRandomSituationalThought);
+	}
 
-		public HediffCompProperties_GiveRandomSituationalThought()
+	public override IEnumerable<string> ConfigErrors(HediffDef parentDef)
+	{
+		foreach (string item in base.ConfigErrors(parentDef))
 		{
-			compClass = typeof(HediffComp_GiveRandomSituationalThought);
+			yield return item;
 		}
-
-		public override IEnumerable<string> ConfigErrors(HediffDef parentDef)
+		if (thoughtDefs.NullOrEmpty())
 		{
-			foreach (string item in base.ConfigErrors(parentDef))
-			{
-				yield return item;
-			}
-			if (thoughtDefs.NullOrEmpty())
-			{
-				yield return "There must be at least one item defined in thoughtDefs";
-			}
+			yield return "There must be at least one item defined in thoughtDefs";
 		}
 	}
 }

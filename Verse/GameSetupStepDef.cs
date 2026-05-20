@@ -1,17 +1,16 @@
-namespace Verse
+namespace Verse;
+
+public class GameSetupStepDef : Def
 {
-	public class GameSetupStepDef : Def
+	public float order;
+
+	public bool executeAfterWorldSetup;
+
+	public GameSetupStep setupStep;
+
+	public override void PostLoad()
 	{
-		public float order;
-
-		public bool executeAfterWorldSetup;
-
-		public GameSetupStep setupStep;
-
-		public override void PostLoad()
-		{
-			base.PostLoad();
-			setupStep.def = this;
-		}
+		base.PostLoad();
+		setupStep.def = this;
 	}
 }

@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_CreatesInfestations : CompProperties
 {
-	public class CompProperties_CreatesInfestations : CompProperties
+	public CompProperties_CreatesInfestations()
 	{
-		public CompProperties_CreatesInfestations()
-		{
-			compClass = typeof(CompCreatesInfestations);
-		}
+		compClass = typeof(CompCreatesInfestations);
 	}
 }

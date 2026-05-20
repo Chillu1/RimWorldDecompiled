@@ -1,12 +1,11 @@
-namespace Verse.Sound
-{
-	public class SoundParamSource_Random : SoundParamSource
-	{
-		public override string Label => "Random";
+namespace Verse.Sound;
 
-		public override float ValueFor(Sample samp)
-		{
-			return Rand.Value;
-		}
+public class SoundParamSource_Random : SoundParamSource
+{
+	public override string Label => "Random";
+
+	public override float ValueFor(Sample samp)
+	{
+		return Rand.Value;
 	}
 }

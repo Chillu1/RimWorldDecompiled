@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum EntityContainmentMode
 {
-	public enum EntityContainmentMode
-	{
-		MaintainOnly,
-		Study,
-		Release,
-		Execute
-	}
+	MaintainOnly,
+	Study,
+	Release,
+	Execute
 }

@@ -1,48 +1,47 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_GetRandomByCurve : QuestNode
 {
-	public class QuestNode_GetRandomByCurve : QuestNode
+	[NoTranslate]
+	public SlateRef<string> storeAs;
+
+	public SlateRef<SimpleCurve> curve;
+
+	public SlateRef<bool> roundRandom;
+
+	public SlateRef<float?> min;
+
+	public SlateRef<float?> max;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		[NoTranslate]
-		public SlateRef<string> storeAs;
+		SetVars(slate);
+		return true;
+	}
 
-		public SlateRef<SimpleCurve> curve;
+	protected override void RunInt()
+	{
+		SetVars(QuestGen.slate);
+	}
 
-		public SlateRef<bool> roundRandom;
-
-		public SlateRef<float?> min;
-
-		public SlateRef<float?> max;
-
-		protected override bool TestRunInt(Slate slate)
+	private void SetVars(Slate slate)
+	{
+		float num = Rand.ByCurve(curve.GetValue(slate));
+		if (roundRandom.GetValue(slate))
 		{
-			SetVars(slate);
-			return true;
+			num = GenMath.RoundRandom(num);
 		}
-
-		protected override void RunInt()
+		if (min.GetValue(slate).HasValue)
 		{
-			SetVars(QuestGen.slate);
+			num = Mathf.Max(num, min.GetValue(slate).Value);
 		}
-
-		private void SetVars(Slate slate)
+		if (max.GetValue(slate).HasValue)
 		{
-			float num = Rand.ByCurve(curve.GetValue(slate));
-			if (roundRandom.GetValue(slate))
-			{
-				num = GenMath.RoundRandom(num);
-			}
-			if (min.GetValue(slate).HasValue)
-			{
-				num = Mathf.Max(num, min.GetValue(slate).Value);
-			}
-			if (max.GetValue(slate).HasValue)
-			{
-				num = Mathf.Min(num, max.GetValue(slate).Value);
-			}
-			slate.Set(storeAs.GetValue(slate), num);
+			num = Mathf.Min(num, max.GetValue(slate).Value);
 		}
+		slate.Set(storeAs.GetValue(slate), num);
 	}
 }

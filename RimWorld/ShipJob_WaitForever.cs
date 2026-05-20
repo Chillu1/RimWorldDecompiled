@@ -1,17 +1,16 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class ShipJob_WaitForever : ShipJob_Wait
 {
-	public class ShipJob_WaitForever : ShipJob_Wait
+	protected override bool ShouldEnd
 	{
-		protected override bool ShouldEnd
+		get
 		{
-			get
+			if (transportShip.shipThing != null)
 			{
-				if (transportShip.shipThing != null)
-				{
-					return transportShip.shipThing.Destroyed;
-				}
-				return true;
+				return transportShip.shipThing.Destroyed;
 			}
+			return true;
 		}
 	}
 }

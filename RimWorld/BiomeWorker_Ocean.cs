@@ -1,16 +1,15 @@
 using RimWorld.Planet;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class BiomeWorker_Ocean : BiomeWorker
 {
-	public class BiomeWorker_Ocean : BiomeWorker
+	public override float GetScore(BiomeDef biome, Tile tile, PlanetTile planetTile)
 	{
-		public override float GetScore(BiomeDef biome, Tile tile, PlanetTile planetTile)
+		if (!tile.WaterCovered)
 		{
-			if (!tile.WaterCovered)
-			{
-				return -100f;
-			}
-			return 0f;
+			return -100f;
 		}
+		return 0f;
 	}
 }

@@ -1,19 +1,18 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class PawnTags : IExposable
 {
-	public class PawnTags : IExposable
+	public List<string> tags;
+
+	public bool Contains(string tag)
 	{
-		public List<string> tags;
+		return tags.Contains(tag);
+	}
 
-		public bool Contains(string tag)
-		{
-			return tags.Contains(tag);
-		}
-
-		public void ExposeData()
-		{
-			Scribe_Collections.Look(ref tags, "tags", LookMode.Value);
-		}
+	public void ExposeData()
+	{
+		Scribe_Collections.Look(ref tags, "tags", LookMode.Value);
 	}
 }

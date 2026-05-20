@@ -1,52 +1,51 @@
-namespace Verse.AI
+namespace Verse.AI;
+
+public class MentalState_CorpseObsession : MentalState
 {
-	public class MentalState_CorpseObsession : MentalState
+	public Corpse corpse;
+
+	public bool alreadyHauledCorpse;
+
+	private const int AnyCorpseStillValidCheckInterval = 500;
+
+	public override void ExposeData()
 	{
-		public Corpse corpse;
+		base.ExposeData();
+		Scribe_References.Look(ref corpse, "corpse");
+		Scribe_Values.Look(ref alreadyHauledCorpse, "alreadyHauledCorpse", defaultValue: false);
+	}
 
-		public bool alreadyHauledCorpse;
-
-		private const int AnyCorpseStillValidCheckInterval = 500;
-
-		public override void ExposeData()
+	public override void MentalStateTick(int delta)
+	{
+		if (alreadyHauledCorpse)
 		{
-			base.ExposeData();
-			Scribe_References.Look(ref corpse, "corpse");
-			Scribe_Values.Look(ref alreadyHauledCorpse, "alreadyHauledCorpse", defaultValue: false);
+			base.MentalStateTick(delta);
+			return;
 		}
-
-		public override void MentalStateTick(int delta)
+		bool flag = false;
+		if (pawn.IsHashIntervalTick(500, delta) && !CorpseObsessionMentalStateUtility.IsCorpseValid(corpse, pawn))
 		{
-			if (alreadyHauledCorpse)
-			{
-				base.MentalStateTick(delta);
-				return;
-			}
-			bool flag = false;
-			if (pawn.IsHashIntervalTick(500, delta) && !CorpseObsessionMentalStateUtility.IsCorpseValid(corpse, pawn))
-			{
-				corpse = CorpseObsessionMentalStateUtility.GetClosestCorpseToDigUp(pawn);
-				if (corpse == null)
-				{
-					RecoverFromState();
-					flag = true;
-				}
-			}
-			if (!flag)
-			{
-				base.MentalStateTick(delta);
-			}
-		}
-
-		public override void PostStart(string reason)
-		{
-			base.PostStart(reason);
 			corpse = CorpseObsessionMentalStateUtility.GetClosestCorpseToDigUp(pawn);
+			if (corpse == null)
+			{
+				RecoverFromState();
+				flag = true;
+			}
 		}
-
-		public void Notify_CorpseHauled()
+		if (!flag)
 		{
-			alreadyHauledCorpse = true;
+			base.MentalStateTick(delta);
 		}
+	}
+
+	public override void PostStart(string reason)
+	{
+		base.PostStart(reason);
+		corpse = CorpseObsessionMentalStateUtility.GetClosestCorpseToDigUp(pawn);
+	}
+
+	public void Notify_CorpseHauled()
+	{
+		alreadyHauledCorpse = true;
 	}
 }

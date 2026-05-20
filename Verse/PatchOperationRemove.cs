@@ -1,20 +1,19 @@
 using System.Linq;
 using System.Xml;
 
-namespace Verse
+namespace Verse;
+
+public class PatchOperationRemove : PatchOperationPathed
 {
-	public class PatchOperationRemove : PatchOperationPathed
+	protected override bool ApplyWorker(XmlDocument xml)
 	{
-		protected override bool ApplyWorker(XmlDocument xml)
+		bool result = false;
+		XmlNode[] array = xml.SelectNodes(xpath).Cast<XmlNode>().ToArray();
+		foreach (XmlNode xmlNode in array)
 		{
-			bool result = false;
-			XmlNode[] array = xml.SelectNodes(xpath).Cast<XmlNode>().ToArray();
-			foreach (XmlNode xmlNode in array)
-			{
-				result = true;
-				xmlNode.ParentNode.RemoveChild(xmlNode);
-			}
-			return result;
+			result = true;
+			xmlNode.ParentNode.RemoveChild(xmlNode);
 		}
+		return result;
 	}
 }

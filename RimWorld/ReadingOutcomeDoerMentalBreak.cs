@@ -1,21 +1,20 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ReadingOutcomeDoerMentalBreak : BookOutcomeDoer
 {
-	public class ReadingOutcomeDoerMentalBreak : BookOutcomeDoer
+	public new BookOutcomeProperties_MentalBreak Props => (BookOutcomeProperties_MentalBreak)props;
+
+	public override bool DoesProvidesOutcome(Pawn reader)
 	{
-		public new BookOutcomeProperties_MentalBreak Props => (BookOutcomeProperties_MentalBreak)props;
+		return false;
+	}
 
-		public override bool DoesProvidesOutcome(Pawn reader)
-		{
-			return false;
-		}
-
-		public override void OnBookGenerated(Pawn author = null)
-		{
-			float randomInRange = Props.chancePerHourRange.RandomInRange;
-			randomInRange = Props.chanceMinMaxRange.ClampToRange(randomInRange);
-			base.Book.SetMentalBreakChance(randomInRange);
-		}
+	public override void OnBookGenerated(Pawn author = null)
+	{
+		float randomInRange = Props.chancePerHourRange.RandomInRange;
+		randomInRange = Props.chanceMinMaxRange.ClampToRange(randomInRange);
+		base.Book.SetMentalBreakChance(randomInRange);
 	}
 }

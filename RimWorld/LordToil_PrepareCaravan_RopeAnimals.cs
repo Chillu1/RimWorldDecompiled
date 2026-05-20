@@ -2,41 +2,40 @@ using Verse;
 using Verse.AI;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class LordToil_PrepareCaravan_RopeAnimals : LordToil
 {
-	public abstract class LordToil_PrepareCaravan_RopeAnimals : LordToil
+	protected IntVec3 destinationPoint;
+
+	protected int? ropeeLimit;
+
+	public override float? CustomWakeThreshold => 0.5f;
+
+	public override bool AllowRestingInBed => false;
+
+	public LordToil_PrepareCaravan_RopeAnimals(IntVec3 destinationPoint, int? ropeeLimit)
 	{
-		protected IntVec3 destinationPoint;
+		this.destinationPoint = destinationPoint;
+		this.ropeeLimit = ropeeLimit;
+	}
 
-		protected int? ropeeLimit;
-
-		public override float? CustomWakeThreshold => 0.5f;
-
-		public override bool AllowRestingInBed => false;
-
-		public LordToil_PrepareCaravan_RopeAnimals(IntVec3 destinationPoint, int? ropeeLimit)
+	public override void UpdateAllDuties()
+	{
+		for (int i = 0; i < lord.ownedPawns.Count; i++)
 		{
-			this.destinationPoint = destinationPoint;
-			this.ropeeLimit = ropeeLimit;
-		}
-
-		public override void UpdateAllDuties()
-		{
-			for (int i = 0; i < lord.ownedPawns.Count; i++)
+			Pawn pawn = lord.ownedPawns[i];
+			if (pawn.IsColonist || AnimalPenUtility.NeedsToBeManagedByRope(pawn))
 			{
-				Pawn pawn = lord.ownedPawns[i];
-				if (pawn.IsColonist || AnimalPenUtility.NeedsToBeManagedByRope(pawn))
-				{
-					pawn.mindState.duty = MakeRopeDuty();
-					pawn.mindState.duty.ropeeLimit = ropeeLimit;
-				}
-				else
-				{
-					pawn.mindState.duty = new PawnDuty(DutyDefOf.PrepareCaravan_Wait, destinationPoint);
-				}
+				pawn.mindState.duty = MakeRopeDuty();
+				pawn.mindState.duty.ropeeLimit = ropeeLimit;
+			}
+			else
+			{
+				pawn.mindState.duty = new PawnDuty(DutyDefOf.PrepareCaravan_Wait, destinationPoint);
 			}
 		}
-
-		protected abstract PawnDuty MakeRopeDuty();
 	}
+
+	protected abstract PawnDuty MakeRopeDuty();
 }

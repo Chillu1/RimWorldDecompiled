@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RaidAgeRestrictionWorker_Children : RaidAgeRestrictionWorker
 {
-	public class RaidAgeRestrictionWorker_Children : RaidAgeRestrictionWorker
+	public override bool CanUseWith(IncidentParms parms)
 	{
-		public override bool CanUseWith(IncidentParms parms)
+		if (!Find.Storyteller.difficulty.ChildRaidersAllowed || Find.Storyteller.difficulty.babiesAreHealthy)
 		{
-			if (!Find.Storyteller.difficulty.ChildRaidersAllowed || Find.Storyteller.difficulty.babiesAreHealthy)
-			{
-				return false;
-			}
-			return base.CanUseWith(parms);
+			return false;
 		}
+		return base.CanUseWith(parms);
 	}
 }

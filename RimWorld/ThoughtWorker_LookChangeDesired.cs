@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_LookChangeDesired : ThoughtWorker
 {
-	public class ThoughtWorker_LookChangeDesired : ThoughtWorker
+	protected override ThoughtState CurrentStateInternal(Pawn p)
 	{
-		protected override ThoughtState CurrentStateInternal(Pawn p)
+		if (p.style == null || !ModsConfig.IdeologyActive)
 		{
-			if (p.style == null || !ModsConfig.IdeologyActive)
-			{
-				return ThoughtState.Inactive;
-			}
-			return p.style.LookChangeDesired;
+			return ThoughtState.Inactive;
 		}
+		return p.style.LookChangeDesired;
 	}
 }

@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum GeneType
 {
-	public enum GeneType
-	{
-		Endogene,
-		Xenogene
-	}
+	Endogene,
+	Xenogene
 }

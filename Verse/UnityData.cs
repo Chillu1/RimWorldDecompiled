@@ -3,113 +3,112 @@ using System.Threading;
 using Unity.Jobs.LowLevel.Unsafe;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public static class UnityData
 {
-	public static class UnityData
+	private static bool initialized;
+
+	public static bool isEditor;
+
+	public static string dataPath;
+
+	public static RuntimePlatform platform;
+
+	public static string persistentDataPath;
+
+	private static int mainThreadId;
+
+	private static int maximumJobWorkerThreads;
+
+	private static int maximumJobWorkerCount;
+
+	private static bool computeShadersSupported;
+
+	public static bool IsInMainThread => mainThreadId == Thread.CurrentThread.ManagedThreadId;
+
+	public static bool Is32BitBuild => IntPtr.Size == 4;
+
+	public static bool Is64BitBuild => IntPtr.Size == 8;
+
+	public static int MaxJobWorkerThreadCount => maximumJobWorkerThreads;
+
+	public static int MaxJobWorkerCount => maximumJobWorkerCount;
+
+	public static bool ComputeShadersSupported => computeShadersSupported;
+
+	public static event Action DisposeStatic;
+
+	public static int GetIdealBatchCount(int items)
 	{
-		private static bool initialized;
+		return Mathf.Max(items / maximumJobWorkerThreads, 4);
+	}
 
-		public static bool isEditor;
+	public static void DisposeStaticResources()
+	{
+		UnityData.DisposeStatic?.Invoke();
+		UnityData.DisposeStatic = null;
+	}
 
-		public static string dataPath;
-
-		public static RuntimePlatform platform;
-
-		public static string persistentDataPath;
-
-		private static int mainThreadId;
-
-		private static int maximumJobWorkerThreads;
-
-		private static int maximumJobWorkerCount;
-
-		private static bool computeShadersSupported;
-
-		public static bool IsInMainThread => mainThreadId == Thread.CurrentThread.ManagedThreadId;
-
-		public static bool Is32BitBuild => IntPtr.Size == 4;
-
-		public static bool Is64BitBuild => IntPtr.Size == 8;
-
-		public static int MaxJobWorkerThreadCount => maximumJobWorkerThreads;
-
-		public static int MaxJobWorkerCount => maximumJobWorkerCount;
-
-		public static bool ComputeShadersSupported => computeShadersSupported;
-
-		public static event Action DisposeStatic;
-
-		public static int GetIdealBatchCount(int items)
+	static UnityData()
+	{
+		if (!initialized && !UnityDataInitializer.initializing)
 		{
-			return Mathf.Max(items / maximumJobWorkerThreads, 4);
+			Log.Warning("Used UnityData before it's initialized.");
 		}
+	}
 
-		public static void DisposeStaticResources()
+	public static void CopyUnityData()
+	{
+		mainThreadId = Thread.CurrentThread.ManagedThreadId;
+		isEditor = Application.isEditor;
+		dataPath = Application.dataPath;
+		platform = Application.platform;
+		persistentDataPath = Application.persistentDataPath;
+		maximumJobWorkerThreads = JobsUtility.ThreadIndexCount + 1;
+		maximumJobWorkerCount = JobsUtility.JobWorkerCount;
+		computeShadersSupported = false;
+		initialized = true;
+	}
+
+	private static bool IsIntegratedGraphicsCard()
+	{
+		if (SystemInfo.graphicsDeviceVendorID != 32902 && SystemInfo.graphicsDeviceVendorID != 4203)
 		{
-			UnityData.DisposeStatic?.Invoke();
-			UnityData.DisposeStatic = null;
+			return IsAmdIntegratedGraphics();
 		}
+		return true;
+	}
 
-		static UnityData()
+	private static bool IsAmdIntegratedGraphics()
+	{
+		if (SystemInfo.graphicsDeviceVendorID != 4098)
 		{
-			if (!initialized && !UnityDataInitializer.initializing)
-			{
-				Log.Warning("Used UnityData before it's initialized.");
-			}
-		}
-
-		public static void CopyUnityData()
-		{
-			mainThreadId = Thread.CurrentThread.ManagedThreadId;
-			isEditor = Application.isEditor;
-			dataPath = Application.dataPath;
-			platform = Application.platform;
-			persistentDataPath = Application.persistentDataPath;
-			maximumJobWorkerThreads = JobsUtility.ThreadIndexCount + 1;
-			maximumJobWorkerCount = JobsUtility.JobWorkerCount;
-			computeShadersSupported = false;
-			initialized = true;
-		}
-
-		private static bool IsIntegratedGraphicsCard()
-		{
-			if (SystemInfo.graphicsDeviceVendorID != 32902 && SystemInfo.graphicsDeviceVendorID != 4203)
-			{
-				return IsAmdIntegratedGraphics();
-			}
-			return true;
-		}
-
-		private static bool IsAmdIntegratedGraphics()
-		{
-			if (SystemInfo.graphicsDeviceVendorID != 4098)
-			{
-				return false;
-			}
-			string text = SystemInfo.graphicsDeviceName.ToLowerInvariant();
-			int num = text.IndexOf("m graphics", StringComparison.InvariantCulture);
-			if (num > 1 && char.IsDigit(text[num - 1]))
-			{
-				return true;
-			}
-			if (text.Contains("vega"))
-			{
-				return true;
-			}
-			if (text.Contains("integrated") || text.Contains("apu"))
-			{
-				return true;
-			}
-			if (text.Contains("ryzen"))
-			{
-				return true;
-			}
-			string text2 = text.ToLowerInvariant().Trim();
-			if (text2 == "amd radeon(tm) graphics" || text2 == "amd radeon graphics")
-			{
-				return true;
-			}
 			return false;
 		}
+		string text = SystemInfo.graphicsDeviceName.ToLowerInvariant();
+		int num = text.IndexOf("m graphics", StringComparison.InvariantCulture);
+		if (num > 1 && char.IsDigit(text[num - 1]))
+		{
+			return true;
+		}
+		if (text.Contains("vega"))
+		{
+			return true;
+		}
+		if (text.Contains("integrated") || text.Contains("apu"))
+		{
+			return true;
+		}
+		if (text.Contains("ryzen"))
+		{
+			return true;
+		}
+		string text2 = text.ToLowerInvariant().Trim();
+		if (text2 == "amd radeon(tm) graphics" || text2 == "amd radeon graphics")
+		{
+			return true;
+		}
+		return false;
 	}
 }

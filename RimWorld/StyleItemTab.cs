@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum StyleItemTab
 {
-	public enum StyleItemTab
-	{
-		HairAndBeard,
-		Tattoo
-	}
+	HairAndBeard,
+	Tattoo
 }

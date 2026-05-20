@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_AbilityReimplantXenogerm : CompProperties_AbilityEffect
 {
-	public class CompProperties_AbilityReimplantXenogerm : CompProperties_AbilityEffect
+	public CompProperties_AbilityReimplantXenogerm()
 	{
-		public CompProperties_AbilityReimplantXenogerm()
-		{
-			compClass = typeof(CompAbilityEffect_ReimplantXenogerm);
-		}
+		compClass = typeof(CompAbilityEffect_ReimplantXenogerm);
 	}
 }

@@ -1,12 +1,11 @@
-namespace Verse
+namespace Verse;
+
+public enum MoteSpawnLocType : byte
 {
-	public enum MoteSpawnLocType : byte
-	{
-		OnSource,
-		BetweenPositions,
-		BetweenTouchingCells,
-		RandomCellOnTarget,
-		RandomDrawPosOnTarget,
-		OnTarget
-	}
+	OnSource,
+	BetweenPositions,
+	BetweenTouchingCells,
+	RandomCellOnTarget,
+	RandomDrawPosOnTarget,
+	OnTarget
 }

@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public class FleckSystemStatic : FleckSystemBase<FleckStatic>
 {
-	public class FleckSystemStatic : FleckSystemBase<FleckStatic>
+	public FleckSystemStatic(FleckManager parent)
+		: base(parent)
 	{
-		public FleckSystemStatic(FleckManager parent)
-			: base(parent)
-		{
-		}
 	}
 }

@@ -2,31 +2,30 @@ using System.Collections.Generic;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_TradeWithPawn : JobDriver
 {
-	public class JobDriver_TradeWithPawn : JobDriver
+	private Pawn Trader => (Pawn)base.TargetThingA;
+
+	public override bool TryMakePreToilReservations(bool errorOnFailed)
 	{
-		private Pawn Trader => (Pawn)base.TargetThingA;
+		return pawn.Reserve(Trader, job, 1, -1, null, errorOnFailed);
+	}
 
-		public override bool TryMakePreToilReservations(bool errorOnFailed)
+	protected override IEnumerable<Toil> MakeNewToils()
+	{
+		this.FailOnDespawnedOrNull(TargetIndex.A);
+		yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch).FailOn(() => !Trader.CanTradeNow);
+		Toil trade = ToilMaker.MakeToil("MakeNewToils");
+		trade.initAction = delegate
 		{
-			return pawn.Reserve(Trader, job, 1, -1, null, errorOnFailed);
-		}
-
-		protected override IEnumerable<Toil> MakeNewToils()
-		{
-			this.FailOnDespawnedOrNull(TargetIndex.A);
-			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch).FailOn(() => !Trader.CanTradeNow);
-			Toil trade = ToilMaker.MakeToil("MakeNewToils");
-			trade.initAction = delegate
+			Pawn actor = trade.actor;
+			if (Trader.CanTradeNow)
 			{
-				Pawn actor = trade.actor;
-				if (Trader.CanTradeNow)
-				{
-					Find.WindowStack.Add(new Dialog_Trade(actor, Trader));
-				}
-			};
-			yield return trade;
-		}
+				Find.WindowStack.Add(new Dialog_Trade(actor, Trader));
+			}
+		};
+		yield return trade;
 	}
 }

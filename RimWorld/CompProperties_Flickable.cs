@@ -1,21 +1,20 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_Flickable : CompProperties
 {
-	public class CompProperties_Flickable : CompProperties
+	[NoTranslate]
+	public string commandTexture = "UI/Commands/DesirePower";
+
+	[NoTranslate]
+	public string commandLabelKey = "CommandDesignateTogglePowerLabel";
+
+	[NoTranslate]
+	public string commandDescKey = "CommandDesignateTogglePowerDesc";
+
+	public CompProperties_Flickable()
 	{
-		[NoTranslate]
-		public string commandTexture = "UI/Commands/DesirePower";
-
-		[NoTranslate]
-		public string commandLabelKey = "CommandDesignateTogglePowerLabel";
-
-		[NoTranslate]
-		public string commandDescKey = "CommandDesignateTogglePowerDesc";
-
-		public CompProperties_Flickable()
-		{
-			compClass = typeof(CompFlickable);
-		}
+		compClass = typeof(CompFlickable);
 	}
 }

@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_PsychicRitualSpot : CompProperties
 {
-	public class CompProperties_PsychicRitualSpot : CompProperties
+	public CompProperties_PsychicRitualSpot()
 	{
-		public CompProperties_PsychicRitualSpot()
-		{
-			compClass = typeof(CompPsychicRitualSpot);
-		}
+		compClass = typeof(CompPsychicRitualSpot);
 	}
 }

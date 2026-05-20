@@ -1,14 +1,13 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class CompProperties_SpawnEffecterOnDestroy : CompProperties
-	{
-		public EffecterDef effect;
+namespace RimWorld;
 
-		public CompProperties_SpawnEffecterOnDestroy()
-		{
-			compClass = typeof(CompSpawnEffecterOnDestroy);
-		}
+public class CompProperties_SpawnEffecterOnDestroy : CompProperties
+{
+	public EffecterDef effect;
+
+	public CompProperties_SpawnEffecterOnDestroy()
+	{
+		compClass = typeof(CompSpawnEffecterOnDestroy);
 	}
 }

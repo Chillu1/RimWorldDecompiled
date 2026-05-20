@@ -1,17 +1,16 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThinkNode_ConditionalHasDutyTarget : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalHasDutyTarget : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
+		if (pawn.mindState.duty != null)
 		{
-			if (pawn.mindState.duty != null)
-			{
-				return pawn.mindState.duty.focus.IsValid;
-			}
-			return false;
+			return pawn.mindState.duty.focus.IsValid;
 		}
+		return false;
 	}
 }

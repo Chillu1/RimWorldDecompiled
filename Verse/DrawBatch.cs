@@ -3,287 +3,286 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace Verse
+namespace Verse;
+
+public class DrawBatch
 {
-	public class DrawBatch
+	private class BatchData
 	{
-		private class BatchData
+		public Matrix4x4[] matrices;
+
+		public int ptr;
+
+		public Vector4[] colors;
+
+		public bool hasAnyColors;
+
+		private static readonly Vector4 WhiteColor = Color.white;
+
+		public BatchData()
 		{
-			public Matrix4x4[] matrices;
-
-			public int ptr;
-
-			public Vector4[] colors;
-
-			public bool hasAnyColors;
-
-			private static readonly Vector4 WhiteColor = Color.white;
-
-			public BatchData()
-			{
-				matrices = new Matrix4x4[1023];
-				colors = new Vector4[1023];
-				ptr = 0;
-			}
-
-			public void Clear()
-			{
-				ptr = 0;
-				hasAnyColors = false;
-			}
-
-			public void Add(Matrix4x4 matrix)
-			{
-				matrices[ptr] = matrix;
-				colors[ptr] = WhiteColor;
-				ptr++;
-			}
-
-			public void Add(Matrix4x4 matrix, Color? color)
-			{
-				matrices[ptr] = matrix;
-				colors[ptr] = color ?? ((Color)WhiteColor);
-				ptr++;
-				hasAnyColors = true;
-			}
+			matrices = new Matrix4x4[1023];
+			colors = new Vector4[1023];
+			ptr = 0;
 		}
 
-		private struct BatchKey : IEquatable<BatchKey>
+		public void Clear()
 		{
-			public readonly Mesh mesh;
+			ptr = 0;
+			hasAnyColors = false;
+		}
 
-			public readonly Material material;
+		public void Add(Matrix4x4 matrix)
+		{
+			matrices[ptr] = matrix;
+			colors[ptr] = WhiteColor;
+			ptr++;
+		}
 
-			public readonly int layer;
+		public void Add(Matrix4x4 matrix, Color? color)
+		{
+			matrices[ptr] = matrix;
+			colors[ptr] = color ?? ((Color)WhiteColor);
+			ptr++;
+			hasAnyColors = true;
+		}
+	}
 
-			public readonly bool renderInstanced;
+	private struct BatchKey : IEquatable<BatchKey>
+	{
+		public readonly Mesh mesh;
 
-			public readonly DrawBatchPropertyBlock propertyBlock;
+		public readonly Material material;
 
-			private int hash;
+		public readonly int layer;
 
-			public BatchKey(Mesh mesh, Material material, int layer, bool renderInstanced, DrawBatchPropertyBlock propertyBlock)
+		public readonly bool renderInstanced;
+
+		public readonly DrawBatchPropertyBlock propertyBlock;
+
+		private int hash;
+
+		public BatchKey(Mesh mesh, Material material, int layer, bool renderInstanced, DrawBatchPropertyBlock propertyBlock)
+		{
+			this.mesh = mesh;
+			this.material = material;
+			this.layer = layer;
+			this.renderInstanced = renderInstanced && SystemInfo.supportsInstancing;
+			this.propertyBlock = propertyBlock;
+			hash = mesh.GetHashCode();
+			hash = Gen.HashCombineInt(hash, material.GetHashCode());
+			hash = Gen.HashCombineInt(hash, layer | ((renderInstanced ? 1 : 0) << 8));
+			hash = ((propertyBlock == null) ? hash : Gen.HashCombineInt(hash, propertyBlock.GetHashCode()));
+		}
+
+		public override bool Equals(object obj)
+		{
+			if (obj == null || !(obj is BatchKey other))
 			{
-				this.mesh = mesh;
-				this.material = material;
-				this.layer = layer;
-				this.renderInstanced = renderInstanced && SystemInfo.supportsInstancing;
-				this.propertyBlock = propertyBlock;
-				hash = mesh.GetHashCode();
-				hash = Gen.HashCombineInt(hash, material.GetHashCode());
-				hash = Gen.HashCombineInt(hash, layer | ((renderInstanced ? 1 : 0) << 8));
-				hash = ((propertyBlock == null) ? hash : Gen.HashCombineInt(hash, propertyBlock.GetHashCode()));
-			}
-
-			public override bool Equals(object obj)
-			{
-				if (obj == null || !(obj is BatchKey other))
-				{
-					return false;
-				}
-				return Equals(other);
-			}
-
-			public bool Equals(BatchKey other)
-			{
-				if ((object)mesh == other.mesh && (object)material == other.material && layer == other.layer && renderInstanced == other.renderInstanced)
-				{
-					return propertyBlock == other.propertyBlock;
-				}
 				return false;
 			}
-
-			public override int GetHashCode()
-			{
-				return hash;
-			}
+			return Equals(other);
 		}
 
-		private Dictionary<BatchKey, List<BatchData>> batches = new Dictionary<BatchKey, List<BatchData>>();
-
-		private List<BatchData> batchDataListCache = new List<BatchData>();
-
-		private List<List<BatchData>> batchListCache = new List<List<BatchData>>();
-
-		private HashSet<DrawBatchPropertyBlock> myPropertyBlocks = new HashSet<DrawBatchPropertyBlock>();
-
-		private List<DrawBatchPropertyBlock> propertyBlockCache = new List<DrawBatchPropertyBlock>();
-
-		private MaterialPropertyBlock tmpPropertyBlock;
-
-		private HashSet<DrawBatchPropertyBlock> tmpPropertyBlocks = new HashSet<DrawBatchPropertyBlock>();
-
-		public const int MaxCountPerBatch = 1023;
-
-		private static bool PropertyBlockLeakDebug;
-
-		private BatchKey lastBatchKey;
-
-		private List<BatchData> lastBatchList;
-
-		public DrawBatchPropertyBlock GetPropertyBlock()
+		public bool Equals(BatchKey other)
 		{
-			DrawBatchPropertyBlock drawBatchPropertyBlock = null;
-			if (propertyBlockCache.Count == 0)
+			if ((object)mesh == other.mesh && (object)material == other.material && layer == other.layer && renderInstanced == other.renderInstanced)
 			{
-				drawBatchPropertyBlock = new DrawBatchPropertyBlock();
-				myPropertyBlocks.Add(drawBatchPropertyBlock);
+				return propertyBlock == other.propertyBlock;
 			}
-			else
-			{
-				drawBatchPropertyBlock = propertyBlockCache.Pop();
-			}
-			if (PropertyBlockLeakDebug)
-			{
-				drawBatchPropertyBlock.leakDebugString = "Allocated from:\n\n---------------\n\n" + StackTraceUtility.ExtractStackTrace();
-			}
-			return drawBatchPropertyBlock;
+			return false;
 		}
 
-		public void ReturnPropertyBlock(DrawBatchPropertyBlock propertyBlock)
+		public override int GetHashCode()
 		{
-			if (myPropertyBlocks.Contains(propertyBlock))
-			{
-				propertyBlockCache.Add(propertyBlock);
-			}
+			return hash;
 		}
+	}
 
-		public void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Color? color = null, bool renderInstanced = false, DrawBatchPropertyBlock propertyBlock = null)
+	private Dictionary<BatchKey, List<BatchData>> batches = new Dictionary<BatchKey, List<BatchData>>();
+
+	private List<BatchData> batchDataListCache = new List<BatchData>();
+
+	private List<List<BatchData>> batchListCache = new List<List<BatchData>>();
+
+	private HashSet<DrawBatchPropertyBlock> myPropertyBlocks = new HashSet<DrawBatchPropertyBlock>();
+
+	private List<DrawBatchPropertyBlock> propertyBlockCache = new List<DrawBatchPropertyBlock>();
+
+	private MaterialPropertyBlock tmpPropertyBlock;
+
+	private HashSet<DrawBatchPropertyBlock> tmpPropertyBlocks = new HashSet<DrawBatchPropertyBlock>();
+
+	public const int MaxCountPerBatch = 1023;
+
+	private static bool PropertyBlockLeakDebug;
+
+	private BatchKey lastBatchKey;
+
+	private List<BatchData> lastBatchList;
+
+	public DrawBatchPropertyBlock GetPropertyBlock()
+	{
+		DrawBatchPropertyBlock drawBatchPropertyBlock = null;
+		if (propertyBlockCache.Count == 0)
 		{
-			GetBatchDataForInsertion(new BatchKey(mesh, material, layer, renderInstanced, propertyBlock)).Add(matrix, color);
+			drawBatchPropertyBlock = new DrawBatchPropertyBlock();
+			myPropertyBlocks.Add(drawBatchPropertyBlock);
 		}
-
-		public void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, bool renderInstanced = false)
+		else
 		{
-			GetBatchDataForInsertion(new BatchKey(mesh, material, layer, renderInstanced, null)).Add(matrix);
+			drawBatchPropertyBlock = propertyBlockCache.Pop();
 		}
-
-		public void Flush(bool draw = true)
+		if (PropertyBlockLeakDebug)
 		{
-			if (tmpPropertyBlock == null)
+			drawBatchPropertyBlock.leakDebugString = "Allocated from:\n\n---------------\n\n" + StackTraceUtility.ExtractStackTrace();
+		}
+		return drawBatchPropertyBlock;
+	}
+
+	public void ReturnPropertyBlock(DrawBatchPropertyBlock propertyBlock)
+	{
+		if (myPropertyBlocks.Contains(propertyBlock))
+		{
+			propertyBlockCache.Add(propertyBlock);
+		}
+	}
+
+	public void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Color? color = null, bool renderInstanced = false, DrawBatchPropertyBlock propertyBlock = null)
+	{
+		GetBatchDataForInsertion(new BatchKey(mesh, material, layer, renderInstanced, propertyBlock)).Add(matrix, color);
+	}
+
+	public void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, bool renderInstanced = false)
+	{
+		GetBatchDataForInsertion(new BatchKey(mesh, material, layer, renderInstanced, null)).Add(matrix);
+	}
+
+	public void Flush(bool draw = true)
+	{
+		if (tmpPropertyBlock == null)
+		{
+			tmpPropertyBlock = new MaterialPropertyBlock();
+		}
+		tmpPropertyBlocks.Clear();
+		tmpPropertyBlocks.AddRange(propertyBlockCache);
+		try
+		{
+			foreach (KeyValuePair<BatchKey, List<BatchData>> batch in batches)
 			{
-				tmpPropertyBlock = new MaterialPropertyBlock();
-			}
-			tmpPropertyBlocks.Clear();
-			tmpPropertyBlocks.AddRange(propertyBlockCache);
-			try
-			{
-				foreach (KeyValuePair<BatchKey, List<BatchData>> batch in batches)
+				BatchKey key = batch.Key;
+				try
 				{
-					BatchKey key = batch.Key;
-					try
+					foreach (BatchData item in batch.Value)
 					{
-						foreach (BatchData item in batch.Value)
+						BatchData batchData = item;
+						if (draw)
 						{
-							BatchData batchData = item;
-							if (draw)
+							tmpPropertyBlock.Clear();
+							if (key.propertyBlock != null)
 							{
-								tmpPropertyBlock.Clear();
-								if (key.propertyBlock != null)
+								key.propertyBlock.Write(tmpPropertyBlock);
+							}
+							if (key.renderInstanced)
+							{
+								key.material.enableInstancing = true;
+								if (batchData.hasAnyColors)
 								{
-									key.propertyBlock.Write(tmpPropertyBlock);
+									tmpPropertyBlock.SetVectorArray("_Color", batchData.colors);
 								}
-								if (key.renderInstanced)
+								Graphics.DrawMeshInstanced(key.mesh, 0, key.material, item.matrices, item.ptr, tmpPropertyBlock, ShadowCastingMode.On, receiveShadows: true, key.layer);
+							}
+							else
+							{
+								for (int i = 0; i < batchData.ptr; i++)
 								{
-									key.material.enableInstancing = true;
+									Matrix4x4 matrix = batchData.matrices[i];
+									Vector4 vector = batchData.colors[i];
 									if (batchData.hasAnyColors)
 									{
-										tmpPropertyBlock.SetVectorArray("_Color", batchData.colors);
+										tmpPropertyBlock.SetColor("_Color", vector);
 									}
-									Graphics.DrawMeshInstanced(key.mesh, 0, key.material, item.matrices, item.ptr, tmpPropertyBlock, ShadowCastingMode.On, receiveShadows: true, key.layer);
-								}
-								else
-								{
-									for (int i = 0; i < batchData.ptr; i++)
-									{
-										Matrix4x4 matrix = batchData.matrices[i];
-										Vector4 vector = batchData.colors[i];
-										if (batchData.hasAnyColors)
-										{
-											tmpPropertyBlock.SetColor("_Color", vector);
-										}
-										Graphics.DrawMesh(key.mesh, matrix, key.material, key.layer, null, 0, tmpPropertyBlock);
-									}
+									Graphics.DrawMesh(key.mesh, matrix, key.material, key.layer, null, 0, tmpPropertyBlock);
 								}
 							}
-							batchData.Clear();
-							batchDataListCache.Add(batchData);
 						}
-					}
-					finally
-					{
-						if (key.propertyBlock != null && myPropertyBlocks.Contains(key.propertyBlock))
-						{
-							tmpPropertyBlocks.Add(key.propertyBlock);
-							key.propertyBlock.Clear();
-							propertyBlockCache.Add(key.propertyBlock);
-						}
-						batchListCache.Add(batch.Value);
-						batch.Value.Clear();
+						batchData.Clear();
+						batchDataListCache.Add(batchData);
 					}
 				}
-			}
-			finally
-			{
-				foreach (DrawBatchPropertyBlock myPropertyBlock in myPropertyBlocks)
+				finally
 				{
-					if (!tmpPropertyBlocks.Contains(myPropertyBlock))
+					if (key.propertyBlock != null && myPropertyBlocks.Contains(key.propertyBlock))
 					{
-						Log.Warning("Property block from FleckDrawBatch leaked!" + ((myPropertyBlock.leakDebugString == null) ? null : ("Leak debug information: \n" + myPropertyBlock.leakDebugString)));
+						tmpPropertyBlocks.Add(key.propertyBlock);
+						key.propertyBlock.Clear();
+						propertyBlockCache.Add(key.propertyBlock);
 					}
+					batchListCache.Add(batch.Value);
+					batch.Value.Clear();
 				}
-				HashSet<DrawBatchPropertyBlock> hashSet = myPropertyBlocks;
-				myPropertyBlocks = tmpPropertyBlocks;
-				tmpPropertyBlocks = hashSet;
-				batches.Clear();
-				lastBatchKey = default(BatchKey);
-				lastBatchList = null;
 			}
 		}
-
-		private BatchData GetBatchDataForInsertion(BatchKey key)
+		finally
 		{
-			List<BatchData> value;
-			if (lastBatchList != null && key.GetHashCode() == lastBatchKey.GetHashCode() && key.Equals(lastBatchKey))
+			foreach (DrawBatchPropertyBlock myPropertyBlock in myPropertyBlocks)
 			{
-				value = lastBatchList;
-			}
-			else
-			{
-				if (!batches.TryGetValue(key, out value))
+				if (!tmpPropertyBlocks.Contains(myPropertyBlock))
 				{
-					value = ((batchListCache.Count == 0) ? new List<BatchData>() : batchListCache.Pop());
-					batches.Add(key, value);
-					value.Add((batchDataListCache.Count == 0) ? new BatchData() : batchDataListCache.Pop());
+					Log.Warning("Property block from FleckDrawBatch leaked!" + ((myPropertyBlock.leakDebugString == null) ? null : ("Leak debug information: \n" + myPropertyBlock.leakDebugString)));
 				}
-				lastBatchList = value;
-				lastBatchKey = key;
 			}
-			int index = value.Count - 1;
-			if (value[index].ptr < 1023)
-			{
-				return value[index];
-			}
-			BatchData batchData = ((batchDataListCache.Count == 0) ? new BatchData() : batchDataListCache.Pop());
-			value.Add(batchData);
-			return batchData;
+			HashSet<DrawBatchPropertyBlock> hashSet = myPropertyBlocks;
+			myPropertyBlocks = tmpPropertyBlocks;
+			tmpPropertyBlocks = hashSet;
+			batches.Clear();
+			lastBatchKey = default(BatchKey);
+			lastBatchList = null;
 		}
+	}
 
-		public void MergeWith(DrawBatch other)
+	private BatchData GetBatchDataForInsertion(BatchKey key)
+	{
+		List<BatchData> value;
+		if (lastBatchList != null && key.GetHashCode() == lastBatchKey.GetHashCode() && key.Equals(lastBatchKey))
 		{
-			foreach (KeyValuePair<BatchKey, List<BatchData>> batch in other.batches)
+			value = lastBatchList;
+		}
+		else
+		{
+			if (!batches.TryGetValue(key, out value))
 			{
-				foreach (BatchData item in batch.Value)
+				value = ((batchListCache.Count == 0) ? new List<BatchData>() : batchListCache.Pop());
+				batches.Add(key, value);
+				value.Add((batchDataListCache.Count == 0) ? new BatchData() : batchDataListCache.Pop());
+			}
+			lastBatchList = value;
+			lastBatchKey = key;
+		}
+		int index = value.Count - 1;
+		if (value[index].ptr < 1023)
+		{
+			return value[index];
+		}
+		BatchData batchData = ((batchDataListCache.Count == 0) ? new BatchData() : batchDataListCache.Pop());
+		value.Add(batchData);
+		return batchData;
+	}
+
+	public void MergeWith(DrawBatch other)
+	{
+		foreach (KeyValuePair<BatchKey, List<BatchData>> batch in other.batches)
+		{
+			foreach (BatchData item in batch.Value)
+			{
+				while (item.ptr > 0)
 				{
-					while (item.ptr > 0)
-					{
-						BatchData batchDataForInsertion = GetBatchDataForInsertion(batch.Key);
-						int num = Mathf.Min(item.ptr, 1023 - batchDataForInsertion.ptr);
-						Array.Copy(item.matrices, 0, batchDataForInsertion.matrices, batchDataForInsertion.ptr, num);
-						Array.Copy(item.colors, 0, batchDataForInsertion.colors, batchDataForInsertion.ptr, num);
-						batchDataForInsertion.ptr += num;
-						item.ptr -= num;
-					}
+					BatchData batchDataForInsertion = GetBatchDataForInsertion(batch.Key);
+					int num = Mathf.Min(item.ptr, 1023 - batchDataForInsertion.ptr);
+					Array.Copy(item.matrices, 0, batchDataForInsertion.matrices, batchDataForInsertion.ptr, num);
+					Array.Copy(item.colors, 0, batchDataForInsertion.colors, batchDataForInsertion.ptr, num);
+					batchDataForInsertion.ptr += num;
+					item.ptr -= num;
 				}
 			}
 		}

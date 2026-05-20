@@ -1,17 +1,16 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public struct RoyalTitleInheritanceOutcome
 {
-	public struct RoyalTitleInheritanceOutcome
-	{
-		public Pawn heir;
+	public Pawn heir;
 
-		public RoyalTitleDef heirCurrentTitle;
+	public RoyalTitleDef heirCurrentTitle;
 
-		public bool heirTitleHigher;
+	public bool heirTitleHigher;
 
-		public bool FoundHeir => heir != null;
+	public bool FoundHeir => heir != null;
 
-		public bool HeirHasTitle => heirCurrentTitle != null;
-	}
+	public bool HeirHasTitle => heirCurrentTitle != null;
 }

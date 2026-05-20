@@ -1,15 +1,14 @@
-namespace RimWorld
+namespace RimWorld;
+
+[DefOf]
+public static class StorytellerDefOf
 {
-	[DefOf]
-	public static class StorytellerDefOf
+	public static StorytellerDef Cassandra;
+
+	public static StorytellerDef Tutor;
+
+	static StorytellerDefOf()
 	{
-		public static StorytellerDef Cassandra;
-
-		public static StorytellerDef Tutor;
-
-		static StorytellerDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(StorytellerDefOf));
-		}
+		DefOfHelper.EnsureInitializedInCtor(typeof(StorytellerDefOf));
 	}
 }

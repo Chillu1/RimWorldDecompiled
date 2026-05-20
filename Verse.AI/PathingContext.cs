@@ -1,22 +1,21 @@
 using System;
 
-namespace Verse.AI
+namespace Verse.AI;
+
+public class PathingContext : IDisposable
 {
-	public class PathingContext : IDisposable
+	public readonly Map map;
+
+	public readonly PathGrid pathGrid;
+
+	public PathingContext(Map map, PathGrid pathGrid)
 	{
-		public readonly Map map;
+		this.map = map;
+		this.pathGrid = pathGrid;
+	}
 
-		public readonly PathGrid pathGrid;
-
-		public PathingContext(Map map, PathGrid pathGrid)
-		{
-			this.map = map;
-			this.pathGrid = pathGrid;
-		}
-
-		public void Dispose()
-		{
-			pathGrid.Dispose();
-		}
+	public void Dispose()
+	{
+		pathGrid.Dispose();
 	}
 }

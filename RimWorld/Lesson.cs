@@ -1,64 +1,63 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class Lesson : IExposable
 {
-	public abstract class Lesson : IExposable
+	public float startRealTime = -999f;
+
+	public const float KnowledgeForAutoVanish = 0.2f;
+
+	protected float AgeSeconds
 	{
-		public float startRealTime = -999f;
-
-		public const float KnowledgeForAutoVanish = 0.2f;
-
-		protected float AgeSeconds
+		get
 		{
-			get
+			if (startRealTime < 0f)
 			{
-				if (startRealTime < 0f)
-				{
-					startRealTime = Time.realtimeSinceStartup;
-				}
-				return Time.realtimeSinceStartup - startRealTime;
+				startRealTime = Time.realtimeSinceStartup;
 			}
+			return Time.realtimeSinceStartup - startRealTime;
 		}
+	}
 
-		public virtual ConceptDef Concept => null;
+	public virtual ConceptDef Concept => null;
 
-		public virtual InstructionDef Instruction => null;
+	public virtual InstructionDef Instruction => null;
 
-		public virtual float MessagesYOffset => 0f;
+	public virtual float MessagesYOffset => 0f;
 
-		public virtual string DefaultRejectInputMessage => null;
+	public virtual string DefaultRejectInputMessage => null;
 
-		public virtual void ExposeData()
-		{
-		}
+	public virtual void ExposeData()
+	{
+	}
 
-		public virtual void OnActivated()
-		{
-			startRealTime = Time.realtimeSinceStartup;
-		}
+	public virtual void OnActivated()
+	{
+		startRealTime = Time.realtimeSinceStartup;
+	}
 
-		public virtual void PostDeactivated()
-		{
-		}
+	public virtual void PostDeactivated()
+	{
+	}
 
-		public abstract void LessonOnGUI();
+	public abstract void LessonOnGUI();
 
-		public virtual void LessonUpdate()
-		{
-		}
+	public virtual void LessonUpdate()
+	{
+	}
 
-		public virtual void Notify_KnowledgeDemonstrated(ConceptDef conc)
-		{
-		}
+	public virtual void Notify_KnowledgeDemonstrated(ConceptDef conc)
+	{
+	}
 
-		public virtual void Notify_Event(EventPack ep)
-		{
-		}
+	public virtual void Notify_Event(EventPack ep)
+	{
+	}
 
-		public virtual AcceptanceReport AllowAction(EventPack ep)
-		{
-			return true;
-		}
+	public virtual AcceptanceReport AllowAction(EventPack ep)
+	{
+		return true;
 	}
 }

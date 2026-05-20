@@ -1,54 +1,53 @@
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_IsOfRoyalFaction : QuestNode
 {
-	public class QuestNode_IsOfRoyalFaction : QuestNode
+	public SlateRef<Thing> thing;
+
+	public QuestNode node;
+
+	public QuestNode elseNode;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		public SlateRef<Thing> thing;
-
-		public QuestNode node;
-
-		public QuestNode elseNode;
-
-		protected override bool TestRunInt(Slate slate)
+		if (IsOfRoyalFaction(slate))
 		{
-			if (IsOfRoyalFaction(slate))
+			if (node != null)
 			{
-				if (node != null)
-				{
-					return node.TestRun(slate);
-				}
-				return true;
-			}
-			if (elseNode != null)
-			{
-				return elseNode.TestRun(slate);
+				return node.TestRun(slate);
 			}
 			return true;
 		}
-
-		protected override void RunInt()
+		if (elseNode != null)
 		{
-			if (IsOfRoyalFaction(QuestGen.slate))
+			return elseNode.TestRun(slate);
+		}
+		return true;
+	}
+
+	protected override void RunInt()
+	{
+		if (IsOfRoyalFaction(QuestGen.slate))
+		{
+			if (node != null)
 			{
-				if (node != null)
-				{
-					node.Run();
-				}
-			}
-			else if (elseNode != null)
-			{
-				elseNode.Run();
+				node.Run();
 			}
 		}
-
-		private bool IsOfRoyalFaction(Slate slate)
+		else if (elseNode != null)
 		{
-			if (thing.GetValue(slate) != null && thing.GetValue(slate).Faction != null)
-			{
-				return thing.GetValue(slate).Faction.def.HasRoyalTitles;
-			}
-			return false;
+			elseNode.Run();
 		}
+	}
+
+	private bool IsOfRoyalFaction(Slate slate)
+	{
+		if (thing.GetValue(slate) != null && thing.GetValue(slate).Faction != null)
+		{
+			return thing.GetValue(slate).Faction.def.HasRoyalTitles;
+		}
+		return false;
 	}
 }

@@ -1,40 +1,39 @@
 using Verse;
 using Verse.Sound;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class InsectLairEntrance : MapPortal
 {
-	public class InsectLairEntrance : MapPortal
+	public bool spawnGravcore;
+
+	public override void ExposeData()
 	{
-		public bool spawnGravcore;
+		base.ExposeData();
+		Scribe_Values.Look(ref spawnGravcore, "spawnGravcore", defaultValue: false);
+	}
 
-		public override void ExposeData()
+	public override void OnEntered(Pawn pawn)
+	{
+		if (!beenEntered)
 		{
-			base.ExposeData();
-			Scribe_Values.Look(ref spawnGravcore, "spawnGravcore", defaultValue: false);
-		}
-
-		public override void OnEntered(Pawn pawn)
-		{
-			if (!beenEntered)
+			TaggedString text = "EnteredMegahiveText".Translate(pawn.Named("PAWN"));
+			if (spawnGravcore)
 			{
-				TaggedString text = "EnteredMegahiveText".Translate(pawn.Named("PAWN"));
-				if (spawnGravcore)
-				{
-					text += "\n\n" + "EnteredMegahiveGravcoreExtra".Translate();
-				}
-				Find.LetterStack.ReceiveLetter("EnteredMegahiveLabel".Translate(), text, LetterDefOf.ThreatBig, exit);
+				text += "\n\n" + "EnteredMegahiveGravcoreExtra".Translate();
 			}
-			base.OnEntered(pawn);
+			Find.LetterStack.ReceiveLetter("EnteredMegahiveLabel".Translate(), text, LetterDefOf.ThreatBig, exit);
 		}
+		base.OnEntered(pawn);
+	}
 
-		protected override void ReceiveCompSignal(string signal)
+	protected override void ReceiveCompSignal(string signal)
+	{
+		base.ReceiveCompSignal(signal);
+		if (!(signal != "Sealed"))
 		{
-			base.ReceiveCompSignal(signal);
-			if (!(signal != "Sealed"))
-			{
-				EffecterDefOf.ImpactSmallDustCloud.Spawn(base.Position, base.Map).Cleanup();
-				SoundDefOf.Crater_FilledIn.PlayOneShot(this);
-			}
+			EffecterDefOf.ImpactSmallDustCloud.Spawn(base.Position, base.Map).Cleanup();
+			SoundDefOf.Crater_FilledIn.PlayOneShot(this);
 		}
 	}
 }

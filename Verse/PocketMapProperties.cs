@@ -1,22 +1,21 @@
 using System.Collections.Generic;
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class PocketMapProperties
 {
-	public class PocketMapProperties
-	{
-		public BiomeDef biome;
+	public BiomeDef biome;
 
-		public List<TileMutatorDef> tileMutators = new List<TileMutatorDef>();
+	public List<TileMutatorDef> tileMutators = new List<TileMutatorDef>();
 
-		public float temperature;
+	public float temperature;
 
-		public bool destroyOnParentMapAbandoned = true;
+	public bool destroyOnParentMapAbandoned = true;
 
-		public bool preventPrisonerEscape = true;
+	public bool preventPrisonerEscape = true;
 
-		public bool canLaunchGravship;
+	public bool canLaunchGravship;
 
-		public bool canBeCleaned;
-	}
+	public bool canBeCleaned;
 }

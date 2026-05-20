@@ -2,25 +2,24 @@ using System;
 using System.IO;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class Dialog_ModList : Dialog_FileList
 {
-	public abstract class Dialog_ModList : Dialog_FileList
+	protected override void ReloadFiles()
 	{
-		protected override void ReloadFiles()
+		files.Clear();
+		foreach (FileInfo allModListFile in GenFilePaths.AllModListFiles)
 		{
-			files.Clear();
-			foreach (FileInfo allModListFile in GenFilePaths.AllModListFiles)
+			try
 			{
-				try
-				{
-					SaveFileInfo saveFileInfo = new SaveFileInfo(allModListFile);
-					saveFileInfo.LoadData();
-					files.Add(saveFileInfo);
-				}
-				catch (Exception ex)
-				{
-					Log.Error("Exception loading " + allModListFile.Name + ": " + ex.ToString());
-				}
+				SaveFileInfo saveFileInfo = new SaveFileInfo(allModListFile);
+				saveFileInfo.LoadData();
+				files.Add(saveFileInfo);
+			}
+			catch (Exception ex)
+			{
+				Log.Error("Exception loading " + allModListFile.Name + ": " + ex.ToString());
 			}
 		}
 	}

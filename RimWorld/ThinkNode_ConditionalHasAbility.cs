@@ -1,22 +1,21 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThinkNode_ConditionalHasAbility : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalHasAbility : ThinkNode_Conditional
+	public AbilityDef ability;
+
+	protected override bool Satisfied(Pawn pawn)
 	{
-		public AbilityDef ability;
+		return pawn.abilities?.GetAbility(ability) != null;
+	}
 
-		protected override bool Satisfied(Pawn pawn)
-		{
-			return pawn.abilities?.GetAbility(ability) != null;
-		}
-
-		public override ThinkNode DeepCopy(bool resolve = true)
-		{
-			ThinkNode_ConditionalHasAbility obj = (ThinkNode_ConditionalHasAbility)base.DeepCopy(resolve);
-			obj.ability = ability;
-			return obj;
-		}
+	public override ThinkNode DeepCopy(bool resolve = true)
+	{
+		ThinkNode_ConditionalHasAbility obj = (ThinkNode_ConditionalHasAbility)base.DeepCopy(resolve);
+		obj.ability = ability;
+		return obj;
 	}
 }

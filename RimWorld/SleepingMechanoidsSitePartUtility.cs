@@ -1,12 +1,11 @@
 using RimWorld.Planet;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class SleepingMechanoidsSitePartUtility
 {
-	public static class SleepingMechanoidsSitePartUtility
+	public static int GetPawnGroupMakerSeed(SitePartParams parms)
 	{
-		public static int GetPawnGroupMakerSeed(SitePartParams parms)
-		{
-			return parms.randomValue;
-		}
+		return parms.randomValue;
 	}
 }

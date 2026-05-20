@@ -1,15 +1,14 @@
-namespace RimWorld
+namespace RimWorld;
+
+[DefOf]
+public static class RoadPathingDefOf
 {
-	[DefOf]
-	public static class RoadPathingDefOf
+	public static RoadPathingDef Avoid;
+
+	public static RoadPathingDef Bulldoze;
+
+	static RoadPathingDefOf()
 	{
-		public static RoadPathingDef Avoid;
-
-		public static RoadPathingDef Bulldoze;
-
-		static RoadPathingDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(RoadPathingDefOf));
-		}
+		DefOfHelper.EnsureInitializedInCtor(typeof(RoadPathingDefOf));
 	}
 }

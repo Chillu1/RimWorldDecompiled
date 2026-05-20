@@ -1,4 +1,3 @@
-namespace Verse
-{
-	public delegate void PanCompletionCallback();
-}
+namespace Verse;
+
+public delegate void PanCompletionCallback();

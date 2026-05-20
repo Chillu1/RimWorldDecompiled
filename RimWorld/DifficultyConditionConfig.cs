@@ -1,15 +1,14 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class DifficultyConditionConfig
 {
-	public class DifficultyConditionConfig
-	{
-		public bool bigThreatsDisabled;
+	public bool bigThreatsDisabled;
 
-		public bool trapsDisabled;
+	public bool trapsDisabled;
 
-		public bool turretsDisabled;
+	public bool turretsDisabled;
 
-		public bool mortarsDisabled;
+	public bool mortarsDisabled;
 
-		public bool extremeWeatherIncidentsDisabled;
-	}
+	public bool extremeWeatherIncidentsDisabled;
 }

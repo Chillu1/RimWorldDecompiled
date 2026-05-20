@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum SurfaceType : byte
 {
-	public enum SurfaceType : byte
-	{
-		None,
-		Item,
-		Eat
-	}
+	None,
+	Item,
+	Eat
 }

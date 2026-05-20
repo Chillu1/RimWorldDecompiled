@@ -1,11 +1,10 @@
 using UnityEngine;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class LatestVersionGetter : MonoBehaviour
 {
-	public class LatestVersionGetter : MonoBehaviour
+	public void DrawAt(Rect rect)
 	{
-		public void DrawAt(Rect rect)
-		{
-		}
 	}
 }

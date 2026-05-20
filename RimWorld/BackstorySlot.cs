@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum BackstorySlot : byte
 {
-	public enum BackstorySlot : byte
-	{
-		Childhood,
-		Adulthood
-	}
+	Childhood,
+	Adulthood
 }

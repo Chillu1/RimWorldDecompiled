@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RecordWorker_TimeUnderRoof : RecordWorker
 {
-	public class RecordWorker_TimeUnderRoof : RecordWorker
+	public override bool ShouldMeasureTimeNow(Pawn pawn)
 	{
-		public override bool ShouldMeasureTimeNow(Pawn pawn)
+		if (!pawn.Spawned)
 		{
-			if (!pawn.Spawned)
-			{
-				return false;
-			}
-			return pawn.Position.Roofed(pawn.Map);
+			return false;
 		}
+		return pawn.Position.Roofed(pawn.Map);
 	}
 }

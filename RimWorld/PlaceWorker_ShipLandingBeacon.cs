@@ -1,17 +1,16 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class PlaceWorker_ShipLandingBeacon : PlaceWorker
 {
-	public class PlaceWorker_ShipLandingBeacon : PlaceWorker
+	public override void DrawGhost(ThingDef def, IntVec3 center, Rot4 rot, Color ghostCol, Thing thing = null)
 	{
-		public override void DrawGhost(ThingDef def, IntVec3 center, Rot4 rot, Color ghostCol, Thing thing = null)
+		Map currentMap = Find.CurrentMap;
+		if (def.HasComp(typeof(CompShipLandingBeacon)))
 		{
-			Map currentMap = Find.CurrentMap;
-			if (def.HasComp(typeof(CompShipLandingBeacon)))
-			{
-				ShipLandingBeaconUtility.DrawLinesToNearbyBeacons(def, center, rot, currentMap, thing);
-			}
+			ShipLandingBeaconUtility.DrawLinesToNearbyBeacons(def, center, rot, currentMap, thing);
 		}
 	}
 }

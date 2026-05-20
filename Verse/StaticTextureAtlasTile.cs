@@ -1,13 +1,12 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class StaticTextureAtlasTile
 {
-	public class StaticTextureAtlasTile
-	{
-		public StaticTextureAtlas atlas;
+	public StaticTextureAtlas atlas;
 
-		public Rect uvRect;
+	public Rect uvRect;
 
-		public Mesh mesh;
-	}
+	public Mesh mesh;
 }

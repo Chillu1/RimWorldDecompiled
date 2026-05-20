@@ -2,26 +2,25 @@ using System.Collections.Generic;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_UnnaturalCorpseSkip : JobDriver
 {
-	public class JobDriver_UnnaturalCorpseSkip : JobDriver
+	private const TargetIndex DestIndex = TargetIndex.A;
+
+	public override bool TryMakePreToilReservations(bool errorOnFailed)
 	{
-		private const TargetIndex DestIndex = TargetIndex.A;
+		return true;
+	}
 
-		public override bool TryMakePreToilReservations(bool errorOnFailed)
+	protected override IEnumerable<Toil> MakeNewToils()
+	{
+		Toil toil = ToilMaker.MakeToil("MakeNewToils");
+		toil.initAction = delegate
 		{
-			return true;
-		}
-
-		protected override IEnumerable<Toil> MakeNewToils()
-		{
-			Toil toil = ToilMaker.MakeToil("MakeNewToils");
-			toil.initAction = delegate
-			{
-				SkipUtility.SkipTo(pawn, base.TargetA.Cell, pawn.MapHeld);
-				pawn.jobs.EndCurrentJob(JobCondition.Succeeded);
-			};
-			yield return toil;
-		}
+			SkipUtility.SkipTo(pawn, base.TargetA.Cell, pawn.MapHeld);
+			pawn.jobs.EndCurrentJob(JobCondition.Succeeded);
+		};
+		yield return toil;
 	}
 }

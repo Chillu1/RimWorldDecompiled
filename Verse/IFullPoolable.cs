@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public interface IFullPoolable
 {
-	public interface IFullPoolable
-	{
-		void Reset();
-	}
+	void Reset();
 }

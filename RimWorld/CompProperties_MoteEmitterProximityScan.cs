@@ -1,20 +1,19 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_MoteEmitterProximityScan : CompProperties_MoteEmitter
 {
-	public class CompProperties_MoteEmitterProximityScan : CompProperties_MoteEmitter
+	public float warmupPulseFadeInTime;
+
+	public float warmupPulseSolidTime;
+
+	public float warmupPulseFadeOutTime;
+
+	public SoundDef soundEmitting;
+
+	public CompProperties_MoteEmitterProximityScan()
 	{
-		public float warmupPulseFadeInTime;
-
-		public float warmupPulseSolidTime;
-
-		public float warmupPulseFadeOutTime;
-
-		public SoundDef soundEmitting;
-
-		public CompProperties_MoteEmitterProximityScan()
-		{
-			compClass = typeof(CompMoteEmitterProximityScan);
-		}
+		compClass = typeof(CompMoteEmitterProximityScan);
 	}
 }

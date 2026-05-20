@@ -3,97 +3,96 @@ using System.Linq;
 using Verse;
 using Verse.Sound;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Building_MusicalInstrument : Building
 {
-	public class Building_MusicalInstrument : Building
+	private Pawn currentPlayer;
+
+	private Sustainer soundPlaying;
+
+	public bool IsBeingPlayed => currentPlayer != null;
+
+	public FloatRange SoundRange
 	{
-		private Pawn currentPlayer;
-
-		private Sustainer soundPlaying;
-
-		public bool IsBeingPlayed => currentPlayer != null;
-
-		public FloatRange SoundRange
+		get
 		{
-			get
+			if (soundPlaying == null)
 			{
-				if (soundPlaying == null)
-				{
-					return FloatRange.Zero;
-				}
-				if (soundPlaying.def.subSounds.NullOrEmpty())
-				{
-					return FloatRange.Zero;
-				}
-				return soundPlaying.def.subSounds.First().distRange;
+				return FloatRange.Zero;
+			}
+			if (soundPlaying.def.subSounds.NullOrEmpty())
+			{
+				return FloatRange.Zero;
+			}
+			return soundPlaying.def.subSounds.First().distRange;
+		}
+	}
+
+	public static bool IsAffectedByInstrument(ThingDef instrumentDef, IntVec3 instrumentPos, IntVec3 pawnPos, Map map)
+	{
+		if (instrumentPos.DistanceTo(pawnPos) < instrumentDef.building.instrumentRange)
+		{
+			return instrumentPos.GetRoom(map) == pawnPos.GetRoom(map);
+		}
+		return false;
+	}
+
+	public void StartPlaying(Pawn player)
+	{
+		if (ModLister.CheckRoyaltyOrIdeology("Musical instrument"))
+		{
+			currentPlayer = player;
+		}
+	}
+
+	protected override void Tick()
+	{
+		base.Tick();
+		if (currentPlayer != null)
+		{
+			if (def.soundPlayInstrument != null && soundPlaying == null)
+			{
+				soundPlaying = def.soundPlayInstrument.TrySpawnSustainer(SoundInfo.InMap(new TargetInfo(base.Position, base.Map), MaintenanceType.PerTick));
 			}
 		}
-
-		public static bool IsAffectedByInstrument(ThingDef instrumentDef, IntVec3 instrumentPos, IntVec3 pawnPos, Map map)
+		else
 		{
-			if (instrumentPos.DistanceTo(pawnPos) < instrumentDef.building.instrumentRange)
-			{
-				return instrumentPos.GetRoom(map) == pawnPos.GetRoom(map);
-			}
-			return false;
+			soundPlaying = null;
 		}
+		soundPlaying?.Maintain();
+	}
 
-		public void StartPlaying(Pawn player)
+	public void StopPlaying()
+	{
+		currentPlayer = null;
+	}
+
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_References.Look(ref currentPlayer, "currentPlayer");
+	}
+
+	public override IEnumerable<Gizmo> GetGizmos()
+	{
+		if (!ModLister.CheckRoyaltyOrIdeology("Musical instrument"))
 		{
-			if (ModLister.CheckRoyaltyOrIdeology("Musical instrument"))
-			{
-				currentPlayer = player;
-			}
+			yield break;
 		}
-
-		protected override void Tick()
+		foreach (Gizmo gizmo in base.GetGizmos())
 		{
-			base.Tick();
-			if (currentPlayer != null)
-			{
-				if (def.soundPlayInstrument != null && soundPlaying == null)
-				{
-					soundPlaying = def.soundPlayInstrument.TrySpawnSustainer(SoundInfo.InMap(new TargetInfo(base.Position, base.Map), MaintenanceType.PerTick));
-				}
-			}
-			else
-			{
-				soundPlaying = null;
-			}
-			soundPlaying?.Maintain();
+			yield return gizmo;
 		}
-
-		public void StopPlaying()
+		if (DebugSettings.ShowDevGizmos)
 		{
-			currentPlayer = null;
-		}
-
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_References.Look(ref currentPlayer, "currentPlayer");
-		}
-
-		public override IEnumerable<Gizmo> GetGizmos()
-		{
-			if (!ModLister.CheckRoyaltyOrIdeology("Musical instrument"))
+			Command_Action command_Action = new Command_Action();
+			command_Action.defaultLabel = "DEV: Toggle is playing";
+			command_Action.action = delegate
 			{
-				yield break;
-			}
-			foreach (Gizmo gizmo in base.GetGizmos())
-			{
-				yield return gizmo;
-			}
-			if (DebugSettings.ShowDevGizmos)
-			{
-				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "DEV: Toggle is playing";
-				command_Action.action = delegate
-				{
-					currentPlayer = ((currentPlayer == null) ? PawnsFinder.AllMaps_FreeColonists.FirstOrDefault() : null);
-				};
-				yield return command_Action;
-			}
+				currentPlayer = ((currentPlayer == null) ? PawnsFinder.AllMaps_FreeColonists.FirstOrDefault() : null);
+			};
+			yield return command_Action;
 		}
 	}
 }

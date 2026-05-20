@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class BreakdownableUtility
 {
-	public static class BreakdownableUtility
+	public static bool IsBrokenDown(this Thing t)
 	{
-		public static bool IsBrokenDown(this Thing t)
-		{
-			return t.TryGetComp<CompBreakdownable>()?.BrokenDown ?? false;
-		}
+		return t.TryGetComp<CompBreakdownable>()?.BrokenDown ?? false;
 	}
 }

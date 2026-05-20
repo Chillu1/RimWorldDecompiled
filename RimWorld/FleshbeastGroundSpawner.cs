@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class FleshbeastGroundSpawner : PawnGroundSpawner
 {
-	public class FleshbeastGroundSpawner : PawnGroundSpawner
-	{
-		protected override SoundDef SustainerSound => SoundDefOf.FleshbeastDigging;
-	}
+	protected override SoundDef SustainerSound => SoundDefOf.FleshbeastDigging;
 }

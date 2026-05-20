@@ -1,17 +1,16 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public interface ICreepJoinerDef
 {
-	public interface ICreepJoinerDef
-	{
-		float Weight { get; }
+	float Weight { get; }
 
-		float MinCombatPoints { get; }
+	float MinCombatPoints { get; }
 
-		bool CanOccurRandomly { get; }
+	bool CanOccurRandomly { get; }
 
-		List<CreepJoinerBaseDef> Excludes { get; }
+	List<CreepJoinerBaseDef> Excludes { get; }
 
-		List<CreepJoinerBaseDef> Requires { get; }
-	}
+	List<CreepJoinerBaseDef> Requires { get; }
 }

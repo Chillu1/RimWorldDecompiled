@@ -1,36 +1,35 @@
-namespace Verse
+namespace Verse;
+
+public class ExtraDamage
 {
-	public class ExtraDamage
+	public DamageDef def;
+
+	public float amount;
+
+	public float armorPenetration = -1f;
+
+	public float chance = 1f;
+
+	public float AdjustedDamageAmount(Verb verb, Pawn caster)
 	{
-		public DamageDef def;
+		return amount * verb.verbProps.GetDamageFactorFor(verb, caster);
+	}
 
-		public float amount;
-
-		public float armorPenetration = -1f;
-
-		public float chance = 1f;
-
-		public float AdjustedDamageAmount(Verb verb, Pawn caster)
+	public float AdjustedArmorPenetration(Verb verb, Pawn caster)
+	{
+		if (armorPenetration < 0f)
 		{
-			return amount * verb.verbProps.GetDamageFactorFor(verb, caster);
+			return AdjustedDamageAmount(verb, caster) * 0.015f;
 		}
+		return armorPenetration;
+	}
 
-		public float AdjustedArmorPenetration(Verb verb, Pawn caster)
+	public float AdjustedArmorPenetration()
+	{
+		if (armorPenetration < 0f)
 		{
-			if (armorPenetration < 0f)
-			{
-				return AdjustedDamageAmount(verb, caster) * 0.015f;
-			}
-			return armorPenetration;
+			return amount * 0.015f;
 		}
-
-		public float AdjustedArmorPenetration()
-		{
-			if (armorPenetration < 0f)
-			{
-				return amount * 0.015f;
-			}
-			return armorPenetration;
-		}
+		return armorPenetration;
 	}
 }

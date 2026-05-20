@@ -1,35 +1,34 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class QuickSearchUtility
 {
-	public static class QuickSearchUtility
+	private static string[] searchingTexts;
+
+	private static string[] SearchingTexts
 	{
-		private static string[] searchingTexts;
-
-		private static string[] SearchingTexts
+		get
 		{
-			get
+			if (searchingTexts == null)
 			{
-				if (searchingTexts == null)
+				string text = "Searching".Translate();
+				searchingTexts = new string[3]
 				{
-					string text = "Searching".Translate();
-					searchingTexts = new string[3]
-					{
-						text + ".",
-						text + "..",
-						text + "..."
-					};
-				}
-				return searchingTexts;
+					text + ".",
+					text + "..",
+					text + "..."
+				};
 			}
+			return searchingTexts;
 		}
+	}
 
-		public static string CurrentSearchText => SearchingTexts[Time.frameCount / 20 % searchingTexts.Length];
+	public static string CurrentSearchText => SearchingTexts[Time.frameCount / 20 % searchingTexts.Length];
 
-		public static void ResetStaticData()
-		{
-			searchingTexts = null;
-		}
+	public static void ResetStaticData()
+	{
+		searchingTexts = null;
 	}
 }

@@ -1,15 +1,14 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobGiver_ForceSleepNow : ThinkNode_JobGiver
 {
-	public class JobGiver_ForceSleepNow : ThinkNode_JobGiver
+	protected override Job TryGiveJob(Pawn pawn)
 	{
-		protected override Job TryGiveJob(Pawn pawn)
-		{
-			Job job = JobMaker.MakeJob(JobDefOf.LayDown, pawn.Position);
-			job.forceSleep = true;
-			return job;
-		}
+		Job job = JobMaker.MakeJob(JobDefOf.LayDown, pawn.Position);
+		job.forceSleep = true;
+		return job;
 	}
 }

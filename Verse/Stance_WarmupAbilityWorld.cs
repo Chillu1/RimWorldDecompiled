@@ -1,23 +1,22 @@
-namespace Verse
+namespace Verse;
+
+public class Stance_WarmupAbilityWorld : Stance_Warmup
 {
-	public class Stance_WarmupAbilityWorld : Stance_Warmup
+	public Stance_WarmupAbilityWorld()
 	{
-		public Stance_WarmupAbilityWorld()
-		{
-		}
+	}
 
-		public Stance_WarmupAbilityWorld(int ticks, LocalTargetInfo focusTarg, Verb verb)
-			: base(ticks, focusTarg, verb)
-		{
-		}
+	public Stance_WarmupAbilityWorld(int ticks, LocalTargetInfo focusTarg, Verb verb)
+		: base(ticks, focusTarg, verb)
+	{
+	}
 
-		protected override void Expire()
+	protected override void Expire()
+	{
+		effecter?.Cleanup();
+		if (stanceTracker.curStance == this)
 		{
-			effecter?.Cleanup();
-			if (stanceTracker.curStance == this)
-			{
-				stanceTracker.SetStance(new Stance_Mobile());
-			}
+			stanceTracker.SetStance(new Stance_Mobile());
 		}
 	}
 }

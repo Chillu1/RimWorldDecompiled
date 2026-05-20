@@ -1,10 +1,9 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_AbilityWallraise : CompProperties_AbilityEffect
 {
-	public class CompProperties_AbilityWallraise : CompProperties_AbilityEffect
-	{
-		public List<IntVec2> pattern;
-	}
+	public List<IntVec2> pattern;
 }

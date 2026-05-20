@@ -1,33 +1,32 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class IdeoSymbolPack
 {
-	public class IdeoSymbolPack
+	[MustTranslate]
+	public string ideoName;
+
+	[MustTranslate]
+	public string theme;
+
+	[MustTranslate]
+	public string adjective;
+
+	[MustTranslate]
+	public string member;
+
+	public bool prefix;
+
+	public string PrimarySymbol
 	{
-		[MustTranslate]
-		public string ideoName;
-
-		[MustTranslate]
-		public string theme;
-
-		[MustTranslate]
-		public string adjective;
-
-		[MustTranslate]
-		public string member;
-
-		public bool prefix;
-
-		public string PrimarySymbol
+		get
 		{
-			get
+			if (!ideoName.NullOrEmpty())
 			{
-				if (!ideoName.NullOrEmpty())
-				{
-					return ideoName;
-				}
-				return theme;
+				return ideoName;
 			}
+			return theme;
 		}
 	}
 }

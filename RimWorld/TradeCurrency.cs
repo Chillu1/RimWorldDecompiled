@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum TradeCurrency
 {
-	public enum TradeCurrency
-	{
-		Silver,
-		Favor
-	}
+	Silver,
+	Favor
 }

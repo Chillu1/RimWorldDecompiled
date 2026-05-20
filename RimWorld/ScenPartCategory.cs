@@ -1,16 +1,15 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum ScenPartCategory
 {
-	public enum ScenPartCategory
-	{
-		Undefined,
-		Fixed,
-		StartingImportant,
-		PlayerPawnFilter,
-		PlayerPawnModifier,
-		GameCondition,
-		Rule,
-		StartingItem,
-		WorldThing,
-		Misc
-	}
+	Undefined,
+	Fixed,
+	StartingImportant,
+	PlayerPawnFilter,
+	PlayerPawnModifier,
+	GameCondition,
+	Rule,
+	StartingItem,
+	WorldThing,
+	Misc
 }

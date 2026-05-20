@@ -1,45 +1,44 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobGiver_RescueNearby : ThinkNode_JobGiver
 {
-	public class JobGiver_RescueNearby : ThinkNode_JobGiver
+	private float radius = 30f;
+
+	private const float MinDistFromEnemy = 25f;
+
+	public override ThinkNode DeepCopy(bool resolve = true)
 	{
-		private float radius = 30f;
+		JobGiver_RescueNearby obj = (JobGiver_RescueNearby)base.DeepCopy(resolve);
+		obj.radius = radius;
+		return obj;
+	}
 
-		private const float MinDistFromEnemy = 25f;
-
-		public override ThinkNode DeepCopy(bool resolve = true)
+	protected override Job TryGiveJob(Pawn pawn)
+	{
+		Pawn pawn2 = (Pawn)GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForGroup(ThingRequestGroup.Pawn), PathEndMode.OnCell, TraverseParms.For(pawn), radius, Validator);
+		if (pawn2 == null)
 		{
-			JobGiver_RescueNearby obj = (JobGiver_RescueNearby)base.DeepCopy(resolve);
-			obj.radius = radius;
-			return obj;
+			return null;
 		}
-
-		protected override Job TryGiveJob(Pawn pawn)
+		Building_Bed building_Bed = RestUtility.FindBedFor(pawn2, pawn, checkSocialProperness: false, ignoreOtherReservations: false, pawn2.GuestStatus);
+		if (building_Bed == null || !pawn2.CanReserve(building_Bed))
 		{
-			Pawn pawn2 = (Pawn)GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForGroup(ThingRequestGroup.Pawn), PathEndMode.OnCell, TraverseParms.For(pawn), radius, Validator);
-			if (pawn2 == null)
+			return null;
+		}
+		Job job = JobMaker.MakeJob(JobDefOf.Rescue, pawn2, building_Bed);
+		job.count = 1;
+		return job;
+		bool Validator(Thing t)
+		{
+			Pawn patient = (Pawn)t;
+			if (!HealthAIUtility.CanRescueNow(pawn, patient))
 			{
-				return null;
+				return false;
 			}
-			Building_Bed building_Bed = RestUtility.FindBedFor(pawn2, pawn, checkSocialProperness: false, ignoreOtherReservations: false, pawn2.GuestStatus);
-			if (building_Bed == null || !pawn2.CanReserve(building_Bed))
-			{
-				return null;
-			}
-			Job job = JobMaker.MakeJob(JobDefOf.Rescue, pawn2, building_Bed);
-			job.count = 1;
-			return job;
-			bool Validator(Thing t)
-			{
-				Pawn patient = (Pawn)t;
-				if (!HealthAIUtility.CanRescueNow(pawn, patient))
-				{
-					return false;
-				}
-				return true;
-			}
+			return true;
 		}
 	}
 }

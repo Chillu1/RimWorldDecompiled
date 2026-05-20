@@ -1,57 +1,56 @@
 using RimWorld;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+[StaticConstructorOnStartup]
+public class PawnHeadOverlays
 {
-	[StaticConstructorOnStartup]
-	public class PawnHeadOverlays
+	private Pawn pawn;
+
+	private const float AngerBlinkPeriod = 1.2f;
+
+	private const float AngerBlinkLength = 0.4f;
+
+	private static readonly Material UnhappyMat = MaterialPool.MatFrom("Things/Pawn/Effects/Unhappy");
+
+	private static readonly Material MentalStateImminentMat = MaterialPool.MatFrom("Things/Pawn/Effects/MentalStateImminent");
+
+	public PawnHeadOverlays(Pawn pawn)
 	{
-		private Pawn pawn;
+		this.pawn = pawn;
+	}
 
-		private const float AngerBlinkPeriod = 1.2f;
-
-		private const float AngerBlinkLength = 0.4f;
-
-		private static readonly Material UnhappyMat = MaterialPool.MatFrom("Things/Pawn/Effects/Unhappy");
-
-		private static readonly Material MentalStateImminentMat = MaterialPool.MatFrom("Things/Pawn/Effects/MentalStateImminent");
-
-		public PawnHeadOverlays(Pawn pawn)
+	public void RenderStatusOverlays(Vector3 offset, Quaternion quat, Mesh headMesh)
+	{
+		Vector3 vector = pawn.DrawPos + offset + new Vector3(0f, 0f, 0.32f);
+		if (pawn.needs?.mood == null || pawn.Downed)
 		{
-			this.pawn = pawn;
+			return;
 		}
-
-		public void RenderStatusOverlays(Vector3 offset, Quaternion quat, Mesh headMesh)
+		if (pawn.HitPoints > 0 && pawn.IsColonistPlayerControlled)
 		{
-			Vector3 vector = pawn.DrawPos + offset + new Vector3(0f, 0f, 0.32f);
-			if (pawn.needs?.mood == null || pawn.Downed)
+			if (pawn.mindState.mentalBreaker.BreakExtremeIsImminent)
 			{
-				return;
-			}
-			if (pawn.HitPoints > 0 && pawn.IsColonistPlayerControlled)
-			{
-				if (pawn.mindState.mentalBreaker.BreakExtremeIsImminent)
+				if (Time.time % 1.2f < 0.4f)
 				{
-					if (Time.time % 1.2f < 0.4f)
-					{
-						DrawHeadGlow(vector, MentalStateImminentMat);
-					}
-				}
-				else if (pawn.mindState.mentalBreaker.BreakExtremeIsApproaching && Time.time % 1.2f < 0.4f)
-				{
-					DrawHeadGlow(vector, UnhappyMat);
+					DrawHeadGlow(vector, MentalStateImminentMat);
 				}
 			}
-			MentalStateDef mentalStateDef = pawn.mindState?.mentalStateHandler?.CurStateDef;
-			if ((ModsConfig.OdysseyActive && mentalStateDef == MentalStateDefOf.Terror) || (ModsConfig.BiotechActive && mentalStateDef == MentalStateDefOf.PanicFleeFire))
+			else if (pawn.mindState.mentalBreaker.BreakExtremeIsApproaching && Time.time % 1.2f < 0.4f)
 			{
-				ThingDefOf.Mote_TerrorHalo.graphicData.Graphic.DrawWorker(vector, pawn.Rotation, null, null, 0f);
+				DrawHeadGlow(vector, UnhappyMat);
 			}
 		}
-
-		private void DrawHeadGlow(Vector3 headLoc, Material mat)
+		MentalStateDef mentalStateDef = pawn.mindState?.mentalStateHandler?.CurStateDef;
+		if ((ModsConfig.OdysseyActive && mentalStateDef == MentalStateDefOf.Terror) || (ModsConfig.BiotechActive && mentalStateDef == MentalStateDefOf.PanicFleeFire))
 		{
-			Graphics.DrawMesh(MeshPool.plane20, headLoc, Quaternion.identity, mat, 0);
+			ThingDefOf.Mote_TerrorHalo.graphicData.Graphic.DrawWorker(vector, pawn.Rotation, null, null, 0f);
 		}
+	}
+
+	private void DrawHeadGlow(Vector3 headLoc, Material mat)
+	{
+		Graphics.DrawMesh(MeshPool.plane20, headLoc, Quaternion.identity, mat, 0);
 	}
 }

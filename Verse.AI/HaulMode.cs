@@ -1,10 +1,9 @@
-namespace Verse.AI
+namespace Verse.AI;
+
+public enum HaulMode : byte
 {
-	public enum HaulMode : byte
-	{
-		Undefined,
-		ToCellStorage,
-		ToCellNonStorage,
-		ToContainer
-	}
+	Undefined,
+	ToCellStorage,
+	ToCellNonStorage,
+	ToContainer
 }

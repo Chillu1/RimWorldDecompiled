@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum LogMessageType : byte
 {
-	public enum LogMessageType : byte
-	{
-		Message,
-		Warning,
-		Error
-	}
+	Message,
+	Warning,
+	Error
 }

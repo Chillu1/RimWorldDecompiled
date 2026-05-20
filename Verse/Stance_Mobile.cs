@@ -1,6 +1,5 @@
-namespace Verse
+namespace Verse;
+
+public class Stance_Mobile : Stance
 {
-	public class Stance_Mobile : Stance
-	{
-	}
 }

@@ -1,21 +1,20 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class MannableUtility
 {
-	public static class MannableUtility
+	public static Thing MannedThing(this Pawn pawn)
 	{
-		public static Thing MannedThing(this Pawn pawn)
+		if (pawn.Dead)
 		{
-			if (pawn.Dead)
-			{
-				return null;
-			}
-			Thing lastMannedThing = pawn.mindState.lastMannedThing;
-			if (lastMannedThing == null || lastMannedThing.TryGetComp<CompMannable>().ManningPawn != pawn)
-			{
-				return null;
-			}
-			return lastMannedThing;
+			return null;
 		}
+		Thing lastMannedThing = pawn.mindState.lastMannedThing;
+		if (lastMannedThing == null || lastMannedThing.TryGetComp<CompMannable>().ManningPawn != pawn)
+		{
+			return null;
+		}
+		return lastMannedThing;
 	}
 }

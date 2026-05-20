@@ -1,10 +1,9 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class IdeoPresetCategoryDef : Def
 {
-	public class IdeoPresetCategoryDef : Def
-	{
-		[MustTranslate]
-		public string groupLabel;
-	}
+	[MustTranslate]
+	public string groupLabel;
 }

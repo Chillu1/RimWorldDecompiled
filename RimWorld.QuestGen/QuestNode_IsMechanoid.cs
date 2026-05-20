@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_IsMechanoid : QuestNode_RaceProperty
 {
-	public class QuestNode_IsMechanoid : QuestNode_RaceProperty
+	protected override bool Matches(RaceProperties raceProperties)
 	{
-		protected override bool Matches(RaceProperties raceProperties)
-		{
-			return raceProperties.IsMechanoid;
-		}
+		return raceProperties.IsMechanoid;
 	}
 }

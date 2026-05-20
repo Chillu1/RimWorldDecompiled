@@ -1,30 +1,29 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_DestroyOrPassToWorld : QuestNode
 {
-	public class QuestNode_DestroyOrPassToWorld : QuestNode
+	[NoTranslate]
+	public SlateRef<string> inSignal;
+
+	public SlateRef<IEnumerable<Thing>> things;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		[NoTranslate]
-		public SlateRef<string> inSignal;
+		return true;
+	}
 
-		public SlateRef<IEnumerable<Thing>> things;
-
-		protected override bool TestRunInt(Slate slate)
+	protected override void RunInt()
+	{
+		Slate slate = QuestGen.slate;
+		if (!things.GetValue(slate).EnumerableNullOrEmpty())
 		{
-			return true;
-		}
-
-		protected override void RunInt()
-		{
-			Slate slate = QuestGen.slate;
-			if (!things.GetValue(slate).EnumerableNullOrEmpty())
-			{
-				QuestPart_DestroyThingsOrPassToWorld questPart_DestroyThingsOrPassToWorld = new QuestPart_DestroyThingsOrPassToWorld();
-				questPart_DestroyThingsOrPassToWorld.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
-				questPart_DestroyThingsOrPassToWorld.things.AddRange(things.GetValue(slate));
-				QuestGen.quest.AddPart(questPart_DestroyThingsOrPassToWorld);
-			}
+			QuestPart_DestroyThingsOrPassToWorld questPart_DestroyThingsOrPassToWorld = new QuestPart_DestroyThingsOrPassToWorld();
+			questPart_DestroyThingsOrPassToWorld.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
+			questPart_DestroyThingsOrPassToWorld.things.AddRange(things.GetValue(slate));
+			QuestGen.quest.AddPart(questPart_DestroyThingsOrPassToWorld);
 		}
 	}
 }

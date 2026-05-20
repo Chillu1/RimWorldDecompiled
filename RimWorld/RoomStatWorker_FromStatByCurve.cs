@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RoomStatWorker_FromStatByCurve : RoomStatWorker
 {
-	public class RoomStatWorker_FromStatByCurve : RoomStatWorker
+	public override float GetScore(Room room)
 	{
-		public override float GetScore(Room room)
-		{
-			return def.curve.Evaluate(room.GetStat(def.inputStat));
-		}
+		return def.curve.Evaluate(room.GetStat(def.inputStat));
 	}
 }

@@ -1,27 +1,26 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class ThingDefComparer : IEqualityComparer<ThingDef>
 {
-	public class ThingDefComparer : IEqualityComparer<ThingDef>
+	public static readonly ThingDefComparer Instance = new ThingDefComparer();
+
+	public bool Equals(ThingDef x, ThingDef y)
 	{
-		public static readonly ThingDefComparer Instance = new ThingDefComparer();
-
-		public bool Equals(ThingDef x, ThingDef y)
+		if (x == null && y == null)
 		{
-			if (x == null && y == null)
-			{
-				return true;
-			}
-			if (x == null || y == null)
-			{
-				return false;
-			}
-			return x.shortHash == y.shortHash;
+			return true;
 		}
-
-		public int GetHashCode(ThingDef obj)
+		if (x == null || y == null)
 		{
-			return obj.GetHashCode();
+			return false;
 		}
+		return x.shortHash == y.shortHash;
+	}
+
+	public int GetHashCode(ThingDef obj)
+	{
+		return obj.GetHashCode();
 	}
 }

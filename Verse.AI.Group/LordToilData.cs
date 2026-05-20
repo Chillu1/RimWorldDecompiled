@@ -1,7 +1,6 @@
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public abstract class LordToilData : IExposable
 {
-	public abstract class LordToilData : IExposable
-	{
-		public abstract void ExposeData();
-	}
+	public abstract void ExposeData();
 }

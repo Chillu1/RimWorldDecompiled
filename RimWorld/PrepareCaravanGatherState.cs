@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum PrepareCaravanGatherState
 {
-	public enum PrepareCaravanGatherState
-	{
-		Unset,
-		Haul,
-		Carry
-	}
+	Unset,
+	Haul,
+	Carry
 }

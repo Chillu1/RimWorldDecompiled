@@ -1,28 +1,27 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class BuildFacilityCommandUtility
 {
-	public static class BuildFacilityCommandUtility
+	public static IEnumerable<Command> BuildFacilityCommands(BuildableDef building)
 	{
-		public static IEnumerable<Command> BuildFacilityCommands(BuildableDef building)
+		if (!(building is ThingDef thingDef))
 		{
-			if (!(building is ThingDef thingDef))
+			yield break;
+		}
+		CompProperties_AffectedByFacilities affectedByFacilities = thingDef.GetCompProperties<CompProperties_AffectedByFacilities>();
+		if (affectedByFacilities == null)
+		{
+			yield break;
+		}
+		for (int i = 0; i < affectedByFacilities.linkableFacilities.Count; i++)
+		{
+			Designator_Build designator_Build = BuildCopyCommandUtility.FindAllowedDesignator(affectedByFacilities.linkableFacilities[i]);
+			if (designator_Build != null)
 			{
-				yield break;
-			}
-			CompProperties_AffectedByFacilities affectedByFacilities = thingDef.GetCompProperties<CompProperties_AffectedByFacilities>();
-			if (affectedByFacilities == null)
-			{
-				yield break;
-			}
-			for (int i = 0; i < affectedByFacilities.linkableFacilities.Count; i++)
-			{
-				Designator_Build designator_Build = BuildCopyCommandUtility.FindAllowedDesignator(affectedByFacilities.linkableFacilities[i]);
-				if (designator_Build != null)
-				{
-					yield return designator_Build;
-				}
+				yield return designator_Build;
 			}
 		}
 	}

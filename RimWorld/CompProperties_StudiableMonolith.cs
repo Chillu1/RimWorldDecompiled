@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_StudiableMonolith : CompProperties_Studiable
 {
-	public class CompProperties_StudiableMonolith : CompProperties_Studiable
+	public CompProperties_StudiableMonolith()
 	{
-		public CompProperties_StudiableMonolith()
-		{
-			compClass = typeof(CompStudiableMonolith);
-		}
+		compClass = typeof(CompStudiableMonolith);
 	}
 }

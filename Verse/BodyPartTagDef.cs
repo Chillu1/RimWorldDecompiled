@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public class BodyPartTagDef : Def
 {
-	public class BodyPartTagDef : Def
-	{
-		public bool vital;
-	}
+	public bool vital;
 }

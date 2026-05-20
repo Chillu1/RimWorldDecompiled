@@ -1,11 +1,10 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum PsychicEntropySeverity
 {
-	public enum PsychicEntropySeverity
-	{
-		Safe,
-		Overloaded,
-		VeryOverloaded,
-		Extreme,
-		Overwhelming
-	}
+	Safe,
+	Overloaded,
+	VeryOverloaded,
+	Extreme,
+	Overwhelming
 }

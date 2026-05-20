@@ -1,11 +1,10 @@
 using RimWorld;
 
-namespace Verse
-{
-	public class ApparelLayerDef : Def
-	{
-		public int drawOrder;
+namespace Verse;
 
-		public bool IsUtilityLayer => this == ApparelLayerDefOf.Belt;
-	}
+public class ApparelLayerDef : Def
+{
+	public int drawOrder;
+
+	public bool IsUtilityLayer => this == ApparelLayerDefOf.Belt;
 }

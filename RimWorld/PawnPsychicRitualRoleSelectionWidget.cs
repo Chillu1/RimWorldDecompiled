@@ -3,47 +3,46 @@ using System.Text;
 using Verse;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+[StaticConstructorOnStartup]
+public class PawnPsychicRitualRoleSelectionWidget : PawnRoleSelectionWidgetBase<PsychicRitualRoleDef>
 {
-	[StaticConstructorOnStartup]
-	public class PawnPsychicRitualRoleSelectionWidget : PawnRoleSelectionWidgetBase<PsychicRitualRoleDef>
+	protected PsychicRitualRoleAssignments psychicRitualAssignments;
+
+	protected PsychicRitualDef ritualDef;
+
+	private StringBuilder sb = new StringBuilder();
+
+	public PawnPsychicRitualRoleSelectionWidget(PsychicRitualDef ritualDef, PsychicRitualCandidatePool candidatePool, PsychicRitualRoleAssignments assignments)
+		: base((ILordJobCandidatePool)candidatePool, (ILordJobAssignmentsManager<PsychicRitualRoleDef>)assignments)
 	{
-		protected PsychicRitualRoleAssignments psychicRitualAssignments;
+		this.ritualDef = ritualDef;
+		psychicRitualAssignments = assignments;
+	}
 
-		protected PsychicRitualDef ritualDef;
-
-		private StringBuilder sb = new StringBuilder();
-
-		public PawnPsychicRitualRoleSelectionWidget(PsychicRitualDef ritualDef, PsychicRitualCandidatePool candidatePool, PsychicRitualRoleAssignments assignments)
-			: base((ILordJobCandidatePool)candidatePool, (ILordJobAssignmentsManager<PsychicRitualRoleDef>)assignments)
+	public override bool ShouldDrawHighlight(PsychicRitualRoleDef highlightedRole, Pawn pawn)
+	{
+		PsychicRitualRoleDef.Reason reason;
+		if (highlightedRole != null && !DragAndDropWidget.Dragging && !assignments.AssignedPawns(highlightedRole).Contains(pawn))
 		{
-			this.ritualDef = ritualDef;
-			psychicRitualAssignments = assignments;
+			return highlightedRole.PawnCanDo(PsychicRitualRoleDef.Context.Dialog_BeginPsychicRitual, pawn, psychicRitualAssignments.Target, out reason);
 		}
+		return false;
+	}
 
-		public override bool ShouldDrawHighlight(PsychicRitualRoleDef highlightedRole, Pawn pawn)
+	protected override string ExtraTipContents(Pawn pawn)
+	{
+		sb.Clear();
+		sb.AppendLine("  - " + StatDefOf.PsychicSensitivity.LabelCap + ": " + StatDefOf.PsychicSensitivity.Worker.ValueToStringFor(pawn));
+		if (ModsConfig.IdeologyActive && !Find.IdeoManager.classicMode && pawn.Ideo != null)
 		{
-			PsychicRitualRoleDef.Reason reason;
-			if (highlightedRole != null && !DragAndDropWidget.Dragging && !assignments.AssignedPawns(highlightedRole).Contains(pawn))
-			{
-				return highlightedRole.PawnCanDo(PsychicRitualRoleDef.Context.Dialog_BeginPsychicRitual, pawn, psychicRitualAssignments.Target, out reason);
-			}
-			return false;
+			sb.AppendLineTagged("  - " + "Ideo".Translate().CapitalizeFirst() + ": " + pawn.Ideo.name.Colorize(pawn.Ideo.Color));
 		}
-
-		protected override string ExtraTipContents(Pawn pawn)
+		foreach (string pawnTooltipExtra in ritualDef.GetPawnTooltipExtras(pawn))
 		{
-			sb.Clear();
-			sb.AppendLine("  - " + StatDefOf.PsychicSensitivity.LabelCap + ": " + StatDefOf.PsychicSensitivity.Worker.ValueToStringFor(pawn));
-			if (ModsConfig.IdeologyActive && !Find.IdeoManager.classicMode && pawn.Ideo != null)
-			{
-				sb.AppendLineTagged("  - " + "Ideo".Translate().CapitalizeFirst() + ": " + pawn.Ideo.name.Colorize(pawn.Ideo.Color));
-			}
-			foreach (string pawnTooltipExtra in ritualDef.GetPawnTooltipExtras(pawn))
-			{
-				sb.AppendLine("  - " + pawnTooltipExtra);
-			}
-			return sb.ToString().TrimEndNewlines();
+			sb.AppendLine("  - " + pawnTooltipExtra);
 		}
+		return sb.ToString().TrimEndNewlines();
 	}
 }

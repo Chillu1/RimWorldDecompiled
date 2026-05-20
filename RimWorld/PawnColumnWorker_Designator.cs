@@ -1,69 +1,68 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class PawnColumnWorker_Designator : PawnColumnWorker_Checkbox
 {
-	public abstract class PawnColumnWorker_Designator : PawnColumnWorker_Checkbox
+	protected abstract DesignationDef DesignationType { get; }
+
+	protected virtual void Notify_DesignationAdded(Pawn pawn)
 	{
-		protected abstract DesignationDef DesignationType { get; }
+	}
 
-		protected virtual void Notify_DesignationAdded(Pawn pawn)
+	protected override bool GetValue(Pawn pawn)
+	{
+		return GetDesignation(pawn) != null;
+	}
+
+	protected override void SetValue(Pawn pawn, bool value, PawnTable table)
+	{
+		if (value == GetValue(pawn))
 		{
+			return;
 		}
-
-		protected override bool GetValue(Pawn pawn)
+		if (table.SortingBy == def)
 		{
-			return GetDesignation(pawn) != null;
+			table.SetDirty();
 		}
-
-		protected override void SetValue(Pawn pawn, bool value, PawnTable table)
+		if (value)
 		{
-			if (value == GetValue(pawn))
+			if (ShouldConfirmDesignation(pawn, out var title))
 			{
-				return;
-			}
-			if (table.SortingBy == def)
-			{
-				table.SetDirty();
-			}
-			if (value)
-			{
-				if (ShouldConfirmDesignation(pawn, out var title))
-				{
-					Find.WindowStack.Add(new Dialog_Confirm(title, delegate
-					{
-						DesignationConfirmed(pawn);
-					}));
-				}
-				else
+				Find.WindowStack.Add(new Dialog_Confirm(title, delegate
 				{
 					DesignationConfirmed(pawn);
-				}
+				}));
 			}
 			else
 			{
-				Designation designation = GetDesignation(pawn);
-				if (designation != null)
-				{
-					pawn.MapHeld.designationManager.RemoveDesignation(designation);
-				}
+				DesignationConfirmed(pawn);
 			}
 		}
-
-		private void DesignationConfirmed(Pawn pawn)
+		else
 		{
-			pawn.MapHeld.designationManager.AddDesignation(new Designation(pawn, DesignationType));
-			Notify_DesignationAdded(pawn);
+			Designation designation = GetDesignation(pawn);
+			if (designation != null)
+			{
+				pawn.MapHeld.designationManager.RemoveDesignation(designation);
+			}
 		}
+	}
 
-		protected virtual bool ShouldConfirmDesignation(Pawn pawn, out string title)
-		{
-			title = "";
-			return false;
-		}
+	private void DesignationConfirmed(Pawn pawn)
+	{
+		pawn.MapHeld.designationManager.AddDesignation(new Designation(pawn, DesignationType));
+		Notify_DesignationAdded(pawn);
+	}
 
-		private Designation GetDesignation(Pawn pawn)
-		{
-			return pawn.MapHeld?.designationManager.DesignationOn(pawn, DesignationType);
-		}
+	protected virtual bool ShouldConfirmDesignation(Pawn pawn, out string title)
+	{
+		title = "";
+		return false;
+	}
+
+	private Designation GetDesignation(Pawn pawn)
+	{
+		return pawn.MapHeld?.designationManager.DesignationOn(pawn, DesignationType);
 	}
 }

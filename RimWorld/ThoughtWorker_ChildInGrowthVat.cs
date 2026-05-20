@@ -1,52 +1,51 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_ChildInGrowthVat : ThoughtWorker
 {
-	public class ThoughtWorker_ChildInGrowthVat : ThoughtWorker
+	public override string PostProcessLabel(Pawn p, string label)
 	{
-		public override string PostProcessLabel(Pawn p, string label)
+		int num = Mathf.RoundToInt(MoodMultiplier(p));
+		if (num <= 1)
 		{
-			int num = Mathf.RoundToInt(MoodMultiplier(p));
-			if (num <= 1)
-			{
-				return base.PostProcessLabel(p, label);
-			}
-			return base.PostProcessLabel(p, label) + " x" + num;
+			return base.PostProcessLabel(p, label);
 		}
+		return base.PostProcessLabel(p, label) + " x" + num;
+	}
 
-		protected override ThoughtState CurrentStateInternal(Pawn p)
+	protected override ThoughtState CurrentStateInternal(Pawn p)
+	{
+		if (!ModsConfig.BiotechActive)
 		{
-			if (!ModsConfig.BiotechActive)
-			{
-				return ThoughtState.Inactive;
-			}
-			if (ChildrenInGrowthVatCount(p) <= 0)
-			{
-				return ThoughtState.Inactive;
-			}
-			return ThoughtState.ActiveDefault;
+			return ThoughtState.Inactive;
 		}
-
-		private int ChildrenInGrowthVatCount(Pawn pawn)
+		if (ChildrenInGrowthVatCount(p) <= 0)
 		{
-			int num = 0;
-			if (pawn.relations.ChildrenCount > 0)
+			return ThoughtState.Inactive;
+		}
+		return ThoughtState.ActiveDefault;
+	}
+
+	private int ChildrenInGrowthVatCount(Pawn pawn)
+	{
+		int num = 0;
+		if (pawn.relations.ChildrenCount > 0)
+		{
+			foreach (Pawn child in pawn.relations.Children)
 			{
-				foreach (Pawn child in pawn.relations.Children)
+				if (!child.DevelopmentalStage.Adult() && child.ParentHolder != null && child.ParentHolder is Building_GrowthVat)
 				{
-					if (!child.DevelopmentalStage.Adult() && child.ParentHolder != null && child.ParentHolder is Building_GrowthVat)
-					{
-						num++;
-					}
+					num++;
 				}
 			}
-			return num;
 		}
+		return num;
+	}
 
-		public override float MoodMultiplier(Pawn p)
-		{
-			return Mathf.Min(def.stackLimit, ChildrenInGrowthVatCount(p));
-		}
+	public override float MoodMultiplier(Pawn p)
+	{
+		return Mathf.Min(def.stackLimit, ChildrenInGrowthVatCount(p));
 	}
 }

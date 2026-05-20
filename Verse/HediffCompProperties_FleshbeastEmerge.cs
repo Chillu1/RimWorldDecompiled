@@ -1,16 +1,15 @@
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_FleshbeastEmerge : HediffCompProperties
 {
-	public class HediffCompProperties_FleshbeastEmerge : HediffCompProperties
+	[MustTranslate]
+	public string letterLabel;
+
+	[MustTranslate]
+	public string letterText;
+
+	public HediffCompProperties_FleshbeastEmerge()
 	{
-		[MustTranslate]
-		public string letterLabel;
-
-		[MustTranslate]
-		public string letterText;
-
-		public HediffCompProperties_FleshbeastEmerge()
-		{
-			compClass = typeof(HediffComp_FleshbeastEmerge);
-		}
+		compClass = typeof(HediffComp_FleshbeastEmerge);
 	}
 }

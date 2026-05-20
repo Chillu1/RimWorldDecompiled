@@ -1,24 +1,23 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ShortcutKeys
 {
-	public class ShortcutKeys
+	public void ShortcutKeysOnGUI()
 	{
-		public void ShortcutKeysOnGUI()
+		if (Current.ProgramState == ProgramState.Playing && !WorldComponent_GravshipController.CutsceneInProgress)
 		{
-			if (Current.ProgramState == ProgramState.Playing && !WorldComponent_GravshipController.CutsceneInProgress)
+			if (KeyBindingDefOf.NextColonist.KeyDownEvent)
 			{
-				if (KeyBindingDefOf.NextColonist.KeyDownEvent)
-				{
-					ThingSelectionUtility.SelectNextColonist();
-					Event.current.Use();
-				}
-				if (KeyBindingDefOf.PreviousColonist.KeyDownEvent)
-				{
-					ThingSelectionUtility.SelectPreviousColonist();
-					Event.current.Use();
-				}
+				ThingSelectionUtility.SelectNextColonist();
+				Event.current.Use();
+			}
+			if (KeyBindingDefOf.PreviousColonist.KeyDownEvent)
+			{
+				ThingSelectionUtility.SelectPreviousColonist();
+				Event.current.Use();
 			}
 		}
 	}

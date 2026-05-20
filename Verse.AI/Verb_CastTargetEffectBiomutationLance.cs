@@ -1,32 +1,31 @@
 using RimWorld;
 
-namespace Verse.AI
+namespace Verse.AI;
+
+public class Verb_CastTargetEffectBiomutationLance : Verb_CastTargetEffect
 {
-	public class Verb_CastTargetEffectBiomutationLance : Verb_CastTargetEffect
+	public override bool ValidateTarget(LocalTargetInfo target, bool showMessages = true)
 	{
-		public override bool ValidateTarget(LocalTargetInfo target, bool showMessages = true)
+		Pawn pawn = target.Pawn;
+		if (pawn != null)
 		{
-			Pawn pawn = target.Pawn;
-			if (pawn != null)
+			if (!pawn.RaceProps.Humanlike && !pawn.IsAnimal)
 			{
-				if (!pawn.RaceProps.Humanlike && !pawn.IsAnimal)
+				if (showMessages)
 				{
-					if (showMessages)
-					{
-						Messages.Message("MessageBiomutationLanceInvalidTargetRace".Translate(pawn), caster, MessageTypeDefOf.RejectInput, null, historical: false);
-					}
-					return false;
+					Messages.Message("MessageBiomutationLanceInvalidTargetRace".Translate(pawn), caster, MessageTypeDefOf.RejectInput, null, historical: false);
 				}
-				if (pawn.BodySize > 2.5f)
-				{
-					if (showMessages)
-					{
-						Messages.Message("MessageBiomutationLanceTargetTooBig".Translate(pawn), caster, MessageTypeDefOf.RejectInput, null, historical: false);
-					}
-					return false;
-				}
+				return false;
 			}
-			return base.ValidateTarget(target, showMessages);
+			if (pawn.BodySize > 2.5f)
+			{
+				if (showMessages)
+				{
+					Messages.Message("MessageBiomutationLanceTargetTooBig".Translate(pawn), caster, MessageTypeDefOf.RejectInput, null, historical: false);
+				}
+				return false;
+			}
 		}
+		return base.ValidateTarget(target, showMessages);
 	}
 }

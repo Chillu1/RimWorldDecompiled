@@ -1,72 +1,71 @@
-namespace Verse.Noise
+namespace Verse.Noise;
+
+public class Translate : ModuleBase
 {
-	public class Translate : ModuleBase
+	private double m_x = 1.0;
+
+	private double m_y = 1.0;
+
+	private double m_z = 1.0;
+
+	public double X
 	{
-		private double m_x = 1.0;
-
-		private double m_y = 1.0;
-
-		private double m_z = 1.0;
-
-		public double X
+		get
 		{
-			get
-			{
-				return m_x;
-			}
-			set
-			{
-				m_x = value;
-			}
+			return m_x;
 		}
-
-		public double Y
+		set
 		{
-			get
-			{
-				return m_y;
-			}
-			set
-			{
-				m_y = value;
-			}
+			m_x = value;
 		}
+	}
 
-		public double Z
+	public double Y
+	{
+		get
 		{
-			get
-			{
-				return m_z;
-			}
-			set
-			{
-				m_z = value;
-			}
+			return m_y;
 		}
+		set
+		{
+			m_y = value;
+		}
+	}
 
-		public Translate()
-			: base(1)
+	public double Z
+	{
+		get
 		{
+			return m_z;
 		}
+		set
+		{
+			m_z = value;
+		}
+	}
 
-		public Translate(ModuleBase input)
-			: base(1)
-		{
-			modules[0] = input;
-		}
+	public Translate()
+		: base(1)
+	{
+	}
 
-		public Translate(double x, double y, double z, ModuleBase input)
-			: base(1)
-		{
-			modules[0] = input;
-			X = x;
-			Y = y;
-			Z = z;
-		}
+	public Translate(ModuleBase input)
+		: base(1)
+	{
+		modules[0] = input;
+	}
 
-		public override double GetValue(double x, double y, double z)
-		{
-			return modules[0].GetValue(x + m_x, y + m_y, z + m_z);
-		}
+	public Translate(double x, double y, double z, ModuleBase input)
+		: base(1)
+	{
+		modules[0] = input;
+		X = x;
+		Y = y;
+		Z = z;
+	}
+
+	public override double GetValue(double x, double y, double z)
+	{
+		return modules[0].GetValue(x + m_x, y + m_y, z + m_z);
 	}
 }

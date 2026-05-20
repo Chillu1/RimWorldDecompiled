@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Instruction_BuildInRoom : Instruction_BuildAtRoom
 {
-	public class Instruction_BuildInRoom : Instruction_BuildAtRoom
-	{
-		protected override CellRect BuildableRect => Find.TutorialState.roomRect.ContractedBy(1);
-	}
+	protected override CellRect BuildableRect => Find.TutorialState.roomRect.ContractedBy(1);
 }

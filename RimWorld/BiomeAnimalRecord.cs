@@ -1,18 +1,17 @@
 using System.Xml;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class BiomeAnimalRecord
 {
-	public class BiomeAnimalRecord
+	public PawnKindDef animal;
+
+	public float commonality;
+
+	public void LoadDataFromXmlCustom(XmlNode xmlRoot)
 	{
-		public PawnKindDef animal;
-
-		public float commonality;
-
-		public void LoadDataFromXmlCustom(XmlNode xmlRoot)
-		{
-			DirectXmlCrossRefLoader.RegisterObjectWantsCrossRef(this, "animal", xmlRoot);
-			commonality = ParseHelper.FromString<float>(xmlRoot.FirstChild.Value);
-		}
+		DirectXmlCrossRefLoader.RegisterObjectWantsCrossRef(this, "animal", xmlRoot);
+		commonality = ParseHelper.FromString<float>(xmlRoot.FirstChild.Value);
 	}
 }

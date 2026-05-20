@@ -1,19 +1,18 @@
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class Hediff_Hangover : HediffWithComps
 {
-	public class Hediff_Hangover : HediffWithComps
+	public override bool Visible
 	{
-		public override bool Visible
+		get
 		{
-			get
+			if (pawn.health.hediffSet.HasHediff(HediffDefOf.AlcoholHigh))
 			{
-				if (pawn.health.hediffSet.HasHediff(HediffDefOf.AlcoholHigh))
-				{
-					return false;
-				}
-				return base.Visible;
+				return false;
 			}
+			return base.Visible;
 		}
 	}
 }

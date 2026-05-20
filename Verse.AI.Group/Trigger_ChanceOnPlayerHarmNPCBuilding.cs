@@ -1,23 +1,22 @@
 using RimWorld;
 
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public class Trigger_ChanceOnPlayerHarmNPCBuilding : Trigger
 {
-	public class Trigger_ChanceOnPlayerHarmNPCBuilding : Trigger
+	private float chance = 1f;
+
+	public Trigger_ChanceOnPlayerHarmNPCBuilding(float chance)
 	{
-		private float chance = 1f;
+		this.chance = chance;
+	}
 
-		public Trigger_ChanceOnPlayerHarmNPCBuilding(float chance)
+	public override bool ActivateOn(Lord lord, TriggerSignal signal)
+	{
+		if (signal.type == TriggerSignalType.BuildingDamaged && signal.dinfo.Def.ExternalViolenceFor(signal.thing) && signal.thing.def.category == ThingCategory.Building && signal.dinfo.Instigator != null && signal.dinfo.Instigator.Faction == Faction.OfPlayer && signal.thing.Faction != Faction.OfPlayer && Rand.Value < chance)
 		{
-			this.chance = chance;
+			return true;
 		}
-
-		public override bool ActivateOn(Lord lord, TriggerSignal signal)
-		{
-			if (signal.type == TriggerSignalType.BuildingDamaged && signal.dinfo.Def.ExternalViolenceFor(signal.thing) && signal.thing.def.category == ThingCategory.Building && signal.dinfo.Instigator != null && signal.dinfo.Instigator.Faction == Faction.OfPlayer && signal.thing.Faction != Faction.OfPlayer && Rand.Value < chance)
-			{
-				return true;
-			}
-			return false;
-		}
+		return false;
 	}
 }

@@ -1,154 +1,153 @@
 using System;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompAbilityEffect_BloodfeederBite : CompAbilityEffect
 {
-	public class CompAbilityEffect_BloodfeederBite : CompAbilityEffect
+	public new CompProperties_AbilityBloodfeederBite Props => (CompProperties_AbilityBloodfeederBite)props;
+
+	public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
 	{
-		public new CompProperties_AbilityBloodfeederBite Props => (CompProperties_AbilityBloodfeederBite)props;
-
-		public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
+		base.Apply(target, dest);
+		Pawn pawn = target.Pawn;
+		if (pawn != null)
 		{
-			base.Apply(target, dest);
-			Pawn pawn = target.Pawn;
-			if (pawn != null)
-			{
-				SanguophageUtility.DoBite(parent.pawn, pawn, Props.hemogenGain, Props.nutritionGain, Props.targetBloodLoss, Props.resistanceGain, Props.bloodFilthToSpawnRange, Props.thoughtDefToGiveTarget, Props.opinionThoughtDefToGiveTarget);
-			}
+			SanguophageUtility.DoBite(parent.pawn, pawn, Props.hemogenGain, Props.nutritionGain, Props.targetBloodLoss, Props.resistanceGain, Props.bloodFilthToSpawnRange, Props.thoughtDefToGiveTarget, Props.opinionThoughtDefToGiveTarget);
 		}
+	}
 
-		public override bool CanApplyOn(LocalTargetInfo target, LocalTargetInfo dest)
+	public override bool CanApplyOn(LocalTargetInfo target, LocalTargetInfo dest)
+	{
+		return Valid(target);
+	}
+
+	public override bool Valid(LocalTargetInfo target, bool throwMessages = false)
+	{
+		Pawn pawn = target.Pawn;
+		if (pawn == null)
 		{
-			return Valid(target);
+			return false;
 		}
-
-		public override bool Valid(LocalTargetInfo target, bool throwMessages = false)
+		if (!AbilityUtility.ValidateMustBeHumanOrWildMan(pawn, throwMessages, parent))
 		{
-			Pawn pawn = target.Pawn;
-			if (pawn == null)
+			return false;
+		}
+		if (pawn.Faction != null && !pawn.IsSlaveOfColony && !pawn.IsPrisonerOfColony)
+		{
+			if (pawn.Faction.HostileTo(parent.pawn.Faction))
 			{
-				return false;
-			}
-			if (!AbilityUtility.ValidateMustBeHumanOrWildMan(pawn, throwMessages, parent))
-			{
-				return false;
-			}
-			if (pawn.Faction != null && !pawn.IsSlaveOfColony && !pawn.IsPrisonerOfColony)
-			{
-				if (pawn.Faction.HostileTo(parent.pawn.Faction))
-				{
-					if (!pawn.Downed)
-					{
-						if (throwMessages)
-						{
-							Messages.Message("MessageCantUseOnResistingPerson".Translate(parent.def.Named("ABILITY")), pawn, MessageTypeDefOf.RejectInput, historical: false);
-						}
-						return false;
-					}
-				}
-				else if (pawn.IsQuestLodger() || pawn.Faction != parent.pawn.Faction)
+				if (!pawn.Downed)
 				{
 					if (throwMessages)
 					{
-						Messages.Message("MessageCannotUseOnOtherFactions".Translate(parent.def.Named("ABILITY")), pawn, MessageTypeDefOf.RejectInput, historical: false);
+						Messages.Message("MessageCantUseOnResistingPerson".Translate(parent.def.Named("ABILITY")), pawn, MessageTypeDefOf.RejectInput, historical: false);
 					}
 					return false;
 				}
 			}
-			if (pawn.IsWildMan() && !pawn.IsPrisonerOfColony && !pawn.Downed)
+			else if (pawn.IsQuestLodger() || pawn.Faction != parent.pawn.Faction)
 			{
 				if (throwMessages)
 				{
-					Messages.Message("MessageCantUseOnResistingPerson".Translate(parent.def.Named("ABILITY")), pawn, MessageTypeDefOf.RejectInput, historical: false);
+					Messages.Message("MessageCannotUseOnOtherFactions".Translate(parent.def.Named("ABILITY")), pawn, MessageTypeDefOf.RejectInput, historical: false);
 				}
 				return false;
 			}
-			if (pawn.InMentalState || PrisonBreakUtility.IsPrisonBreaking(pawn))
-			{
-				if (throwMessages)
-				{
-					Messages.Message("MessageCantUseOnResistingPerson".Translate(parent.def.Named("ABILITY")), pawn, MessageTypeDefOf.RejectInput, historical: false);
-				}
-				return false;
-			}
-			if (ModsConfig.AnomalyActive && pawn.IsMutant && !pawn.mutant.Def.canBleed)
-			{
-				if (throwMessages)
-				{
-					Messages.Message("MessageCannotUseOnNonBleeder".Translate(parent.def.Named("ABILITY")), pawn, MessageTypeDefOf.RejectInput, historical: false);
-				}
-				return false;
-			}
-			return true;
 		}
-
-		public override string ExtraLabelMouseAttachment(LocalTargetInfo target)
+		if (pawn.IsWildMan() && !pawn.IsPrisonerOfColony && !pawn.Downed)
 		{
-			Pawn pawn = target.Pawn;
-			if (pawn != null)
+			if (throwMessages)
 			{
-				string text = null;
-				if (pawn.HostileTo(parent.pawn) && !pawn.Downed)
-				{
-					text += "MessageCantUseOnResistingPerson".Translate(parent.def.Named("ABILITY"));
-				}
-				float num = BloodlossAfterBite(pawn);
-				if (num >= HediffDefOf.BloodLoss.lethalSeverity)
-				{
-					if (!text.NullOrEmpty())
-					{
-						text += "\n";
-					}
-					text += "WillKill".Translate();
-				}
-				else if (HediffDefOf.BloodLoss.stages[HediffDefOf.BloodLoss.StageAtSeverity(num)].lifeThreatening)
-				{
-					if (!text.NullOrEmpty())
-					{
-						text += "\n";
-					}
-					text += "WillCauseSeriousBloodloss".Translate();
-				}
-				return text;
+				Messages.Message("MessageCantUseOnResistingPerson".Translate(parent.def.Named("ABILITY")), pawn, MessageTypeDefOf.RejectInput, historical: false);
 			}
-			return base.ExtraLabelMouseAttachment(target);
+			return false;
 		}
-
-		public override Window ConfirmationDialog(LocalTargetInfo target, Action confirmAction)
+		if (pawn.InMentalState || PrisonBreakUtility.IsPrisonBreaking(pawn))
 		{
-			Pawn pawn = target.Pawn;
-			if (pawn != null)
+			if (throwMessages)
 			{
-				if (pawn.genes != null && pawn.genes.HasActiveGene(GeneDefOf.Deathless))
-				{
-					return null;
-				}
-				float num = BloodlossAfterBite(pawn);
-				if (num >= HediffDefOf.BloodLoss.lethalSeverity)
-				{
-					return Dialog_MessageBox.CreateConfirmation("WarningPawnWillDieFromBloodfeeding".Translate(pawn.Named("PAWN")), confirmAction, destructive: true);
-				}
-				if (HediffDefOf.BloodLoss.stages[HediffDefOf.BloodLoss.StageAtSeverity(num)].lifeThreatening)
-				{
-					return Dialog_MessageBox.CreateConfirmation("WarningPawnWillHaveSeriousBloodlossFromBloodfeeding".Translate(pawn.Named("PAWN")), confirmAction, destructive: true);
-				}
+				Messages.Message("MessageCantUseOnResistingPerson".Translate(parent.def.Named("ABILITY")), pawn, MessageTypeDefOf.RejectInput, historical: false);
 			}
-			return null;
+			return false;
 		}
-
-		private float BloodlossAfterBite(Pawn target)
+		if (ModsConfig.AnomalyActive && pawn.IsMutant && !pawn.mutant.Def.canBleed)
 		{
-			if (target.Dead || !target.RaceProps.IsFlesh)
+			if (throwMessages)
 			{
-				return 0f;
+				Messages.Message("MessageCannotUseOnNonBleeder".Translate(parent.def.Named("ABILITY")), pawn, MessageTypeDefOf.RejectInput, historical: false);
 			}
-			float num = Props.targetBloodLoss;
-			Hediff firstHediffOfDef = target.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.BloodLoss);
-			if (firstHediffOfDef != null)
-			{
-				num += firstHediffOfDef.Severity;
-			}
-			return num;
+			return false;
 		}
+		return true;
+	}
+
+	public override string ExtraLabelMouseAttachment(LocalTargetInfo target)
+	{
+		Pawn pawn = target.Pawn;
+		if (pawn != null)
+		{
+			string text = null;
+			if (pawn.HostileTo(parent.pawn) && !pawn.Downed)
+			{
+				text += "MessageCantUseOnResistingPerson".Translate(parent.def.Named("ABILITY"));
+			}
+			float num = BloodlossAfterBite(pawn);
+			if (num >= HediffDefOf.BloodLoss.lethalSeverity)
+			{
+				if (!text.NullOrEmpty())
+				{
+					text += "\n";
+				}
+				text += "WillKill".Translate();
+			}
+			else if (HediffDefOf.BloodLoss.stages[HediffDefOf.BloodLoss.StageAtSeverity(num)].lifeThreatening)
+			{
+				if (!text.NullOrEmpty())
+				{
+					text += "\n";
+				}
+				text += "WillCauseSeriousBloodloss".Translate();
+			}
+			return text;
+		}
+		return base.ExtraLabelMouseAttachment(target);
+	}
+
+	public override Window ConfirmationDialog(LocalTargetInfo target, Action confirmAction)
+	{
+		Pawn pawn = target.Pawn;
+		if (pawn != null)
+		{
+			if (pawn.genes != null && pawn.genes.HasActiveGene(GeneDefOf.Deathless))
+			{
+				return null;
+			}
+			float num = BloodlossAfterBite(pawn);
+			if (num >= HediffDefOf.BloodLoss.lethalSeverity)
+			{
+				return Dialog_MessageBox.CreateConfirmation("WarningPawnWillDieFromBloodfeeding".Translate(pawn.Named("PAWN")), confirmAction, destructive: true);
+			}
+			if (HediffDefOf.BloodLoss.stages[HediffDefOf.BloodLoss.StageAtSeverity(num)].lifeThreatening)
+			{
+				return Dialog_MessageBox.CreateConfirmation("WarningPawnWillHaveSeriousBloodlossFromBloodfeeding".Translate(pawn.Named("PAWN")), confirmAction, destructive: true);
+			}
+		}
+		return null;
+	}
+
+	private float BloodlossAfterBite(Pawn target)
+	{
+		if (target.Dead || !target.RaceProps.IsFlesh)
+		{
+			return 0f;
+		}
+		float num = Props.targetBloodLoss;
+		Hediff firstHediffOfDef = target.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.BloodLoss);
+		if (firstHediffOfDef != null)
+		{
+			num += firstHediffOfDef.Severity;
+		}
+		return num;
 	}
 }

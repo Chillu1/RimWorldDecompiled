@@ -1,34 +1,33 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class TreeNode
 {
-	public class TreeNode
+	public TreeNode parentNode;
+
+	public List<TreeNode> children;
+
+	public int nestDepth;
+
+	private int openBits;
+
+	public virtual bool Openable => true;
+
+	public bool IsOpen(int mask)
 	{
-		public TreeNode parentNode;
+		return (openBits & mask) != 0;
+	}
 
-		public List<TreeNode> children;
-
-		public int nestDepth;
-
-		private int openBits;
-
-		public virtual bool Openable => true;
-
-		public bool IsOpen(int mask)
+	public void SetOpen(int mask, bool val)
+	{
+		if (val)
 		{
-			return (openBits & mask) != 0;
+			openBits |= mask;
 		}
-
-		public void SetOpen(int mask, bool val)
+		else
 		{
-			if (val)
-			{
-				openBits |= mask;
-			}
-			else
-			{
-				openBits &= ~mask;
-			}
+			openBits &= ~mask;
 		}
 	}
 }

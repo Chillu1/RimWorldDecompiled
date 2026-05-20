@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_PsychicSlaughter : CompProperties_AbilityEffect
 {
-	public class CompProperties_PsychicSlaughter : CompProperties_AbilityEffect
+	public CompProperties_PsychicSlaughter()
 	{
-		public CompProperties_PsychicSlaughter()
-		{
-			compClass = typeof(CompAbilityEffect_PsychicSlaughter);
-		}
+		compClass = typeof(CompAbilityEffect_PsychicSlaughter);
 	}
 }

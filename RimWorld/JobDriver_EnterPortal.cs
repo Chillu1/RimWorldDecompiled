@@ -4,77 +4,76 @@ using Verse;
 using Verse.AI;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_EnterPortal : JobDriver
 {
-	public class JobDriver_EnterPortal : JobDriver
+	private TargetIndex PortalInd = TargetIndex.A;
+
+	private const int EnterDelay = 90;
+
+	public MapPortal MapPortal => base.TargetThingA as MapPortal;
+
+	public override bool TryMakePreToilReservations(bool errorOnFailed)
 	{
-		private TargetIndex PortalInd = TargetIndex.A;
+		return true;
+	}
 
-		private const int EnterDelay = 90;
-
-		public MapPortal MapPortal => base.TargetThingA as MapPortal;
-
-		public override bool TryMakePreToilReservations(bool errorOnFailed)
+	protected override IEnumerable<Toil> MakeNewToils()
+	{
+		this.FailOnDespawnedOrNull(PortalInd);
+		this.FailOn(() => !((MapPortal)base.TargetThingA).IsEnterable(out var _));
+		yield return Toils_Goto.GotoThing(PortalInd, PathEndMode.Touch);
+		Toil toil = Toils_General.Wait(90).FailOnCannotTouch(PortalInd, PathEndMode.Touch).WithProgressBarToilDelay(PortalInd, interpolateBetweenActorAndTarget: true);
+		toil.tickIntervalAction = (Action<int>)Delegate.Combine(toil.tickIntervalAction, (Action<int>)delegate
 		{
-			return true;
-		}
-
-		protected override IEnumerable<Toil> MakeNewToils()
+			pawn.rotationTracker.FaceTarget(base.TargetA);
+		});
+		toil.handlingFacing = true;
+		yield return toil;
+		Toil toil2 = ToilMaker.MakeToil("MakeNewToils");
+		toil2.initAction = delegate
 		{
-			this.FailOnDespawnedOrNull(PortalInd);
-			this.FailOn(() => !((MapPortal)base.TargetThingA).IsEnterable(out var _));
-			yield return Toils_Goto.GotoThing(PortalInd, PathEndMode.Touch);
-			Toil toil = Toils_General.Wait(90).FailOnCannotTouch(PortalInd, PathEndMode.Touch).WithProgressBarToilDelay(PortalInd, interpolateBetweenActorAndTarget: true);
-			toil.tickIntervalAction = (Action<int>)Delegate.Combine(toil.tickIntervalAction, (Action<int>)delegate
+			MapPortal mapPortal = base.TargetThingA as MapPortal;
+			Map otherMap = mapPortal.GetOtherMap();
+			IntVec3 intVec = mapPortal.GetDestinationLocation();
+			if (!intVec.Standable(otherMap))
 			{
-				pawn.rotationTracker.FaceTarget(base.TargetA);
-			});
-			toil.handlingFacing = true;
-			yield return toil;
-			Toil toil2 = ToilMaker.MakeToil("MakeNewToils");
-			toil2.initAction = delegate
+				intVec = CellFinder.StandableCellNear(intVec, otherMap, 5f);
+			}
+			if (intVec == IntVec3.Invalid)
 			{
-				MapPortal mapPortal = base.TargetThingA as MapPortal;
-				Map otherMap = mapPortal.GetOtherMap();
-				IntVec3 intVec = mapPortal.GetDestinationLocation();
-				if (!intVec.Standable(otherMap))
+				Messages.Message("UnableToEnterPortal".Translate(base.TargetThingA.Label), base.TargetThingA, MessageTypeDefOf.NegativeEvent);
+			}
+			else
+			{
+				bool flag = false;
+				bool fireAtWill = false;
+				if (pawn.IsPlayerControlled)
 				{
-					intVec = CellFinder.StandableCellNear(intVec, otherMap, 5f);
+					flag = pawn.Drafted;
+					fireAtWill = pawn.drafter.FireAtWill;
 				}
-				if (intVec == IntVec3.Invalid)
+				pawn.DeSpawnOrDeselect();
+				GenSpawn.Spawn(pawn, intVec, otherMap, Rot4.Random);
+				mapPortal.OnEntered(pawn);
+				if (pawn.inventory != null)
 				{
-					Messages.Message("UnableToEnterPortal".Translate(base.TargetThingA.Label), base.TargetThingA, MessageTypeDefOf.NegativeEvent);
+					pawn.inventory.UnloadEverything = !otherMap.IsPocketMap;
 				}
-				else
+				if (pawn.IsPlayerControlled && (flag || mapPortal.AutoDraftOnEnter))
 				{
-					bool flag = false;
-					bool fireAtWill = false;
-					if (pawn.IsPlayerControlled)
-					{
-						flag = pawn.Drafted;
-						fireAtWill = pawn.drafter.FireAtWill;
-					}
-					pawn.DeSpawnOrDeselect();
-					GenSpawn.Spawn(pawn, intVec, otherMap, Rot4.Random);
-					mapPortal.OnEntered(pawn);
-					if (pawn.inventory != null)
-					{
-						pawn.inventory.UnloadEverything = !otherMap.IsPocketMap;
-					}
-					if (pawn.IsPlayerControlled && (flag || mapPortal.AutoDraftOnEnter))
-					{
-						pawn.drafter.Drafted = true;
-						pawn.drafter.FireAtWill = fireAtWill;
-					}
-					if (pawn.carryTracker?.CarriedThing != null && !pawn.Drafted)
-					{
-						pawn.carryTracker.TryDropCarriedThing(pawn.Position, ThingPlaceMode.Direct, out var _);
-					}
-					pawn.mindState.priorityWork.ClearPrioritizedWorkAndJobQueue();
-					pawn.GetLord()?.Notify_PawnLost(pawn, PawnLostCondition.ExitedMap);
+					pawn.drafter.Drafted = true;
+					pawn.drafter.FireAtWill = fireAtWill;
 				}
-			};
-			yield return toil2;
-		}
+				if (pawn.carryTracker?.CarriedThing != null && !pawn.Drafted)
+				{
+					pawn.carryTracker.TryDropCarriedThing(pawn.Position, ThingPlaceMode.Direct, out var _);
+				}
+				pawn.mindState.priorityWork.ClearPrioritizedWorkAndJobQueue();
+				pawn.GetLord()?.Notify_PawnLost(pawn, PawnLostCondition.ExitedMap);
+			}
+		};
+		yield return toil2;
 	}
 }

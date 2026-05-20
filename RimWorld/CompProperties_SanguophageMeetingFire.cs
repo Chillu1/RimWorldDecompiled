@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_SanguophageMeetingFire : CompProperties_FireOverlay
 {
-	public class CompProperties_SanguophageMeetingFire : CompProperties_FireOverlay
+	public CompProperties_SanguophageMeetingFire()
 	{
-		public CompProperties_SanguophageMeetingFire()
-		{
-			compClass = typeof(CompSanguophageMeetingFire);
-		}
+		compClass = typeof(CompSanguophageMeetingFire);
 	}
 }

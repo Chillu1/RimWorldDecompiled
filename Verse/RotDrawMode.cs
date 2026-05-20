@@ -1,12 +1,11 @@
 using System;
 
-namespace Verse
+namespace Verse;
+
+[Flags]
+public enum RotDrawMode : byte
 {
-	[Flags]
-	public enum RotDrawMode : byte
-	{
-		Fresh = 1,
-		Rotting = 2,
-		Dessicated = 4
-	}
+	Fresh = 1,
+	Rotting = 2,
+	Dessicated = 4
 }

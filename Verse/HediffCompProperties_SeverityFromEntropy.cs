@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_SeverityFromEntropy : HediffCompProperties
 {
-	public class HediffCompProperties_SeverityFromEntropy : HediffCompProperties
+	public HediffCompProperties_SeverityFromEntropy()
 	{
-		public HediffCompProperties_SeverityFromEntropy()
-		{
-			compClass = typeof(HediffComp_SeverityFromEntropy);
-		}
+		compClass = typeof(HediffComp_SeverityFromEntropy);
 	}
 }

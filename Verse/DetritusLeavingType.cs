@@ -1,11 +1,10 @@
-namespace Verse
+namespace Verse;
+
+public class DetritusLeavingType
 {
-	public class DetritusLeavingType
-	{
-		public ThingDef def;
+	public ThingDef def;
 
-		public int texOverrideIndex;
+	public int texOverrideIndex;
 
-		public float spawnChance;
-	}
+	public float spawnChance;
 }

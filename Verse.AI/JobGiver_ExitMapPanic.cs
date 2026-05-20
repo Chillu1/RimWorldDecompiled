@@ -1,10 +1,9 @@
-namespace Verse.AI
+namespace Verse.AI;
+
+public class JobGiver_ExitMapPanic : JobGiver_ExitMapBest
 {
-	public class JobGiver_ExitMapPanic : JobGiver_ExitMapBest
+	public JobGiver_ExitMapPanic()
 	{
-		public JobGiver_ExitMapPanic()
-		{
-			canBash = true;
-		}
+		canBash = true;
 	}
 }

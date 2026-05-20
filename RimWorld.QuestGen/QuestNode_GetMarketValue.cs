@@ -1,37 +1,36 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_GetMarketValue : QuestNode
 {
-	public class QuestNode_GetMarketValue : QuestNode
+	[NoTranslate]
+	public SlateRef<string> storeAs;
+
+	public SlateRef<IEnumerable<Thing>> things;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		[NoTranslate]
-		public SlateRef<string> storeAs;
+		return DoWork(slate);
+	}
 
-		public SlateRef<IEnumerable<Thing>> things;
+	protected override void RunInt()
+	{
+		DoWork(QuestGen.slate);
+	}
 
-		protected override bool TestRunInt(Slate slate)
+	private bool DoWork(Slate slate)
+	{
+		float num = 0f;
+		if (things.GetValue(slate) != null)
 		{
-			return DoWork(slate);
-		}
-
-		protected override void RunInt()
-		{
-			DoWork(QuestGen.slate);
-		}
-
-		private bool DoWork(Slate slate)
-		{
-			float num = 0f;
-			if (things.GetValue(slate) != null)
+			foreach (Thing item in things.GetValue(slate))
 			{
-				foreach (Thing item in things.GetValue(slate))
-				{
-					num += item.MarketValue * (float)item.stackCount;
-				}
+				num += item.MarketValue * (float)item.stackCount;
 			}
-			slate.Set(storeAs.GetValue(slate), num);
-			return true;
 		}
+		slate.Set(storeAs.GetValue(slate), num);
+		return true;
 	}
 }

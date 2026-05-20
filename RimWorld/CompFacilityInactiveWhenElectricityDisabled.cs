@@ -1,17 +1,16 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompFacilityInactiveWhenElectricityDisabled : CompFacility
 {
-	public class CompFacilityInactiveWhenElectricityDisabled : CompFacility
+	public override bool CanBeActive
 	{
-		public override bool CanBeActive
+		get
 		{
-			get
+			if (!base.CanBeActive)
 			{
-				if (!base.CanBeActive)
-				{
-					return false;
-				}
-				return !parent.Map.gameConditionManager.ElectricityDisabled(parent.Map);
+				return false;
 			}
+			return !parent.Map.gameConditionManager.ElectricityDisabled(parent.Map);
 		}
 	}
 }

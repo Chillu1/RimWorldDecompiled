@@ -1,9 +1,8 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class Hediff_DeathrestEffect : Hediff
 {
-	public class Hediff_DeathrestEffect : Hediff
-	{
-		public override string LabelBase => base.LabelBase + " x" + Mathf.FloorToInt(Severity);
-	}
+	public override string LabelBase => base.LabelBase + " x" + Mathf.FloorToInt(Severity);
 }

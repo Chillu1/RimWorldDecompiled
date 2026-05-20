@@ -1,19 +1,18 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RoleEffect_HuntingRevengeChanceFactor : RoleEffect
 {
-	public class RoleEffect_HuntingRevengeChanceFactor : RoleEffect
+	public float factor;
+
+	public RoleEffect_HuntingRevengeChanceFactor()
 	{
-		public float factor;
+		labelKey = "RoleEffectHuntingRevengeChance";
+	}
 
-		public RoleEffect_HuntingRevengeChanceFactor()
-		{
-			labelKey = "RoleEffectHuntingRevengeChance";
-		}
-
-		public override string Label(Pawn pawn, Precept_Role role)
-		{
-			return labelKey.Translate("x" + factor.ToStringPercent());
-		}
+	public override string Label(Pawn pawn, Precept_Role role)
+	{
+		return labelKey.Translate("x" + factor.ToStringPercent());
 	}
 }

@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class HistoryAutoRecorderWorker_ThreatPoints : HistoryAutoRecorderWorker
 {
-	public class HistoryAutoRecorderWorker_ThreatPoints : HistoryAutoRecorderWorker
+	public override float PullRecord()
 	{
-		public override float PullRecord()
+		if (Find.AnyPlayerHomeMap == null)
 		{
-			if (Find.AnyPlayerHomeMap == null)
-			{
-				return 0f;
-			}
-			return StorytellerUtility.DefaultThreatPointsNow(Find.AnyPlayerHomeMap) / 10f;
+			return 0f;
 		}
+		return StorytellerUtility.DefaultThreatPointsNow(Find.AnyPlayerHomeMap) / 10f;
 	}
 }

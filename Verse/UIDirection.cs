@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum UIDirection : byte
 {
-	public enum UIDirection : byte
-	{
-		LeftThenUp,
-		LeftThenDown,
-		RightThenUp,
-		RightThenDown
-	}
+	LeftThenUp,
+	LeftThenDown,
+	RightThenUp,
+	RightThenDown
 }

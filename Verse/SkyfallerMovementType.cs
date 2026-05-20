@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum SkyfallerMovementType
 {
-	public enum SkyfallerMovementType
-	{
-		Accelerate,
-		ConstantSpeed,
-		Decelerate
-	}
+	Accelerate,
+	ConstantSpeed,
+	Decelerate
 }

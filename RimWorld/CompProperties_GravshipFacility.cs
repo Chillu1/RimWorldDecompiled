@@ -1,33 +1,32 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_GravshipFacility : CompProperties_Facility
 {
-	public class CompProperties_GravshipFacility : CompProperties_Facility
+	public bool providesFuel;
+
+	public float fuelSavingsPercent;
+
+	public GravshipComponentTypeDef componentTypeDef;
+
+	public bool onlyRequiresLooseConnection;
+
+	public CompProperties_GravshipFacility()
 	{
-		public bool providesFuel;
+		compClass = typeof(CompGravshipFacility);
+	}
 
-		public float fuelSavingsPercent;
-
-		public GravshipComponentTypeDef componentTypeDef;
-
-		public bool onlyRequiresLooseConnection;
-
-		public CompProperties_GravshipFacility()
+	public override IEnumerable<StatDrawEntry> SpecialDisplayStats(StatRequest req)
+	{
+		foreach (StatDrawEntry item in base.SpecialDisplayStats(req))
 		{
-			compClass = typeof(CompGravshipFacility);
+			yield return item;
 		}
-
-		public override IEnumerable<StatDrawEntry> SpecialDisplayStats(StatRequest req)
+		if (fuelSavingsPercent > 0f)
 		{
-			foreach (StatDrawEntry item in base.SpecialDisplayStats(req))
-			{
-				yield return item;
-			}
-			if (fuelSavingsPercent > 0f)
-			{
-				yield return new StatDrawEntry(StatCategoryDefOf.Building, "StatsReport_GravshipFuelSavings".Translate(), fuelSavingsPercent.ToStringPercentSigned("F0"), "StatsReport_GravshipFuelSavings_Desc".Translate(), 520);
-			}
+			yield return new StatDrawEntry(StatCategoryDefOf.Building, "StatsReport_GravshipFuelSavings".Translate(), fuelSavingsPercent.ToStringPercentSigned("F0"), "StatsReport_GravshipFuelSavings_Desc".Translate(), 520);
 		}
 	}
 }

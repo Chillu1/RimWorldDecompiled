@@ -1,34 +1,33 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class CreditRecord_Text : CreditsEntry
 {
-	public class CreditRecord_Text : CreditsEntry
+	public string text;
+
+	public TextAnchor anchor;
+
+	public CreditRecord_Text()
 	{
-		public string text;
+	}
 
-		public TextAnchor anchor;
+	public CreditRecord_Text(string text, TextAnchor anchor = TextAnchor.UpperLeft)
+	{
+		this.text = text;
+		this.anchor = anchor;
+	}
 
-		public CreditRecord_Text()
-		{
-		}
+	public override float DrawHeight(float width)
+	{
+		return Text.CalcHeight(text, width);
+	}
 
-		public CreditRecord_Text(string text, TextAnchor anchor = TextAnchor.UpperLeft)
-		{
-			this.text = text;
-			this.anchor = anchor;
-		}
-
-		public override float DrawHeight(float width)
-		{
-			return Text.CalcHeight(text, width);
-		}
-
-		public override void Draw(Rect r)
-		{
-			Text.Anchor = anchor;
-			Text.Font = GameFont.Medium;
-			Widgets.Label(r, text);
-			Text.Anchor = TextAnchor.UpperLeft;
-		}
+	public override void Draw(Rect r)
+	{
+		Text.Anchor = anchor;
+		Text.Font = GameFont.Medium;
+		Widgets.Label(r, text);
+		Text.Anchor = TextAnchor.UpperLeft;
 	}
 }

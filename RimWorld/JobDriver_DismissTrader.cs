@@ -2,30 +2,29 @@ using System.Collections.Generic;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_DismissTrader : JobDriver
 {
-	public class JobDriver_DismissTrader : JobDriver
+	private Pawn Trader => (Pawn)base.TargetThingA;
+
+	public override bool TryMakePreToilReservations(bool errorOnFailed)
 	{
-		private Pawn Trader => (Pawn)base.TargetThingA;
+		return pawn.Reserve(Trader, job, 1, -1, null, errorOnFailed);
+	}
 
-		public override bool TryMakePreToilReservations(bool errorOnFailed)
+	protected override IEnumerable<Toil> MakeNewToils()
+	{
+		this.FailOnDespawnedOrNull(TargetIndex.A);
+		yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch).FailOn(() => !Trader.CanTradeNow);
+		Toil toil = ToilMaker.MakeToil("MakeNewToils");
+		toil.initAction = delegate
 		{
-			return pawn.Reserve(Trader, job, 1, -1, null, errorOnFailed);
-		}
-
-		protected override IEnumerable<Toil> MakeNewToils()
-		{
-			this.FailOnDespawnedOrNull(TargetIndex.A);
-			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch).FailOn(() => !Trader.CanTradeNow);
-			Toil toil = ToilMaker.MakeToil("MakeNewToils");
-			toil.initAction = delegate
+			if (Trader.CanTradeNow)
 			{
-				if (Trader.CanTradeNow)
-				{
-					Trader.mindState.traderDismissed = true;
-				}
-			};
-			yield return toil;
-		}
+				Trader.mindState.traderDismissed = true;
+			}
+		};
+		yield return toil;
 	}
 }

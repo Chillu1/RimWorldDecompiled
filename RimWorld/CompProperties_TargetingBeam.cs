@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_TargetingBeam : CompProperties
 {
-	public class CompProperties_TargetingBeam : CompProperties
+	public int delayTicks;
+
+	public DamageDef damage;
+
+	public CompProperties_TargetingBeam()
 	{
-		public int delayTicks;
-
-		public DamageDef damage;
-
-		public CompProperties_TargetingBeam()
-		{
-			compClass = typeof(CompTargetingBeam);
-		}
+		compClass = typeof(CompTargetingBeam);
 	}
 }

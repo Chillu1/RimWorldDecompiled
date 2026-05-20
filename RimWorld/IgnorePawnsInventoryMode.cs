@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum IgnorePawnsInventoryMode
 {
-	public enum IgnorePawnsInventoryMode
-	{
-		Ignore,
-		IgnoreIfAssignedToUnload,
-		IgnoreIfAssignedToUnloadOrPlayerPawn,
-		DontIgnore
-	}
+	Ignore,
+	IgnoreIfAssignedToUnload,
+	IgnoreIfAssignedToUnloadOrPlayerPawn,
+	DontIgnore
 }

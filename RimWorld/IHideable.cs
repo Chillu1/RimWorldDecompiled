@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public interface IHideable
 {
-	public interface IHideable
-	{
-		bool Hidden { get; set; }
-	}
+	bool Hidden { get; set; }
 }

@@ -1,22 +1,21 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class ResearchProjectTagDef : Def
 {
-	public class ResearchProjectTagDef : Def
+	public int CompletedProjects()
 	{
-		public int CompletedProjects()
+		int num = 0;
+		List<ResearchProjectDef> allDefsListForReading = DefDatabase<ResearchProjectDef>.AllDefsListForReading;
+		for (int i = 0; i < allDefsListForReading.Count; i++)
 		{
-			int num = 0;
-			List<ResearchProjectDef> allDefsListForReading = DefDatabase<ResearchProjectDef>.AllDefsListForReading;
-			for (int i = 0; i < allDefsListForReading.Count; i++)
+			ResearchProjectDef researchProjectDef = allDefsListForReading[i];
+			if (researchProjectDef.IsFinished && researchProjectDef.HasTag(this))
 			{
-				ResearchProjectDef researchProjectDef = allDefsListForReading[i];
-				if (researchProjectDef.IsFinished && researchProjectDef.HasTag(this))
-				{
-					num++;
-				}
+				num++;
 			}
-			return num;
 		}
+		return num;
 	}
 }

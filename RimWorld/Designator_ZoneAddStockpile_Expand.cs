@@ -1,15 +1,14 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class Designator_ZoneAddStockpile_Expand : Designator_ZoneAddStockpile_Resources
-	{
-		protected override bool ShowRightClickHideOptions => false;
+namespace RimWorld;
 
-		public Designator_ZoneAddStockpile_Expand()
-		{
-			defaultLabel = "DesignatorZoneExpand".Translate();
-			hotKey = KeyBindingDefOf.Misc6;
-		}
+public class Designator_ZoneAddStockpile_Expand : Designator_ZoneAddStockpile_Resources
+{
+	protected override bool ShowRightClickHideOptions => false;
+
+	public Designator_ZoneAddStockpile_Expand()
+	{
+		defaultLabel = "DesignatorZoneExpand".Translate();
+		hotKey = KeyBindingDefOf.Misc6;
 	}
 }

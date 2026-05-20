@@ -1,50 +1,49 @@
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_GetEventDelays : QuestNode
 {
-	public class QuestNode_GetEventDelays : QuestNode
+	public SlateRef<int> durationTicks;
+
+	public SlateRef<IntRange> intervalTicksRange;
+
+	[NoTranslate]
+	public SlateRef<string> storeCountAs;
+
+	[NoTranslate]
+	public SlateRef<string> storeDelaysAs;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		public SlateRef<int> durationTicks;
+		SetVars(slate);
+		return true;
+	}
 
-		public SlateRef<IntRange> intervalTicksRange;
+	protected override void RunInt()
+	{
+		SetVars(QuestGen.slate);
+	}
 
-		[NoTranslate]
-		public SlateRef<string> storeCountAs;
-
-		[NoTranslate]
-		public SlateRef<string> storeDelaysAs;
-
-		protected override bool TestRunInt(Slate slate)
+	private void SetVars(Slate slate)
+	{
+		if (intervalTicksRange.GetValue(slate).max <= 0)
 		{
-			SetVars(slate);
-			return true;
+			Log.Error("intervalTicksRange with max <= 0");
+			return;
 		}
-
-		protected override void RunInt()
+		int num = 0;
+		int num2 = 0;
+		while (true)
 		{
-			SetVars(QuestGen.slate);
-		}
-
-		private void SetVars(Slate slate)
-		{
-			if (intervalTicksRange.GetValue(slate).max <= 0)
+			num += intervalTicksRange.GetValue(slate).RandomInRange;
+			if (num > durationTicks.GetValue(slate))
 			{
-				Log.Error("intervalTicksRange with max <= 0");
-				return;
+				break;
 			}
-			int num = 0;
-			int num2 = 0;
-			while (true)
-			{
-				num += intervalTicksRange.GetValue(slate).RandomInRange;
-				if (num > durationTicks.GetValue(slate))
-				{
-					break;
-				}
-				slate.Set(storeDelaysAs.GetValue(slate).Formatted(num2.Named("INDEX")), num);
-				num2++;
-			}
-			slate.Set(storeCountAs.GetValue(slate), num2);
+			slate.Set(storeDelaysAs.GetValue(slate).Formatted(num2.Named("INDEX")), num);
+			num2++;
 		}
+		slate.Set(storeCountAs.GetValue(slate), num2);
 	}
 }

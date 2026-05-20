@@ -2,71 +2,70 @@ using System;
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public static class WorldComponentUtility
 {
-	public static class WorldComponentUtility
+	public static void WorldComponentUpdate(World world)
 	{
-		public static void WorldComponentUpdate(World world)
+		List<WorldComponent> components = world.components;
+		for (int i = 0; i < components.Count; i++)
 		{
-			List<WorldComponent> components = world.components;
-			for (int i = 0; i < components.Count; i++)
+			try
 			{
-				try
-				{
-					components[i].WorldComponentUpdate();
-				}
-				catch (Exception ex)
-				{
-					Log.Error(ex.ToString());
-				}
+				components[i].WorldComponentUpdate();
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex.ToString());
 			}
 		}
+	}
 
-		public static void WorldComponentTick(World world)
+	public static void WorldComponentTick(World world)
+	{
+		List<WorldComponent> components = world.components;
+		for (int i = 0; i < components.Count; i++)
 		{
-			List<WorldComponent> components = world.components;
-			for (int i = 0; i < components.Count; i++)
+			try
 			{
-				try
-				{
-					components[i].WorldComponentTick();
-				}
-				catch (Exception ex)
-				{
-					Log.Error(ex.ToString());
-				}
+				components[i].WorldComponentTick();
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex.ToString());
 			}
 		}
+	}
 
-		public static void WorldComponentOnGUI(World world)
+	public static void WorldComponentOnGUI(World world)
+	{
+		List<WorldComponent> components = world.components;
+		for (int i = 0; i < components.Count; i++)
 		{
-			List<WorldComponent> components = world.components;
-			for (int i = 0; i < components.Count; i++)
+			try
 			{
-				try
-				{
-					components[i].WorldComponentOnGUI();
-				}
-				catch (Exception ex)
-				{
-					Log.Error(ex.ToString());
-				}
+				components[i].WorldComponentOnGUI();
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex.ToString());
 			}
 		}
+	}
 
-		public static void FinalizeInit(World world, bool fromLoad)
+	public static void FinalizeInit(World world, bool fromLoad)
+	{
+		List<WorldComponent> components = world.components;
+		for (int i = 0; i < components.Count; i++)
 		{
-			List<WorldComponent> components = world.components;
-			for (int i = 0; i < components.Count; i++)
+			try
 			{
-				try
-				{
-					components[i].FinalizeInit(fromLoad);
-				}
-				catch (Exception ex)
-				{
-					Log.Error(ex.ToString());
-				}
+				components[i].FinalizeInit(fromLoad);
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex.ToString());
 			}
 		}
 	}

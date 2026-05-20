@@ -1,35 +1,34 @@
 using RimWorld;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+internal class SectionLayer_Watergen : SectionLayer_Terrain
 {
-	internal class SectionLayer_Watergen : SectionLayer_Terrain
+	public SectionLayer_Watergen(Section section)
+		: base(section)
 	{
-		public SectionLayer_Watergen(Section section)
-			: base(section)
-		{
-			relevantChangeTypes = MapMeshFlagDefOf.Terrain;
-		}
+		relevantChangeTypes = MapMeshFlagDefOf.Terrain;
+	}
 
-		public override Material GetMaterialFor(CellTerrain terrain)
-		{
-			return terrain.def.waterDepthMaterial;
-		}
+	public override Material GetMaterialFor(CellTerrain terrain)
+	{
+		return terrain.def.waterDepthMaterial;
+	}
 
-		public override void DrawLayer()
+	public override void DrawLayer()
+	{
+		if (!Visible)
 		{
-			if (!Visible)
+			return;
+		}
+		int count = subMeshes.Count;
+		for (int i = 0; i < count; i++)
+		{
+			LayerSubMesh layerSubMesh = subMeshes[i];
+			if (layerSubMesh.finalized && !layerSubMesh.disabled)
 			{
-				return;
-			}
-			int count = subMeshes.Count;
-			for (int i = 0; i < count; i++)
-			{
-				LayerSubMesh layerSubMesh = subMeshes[i];
-				if (layerSubMesh.finalized && !layerSubMesh.disabled)
-				{
-					Graphics.DrawMesh(layerSubMesh.mesh, Matrix4x4.identity, layerSubMesh.material, SubcameraDefOf.WaterDepth.LayerId);
-				}
+				Graphics.DrawMesh(layerSubMesh.mesh, Matrix4x4.identity, layerSubMesh.material, SubcameraDefOf.WaterDepth.LayerId);
 			}
 		}
 	}

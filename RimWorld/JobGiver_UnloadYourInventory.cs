@@ -1,17 +1,16 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobGiver_UnloadYourInventory : ThinkNode_JobGiver
 {
-	public class JobGiver_UnloadYourInventory : ThinkNode_JobGiver
+	protected override Job TryGiveJob(Pawn pawn)
 	{
-		protected override Job TryGiveJob(Pawn pawn)
+		if (!pawn.inventory.UnloadEverything)
 		{
-			if (!pawn.inventory.UnloadEverything)
-			{
-				return null;
-			}
-			return JobMaker.MakeJob(JobDefOf.UnloadYourInventory);
+			return null;
 		}
+		return JobMaker.MakeJob(JobDefOf.UnloadYourInventory);
 	}
 }

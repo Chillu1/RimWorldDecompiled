@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_AbilityTrainRandomSkill : CompProperties_AbilityEffect
 {
-	public class CompProperties_AbilityTrainRandomSkill : CompProperties_AbilityEffect
+	public CompProperties_AbilityTrainRandomSkill()
 	{
-		public CompProperties_AbilityTrainRandomSkill()
-		{
-			compClass = typeof(CompAbilityEffect_TrainRandomSkill);
-		}
+		compClass = typeof(CompAbilityEffect_TrainRandomSkill);
 	}
 }

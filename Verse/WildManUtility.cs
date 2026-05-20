@@ -1,47 +1,46 @@
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public static class WildManUtility
 {
-	public static class WildManUtility
+	public static bool IsWildMan(this Pawn p)
 	{
-		public static bool IsWildMan(this Pawn p)
+		if (p.kindDef == PawnKindDefOf.WildMan)
 		{
-			if (p.kindDef == PawnKindDefOf.WildMan)
-			{
-				return !p.IsSubhuman;
-			}
-			return false;
+			return !p.IsSubhuman;
 		}
+		return false;
+	}
 
-		public static bool AnimalOrWildMan(this Pawn p)
+	public static bool AnimalOrWildMan(this Pawn p)
+	{
+		if (!p.IsAnimal)
 		{
-			if (!p.IsAnimal)
+			return p.IsWildMan();
+		}
+		return true;
+	}
+
+	public static bool NonHumanlikeOrWildMan(this Pawn p)
+	{
+		if (p.RaceProps.Humanlike)
+		{
+			return p.IsWildMan();
+		}
+		return true;
+	}
+
+	public static bool WildManShouldReachOutsideNow(Pawn p)
+	{
+		if (p.IsWildMan() && !p.mindState.WildManEverReachedOutside)
+		{
+			if (p.IsPrisoner)
 			{
-				return p.IsWildMan();
+				return p.guest.Released;
 			}
 			return true;
 		}
-
-		public static bool NonHumanlikeOrWildMan(this Pawn p)
-		{
-			if (p.RaceProps.Humanlike)
-			{
-				return p.IsWildMan();
-			}
-			return true;
-		}
-
-		public static bool WildManShouldReachOutsideNow(Pawn p)
-		{
-			if (p.IsWildMan() && !p.mindState.WildManEverReachedOutside)
-			{
-				if (p.IsPrisoner)
-				{
-					return p.guest.Released;
-				}
-				return true;
-			}
-			return false;
-		}
+		return false;
 	}
 }

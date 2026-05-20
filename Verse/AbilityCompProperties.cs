@@ -3,36 +3,35 @@ using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class AbilityCompProperties
 {
-	public class AbilityCompProperties
+	[TranslationHandle]
+	public Type compClass;
+
+	public virtual bool OverridesPsyfocusCost => false;
+
+	public virtual FloatRange PsyfocusCostRange => FloatRange.ZeroToOne;
+
+	public virtual string PsyfocusCostExplanation => "";
+
+	public virtual IEnumerable<string> ExtraStatSummary()
 	{
-		[TranslationHandle]
-		public Type compClass;
+		return Enumerable.Empty<string>();
+	}
 
-		public virtual bool OverridesPsyfocusCost => false;
-
-		public virtual FloatRange PsyfocusCostRange => FloatRange.ZeroToOne;
-
-		public virtual string PsyfocusCostExplanation => "";
-
-		public virtual IEnumerable<string> ExtraStatSummary()
+	public virtual IEnumerable<string> ConfigErrors(AbilityDef parentDef)
+	{
+		if (compClass == null)
 		{
-			return Enumerable.Empty<string>();
+			yield return "compClass is null";
 		}
-
-		public virtual IEnumerable<string> ConfigErrors(AbilityDef parentDef)
+		for (int i = 0; i < parentDef.comps.Count; i++)
 		{
-			if (compClass == null)
+			if (parentDef.comps[i] != this && parentDef.comps[i].compClass == compClass)
 			{
-				yield return "compClass is null";
-			}
-			for (int i = 0; i < parentDef.comps.Count; i++)
-			{
-				if (parentDef.comps[i] != this && parentDef.comps[i].compClass == compClass)
-				{
-					yield return "two comps with same compClass: " + compClass;
-				}
+				yield return "two comps with same compClass: " + compClass;
 			}
 		}
 	}

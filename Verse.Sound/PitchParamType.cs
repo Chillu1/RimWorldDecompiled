@@ -1,8 +1,7 @@
-namespace Verse.Sound
+namespace Verse.Sound;
+
+public enum PitchParamType : byte
 {
-	public enum PitchParamType : byte
-	{
-		Multiply,
-		Semitones
-	}
+	Multiply,
+	Semitones
 }

@@ -1,15 +1,14 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Command_AbilityTrial : Command_AbilitySpeech
 {
-	public class Command_AbilityTrial : Command_AbilitySpeech
+	public Command_AbilityTrial(Ability ability, Pawn pawn)
+		: base(ability, pawn)
 	{
-		public Command_AbilityTrial(Ability ability, Pawn pawn)
-			: base(ability, pawn)
-		{
-			defaultLabel = "Accuse".Translate();
-			defaultIconColor = Color.white;
-		}
+		defaultLabel = "Accuse".Translate();
+		defaultIconColor = Color.white;
 	}
 }

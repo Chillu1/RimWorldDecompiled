@@ -1,11 +1,10 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class CompProperties_AbilityEffectWithDuration : CompProperties_AbilityEffect
-	{
-		public StatDef durationMultiplier;
+namespace RimWorld;
 
-		public FloatRange durationSecondsOverride = FloatRange.Zero;
-	}
+public class CompProperties_AbilityEffectWithDuration : CompProperties_AbilityEffect
+{
+	public StatDef durationMultiplier;
+
+	public FloatRange durationSecondsOverride = FloatRange.Zero;
 }

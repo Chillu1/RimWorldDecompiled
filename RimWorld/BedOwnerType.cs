@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum BedOwnerType
 {
-	public enum BedOwnerType
-	{
-		Colonist,
-		Prisoner,
-		Slave
-	}
+	Colonist,
+	Prisoner,
+	Slave
 }

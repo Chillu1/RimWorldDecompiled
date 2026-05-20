@@ -1,17 +1,16 @@
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public class BasicAsteroidMapParent : SpaceMapParent
 {
-	public class BasicAsteroidMapParent : SpaceMapParent
+	public override string GetInspectString()
 	{
-		public override string GetInspectString()
+		string text = base.GetInspectString();
+		if (preciousResource != null)
 		{
-			string text = base.GetInspectString();
-			if (preciousResource != null)
-			{
-				text += "\n" + "TracesOfPreciousResource".Translate(NamedArgumentUtility.Named(preciousResource, "RESOURCE"));
-			}
-			return text.Trim();
+			text += "\n" + "TracesOfPreciousResource".Translate(NamedArgumentUtility.Named(preciousResource, "RESOURCE"));
 		}
+		return text.Trim();
 	}
 }

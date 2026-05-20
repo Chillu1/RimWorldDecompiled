@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum IdeoEditMode
 {
-	public enum IdeoEditMode
-	{
-		None,
-		GameStart,
-		Dev,
-		Reform
-	}
+	None,
+	GameStart,
+	Dev,
+	Reform
 }

@@ -1,16 +1,15 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public interface IConstructible
 {
-	public interface IConstructible
-	{
-		List<ThingDefCountClass> TotalMaterialCost();
+	List<ThingDefCountClass> TotalMaterialCost();
 
-		bool IsCompleted();
+	bool IsCompleted();
 
-		int ThingCountNeeded(ThingDef stuff);
+	int ThingCountNeeded(ThingDef stuff);
 
-		ThingDef EntityToBuildStuff();
-	}
+	ThingDef EntityToBuildStuff();
 }

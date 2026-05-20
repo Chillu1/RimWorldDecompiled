@@ -1,22 +1,21 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
-{
-	[StaticConstructorOnStartup]
-	public class WeatherOverlay_ToxRain : WeatherOverlayDualPanner
-	{
-		private static readonly Material RainOverlayWorld = MatLoader.LoadMat("Weather/ToxRainOverlayWorld");
+namespace RimWorld;
 
-		public WeatherOverlay_ToxRain()
-		{
-			worldOverlayMat = RainOverlayWorld;
-			worldOverlayPanSpeed1 = 0.015f;
-			worldPanDir1 = new Vector2(-0.25f, -1f);
-			worldPanDir1.Normalize();
-			worldOverlayPanSpeed2 = 0.022f;
-			worldPanDir2 = new Vector2(-0.24f, -1f);
-			worldPanDir2.Normalize();
-		}
+[StaticConstructorOnStartup]
+public class WeatherOverlay_ToxRain : WeatherOverlayDualPanner
+{
+	private static readonly Material RainOverlayWorld = MatLoader.LoadMat("Weather/ToxRainOverlayWorld");
+
+	public WeatherOverlay_ToxRain()
+	{
+		worldOverlayMat = RainOverlayWorld;
+		worldOverlayPanSpeed1 = 0.015f;
+		worldPanDir1 = new Vector2(-0.25f, -1f);
+		worldPanDir1.Normalize();
+		worldOverlayPanSpeed2 = 0.022f;
+		worldPanDir2 = new Vector2(-0.24f, -1f);
+		worldPanDir2.Normalize();
 	}
 }

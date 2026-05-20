@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum WindowLayer
 {
-	public enum WindowLayer
-	{
-		GameUI,
-		Dialog,
-		SubSuper,
-		Super
-	}
+	GameUI,
+	Dialog,
+	SubSuper,
+	Super
 }

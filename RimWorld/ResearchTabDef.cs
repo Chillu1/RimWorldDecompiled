@@ -1,19 +1,18 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ResearchTabDef : Def
 {
-	public class ResearchTabDef : Def
-	{
-		[MustTranslate]
-		public string generalTitle = "";
+	[MustTranslate]
+	public string generalTitle = "";
 
-		[MustTranslate]
-		public string generalDescription = "";
+	[MustTranslate]
+	public string generalDescription = "";
 
-		public bool visibleByDefault = true;
+	public bool visibleByDefault = true;
 
-		public int minMonolithLevelVisible = -1;
+	public int minMonolithLevelVisible = -1;
 
-		public string tutorTag;
-	}
+	public string tutorTag;
 }

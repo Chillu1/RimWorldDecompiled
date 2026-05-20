@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_IsCarryingRangedWeapon : ThoughtWorker
 {
-	public class ThoughtWorker_IsCarryingRangedWeapon : ThoughtWorker
+	protected override ThoughtState CurrentStateInternal(Pawn p)
 	{
-		protected override ThoughtState CurrentStateInternal(Pawn p)
-		{
-			return p.equipment.Primary != null && p.equipment.Primary.def.IsRangedWeapon;
-		}
+		return p.equipment.Primary != null && p.equipment.Primary.def.IsRangedWeapon;
 	}
 }

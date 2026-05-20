@@ -1,62 +1,61 @@
-namespace Verse
+namespace Verse;
+
+public class HediffComp_ChanceToRemove : HediffComp
 {
-	public class HediffComp_ChanceToRemove : HediffComp
+	public int currentInterval;
+
+	public bool removeNextInterval;
+
+	public HediffCompProperties_ChanceToRemove Props => (HediffCompProperties_ChanceToRemove)props;
+
+	public override bool CompShouldRemove
 	{
-		public int currentInterval;
-
-		public bool removeNextInterval;
-
-		public HediffCompProperties_ChanceToRemove Props => (HediffCompProperties_ChanceToRemove)props;
-
-		public override bool CompShouldRemove
+		get
 		{
-			get
+			if (!base.CompShouldRemove)
 			{
-				if (!base.CompShouldRemove)
+				if (removeNextInterval)
 				{
-					if (removeNextInterval)
-					{
-						return currentInterval <= 0;
-					}
-					return false;
+					return currentInterval <= 0;
 				}
-				return true;
+				return false;
 			}
+			return true;
 		}
+	}
 
-		public override void CompPostTickInterval(ref float severityAdjustment, int delta)
+	public override void CompPostTickInterval(ref float severityAdjustment, int delta)
+	{
+		if (CompShouldRemove)
 		{
-			if (CompShouldRemove)
+			return;
+		}
+		if (currentInterval <= 0)
+		{
+			if (Rand.Chance(Props.chance))
 			{
-				return;
-			}
-			if (currentInterval <= 0)
-			{
-				if (Rand.Chance(Props.chance))
-				{
-					removeNextInterval = true;
-					currentInterval = Rand.Range(0, Props.intervalTicks);
-				}
-				else
-				{
-					currentInterval = Props.intervalTicks;
-				}
+				removeNextInterval = true;
+				currentInterval = Rand.Range(0, Props.intervalTicks);
 			}
 			else
 			{
-				currentInterval -= delta;
+				currentInterval = Props.intervalTicks;
 			}
 		}
-
-		public override void CompExposeData()
+		else
 		{
-			Scribe_Values.Look(ref currentInterval, "currentInterval", 0);
-			Scribe_Values.Look(ref removeNextInterval, "removeNextInterval", defaultValue: false);
+			currentInterval -= delta;
 		}
+	}
 
-		public override string CompDebugString()
-		{
-			return $"currentInterval: {currentInterval}\nremove: {removeNextInterval}";
-		}
+	public override void CompExposeData()
+	{
+		Scribe_Values.Look(ref currentInterval, "currentInterval", 0);
+		Scribe_Values.Look(ref removeNextInterval, "removeNextInterval", defaultValue: false);
+	}
+
+	public override string CompDebugString()
+	{
+		return $"currentInterval: {currentInterval}\nremove: {removeNextInterval}";
 	}
 }

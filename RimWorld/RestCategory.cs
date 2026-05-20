@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum RestCategory : byte
 {
-	public enum RestCategory : byte
-	{
-		Rested,
-		Tired,
-		VeryTired,
-		Exhausted
-	}
+	Rested,
+	Tired,
+	VeryTired,
+	Exhausted
 }

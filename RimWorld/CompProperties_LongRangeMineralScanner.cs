@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_LongRangeMineralScanner : CompProperties_Scanner
 {
-	public class CompProperties_LongRangeMineralScanner : CompProperties_Scanner
+	public CompProperties_LongRangeMineralScanner()
 	{
-		public CompProperties_LongRangeMineralScanner()
-		{
-			compClass = typeof(CompLongRangeMineralScanner);
-		}
+		compClass = typeof(CompLongRangeMineralScanner);
 	}
 }

@@ -1,26 +1,25 @@
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_PlantCut : JobDriver_PlantWork
 {
-	public class JobDriver_PlantCut : JobDriver_PlantWork
+	protected override PlantDestructionMode PlantDestructionMode => PlantDestructionMode.Cut;
+
+	protected override void Init()
 	{
-		protected override PlantDestructionMode PlantDestructionMode => PlantDestructionMode.Cut;
-
-		protected override void Init()
+		if (base.Plant?.def.plant.harvestedThingDef != null && base.Plant.CanYieldNow())
 		{
-			if (base.Plant?.def.plant.harvestedThingDef != null && base.Plant.CanYieldNow())
-			{
-				xpPerTick = 0.085f;
-			}
-			else
-			{
-				xpPerTick = 0f;
-			}
+			xpPerTick = 0.085f;
 		}
-
-		protected override Toil PlantWorkDoneToil()
+		else
 		{
-			return Toils_Interact.DestroyThing(TargetIndex.A);
+			xpPerTick = 0f;
 		}
+	}
+
+	protected override Toil PlantWorkDoneToil()
+	{
+		return Toils_Interact.DestroyThing(TargetIndex.A);
 	}
 }

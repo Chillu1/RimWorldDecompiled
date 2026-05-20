@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum QuestPartState
 {
-	public enum QuestPartState
-	{
-		NeverEnabled,
-		Enabled,
-		Disabled
-	}
+	NeverEnabled,
+	Enabled,
+	Disabled
 }

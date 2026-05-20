@@ -1,18 +1,17 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class ZonePresetNames
 {
-	public static class ZonePresetNames
+	public static string PresetName(this StorageSettingsPreset preset)
 	{
-		public static string PresetName(this StorageSettingsPreset preset)
+		return preset switch
 		{
-			return preset switch
-			{
-				StorageSettingsPreset.DumpingStockpile => "DumpingStockpile".Translate(), 
-				StorageSettingsPreset.DefaultStockpile => "Stockpile".Translate(), 
-				StorageSettingsPreset.CorpseStockpile => "CorpseStockpile".Translate(), 
-				_ => "Zone".Translate(), 
-			};
-		}
+			StorageSettingsPreset.DumpingStockpile => "DumpingStockpile".Translate(), 
+			StorageSettingsPreset.DefaultStockpile => "Stockpile".Translate(), 
+			StorageSettingsPreset.CorpseStockpile => "CorpseStockpile".Translate(), 
+			_ => "Zone".Translate(), 
+		};
 	}
 }

@@ -1,54 +1,53 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace RimWorld.IO
+namespace RimWorld.IO;
+
+internal class FilesystemDirectory : VirtualDirectory
 {
-	internal class FilesystemDirectory : VirtualDirectory
+	private DirectoryInfo dirInfo;
+
+	public override string Name => dirInfo.Name;
+
+	public override string FullPath => dirInfo.FullName;
+
+	public override bool Exists => dirInfo.Exists;
+
+	public FilesystemDirectory(string dir)
 	{
-		private DirectoryInfo dirInfo;
+		dirInfo = new DirectoryInfo(dir);
+	}
 
-		public override string Name => dirInfo.Name;
+	public FilesystemDirectory(DirectoryInfo dir)
+	{
+		dirInfo = dir;
+	}
 
-		public override string FullPath => dirInfo.FullName;
-
-		public override bool Exists => dirInfo.Exists;
-
-		public FilesystemDirectory(string dir)
+	public override IEnumerable<VirtualDirectory> GetDirectories(string searchPattern, SearchOption searchOption)
+	{
+		DirectoryInfo[] directories = dirInfo.GetDirectories(searchPattern, searchOption);
+		foreach (DirectoryInfo dir in directories)
 		{
-			dirInfo = new DirectoryInfo(dir);
+			yield return new FilesystemDirectory(dir);
 		}
+	}
 
-		public FilesystemDirectory(DirectoryInfo dir)
-		{
-			dirInfo = dir;
-		}
+	public override VirtualDirectory GetDirectory(string directoryName)
+	{
+		return new FilesystemDirectory(Path.Combine(FullPath, directoryName));
+	}
 
-		public override IEnumerable<VirtualDirectory> GetDirectories(string searchPattern, SearchOption searchOption)
-		{
-			DirectoryInfo[] directories = dirInfo.GetDirectories(searchPattern, searchOption);
-			foreach (DirectoryInfo dir in directories)
-			{
-				yield return new FilesystemDirectory(dir);
-			}
-		}
+	public override VirtualFile GetFile(string filename)
+	{
+		return new FilesystemFile(new FileInfo(Path.Combine(FullPath, filename)));
+	}
 
-		public override VirtualDirectory GetDirectory(string directoryName)
+	public override IEnumerable<VirtualFile> GetFiles(string searchPattern, SearchOption searchOption)
+	{
+		FileInfo[] files = dirInfo.GetFiles(searchPattern, searchOption);
+		foreach (FileInfo fileInfo in files)
 		{
-			return new FilesystemDirectory(Path.Combine(FullPath, directoryName));
-		}
-
-		public override VirtualFile GetFile(string filename)
-		{
-			return new FilesystemFile(new FileInfo(Path.Combine(FullPath, filename)));
-		}
-
-		public override IEnumerable<VirtualFile> GetFiles(string searchPattern, SearchOption searchOption)
-		{
-			FileInfo[] files = dirInfo.GetFiles(searchPattern, searchOption);
-			foreach (FileInfo fileInfo in files)
-			{
-				yield return new FilesystemFile(fileInfo);
-			}
+			yield return new FilesystemFile(fileInfo);
 		}
 	}
 }

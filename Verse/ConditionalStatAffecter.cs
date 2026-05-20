@@ -1,16 +1,15 @@
 using System.Collections.Generic;
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public abstract class ConditionalStatAffecter
 {
-	public abstract class ConditionalStatAffecter
-	{
-		public List<StatModifier> statFactors;
+	public List<StatModifier> statFactors;
 
-		public List<StatModifier> statOffsets;
+	public List<StatModifier> statOffsets;
 
-		public abstract string Label { get; }
+	public abstract string Label { get; }
 
-		public abstract bool Applies(StatRequest req);
-	}
+	public abstract bool Applies(StatRequest req);
 }

@@ -1,14 +1,13 @@
-namespace RimWorld
-{
-	[DefOf]
-	public static class MeditationFocusDefOf
-	{
-		[MayRequireRoyalty]
-		public static MeditationFocusDef Natural;
+namespace RimWorld;
 
-		static MeditationFocusDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(MeditationFocusDefOf));
-		}
+[DefOf]
+public static class MeditationFocusDefOf
+{
+	[MayRequireRoyalty]
+	public static MeditationFocusDef Natural;
+
+	static MeditationFocusDefOf()
+	{
+		DefOfHelper.EnsureInitializedInCtor(typeof(MeditationFocusDefOf));
 	}
 }

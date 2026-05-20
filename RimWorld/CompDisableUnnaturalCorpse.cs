@@ -2,65 +2,64 @@ using System.Collections.Generic;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompDisableUnnaturalCorpse : CompInteractable
 {
-	public class CompDisableUnnaturalCorpse : CompInteractable
+	public UnnaturalCorpse Corpse => (UnnaturalCorpse)parent;
+
+	public new CompProperties_DisableUnnaturalCorpse Props => (CompProperties_DisableUnnaturalCorpse)props;
+
+	public override void OrderForceTarget(LocalTargetInfo target)
 	{
-		public UnnaturalCorpse Corpse => (UnnaturalCorpse)parent;
+		OrderActivation(target.Pawn);
+	}
 
-		public new CompProperties_DisableUnnaturalCorpse Props => (CompProperties_DisableUnnaturalCorpse)props;
+	protected override void OnInteracted(Pawn caster)
+	{
+		Corpse.DoStudiedDeactivation(caster);
+	}
 
-		public override void OrderForceTarget(LocalTargetInfo target)
+	public override string CompInspectStringExtra()
+	{
+		return null;
+	}
+
+	public override IEnumerable<FloatMenuOption> CompFloatMenuOptions(Pawn selPawn)
+	{
+		if (Corpse.Tracker.CanDestroyViaResearch)
 		{
-			OrderActivation(target.Pawn);
-		}
-
-		protected override void OnInteracted(Pawn caster)
-		{
-			Corpse.DoStudiedDeactivation(caster);
-		}
-
-		public override string CompInspectStringExtra()
-		{
-			return null;
-		}
-
-		public override IEnumerable<FloatMenuOption> CompFloatMenuOptions(Pawn selPawn)
-		{
-			if (Corpse.Tracker.CanDestroyViaResearch)
+			AcceptanceReport acceptanceReport = CanInteract(selPawn);
+			FloatMenuOption floatMenuOption = new FloatMenuOption(Props.jobString.CapitalizeFirst(), delegate
 			{
-				AcceptanceReport acceptanceReport = CanInteract(selPawn);
-				FloatMenuOption floatMenuOption = new FloatMenuOption(Props.jobString.CapitalizeFirst(), delegate
-				{
-					OrderActivation(selPawn);
-				});
-				if (!acceptanceReport.Accepted)
-				{
-					floatMenuOption.Disabled = true;
-					floatMenuOption.Label = floatMenuOption.Label + " (" + acceptanceReport.Reason + ")";
-				}
-				yield return floatMenuOption;
-			}
-		}
-
-		public override IEnumerable<Gizmo> CompGetGizmosExtra()
-		{
-			if (!Corpse.Tracker.CanDestroyViaResearch)
+				OrderActivation(selPawn);
+			});
+			if (!acceptanceReport.Accepted)
 			{
-				yield break;
+				floatMenuOption.Disabled = true;
+				floatMenuOption.Label = floatMenuOption.Label + " (" + acceptanceReport.Reason + ")";
 			}
-			foreach (Gizmo item in base.CompGetGizmosExtra())
-			{
-				yield return item;
-			}
+			yield return floatMenuOption;
 		}
+	}
 
-		private void OrderActivation(Pawn pawn)
+	public override IEnumerable<Gizmo> CompGetGizmosExtra()
+	{
+		if (!Corpse.Tracker.CanDestroyViaResearch)
 		{
-			Job job = JobMaker.MakeJob(JobDefOf.InteractThing, parent);
-			job.count = 1;
-			job.playerForced = true;
-			pawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
+			yield break;
 		}
+		foreach (Gizmo item in base.CompGetGizmosExtra())
+		{
+			yield return item;
+		}
+	}
+
+	private void OrderActivation(Pawn pawn)
+	{
+		Job job = JobMaker.MakeJob(JobDefOf.InteractThing, parent);
+		job.count = 1;
+		job.playerForced = true;
+		pawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
 	}
 }

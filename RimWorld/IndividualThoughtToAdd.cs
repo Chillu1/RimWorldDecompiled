@@ -1,50 +1,49 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public struct IndividualThoughtToAdd
 {
-	public struct IndividualThoughtToAdd
+	public Thought_Memory thought;
+
+	public Pawn addTo;
+
+	private Pawn otherPawn;
+
+	public string LabelCap
 	{
-		public Thought_Memory thought;
-
-		public Pawn addTo;
-
-		private Pawn otherPawn;
-
-		public string LabelCap
+		get
 		{
-			get
+			string text = thought.LabelCap;
+			float num = thought.MoodOffset();
+			if (num != 0f)
 			{
-				string text = thought.LabelCap;
-				float num = thought.MoodOffset();
-				if (num != 0f)
-				{
-					text = text + " " + Mathf.RoundToInt(num).ToStringWithSign();
-				}
-				return text;
+				text = text + " " + Mathf.RoundToInt(num).ToStringWithSign();
 			}
+			return text;
 		}
+	}
 
-		public IndividualThoughtToAdd(ThoughtDef thoughtDef, Pawn addTo, Pawn otherPawn = null, float moodPowerFactor = 1f, float opinionOffsetFactor = 1f)
+	public IndividualThoughtToAdd(ThoughtDef thoughtDef, Pawn addTo, Pawn otherPawn = null, float moodPowerFactor = 1f, float opinionOffsetFactor = 1f)
+	{
+		this.addTo = addTo;
+		this.otherPawn = otherPawn;
+		thought = (Thought_Memory)ThoughtMaker.MakeThought(thoughtDef);
+		thought.moodPowerFactor = moodPowerFactor;
+		thought.otherPawn = otherPawn;
+		thought.pawn = addTo;
+		if (thought is Thought_MemorySocial thought_MemorySocial)
 		{
-			this.addTo = addTo;
-			this.otherPawn = otherPawn;
-			thought = (Thought_Memory)ThoughtMaker.MakeThought(thoughtDef);
-			thought.moodPowerFactor = moodPowerFactor;
-			thought.otherPawn = otherPawn;
-			thought.pawn = addTo;
-			if (thought is Thought_MemorySocial thought_MemorySocial)
-			{
-				thought_MemorySocial.opinionOffset *= opinionOffsetFactor;
-			}
+			thought_MemorySocial.opinionOffset *= opinionOffsetFactor;
 		}
+	}
 
-		public void Add()
+	public void Add()
+	{
+		if (addTo.needs != null && addTo.needs.mood != null)
 		{
-			if (addTo.needs != null && addTo.needs.mood != null)
-			{
-				addTo.needs.mood.thoughts.memories.TryGainMemory(thought, otherPawn);
-			}
+			addTo.needs.mood.thoughts.memories.TryGainMemory(thought, otherPawn);
 		}
 	}
 }

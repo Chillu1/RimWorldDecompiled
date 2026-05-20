@@ -1,12 +1,11 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum PlayCategory : byte
 {
-	public enum PlayCategory : byte
-	{
-		Empty,
-		VeryLow,
-		Low,
-		Satisfied,
-		High,
-		Extreme
-	}
+	Empty,
+	VeryLow,
+	Low,
+	Satisfied,
+	High,
+	Extreme
 }

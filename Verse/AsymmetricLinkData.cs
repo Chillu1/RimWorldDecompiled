@@ -1,38 +1,37 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class AsymmetricLinkData
 {
-	public class AsymmetricLinkData
+	public class BorderData
 	{
-		public class BorderData
+		public Color color = Color.black;
+
+		public Vector2 size;
+
+		public Vector3 offset;
+
+		private Material colorMat;
+
+		public Material Mat
 		{
-			public Color color = Color.black;
-
-			public Vector2 size;
-
-			public Vector3 offset;
-
-			private Material colorMat;
-
-			public Material Mat
+			get
 			{
-				get
+				if (colorMat == null)
 				{
-					if (colorMat == null)
-					{
-						colorMat = SolidColorMaterials.SimpleSolidColorMaterial(color);
-					}
-					return colorMat;
+					colorMat = SolidColorMaterials.SimpleSolidColorMaterial(color);
 				}
+				return colorMat;
 			}
 		}
-
-		public LinkFlags linkFlags;
-
-		public bool linkToDoors;
-
-		public BorderData drawDoorBorderEast;
-
-		public BorderData drawDoorBorderWest;
 	}
+
+	public LinkFlags linkFlags;
+
+	public bool linkToDoors;
+
+	public BorderData drawDoorBorderEast;
+
+	public BorderData drawDoorBorderWest;
 }

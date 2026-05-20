@@ -1,10 +1,9 @@
 using System;
 
-namespace Verse
+namespace Verse;
+
+[AttributeUsage(AttributeTargets.Field)]
+public class TranslationHandleAttribute : Attribute
 {
-	[AttributeUsage(AttributeTargets.Field)]
-	public class TranslationHandleAttribute : Attribute
-	{
-		public int Priority { get; set; }
-	}
+	public int Priority { get; set; }
 }

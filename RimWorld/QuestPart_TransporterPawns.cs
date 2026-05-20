@@ -1,62 +1,61 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class QuestPart_TransporterPawns : QuestPart
 {
-	public abstract class QuestPart_TransporterPawns : QuestPart
+	public string inSignal;
+
+	public Thing pawnsInTransporter;
+
+	public List<Pawn> pawns = new List<Pawn>();
+
+	public override void Notify_QuestSignalReceived(Signal signal)
 	{
-		public string inSignal;
-
-		public Thing pawnsInTransporter;
-
-		public List<Pawn> pawns = new List<Pawn>();
-
-		public override void Notify_QuestSignalReceived(Signal signal)
+		if (!(signal.tag == inSignal))
 		{
-			if (!(signal.tag == inSignal))
+			return;
+		}
+		if (pawns != null)
+		{
+			foreach (Pawn pawn2 in pawns)
 			{
-				return;
-			}
-			if (pawns != null)
-			{
-				foreach (Pawn pawn2 in pawns)
-				{
-					Process(pawn2);
-				}
-			}
-			if (pawnsInTransporter == null)
-			{
-				return;
-			}
-			foreach (Thing item in (IEnumerable<Thing>)pawnsInTransporter.TryGetComp<CompTransporter>().innerContainer)
-			{
-				if (item is Pawn pawn)
-				{
-					Process(pawn);
-				}
+				Process(pawn2);
 			}
 		}
-
-		public abstract void Process(Pawn pawn);
-
-		public override void ExposeData()
+		if (pawnsInTransporter == null)
 		{
-			base.ExposeData();
-			Scribe_Collections.Look(ref pawns, "pawns", LookMode.Reference);
-			Scribe_References.Look(ref pawnsInTransporter, "pawnsInTransporter");
-			Scribe_Values.Look(ref inSignal, "inSignal");
-			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			return;
+		}
+		foreach (Thing item in (IEnumerable<Thing>)pawnsInTransporter.TryGetComp<CompTransporter>().innerContainer)
+		{
+			if (item is Pawn pawn)
 			{
-				pawns.RemoveAll((Pawn x) => x == null);
+				Process(pawn);
 			}
 		}
+	}
 
-		public override void ReplacePawnReferences(Pawn replace, Pawn with)
+	public abstract void Process(Pawn pawn);
+
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Collections.Look(ref pawns, "pawns", LookMode.Reference);
+		Scribe_References.Look(ref pawnsInTransporter, "pawnsInTransporter");
+		Scribe_Values.Look(ref inSignal, "inSignal");
+		if (Scribe.mode == LoadSaveMode.PostLoadInit)
 		{
-			if (pawns != null)
-			{
-				pawns.Replace(replace, with);
-			}
+			pawns.RemoveAll((Pawn x) => x == null);
+		}
+	}
+
+	public override void ReplacePawnReferences(Pawn replace, Pawn with)
+	{
+		if (pawns != null)
+		{
+			pawns.Replace(replace, with);
 		}
 	}
 }

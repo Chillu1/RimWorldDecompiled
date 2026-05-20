@@ -1,14 +1,13 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class CompProperties_RoyalImplant : CompProperties
-	{
-		public HediffDef implantHediff;
+namespace RimWorld;
 
-		public CompProperties_RoyalImplant()
-		{
-			compClass = typeof(CompRoyalImplant);
-		}
+public class CompProperties_RoyalImplant : CompProperties
+{
+	public HediffDef implantHediff;
+
+	public CompProperties_RoyalImplant()
+	{
+		compClass = typeof(CompRoyalImplant);
 	}
 }

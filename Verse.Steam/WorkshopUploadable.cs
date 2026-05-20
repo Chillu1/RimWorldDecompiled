@@ -3,30 +3,29 @@ using System.Collections.Generic;
 using System.IO;
 using Steamworks;
 
-namespace Verse.Steam
+namespace Verse.Steam;
+
+public interface WorkshopUploadable
 {
-	public interface WorkshopUploadable
-	{
-		IEnumerable<System.Version> SupportedVersions { get; }
+	IEnumerable<System.Version> SupportedVersions { get; }
 
-		bool CanToUploadToWorkshop();
+	bool CanToUploadToWorkshop();
 
-		void PrepareForWorkshopUpload();
+	void PrepareForWorkshopUpload();
 
-		PublishedFileId_t GetPublishedFileId();
+	PublishedFileId_t GetPublishedFileId();
 
-		void SetPublishedFileId(PublishedFileId_t pfid);
+	void SetPublishedFileId(PublishedFileId_t pfid);
 
-		string GetWorkshopName();
+	string GetWorkshopName();
 
-		string GetWorkshopDescription();
+	string GetWorkshopDescription();
 
-		string GetWorkshopPreviewImagePath();
+	string GetWorkshopPreviewImagePath();
 
-		IList<string> GetWorkshopTags();
+	IList<string> GetWorkshopTags();
 
-		DirectoryInfo GetWorkshopUploadDirectory();
+	DirectoryInfo GetWorkshopUploadDirectory();
 
-		WorkshopItemHook GetWorkshopItemHook();
-	}
+	WorkshopItemHook GetWorkshopItemHook();
 }

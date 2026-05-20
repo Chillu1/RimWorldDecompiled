@@ -1,69 +1,68 @@
 using System;
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public abstract class FleckSystem : IFleckCreator, IExposable, ILoadReferenceable
 {
-	public abstract class FleckSystem : IFleckCreator, IExposable, ILoadReferenceable
+	public List<FleckDef> handledDefs = new List<FleckDef>();
+
+	public FleckManager parent;
+
+	public FleckSystem(FleckManager parent)
 	{
-		public List<FleckDef> handledDefs = new List<FleckDef>();
+		this.parent = parent;
+	}
 
-		public FleckManager parent;
+	public abstract void Update(float deltaTime);
 
-		public FleckSystem(FleckManager parent)
+	public abstract void Tick();
+
+	public abstract void ForceDraw(DrawBatch drawBatch);
+
+	public virtual void Draw(DrawBatch drawBatch)
+	{
+		if (!WorldComponent_GravshipController.GravshipRenderInProgess)
 		{
-			this.parent = parent;
+			ForceDraw(drawBatch);
 		}
+	}
 
-		public abstract void Update(float deltaTime);
+	public virtual void OnGUI()
+	{
+	}
 
-		public abstract void Tick();
-
-		public abstract void ForceDraw(DrawBatch drawBatch);
-
-		public virtual void Draw(DrawBatch drawBatch)
+	public virtual void Prewarm(float prewarmSeconds, Action<float> onUpdate, Action onTick)
+	{
+		float num = 0f;
+		float num2 = 0f;
+		while (num < prewarmSeconds)
 		{
-			if (!WorldComponent_GravshipController.GravshipRenderInProgess)
+			Update(1f / 15f);
+			onUpdate?.Invoke(1f / 15f);
+			while (num2 >= 1f / 60f)
 			{
-				ForceDraw(drawBatch);
+				Tick();
+				onTick?.Invoke();
+				num2 -= 1f / 60f;
 			}
+			num += 1f / 15f;
+			num2 += 1f / 15f;
 		}
+	}
 
-		public virtual void OnGUI()
-		{
-		}
+	public abstract void CreateFleck(FleckCreationData fleckData);
 
-		public virtual void Prewarm(float prewarmSeconds, Action<float> onUpdate, Action onTick)
-		{
-			float num = 0f;
-			float num2 = 0f;
-			while (num < prewarmSeconds)
-			{
-				Update(1f / 15f);
-				onUpdate?.Invoke(1f / 15f);
-				while (num2 >= 1f / 60f)
-				{
-					Tick();
-					onTick?.Invoke();
-					num2 -= 1f / 60f;
-				}
-				num += 1f / 15f;
-				num2 += 1f / 15f;
-			}
-		}
+	public abstract void MergeWith(FleckSystem system);
 
-		public abstract void CreateFleck(FleckCreationData fleckData);
+	public abstract IEnumerable<IFleck> EnumerateFlecks();
 
-		public abstract void MergeWith(FleckSystem system);
+	public abstract void RemoveAllFlecks(Predicate<IFleck> shouldRemove);
 
-		public abstract IEnumerable<IFleck> EnumerateFlecks();
+	public abstract void ExposeData();
 
-		public abstract void RemoveAllFlecks(Predicate<IFleck> shouldRemove);
-
-		public abstract void ExposeData();
-
-		public string GetUniqueLoadID()
-		{
-			return parent.parent.GetUniqueLoadID() + "_FleckSystem_" + GetType().FullName;
-		}
+	public string GetUniqueLoadID()
+	{
+		return parent.parent.GetUniqueLoadID() + "_FleckSystem_" + GetType().FullName;
 	}
 }

@@ -1,12 +1,11 @@
 using RimWorld.Planet;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WorldObjectCompProperties_Timeout : WorldObjectCompProperties
 {
-	public class WorldObjectCompProperties_Timeout : WorldObjectCompProperties
+	public WorldObjectCompProperties_Timeout()
 	{
-		public WorldObjectCompProperties_Timeout()
-		{
-			compClass = typeof(TimeoutComp);
-		}
+		compClass = typeof(TimeoutComp);
 	}
 }

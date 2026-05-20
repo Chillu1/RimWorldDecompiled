@@ -1,19 +1,18 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class TransportShipDef : Def
 {
-	public class TransportShipDef : Def
-	{
-		public ThingDef shipThing;
+	public ThingDef shipThing;
 
-		public ThingDef arrivingSkyfaller;
+	public ThingDef arrivingSkyfaller;
 
-		public ThingDef leavingSkyfaller;
+	public ThingDef leavingSkyfaller;
 
-		public WorldObjectDef worldObject;
+	public WorldObjectDef worldObject;
 
-		public int maxLaunchDistance;
+	public int maxLaunchDistance;
 
-		public bool playerShuttle;
-	}
+	public bool playerShuttle;
 }

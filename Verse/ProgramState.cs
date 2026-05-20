@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum ProgramState : byte
 {
-	public enum ProgramState : byte
-	{
-		Entry,
-		MapInitializing,
-		Playing
-	}
+	Entry,
+	MapInitializing,
+	Playing
 }

@@ -1,21 +1,20 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class TileMutatorWorker_AbandonedColonyTribal : TileMutatorWorker_AbandonedColony
-	{
-		public TileMutatorWorker_AbandonedColonyTribal(TileMutatorDef def)
-			: base(def)
-		{
-		}
+namespace RimWorld;
 
-		protected override Faction GetFaction()
+public class TileMutatorWorker_AbandonedColonyTribal : TileMutatorWorker_AbandonedColony
+{
+	public TileMutatorWorker_AbandonedColonyTribal(TileMutatorDef def)
+		: base(def)
+	{
+	}
+
+	protected override Faction GetFaction()
+	{
+		if (Find.FactionManager.TryGetRandomNonColonyHumanlikeFaction(out var faction, tryMedievalOrBetter: false, allowDefeated: true, TechLevel.Animal, TechLevel.Neolithic))
 		{
-			if (Find.FactionManager.TryGetRandomNonColonyHumanlikeFaction(out var faction, tryMedievalOrBetter: false, allowDefeated: true, TechLevel.Animal, TechLevel.Neolithic))
-			{
-				return faction;
-			}
-			return null;
+			return faction;
 		}
+		return null;
 	}
 }

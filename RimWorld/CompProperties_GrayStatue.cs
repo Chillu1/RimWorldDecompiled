@@ -1,17 +1,16 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class CompProperties_GrayStatue : CompProperties
 {
-	public abstract class CompProperties_GrayStatue : CompProperties
-	{
-		[MustTranslate]
-		public string letterLabel;
+	[MustTranslate]
+	public string letterLabel;
 
-		[MustTranslate]
-		public string letterText;
+	[MustTranslate]
+	public string letterText;
 
-		public LetterDef letterDef;
+	public LetterDef letterDef;
 
-		public FloatRange triggerRadiusRange = new FloatRange(3f, 8f);
-	}
+	public FloatRange triggerRadiusRange = new FloatRange(3f, 8f);
 }

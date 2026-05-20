@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum EntityQueryType
 {
-	public enum EntityQueryType
-	{
-		Any,
-		ForSlaughter,
-		ForRelease
-	}
+	Any,
+	ForSlaughter,
+	ForRelease
 }

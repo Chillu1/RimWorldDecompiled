@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum RotationMode
 {
-	public enum RotationMode
-	{
-		None,
-		OneD,
-		TwoD,
-		PawnAimTarget
-	}
+	None,
+	OneD,
+	TwoD,
+	PawnAimTarget
 }

@@ -1,138 +1,137 @@
-namespace Verse
+namespace Verse;
+
+public class NameSingle : Name
 {
-	public class NameSingle : Name
+	private string nameInt;
+
+	private bool numerical;
+
+	public string Name => nameInt;
+
+	public override string ToStringFull => nameInt;
+
+	public override string ToStringShort => nameInt;
+
+	public override bool IsValid => !nameInt.NullOrEmpty();
+
+	public override bool Numerical => numerical;
+
+	private int FirstDigitPosition
 	{
-		private string nameInt;
-
-		private bool numerical;
-
-		public string Name => nameInt;
-
-		public override string ToStringFull => nameInt;
-
-		public override string ToStringShort => nameInt;
-
-		public override bool IsValid => !nameInt.NullOrEmpty();
-
-		public override bool Numerical => numerical;
-
-		private int FirstDigitPosition
+		get
 		{
-			get
+			if (!numerical)
 			{
-				if (!numerical)
+				return -1;
+			}
+			if (nameInt.NullOrEmpty() || !char.IsDigit(nameInt[nameInt.Length - 1]))
+			{
+				return -1;
+			}
+			for (int num = nameInt.Length - 2; num >= 0; num--)
+			{
+				if (!char.IsDigit(nameInt[num]))
 				{
-					return -1;
+					return num + 1;
 				}
-				if (nameInt.NullOrEmpty() || !char.IsDigit(nameInt[nameInt.Length - 1]))
-				{
-					return -1;
-				}
-				for (int num = nameInt.Length - 2; num >= 0; num--)
-				{
-					if (!char.IsDigit(nameInt[num]))
-					{
-						return num + 1;
-					}
-				}
+			}
+			return 0;
+		}
+	}
+
+	public string NameWithoutNumber
+	{
+		get
+		{
+			if (!numerical)
+			{
+				return nameInt;
+			}
+			int firstDigitPosition = FirstDigitPosition;
+			if (firstDigitPosition < 0)
+			{
+				return nameInt;
+			}
+			int num = firstDigitPosition;
+			if (num - 1 >= 0 && nameInt[num - 1] == ' ')
+			{
+				num--;
+			}
+			if (num <= 0)
+			{
+				return "";
+			}
+			return nameInt.Substring(0, num);
+		}
+	}
+
+	public int Number
+	{
+		get
+		{
+			if (!numerical)
+			{
 				return 0;
 			}
-		}
-
-		public string NameWithoutNumber
-		{
-			get
+			int firstDigitPosition = FirstDigitPosition;
+			if (firstDigitPosition < 0)
 			{
-				if (!numerical)
-				{
-					return nameInt;
-				}
-				int firstDigitPosition = FirstDigitPosition;
-				if (firstDigitPosition < 0)
-				{
-					return nameInt;
-				}
-				int num = firstDigitPosition;
-				if (num - 1 >= 0 && nameInt[num - 1] == ' ')
-				{
-					num--;
-				}
-				if (num <= 0)
-				{
-					return "";
-				}
-				return nameInt.Substring(0, num);
+				return 0;
 			}
+			return int.Parse(nameInt.Substring(firstDigitPosition));
 		}
+	}
 
-		public int Number
+	public NameSingle()
+	{
+	}
+
+	public NameSingle(string name, bool numerical = false)
+	{
+		nameInt = name;
+		this.numerical = numerical;
+	}
+
+	public override void ExposeData()
+	{
+		Scribe_Values.Look(ref nameInt, "name");
+		Scribe_Values.Look(ref numerical, "numerical", defaultValue: false);
+	}
+
+	public override bool ConfusinglySimilarTo(Name other)
+	{
+		if (other is NameSingle nameSingle && nameSingle.nameInt == nameInt)
 		{
-			get
-			{
-				if (!numerical)
-				{
-					return 0;
-				}
-				int firstDigitPosition = FirstDigitPosition;
-				if (firstDigitPosition < 0)
-				{
-					return 0;
-				}
-				return int.Parse(nameInt.Substring(firstDigitPosition));
-			}
+			return true;
 		}
-
-		public NameSingle()
+		if (other is NameTriple nameTriple && nameTriple.Nick == nameInt)
 		{
+			return true;
 		}
+		return false;
+	}
 
-		public NameSingle(string name, bool numerical = false)
-		{
-			nameInt = name;
-			this.numerical = numerical;
-		}
+	public override string ToString()
+	{
+		return nameInt;
+	}
 
-		public override void ExposeData()
+	public override bool Equals(object obj)
+	{
+		if (obj == null)
 		{
-			Scribe_Values.Look(ref nameInt, "name");
-			Scribe_Values.Look(ref numerical, "numerical", defaultValue: false);
-		}
-
-		public override bool ConfusinglySimilarTo(Name other)
-		{
-			if (other is NameSingle nameSingle && nameSingle.nameInt == nameInt)
-			{
-				return true;
-			}
-			if (other is NameTriple nameTriple && nameTriple.Nick == nameInt)
-			{
-				return true;
-			}
 			return false;
 		}
-
-		public override string ToString()
+		if (!(obj is NameSingle))
 		{
-			return nameInt;
+			return false;
 		}
+		NameSingle nameSingle = (NameSingle)obj;
+		return nameInt == nameSingle.nameInt;
+	}
 
-		public override bool Equals(object obj)
-		{
-			if (obj == null)
-			{
-				return false;
-			}
-			if (!(obj is NameSingle))
-			{
-				return false;
-			}
-			NameSingle nameSingle = (NameSingle)obj;
-			return nameInt == nameSingle.nameInt;
-		}
-
-		public override int GetHashCode()
-		{
-			return Gen.HashCombineInt(nameInt.GetHashCode(), 1384661390);
-		}
+	public override int GetHashCode()
+	{
+		return Gen.HashCombineInt(nameInt.GetHashCode(), 1384661390);
 	}
 }

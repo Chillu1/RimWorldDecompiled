@@ -1,14 +1,13 @@
-namespace Verse.AI
+namespace Verse.AI;
+
+public class MentalStateWorker_RitualBlinding : MentalStateWorker
 {
-	public class MentalStateWorker_RitualBlinding : MentalStateWorker
+	public override bool StateCanOccur(Pawn pawn)
 	{
-		public override bool StateCanOccur(Pawn pawn)
+		if (!base.StateCanOccur(pawn))
 		{
-			if (!base.StateCanOccur(pawn))
-			{
-				return false;
-			}
-			return RitualBlindingMentalStateUtility.FindPawnToBlind(pawn) != null;
+			return false;
 		}
+		return RitualBlindingMentalStateUtility.FindPawnToBlind(pawn) != null;
 	}
 }

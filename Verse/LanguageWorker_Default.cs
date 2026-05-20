@@ -1,6 +1,5 @@
-namespace Verse
+namespace Verse;
+
+public class LanguageWorker_Default : LanguageWorker
 {
-	public class LanguageWorker_Default : LanguageWorker
-	{
-	}
 }

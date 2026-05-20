@@ -1,15 +1,14 @@
-namespace RimWorld
+namespace RimWorld;
+
+[DefOf]
+public static class DifficultyDefOf
 {
-	[DefOf]
-	public static class DifficultyDefOf
+	public static DifficultyDef Easy;
+
+	public static DifficultyDef Rough;
+
+	static DifficultyDefOf()
 	{
-		public static DifficultyDef Easy;
-
-		public static DifficultyDef Rough;
-
-		static DifficultyDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(DifficultyDefOf));
-		}
+		DefOfHelper.EnsureInitializedInCtor(typeof(DifficultyDefOf));
 	}
 }

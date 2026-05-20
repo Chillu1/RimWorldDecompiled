@@ -2,78 +2,77 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_GetLargestClearArea : QuestNode
 {
-	public class QuestNode_GetLargestClearArea : QuestNode
+	public SlateRef<Map> map;
+
+	[NoTranslate]
+	public SlateRef<string> storeAs;
+
+	public SlateRef<int> failIfSmaller;
+
+	public SlateRef<int> max;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		public SlateRef<Map> map;
+		int largestSize = GetLargestSize(slate);
+		slate.Set(storeAs.GetValue(slate), largestSize);
+		return largestSize >= failIfSmaller.GetValue(slate);
+	}
 
-		[NoTranslate]
-		public SlateRef<string> storeAs;
+	protected override void RunInt()
+	{
+		Slate slate = QuestGen.slate;
+		int largestSize = GetLargestSize(slate);
+		slate.Set(storeAs.GetValue(slate), largestSize);
+	}
 
-		public SlateRef<int> failIfSmaller;
-
-		public SlateRef<int> max;
-
-		protected override bool TestRunInt(Slate slate)
+	private int GetLargestSize(Slate slate)
+	{
+		Map mapResolved = map.GetValue(slate) ?? slate.Get<Map>("map");
+		if (mapResolved == null)
 		{
-			int largestSize = GetLargestSize(slate);
-			slate.Set(storeAs.GetValue(slate), largestSize);
-			return largestSize >= failIfSmaller.GetValue(slate);
+			return 0;
 		}
+		int value = max.GetValue(slate);
+		CellRect cellRect = LargestAreaFinder.FindLargestRect(mapResolved, (IntVec3 x) => IsClear(x, mapResolved), value);
+		return Mathf.Min(cellRect.Width, cellRect.Height, value);
+	}
 
-		protected override void RunInt()
+	private bool IsClear(IntVec3 c, Map map)
+	{
+		if (!c.GetAffordances(map).Contains(TerrainAffordanceDefOf.Heavy))
 		{
-			Slate slate = QuestGen.slate;
-			int largestSize = GetLargestSize(slate);
-			slate.Set(storeAs.GetValue(slate), largestSize);
+			return false;
 		}
-
-		private int GetLargestSize(Slate slate)
+		List<Thing> thingList = c.GetThingList(map);
+		for (int i = 0; i < thingList.Count; i++)
 		{
-			Map mapResolved = map.GetValue(slate) ?? slate.Get<Map>("map");
-			if (mapResolved == null)
-			{
-				return 0;
-			}
-			int value = max.GetValue(slate);
-			CellRect cellRect = LargestAreaFinder.FindLargestRect(mapResolved, (IntVec3 x) => IsClear(x, mapResolved), value);
-			return Mathf.Min(cellRect.Width, cellRect.Height, value);
-		}
-
-		private bool IsClear(IntVec3 c, Map map)
-		{
-			if (!c.GetAffordances(map).Contains(TerrainAffordanceDefOf.Heavy))
+			if (thingList[i].def.IsBuildingArtificial && thingList[i].Faction == Faction.OfPlayer)
 			{
 				return false;
 			}
-			List<Thing> thingList = c.GetThingList(map);
-			for (int i = 0; i < thingList.Count; i++)
+			if (!thingList[i].def.mineable)
 			{
-				if (thingList[i].def.IsBuildingArtificial && thingList[i].Faction == Faction.OfPlayer)
+				continue;
+			}
+			bool flag = false;
+			for (int j = 0; j < 8; j++)
+			{
+				IntVec3 c2 = c + GenAdj.AdjacentCells[j];
+				if (c2.InBounds(map) && c2.GetFirstMineable(map) == null)
 				{
-					return false;
-				}
-				if (!thingList[i].def.mineable)
-				{
-					continue;
-				}
-				bool flag = false;
-				for (int j = 0; j < 8; j++)
-				{
-					IntVec3 c2 = c + GenAdj.AdjacentCells[j];
-					if (c2.InBounds(map) && c2.GetFirstMineable(map) == null)
-					{
-						flag = true;
-						break;
-					}
-				}
-				if (!flag)
-				{
-					return false;
+					flag = true;
+					break;
 				}
 			}
-			return true;
+			if (!flag)
+			{
+				return false;
+			}
 		}
+		return true;
 	}
 }

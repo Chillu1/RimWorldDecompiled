@@ -1,18 +1,17 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_SpreadSludge : CompProperties
 {
-	public class CompProperties_SpreadSludge : CompProperties
+	public int mtbTicks = 2500;
+
+	public AbilityDef abilityDef;
+
+	public bool tryAvoidSludge;
+
+	public CompProperties_SpreadSludge()
 	{
-		public int mtbTicks = 2500;
-
-		public AbilityDef abilityDef;
-
-		public bool tryAvoidSludge;
-
-		public CompProperties_SpreadSludge()
-		{
-			compClass = typeof(CompSpreadSludge);
-		}
+		compClass = typeof(CompSpreadSludge);
 	}
 }

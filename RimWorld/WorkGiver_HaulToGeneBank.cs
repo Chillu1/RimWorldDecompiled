@@ -1,77 +1,76 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WorkGiver_HaulToGeneBank : WorkGiver_Scanner
 {
-	public class WorkGiver_HaulToGeneBank : WorkGiver_Scanner
+	public override ThingRequest PotentialWorkThingRequest => ThingRequest.ForDef(ThingDefOf.Genepack);
+
+	public override PathEndMode PathEndMode => PathEndMode.Touch;
+
+	public override bool ShouldSkip(Pawn pawn, bool forced = false)
 	{
-		public override ThingRequest PotentialWorkThingRequest => ThingRequest.ForDef(ThingDefOf.Genepack);
+		return !ModsConfig.BiotechActive;
+	}
 
-		public override PathEndMode PathEndMode => PathEndMode.Touch;
-
-		public override bool ShouldSkip(Pawn pawn, bool forced = false)
+	public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
+	{
+		if (!ModLister.CheckBiotech("Genepack"))
 		{
-			return !ModsConfig.BiotechActive;
+			return false;
 		}
-
-		public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
+		if (!pawn.CanReserve(t, 1, -1, null, forced))
 		{
-			if (!ModLister.CheckBiotech("Genepack"))
-			{
-				return false;
-			}
-			if (!pawn.CanReserve(t, 1, -1, null, forced))
-			{
-				return false;
-			}
-			return FindGeneBank(pawn, t) != null;
+			return false;
 		}
+		return FindGeneBank(pawn, t) != null;
+	}
 
-		public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
+	public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
+	{
+		Thing thing = FindGeneBank(pawn, t);
+		if (thing != null)
 		{
-			Thing thing = FindGeneBank(pawn, t);
-			if (thing != null)
+			Job job = JobMaker.MakeJob(JobDefOf.CarryGenepackToContainer, t, thing, thing.InteractionCell);
+			job.count = t.stackCount;
+			return job;
+		}
+		return null;
+	}
+
+	private Thing FindGeneBank(Pawn pawn, Thing genepackThing)
+	{
+		Genepack genepack = genepackThing as Genepack;
+		if (!genepack.AutoLoad)
+		{
+			return null;
+		}
+		if (genepack.targetContainer != null)
+		{
+			if (genepack.targetContainer.Map == genepack.Map)
 			{
-				Job job = JobMaker.MakeJob(JobDefOf.CarryGenepackToContainer, t, thing, thing.InteractionCell);
-				job.count = t.stackCount;
-				return job;
+				CompGenepackContainer compGenepackContainer = genepack.targetContainer.TryGetComp<CompGenepackContainer>();
+				if (compGenepackContainer != null && !compGenepackContainer.Full)
+				{
+					return genepack.targetContainer;
+				}
 			}
 			return null;
 		}
-
-		private Thing FindGeneBank(Pawn pawn, Thing genepackThing)
+		return GenClosest.ClosestThingReachable(genepack.Position, genepack.Map, ThingRequest.ForGroup(ThingRequestGroup.GenepackHolder), PathEndMode.InteractionCell, TraverseParms.For(pawn), 9999f, delegate(Thing x)
 		{
-			Genepack genepack = genepackThing as Genepack;
-			if (!genepack.AutoLoad)
+			if (x.IsForbidden(pawn) || !pawn.CanReserve(x))
 			{
-				return null;
+				return false;
 			}
-			if (genepack.targetContainer != null)
+			CompGenepackContainer compGenepackContainer2 = x.TryGetComp<CompGenepackContainer>();
+			if (compGenepackContainer2 == null || compGenepackContainer2.Full || !compGenepackContainer2.autoLoad)
 			{
-				if (genepack.targetContainer.Map == genepack.Map)
-				{
-					CompGenepackContainer compGenepackContainer = genepack.targetContainer.TryGetComp<CompGenepackContainer>();
-					if (compGenepackContainer != null && !compGenepackContainer.Full)
-					{
-						return genepack.targetContainer;
-					}
-				}
-				return null;
+				return false;
 			}
-			return GenClosest.ClosestThingReachable(genepack.Position, genepack.Map, ThingRequest.ForGroup(ThingRequestGroup.GenepackHolder), PathEndMode.InteractionCell, TraverseParms.For(pawn), 9999f, delegate(Thing x)
-			{
-				if (x.IsForbidden(pawn) || !pawn.CanReserve(x))
-				{
-					return false;
-				}
-				CompGenepackContainer compGenepackContainer2 = x.TryGetComp<CompGenepackContainer>();
-				if (compGenepackContainer2 == null || compGenepackContainer2.Full || !compGenepackContainer2.autoLoad)
-				{
-					return false;
-				}
-				Thing targetContainer = genepack.targetContainer;
-				return (targetContainer == null || targetContainer == compGenepackContainer2.parent) ? true : false;
-			});
-		}
+			Thing targetContainer = genepack.targetContainer;
+			return (targetContainer == null || targetContainer == compGenepackContainer2.parent) ? true : false;
+		});
 	}
 }

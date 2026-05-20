@@ -1,70 +1,69 @@
 using System;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class IntermittentSteamSprayer
 {
-	public class IntermittentSteamSprayer
+	private readonly Thing parent;
+
+	private int ticksUntilSpray;
+
+	private int sprayTicksLeft;
+
+	public Action startSprayCallback;
+
+	public Action endSprayCallback;
+
+	public int MinTicksBetweenSprays { get; set; } = 500;
+
+	public int MaxTicksBetweenSprays { get; set; } = 2000;
+
+	public int MinSprayDuration { get; set; } = 200;
+
+	public int MaxSprayDuration { get; set; } = 500;
+
+	public int PushHeatInterval { get; set; } = 20;
+
+	public float SprayThickness { get; set; } = 0.6f;
+
+	public IntermittentSteamSprayer(Thing parent)
 	{
-		private readonly Thing parent;
+		this.parent = parent;
+		ticksUntilSpray = MinTicksBetweenSprays;
+	}
 
-		private int ticksUntilSpray;
-
-		private int sprayTicksLeft;
-
-		public Action startSprayCallback;
-
-		public Action endSprayCallback;
-
-		public int MinTicksBetweenSprays { get; set; } = 500;
-
-		public int MaxTicksBetweenSprays { get; set; } = 2000;
-
-		public int MinSprayDuration { get; set; } = 200;
-
-		public int MaxSprayDuration { get; set; } = 500;
-
-		public int PushHeatInterval { get; set; } = 20;
-
-		public float SprayThickness { get; set; } = 0.6f;
-
-		public IntermittentSteamSprayer(Thing parent)
+	public void SteamSprayerTick()
+	{
+		if (sprayTicksLeft > 0)
 		{
-			this.parent = parent;
-			ticksUntilSpray = MinTicksBetweenSprays;
+			sprayTicksLeft--;
+			if (Rand.Value < SprayThickness)
+			{
+				FleckMaker.ThrowAirPuffUp(parent.TrueCenter(), parent.Map);
+			}
+			if (parent.IsHashIntervalTick(PushHeatInterval))
+			{
+				GenTemperature.PushHeat(parent, 40f);
+			}
+			if (sprayTicksLeft <= 0)
+			{
+				if (endSprayCallback != null)
+				{
+					endSprayCallback();
+				}
+				ticksUntilSpray = Rand.RangeInclusive(MinTicksBetweenSprays, MaxTicksBetweenSprays);
+			}
+			return;
 		}
-
-		public void SteamSprayerTick()
+		ticksUntilSpray--;
+		if (ticksUntilSpray <= 0)
 		{
-			if (sprayTicksLeft > 0)
+			if (startSprayCallback != null)
 			{
-				sprayTicksLeft--;
-				if (Rand.Value < SprayThickness)
-				{
-					FleckMaker.ThrowAirPuffUp(parent.TrueCenter(), parent.Map);
-				}
-				if (parent.IsHashIntervalTick(PushHeatInterval))
-				{
-					GenTemperature.PushHeat(parent, 40f);
-				}
-				if (sprayTicksLeft <= 0)
-				{
-					if (endSprayCallback != null)
-					{
-						endSprayCallback();
-					}
-					ticksUntilSpray = Rand.RangeInclusive(MinTicksBetweenSprays, MaxTicksBetweenSprays);
-				}
-				return;
+				startSprayCallback();
 			}
-			ticksUntilSpray--;
-			if (ticksUntilSpray <= 0)
-			{
-				if (startSprayCallback != null)
-				{
-					startSprayCallback();
-				}
-				sprayTicksLeft = Rand.RangeInclusive(MinSprayDuration, MaxSprayDuration);
-			}
+			sprayTicksLeft = Rand.RangeInclusive(MinSprayDuration, MaxSprayDuration);
 		}
 	}
 }

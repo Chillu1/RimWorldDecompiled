@@ -2,44 +2,43 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompRitualEffect_StaticAreaRandomMote : CompRitualEffect_Constant
 {
-	public class CompRitualEffect_StaticAreaRandomMote : CompRitualEffect_Constant
+	protected CompProperties_RitualEffectStaticAreaRandomMote Props => (CompProperties_RitualEffectStaticAreaRandomMote)props;
+
+	protected override ThingDef MoteDef => Props.moteDefs.RandomElement();
+
+	protected override Vector3 SpawnPos(LordJob_Ritual ritual)
 	{
-		protected CompProperties_RitualEffectStaticAreaRandomMote Props => (CompProperties_RitualEffectStaticAreaRandomMote)props;
+		return Vector3.zero;
+	}
 
-		protected override ThingDef MoteDef => Props.moteDefs.RandomElement();
-
-		protected override Vector3 SpawnPos(LordJob_Ritual ritual)
+	public override void OnSetup(RitualVisualEffect parent, LordJob_Ritual ritual, bool loading)
+	{
+		base.parent = parent;
+		CellRect cellRect = CellRect.CenteredOn(ritual.selectedTarget.Cell, Props.area.x / 2, Props.area.z / 2).ClipInsideMap(ritual.Map);
+		List<IntVec3> list = new List<IntVec3>();
+		for (int i = 0; i < Props.spawnCount; i++)
 		{
-			return Vector3.zero;
-		}
-
-		public override void OnSetup(RitualVisualEffect parent, LordJob_Ritual ritual, bool loading)
-		{
-			base.parent = parent;
-			CellRect cellRect = CellRect.CenteredOn(ritual.selectedTarget.Cell, Props.area.x / 2, Props.area.z / 2).ClipInsideMap(ritual.Map);
-			List<IntVec3> list = new List<IntVec3>();
-			for (int i = 0; i < Props.spawnCount; i++)
+			IntVec3 pos = IntVec3.Invalid;
+			for (int j = 0; j < 15; j++)
 			{
-				IntVec3 pos = IntVec3.Invalid;
-				for (int j = 0; j < 15; j++)
+				pos = cellRect.RandomCell;
+				if (!list.Any((IntVec3 c) => c.InHorDistOf(pos, Props.minDist)))
 				{
-					pos = cellRect.RandomCell;
-					if (!list.Any((IntVec3 c) => c.InHorDistOf(pos, Props.minDist)))
-					{
-						break;
-					}
+					break;
 				}
-				if (pos.IsValid)
+			}
+			if (pos.IsValid)
+			{
+				Mote mote = SpawnMote(ritual, pos.ToVector3Shifted() + Props.offset);
+				if (mote != null)
 				{
-					Mote mote = SpawnMote(ritual, pos.ToVector3Shifted() + Props.offset);
-					if (mote != null)
-					{
-						parent.AddMoteToMaintain(mote);
-					}
-					list.Add(pos);
+					parent.AddMoteToMaintain(mote);
 				}
+				list.Add(pos);
 			}
 		}
 	}

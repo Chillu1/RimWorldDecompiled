@@ -1,19 +1,18 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+[DefOf]
+public static class PathGridDefOf
 {
-	[DefOf]
-	public static class PathGridDefOf
+	public static PathGridDef Normal;
+
+	public static PathGridDef FenceBlocked;
+
+	public static PathGridDef Flying;
+
+	static PathGridDefOf()
 	{
-		public static PathGridDef Normal;
-
-		public static PathGridDef FenceBlocked;
-
-		public static PathGridDef Flying;
-
-		static PathGridDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(PathGridDefOf));
-		}
+		DefOfHelper.EnsureInitializedInCtor(typeof(PathGridDefOf));
 	}
 }

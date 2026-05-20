@@ -1,68 +1,67 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Building_WastepackAtomizer : Building
 {
-	public class Building_WastepackAtomizer : Building
+	private CompAtomizer atomizer;
+
+	private CompPowerTrader powerTrader;
+
+	private Effecter operatingEffecter;
+
+	private Graphic contentsGraphic;
+
+	public CompAtomizer Atomizer
 	{
-		private CompAtomizer atomizer;
-
-		private CompPowerTrader powerTrader;
-
-		private Effecter operatingEffecter;
-
-		private Graphic contentsGraphic;
-
-		public CompAtomizer Atomizer
+		get
 		{
-			get
+			if (atomizer == null)
 			{
-				if (atomizer == null)
-				{
-					atomizer = GetComp<CompAtomizer>();
-				}
-				return atomizer;
+				atomizer = GetComp<CompAtomizer>();
 			}
+			return atomizer;
 		}
+	}
 
-		private CompPowerTrader PowerTrader
+	private CompPowerTrader PowerTrader
+	{
+		get
 		{
-			get
+			if (powerTrader == null)
 			{
-				if (powerTrader == null)
-				{
-					powerTrader = GetComp<CompPowerTrader>();
-				}
-				return powerTrader;
+				powerTrader = GetComp<CompPowerTrader>();
 			}
+			return powerTrader;
 		}
+	}
 
-		protected override void Tick()
+	protected override void Tick()
+	{
+		base.Tick();
+		if (Atomizer.Empty || !PowerTrader.PowerOn)
 		{
-			base.Tick();
-			if (Atomizer.Empty || !PowerTrader.PowerOn)
-			{
-				operatingEffecter?.Cleanup();
-				operatingEffecter = null;
-				return;
-			}
-			if (operatingEffecter == null)
-			{
-				operatingEffecter = def.building.wastepackAtomizerOperationEffecter.Spawn();
-				operatingEffecter.Trigger(this, new TargetInfo(InteractionCell, base.Map));
-			}
-			operatingEffecter.EffectTick(this, new TargetInfo(InteractionCell, base.Map));
+			operatingEffecter?.Cleanup();
+			operatingEffecter = null;
+			return;
 		}
+		if (operatingEffecter == null)
+		{
+			operatingEffecter = def.building.wastepackAtomizerOperationEffecter.Spawn();
+			operatingEffecter.Trigger(this, new TargetInfo(InteractionCell, base.Map));
+		}
+		operatingEffecter.EffectTick(this, new TargetInfo(InteractionCell, base.Map));
+	}
 
-		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
-		{
-			base.DrawAt(drawLoc, flip);
-			Vector3 loc = drawLoc;
-			loc.y -= 0.054878052f;
-			def.building.wastepackAtomizerBottomGraphic.Graphic.Draw(loc, base.Rotation, this);
-			Vector3 loc2 = drawLoc;
-			loc2.y -= 0.018292684f;
-			def.building.wastepackAtomizerWindowGraphic.Graphic.Draw(loc2, base.Rotation, this);
-		}
+	protected override void DrawAt(Vector3 drawLoc, bool flip = false)
+	{
+		base.DrawAt(drawLoc, flip);
+		Vector3 loc = drawLoc;
+		loc.y -= 0.054878052f;
+		def.building.wastepackAtomizerBottomGraphic.Graphic.Draw(loc, base.Rotation, this);
+		Vector3 loc2 = drawLoc;
+		loc2.y -= 0.018292684f;
+		def.building.wastepackAtomizerWindowGraphic.Graphic.Draw(loc2, base.Rotation, this);
 	}
 }

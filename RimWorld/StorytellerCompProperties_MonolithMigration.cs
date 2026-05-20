@@ -1,14 +1,13 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class StorytellerCompProperties_MonolithMigration : StorytellerCompProperties
 {
-	public class StorytellerCompProperties_MonolithMigration : StorytellerCompProperties
+	public float mtbDays;
+
+	public IncidentDef incident;
+
+	public StorytellerCompProperties_MonolithMigration()
 	{
-		public float mtbDays;
-
-		public IncidentDef incident;
-
-		public StorytellerCompProperties_MonolithMigration()
-		{
-			compClass = typeof(StorytellerComp_MonolithMigration);
-		}
+		compClass = typeof(StorytellerComp_MonolithMigration);
 	}
 }

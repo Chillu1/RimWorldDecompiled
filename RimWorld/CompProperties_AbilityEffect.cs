@@ -1,45 +1,44 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_AbilityEffect : AbilityCompProperties
 {
-	public class CompProperties_AbilityEffect : AbilityCompProperties
-	{
-		public int goodwillImpact;
+	public int goodwillImpact;
 
-		public bool psychic;
+	public bool psychic;
 
-		public bool applicableToMechs = true;
+	public bool applicableToMechs = true;
 
-		public bool applyGoodwillImpactToLodgers = true;
+	public bool applyGoodwillImpactToLodgers = true;
 
-		public bool canTargetBosses = true;
+	public bool canTargetBosses = true;
 
-		public ClamorDef clamorType;
+	public ClamorDef clamorType;
 
-		public int clamorRadius;
+	public int clamorRadius;
 
-		public float screenShakeIntensity;
+	public float screenShakeIntensity;
 
-		public SoundDef sound;
+	public SoundDef sound;
 
-		public SoundDef soundMale;
+	public SoundDef soundMale;
 
-		public SoundDef soundFemale;
+	public SoundDef soundFemale;
 
-		public string customLetterLabel;
+	public string customLetterLabel;
 
-		public string customLetterText;
+	public string customLetterText;
 
-		public bool sendLetter = true;
+	public bool sendLetter = true;
 
-		public string message;
+	public string message;
 
-		public MessageTypeDef messageType;
+	public MessageTypeDef messageType;
 
-		public float weight = 1f;
+	public float weight = 1f;
 
-		public bool availableWhenTargetIsWounded = true;
+	public bool availableWhenTargetIsWounded = true;
 
-		public bool canTargetBaby = true;
-	}
+	public bool canTargetBaby = true;
 }

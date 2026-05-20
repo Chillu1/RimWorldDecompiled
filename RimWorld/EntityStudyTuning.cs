@@ -1,6 +1,5 @@
-namespace RimWorld
+namespace RimWorld;
+
+public static class EntityStudyTuning
 {
-	public static class EntityStudyTuning
-	{
-	}
 }

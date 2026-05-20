@@ -1,48 +1,47 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class PawnColumnWorker_Faction : PawnColumnWorker_Icon
 {
-	public class PawnColumnWorker_Faction : PawnColumnWorker_Icon
+	protected override Texture2D GetIconFor(Pawn pawn)
 	{
-		protected override Texture2D GetIconFor(Pawn pawn)
+		Faction homeFaction = pawn.HomeFaction;
+		if (homeFaction != null && homeFaction != Faction.OfPlayer)
 		{
-			Faction homeFaction = pawn.HomeFaction;
-			if (homeFaction != null && homeFaction != Faction.OfPlayer)
-			{
-				return homeFaction.def.FactionIcon;
-			}
-			return null;
+			return homeFaction.def.FactionIcon;
 		}
+		return null;
+	}
 
-		protected override Color GetIconColor(Pawn pawn)
+	protected override Color GetIconColor(Pawn pawn)
+	{
+		Faction homeFaction = pawn.HomeFaction;
+		if (homeFaction != null && homeFaction != Faction.OfPlayer)
 		{
-			Faction homeFaction = pawn.HomeFaction;
-			if (homeFaction != null && homeFaction != Faction.OfPlayer)
-			{
-				return homeFaction.Color;
-			}
-			return Color.white;
+			return homeFaction.Color;
 		}
+		return Color.white;
+	}
 
-		protected override string GetIconTip(Pawn pawn)
+	protected override string GetIconTip(Pawn pawn)
+	{
+		string text = pawn.HomeFaction?.Name;
+		if (!text.NullOrEmpty())
 		{
-			string text = pawn.HomeFaction?.Name;
-			if (!text.NullOrEmpty())
-			{
-				return "PawnFactionInfo".Translate(text, pawn);
-			}
-			return null;
+			return "PawnFactionInfo".Translate(text, pawn);
 		}
+		return null;
+	}
 
-		protected override void ClickedIcon(Pawn pawn)
+	protected override void ClickedIcon(Pawn pawn)
+	{
+		Faction homeFaction = pawn.HomeFaction;
+		if (homeFaction != null)
 		{
-			Faction homeFaction = pawn.HomeFaction;
-			if (homeFaction != null)
-			{
-				Find.MainTabsRoot.SetCurrentTab(MainButtonDefOf.Factions);
-				((MainTabWindow_Factions)Find.MainTabsRoot.OpenTab.TabWindow).ScrollToFaction(homeFaction);
-			}
+			Find.MainTabsRoot.SetCurrentTab(MainButtonDefOf.Factions);
+			((MainTabWindow_Factions)Find.MainTabsRoot.OpenTab.TabWindow).ScrollToFaction(homeFaction);
 		}
 	}
 }

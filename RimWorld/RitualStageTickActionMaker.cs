@@ -1,9 +1,8 @@
 using System.Collections.Generic;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class RitualStageTickActionMaker
 {
-	public abstract class RitualStageTickActionMaker
-	{
-		public abstract IEnumerable<ActionOnTick> GenerateTimedActions(LordJob_Ritual ritual, RitualStage stage);
-	}
+	public abstract IEnumerable<ActionOnTick> GenerateTimedActions(LordJob_Ritual ritual, RitualStage stage);
 }

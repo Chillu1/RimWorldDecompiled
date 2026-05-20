@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RitualSpectatorFilter_NatureFocus : RitualSpectatorFilter
 {
-	public class RitualSpectatorFilter_NatureFocus : RitualSpectatorFilter
+	public override bool Allowed(Pawn p)
 	{
-		public override bool Allowed(Pawn p)
-		{
-			return MeditationFocusDefOf.Natural.CanPawnUse(p);
-		}
+		return MeditationFocusDefOf.Natural.CanPawnUse(p);
 	}
 }

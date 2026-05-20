@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum PollutionLevel
 {
-	public enum PollutionLevel
-	{
-		None,
-		Light,
-		Moderate,
-		Extreme
-	}
+	None,
+	Light,
+	Moderate,
+	Extreme
 }

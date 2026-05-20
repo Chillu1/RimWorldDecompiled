@@ -1,13 +1,12 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_WearingColor_Ideo : ThoughtWorker_WearingColor
 {
-	public class ThoughtWorker_WearingColor_Ideo : ThoughtWorker_WearingColor
+	protected override Color? Color(Pawn p)
 	{
-		protected override Color? Color(Pawn p)
-		{
-			return p.Ideo?.ApparelColor;
-		}
+		return p.Ideo?.ApparelColor;
 	}
 }

@@ -1,15 +1,14 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class ColorForStuff
 {
-	public class ColorForStuff
-	{
-		private ThingDef stuff;
+	private ThingDef stuff;
 
-		private Color color = Color.white;
+	private Color color = Color.white;
 
-		public ThingDef Stuff => stuff;
+	public ThingDef Stuff => stuff;
 
-		public Color Color => color;
-	}
+	public Color Color => color;
 }

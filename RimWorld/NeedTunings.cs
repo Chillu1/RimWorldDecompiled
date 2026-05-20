@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public static class NeedTunings
 {
-	public static class NeedTunings
-	{
-		public const int NeedUpdateInterval = 150;
-	}
+	public const int NeedUpdateInterval = 150;
 }

@@ -1,44 +1,43 @@
 using System.Collections.Generic;
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class CompToxPack : CompAIUsablePack
 {
-	public class CompToxPack : CompAIUsablePack
+	protected override float ChanceToUse(Pawn wearer)
 	{
-		protected override float ChanceToUse(Pawn wearer)
+		if (!ModsConfig.BiotechActive)
 		{
-			if (!ModsConfig.BiotechActive)
+			return 0f;
+		}
+		int num = GenRadial.NumCellsInRadius(1.9f);
+		float num2 = 0f;
+		for (int i = 0; i < num; i++)
+		{
+			IntVec3 c = wearer.Position + GenRadial.RadialPattern[i];
+			if (!c.InBounds(wearer.Map))
 			{
-				return 0f;
+				continue;
 			}
-			int num = GenRadial.NumCellsInRadius(1.9f);
-			float num2 = 0f;
-			for (int i = 0; i < num; i++)
+			List<Thing> thingList = c.GetThingList(wearer.Map);
+			for (int j = 0; j < thingList.Count; j++)
 			{
-				IntVec3 c = wearer.Position + GenRadial.RadialPattern[i];
-				if (!c.InBounds(wearer.Map))
+				if (thingList[j] is Pawn pawn && pawn != wearer && pawn.HostileTo(wearer) && GasUtility.IsAffectedByExposure(pawn) && !pawn.IsPsychologicallyInvisible())
 				{
-					continue;
-				}
-				List<Thing> thingList = c.GetThingList(wearer.Map);
-				for (int j = 0; j < thingList.Count; j++)
-				{
-					if (thingList[j] is Pawn pawn && pawn != wearer && pawn.HostileTo(wearer) && GasUtility.IsAffectedByExposure(pawn) && !pawn.IsPsychologicallyInvisible())
+					num2 += pawn.BodySize;
+					if (num2 >= 1f)
 					{
-						num2 += pawn.BodySize;
-						if (num2 >= 1f)
-						{
-							break;
-						}
+						break;
 					}
 				}
 			}
-			return num2;
 		}
+		return num2;
+	}
 
-		protected override void UsePack(Pawn wearer)
-		{
-			Verb_DeployToxPack.TryDeploy(parent.TryGetComp<CompApparelReloadable>(), parent.TryGetComp<CompReleaseGas>());
-		}
+	protected override void UsePack(Pawn wearer)
+	{
+		Verb_DeployToxPack.TryDeploy(parent.TryGetComp<CompApparelReloadable>(), parent.TryGetComp<CompReleaseGas>());
 	}
 }

@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class EntityCategoryDef : Def
 {
-	public class EntityCategoryDef : Def
-	{
-		public int listOrder = 999999;
-	}
+	public int listOrder = 999999;
 }

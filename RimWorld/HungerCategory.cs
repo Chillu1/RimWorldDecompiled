@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum HungerCategory : byte
 {
-	public enum HungerCategory : byte
-	{
-		Fed,
-		Hungry,
-		UrgentlyHungry,
-		Starving
-	}
+	Fed,
+	Hungry,
+	UrgentlyHungry,
+	Starving
 }

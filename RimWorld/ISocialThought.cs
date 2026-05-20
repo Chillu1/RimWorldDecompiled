@@ -1,11 +1,10 @@
 using Verse;
 
-namespace RimWorld
-{
-	public interface ISocialThought
-	{
-		float OpinionOffset();
+namespace RimWorld;
 
-		Pawn OtherPawn();
-	}
+public interface ISocialThought
+{
+	float OpinionOffset();
+
+	Pawn OtherPawn();
 }

@@ -3,80 +3,79 @@ using System.Linq;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Designator_Open : Designator
 {
-	public class Designator_Open : Designator
+	protected override DesignationDef Designation => DesignationDefOf.Open;
+
+	public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.FilledRectangle;
+
+	public Designator_Open()
 	{
-		protected override DesignationDef Designation => DesignationDefOf.Open;
+		defaultLabel = "DesignatorOpen".Translate();
+		defaultDesc = "DesignatorOpenDesc".Translate();
+		icon = ContentFinder<Texture2D>.Get("UI/Designators/Open");
+		soundDragSustain = SoundDefOf.Designate_DragStandard;
+		soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
+		hotKey = KeyBindingDefOf.Misc5;
+		useMouseIcon = true;
+		soundSucceeded = SoundDefOf.Designate_Claim;
+	}
 
-		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.FilledRectangle;
+	protected override void FinalizeDesignationFailed()
+	{
+		base.FinalizeDesignationFailed();
+		Messages.Message("MessageMustDesignateOpenable".Translate(), MessageTypeDefOf.RejectInput, historical: false);
+	}
 
-		public Designator_Open()
+	public override AcceptanceReport CanDesignateCell(IntVec3 c)
+	{
+		if (!c.InBounds(base.Map))
 		{
-			defaultLabel = "DesignatorOpen".Translate();
-			defaultDesc = "DesignatorOpenDesc".Translate();
-			icon = ContentFinder<Texture2D>.Get("UI/Designators/Open");
-			soundDragSustain = SoundDefOf.Designate_DragStandard;
-			soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
-			hotKey = KeyBindingDefOf.Misc5;
-			useMouseIcon = true;
-			soundSucceeded = SoundDefOf.Designate_Claim;
+			return false;
 		}
-
-		protected override void FinalizeDesignationFailed()
+		if (!OpenablesInCell(c).Any())
 		{
-			base.FinalizeDesignationFailed();
-			Messages.Message("MessageMustDesignateOpenable".Translate(), MessageTypeDefOf.RejectInput, historical: false);
+			return false;
 		}
+		return true;
+	}
 
-		public override AcceptanceReport CanDesignateCell(IntVec3 c)
+	public override void DesignateSingleCell(IntVec3 c)
+	{
+		foreach (Thing item in OpenablesInCell(c))
 		{
-			if (!c.InBounds(base.Map))
-			{
-				return false;
-			}
-			if (!OpenablesInCell(c).Any())
-			{
-				return false;
-			}
-			return true;
+			DesignateThing(item);
 		}
+	}
 
-		public override void DesignateSingleCell(IntVec3 c)
+	public override AcceptanceReport CanDesignateThing(Thing t)
+	{
+		if (!(t is IOpenable { CanOpen: not false }) || base.Map.designationManager.DesignationOn(t, Designation) != null)
 		{
-			foreach (Thing item in OpenablesInCell(c))
-			{
-				DesignateThing(item);
-			}
+			return false;
 		}
+		return true;
+	}
 
-		public override AcceptanceReport CanDesignateThing(Thing t)
+	public override void DesignateThing(Thing t)
+	{
+		base.Map.designationManager.AddDesignation(new Designation(t, Designation));
+	}
+
+	private IEnumerable<Thing> OpenablesInCell(IntVec3 c)
+	{
+		if (c.Fogged(base.Map))
 		{
-			if (!(t is IOpenable { CanOpen: not false }) || base.Map.designationManager.DesignationOn(t, Designation) != null)
-			{
-				return false;
-			}
-			return true;
+			yield break;
 		}
-
-		public override void DesignateThing(Thing t)
+		List<Thing> thingList = c.GetThingList(base.Map);
+		for (int i = 0; i < thingList.Count; i++)
 		{
-			base.Map.designationManager.AddDesignation(new Designation(t, Designation));
-		}
-
-		private IEnumerable<Thing> OpenablesInCell(IntVec3 c)
-		{
-			if (c.Fogged(base.Map))
+			if (CanDesignateThing(thingList[i]).Accepted)
 			{
-				yield break;
-			}
-			List<Thing> thingList = c.GetThingList(base.Map);
-			for (int i = 0; i < thingList.Count; i++)
-			{
-				if (CanDesignateThing(thingList[i]).Accepted)
-				{
-					yield return thingList[i];
-				}
+				yield return thingList[i];
 			}
 		}
 	}

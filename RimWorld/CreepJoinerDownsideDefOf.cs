@@ -1,19 +1,18 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+[DefOf]
+public static class CreepJoinerDownsideDefOf
 {
-	[DefOf]
-	public static class CreepJoinerDownsideDefOf
+	[MayRequireAnomaly]
+	public static CreepJoinerDownsideDef OrganDecay;
+
+	[MayRequireAnomaly]
+	public static CreepJoinerDownsideDef CrumblingMind;
+
+	static CreepJoinerDownsideDefOf()
 	{
-		[MayRequireAnomaly]
-		public static CreepJoinerDownsideDef OrganDecay;
-
-		[MayRequireAnomaly]
-		public static CreepJoinerDownsideDef CrumblingMind;
-
-		static CreepJoinerDownsideDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(CreepJoinerDownsideDefOf));
-		}
+		DefOfHelper.EnsureInitializedInCtor(typeof(CreepJoinerDownsideDefOf));
 	}
 }

@@ -1,8 +1,7 @@
-namespace Verse
+namespace Verse;
+
+public enum TargetType : byte
 {
-	public enum TargetType : byte
-	{
-		Thing,
-		Cell
-	}
+	Thing,
+	Cell
 }

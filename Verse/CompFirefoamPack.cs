@@ -1,45 +1,44 @@
 using System.Collections.Generic;
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class CompFirefoamPack : CompAIUsablePack
 {
-	public class CompFirefoamPack : CompAIUsablePack
+	private const float ChanceToUseWithNearbyFire = 0.2f;
+
+	protected override float ChanceToUse(Pawn wearer)
 	{
-		private const float ChanceToUseWithNearbyFire = 0.2f;
-
-		protected override float ChanceToUse(Pawn wearer)
+		if (wearer.GetAttachment(ThingDefOf.Fire) != null)
 		{
-			if (wearer.GetAttachment(ThingDefOf.Fire) != null)
+			return 1f;
+		}
+		int num = GenRadial.NumCellsInRadius(1.9f);
+		for (int i = 0; i < num; i++)
+		{
+			IntVec3 c = wearer.Position + GenRadial.RadialPattern[i];
+			if (!c.InBounds(wearer.Map))
 			{
-				return 1f;
+				continue;
 			}
-			int num = GenRadial.NumCellsInRadius(1.9f);
-			for (int i = 0; i < num; i++)
+			List<Thing> thingList = c.GetThingList(wearer.Map);
+			for (int j = 0; j < thingList.Count; j++)
 			{
-				IntVec3 c = wearer.Position + GenRadial.RadialPattern[i];
-				if (!c.InBounds(wearer.Map))
+				if (thingList[j] is Fire || thingList[j].HasAttachment(ThingDefOf.Fire))
 				{
-					continue;
-				}
-				List<Thing> thingList = c.GetThingList(wearer.Map);
-				for (int j = 0; j < thingList.Count; j++)
-				{
-					if (thingList[j] is Fire || thingList[j].HasAttachment(ThingDefOf.Fire))
+					if (i == 0)
 					{
-						if (i == 0)
-						{
-							return 1f;
-						}
-						return 0.2f;
+						return 1f;
 					}
+					return 0.2f;
 				}
 			}
-			return 0f;
 		}
+		return 0f;
+	}
 
-		protected override void UsePack(Pawn wearer)
-		{
-			Verb_FirefoamPop.Pop(wearer, parent.TryGetComp<CompExplosive>(), parent.TryGetComp<CompApparelReloadable>());
-		}
+	protected override void UsePack(Pawn wearer)
+	{
+		Verb_FirefoamPop.Pop(wearer, parent.TryGetComp<CompExplosive>(), parent.TryGetComp<CompApparelReloadable>());
 	}
 }

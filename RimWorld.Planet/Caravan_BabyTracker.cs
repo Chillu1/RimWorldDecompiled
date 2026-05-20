@@ -1,88 +1,87 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public class Caravan_BabyTracker
 {
-	public class Caravan_BabyTracker
+	private readonly Caravan caravan;
+
+	private readonly List<Pawn> babies = new List<Pawn>();
+
+	private readonly List<Ideo> ideosForExposure = new List<Ideo>();
+
+	private const int IdeoExposureIntervalTicks = 30;
+
+	private float IdeoExposurePerCaravanIdeoMember => 0.003f / (float)ideosForExposure.Count;
+
+	public Caravan_BabyTracker(Caravan caravan)
 	{
-		private readonly Caravan caravan;
+		this.caravan = caravan;
+	}
 
-		private readonly List<Pawn> babies = new List<Pawn>();
-
-		private readonly List<Ideo> ideosForExposure = new List<Ideo>();
-
-		private const int IdeoExposureIntervalTicks = 30;
-
-		private float IdeoExposurePerCaravanIdeoMember => 0.003f / (float)ideosForExposure.Count;
-
-		public Caravan_BabyTracker(Caravan caravan)
+	public void TickInterval(int delta)
+	{
+		if (!ModsConfig.IdeologyActive || !caravan.IsHashIntervalTick(30, delta))
 		{
-			this.caravan = caravan;
+			return;
 		}
-
-		public void TickInterval(int delta)
+		bool flag = false;
+		foreach (Pawn baby in babies)
 		{
-			if (!ModsConfig.IdeologyActive || !caravan.IsHashIntervalTick(30, delta))
+			if (baby.Dead || !baby.DevelopmentalStage.Baby())
 			{
-				return;
+				flag = true;
 			}
-			bool flag = false;
-			foreach (Pawn baby in babies)
+			else
 			{
-				if (baby.Dead || !baby.DevelopmentalStage.Baby())
+				if (baby.ideo == null)
 				{
-					flag = true;
+					continue;
 				}
-				else
+				float ideoExposurePerCaravanIdeoMember = IdeoExposurePerCaravanIdeoMember;
+				foreach (Ideo item in ideosForExposure)
 				{
-					if (baby.ideo == null)
-					{
-						continue;
-					}
-					float ideoExposurePerCaravanIdeoMember = IdeoExposurePerCaravanIdeoMember;
-					foreach (Ideo item in ideosForExposure)
-					{
-						baby.ideo.IncreaseIdeoExposureIfBaby(item, ideoExposurePerCaravanIdeoMember);
-					}
-				}
-			}
-			if (flag)
-			{
-				Recache();
-			}
-		}
-
-		public void Recache()
-		{
-			RebuildBabyList();
-			RebuildPawnIdeos();
-		}
-
-		private void RebuildBabyList()
-		{
-			babies.Clear();
-			foreach (Pawn item in caravan.PawnsListForReading)
-			{
-				if (item.DevelopmentalStage.Baby())
-				{
-					babies.Add(item);
+					baby.ideo.IncreaseIdeoExposureIfBaby(item, ideoExposurePerCaravanIdeoMember);
 				}
 			}
 		}
-
-		private void RebuildPawnIdeos()
+		if (flag)
 		{
-			if (!ModsConfig.IdeologyActive)
+			Recache();
+		}
+	}
+
+	public void Recache()
+	{
+		RebuildBabyList();
+		RebuildPawnIdeos();
+	}
+
+	private void RebuildBabyList()
+	{
+		babies.Clear();
+		foreach (Pawn item in caravan.PawnsListForReading)
+		{
+			if (item.DevelopmentalStage.Baby())
 			{
-				return;
+				babies.Add(item);
 			}
-			ideosForExposure.Clear();
-			foreach (Pawn item in caravan.PawnsListForReading)
+		}
+	}
+
+	private void RebuildPawnIdeos()
+	{
+		if (!ModsConfig.IdeologyActive)
+		{
+			return;
+		}
+		ideosForExposure.Clear();
+		foreach (Pawn item in caravan.PawnsListForReading)
+		{
+			if (item.Ideo != null)
 			{
-				if (item.Ideo != null)
-				{
-					ideosForExposure.Add(item.Ideo);
-				}
+				ideosForExposure.Add(item.Ideo);
 			}
 		}
 	}

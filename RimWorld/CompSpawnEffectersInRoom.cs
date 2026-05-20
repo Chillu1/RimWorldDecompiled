@@ -1,65 +1,64 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompSpawnEffectersInRoom : ThingComp
 {
-	public class CompSpawnEffectersInRoom : ThingComp
+	private readonly Dictionary<IntVec3, Effecter> effecters = new Dictionary<IntVec3, Effecter>();
+
+	private CompProperties_SpawnEffectersInRoom Props => (CompProperties_SpawnEffectersInRoom)props;
+
+	public override void PostSpawnSetup(bool respawningAfterLoad)
 	{
-		private readonly Dictionary<IntVec3, Effecter> effecters = new Dictionary<IntVec3, Effecter>();
+		base.PostSpawnSetup(respawningAfterLoad);
+		effecters.Clear();
+	}
 
-		private CompProperties_SpawnEffectersInRoom Props => (CompProperties_SpawnEffectersInRoom)props;
-
-		public override void PostSpawnSetup(bool respawningAfterLoad)
+	public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
+	{
+		base.PostDeSpawn(map, mode);
+		foreach (Effecter value in effecters.Values)
 		{
-			base.PostSpawnSetup(respawningAfterLoad);
-			effecters.Clear();
+			value.Cleanup();
 		}
+	}
 
-		public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
+	public override void CompTick()
+	{
+		if (!parent.Spawned)
 		{
-			base.PostDeSpawn(map, mode);
-			foreach (Effecter value in effecters.Values)
-			{
-				value.Cleanup();
-			}
+			return;
 		}
-
-		public override void CompTick()
+		Room room = parent.GetRoom();
+		if (room == null || room.TouchesMapEdge || !parent.IsRitualTarget())
 		{
-			if (!parent.Spawned)
+			return;
+		}
+		foreach (IntVec3 cell in room.Cells)
+		{
+			if (cell.InHorDistOf(parent.Position, Props.radius))
 			{
-				return;
-			}
-			Room room = parent.GetRoom();
-			if (room == null || room.TouchesMapEdge || !parent.IsRitualTarget())
-			{
-				return;
-			}
-			foreach (IntVec3 cell in room.Cells)
-			{
-				if (cell.InHorDistOf(parent.Position, Props.radius))
-				{
-					CheckEffecter(cell);
-				}
+				CheckEffecter(cell);
 			}
 		}
+	}
 
-		private void CheckEffecter(IntVec3 cell)
+	private void CheckEffecter(IntVec3 cell)
+	{
+		if (effecters.ContainsKey(cell))
 		{
-			if (effecters.ContainsKey(cell))
-			{
-				if (effecters[cell] == null)
-				{
-					effecters[cell] = Props.effecter.Spawn();
-					effecters[cell].Trigger(new TargetInfo(cell, parent.Map), TargetInfo.Invalid);
-				}
-			}
-			else
+			if (effecters[cell] == null)
 			{
 				effecters[cell] = Props.effecter.Spawn();
 				effecters[cell].Trigger(new TargetInfo(cell, parent.Map), TargetInfo.Invalid);
 			}
-			effecters[cell].EffectTick(new TargetInfo(cell, parent.Map), TargetInfo.Invalid);
 		}
+		else
+		{
+			effecters[cell] = Props.effecter.Spawn();
+			effecters[cell].Trigger(new TargetInfo(cell, parent.Map), TargetInfo.Invalid);
+		}
+		effecters[cell].EffectTick(new TargetInfo(cell, parent.Map), TargetInfo.Invalid);
 	}
 }

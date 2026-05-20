@@ -1,52 +1,51 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProximityLetter : ThingComp
 {
-	public class CompProximityLetter : ThingComp
+	public bool letterSent;
+
+	public CompProperties_ProximityLetter Props => (CompProperties_ProximityLetter)props;
+
+	public void SendLetter(Pawn triggerer)
 	{
-		public bool letterSent;
+		Find.LetterStack.ReceiveLetter(Props.letterLabel.Formatted(triggerer.Named("PAWN")), Props.letterText.Formatted(triggerer.Named("PAWN")), Props.letterDef, parent);
+		letterSent = true;
+	}
 
-		public CompProperties_ProximityLetter Props => (CompProperties_ProximityLetter)props;
-
-		public void SendLetter(Pawn triggerer)
+	public override void CompTick()
+	{
+		base.CompTick();
+		if (letterSent || Find.Anomaly.Level > 0 || !parent.IsHashIntervalTick(60))
 		{
-			Find.LetterStack.ReceiveLetter(Props.letterLabel.Formatted(triggerer.Named("PAWN")), Props.letterText.Formatted(triggerer.Named("PAWN")), Props.letterDef, parent);
-			letterSent = true;
+			return;
 		}
-
-		public override void CompTick()
+		Map map = parent.Map;
+		int num = GenRadial.NumCellsInRadius(Props.radius);
+		for (int i = 0; i < num; i++)
 		{
-			base.CompTick();
-			if (letterSent || Find.Anomaly.Level > 0 || !parent.IsHashIntervalTick(60))
+			IntVec3 c = parent.Position + GenRadial.RadialPattern[i];
+			if (!c.InBounds(map))
 			{
-				return;
+				continue;
 			}
-			Map map = parent.Map;
-			int num = GenRadial.NumCellsInRadius(Props.radius);
-			for (int i = 0; i < num; i++)
+			List<Thing> thingList = c.GetThingList(map);
+			for (int j = 0; j < thingList.Count; j++)
 			{
-				IntVec3 c = parent.Position + GenRadial.RadialPattern[i];
-				if (!c.InBounds(map))
+				if (thingList[j] is Pawn { IsColonistPlayerControlled: not false } pawn && pawn.health.capacities.CapableOf(PawnCapacityDefOf.Sight) && pawn.Awake() && GenSight.LineOfSightToThing(pawn.Position, parent, parent.Map))
 				{
-					continue;
-				}
-				List<Thing> thingList = c.GetThingList(map);
-				for (int j = 0; j < thingList.Count; j++)
-				{
-					if (thingList[j] is Pawn { IsColonistPlayerControlled: not false } pawn && pawn.health.capacities.CapableOf(PawnCapacityDefOf.Sight) && pawn.Awake() && GenSight.LineOfSightToThing(pawn.Position, parent, parent.Map))
-					{
-						SendLetter(pawn);
-						return;
-					}
+					SendLetter(pawn);
+					return;
 				}
 			}
 		}
+	}
 
-		public override void PostExposeData()
-		{
-			base.PostExposeData();
-			Scribe_Values.Look(ref letterSent, "letterSent", defaultValue: false);
-		}
+	public override void PostExposeData()
+	{
+		base.PostExposeData();
+		Scribe_Values.Look(ref letterSent, "letterSent", defaultValue: false);
 	}
 }

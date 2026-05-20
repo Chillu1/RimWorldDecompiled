@@ -1,7 +1,6 @@
-namespace Verse.AI
+namespace Verse.AI;
+
+public class MentalState_Slaughterer : MentalState_SlaughterThing
 {
-	public class MentalState_Slaughterer : MentalState_SlaughterThing
-	{
-		protected override bool SlaughterTargetAvailable => SlaughtererMentalStateUtility.FindAnimal(pawn) != null;
-	}
+	protected override bool SlaughterTargetAvailable => SlaughtererMentalStateUtility.FindAnimal(pawn) != null;
 }

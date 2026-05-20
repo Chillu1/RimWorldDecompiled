@@ -1,19 +1,18 @@
 using System;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RitualTargetFilterDef : Def
 {
-	public class RitualTargetFilterDef : Def
+	public Type workerClass;
+
+	public bool fallBackToGatherSpot;
+
+	public bool fallbackToRitualSpot;
+
+	public RitualTargetFilter GetInstance()
 	{
-		public Type workerClass;
-
-		public bool fallBackToGatherSpot;
-
-		public bool fallbackToRitualSpot;
-
-		public RitualTargetFilter GetInstance()
-		{
-			return (RitualTargetFilter)Activator.CreateInstance(workerClass, this);
-		}
+		return (RitualTargetFilter)Activator.CreateInstance(workerClass, this);
 	}
 }

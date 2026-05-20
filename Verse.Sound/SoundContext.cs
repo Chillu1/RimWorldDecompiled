@@ -1,9 +1,8 @@
-namespace Verse.Sound
+namespace Verse.Sound;
+
+public enum SoundContext
 {
-	public enum SoundContext
-	{
-		Any,
-		MapOnly,
-		WorldOnly
-	}
+	Any,
+	MapOnly,
+	WorldOnly
 }

@@ -1,19 +1,18 @@
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_SeverityPerSecond : HediffCompProperties
 {
-	public class HediffCompProperties_SeverityPerSecond : HediffCompProperties
+	public float severityPerSecond;
+
+	public FloatRange severityPerSecondRange = FloatRange.Zero;
+
+	public HediffCompProperties_SeverityPerSecond()
 	{
-		public float severityPerSecond;
+		compClass = typeof(HediffComp_SeverityPerSecond);
+	}
 
-		public FloatRange severityPerSecondRange = FloatRange.Zero;
-
-		public HediffCompProperties_SeverityPerSecond()
-		{
-			compClass = typeof(HediffComp_SeverityPerSecond);
-		}
-
-		public float CalculateSeverityPerSecond()
-		{
-			return severityPerSecond + severityPerSecondRange.RandomInRange;
-		}
+	public float CalculateSeverityPerSecond()
+	{
+		return severityPerSecond + severityPerSecondRange.RandomInRange;
 	}
 }

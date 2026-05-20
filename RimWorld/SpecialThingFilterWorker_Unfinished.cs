@@ -1,22 +1,21 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class SpecialThingFilterWorker_Unfinished : SpecialThingFilterWorker
 {
-	public class SpecialThingFilterWorker_Unfinished : SpecialThingFilterWorker
+	public override bool Matches(Thing t)
 	{
-		public override bool Matches(Thing t)
-		{
-			return t.def.isUnfinishedThing;
-		}
+		return t.def.isUnfinishedThing;
+	}
 
-		public override bool CanEverMatch(ThingDef def)
-		{
-			return def.isUnfinishedThing;
-		}
+	public override bool CanEverMatch(ThingDef def)
+	{
+		return def.isUnfinishedThing;
+	}
 
-		public override bool AlwaysMatches(ThingDef def)
-		{
-			return def.isUnfinishedThing;
-		}
+	public override bool AlwaysMatches(ThingDef def)
+	{
+		return def.isUnfinishedThing;
 	}
 }

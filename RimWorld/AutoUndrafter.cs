@@ -2,74 +2,73 @@ using System.Collections.Generic;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class AutoUndrafter : IExposable
 {
-	public class AutoUndrafter : IExposable
+	private Pawn pawn;
+
+	private int lastNonWaitingTick;
+
+	private const int UndraftDelay = 10000;
+
+	public AutoUndrafter(Pawn pawn)
 	{
-		private Pawn pawn;
+		this.pawn = pawn;
+	}
 
-		private int lastNonWaitingTick;
+	public void ExposeData()
+	{
+		Scribe_Values.Look(ref lastNonWaitingTick, "lastNonWaitingTick", 0);
+	}
 
-		private const int UndraftDelay = 10000;
-
-		public AutoUndrafter(Pawn pawn)
+	public void AutoUndraftTickInterval(int delta)
+	{
+		if (!GenTicks.IsTickIntervalDelta(100, delta) && pawn.Drafted)
 		{
-			this.pawn = pawn;
-		}
-
-		public void ExposeData()
-		{
-			Scribe_Values.Look(ref lastNonWaitingTick, "lastNonWaitingTick", 0);
-		}
-
-		public void AutoUndraftTickInterval(int delta)
-		{
-			if (!GenTicks.IsTickIntervalDelta(100, delta) && pawn.Drafted)
+			if ((pawn.jobs.curJob != null && pawn.jobs.curJob.def != JobDefOf.Wait_Combat) || AnyHostilePreventingAutoUndraft())
 			{
-				if ((pawn.jobs.curJob != null && pawn.jobs.curJob.def != JobDefOf.Wait_Combat) || AnyHostilePreventingAutoUndraft())
-				{
-					lastNonWaitingTick = Find.TickManager.TicksGame;
-				}
-				if (ShouldAutoUndraft())
-				{
-					pawn.drafter.Drafted = false;
-				}
+				lastNonWaitingTick = Find.TickManager.TicksGame;
+			}
+			if (ShouldAutoUndraft())
+			{
+				pawn.drafter.Drafted = false;
 			}
 		}
+	}
 
-		public void Notify_Drafted()
-		{
-			lastNonWaitingTick = Find.TickManager.TicksGame;
-		}
+	public void Notify_Drafted()
+	{
+		lastNonWaitingTick = Find.TickManager.TicksGame;
+	}
 
-		private bool ShouldAutoUndraft()
+	private bool ShouldAutoUndraft()
+	{
+		if (pawn.IsColonyMech)
 		{
-			if (pawn.IsColonyMech)
-			{
-				return false;
-			}
-			if (Find.TickManager.TicksGame - lastNonWaitingTick < 10000)
-			{
-				return false;
-			}
-			if (AnyHostilePreventingAutoUndraft())
-			{
-				return false;
-			}
-			return true;
-		}
-
-		private bool AnyHostilePreventingAutoUndraft()
-		{
-			List<IAttackTarget> potentialTargetsFor = pawn.Map.attackTargetsCache.GetPotentialTargetsFor(pawn);
-			for (int i = 0; i < potentialTargetsFor.Count; i++)
-			{
-				if (GenHostility.IsActiveThreatToPlayer(potentialTargetsFor[i]))
-				{
-					return true;
-				}
-			}
 			return false;
 		}
+		if (Find.TickManager.TicksGame - lastNonWaitingTick < 10000)
+		{
+			return false;
+		}
+		if (AnyHostilePreventingAutoUndraft())
+		{
+			return false;
+		}
+		return true;
+	}
+
+	private bool AnyHostilePreventingAutoUndraft()
+	{
+		List<IAttackTarget> potentialTargetsFor = pawn.Map.attackTargetsCache.GetPotentialTargetsFor(pawn);
+		for (int i = 0; i < potentialTargetsFor.Count; i++)
+		{
+			if (GenHostility.IsActiveThreatToPlayer(potentialTargetsFor[i]))
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 }

@@ -1,38 +1,37 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public static class HackUtility
 {
-	public static class HackUtility
+	public static bool IsHackable(this Thing thing)
 	{
-		public static bool IsHackable(this Thing thing)
-		{
-			return thing.TryGetComp<CompHackable>() != null;
-		}
+		return thing.TryGetComp<CompHackable>() != null;
+	}
 
-		public static bool IsHacked(this Thing thing)
-		{
-			return thing.TryGetComp<CompHackable>()?.IsHacked ?? false;
-		}
+	public static bool IsHacked(this Thing thing)
+	{
+		return thing.TryGetComp<CompHackable>()?.IsHacked ?? false;
+	}
 
-		public static bool IsCapableOfHacking(Pawn pawn)
+	public static bool IsCapableOfHacking(Pawn pawn)
+	{
+		if (pawn.IsSubhuman)
 		{
-			if (pawn.IsSubhuman)
-			{
-				return false;
-			}
-			if (pawn.skills == null || pawn.skills.GetSkill(SkillDefOf.Intellectual).TotallyDisabled)
-			{
-				return false;
-			}
-			if (StatDefOf.HackingSpeed.Worker.IsDisabledFor(pawn))
-			{
-				return false;
-			}
-			if (!pawn.WorkTagIsDisabled(WorkTags.Intellectual))
-			{
-				return pawn.health.capacities.CapableOf(PawnCapacityDefOf.Manipulation);
-			}
 			return false;
 		}
+		if (pawn.skills == null || pawn.skills.GetSkill(SkillDefOf.Intellectual).TotallyDisabled)
+		{
+			return false;
+		}
+		if (StatDefOf.HackingSpeed.Worker.IsDisabledFor(pawn))
+		{
+			return false;
+		}
+		if (!pawn.WorkTagIsDisabled(WorkTags.Intellectual))
+		{
+			return pawn.health.capacities.CapableOf(PawnCapacityDefOf.Manipulation);
+		}
+		return false;
 	}
 }

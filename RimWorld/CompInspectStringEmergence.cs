@@ -1,24 +1,23 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompInspectStringEmergence : CompInspectString
 {
-	public class CompInspectStringEmergence : CompInspectString
+	public Pawn sourcePawn;
+
+	public override string CompInspectStringExtra()
 	{
-		public Pawn sourcePawn;
-
-		public override string CompInspectStringExtra()
+		if (sourcePawn != null)
 		{
-			if (sourcePawn != null)
-			{
-				return base.Props.inspectString.Formatted(sourcePawn.Named("SOURCEPAWN")).Resolve();
-			}
-			return null;
+			return base.Props.inspectString.Formatted(sourcePawn.Named("SOURCEPAWN")).Resolve();
 		}
+		return null;
+	}
 
-		public override void PostExposeData()
-		{
-			base.PostExposeData();
-			Scribe_References.Look(ref sourcePawn, "sourcePawn");
-		}
+	public override void PostExposeData()
+	{
+		base.PostExposeData();
+		Scribe_References.Look(ref sourcePawn, "sourcePawn");
 	}
 }

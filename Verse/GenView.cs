@@ -1,43 +1,42 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public static class GenView
 {
-	public static class GenView
+	private static CellRect viewRect;
+
+	private const int ViewRectMargin = 5;
+
+	public static bool ShouldSpawnMotesAt(this Vector3 loc, Map map, bool drawOffscreen = true)
 	{
-		private static CellRect viewRect;
+		return loc.ToIntVec3().ShouldSpawnMotesAt(map, drawOffscreen);
+	}
 
-		private const int ViewRectMargin = 5;
-
-		public static bool ShouldSpawnMotesAt(this Vector3 loc, Map map, bool drawOffscreen = true)
+	public static bool ShouldSpawnMotesAt(this IntVec3 loc, Map map, bool drawOffscreen = true)
+	{
+		if (map != Find.CurrentMap)
 		{
-			return loc.ToIntVec3().ShouldSpawnMotesAt(map, drawOffscreen);
+			return false;
 		}
-
-		public static bool ShouldSpawnMotesAt(this IntVec3 loc, Map map, bool drawOffscreen = true)
+		if (!loc.InBounds(map))
 		{
-			if (map != Find.CurrentMap)
-			{
-				return false;
-			}
-			if (!loc.InBounds(map))
-			{
-				return false;
-			}
-			if (drawOffscreen)
-			{
-				return true;
-			}
-			viewRect = Find.CameraDriver.CurrentViewRect;
-			viewRect = viewRect.ExpandedBy(5);
-			return viewRect.Contains(loc);
+			return false;
 		}
-
-		public static Vector3 RandomPositionOnOrNearScreen()
+		if (drawOffscreen)
 		{
-			viewRect = Find.CameraDriver.CurrentViewRect;
-			viewRect = viewRect.ExpandedBy(5);
-			viewRect.ClipInsideMap(Find.CurrentMap);
-			return viewRect.RandomVector3;
+			return true;
 		}
+		viewRect = Find.CameraDriver.CurrentViewRect;
+		viewRect = viewRect.ExpandedBy(5);
+		return viewRect.Contains(loc);
+	}
+
+	public static Vector3 RandomPositionOnOrNearScreen()
+	{
+		viewRect = Find.CameraDriver.CurrentViewRect;
+		viewRect = viewRect.ExpandedBy(5);
+		viewRect.ClipInsideMap(Find.CurrentMap);
+		return viewRect.RandomVector3;
 	}
 }

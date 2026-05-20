@@ -1,19 +1,18 @@
-namespace Verse
+namespace Verse;
+
+public class ManeuverDef : Def
 {
-	public class ManeuverDef : Def
-	{
-		public ToolCapacityDef requiredCapacity;
+	public ToolCapacityDef requiredCapacity;
 
-		public VerbProperties verb;
+	public VerbProperties verb;
 
-		public RulePackDef combatLogRulesHit;
+	public RulePackDef combatLogRulesHit;
 
-		public RulePackDef combatLogRulesDeflect;
+	public RulePackDef combatLogRulesDeflect;
 
-		public RulePackDef combatLogRulesMiss;
+	public RulePackDef combatLogRulesMiss;
 
-		public RulePackDef combatLogRulesDodge;
+	public RulePackDef combatLogRulesDodge;
 
-		public LogEntryDef logEntryDef;
-	}
+	public LogEntryDef logEntryDef;
 }

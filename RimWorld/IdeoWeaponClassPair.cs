@@ -1,9 +1,8 @@
-namespace RimWorld
-{
-	public class IdeoWeaponClassPair
-	{
-		public WeaponClassDef noble;
+namespace RimWorld;
 
-		public WeaponClassDef despised;
-	}
+public class IdeoWeaponClassPair
+{
+	public WeaponClassDef noble;
+
+	public WeaponClassDef despised;
 }

@@ -1,15 +1,14 @@
-namespace RimWorld
+namespace RimWorld;
+
+[DefOf]
+public static class JoyGiverDefOf
 {
-	[DefOf]
-	public static class JoyGiverDefOf
+	public static JoyGiverDef Play_Chess;
+
+	public static JoyGiverDef Play_Poker;
+
+	static JoyGiverDefOf()
 	{
-		public static JoyGiverDef Play_Chess;
-
-		public static JoyGiverDef Play_Poker;
-
-		static JoyGiverDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(JoyGiverDefOf));
-		}
+		DefOfHelper.EnsureInitializedInCtor(typeof(JoyGiverDefOf));
 	}
 }

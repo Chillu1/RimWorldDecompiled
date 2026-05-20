@@ -1,32 +1,31 @@
-namespace Verse
+namespace Verse;
+
+public abstract class Name : IExposable
 {
-	public abstract class Name : IExposable
+	public abstract string ToStringFull { get; }
+
+	public abstract string ToStringShort { get; }
+
+	public abstract bool IsValid { get; }
+
+	public bool UsedThisGame
 	{
-		public abstract string ToStringFull { get; }
-
-		public abstract string ToStringShort { get; }
-
-		public abstract bool IsValid { get; }
-
-		public bool UsedThisGame
+		get
 		{
-			get
+			foreach (Name item in NameUseChecker.AllPawnsNamesEverUsed)
 			{
-				foreach (Name item in NameUseChecker.AllPawnsNamesEverUsed)
+				if (item.ConfusinglySimilarTo(this))
 				{
-					if (item.ConfusinglySimilarTo(this))
-					{
-						return true;
-					}
+					return true;
 				}
-				return false;
 			}
+			return false;
 		}
-
-		public abstract bool Numerical { get; }
-
-		public abstract bool ConfusinglySimilarTo(Name other);
-
-		public abstract void ExposeData();
 	}
+
+	public abstract bool Numerical { get; }
+
+	public abstract bool ConfusinglySimilarTo(Name other);
+
+	public abstract void ExposeData();
 }

@@ -1,35 +1,34 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThingSetMakerDef : Def
 {
-	public class ThingSetMakerDef : Def
+	public ThingSetMaker root;
+
+	public ThingSetMakerParams debugParams;
+
+	public override void ResolveReferences()
 	{
-		public ThingSetMaker root;
+		base.ResolveReferences();
+		root.ResolveReferences();
+	}
 
-		public ThingSetMakerParams debugParams;
-
-		public override void ResolveReferences()
+	public override IEnumerable<string> ConfigErrors()
+	{
+		foreach (string item in base.ConfigErrors())
 		{
-			base.ResolveReferences();
-			root.ResolveReferences();
+			yield return item;
 		}
-
-		public override IEnumerable<string> ConfigErrors()
+		if (root == null)
 		{
-			foreach (string item in base.ConfigErrors())
-			{
-				yield return item;
-			}
-			if (root == null)
-			{
-				yield return "root is null.";
-				yield break;
-			}
-			foreach (string item2 in root.ConfigErrors())
-			{
-				yield return item2;
-			}
+			yield return "root is null.";
+			yield break;
+		}
+		foreach (string item2 in root.ConfigErrors())
+		{
+			yield return item2;
 		}
 	}
 }

@@ -2,53 +2,52 @@ using System;
 using System.Xml;
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class DefHyperlink
 {
-	public class DefHyperlink
+	public Def def;
+
+	public Faction faction;
+
+	public DefHyperlink()
 	{
-		public Def def;
+	}
 
-		public Faction faction;
+	public DefHyperlink(Def def)
+	{
+		this.def = def;
+	}
 
-		public DefHyperlink()
+	public DefHyperlink(RoyalTitleDef def, Faction faction)
+	{
+		this.def = def;
+		this.faction = faction;
+	}
+
+	public void LoadDataFromXmlCustom(XmlNode xmlRoot)
+	{
+		if (xmlRoot.ChildNodes.Count != 1)
 		{
+			Log.Error("Misconfigured DefHyperlink: " + xmlRoot.OuterXml);
+			return;
 		}
-
-		public DefHyperlink(Def def)
+		Type typeInAnyAssembly = GenTypes.GetTypeInAnyAssembly(xmlRoot.Name);
+		if (typeInAnyAssembly == null)
 		{
-			this.def = def;
+			Log.Error("Misconfigured DefHyperlink. Could not find def of type " + xmlRoot.Name);
 		}
-
-		public DefHyperlink(RoyalTitleDef def, Faction faction)
+		else
 		{
-			this.def = def;
-			this.faction = faction;
+			DirectXmlCrossRefLoader.RegisterObjectWantsCrossRef(this, "def", xmlRoot.FirstChild.Value, null, null, typeInAnyAssembly);
 		}
+	}
 
-		public void LoadDataFromXmlCustom(XmlNode xmlRoot)
+	public static implicit operator DefHyperlink(Def def)
+	{
+		return new DefHyperlink
 		{
-			if (xmlRoot.ChildNodes.Count != 1)
-			{
-				Log.Error("Misconfigured DefHyperlink: " + xmlRoot.OuterXml);
-				return;
-			}
-			Type typeInAnyAssembly = GenTypes.GetTypeInAnyAssembly(xmlRoot.Name);
-			if (typeInAnyAssembly == null)
-			{
-				Log.Error("Misconfigured DefHyperlink. Could not find def of type " + xmlRoot.Name);
-			}
-			else
-			{
-				DirectXmlCrossRefLoader.RegisterObjectWantsCrossRef(this, "def", xmlRoot.FirstChild.Value, null, null, typeInAnyAssembly);
-			}
-		}
-
-		public static implicit operator DefHyperlink(Def def)
-		{
-			return new DefHyperlink
-			{
-				def = def
-			};
-		}
+			def = def
+		};
 	}
 }

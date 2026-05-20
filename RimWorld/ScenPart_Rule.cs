@@ -1,12 +1,11 @@
-namespace RimWorld
-{
-	public abstract class ScenPart_Rule : ScenPart
-	{
-		public override void PostGameStart()
-		{
-			ApplyRule();
-		}
+namespace RimWorld;
 
-		protected abstract void ApplyRule();
+public abstract class ScenPart_Rule : ScenPart
+{
+	public override void PostGameStart()
+	{
+		ApplyRule();
 	}
+
+	protected abstract void ApplyRule();
 }

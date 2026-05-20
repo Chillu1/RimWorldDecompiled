@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class IncidentWorker_ObeliskDuplicator : IncidentWorker_Obelisk
 {
-	public class IncidentWorker_ObeliskDuplicator : IncidentWorker_Obelisk
-	{
-		public override ThingDef ObeliskDef => ThingDefOf.WarpedObelisk_Duplicator;
-	}
+	public override ThingDef ObeliskDef => ThingDefOf.WarpedObelisk_Duplicator;
 }

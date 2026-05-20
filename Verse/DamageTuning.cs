@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public static class DamageTuning
 {
-	public static class DamageTuning
-	{
-		public const float SpreadDamageChance = 0.5f;
-	}
+	public const float SpreadDamageChance = 0.5f;
 }

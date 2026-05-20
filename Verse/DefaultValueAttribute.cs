@@ -1,28 +1,27 @@
 using System;
 
-namespace Verse
+namespace Verse;
+
+[AttributeUsage(AttributeTargets.Field)]
+public class DefaultValueAttribute : Attribute
 {
-	[AttributeUsage(AttributeTargets.Field)]
-	public class DefaultValueAttribute : Attribute
+	public object value;
+
+	public DefaultValueAttribute(object value)
 	{
-		public object value;
+		this.value = value;
+	}
 
-		public DefaultValueAttribute(object value)
+	public virtual bool ObjIsDefault(object obj)
+	{
+		if (obj == null)
 		{
-			this.value = value;
+			return value == null;
 		}
-
-		public virtual bool ObjIsDefault(object obj)
+		if (value == null)
 		{
-			if (obj == null)
-			{
-				return value == null;
-			}
-			if (value == null)
-			{
-				return false;
-			}
-			return value.Equals(obj);
+			return false;
 		}
+		return value.Equals(obj);
 	}
 }

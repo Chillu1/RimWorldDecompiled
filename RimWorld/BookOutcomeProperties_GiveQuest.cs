@@ -1,11 +1,10 @@
 using System;
 
-namespace RimWorld
-{
-	public class BookOutcomeProperties_GiveQuest : BookOutcomeProperties
-	{
-		public float questChance;
+namespace RimWorld;
 
-		public override Type DoerClass => typeof(BookOutcomeDoer_GiveQuest);
-	}
+public class BookOutcomeProperties_GiveQuest : BookOutcomeProperties
+{
+	public float questChance;
+
+	public override Type DoerClass => typeof(BookOutcomeDoer_GiveQuest);
 }

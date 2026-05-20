@@ -1,19 +1,18 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class PawnRenderNodeProperties_NociosphereSegment : PawnRenderNodeProperties
 {
-	public class PawnRenderNodeProperties_NociosphereSegment : PawnRenderNodeProperties
+	[NoTranslate]
+	public string maskPath;
+
+	public Vector2 offset;
+
+	public PawnRenderNodeProperties_NociosphereSegment()
 	{
-		[NoTranslate]
-		public string maskPath;
-
-		public Vector2 offset;
-
-		public PawnRenderNodeProperties_NociosphereSegment()
-		{
-			nodeClass = typeof(PawnRenderNode_NociosphereSegment);
-			workerClass = typeof(PawnRenderNodeWorker_NociosphereSegment);
-			drawSize = new Vector2(1.35f, 1.35f);
-		}
+		nodeClass = typeof(PawnRenderNode_NociosphereSegment);
+		workerClass = typeof(PawnRenderNodeWorker_NociosphereSegment);
+		drawSize = new Vector2(1.35f, 1.35f);
 	}
 }

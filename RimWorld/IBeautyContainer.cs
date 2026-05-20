@@ -1,9 +1,8 @@
-namespace RimWorld
-{
-	public interface IBeautyContainer
-	{
-		float BeautyOffset { get; }
+namespace RimWorld;
 
-		string BeautyOffsetExplanation { get; }
-	}
+public interface IBeautyContainer
+{
+	float BeautyOffset { get; }
+
+	string BeautyOffsetExplanation { get; }
 }

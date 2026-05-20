@@ -1,13 +1,12 @@
-namespace Verse
+namespace Verse;
+
+public class BodyPartToDrop
 {
-	public class BodyPartToDrop
-	{
-		public BodyPartGroupDef bodyPartGroup;
+	public BodyPartGroupDef bodyPartGroup;
 
-		public ThingDef thing;
+	public ThingDef thing;
 
-		public bool allowMale = true;
+	public bool allowMale = true;
 
-		public bool allowFemale = true;
-	}
+	public bool allowFemale = true;
 }

@@ -1,8 +1,7 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum MonolithGenerationMethod
 {
-	public enum MonolithGenerationMethod
-	{
-		Disabled,
-		NearColonists
-	}
+	Disabled,
+	NearColonists
 }

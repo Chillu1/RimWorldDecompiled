@@ -2,61 +2,60 @@ using UnityEngine;
 using Verse;
 using Verse.Sound;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class PawnColumnWorker_Text : PawnColumnWorker
 {
-	public abstract class PawnColumnWorker_Text : PawnColumnWorker
+	private static NumericStringComparer comparer = new NumericStringComparer();
+
+	protected virtual int Width => def.width;
+
+	protected virtual TextAnchor Anchor => TextAnchor.MiddleLeft;
+
+	public override void DoHeader(Rect rect, PawnTable table)
 	{
-		private static NumericStringComparer comparer = new NumericStringComparer();
+		base.DoHeader(rect, table);
+		MouseoverSounds.DoRegion(rect);
+	}
 
-		protected virtual int Width => def.width;
-
-		protected virtual TextAnchor Anchor => TextAnchor.MiddleLeft;
-
-		public override void DoHeader(Rect rect, PawnTable table)
+	public override void DoCell(Rect rect, Pawn pawn, PawnTable table)
+	{
+		Rect rect2 = new Rect(rect.x, rect.y, rect.width, Mathf.Min(rect.height, 30f));
+		string textFor = GetTextFor(pawn);
+		if (textFor == null)
 		{
-			base.DoHeader(rect, table);
-			MouseoverSounds.DoRegion(rect);
+			return;
 		}
-
-		public override void DoCell(Rect rect, Pawn pawn, PawnTable table)
+		Text.Font = GameFont.Small;
+		Text.Anchor = Anchor;
+		Text.WordWrap = false;
+		Widgets.Label(rect2, textFor);
+		Text.WordWrap = true;
+		Text.Anchor = TextAnchor.UpperLeft;
+		if (Mouse.IsOver(rect2))
 		{
-			Rect rect2 = new Rect(rect.x, rect.y, rect.width, Mathf.Min(rect.height, 30f));
-			string textFor = GetTextFor(pawn);
-			if (textFor == null)
+			string tip = GetTip(pawn);
+			if (!tip.NullOrEmpty())
 			{
-				return;
-			}
-			Text.Font = GameFont.Small;
-			Text.Anchor = Anchor;
-			Text.WordWrap = false;
-			Widgets.Label(rect2, textFor);
-			Text.WordWrap = true;
-			Text.Anchor = TextAnchor.UpperLeft;
-			if (Mouse.IsOver(rect2))
-			{
-				string tip = GetTip(pawn);
-				if (!tip.NullOrEmpty())
-				{
-					TooltipHandler.TipRegion(rect2, tip);
-				}
+				TooltipHandler.TipRegion(rect2, tip);
 			}
 		}
+	}
 
-		public override int GetMinWidth(PawnTable table)
-		{
-			return Mathf.Max(base.GetMinWidth(table), Width);
-		}
+	public override int GetMinWidth(PawnTable table)
+	{
+		return Mathf.Max(base.GetMinWidth(table), Width);
+	}
 
-		public override int Compare(Pawn a, Pawn b)
-		{
-			return comparer.Compare(GetTextFor(a), GetTextFor(b));
-		}
+	public override int Compare(Pawn a, Pawn b)
+	{
+		return comparer.Compare(GetTextFor(a), GetTextFor(b));
+	}
 
-		protected abstract string GetTextFor(Pawn pawn);
+	protected abstract string GetTextFor(Pawn pawn);
 
-		protected virtual string GetTip(Pawn pawn)
-		{
-			return null;
-		}
+	protected virtual string GetTip(Pawn pawn)
+	{
+		return null;
 	}
 }

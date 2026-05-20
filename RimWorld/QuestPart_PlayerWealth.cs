@@ -1,25 +1,24 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class QuestPart_PlayerWealth : QuestPartActivable
 {
-	public class QuestPart_PlayerWealth : QuestPartActivable
+	public float playerWealth = 100000f;
+
+	public const int CheckInterval = 60;
+
+	public override void QuestPartTick()
 	{
-		public float playerWealth = 100000f;
-
-		public const int CheckInterval = 60;
-
-		public override void QuestPartTick()
+		if (Find.TickManager.TicksGame % 60 == 0 && WealthUtility.PlayerWealth >= playerWealth)
 		{
-			if (Find.TickManager.TicksGame % 60 == 0 && WealthUtility.PlayerWealth >= playerWealth)
-			{
-				Complete();
-			}
+			Complete();
 		}
+	}
 
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_Values.Look(ref playerWealth, "playerWealth", 0f);
-		}
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Values.Look(ref playerWealth, "playerWealth", 0f);
 	}
 }

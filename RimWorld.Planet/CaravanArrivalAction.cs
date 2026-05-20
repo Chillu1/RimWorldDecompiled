@@ -1,22 +1,21 @@
 using Verse;
 
-namespace RimWorld.Planet
+namespace RimWorld.Planet;
+
+public abstract class CaravanArrivalAction : IExposable
 {
-	public abstract class CaravanArrivalAction : IExposable
+	public abstract string Label { get; }
+
+	public abstract string ReportString { get; }
+
+	public virtual FloatMenuAcceptanceReport StillValid(Caravan caravan, PlanetTile destinationTile)
 	{
-		public abstract string Label { get; }
+		return true;
+	}
 
-		public abstract string ReportString { get; }
+	public abstract void Arrived(Caravan caravan);
 
-		public virtual FloatMenuAcceptanceReport StillValid(Caravan caravan, PlanetTile destinationTile)
-		{
-			return true;
-		}
-
-		public abstract void Arrived(Caravan caravan);
-
-		public virtual void ExposeData()
-		{
-		}
+	public virtual void ExposeData()
+	{
 	}
 }

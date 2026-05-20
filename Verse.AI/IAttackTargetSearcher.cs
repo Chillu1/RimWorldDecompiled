@@ -1,13 +1,12 @@
-namespace Verse.AI
+namespace Verse.AI;
+
+public interface IAttackTargetSearcher
 {
-	public interface IAttackTargetSearcher
-	{
-		Thing Thing { get; }
+	Thing Thing { get; }
 
-		Verb CurrentEffectiveVerb { get; }
+	Verb CurrentEffectiveVerb { get; }
 
-		LocalTargetInfo LastAttackedTarget { get; }
+	LocalTargetInfo LastAttackedTarget { get; }
 
-		int LastAttackTargetTick { get; }
-	}
+	int LastAttackTargetTick { get; }
 }

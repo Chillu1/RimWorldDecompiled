@@ -1,44 +1,43 @@
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_IsTrueOrUnset : QuestNode
 {
-	public class QuestNode_IsTrueOrUnset : QuestNode
+	public SlateRef<bool?> value;
+
+	public QuestNode node;
+
+	public QuestNode elseNode;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		public SlateRef<bool?> value;
-
-		public QuestNode node;
-
-		public QuestNode elseNode;
-
-		protected override bool TestRunInt(Slate slate)
+		if (value.GetValue(slate) ?? true)
 		{
-			if (value.GetValue(slate) ?? true)
+			if (node != null)
 			{
-				if (node != null)
-				{
-					return node.TestRun(slate);
-				}
-				return true;
-			}
-			if (elseNode != null)
-			{
-				return elseNode.TestRun(slate);
+				return node.TestRun(slate);
 			}
 			return true;
 		}
-
-		protected override void RunInt()
+		if (elseNode != null)
 		{
-			Slate slate = QuestGen.slate;
-			if (value.GetValue(slate) ?? true)
+			return elseNode.TestRun(slate);
+		}
+		return true;
+	}
+
+	protected override void RunInt()
+	{
+		Slate slate = QuestGen.slate;
+		if (value.GetValue(slate) ?? true)
+		{
+			if (node != null)
 			{
-				if (node != null)
-				{
-					node.Run();
-				}
+				node.Run();
 			}
-			else if (elseNode != null)
-			{
-				elseNode.Run();
-			}
+		}
+		else if (elseNode != null)
+		{
+			elseNode.Run();
 		}
 	}
 }

@@ -1,9 +1,8 @@
-namespace RimWorld
-{
-	public class IdeoDescriptionResult
-	{
-		public string text;
+namespace RimWorld;
 
-		public string template;
-	}
+public class IdeoDescriptionResult
+{
+	public string text;
+
+	public string template;
 }

@@ -1,36 +1,35 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompRitualSignalSender : ThingComp, IThingGlower
 {
-	public class CompRitualSignalSender : ThingComp, IThingGlower
+	public bool ritualTarget;
+
+	private const int CheckInterval = 30;
+
+	public const string RitualTargetChangedSignal = "RitualTargetChanged";
+
+	public bool ShouldBeLitNow()
 	{
-		public bool ritualTarget;
+		return ritualTarget;
+	}
 
-		private const int CheckInterval = 30;
-
-		public const string RitualTargetChangedSignal = "RitualTargetChanged";
-
-		public bool ShouldBeLitNow()
+	public override void CompTick()
+	{
+		if (parent.IsHashIntervalTick(30))
 		{
-			return ritualTarget;
-		}
-
-		public override void CompTick()
-		{
-			if (parent.IsHashIntervalTick(30))
+			bool num = ritualTarget;
+			ritualTarget = parent.IsRitualTarget();
+			if (num != ritualTarget)
 			{
-				bool num = ritualTarget;
-				ritualTarget = parent.IsRitualTarget();
-				if (num != ritualTarget)
-				{
-					parent.BroadcastCompSignal("RitualTargetChanged");
-				}
+				parent.BroadcastCompSignal("RitualTargetChanged");
 			}
 		}
+	}
 
-		public override void PostExposeData()
-		{
-			Scribe_Values.Look(ref ritualTarget, "ritualTarget", defaultValue: false);
-		}
+	public override void PostExposeData()
+	{
+		Scribe_Values.Look(ref ritualTarget, "ritualTarget", defaultValue: false);
 	}
 }

@@ -1,24 +1,23 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+[StaticConstructorOnStartup]
+public class PawnColumnWorker_Info : PawnColumnWorker
 {
-	[StaticConstructorOnStartup]
-	public class PawnColumnWorker_Info : PawnColumnWorker
+	public override void DoCell(Rect rect, Pawn pawn, PawnTable table)
 	{
-		public override void DoCell(Rect rect, Pawn pawn, PawnTable table)
-		{
-			Widgets.InfoCardButtonCentered(rect, pawn);
-		}
+		Widgets.InfoCardButtonCentered(rect, pawn);
+	}
 
-		public override int GetMinWidth(PawnTable table)
-		{
-			return 24;
-		}
+	public override int GetMinWidth(PawnTable table)
+	{
+		return 24;
+	}
 
-		public override int GetMaxWidth(PawnTable table)
-		{
-			return 24;
-		}
+	public override int GetMaxWidth(PawnTable table)
+	{
+		return 24;
 	}
 }

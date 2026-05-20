@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_DeconstructForBlueprint : JobDriver_Deconstruct
 {
-	public class JobDriver_DeconstructForBlueprint : JobDriver_Deconstruct
-	{
-		protected override DesignationDef Designation => null;
-	}
+	protected override DesignationDef Designation => null;
 }

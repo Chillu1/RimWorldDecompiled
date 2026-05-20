@@ -1,55 +1,54 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public struct EventPack
 {
-	public struct EventPack
+	private string tagInt;
+
+	private IntVec3 cellInt;
+
+	private IEnumerable<IntVec3> cellsInt;
+
+	public string Tag => tagInt;
+
+	public IntVec3 Cell => cellInt;
+
+	public IEnumerable<IntVec3> Cells => cellsInt;
+
+	public EventPack(string tag)
 	{
-		private string tagInt;
+		tagInt = tag;
+		cellInt = IntVec3.Invalid;
+		cellsInt = null;
+	}
 
-		private IntVec3 cellInt;
+	public EventPack(string tag, IntVec3 cell)
+	{
+		tagInt = tag;
+		cellInt = cell;
+		cellsInt = null;
+	}
 
-		private IEnumerable<IntVec3> cellsInt;
+	public EventPack(string tag, IEnumerable<IntVec3> cells)
+	{
+		tagInt = tag;
+		cellInt = IntVec3.Invalid;
+		cellsInt = cells;
+	}
 
-		public string Tag => tagInt;
+	public static implicit operator EventPack(string s)
+	{
+		return new EventPack(s);
+	}
 
-		public IntVec3 Cell => cellInt;
-
-		public IEnumerable<IntVec3> Cells => cellsInt;
-
-		public EventPack(string tag)
+	public override string ToString()
+	{
+		if (Cell.IsValid)
 		{
-			tagInt = tag;
-			cellInt = IntVec3.Invalid;
-			cellsInt = null;
+			return Tag + "-" + Cell.ToString();
 		}
-
-		public EventPack(string tag, IntVec3 cell)
-		{
-			tagInt = tag;
-			cellInt = cell;
-			cellsInt = null;
-		}
-
-		public EventPack(string tag, IEnumerable<IntVec3> cells)
-		{
-			tagInt = tag;
-			cellInt = IntVec3.Invalid;
-			cellsInt = cells;
-		}
-
-		public static implicit operator EventPack(string s)
-		{
-			return new EventPack(s);
-		}
-
-		public override string ToString()
-		{
-			if (Cell.IsValid)
-			{
-				return Tag + "-" + Cell.ToString();
-			}
-			return Tag;
-		}
+		return Tag;
 	}
 }

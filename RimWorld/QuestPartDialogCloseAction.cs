@@ -1,19 +1,18 @@
 using System;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class QuestPartDialogCloseAction
 {
-	public class QuestPartDialogCloseAction
+	public enum CloseActionKey
 	{
-		public enum CloseActionKey
-		{
-			None,
-			ArchonexusVictorySound2nd,
-			ArchonexusVictorySound3rd
-		}
-
-		public SoundDef dialogCloseSound;
-
-		public Action dialogCloseAction;
+		None,
+		ArchonexusVictorySound2nd,
+		ArchonexusVictorySound3rd
 	}
+
+	public SoundDef dialogCloseSound;
+
+	public Action dialogCloseAction;
 }

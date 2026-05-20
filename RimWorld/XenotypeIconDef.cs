@@ -2,38 +2,37 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class XenotypeIconDef : Def
 {
-	public class XenotypeIconDef : Def
+	[NoTranslate]
+	public string texPath;
+
+	[Unsaved(false)]
+	private Texture2D cachedIcon;
+
+	public Texture2D Icon
 	{
-		[NoTranslate]
-		public string texPath;
-
-		[Unsaved(false)]
-		private Texture2D cachedIcon;
-
-		public Texture2D Icon
+		get
 		{
-			get
+			if (cachedIcon == null)
 			{
-				if (cachedIcon == null)
-				{
-					cachedIcon = ContentFinder<Texture2D>.Get(texPath);
-				}
-				return cachedIcon;
+				cachedIcon = ContentFinder<Texture2D>.Get(texPath);
 			}
+			return cachedIcon;
 		}
+	}
 
-		public override IEnumerable<string> ConfigErrors()
+	public override IEnumerable<string> ConfigErrors()
+	{
+		foreach (string item in base.ConfigErrors())
 		{
-			foreach (string item in base.ConfigErrors())
-			{
-				yield return item;
-			}
-			if (texPath.NullOrEmpty())
-			{
-				yield return "texPath is empty";
-			}
+			yield return item;
+		}
+		if (texPath.NullOrEmpty())
+		{
+			yield return "texPath is empty";
 		}
 	}
 }

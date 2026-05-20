@@ -1,26 +1,25 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_NeuralSupercharger : CompProperties_Rechargeable
 {
-	public class CompProperties_NeuralSupercharger : CompProperties_Rechargeable
+	[MustTranslate]
+	public string jobString;
+
+	public EffecterDef effectCharged;
+
+	public CompProperties_NeuralSupercharger()
 	{
-		[MustTranslate]
-		public string jobString;
+		compClass = typeof(CompNeuralSupercharger);
+	}
 
-		public EffecterDef effectCharged;
-
-		public CompProperties_NeuralSupercharger()
+	public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+	{
+		if (effectCharged != null && parentDef.tickerType != TickerType.Normal)
 		{
-			compClass = typeof(CompNeuralSupercharger);
-		}
-
-		public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
-		{
-			if (effectCharged != null && parentDef.tickerType != TickerType.Normal)
-			{
-				yield return $"CompProperties_NeuralSupercharger has effectCharged but parent {parentDef} has tickerType!=Normal";
-			}
+			yield return $"CompProperties_NeuralSupercharger has effectCharged but parent {parentDef} has tickerType!=Normal";
 		}
 	}
 }

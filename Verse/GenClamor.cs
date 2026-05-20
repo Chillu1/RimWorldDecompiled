@@ -2,55 +2,54 @@ using System.Collections.Generic;
 using RimWorld;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public static class GenClamor
 {
-	public static class GenClamor
+	public delegate void ClamorEffect(Thing source, Pawn hearer);
+
+	public static void DoClamor(Thing source, float radius, ClamorDef type)
 	{
-		public delegate void ClamorEffect(Thing source, Pawn hearer);
+		DoClamor(source, source.Position, radius, type);
+	}
 
-		public static void DoClamor(Thing source, float radius, ClamorDef type)
+	public static void DoClamor(Thing source, IntVec3 position, float radius, ClamorDef type)
+	{
+		DoClamor(source, position, radius, delegate(Thing _, Pawn hearer)
 		{
-			DoClamor(source, source.Position, radius, type);
+			hearer.HearClamor(source, type);
+		});
+	}
+
+	public static void DoClamor(Thing source, float radius, ClamorEffect clamorEffect)
+	{
+		DoClamor(source, source.Position, radius, clamorEffect);
+	}
+
+	public static void DoClamor(Thing source, IntVec3 position, float radius, ClamorEffect clamorEffect)
+	{
+		if (source.MapHeld == null)
+		{
+			return;
 		}
-
-		public static void DoClamor(Thing source, IntVec3 position, float radius, ClamorDef type)
+		Region region = position.GetRegion(source.MapHeld);
+		if (region == null)
 		{
-			DoClamor(source, position, radius, delegate(Thing _, Pawn hearer)
-			{
-				hearer.HearClamor(source, type);
-			});
+			return;
 		}
-
-		public static void DoClamor(Thing source, float radius, ClamorEffect clamorEffect)
+		RegionTraverser.BreadthFirstTraverse(region, (Region from, Region r) => r.door == null || r.door.Open, delegate(Region r)
 		{
-			DoClamor(source, source.Position, radius, clamorEffect);
-		}
-
-		public static void DoClamor(Thing source, IntVec3 position, float radius, ClamorEffect clamorEffect)
-		{
-			if (source.MapHeld == null)
+			List<Thing> list = r.ListerThings.ThingsInGroup(ThingRequestGroup.Pawn);
+			for (int i = 0; i < list.Count; i++)
 			{
-				return;
-			}
-			Region region = position.GetRegion(source.MapHeld);
-			if (region == null)
-			{
-				return;
-			}
-			RegionTraverser.BreadthFirstTraverse(region, (Region from, Region r) => r.door == null || r.door.Open, delegate(Region r)
-			{
-				List<Thing> list = r.ListerThings.ThingsInGroup(ThingRequestGroup.Pawn);
-				for (int i = 0; i < list.Count; i++)
+				Pawn pawn = list[i] as Pawn;
+				float num = Mathf.Clamp01(pawn.health.capacities.GetLevel(PawnCapacityDefOf.Hearing));
+				if (num > 0f && pawn.Position.InHorDistOf(position, radius * num))
 				{
-					Pawn pawn = list[i] as Pawn;
-					float num = Mathf.Clamp01(pawn.health.capacities.GetLevel(PawnCapacityDefOf.Hearing));
-					if (num > 0f && pawn.Position.InHorDistOf(position, radius * num))
-					{
-						clamorEffect(source, pawn);
-					}
+					clamorEffect(source, pawn);
 				}
-				return false;
-			}, 15);
-		}
+			}
+			return false;
+		}, 15);
 	}
 }

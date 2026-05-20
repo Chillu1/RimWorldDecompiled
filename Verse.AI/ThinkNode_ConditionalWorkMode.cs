@@ -1,30 +1,29 @@
 using RimWorld;
 
-namespace Verse.AI
+namespace Verse.AI;
+
+public class ThinkNode_ConditionalWorkMode : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalWorkMode : ThinkNode_Conditional
+	public MechWorkModeDef workMode;
+
+	public override ThinkNode DeepCopy(bool resolve = true)
 	{
-		public MechWorkModeDef workMode;
+		ThinkNode_ConditionalWorkMode obj = (ThinkNode_ConditionalWorkMode)base.DeepCopy(resolve);
+		obj.workMode = workMode;
+		return obj;
+	}
 
-		public override ThinkNode DeepCopy(bool resolve = true)
+	protected override bool Satisfied(Pawn pawn)
+	{
+		if (!pawn.RaceProps.IsMechanoid || pawn.Faction != Faction.OfPlayer)
 		{
-			ThinkNode_ConditionalWorkMode obj = (ThinkNode_ConditionalWorkMode)base.DeepCopy(resolve);
-			obj.workMode = workMode;
-			return obj;
+			return false;
 		}
-
-		protected override bool Satisfied(Pawn pawn)
+		Pawn overseer = pawn.GetOverseer();
+		if (overseer == null)
 		{
-			if (!pawn.RaceProps.IsMechanoid || pawn.Faction != Faction.OfPlayer)
-			{
-				return false;
-			}
-			Pawn overseer = pawn.GetOverseer();
-			if (overseer == null)
-			{
-				return false;
-			}
-			return overseer.mechanitor.GetControlGroup(pawn).WorkMode == workMode;
+			return false;
 		}
+		return overseer.mechanitor.GetControlGroup(pawn).WorkMode == workMode;
 	}
 }

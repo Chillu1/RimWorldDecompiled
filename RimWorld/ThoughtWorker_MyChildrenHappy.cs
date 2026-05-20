@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_MyChildrenHappy : ThoughtWorker_MyChildHappy
 {
-	public class ThoughtWorker_MyChildrenHappy : ThoughtWorker_MyChildHappy
+	protected override bool Active(Pawn parent)
 	{
-		protected override bool Active(Pawn parent)
-		{
-			return ChildrenWithMoodCount(parent) > 1;
-		}
+		return ChildrenWithMoodCount(parent) > 1;
 	}
 }

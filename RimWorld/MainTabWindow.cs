@@ -2,64 +2,63 @@ using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public abstract class MainTabWindow : Window
 {
-	public abstract class MainTabWindow : Window
+	public MainButtonDef def;
+
+	public virtual Vector2 RequestedTabSize => new Vector2(1010f, 684f);
+
+	public virtual MainTabWindowAnchor Anchor => MainTabWindowAnchor.Left;
+
+	public override Vector2 InitialSize
 	{
-		public MainButtonDef def;
-
-		public virtual Vector2 RequestedTabSize => new Vector2(1010f, 684f);
-
-		public virtual MainTabWindowAnchor Anchor => MainTabWindowAnchor.Left;
-
-		public override Vector2 InitialSize
+		get
 		{
-			get
+			Vector2 requestedTabSize = RequestedTabSize;
+			if (requestedTabSize.y > (float)(UI.screenHeight - 35))
 			{
-				Vector2 requestedTabSize = RequestedTabSize;
-				if (requestedTabSize.y > (float)(UI.screenHeight - 35))
-				{
-					requestedTabSize.y = UI.screenHeight - 35;
-				}
-				if (requestedTabSize.x > (float)UI.screenWidth)
-				{
-					requestedTabSize.x = UI.screenWidth;
-				}
-				return requestedTabSize;
+				requestedTabSize.y = UI.screenHeight - 35;
 			}
+			if (requestedTabSize.x > (float)UI.screenWidth)
+			{
+				requestedTabSize.x = UI.screenWidth;
+			}
+			return requestedTabSize;
 		}
+	}
 
-		public MainTabWindow()
+	public MainTabWindow()
+	{
+		layer = WindowLayer.GameUI;
+		soundAppear = null;
+		soundClose = SoundDefOf.TabClose;
+		doCloseButton = false;
+		doCloseX = false;
+		preventCameraMotion = false;
+	}
+
+	protected override void SetInitialSizeAndPosition()
+	{
+		base.SetInitialSizeAndPosition();
+		if (Anchor == MainTabWindowAnchor.Left)
 		{
-			layer = WindowLayer.GameUI;
-			soundAppear = null;
-			soundClose = SoundDefOf.TabClose;
-			doCloseButton = false;
-			doCloseX = false;
-			preventCameraMotion = false;
+			windowRect.x = 0f;
 		}
-
-		protected override void SetInitialSizeAndPosition()
+		else
 		{
-			base.SetInitialSizeAndPosition();
-			if (Anchor == MainTabWindowAnchor.Left)
-			{
-				windowRect.x = 0f;
-			}
-			else
-			{
-				windowRect.x = (float)UI.screenWidth - windowRect.width;
-			}
-			windowRect.y = (float)(UI.screenHeight - 35) - windowRect.height;
+			windowRect.x = (float)UI.screenWidth - windowRect.width;
 		}
+		windowRect.y = (float)(UI.screenHeight - 35) - windowRect.height;
+	}
 
-		public override void PostOpen()
+	public override void PostOpen()
+	{
+		base.PostOpen();
+		if (def.closesWorldView)
 		{
-			base.PostOpen();
-			if (def.closesWorldView)
-			{
-				Find.World.renderer.wantedMode = WorldRenderMode.None;
-			}
+			Find.World.renderer.wantedMode = WorldRenderMode.None;
 		}
 	}
 }

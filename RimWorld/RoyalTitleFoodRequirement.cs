@@ -1,33 +1,32 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public struct RoyalTitleFoodRequirement
 {
-	public struct RoyalTitleFoodRequirement
+	public FoodPreferability minQuality;
+
+	public FoodTypeFlags allowedTypes;
+
+	public List<ThingDef> allowedDefs;
+
+	public bool Defined => minQuality != FoodPreferability.Undefined;
+
+	public bool Acceptable(ThingDef food)
 	{
-		public FoodPreferability minQuality;
-
-		public FoodTypeFlags allowedTypes;
-
-		public List<ThingDef> allowedDefs;
-
-		public bool Defined => minQuality != FoodPreferability.Undefined;
-
-		public bool Acceptable(ThingDef food)
+		if (food.ingestible == null)
 		{
-			if (food.ingestible == null)
-			{
-				return false;
-			}
-			if (allowedDefs.Contains(food))
-			{
-				return true;
-			}
-			if (allowedTypes != FoodTypeFlags.None && (allowedTypes & food.ingestible.foodType) != FoodTypeFlags.None)
-			{
-				return true;
-			}
-			return (int)food.ingestible.preferability >= (int)minQuality;
+			return false;
 		}
+		if (allowedDefs.Contains(food))
+		{
+			return true;
+		}
+		if (allowedTypes != FoodTypeFlags.None && (allowedTypes & food.ingestible.foodType) != FoodTypeFlags.None)
+		{
+			return true;
+		}
+		return (int)food.ingestible.preferability >= (int)minQuality;
 	}
 }

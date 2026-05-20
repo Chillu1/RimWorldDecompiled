@@ -1,33 +1,32 @@
 using RimWorld;
 
-namespace Verse.AI
+namespace Verse.AI;
+
+public class MentalState_WanderOwnRoom : MentalState
 {
-	public class MentalState_WanderOwnRoom : MentalState
+	public IntVec3 target;
+
+	public override void PostStart(string reason)
 	{
-		public IntVec3 target;
-
-		public override void PostStart(string reason)
+		base.PostStart(reason);
+		if (pawn.ownership.OwnedBed != null)
 		{
-			base.PostStart(reason);
-			if (pawn.ownership.OwnedBed != null)
-			{
-				target = pawn.ownership.OwnedBed.Position;
-			}
-			else
-			{
-				target = pawn.Position;
-			}
+			target = pawn.ownership.OwnedBed.Position;
 		}
-
-		public override void ExposeData()
+		else
 		{
-			base.ExposeData();
-			Scribe_Values.Look(ref target, "target");
+			target = pawn.Position;
 		}
+	}
 
-		public override RandomSocialMode SocialModeMax()
-		{
-			return RandomSocialMode.Off;
-		}
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Values.Look(ref target, "target");
+	}
+
+	public override RandomSocialMode SocialModeMax()
+	{
+		return RandomSocialMode.Off;
 	}
 }

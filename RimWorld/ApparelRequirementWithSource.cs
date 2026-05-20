@@ -1,53 +1,52 @@
-namespace RimWorld
+namespace RimWorld;
+
+public struct ApparelRequirementWithSource
 {
-	public struct ApparelRequirementWithSource
+	public ApparelRequirement requirement;
+
+	public Precept_Role sourceRole;
+
+	public RoyalTitle sourceTitle;
+
+	public ApparelRequirementSource Source
 	{
-		public ApparelRequirement requirement;
-
-		public Precept_Role sourceRole;
-
-		public RoyalTitle sourceTitle;
-
-		public ApparelRequirementSource Source
+		get
 		{
-			get
+			if (sourceRole != null)
 			{
-				if (sourceRole != null)
-				{
-					return ApparelRequirementSource.Role;
-				}
-				if (sourceTitle != null)
-				{
-					return ApparelRequirementSource.Title;
-				}
-				return ApparelRequirementSource.Invalid;
+				return ApparelRequirementSource.Role;
 			}
-		}
-
-		public string SourceLabelCap
-		{
-			get
+			if (sourceTitle != null)
 			{
-				if (sourceTitle != null)
-				{
-					return sourceTitle.def.GetLabelCapFor(sourceTitle.pawn);
-				}
-				return sourceRole.LabelCap;
+				return ApparelRequirementSource.Title;
 			}
+			return ApparelRequirementSource.Invalid;
 		}
+	}
 
-		public ApparelRequirementWithSource(ApparelRequirement requirement, Precept_Role role)
+	public string SourceLabelCap
+	{
+		get
 		{
-			this.requirement = requirement;
-			sourceRole = role;
-			sourceTitle = null;
+			if (sourceTitle != null)
+			{
+				return sourceTitle.def.GetLabelCapFor(sourceTitle.pawn);
+			}
+			return sourceRole.LabelCap;
 		}
+	}
 
-		public ApparelRequirementWithSource(ApparelRequirement requirement, RoyalTitle title)
-		{
-			this.requirement = requirement;
-			sourceTitle = title;
-			sourceRole = null;
-		}
+	public ApparelRequirementWithSource(ApparelRequirement requirement, Precept_Role role)
+	{
+		this.requirement = requirement;
+		sourceRole = role;
+		sourceTitle = null;
+	}
+
+	public ApparelRequirementWithSource(ApparelRequirement requirement, RoyalTitle title)
+	{
+		this.requirement = requirement;
+		sourceTitle = title;
+		sourceRole = null;
 	}
 }

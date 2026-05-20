@@ -1,26 +1,25 @@
-namespace Verse
+namespace Verse;
+
+public class PostTickVisuals
 {
-	public class PostTickVisuals
+	private Map map;
+
+	public PostTickVisuals(Map map)
 	{
-		private Map map;
+		this.map = map;
+	}
 
-		public PostTickVisuals(Map map)
+	public void ProcessPostTickVisuals()
+	{
+		int ticksThisFrame = Find.TickManager.TicksThisFrame;
+		if (ticksThisFrame <= 0)
 		{
-			this.map = map;
+			return;
 		}
-
-		public void ProcessPostTickVisuals()
+		CellRect viewRect = Find.CameraDriver.CurrentViewRect.ExpandedBy(3);
+		foreach (Pawn item in map.mapPawns.AllPawnsSpawned)
 		{
-			int ticksThisFrame = Find.TickManager.TicksThisFrame;
-			if (ticksThisFrame <= 0)
-			{
-				return;
-			}
-			CellRect viewRect = Find.CameraDriver.CurrentViewRect.ExpandedBy(3);
-			foreach (Pawn item in map.mapPawns.AllPawnsSpawned)
-			{
-				item.ProcessPostTickVisuals(ticksThisFrame, viewRect);
-			}
+			item.ProcessPostTickVisuals(ticksThisFrame, viewRect);
 		}
 	}
 }

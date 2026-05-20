@@ -1,17 +1,16 @@
 using System.Xml;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class PawnKindDefCount
 {
-	public class PawnKindDefCount
+	public PawnKindDef kindDef;
+
+	public int count;
+
+	public void LoadDataFromXmlCustom(XmlNode xmlRoot)
 	{
-		public PawnKindDef kindDef;
-
-		public int count;
-
-		public void LoadDataFromXmlCustom(XmlNode xmlRoot)
-		{
-			XmlHelper.ParseElements(this, xmlRoot, "kindDef", "count");
-		}
+		XmlHelper.ParseElements(this, xmlRoot, "kindDef", "count");
 	}
 }

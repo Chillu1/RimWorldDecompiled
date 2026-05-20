@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum TaleType
 {
-	public enum TaleType
-	{
-		Volatile,
-		Expirable,
-		PermanentHistorical
-	}
+	Volatile,
+	Expirable,
+	PermanentHistorical
 }

@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public interface ISignalReceiver
 {
-	public interface ISignalReceiver
-	{
-		void Notify_SignalReceived(Signal signal);
-	}
+	void Notify_SignalReceived(Signal signal);
 }

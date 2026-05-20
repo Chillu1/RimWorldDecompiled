@@ -1,51 +1,50 @@
 using RimWorld;
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class ScreenshotModeHandler
 {
-	public class ScreenshotModeHandler
+	private bool active;
+
+	public bool Active
 	{
-		private bool active;
-
-		public bool Active
+		get
 		{
-			get
-			{
-				return active;
-			}
-			set
-			{
-				active = value;
-			}
+			return active;
 		}
-
-		public bool FiltersCurrentEvent
+		set
 		{
-			get
+			active = value;
+		}
+	}
+
+	public bool FiltersCurrentEvent
+	{
+		get
+		{
+			if (!active)
 			{
-				if (!active)
-				{
-					return false;
-				}
-				if (Event.current.type == EventType.Repaint || Event.current.type == EventType.Layout)
-				{
-					return true;
-				}
-				if (Event.current.type == EventType.MouseDown || Event.current.type == EventType.MouseUp || Event.current.type == EventType.MouseDrag)
-				{
-					return true;
-				}
 				return false;
 			}
-		}
-
-		public void ScreenshotModesOnGUI()
-		{
-			if (KeyBindingDefOf.ToggleScreenshotMode.KeyDownEvent && !WorldComponent_GravshipController.CutsceneInProgress)
+			if (Event.current.type == EventType.Repaint || Event.current.type == EventType.Layout)
 			{
-				active = !active;
-				Event.current.Use();
+				return true;
 			}
+			if (Event.current.type == EventType.MouseDown || Event.current.type == EventType.MouseUp || Event.current.type == EventType.MouseDrag)
+			{
+				return true;
+			}
+			return false;
+		}
+	}
+
+	public void ScreenshotModesOnGUI()
+	{
+		if (KeyBindingDefOf.ToggleScreenshotMode.KeyDownEvent && !WorldComponent_GravshipController.CutsceneInProgress)
+		{
+			active = !active;
+			Event.current.Use();
 		}
 	}
 }

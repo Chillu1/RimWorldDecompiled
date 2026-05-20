@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class AbilityCategoryDef : Def
 {
-	public class AbilityCategoryDef : Def
-	{
-		public int displayOrder;
-	}
+	public int displayOrder;
 }

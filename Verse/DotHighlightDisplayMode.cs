@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum DotHighlightDisplayMode : byte
 {
-	public enum DotHighlightDisplayMode : byte
-	{
-		None,
-		HighlightHostiles,
-		HighlightAll
-	}
+	None,
+	HighlightHostiles,
+	HighlightAll
 }

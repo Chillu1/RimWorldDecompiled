@@ -1,12 +1,11 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum StoragePriority : byte
 {
-	public enum StoragePriority : byte
-	{
-		Unstored,
-		Low,
-		Normal,
-		Preferred,
-		Important,
-		Critical
-	}
+	Unstored,
+	Low,
+	Normal,
+	Preferred,
+	Important,
+	Critical
 }

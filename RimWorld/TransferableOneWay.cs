@@ -1,119 +1,118 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class TransferableOneWay : Transferable
 {
-	public class TransferableOneWay : Transferable
+	public List<Thing> things = new List<Thing>();
+
+	private int countToTransfer;
+
+	public bool interactive = true;
+
+	public override Thing AnyThing
 	{
-		public List<Thing> things = new List<Thing>();
-
-		private int countToTransfer;
-
-		public bool interactive = true;
-
-		public override Thing AnyThing
+		get
 		{
-			get
+			if (!HasAnyThing)
 			{
-				if (!HasAnyThing)
-				{
-					return null;
-				}
-				return things[0];
+				return null;
 			}
+			return things[0];
 		}
+	}
 
-		public override ThingDef ThingDef
+	public override ThingDef ThingDef
+	{
+		get
 		{
-			get
+			if (!HasAnyThing)
 			{
-				if (!HasAnyThing)
-				{
-					return null;
-				}
-				return AnyThing.def;
+				return null;
 			}
+			return AnyThing.def;
 		}
+	}
 
-		public override bool HasAnyThing => things.Count != 0;
+	public override bool HasAnyThing => things.Count != 0;
 
-		public override string Label => AnyThing.LabelNoCount;
+	public override string Label => AnyThing.LabelNoCount;
 
-		public override bool Interactive => interactive;
+	public override bool Interactive => interactive;
 
-		public override TransferablePositiveCountDirection PositiveCountDirection => TransferablePositiveCountDirection.Destination;
+	public override TransferablePositiveCountDirection PositiveCountDirection => TransferablePositiveCountDirection.Destination;
 
-		public override string TipDescription
+	public override string TipDescription
+	{
+		get
 		{
-			get
+			if (!HasAnyThing)
 			{
-				if (!HasAnyThing)
-				{
-					return "";
-				}
-				return AnyThing.DescriptionDetailed;
+				return "";
 			}
+			return AnyThing.DescriptionDetailed;
 		}
+	}
 
-		public override int CountToTransfer
+	public override int CountToTransfer
+	{
+		get
 		{
-			get
-			{
-				return countToTransfer;
-			}
-			protected set
-			{
-				countToTransfer = value;
-				base.EditBuffer = value.ToStringCached();
-			}
+			return countToTransfer;
 		}
-
-		public int MaxCount
+		protected set
 		{
-			get
-			{
-				int num = 0;
-				for (int i = 0; i < things.Count; i++)
-				{
-					num += things[i].stackCount;
-				}
-				return num;
-			}
+			countToTransfer = value;
+			base.EditBuffer = value.ToStringCached();
 		}
+	}
 
-		public override int GetMinimumToTransfer()
+	public int MaxCount
+	{
+		get
 		{
-			return 0;
-		}
-
-		public override int GetMaximumToTransfer()
-		{
-			return MaxCount;
-		}
-
-		public override AcceptanceReport OverflowReport()
-		{
-			return new AcceptanceReport("ColonyHasNoMore".Translate());
-		}
-
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			if (Scribe.mode == LoadSaveMode.Saving)
+			int num = 0;
+			for (int i = 0; i < things.Count; i++)
 			{
-				things.RemoveAll((Thing x) => x.Destroyed);
+				num += things[i].stackCount;
 			}
-			Scribe_Values.Look(ref countToTransfer, "countToTransfer", 0);
-			Scribe_Collections.Look(ref things, "things", LookMode.Reference);
-			Scribe_Values.Look(ref interactive, "interactive", defaultValue: true);
-			if (Scribe.mode == LoadSaveMode.LoadingVars)
-			{
-				base.EditBuffer = countToTransfer.ToStringCached();
-			}
-			if (Scribe.mode == LoadSaveMode.PostLoadInit && things.RemoveAll((Thing x) => x == null) != 0)
-			{
-				Log.Warning("Some of the things were null after loading.");
-			}
+			return num;
+		}
+	}
+
+	public override int GetMinimumToTransfer()
+	{
+		return 0;
+	}
+
+	public override int GetMaximumToTransfer()
+	{
+		return MaxCount;
+	}
+
+	public override AcceptanceReport OverflowReport()
+	{
+		return new AcceptanceReport("ColonyHasNoMore".Translate());
+	}
+
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		if (Scribe.mode == LoadSaveMode.Saving)
+		{
+			things.RemoveAll((Thing x) => x.Destroyed);
+		}
+		Scribe_Values.Look(ref countToTransfer, "countToTransfer", 0);
+		Scribe_Collections.Look(ref things, "things", LookMode.Reference);
+		Scribe_Values.Look(ref interactive, "interactive", defaultValue: true);
+		if (Scribe.mode == LoadSaveMode.LoadingVars)
+		{
+			base.EditBuffer = countToTransfer.ToStringCached();
+		}
+		if (Scribe.mode == LoadSaveMode.PostLoadInit && things.RemoveAll((Thing x) => x == null) != 0)
+		{
+			Log.Warning("Some of the things were null after loading.");
 		}
 	}
 }

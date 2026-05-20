@@ -1,23 +1,22 @@
 using RimWorld;
 
-namespace Verse.AI.Group
+namespace Verse.AI.Group;
+
+public class Trigger_UrgentlyHungry : Trigger
 {
-	public class Trigger_UrgentlyHungry : Trigger
+	public override bool ActivateOn(Lord lord, TriggerSignal signal)
 	{
-		public override bool ActivateOn(Lord lord, TriggerSignal signal)
+		if (signal.type == TriggerSignalType.Tick)
 		{
-			if (signal.type == TriggerSignalType.Tick)
+			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{
-				for (int i = 0; i < lord.ownedPawns.Count; i++)
+				Pawn_NeedsTracker needs = lord.ownedPawns[i].needs;
+				if (needs != null && (int?)needs.food?.CurCategory >= (int?)2)
 				{
-					Pawn_NeedsTracker needs = lord.ownedPawns[i].needs;
-					if (needs != null && (int?)needs.food?.CurCategory >= (int?)2)
-					{
-						return true;
-					}
+					return true;
 				}
 			}
-			return false;
 		}
+		return false;
 	}
 }

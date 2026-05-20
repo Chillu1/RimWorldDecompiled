@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_NotBondedAnimalMaster : ThoughtWorker_BondedAnimalMaster
 {
-	public class ThoughtWorker_NotBondedAnimalMaster : ThoughtWorker_BondedAnimalMaster
+	protected override bool AnimalMasterCheck(Pawn p, Pawn animal)
 	{
-		protected override bool AnimalMasterCheck(Pawn p, Pawn animal)
-		{
-			return animal.playerSettings.RespectedMaster != p;
-		}
+		return animal.playerSettings.RespectedMaster != p;
 	}
 }

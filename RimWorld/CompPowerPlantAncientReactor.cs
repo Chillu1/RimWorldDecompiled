@@ -1,21 +1,20 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompPowerPlantAncientReactor : CompPowerPlant
 {
-	public class CompPowerPlantAncientReactor : CompPowerPlant
+	private CompHackable hackableComp;
+
+	protected override float DesiredPowerOutput
 	{
-		private CompHackable hackableComp;
-
-		protected override float DesiredPowerOutput
+		get
 		{
-			get
+			if (!HackableComp.IsHacked)
 			{
-				if (!HackableComp.IsHacked)
-				{
-					return base.DesiredPowerOutput;
-				}
-				return 0f;
+				return base.DesiredPowerOutput;
 			}
+			return 0f;
 		}
-
-		public CompHackable HackableComp => hackableComp ?? (hackableComp = parent.GetComp<CompHackable>());
 	}
+
+	public CompHackable HackableComp => hackableComp ?? (hackableComp = parent.GetComp<CompHackable>());
 }

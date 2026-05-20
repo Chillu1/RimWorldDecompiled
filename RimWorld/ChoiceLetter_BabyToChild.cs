@@ -1,107 +1,106 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ChoiceLetter_BabyToChild : ChoiceLetter
 {
-	public class ChoiceLetter_BabyToChild : ChoiceLetter
+	private const int TimeoutTicks = 30000;
+
+	private Pawn pawn;
+
+	private bool bornSlave;
+
+	private TaggedString ChoseColonistLabel;
+
+	private TaggedString ChoseSlaveLabel;
+
+	public override bool CanShowInLetterStack => pawn.Faction?.IsPlayer ?? false;
+
+	public override IEnumerable<DiaOption> Choices
 	{
-		private const int TimeoutTicks = 30000;
-
-		private Pawn pawn;
-
-		private bool bornSlave;
-
-		private TaggedString ChoseColonistLabel;
-
-		private TaggedString ChoseSlaveLabel;
-
-		public override bool CanShowInLetterStack => pawn.Faction?.IsPlayer ?? false;
-
-		public override IEnumerable<DiaOption> Choices
+		get
 		{
-			get
+			if (!base.ArchivedOnly)
 			{
-				if (!base.ArchivedOnly)
+				if (pawn.Faction?.IsPlayer ?? false)
 				{
-					if (pawn.Faction?.IsPlayer ?? false)
+					yield return new DiaOption(ChoseColonistLabel)
 					{
-						yield return new DiaOption(ChoseColonistLabel)
-						{
-							action = ChoseColonist,
-							disabled = (bornSlave != pawn.IsSlave),
-							disabledReason = "CannotChangeChildStatusReason".Translate(pawn),
-							resolveTree = true
-						};
-						yield return new DiaOption(ChoseSlaveLabel)
-						{
-							action = ChoseSlave,
-							disabled = (bornSlave != pawn.IsSlave),
-							disabledReason = "CannotChangeChildStatusReason".Translate(pawn),
-							resolveTree = true
-						};
-					}
-					if (bornSlave != pawn.IsSlave)
+						action = ChoseColonist,
+						disabled = (bornSlave != pawn.IsSlave),
+						disabledReason = "CannotChangeChildStatusReason".Translate(pawn),
+						resolveTree = true
+					};
+					yield return new DiaOption(ChoseSlaveLabel)
 					{
-						yield return base.Option_Close;
-					}
-					else
-					{
-						yield return base.Option_Postpone;
-					}
+						action = ChoseSlave,
+						disabled = (bornSlave != pawn.IsSlave),
+						disabledReason = "CannotChangeChildStatusReason".Translate(pawn),
+						resolveTree = true
+					};
 				}
-				else
+				if (bornSlave != pawn.IsSlave)
 				{
 					yield return base.Option_Close;
 				}
-				yield return base.Option_JumpToLocationAndPostpone;
-			}
-		}
-
-		public void Start()
-		{
-			StartTimeout(30000);
-			pawn = lookTargets.TryGetPrimaryTarget().Thing as Pawn;
-			bornSlave = pawn.IsSlave;
-			if (bornSlave)
-			{
-				ChoseColonistLabel = "Emancipate".Translate().CapitalizeFirst();
-				ChoseSlaveLabel = "RemainX".Translate(pawn.LegalStatus).CapitalizeFirst();
+				else
+				{
+					yield return base.Option_Postpone;
+				}
 			}
 			else
 			{
-				ChoseColonistLabel = "RemainX".Translate(pawn.LegalStatus).CapitalizeFirst();
-				ChoseSlaveLabel = "Enslave".Translate().CapitalizeFirst();
+				yield return base.Option_Close;
 			}
+			yield return base.Option_JumpToLocationAndPostpone;
 		}
+	}
 
-		public override void ExposeData()
+	public void Start()
+	{
+		StartTimeout(30000);
+		pawn = lookTargets.TryGetPrimaryTarget().Thing as Pawn;
+		bornSlave = pawn.IsSlave;
+		if (bornSlave)
 		{
-			base.ExposeData();
-			Scribe_Values.Look(ref bornSlave, "bornSlave", defaultValue: false);
-			Scribe_Values.Look(ref ChoseColonistLabel, "ChoseColonistLabel");
-			Scribe_Values.Look(ref ChoseSlaveLabel, "ChoseSlaveLabel");
-			if (Scribe.mode == LoadSaveMode.PostLoadInit)
-			{
-				pawn = lookTargets.TryGetPrimaryTarget().Thing as Pawn;
-			}
+			ChoseColonistLabel = "Emancipate".Translate().CapitalizeFirst();
+			ChoseSlaveLabel = "RemainX".Translate(pawn.LegalStatus).CapitalizeFirst();
 		}
+		else
+		{
+			ChoseColonistLabel = "RemainX".Translate(pawn.LegalStatus).CapitalizeFirst();
+			ChoseSlaveLabel = "Enslave".Translate().CapitalizeFirst();
+		}
+	}
 
-		private void ChoseColonist()
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Values.Look(ref bornSlave, "bornSlave", defaultValue: false);
+		Scribe_Values.Look(ref ChoseColonistLabel, "ChoseColonistLabel");
+		Scribe_Values.Look(ref ChoseSlaveLabel, "ChoseSlaveLabel");
+		if (Scribe.mode == LoadSaveMode.PostLoadInit)
 		{
-			if (bornSlave)
-			{
-				GenGuest.SlaveRelease(pawn);
-			}
-			Find.LetterStack.RemoveLetter(this);
+			pawn = lookTargets.TryGetPrimaryTarget().Thing as Pawn;
 		}
+	}
 
-		private void ChoseSlave()
+	private void ChoseColonist()
+	{
+		if (bornSlave)
 		{
-			if (!bornSlave)
-			{
-				pawn.guest.SetGuestStatus(pawn.Faction, GuestStatus.Slave);
-			}
-			Find.LetterStack.RemoveLetter(this);
+			GenGuest.SlaveRelease(pawn);
 		}
+		Find.LetterStack.RemoveLetter(this);
+	}
+
+	private void ChoseSlave()
+	{
+		if (!bornSlave)
+		{
+			pawn.guest.SetGuestStatus(pawn.Faction, GuestStatus.Slave);
+		}
+		Find.LetterStack.RemoveLetter(this);
 	}
 }

@@ -2,56 +2,55 @@ using System.Collections.Generic;
 using RimWorld.Planet;
 using Verse;
 
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_GetNearestHomeMapOf : QuestNode
 {
-	public class QuestNode_GetNearestHomeMapOf : QuestNode
+	[NoTranslate]
+	public SlateRef<string> storeAs = "map";
+
+	public SlateRef<Thing> mapOf;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		[NoTranslate]
-		public SlateRef<string> storeAs = "map";
+		DoWork(slate);
+		return true;
+	}
 
-		public SlateRef<Thing> mapOf;
+	protected override void RunInt()
+	{
+		DoWork(QuestGen.slate);
+	}
 
-		protected override bool TestRunInt(Slate slate)
+	private void DoWork(Slate slate)
+	{
+		if (mapOf.GetValue(slate) == null)
 		{
-			DoWork(slate);
-			return true;
+			return;
 		}
-
-		protected override void RunInt()
+		Map mapHeld = mapOf.GetValue(slate).MapHeld;
+		if (mapHeld != null && mapHeld.IsPlayerHome)
 		{
-			DoWork(QuestGen.slate);
+			slate.Set(storeAs.GetValue(slate), mapHeld);
+			return;
 		}
-
-		private void DoWork(Slate slate)
+		PlanetTile tile = mapOf.GetValue(slate).Tile;
+		if (!tile.Valid)
 		{
-			if (mapOf.GetValue(slate) == null)
+			return;
+		}
+		Map map = null;
+		List<Map> maps = Find.Maps;
+		for (int i = 0; i < maps.Count; i++)
+		{
+			if (maps[i].IsPlayerHome && (map == null || Find.WorldGrid.ApproxDistanceInTiles(tile, maps[i].Tile) < Find.WorldGrid.ApproxDistanceInTiles(tile, map.Tile)))
 			{
-				return;
+				map = maps[i];
 			}
-			Map mapHeld = mapOf.GetValue(slate).MapHeld;
-			if (mapHeld != null && mapHeld.IsPlayerHome)
-			{
-				slate.Set(storeAs.GetValue(slate), mapHeld);
-				return;
-			}
-			PlanetTile tile = mapOf.GetValue(slate).Tile;
-			if (!tile.Valid)
-			{
-				return;
-			}
-			Map map = null;
-			List<Map> maps = Find.Maps;
-			for (int i = 0; i < maps.Count; i++)
-			{
-				if (maps[i].IsPlayerHome && (map == null || Find.WorldGrid.ApproxDistanceInTiles(tile, maps[i].Tile) < Find.WorldGrid.ApproxDistanceInTiles(tile, map.Tile)))
-				{
-					map = maps[i];
-				}
-			}
-			if (map != null)
-			{
-				slate.Set(storeAs.GetValue(slate), map);
-			}
+		}
+		if (map != null)
+		{
+			slate.Set(storeAs.GetValue(slate), map);
 		}
 	}
 }

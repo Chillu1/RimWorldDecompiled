@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum RangeCategory : byte
 {
-	public enum RangeCategory : byte
-	{
-		Touch,
-		Short,
-		Medium,
-		Long
-	}
+	Touch,
+	Short,
+	Medium,
+	Long
 }

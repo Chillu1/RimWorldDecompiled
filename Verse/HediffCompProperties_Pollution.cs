@@ -1,16 +1,15 @@
-namespace Verse
+namespace Verse;
+
+public class HediffCompProperties_Pollution : HediffCompProperties
 {
-	public class HediffCompProperties_Pollution : HediffCompProperties
+	public float pollutedSeverity;
+
+	public float unpollutedSeverity;
+
+	public int interval = 1;
+
+	public HediffCompProperties_Pollution()
 	{
-		public float pollutedSeverity;
-
-		public float unpollutedSeverity;
-
-		public int interval = 1;
-
-		public HediffCompProperties_Pollution()
-		{
-			compClass = typeof(HediffComp_Pollution);
-		}
+		compClass = typeof(HediffComp_Pollution);
 	}
 }

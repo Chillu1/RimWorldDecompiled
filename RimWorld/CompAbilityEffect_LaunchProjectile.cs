@@ -1,29 +1,28 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompAbilityEffect_LaunchProjectile : CompAbilityEffect
 {
-	public class CompAbilityEffect_LaunchProjectile : CompAbilityEffect
+	public new CompProperties_AbilityLaunchProjectile Props => (CompProperties_AbilityLaunchProjectile)props;
+
+	public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
 	{
-		public new CompProperties_AbilityLaunchProjectile Props => (CompProperties_AbilityLaunchProjectile)props;
+		base.Apply(target, dest);
+		LaunchProjectile(target);
+	}
 
-		public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
+	private void LaunchProjectile(LocalTargetInfo target)
+	{
+		if (Props.projectileDef != null)
 		{
-			base.Apply(target, dest);
-			LaunchProjectile(target);
+			Pawn pawn = parent.pawn;
+			((Projectile)GenSpawn.Spawn(Props.projectileDef, pawn.Position, pawn.Map)).Launch(pawn, pawn.DrawPos, target, target, ProjectileHitFlags.IntendedTarget, parent.verb.preventFriendlyFire);
 		}
+	}
 
-		private void LaunchProjectile(LocalTargetInfo target)
-		{
-			if (Props.projectileDef != null)
-			{
-				Pawn pawn = parent.pawn;
-				((Projectile)GenSpawn.Spawn(Props.projectileDef, pawn.Position, pawn.Map)).Launch(pawn, pawn.DrawPos, target, target, ProjectileHitFlags.IntendedTarget, parent.verb.preventFriendlyFire);
-			}
-		}
-
-		public override bool AICanTargetNow(LocalTargetInfo target)
-		{
-			return target.Pawn != null;
-		}
+	public override bool AICanTargetNow(LocalTargetInfo target)
+	{
+		return target.Pawn != null;
 	}
 }

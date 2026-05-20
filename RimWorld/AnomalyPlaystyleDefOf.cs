@@ -1,17 +1,16 @@
-namespace RimWorld
+namespace RimWorld;
+
+[DefOf]
+public static class AnomalyPlaystyleDefOf
 {
-	[DefOf]
-	public static class AnomalyPlaystyleDefOf
+	[MayRequireAnomaly]
+	public static AnomalyPlaystyleDef Standard;
+
+	[MayRequireAnomaly]
+	public static AnomalyPlaystyleDef AmbientHorror;
+
+	static AnomalyPlaystyleDefOf()
 	{
-		[MayRequireAnomaly]
-		public static AnomalyPlaystyleDef Standard;
-
-		[MayRequireAnomaly]
-		public static AnomalyPlaystyleDef AmbientHorror;
-
-		static AnomalyPlaystyleDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(AnomalyPlaystyleDefOf));
-		}
+		DefOfHelper.EnsureInitializedInCtor(typeof(AnomalyPlaystyleDefOf));
 	}
 }

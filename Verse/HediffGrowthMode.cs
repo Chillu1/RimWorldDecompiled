@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum HediffGrowthMode
 {
-	public enum HediffGrowthMode
-	{
-		Growing,
-		Stable,
-		Remission
-	}
+	Growing,
+	Stable,
+	Remission
 }

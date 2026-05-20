@@ -1,13 +1,12 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RequiredRitualAndBuilding
 {
-	public class RequiredRitualAndBuilding
-	{
-		public PreceptDef precept;
+	public PreceptDef precept;
 
-		public RitualPatternDef pattern;
+	public RitualPatternDef pattern;
 
-		public ThingDef building;
-	}
+	public ThingDef building;
 }

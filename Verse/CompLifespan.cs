@@ -1,67 +1,66 @@
 using RimWorld;
 
-namespace Verse
+namespace Verse;
+
+public class CompLifespan : ThingComp
 {
-	public class CompLifespan : ThingComp
+	public int age = -1;
+
+	public CompProperties_Lifespan Props => (CompProperties_Lifespan)props;
+
+	public override void PostExposeData()
 	{
-		public int age = -1;
+		base.PostExposeData();
+		Scribe_Values.Look(ref age, "age", 0);
+	}
 
-		public CompProperties_Lifespan Props => (CompProperties_Lifespan)props;
-
-		public override void PostExposeData()
+	public override void CompTick()
+	{
+		age++;
+		if (age >= Props.lifespanTicks)
 		{
-			base.PostExposeData();
-			Scribe_Values.Look(ref age, "age", 0);
+			Expire();
 		}
+	}
 
-		public override void CompTick()
+	public override void CompTickRare()
+	{
+		age += 250;
+		if (age >= Props.lifespanTicks)
 		{
-			age++;
-			if (age >= Props.lifespanTicks)
+			Expire();
+		}
+	}
+
+	public override string CompInspectStringExtra()
+	{
+		string text = base.CompInspectStringExtra();
+		string result = "";
+		int num = Props.lifespanTicks - age;
+		if (num > 0)
+		{
+			result = "LifespanExpiry".Translate() + " " + num.ToStringTicksToPeriod().Colorize(ColoredText.DateTimeColor);
+			if (!text.NullOrEmpty())
 			{
-				Expire();
+				result = "\n" + text;
 			}
 		}
+		return result;
+	}
 
-		public override void CompTickRare()
+	protected void Expire()
+	{
+		if (parent.Spawned)
 		{
-			age += 250;
-			if (age >= Props.lifespanTicks)
+			if (Props.expireEffect != null)
 			{
-				Expire();
+				Props.expireEffect.Spawn(parent.Position, parent.Map).Cleanup();
 			}
-		}
-
-		public override string CompInspectStringExtra()
-		{
-			string text = base.CompInspectStringExtra();
-			string result = "";
-			int num = Props.lifespanTicks - age;
-			if (num > 0)
+			if (Props.plantDefToSpawn != null && Props.plantDefToSpawn.CanNowPlantAt(parent.Position, parent.Map))
 			{
-				result = "LifespanExpiry".Translate() + " " + num.ToStringTicksToPeriod().Colorize(ColoredText.DateTimeColor);
-				if (!text.NullOrEmpty())
-				{
-					result = "\n" + text;
-				}
+				GenSpawn.Spawn(Props.plantDefToSpawn, parent.Position, parent.Map);
 			}
-			return result;
-		}
-
-		protected void Expire()
-		{
-			if (parent.Spawned)
-			{
-				if (Props.expireEffect != null)
-				{
-					Props.expireEffect.Spawn(parent.Position, parent.Map).Cleanup();
-				}
-				if (Props.plantDefToSpawn != null && Props.plantDefToSpawn.CanNowPlantAt(parent.Position, parent.Map))
-				{
-					GenSpawn.Spawn(Props.plantDefToSpawn, parent.Position, parent.Map);
-				}
-				parent.Destroy(DestroyMode.KillFinalize);
-			}
+			parent.Destroy(DestroyMode.KillFinalize);
 		}
 	}
 }

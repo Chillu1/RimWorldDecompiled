@@ -1,9 +1,8 @@
-namespace Verse
-{
-	public static class DebugGenerationSettings
-	{
-		public static bool prefabCopyTerrain;
+namespace Verse;
 
-		public static bool prefabCopyAllThings;
-	}
+public static class DebugGenerationSettings
+{
+	public static bool prefabCopyTerrain;
+
+	public static bool prefabCopyAllThings;
 }

@@ -1,51 +1,50 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompMilkable : CompHasGatherableBodyResource
 {
-	public class CompMilkable : CompHasGatherableBodyResource
+	protected override int GatherResourcesIntervalDays => Props.milkIntervalDays;
+
+	protected override int ResourceAmount => Props.milkAmount;
+
+	protected override ThingDef ResourceDef => Props.milkDef;
+
+	protected override string SaveKey => "milkFullness";
+
+	public CompProperties_Milkable Props => (CompProperties_Milkable)props;
+
+	protected override bool Active
 	{
-		protected override int GatherResourcesIntervalDays => Props.milkIntervalDays;
-
-		protected override int ResourceAmount => Props.milkAmount;
-
-		protected override ThingDef ResourceDef => Props.milkDef;
-
-		protected override string SaveKey => "milkFullness";
-
-		public CompProperties_Milkable Props => (CompProperties_Milkable)props;
-
-		protected override bool Active
+		get
 		{
-			get
+			if (!base.Active)
 			{
-				if (!base.Active)
-				{
-					return false;
-				}
-				Pawn pawn = parent as Pawn;
-				if (Props.milkFemaleOnly && pawn != null && pawn.gender != Gender.Female)
-				{
-					return false;
-				}
-				if (pawn != null && !pawn.ageTracker.CurLifeStage.milkable)
-				{
-					return false;
-				}
-				if (ModsConfig.AnomalyActive && pawn.IsShambler)
-				{
-					return false;
-				}
-				return true;
+				return false;
 			}
+			Pawn pawn = parent as Pawn;
+			if (Props.milkFemaleOnly && pawn != null && pawn.gender != Gender.Female)
+			{
+				return false;
+			}
+			if (pawn != null && !pawn.ageTracker.CurLifeStage.milkable)
+			{
+				return false;
+			}
+			if (ModsConfig.AnomalyActive && pawn.IsShambler)
+			{
+				return false;
+			}
+			return true;
 		}
+	}
 
-		public override string CompInspectStringExtra()
+	public override string CompInspectStringExtra()
+	{
+		if (!Active)
 		{
-			if (!Active)
-			{
-				return null;
-			}
-			return "MilkFullness".Translate() + ": " + base.Fullness.ToStringPercent();
+			return null;
 		}
+		return "MilkFullness".Translate() + ": " + base.Fullness.ToStringPercent();
 	}
 }

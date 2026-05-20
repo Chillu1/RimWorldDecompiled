@@ -1,11 +1,10 @@
-namespace Verse
+namespace Verse;
+
+public enum TimeSpeed : byte
 {
-	public enum TimeSpeed : byte
-	{
-		Paused,
-		Normal,
-		Fast,
-		Superfast,
-		Ultrafast
-	}
+	Paused,
+	Normal,
+	Fast,
+	Superfast,
+	Ultrafast
 }

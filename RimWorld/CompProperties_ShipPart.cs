@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_ShipPart : CompProperties
 {
-	public class CompProperties_ShipPart : CompProperties
+	public CompProperties_ShipPart()
 	{
-		public CompProperties_ShipPart()
-		{
-			compClass = typeof(CompShipPart);
-		}
+		compClass = typeof(CompShipPart);
 	}
 }

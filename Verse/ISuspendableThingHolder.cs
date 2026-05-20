@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public interface ISuspendableThingHolder : IThingHolder
 {
-	public interface ISuspendableThingHolder : IThingHolder
-	{
-		bool IsContentsSuspended { get; }
-	}
+	bool IsContentsSuspended { get; }
 }

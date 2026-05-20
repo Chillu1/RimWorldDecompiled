@@ -1,18 +1,17 @@
-namespace Verse
+namespace Verse;
+
+public class StartingHediff
 {
-	public class StartingHediff
+	public HediffDef def;
+
+	public float? severity;
+
+	public float? chance;
+
+	public IntRange? durationTicksRange;
+
+	public bool HasHediff(Pawn p)
 	{
-		public HediffDef def;
-
-		public float? severity;
-
-		public float? chance;
-
-		public IntRange? durationTicksRange;
-
-		public bool HasHediff(Pawn p)
-		{
-			return p.health.hediffSet.HasHediff(def);
-		}
+		return p.health.hediffSet.HasHediff(def);
 	}
 }

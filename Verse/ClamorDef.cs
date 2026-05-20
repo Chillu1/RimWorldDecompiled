@@ -1,6 +1,5 @@
-namespace Verse
+namespace Verse;
+
+public class ClamorDef : Def
 {
-	public class ClamorDef : Def
-	{
-	}
 }

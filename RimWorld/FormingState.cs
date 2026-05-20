@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum FormingState
 {
-	public enum FormingState
-	{
-		Gathering,
-		Preparing,
-		Forming,
-		Formed
-	}
+	Gathering,
+	Preparing,
+	Forming,
+	Formed
 }

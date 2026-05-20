@@ -1,7 +1,6 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_Bombardment : CompProperties_EffectWithDest
 {
-	public class CompProperties_Bombardment : CompProperties_EffectWithDest
-	{
-		public int durationTicks;
-	}
+	public int durationTicks;
 }

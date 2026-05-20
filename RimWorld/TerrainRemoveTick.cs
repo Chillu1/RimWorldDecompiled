@@ -1,11 +1,10 @@
 using Verse;
 
-namespace RimWorld
-{
-	internal struct TerrainRemoveTick
-	{
-		public IntVec3 cell;
+namespace RimWorld;
 
-		public int tick;
-	}
+internal struct TerrainRemoveTick
+{
+	public IntVec3 cell;
+
+	public int tick;
 }

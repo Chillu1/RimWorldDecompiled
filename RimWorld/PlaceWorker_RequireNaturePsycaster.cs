@@ -1,19 +1,18 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class PlaceWorker_RequireNaturePsycaster : PlaceWorker
 {
-	public class PlaceWorker_RequireNaturePsycaster : PlaceWorker
+	public override bool IsBuildDesignatorVisible(BuildableDef def)
 	{
-		public override bool IsBuildDesignatorVisible(BuildableDef def)
+		foreach (Pawn allMapsCaravansAndTravellingTransporters_Alive_Colonist in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_Colonists)
 		{
-			foreach (Pawn allMapsCaravansAndTravellingTransporters_Alive_Colonist in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_Colonists)
+			if (MeditationFocusDefOf.Natural.CanPawnUse(allMapsCaravansAndTravellingTransporters_Alive_Colonist))
 			{
-				if (MeditationFocusDefOf.Natural.CanPawnUse(allMapsCaravansAndTravellingTransporters_Alive_Colonist))
-				{
-					return true;
-				}
+				return true;
 			}
-			return false;
 		}
+		return false;
 	}
 }

@@ -1,17 +1,16 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class Thought_WeaponTraitNotEquipped : Thought_WeaponTrait
 {
-	public class Thought_WeaponTraitNotEquipped : Thought_WeaponTrait
+	public override bool ShouldDiscard
 	{
-		public override bool ShouldDiscard
+		get
 		{
-			get
+			if (!base.ShouldDiscard)
 			{
-				if (!base.ShouldDiscard)
-				{
-					return pawn.equipment.Primary == weapon;
-				}
-				return true;
+				return pawn.equipment.Primary == weapon;
 			}
+			return true;
 		}
 	}
 }

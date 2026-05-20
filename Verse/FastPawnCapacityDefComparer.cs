@@ -1,19 +1,18 @@
 using System.Collections.Generic;
 
-namespace Verse
+namespace Verse;
+
+public class FastPawnCapacityDefComparer : IEqualityComparer<PawnCapacityDef>
 {
-	public class FastPawnCapacityDefComparer : IEqualityComparer<PawnCapacityDef>
+	public static readonly FastPawnCapacityDefComparer Instance = new FastPawnCapacityDefComparer();
+
+	public bool Equals(PawnCapacityDef x, PawnCapacityDef y)
 	{
-		public static readonly FastPawnCapacityDefComparer Instance = new FastPawnCapacityDefComparer();
+		return x == y;
+	}
 
-		public bool Equals(PawnCapacityDef x, PawnCapacityDef y)
-		{
-			return x == y;
-		}
-
-		public int GetHashCode(PawnCapacityDef obj)
-		{
-			return obj.GetHashCode();
-		}
+	public int GetHashCode(PawnCapacityDef obj)
+	{
+		return obj.GetHashCode();
 	}
 }

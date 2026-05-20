@@ -1,21 +1,20 @@
 using System;
 
-namespace Verse
+namespace Verse;
+
+public class Command_ActionWithLimitedUseCount : Command_Action
 {
-	public class Command_ActionWithLimitedUseCount : Command_Action
+	public Func<int> usesLeftGetter;
+
+	public Func<int> maxUsesGetter;
+
+	public override string TopRightLabel => usesLeftGetter() + " / " + maxUsesGetter();
+
+	public void UpdateUsesLeft()
 	{
-		public Func<int> usesLeftGetter;
-
-		public Func<int> maxUsesGetter;
-
-		public override string TopRightLabel => usesLeftGetter() + " / " + maxUsesGetter();
-
-		public void UpdateUsesLeft()
+		if (usesLeftGetter() == 0)
 		{
-			if (usesLeftGetter() == 0)
-			{
-				Disable("CommandNoUsesLeft".Translate());
-			}
+			Disable("CommandNoUsesLeft".Translate());
 		}
 	}
 }

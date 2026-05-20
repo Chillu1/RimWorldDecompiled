@@ -1,10 +1,9 @@
-namespace Verse
+namespace Verse;
+
+public enum MentalBreakIntensity : byte
 {
-	public enum MentalBreakIntensity : byte
-	{
-		None,
-		Minor,
-		Major,
-		Extreme
-	}
+	None,
+	Minor,
+	Major,
+	Extreme
 }

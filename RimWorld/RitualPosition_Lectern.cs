@@ -1,9 +1,8 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RitualPosition_Lectern : RitualPosition_ThingDef
 {
-	public class RitualPosition_Lectern : RitualPosition_ThingDef
-	{
-		protected override ThingDef ThingDef => ThingDefOf.Lectern;
-	}
+	protected override ThingDef ThingDef => ThingDefOf.Lectern;
 }

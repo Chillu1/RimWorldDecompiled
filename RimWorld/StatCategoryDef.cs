@@ -1,11 +1,10 @@
 using Verse;
 
-namespace RimWorld
-{
-	public class StatCategoryDef : Def
-	{
-		public int displayOrder;
+namespace RimWorld;
 
-		public bool displayAllByDefault;
-	}
+public class StatCategoryDef : Def
+{
+	public int displayOrder;
+
+	public bool displayAllByDefault;
 }

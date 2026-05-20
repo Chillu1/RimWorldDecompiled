@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum QuestEndOutcome
 {
-	public enum QuestEndOutcome
-	{
-		Unknown,
-		Success,
-		Fail,
-		InvalidPreAcceptance
-	}
+	Unknown,
+	Success,
+	Fail,
+	InvalidPreAcceptance
 }

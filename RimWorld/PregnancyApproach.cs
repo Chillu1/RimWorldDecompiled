@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum PregnancyApproach
 {
-	public enum PregnancyApproach
-	{
-		Normal,
-		AvoidPregnancy,
-		TryForBaby
-	}
+	Normal,
+	AvoidPregnancy,
+	TryForBaby
 }

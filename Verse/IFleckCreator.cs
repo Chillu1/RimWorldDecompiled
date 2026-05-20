@@ -1,7 +1,6 @@
-namespace Verse
+namespace Verse;
+
+public interface IFleckCreator
 {
-	public interface IFleckCreator
-	{
-		void CreateFleck(FleckCreationData fleckData);
-	}
+	void CreateFleck(FleckCreationData fleckData);
 }

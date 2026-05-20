@@ -1,35 +1,34 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class StatPart_Slave : StatPart
 {
-	public class StatPart_Slave : StatPart
+	private float factor = 0.75f;
+
+	public override void TransformValue(StatRequest req, ref float val)
 	{
-		private float factor = 0.75f;
-
-		public override void TransformValue(StatRequest req, ref float val)
+		if (ActiveFor(req.Thing))
 		{
-			if (ActiveFor(req.Thing))
-			{
-				val *= factor;
-			}
+			val *= factor;
 		}
+	}
 
-		public override string ExplanationPart(StatRequest req)
+	public override string ExplanationPart(StatRequest req)
+	{
+		if (req.HasThing && ActiveFor(req.Thing))
 		{
-			if (req.HasThing && ActiveFor(req.Thing))
-			{
-				return "StatsReport_Slave".Translate() + (": x" + factor.ToStringPercent());
-			}
-			return null;
+			return "StatsReport_Slave".Translate() + (": x" + factor.ToStringPercent());
 		}
+		return null;
+	}
 
-		private bool ActiveFor(Thing t)
+	private bool ActiveFor(Thing t)
+	{
+		if (t is Pawn pawn)
 		{
-			if (t is Pawn pawn)
-			{
-				return pawn.IsSlave;
-			}
-			return false;
+			return pawn.IsSlave;
 		}
+		return false;
 	}
 }

@@ -1,13 +1,12 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_PsychicArchotechEmanator_Core : ThoughtWorker_PsychicArchotechEmanator
 {
-	public class ThoughtWorker_PsychicArchotechEmanator_Core : ThoughtWorker_PsychicArchotechEmanator
-	{
-		protected override ThingDef EmanatorDef => ThingDefOf.ArchonexusCore;
+	protected override ThingDef EmanatorDef => ThingDefOf.ArchonexusCore;
 
-		protected override int InnerRadius => 11;
+	protected override int InnerRadius => 11;
 
-		protected override int OuterRadius => 28;
-	}
+	protected override int OuterRadius => 28;
 }

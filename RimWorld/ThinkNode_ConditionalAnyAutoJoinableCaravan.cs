@@ -2,13 +2,12 @@ using RimWorld.Planet;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThinkNode_ConditionalAnyAutoJoinableCaravan : ThinkNode_Conditional
 {
-	public class ThinkNode_ConditionalAnyAutoJoinableCaravan : ThinkNode_Conditional
+	protected override bool Satisfied(Pawn pawn)
 	{
-		protected override bool Satisfied(Pawn pawn)
-		{
-			return CaravanExitMapUtility.FindCaravanToJoinFor(pawn) != null;
-		}
+		return CaravanExitMapUtility.FindCaravanToJoinFor(pawn) != null;
 	}
 }

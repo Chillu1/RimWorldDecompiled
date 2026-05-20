@@ -1,39 +1,38 @@
 using System;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Dialog_ModList_Save : Dialog_ModList
 {
-	public class Dialog_ModList_Save : Dialog_ModList
+	private ModList savingModList;
+
+	private Action onClosed;
+
+	protected override bool ShouldDoTypeInField => true;
+
+	public Dialog_ModList_Save(ModList modList, Action onClosed = null)
 	{
-		private ModList savingModList;
+		interactButLabel = "OverwriteButton".Translate();
+		savingModList = modList;
+		this.onClosed = onClosed;
+	}
 
-		private Action onClosed;
-
-		protected override bool ShouldDoTypeInField => true;
-
-		public Dialog_ModList_Save(ModList modList, Action onClosed = null)
+	protected override void DoFileInteraction(string fileName)
+	{
+		fileName = GenFile.SanitizedFileName(fileName);
+		string absPath = GenFilePaths.AbsFilePathForModList(fileName);
+		LongEventHandler.QueueLongEvent(delegate
 		{
-			interactButLabel = "OverwriteButton".Translate();
-			savingModList = modList;
-			this.onClosed = onClosed;
-		}
+			GameDataSaveLoader.SaveModList(savingModList, absPath);
+		}, "SavingLongEvent", doAsynchronously: false, null);
+		Messages.Message("SavedAs".Translate(fileName), MessageTypeDefOf.SilentInput, historical: false);
+		Close();
+	}
 
-		protected override void DoFileInteraction(string fileName)
-		{
-			fileName = GenFile.SanitizedFileName(fileName);
-			string absPath = GenFilePaths.AbsFilePathForModList(fileName);
-			LongEventHandler.QueueLongEvent(delegate
-			{
-				GameDataSaveLoader.SaveModList(savingModList, absPath);
-			}, "SavingLongEvent", doAsynchronously: false, null);
-			Messages.Message("SavedAs".Translate(fileName), MessageTypeDefOf.SilentInput, historical: false);
-			Close();
-		}
-
-		public override void Close(bool doCloseSound = true)
-		{
-			base.Close(doCloseSound);
-			onClosed?.Invoke();
-		}
+	public override void Close(bool doCloseSound = true)
+	{
+		base.Close(doCloseSound);
+		onClosed?.Invoke();
 	}
 }

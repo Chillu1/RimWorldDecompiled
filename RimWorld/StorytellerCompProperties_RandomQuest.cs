@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class StorytellerCompProperties_RandomQuest : StorytellerCompProperties_OnOffCycle
 {
-	public class StorytellerCompProperties_RandomQuest : StorytellerCompProperties_OnOffCycle
+	public StorytellerCompProperties_RandomQuest()
 	{
-		public StorytellerCompProperties_RandomQuest()
-		{
-			compClass = typeof(StorytellerComp_RandomQuest);
-		}
+		compClass = typeof(StorytellerComp_RandomQuest);
 	}
 }

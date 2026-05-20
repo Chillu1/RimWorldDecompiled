@@ -1,25 +1,24 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class NegativeFishingOutcomeDef : Def
 {
-	public class NegativeFishingOutcomeDef : Def
-	{
-		public ThingDef fishType;
+	public ThingDef fishType;
 
-		[MustTranslate]
-		public string letterLabel;
+	[MustTranslate]
+	public string letterLabel;
 
-		[MustTranslate]
-		public string letterText;
+	[MustTranslate]
+	public string letterText;
 
-		public LetterDef letterDef;
+	public LetterDef letterDef;
 
-		public DamageDef damageDef;
+	public DamageDef damageDef;
 
-		public IntRange damageAmountRange;
+	public IntRange damageAmountRange;
 
-		public HediffDef addsHediff;
+	public HediffDef addsHediff;
 
-		public float hediffSeverity;
-	}
+	public float hediffSeverity;
 }

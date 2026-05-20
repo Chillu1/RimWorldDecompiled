@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RecordWorker_TimeAsQuestLodger : RecordWorker
 {
-	public class RecordWorker_TimeAsQuestLodger : RecordWorker
+	public override bool ShouldMeasureTimeNow(Pawn pawn)
 	{
-		public override bool ShouldMeasureTimeNow(Pawn pawn)
+		if (pawn.Faction == Faction.OfPlayer)
 		{
-			if (pawn.Faction == Faction.OfPlayer)
-			{
-				return pawn.HasExtraHomeFaction();
-			}
-			return false;
+			return pawn.HasExtraHomeFaction();
 		}
+		return false;
 	}
 }

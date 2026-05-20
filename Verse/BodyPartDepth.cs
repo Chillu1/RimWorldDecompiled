@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum BodyPartDepth : byte
 {
-	public enum BodyPartDepth : byte
-	{
-		Undefined,
-		Inside,
-		Outside
-	}
+	Undefined,
+	Inside,
+	Outside
 }

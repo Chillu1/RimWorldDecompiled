@@ -1,13 +1,12 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompUseEffect_StartWick : CompUseEffect
 {
-	public class CompUseEffect_StartWick : CompUseEffect
+	public override void DoEffect(Pawn usedBy)
 	{
-		public override void DoEffect(Pawn usedBy)
-		{
-			base.DoEffect(usedBy);
-			parent.GetComp<CompExplosive>().StartWick();
-		}
+		base.DoEffect(usedBy);
+		parent.GetComp<CompExplosive>().StartWick();
 	}
 }

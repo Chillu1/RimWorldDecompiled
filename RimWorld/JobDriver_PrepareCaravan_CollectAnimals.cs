@@ -1,32 +1,31 @@
 using Verse;
 using Verse.AI.Group;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_PrepareCaravan_CollectAnimals : JobDriver_RopeToDestination
 {
-	public class JobDriver_PrepareCaravan_CollectAnimals : JobDriver_RopeToDestination
+	protected override bool HasRopeeArrived(Pawn ropee, bool roperWaitingAtDest)
 	{
-		protected override bool HasRopeeArrived(Pawn ropee, bool roperWaitingAtDest)
-		{
-			return false;
-		}
+		return false;
+	}
 
-		protected override void ProcessArrivedRopee(Pawn ropee)
-		{
-		}
+	protected override void ProcessArrivedRopee(Pawn ropee)
+	{
+	}
 
-		protected override bool ShouldOpportunisticallyRopeAnimal(Pawn animal)
-		{
-			return JobGiver_PrepareCaravan_CollectPawns.DoesAnimalNeedGathering(pawn, animal);
-		}
+	protected override bool ShouldOpportunisticallyRopeAnimal(Pawn animal)
+	{
+		return JobGiver_PrepareCaravan_CollectPawns.DoesAnimalNeedGathering(pawn, animal);
+	}
 
-		protected override Thing FindDistantAnimalToRope()
+	protected override Thing FindDistantAnimalToRope()
+	{
+		Lord lord = pawn.GetLord();
+		if (lord == null)
 		{
-			Lord lord = pawn.GetLord();
-			if (lord == null)
-			{
-				return null;
-			}
-			return GenClosest.ClosestThing_Global(pawn.Position, lord.ownedPawns, 99999f, (Thing t) => ShouldOpportunisticallyRopeAnimal(t as Pawn));
+			return null;
 		}
+		return GenClosest.ClosestThing_Global(pawn.Position, lord.ownedPawns, 99999f, (Thing t) => ShouldOpportunisticallyRopeAnimal(t as Pawn));
 	}
 }

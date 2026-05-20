@@ -1,27 +1,26 @@
-namespace Verse
+namespace Verse;
+
+public static class SaveLoadXmlConstants
 {
-	public static class SaveLoadXmlConstants
-	{
-		public const string ListItemName = "li";
+	public const string ListItemName = "li";
 
-		public const string ClassAttributeName = "Class";
+	public const string ClassAttributeName = "Class";
 
-		public const string IsNullAttributeName = "IsNull";
+	public const string IsNullAttributeName = "IsNull";
 
-		public const string AbstractAttributeName = "Abstract";
+	public const string AbstractAttributeName = "Abstract";
 
-		public const string MayRequireAttributeName = "MayRequire";
+	public const string MayRequireAttributeName = "MayRequire";
 
-		public const string MayRequireAnyAttributeName = "MayRequireAnyOf";
+	public const string MayRequireAnyAttributeName = "MayRequireAnyOf";
 
-		public const char MayRequireModDelimiter = ',';
+	public const char MayRequireModDelimiter = ',';
 
-		public const string IfModActiveAttributeName = "IfModActive";
+	public const string IfModActiveAttributeName = "IfModActive";
 
-		public const string IfModActiveAllAttributeName = "IfModActiveAll";
+	public const string IfModActiveAllAttributeName = "IfModActiveAll";
 
-		public const string IfModNotActiveAttributeName = "IfModNotActive";
+	public const string IfModNotActiveAttributeName = "IfModNotActive";
 
-		public const string IgnoreIfNoMatchingFieldAttributeName = "IgnoreIfNoMatchingField";
-	}
+	public const string IgnoreIfNoMatchingFieldAttributeName = "IgnoreIfNoMatchingField";
 }

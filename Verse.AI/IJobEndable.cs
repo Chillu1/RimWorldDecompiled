@@ -1,11 +1,10 @@
 using System;
 
-namespace Verse.AI
-{
-	public interface IJobEndable
-	{
-		Pawn GetActor();
+namespace Verse.AI;
 
-		void AddEndCondition(Func<JobCondition> newEndCondition);
-	}
+public interface IJobEndable
+{
+	Pawn GetActor();
+
+	void AddEndCondition(Func<JobCondition> newEndCondition);
 }

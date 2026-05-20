@@ -1,13 +1,12 @@
-namespace Verse
+namespace Verse;
+
+public enum TraverseMode : byte
 {
-	public enum TraverseMode : byte
-	{
-		ByPawn,
-		PassDoors,
-		NoPassClosedDoors,
-		PassAllDestroyableThings,
-		PassAllDestroyablePlayerOwnedThings,
-		NoPassClosedDoorsOrWater,
-		PassAllDestroyableThingsNotWater
-	}
+	ByPawn,
+	PassDoors,
+	NoPassClosedDoors,
+	PassAllDestroyableThings,
+	PassAllDestroyablePlayerOwnedThings,
+	NoPassClosedDoorsOrWater,
+	PassAllDestroyableThingsNotWater
 }

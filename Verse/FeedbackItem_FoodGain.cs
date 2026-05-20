@@ -1,21 +1,20 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public class FeedbackItem_FoodGain : FeedbackItem
 {
-	public class FeedbackItem_FoodGain : FeedbackItem
+	protected int Amount;
+
+	public FeedbackItem_FoodGain(Vector2 ScreenPos, int Amount)
+		: base(ScreenPos)
 	{
-		protected int Amount;
+		this.Amount = Amount;
+	}
 
-		public FeedbackItem_FoodGain(Vector2 ScreenPos, int Amount)
-			: base(ScreenPos)
-		{
-			this.Amount = Amount;
-		}
-
-		public override void FeedbackOnGUI()
-		{
-			string str = Amount + " food";
-			DrawFloatingText(str, Color.yellow);
-		}
+	public override void FeedbackOnGUI()
+	{
+		string str = Amount + " food";
+		DrawFloatingText(str, Color.yellow);
 	}
 }

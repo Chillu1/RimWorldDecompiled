@@ -1,12 +1,11 @@
 using UnityEngine;
 
-namespace Verse
+namespace Verse;
+
+public static class ColorIntUtility
 {
-	public static class ColorIntUtility
+	public static ColorInt AsColorInt(this Color32 col)
 	{
-		public static ColorInt AsColorInt(this Color32 col)
-		{
-			return new ColorInt(col);
-		}
+		return new ColorInt(col);
 	}
 }

@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class MayRequireBiotechAttribute : MayRequireAttribute
 {
-	public class MayRequireBiotechAttribute : MayRequireAttribute
+	public MayRequireBiotechAttribute()
+		: base("ludeon.rimworld.biotech")
 	{
-		public MayRequireBiotechAttribute()
-			: base("ludeon.rimworld.biotech")
-		{
-		}
 	}
 }

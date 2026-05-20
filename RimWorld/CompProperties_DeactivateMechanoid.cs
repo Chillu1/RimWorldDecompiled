@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_DeactivateMechanoid : CompProperties_AbilityEffect
 {
-	public class CompProperties_DeactivateMechanoid : CompProperties_AbilityEffect
+	public CompProperties_DeactivateMechanoid()
 	{
-		public CompProperties_DeactivateMechanoid()
-		{
-			compClass = typeof(CompAbilityEffect_DeactivateMechanoid);
-		}
+		compClass = typeof(CompAbilityEffect_DeactivateMechanoid);
 	}
 }

@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum GuestStatus
 {
-	public enum GuestStatus
-	{
-		Guest,
-		Prisoner,
-		Slave
-	}
+	Guest,
+	Prisoner,
+	Slave
 }

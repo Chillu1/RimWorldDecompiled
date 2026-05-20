@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ScenPart_Rule_DisallowDesignator : ScenPart_Rule
 {
-	public class ScenPart_Rule_DisallowDesignator : ScenPart_Rule
+	protected override void ApplyRule()
 	{
-		protected override void ApplyRule()
-		{
-			Current.Game.Rules.SetAllowDesignator(def.designatorType, allowed: false);
-		}
+		Current.Game.Rules.SetAllowDesignator(def.designatorType, allowed: false);
 	}
 }

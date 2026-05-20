@@ -1,33 +1,32 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_Spawner : CompProperties
 {
-	public class CompProperties_Spawner : CompProperties
+	public ThingDef thingToSpawn;
+
+	public int spawnCount = 1;
+
+	public IntRange spawnIntervalRange = new IntRange(100, 100);
+
+	public int spawnMaxAdjacent = -1;
+
+	public bool spawnForbidden;
+
+	public bool requiresPower;
+
+	public bool writeTimeLeftToSpawn;
+
+	public bool showMessageIfOwned;
+
+	[NoTranslate]
+	public string saveKeysPrefix;
+
+	public bool inheritFaction;
+
+	public CompProperties_Spawner()
 	{
-		public ThingDef thingToSpawn;
-
-		public int spawnCount = 1;
-
-		public IntRange spawnIntervalRange = new IntRange(100, 100);
-
-		public int spawnMaxAdjacent = -1;
-
-		public bool spawnForbidden;
-
-		public bool requiresPower;
-
-		public bool writeTimeLeftToSpawn;
-
-		public bool showMessageIfOwned;
-
-		[NoTranslate]
-		public string saveKeysPrefix;
-
-		public bool inheritFaction;
-
-		public CompProperties_Spawner()
-		{
-			compClass = typeof(CompSpawner);
-		}
+		compClass = typeof(CompSpawner);
 	}
 }

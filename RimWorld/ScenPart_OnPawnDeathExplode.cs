@@ -2,65 +2,64 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ScenPart_OnPawnDeathExplode : ScenPart
 {
-	public class ScenPart_OnPawnDeathExplode : ScenPart
+	private float radius = 5.9f;
+
+	private DamageDef damage;
+
+	private string radiusBuf;
+
+	public override void Randomize()
 	{
-		private float radius = 5.9f;
+		radius = (float)Rand.RangeInclusive(3, 8) - 0.1f;
+		damage = PossibleDamageDefs().RandomElement();
+	}
 
-		private DamageDef damage;
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Values.Look(ref radius, "radius", 0f);
+		Scribe_Defs.Look(ref damage, "damage");
+	}
 
-		private string radiusBuf;
+	public override string Summary(Scenario scen)
+	{
+		return "ScenPart_OnPawnDeathExplode".Translate(damage.label, radius.ToString());
+	}
 
-		public override void Randomize()
+	public override void DoEditInterface(Listing_ScenEdit listing)
+	{
+		Rect scenPartRect = listing.GetScenPartRect(this, ScenPart.RowHeight * 2f);
+		Widgets.TextFieldNumericLabeled(scenPartRect.TopHalf(), "radius".Translate(), ref radius, ref radiusBuf);
+		if (!Widgets.ButtonText(scenPartRect.BottomHalf(), damage.LabelCap))
 		{
-			radius = (float)Rand.RangeInclusive(3, 8) - 0.1f;
-			damage = PossibleDamageDefs().RandomElement();
+			return;
 		}
-
-		public override void ExposeData()
+		FloatMenuUtility.MakeMenu(PossibleDamageDefs(), (DamageDef d) => d.LabelCap, (DamageDef d) => delegate
 		{
-			base.ExposeData();
-			Scribe_Values.Look(ref radius, "radius", 0f);
-			Scribe_Defs.Look(ref damage, "damage");
-		}
+			damage = d;
+		});
+	}
 
-		public override string Summary(Scenario scen)
+	public override void Notify_PawnDied(Corpse corpse)
+	{
+		if (corpse.Spawned)
 		{
-			return "ScenPart_OnPawnDeathExplode".Translate(damage.label, radius.ToString());
+			GenExplosion.DoExplosion(corpse.Position, corpse.Map, radius, damage, null);
 		}
+	}
 
-		public override void DoEditInterface(Listing_ScenEdit listing)
-		{
-			Rect scenPartRect = listing.GetScenPartRect(this, ScenPart.RowHeight * 2f);
-			Widgets.TextFieldNumericLabeled(scenPartRect.TopHalf(), "radius".Translate(), ref radius, ref radiusBuf);
-			if (!Widgets.ButtonText(scenPartRect.BottomHalf(), damage.LabelCap))
-			{
-				return;
-			}
-			FloatMenuUtility.MakeMenu(PossibleDamageDefs(), (DamageDef d) => d.LabelCap, (DamageDef d) => delegate
-			{
-				damage = d;
-			});
-		}
+	private IEnumerable<DamageDef> PossibleDamageDefs()
+	{
+		yield return DamageDefOf.Bomb;
+		yield return DamageDefOf.Flame;
+	}
 
-		public override void Notify_PawnDied(Corpse corpse)
-		{
-			if (corpse.Spawned)
-			{
-				GenExplosion.DoExplosion(corpse.Position, corpse.Map, radius, damage, null);
-			}
-		}
-
-		private IEnumerable<DamageDef> PossibleDamageDefs()
-		{
-			yield return DamageDefOf.Bomb;
-			yield return DamageDefOf.Flame;
-		}
-
-		public override int GetHashCode()
-		{
-			return base.GetHashCode() ^ ((damage != null) ? damage.GetHashCode() : 0) ^ radius.GetHashCode();
-		}
+	public override int GetHashCode()
+	{
+		return base.GetHashCode() ^ ((damage != null) ? damage.GetHashCode() : 0) ^ radius.GetHashCode();
 	}
 }

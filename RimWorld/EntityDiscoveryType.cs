@@ -1,9 +1,8 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum EntityDiscoveryType
 {
-	public enum EntityDiscoveryType
-	{
-		Spawn,
-		Unfog,
-		BecameVisible
-	}
+	Spawn,
+	Unfog,
+	BecameVisible
 }

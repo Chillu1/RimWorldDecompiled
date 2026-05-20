@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class RecordWorker_TimeAsPrisoner : RecordWorker
 {
-	public class RecordWorker_TimeAsPrisoner : RecordWorker
+	public override bool ShouldMeasureTimeNow(Pawn pawn)
 	{
-		public override bool ShouldMeasureTimeNow(Pawn pawn)
-		{
-			return pawn.IsPrisoner;
-		}
+		return pawn.IsPrisoner;
 	}
 }

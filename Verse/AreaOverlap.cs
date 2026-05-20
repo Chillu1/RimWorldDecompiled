@@ -1,9 +1,8 @@
-namespace Verse
+namespace Verse;
+
+public enum AreaOverlap
 {
-	public enum AreaOverlap
-	{
-		None,
-		Entire,
-		Partial
-	}
+	None,
+	Entire,
+	Partial
 }

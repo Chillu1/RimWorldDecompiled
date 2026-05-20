@@ -2,122 +2,121 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Designator_Mine : Designator_Cells
 {
-	public class Designator_Mine : Designator_Cells
+	private static readonly List<string> tmpIdeoMemberNames = new List<string>();
+
+	public override bool DragDrawMeasurements => true;
+
+	protected override DesignationDef Designation => DesignationDefOf.Mine;
+
+	public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Mine;
+
+	public Designator_Mine()
 	{
-		private static readonly List<string> tmpIdeoMemberNames = new List<string>();
+		defaultLabel = "DesignatorMine".Translate();
+		icon = ContentFinder<Texture2D>.Get("UI/Designators/Mine");
+		defaultDesc = "DesignatorMineDesc".Translate();
+		useMouseIcon = true;
+		soundDragSustain = SoundDefOf.Designate_DragStandard;
+		soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
+		soundSucceeded = SoundDefOf.Designate_Mine;
+		removeAllOtherDesignationDefs = new DesignationDef[1] { DesignationDefOf.MineVein };
+		hotKey = KeyBindingDefOf.Misc10;
+		tutorTag = "Mine";
+	}
 
-		public override bool DragDrawMeasurements => true;
-
-		protected override DesignationDef Designation => DesignationDefOf.Mine;
-
-		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Mine;
-
-		public Designator_Mine()
+	public override AcceptanceReport CanDesignateCell(IntVec3 c)
+	{
+		if (!c.InBounds(base.Map))
 		{
-			defaultLabel = "DesignatorMine".Translate();
-			icon = ContentFinder<Texture2D>.Get("UI/Designators/Mine");
-			defaultDesc = "DesignatorMineDesc".Translate();
-			useMouseIcon = true;
-			soundDragSustain = SoundDefOf.Designate_DragStandard;
-			soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
-			soundSucceeded = SoundDefOf.Designate_Mine;
-			removeAllOtherDesignationDefs = new DesignationDef[1] { DesignationDefOf.MineVein };
-			hotKey = KeyBindingDefOf.Misc10;
-			tutorTag = "Mine";
+			return false;
 		}
-
-		public override AcceptanceReport CanDesignateCell(IntVec3 c)
+		if (base.Map.designationManager.DesignationAt(c, Designation) != null)
 		{
-			if (!c.InBounds(base.Map))
-			{
-				return false;
-			}
-			if (base.Map.designationManager.DesignationAt(c, Designation) != null)
-			{
-				return AcceptanceReport.WasRejected;
-			}
-			if (c.Fogged(base.Map))
-			{
-				return true;
-			}
-			Mineable firstMineable = c.GetFirstMineable(base.Map);
-			if (firstMineable == null)
-			{
-				return "MessageMustDesignateMineable".Translate();
-			}
-			AcceptanceReport result = CanDesignateThing(firstMineable);
-			if (!result.Accepted)
-			{
-				return result;
-			}
-			return AcceptanceReport.WasAccepted;
+			return AcceptanceReport.WasRejected;
 		}
-
-		public override AcceptanceReport CanDesignateThing(Thing t)
+		if (c.Fogged(base.Map))
 		{
-			if (!t.def.mineable)
-			{
-				return false;
-			}
-			if (base.Map.designationManager.DesignationAt(t.Position, Designation) != null)
-			{
-				return AcceptanceReport.WasRejected;
-			}
-			if (base.Map.designationManager.DesignationAt(t.Position, DesignationDefOf.MineVein) != null)
-			{
-				return AcceptanceReport.WasRejected;
-			}
 			return true;
 		}
-
-		public override void DesignateSingleCell(IntVec3 loc)
+		Mineable firstMineable = c.GetFirstMineable(base.Map);
+		if (firstMineable == null)
 		{
-			base.Map.designationManager.AddDesignation(new Designation(loc, Designation));
-			base.Map.designationManager.TryRemoveDesignation(loc, DesignationDefOf.SmoothWall);
-			PossiblyWarnPlayerOnDesignatingMining();
-			if (DebugSettings.godMode)
+			return "MessageMustDesignateMineable".Translate();
+		}
+		AcceptanceReport result = CanDesignateThing(firstMineable);
+		if (!result.Accepted)
+		{
+			return result;
+		}
+		return AcceptanceReport.WasAccepted;
+	}
+
+	public override AcceptanceReport CanDesignateThing(Thing t)
+	{
+		if (!t.def.mineable)
+		{
+			return false;
+		}
+		if (base.Map.designationManager.DesignationAt(t.Position, Designation) != null)
+		{
+			return AcceptanceReport.WasRejected;
+		}
+		if (base.Map.designationManager.DesignationAt(t.Position, DesignationDefOf.MineVein) != null)
+		{
+			return AcceptanceReport.WasRejected;
+		}
+		return true;
+	}
+
+	public override void DesignateSingleCell(IntVec3 loc)
+	{
+		base.Map.designationManager.AddDesignation(new Designation(loc, Designation));
+		base.Map.designationManager.TryRemoveDesignation(loc, DesignationDefOf.SmoothWall);
+		PossiblyWarnPlayerOnDesignatingMining();
+		if (DebugSettings.godMode)
+		{
+			loc.GetFirstMineable(base.Map)?.DestroyMined(null);
+		}
+	}
+
+	public override void DesignateThing(Thing t)
+	{
+		DesignateSingleCell(t.Position);
+	}
+
+	protected override void FinalizeDesignationSucceeded()
+	{
+		base.FinalizeDesignationSucceeded();
+		PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.Mining, KnowledgeAmount.SpecificInteraction);
+	}
+
+	public override void SelectedUpdate()
+	{
+		GenUI.RenderMouseoverBracket();
+	}
+
+	protected static void PossiblyWarnPlayerOnDesignatingMining()
+	{
+		if (!ModsConfig.IdeologyActive)
+		{
+			return;
+		}
+		tmpIdeoMemberNames.Clear();
+		foreach (Ideo allIdeo in Faction.OfPlayer.ideos.AllIdeos)
+		{
+			if (allIdeo.WarnPlayerOnDesignateMine)
 			{
-				loc.GetFirstMineable(base.Map)?.DestroyMined(null);
+				tmpIdeoMemberNames.Add(Find.ActiveLanguageWorker.Pluralize(allIdeo.memberName));
 			}
 		}
-
-		public override void DesignateThing(Thing t)
+		if (tmpIdeoMemberNames.Any())
 		{
-			DesignateSingleCell(t.Position);
+			Messages.Message("MessageWarningPlayerDesignatedMining".Translate(tmpIdeoMemberNames.ToCommaList(useAnd: true)), MessageTypeDefOf.CautionInput, historical: false);
 		}
-
-		protected override void FinalizeDesignationSucceeded()
-		{
-			base.FinalizeDesignationSucceeded();
-			PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.Mining, KnowledgeAmount.SpecificInteraction);
-		}
-
-		public override void SelectedUpdate()
-		{
-			GenUI.RenderMouseoverBracket();
-		}
-
-		protected static void PossiblyWarnPlayerOnDesignatingMining()
-		{
-			if (!ModsConfig.IdeologyActive)
-			{
-				return;
-			}
-			tmpIdeoMemberNames.Clear();
-			foreach (Ideo allIdeo in Faction.OfPlayer.ideos.AllIdeos)
-			{
-				if (allIdeo.WarnPlayerOnDesignateMine)
-				{
-					tmpIdeoMemberNames.Add(Find.ActiveLanguageWorker.Pluralize(allIdeo.memberName));
-				}
-			}
-			if (tmpIdeoMemberNames.Any())
-			{
-				Messages.Message("MessageWarningPlayerDesignatedMining".Translate(tmpIdeoMemberNames.ToCommaList(useAnd: true)), MessageTypeDefOf.CautionInput, historical: false);
-			}
-			tmpIdeoMemberNames.Clear();
-		}
+		tmpIdeoMemberNames.Clear();
 	}
 }

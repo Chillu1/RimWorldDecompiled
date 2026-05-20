@@ -1,74 +1,73 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_Studiable : CompProperties
 {
-	public class CompProperties_Studiable : CompProperties
+	public int frequencyTicks = -1;
+
+	public float studyAmountToComplete = -1f;
+
+	public bool showToggleGizmo;
+
+	public bool studyEnabledByDefault = true;
+
+	public bool canBeActivityDeactivated;
+
+	internal float? anomalyKnowledge;
+
+	internal KnowledgeCategoryDef knowledgeCategory;
+
+	public float knowledgeFactorOutdoors = 1f;
+
+	public int minMonolithLevelForStudy;
+
+	internal bool requiresHoldingPlatform;
+
+	internal bool requiresImprisonment;
+
+	[MustTranslate]
+	public string completedLetterTitle;
+
+	[MustTranslate]
+	public string completedLetterText;
+
+	[MustTranslate]
+	public string completedMessage;
+
+	public LetterDef completedLetterDef;
+
+	public bool Completable => studyAmountToComplete > 0f;
+
+	public CompProperties_Studiable()
 	{
-		public int frequencyTicks = -1;
+		compClass = typeof(CompStudiable);
+	}
 
-		public float studyAmountToComplete = -1f;
-
-		public bool showToggleGizmo;
-
-		public bool studyEnabledByDefault = true;
-
-		public bool canBeActivityDeactivated;
-
-		internal float? anomalyKnowledge;
-
-		internal KnowledgeCategoryDef knowledgeCategory;
-
-		public float knowledgeFactorOutdoors = 1f;
-
-		public int minMonolithLevelForStudy;
-
-		internal bool requiresHoldingPlatform;
-
-		internal bool requiresImprisonment;
-
-		[MustTranslate]
-		public string completedLetterTitle;
-
-		[MustTranslate]
-		public string completedLetterText;
-
-		[MustTranslate]
-		public string completedMessage;
-
-		public LetterDef completedLetterDef;
-
-		public bool Completable => studyAmountToComplete > 0f;
-
-		public CompProperties_Studiable()
+	public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+	{
+		foreach (string item in base.ConfigErrors(parentDef))
 		{
-			compClass = typeof(CompStudiable);
+			yield return item;
 		}
-
-		public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+		if (requiresHoldingPlatform && !typeof(Pawn).IsAssignableFrom(parentDef.thingClass))
 		{
-			foreach (string item in base.ConfigErrors(parentDef))
+			yield return "requiresHoldingPlatform can only be used on Pawns";
+		}
+		if (requiresImprisonment && !typeof(Pawn).IsAssignableFrom(parentDef.thingClass))
+		{
+			yield return "requiresImprisonment can only be used on Pawns";
+		}
+		if (ModsConfig.AnomalyActive && anomalyKnowledge > 0f)
+		{
+			if (knowledgeCategory == null && parentDef != ThingDefOf.VoidMonolith)
 			{
-				yield return item;
+				yield return "anomalyKnowledge is set but knowledgeCategory is not";
 			}
-			if (requiresHoldingPlatform && !typeof(Pawn).IsAssignableFrom(parentDef.thingClass))
+			if (minMonolithLevelForStudy == 0)
 			{
-				yield return "requiresHoldingPlatform can only be used on Pawns";
-			}
-			if (requiresImprisonment && !typeof(Pawn).IsAssignableFrom(parentDef.thingClass))
-			{
-				yield return "requiresImprisonment can only be used on Pawns";
-			}
-			if (ModsConfig.AnomalyActive && anomalyKnowledge > 0f)
-			{
-				if (knowledgeCategory == null && parentDef != ThingDefOf.VoidMonolith)
-				{
-					yield return "anomalyKnowledge is set but knowledgeCategory is not";
-				}
-				if (minMonolithLevelForStudy == 0)
-				{
-					yield return "anomalyKnowledge is set but minMonolithLevelForStudy is not";
-				}
+				yield return "anomalyKnowledge is set but minMonolithLevelForStudy is not";
 			}
 		}
 	}

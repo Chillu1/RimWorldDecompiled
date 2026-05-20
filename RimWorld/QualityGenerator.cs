@@ -1,11 +1,10 @@
-namespace RimWorld
+namespace RimWorld;
+
+public enum QualityGenerator
 {
-	public enum QualityGenerator
-	{
-		BaseGen,
-		Reward,
-		Gift,
-		Super,
-		Trader
-	}
+	BaseGen,
+	Reward,
+	Gift,
+	Super,
+	Trader
 }

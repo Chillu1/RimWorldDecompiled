@@ -1,10 +1,9 @@
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_ObeliskTriggerInteractor : CompProperties_Interactable
 {
-	public class CompProperties_ObeliskTriggerInteractor : CompProperties_Interactable
+	public CompProperties_ObeliskTriggerInteractor()
 	{
-		public CompProperties_ObeliskTriggerInteractor()
-		{
-			compClass = typeof(CompObeliskTriggerInteractor);
-		}
+		compClass = typeof(CompObeliskTriggerInteractor);
 	}
 }

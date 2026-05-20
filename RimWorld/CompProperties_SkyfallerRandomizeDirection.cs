@@ -1,16 +1,15 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_SkyfallerRandomizeDirection : CompProperties
 {
-	public class CompProperties_SkyfallerRandomizeDirection : CompProperties
+	public IntRange directionChangeInterval;
+
+	public float maxDeviationFromStartingAngle;
+
+	public CompProperties_SkyfallerRandomizeDirection()
 	{
-		public IntRange directionChangeInterval;
-
-		public float maxDeviationFromStartingAngle;
-
-		public CompProperties_SkyfallerRandomizeDirection()
-		{
-			compClass = typeof(CompSkyfallerRandomizeDirection);
-		}
+		compClass = typeof(CompSkyfallerRandomizeDirection);
 	}
 }

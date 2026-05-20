@@ -3,54 +3,53 @@ using UnityEngine;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WorkGiver_Merge : WorkGiver_Scanner
 {
-	public class WorkGiver_Merge : WorkGiver_Scanner
+	public override Danger MaxPathDanger(Pawn pawn)
 	{
-		public override Danger MaxPathDanger(Pawn pawn)
-		{
-			return Danger.Deadly;
-		}
+		return Danger.Deadly;
+	}
 
-		public override IEnumerable<Thing> PotentialWorkThingsGlobal(Pawn pawn)
-		{
-			return pawn.Map.listerMergeables.ThingsPotentiallyNeedingMerging();
-		}
+	public override IEnumerable<Thing> PotentialWorkThingsGlobal(Pawn pawn)
+	{
+		return pawn.Map.listerMergeables.ThingsPotentiallyNeedingMerging();
+	}
 
-		public override bool ShouldSkip(Pawn pawn, bool forced = false)
-		{
-			return pawn.Map.listerMergeables.ThingsPotentiallyNeedingMerging().Count == 0;
-		}
+	public override bool ShouldSkip(Pawn pawn, bool forced = false)
+	{
+		return pawn.Map.listerMergeables.ThingsPotentiallyNeedingMerging().Count == 0;
+	}
 
-		public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
+	public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
+	{
+		if (t.stackCount == t.def.stackLimit)
 		{
-			if (t.stackCount == t.def.stackLimit)
-			{
-				return null;
-			}
-			if (!HaulAIUtility.PawnCanAutomaticallyHaul(pawn, t, forced))
-			{
-				return null;
-			}
-			ISlotGroup slotGroup = t.GetSlotGroup();
-			ISlotGroup storageGroup = slotGroup.StorageGroup;
-			slotGroup = storageGroup ?? slotGroup;
-			if (!pawn.CanReserve(t.Position, 1, -1, null, forced))
-			{
-				return null;
-			}
-			foreach (Thing heldThing in slotGroup.HeldThings)
-			{
-				if (heldThing != t && heldThing.CanStackWith(t) && (forced || heldThing.stackCount >= t.stackCount) && heldThing.stackCount < heldThing.def.stackLimit && !heldThing.IsForbidden(pawn.Faction) && heldThing.Position.InAllowedArea(pawn) && pawn.CanReserve(heldThing.Position, 1, -1, null, forced) && pawn.CanReserve(heldThing) && heldThing.Position.IsValidStorageFor(heldThing.Map, t) && !heldThing.Position.ContainsStaticFire(heldThing.Map))
-				{
-					Job job = JobMaker.MakeJob(JobDefOf.HaulToCell, t, heldThing.Position);
-					job.count = Mathf.Min(heldThing.def.stackLimit - heldThing.stackCount, t.stackCount);
-					job.haulMode = HaulMode.ToCellStorage;
-					return job;
-				}
-			}
-			JobFailReason.Is("NoMergeTarget".Translate());
 			return null;
 		}
+		if (!HaulAIUtility.PawnCanAutomaticallyHaul(pawn, t, forced))
+		{
+			return null;
+		}
+		ISlotGroup slotGroup = t.GetSlotGroup();
+		ISlotGroup storageGroup = slotGroup.StorageGroup;
+		slotGroup = storageGroup ?? slotGroup;
+		if (!pawn.CanReserve(t.Position, 1, -1, null, forced))
+		{
+			return null;
+		}
+		foreach (Thing heldThing in slotGroup.HeldThings)
+		{
+			if (heldThing != t && heldThing.CanStackWith(t) && (forced || heldThing.stackCount >= t.stackCount) && heldThing.stackCount < heldThing.def.stackLimit && !heldThing.IsForbidden(pawn.Faction) && heldThing.Position.InAllowedArea(pawn) && pawn.CanReserve(heldThing.Position, 1, -1, null, forced) && pawn.CanReserve(heldThing) && heldThing.Position.IsValidStorageFor(heldThing.Map, t) && !heldThing.Position.ContainsStaticFire(heldThing.Map))
+			{
+				Job job = JobMaker.MakeJob(JobDefOf.HaulToCell, t, heldThing.Position);
+				job.count = Mathf.Min(heldThing.def.stackLimit - heldThing.stackCount, t.stackCount);
+				job.haulMode = HaulMode.ToCellStorage;
+				return job;
+			}
+		}
+		JobFailReason.Is("NoMergeTarget".Translate());
+		return null;
 	}
 }

@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompProperties_Styleable : CompProperties
 {
-	public class CompProperties_Styleable : CompProperties
+	public CompProperties_Styleable()
 	{
-		public CompProperties_Styleable()
-		{
-			compClass = typeof(CompStyleable);
-		}
+		compClass = typeof(CompStyleable);
 	}
 }

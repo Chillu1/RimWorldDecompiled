@@ -1,49 +1,48 @@
 using UnityEngine;
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class CompFadesInOut : ThingComp
 {
-	public class CompFadesInOut : ThingComp
+	private int ageTicks;
+
+	public CompProperties_FadesInOut Props => (CompProperties_FadesInOut)props;
+
+	public override void CompTick()
 	{
-		private int ageTicks;
-
-		public CompProperties_FadesInOut Props => (CompProperties_FadesInOut)props;
-
-		public override void CompTick()
+		base.CompTick();
+		if (parent.Spawned)
 		{
-			base.CompTick();
-			if (parent.Spawned)
-			{
-				ageTicks++;
-			}
+			ageTicks++;
 		}
+	}
 
-		public float Opacity()
+	public float Opacity()
+	{
+		float num = ageTicks.TicksToSeconds();
+		if (num <= Props.fadeInSecs)
 		{
-			float num = ageTicks.TicksToSeconds();
-			if (num <= Props.fadeInSecs)
+			if (Props.fadeInSecs > 0f)
 			{
-				if (Props.fadeInSecs > 0f)
-				{
-					return num / Props.fadeInSecs;
-				}
-				return 1f;
-			}
-			if (num <= Props.fadeInSecs + Props.solidTimeSecs)
-			{
-				return 1f;
-			}
-			if (Props.fadeOutSecs > 0f)
-			{
-				return 1f - Mathf.InverseLerp(Props.fadeInSecs + Props.solidTimeSecs, Props.fadeInSecs + Props.solidTimeSecs + Props.fadeOutSecs, num);
+				return num / Props.fadeInSecs;
 			}
 			return 1f;
 		}
-
-		public override void PostExposeData()
+		if (num <= Props.fadeInSecs + Props.solidTimeSecs)
 		{
-			base.PostExposeData();
-			Scribe_Values.Look(ref ageTicks, "ageTicks", 0);
+			return 1f;
 		}
+		if (Props.fadeOutSecs > 0f)
+		{
+			return 1f - Mathf.InverseLerp(Props.fadeInSecs + Props.solidTimeSecs, Props.fadeInSecs + Props.solidTimeSecs + Props.fadeOutSecs, num);
+		}
+		return 1f;
+	}
+
+	public override void PostExposeData()
+	{
+		base.PostExposeData();
+		Scribe_Values.Look(ref ageTicks, "ageTicks", 0);
 	}
 }

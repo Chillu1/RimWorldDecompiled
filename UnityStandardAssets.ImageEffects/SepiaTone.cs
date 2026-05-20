@@ -1,14 +1,13 @@
 using UnityEngine;
 
-namespace UnityStandardAssets.ImageEffects
+namespace UnityStandardAssets.ImageEffects;
+
+[ExecuteInEditMode]
+[AddComponentMenu("Image Effects/Color Adjustments/Sepia Tone")]
+public class SepiaTone : ImageEffectBase
 {
-	[ExecuteInEditMode]
-	[AddComponentMenu("Image Effects/Color Adjustments/Sepia Tone")]
-	public class SepiaTone : ImageEffectBase
+	private void OnRenderImage(RenderTexture source, RenderTexture destination)
 	{
-		private void OnRenderImage(RenderTexture source, RenderTexture destination)
-		{
-			Graphics.Blit(source, destination, base.material);
-		}
+		Graphics.Blit(source, destination, base.material);
 	}
 }

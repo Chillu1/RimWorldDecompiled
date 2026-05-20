@@ -1,45 +1,44 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class Pawn_ReadingTracker : IExposable
 {
-	public class Pawn_ReadingTracker : IExposable
+	public Pawn pawn;
+
+	private ReadingPolicy curPolicy;
+
+	public ReadingPolicy CurrentPolicy
 	{
-		public Pawn pawn;
-
-		private ReadingPolicy curPolicy;
-
-		public ReadingPolicy CurrentPolicy
+		get
 		{
-			get
+			if (pawn.IsMutant && pawn.mutant.Def.disablePolicies)
 			{
-				if (pawn.IsMutant && pawn.mutant.Def.disablePolicies)
-				{
-					return null;
-				}
-				if (curPolicy == null)
-				{
-					curPolicy = Current.Game.readingPolicyDatabase.DefaultReadingPolicy();
-				}
-				return curPolicy;
+				return null;
 			}
-			set
+			if (curPolicy == null)
 			{
-				curPolicy = value;
+				curPolicy = Current.Game.readingPolicyDatabase.DefaultReadingPolicy();
 			}
+			return curPolicy;
 		}
-
-		public Pawn_ReadingTracker()
+		set
 		{
+			curPolicy = value;
 		}
+	}
 
-		public Pawn_ReadingTracker(Pawn pawn)
-		{
-			this.pawn = pawn;
-		}
+	public Pawn_ReadingTracker()
+	{
+	}
 
-		public void ExposeData()
-		{
-			Scribe_References.Look(ref curPolicy, "curAssignment");
-		}
+	public Pawn_ReadingTracker(Pawn pawn)
+	{
+		this.pawn = pawn;
+	}
+
+	public void ExposeData()
+	{
+		Scribe_References.Look(ref curPolicy, "curAssignment");
 	}
 }

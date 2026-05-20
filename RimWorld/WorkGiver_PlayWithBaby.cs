@@ -2,88 +2,87 @@ using System.Collections.Generic;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WorkGiver_PlayWithBaby : WorkGiver_Scanner
 {
-	public class WorkGiver_PlayWithBaby : WorkGiver_Scanner
+	private const float BabyPlayNeedFullThreshold = 0.95f;
+
+	public override PathEndMode PathEndMode => PathEndMode.InteractionCell;
+
+	public override ThingRequest PotentialWorkThingRequest => ThingRequest.ForGroup(ThingRequestGroup.Pawn);
+
+	public override IEnumerable<Thing> PotentialWorkThingsGlobal(Pawn pawn)
 	{
-		private const float BabyPlayNeedFullThreshold = 0.95f;
+		return pawn.Map.mapPawns.SpawnedBabiesInFaction(pawn.Faction);
+	}
 
-		public override PathEndMode PathEndMode => PathEndMode.InteractionCell;
-
-		public override ThingRequest PotentialWorkThingRequest => ThingRequest.ForGroup(ThingRequestGroup.Pawn);
-
-		public override IEnumerable<Thing> PotentialWorkThingsGlobal(Pawn pawn)
+	public override bool ShouldSkip(Pawn pawn, bool forced = false)
+	{
+		if (!ModsConfig.BiotechActive)
 		{
-			return pawn.Map.mapPawns.SpawnedBabiesInFaction(pawn.Faction);
+			return false;
 		}
-
-		public override bool ShouldSkip(Pawn pawn, bool forced = false)
+		if (pawn.IsBurning())
 		{
-			if (!ModsConfig.BiotechActive)
+			return true;
+		}
+		return false;
+	}
+
+	public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
+	{
+		if (!(t is Pawn pawn2))
+		{
+			return false;
+		}
+		if (!pawn2.DevelopmentalStage.Baby())
+		{
+			return false;
+		}
+		if (pawn2.needs.play == null)
+		{
+			return false;
+		}
+		if (forced)
+		{
+			if (pawn2.needs.play.CurLevelPercentage >= 0.95f)
+			{
+				JobFailReason.Is("CannotInteractBabyPlayFull".Translate());
+				return false;
+			}
+		}
+		else
+		{
+			if (!pawn2.Awake())
 			{
 				return false;
 			}
-			if (pawn.IsBurning())
+			if (!pawn2.needs.play.IsLow)
+			{
+				return false;
+			}
+		}
+		foreach (BabyPlayDef item in DefDatabase<BabyPlayDef>.AllDefs.InRandomOrder())
+		{
+			if (item.Worker.CanDo(pawn, pawn2))
 			{
 				return true;
 			}
-			return false;
 		}
+		return false;
+	}
 
-		public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
+	public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
+	{
+		Pawn baby = (Pawn)t;
+		foreach (BabyPlayDef item in DefDatabase<BabyPlayDef>.AllDefs.InRandomOrder())
 		{
-			if (!(t is Pawn pawn2))
+			if (item.Worker.CanDo(pawn, baby))
 			{
-				return false;
+				return item.Worker.TryGiveJob(pawn, baby);
 			}
-			if (!pawn2.DevelopmentalStage.Baby())
-			{
-				return false;
-			}
-			if (pawn2.needs.play == null)
-			{
-				return false;
-			}
-			if (forced)
-			{
-				if (pawn2.needs.play.CurLevelPercentage >= 0.95f)
-				{
-					JobFailReason.Is("CannotInteractBabyPlayFull".Translate());
-					return false;
-				}
-			}
-			else
-			{
-				if (!pawn2.Awake())
-				{
-					return false;
-				}
-				if (!pawn2.needs.play.IsLow)
-				{
-					return false;
-				}
-			}
-			foreach (BabyPlayDef item in DefDatabase<BabyPlayDef>.AllDefs.InRandomOrder())
-			{
-				if (item.Worker.CanDo(pawn, pawn2))
-				{
-					return true;
-				}
-			}
-			return false;
 		}
-
-		public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
-		{
-			Pawn baby = (Pawn)t;
-			foreach (BabyPlayDef item in DefDatabase<BabyPlayDef>.AllDefs.InRandomOrder())
-			{
-				if (item.Worker.CanDo(pawn, baby))
-				{
-					return item.Worker.TryGiveJob(pawn, baby);
-				}
-			}
-			return null;
-		}
+		return null;
 	}
 }

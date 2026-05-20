@@ -1,61 +1,60 @@
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class WorkGiver_ReleaseEntity : WorkGiver_Scanner
 {
-	public class WorkGiver_ReleaseEntity : WorkGiver_Scanner
+	public override ThingRequest PotentialWorkThingRequest => ThingRequest.ForGroup(ThingRequestGroup.EntityHolder);
+
+	public override bool ShouldSkip(Pawn pawn, bool forced = false)
 	{
-		public override ThingRequest PotentialWorkThingRequest => ThingRequest.ForGroup(ThingRequestGroup.EntityHolder);
+		return !ModsConfig.AnomalyActive;
+	}
 
-		public override bool ShouldSkip(Pawn pawn, bool forced = false)
+	public override string PostProcessedGerund(Job job)
+	{
+		return "ReleasingEntity".Translate(def.gerund.Named("GERUND"), job.targetB.Label.Named("TARGETLABEL"));
+	}
+
+	public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
+	{
+		if (!pawn.CanReserve(t, 1, -1, null, forced))
 		{
-			return !ModsConfig.AnomalyActive;
+			return false;
 		}
-
-		public override string PostProcessedGerund(Job job)
+		if (GetEntity(t) == null)
 		{
-			return "ReleasingEntity".Translate(def.gerund.Named("GERUND"), job.targetB.Label.Named("TARGETLABEL"));
+			return false;
 		}
+		return true;
+	}
 
-		public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
+	public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
+	{
+		Pawn entity = GetEntity(t);
+		if (entity == null)
 		{
-			if (!pawn.CanReserve(t, 1, -1, null, forced))
-			{
-				return false;
-			}
-			if (GetEntity(t) == null)
-			{
-				return false;
-			}
-			return true;
+			return null;
 		}
+		return JobMaker.MakeJob(JobDefOf.ReleaseEntity, t, entity).WithCount(1);
+	}
 
-		public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
+	private Pawn GetEntity(Thing thing)
+	{
+		if (thing is Building_HoldingPlatform { HeldPawn: var heldPawn })
 		{
-			Pawn entity = GetEntity(t);
-			if (entity == null)
+			if (heldPawn == null)
 			{
 				return null;
 			}
-			return JobMaker.MakeJob(JobDefOf.ReleaseEntity, t, entity).WithCount(1);
-		}
-
-		private Pawn GetEntity(Thing thing)
-		{
-			if (thing is Building_HoldingPlatform { HeldPawn: var heldPawn })
+			CompHoldingPlatformTarget compHoldingPlatformTarget = heldPawn.TryGetComp<CompHoldingPlatformTarget>();
+			if (compHoldingPlatformTarget != null && compHoldingPlatformTarget.containmentMode != EntityContainmentMode.Release)
 			{
-				if (heldPawn == null)
-				{
-					return null;
-				}
-				CompHoldingPlatformTarget compHoldingPlatformTarget = heldPawn.TryGetComp<CompHoldingPlatformTarget>();
-				if (compHoldingPlatformTarget != null && compHoldingPlatformTarget.containmentMode != EntityContainmentMode.Release)
-				{
-					return null;
-				}
-				return heldPawn;
+				return null;
 			}
-			return null;
+			return heldPawn;
 		}
+		return null;
 	}
 }

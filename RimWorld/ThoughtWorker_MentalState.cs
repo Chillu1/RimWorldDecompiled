@@ -1,12 +1,11 @@
 using Verse;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class ThoughtWorker_MentalState : ThoughtWorker
 {
-	public class ThoughtWorker_MentalState : ThoughtWorker
+	protected override ThoughtState CurrentStateInternal(Pawn p)
 	{
-		protected override ThoughtState CurrentStateInternal(Pawn p)
-		{
-			return p.MentalStateDef == def.mentalState;
-		}
+		return p.MentalStateDef == def.mentalState;
 	}
 }

@@ -1,11 +1,10 @@
-namespace RimWorld
+namespace RimWorld;
+
+[DefOf]
+public static class PsychicRitualDefOf
 {
-	[DefOf]
-	public static class PsychicRitualDefOf
+	static PsychicRitualDefOf()
 	{
-		static PsychicRitualDefOf()
-		{
-			DefOfHelper.EnsureInitializedInCtor(typeof(PsychicRitualDefOf));
-		}
+		DefOfHelper.EnsureInitializedInCtor(typeof(PsychicRitualDefOf));
 	}
 }

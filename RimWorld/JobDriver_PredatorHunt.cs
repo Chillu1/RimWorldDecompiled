@@ -3,155 +3,154 @@ using System.Collections.Generic;
 using Verse;
 using Verse.AI;
 
-namespace RimWorld
+namespace RimWorld;
+
+public class JobDriver_PredatorHunt : JobDriver
 {
-	public class JobDriver_PredatorHunt : JobDriver
+	private bool notifiedPlayerAttacked;
+
+	private bool notifiedPlayerAttacking;
+
+	private bool firstHit = true;
+
+	public const TargetIndex PreyInd = TargetIndex.A;
+
+	private const TargetIndex CorpseInd = TargetIndex.A;
+
+	private const int MaxHuntTicks = 5000;
+
+	public Pawn Prey
 	{
-		private bool notifiedPlayerAttacked;
-
-		private bool notifiedPlayerAttacking;
-
-		private bool firstHit = true;
-
-		public const TargetIndex PreyInd = TargetIndex.A;
-
-		private const TargetIndex CorpseInd = TargetIndex.A;
-
-		private const int MaxHuntTicks = 5000;
-
-		public Pawn Prey
+		get
 		{
-			get
+			Corpse corpse = Corpse;
+			if (corpse != null)
 			{
-				Corpse corpse = Corpse;
-				if (corpse != null)
-				{
-					return corpse.InnerPawn;
-				}
-				return (Pawn)job.GetTarget(TargetIndex.A).Thing;
+				return corpse.InnerPawn;
 			}
+			return (Pawn)job.GetTarget(TargetIndex.A).Thing;
 		}
+	}
 
-		private Corpse Corpse => job.GetTarget(TargetIndex.A).Thing as Corpse;
+	private Corpse Corpse => job.GetTarget(TargetIndex.A).Thing as Corpse;
 
-		public override void ExposeData()
+	public override void ExposeData()
+	{
+		base.ExposeData();
+		Scribe_Values.Look(ref firstHit, "firstHit", defaultValue: false);
+		Scribe_Values.Look(ref notifiedPlayerAttacking, "notifiedPlayerAttacking", defaultValue: false);
+	}
+
+	public override string GetReport()
+	{
+		if (Corpse != null)
 		{
-			base.ExposeData();
-			Scribe_Values.Look(ref firstHit, "firstHit", defaultValue: false);
-			Scribe_Values.Look(ref notifiedPlayerAttacking, "notifiedPlayerAttacking", defaultValue: false);
+			return ReportStringProcessed(JobDefOf.Ingest.reportString);
 		}
+		return base.GetReport();
+	}
 
-		public override string GetReport()
-		{
-			if (Corpse != null)
-			{
-				return ReportStringProcessed(JobDefOf.Ingest.reportString);
-			}
-			return base.GetReport();
-		}
+	public override bool TryMakePreToilReservations(bool errorOnFailed)
+	{
+		return true;
+	}
 
-		public override bool TryMakePreToilReservations(bool errorOnFailed)
+	protected override IEnumerable<Toil> MakeNewToils()
+	{
+		AddFinishAction(delegate
 		{
-			return true;
-		}
-
-		protected override IEnumerable<Toil> MakeNewToils()
+			base.Map.attackTargetsCache.UpdateTarget(pawn);
+		});
+		Toil prepareToEatCorpse = ToilMaker.MakeToil("MakeNewToils");
+		prepareToEatCorpse.initAction = delegate
 		{
-			AddFinishAction(delegate
-			{
-				base.Map.attackTargetsCache.UpdateTarget(pawn);
-			});
-			Toil prepareToEatCorpse = ToilMaker.MakeToil("MakeNewToils");
-			prepareToEatCorpse.initAction = delegate
-			{
-				Pawn actor = prepareToEatCorpse.actor;
-				Corpse corpse = Corpse;
-				if (corpse == null)
-				{
-					Pawn prey = Prey;
-					if (prey == null)
-					{
-						actor.jobs.EndCurrentJob(JobCondition.Incompletable);
-						return;
-					}
-					corpse = prey.Corpse;
-					if (corpse == null || !corpse.Spawned)
-					{
-						actor.jobs.EndCurrentJob(JobCondition.Incompletable);
-						return;
-					}
-				}
-				if (actor.Faction == Faction.OfPlayer)
-				{
-					corpse.SetForbidden(value: false, warnOnFail: false);
-				}
-				else
-				{
-					corpse.SetForbidden(value: true, warnOnFail: false);
-				}
-				actor.CurJob.SetTarget(TargetIndex.A, corpse);
-			};
-			yield return Toils_General.DoAtomic(delegate
-			{
-				base.Map.attackTargetsCache.UpdateTarget(pawn);
-			});
-			Action hitAction = delegate
+			Pawn actor = prepareToEatCorpse.actor;
+			Corpse corpse = Corpse;
+			if (corpse == null)
 			{
 				Pawn prey = Prey;
-				bool surpriseAttack = firstHit && !prey.IsColonist;
-				if (pawn.meleeVerbs.TryMeleeAttack(prey, job.verbToUse, surpriseAttack))
+				if (prey == null)
 				{
-					if (!notifiedPlayerAttacked && PawnUtility.ShouldSendNotificationAbout(prey))
-					{
-						notifiedPlayerAttacked = true;
-						Messages.Message("MessageAttackedByPredator".Translate(prey.LabelShort, pawn.LabelIndefinite(), prey.Named("PREY"), pawn.Named("PREDATOR")).CapitalizeFirst(), prey, MessageTypeDefOf.ThreatSmall);
-					}
-					base.Map.attackTargetsCache.UpdateTarget(pawn);
-					firstHit = false;
+					actor.jobs.EndCurrentJob(JobCondition.Incompletable);
+					return;
 				}
-			};
-			Toil toil = Toils_Combat.FollowAndMeleeAttack(TargetIndex.A, hitAction).JumpIfDespawnedOrNull(TargetIndex.A, prepareToEatCorpse).JumpIf(() => Corpse != null, prepareToEatCorpse)
-				.FailOn(() => Find.TickManager.TicksGame > startTick + 5000 && (float)(job.GetTarget(TargetIndex.A).Cell - pawn.Position).LengthHorizontalSquared > 4f);
-			toil.AddPreTickIntervalAction(CheckWarnPlayerInterval);
-			yield return toil;
-			yield return prepareToEatCorpse;
-			Toil gotoCorpse = Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
-			yield return gotoCorpse;
-			float durationMultiplier = 1f / pawn.GetStatValue(StatDefOf.EatingSpeed);
-			yield return Toils_Ingest.ChewIngestible(pawn, durationMultiplier, TargetIndex.A).FailOnDespawnedOrNull(TargetIndex.A).FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
-			yield return Toils_Ingest.FinalizeIngest(pawn, TargetIndex.A);
-			yield return Toils_Jump.JumpIf(gotoCorpse, () => pawn.needs.food.CurLevelPercentage < 0.9f);
-		}
-
-		public override void Notify_DamageTaken(DamageInfo dinfo)
-		{
-			base.Notify_DamageTaken(dinfo);
-			if (dinfo.Def.ExternalViolenceFor(pawn) && dinfo.Def.isRanged && dinfo.Instigator != null && dinfo.Instigator != Prey && !pawn.InMentalState && !pawn.Downed)
-			{
-				pawn.mindState.StartFleeingBecauseOfPawnAction(dinfo.Instigator);
+				corpse = prey.Corpse;
+				if (corpse == null || !corpse.Spawned)
+				{
+					actor.jobs.EndCurrentJob(JobCondition.Incompletable);
+					return;
+				}
 			}
-		}
-
-		private void CheckWarnPlayerInterval(int delta)
-		{
-			if (notifiedPlayerAttacking)
+			if (actor.Faction == Faction.OfPlayer)
 			{
-				return;
+				corpse.SetForbidden(value: false, warnOnFail: false);
 			}
+			else
+			{
+				corpse.SetForbidden(value: true, warnOnFail: false);
+			}
+			actor.CurJob.SetTarget(TargetIndex.A, corpse);
+		};
+		yield return Toils_General.DoAtomic(delegate
+		{
+			base.Map.attackTargetsCache.UpdateTarget(pawn);
+		});
+		Action hitAction = delegate
+		{
 			Pawn prey = Prey;
-			if (prey.Spawned && prey.Faction == Faction.OfPlayer && Find.TickManager.TicksGame > pawn.mindState.lastPredatorHuntingPlayerNotificationTick + 2500 && prey.Position.InHorDistOf(pawn.Position, 60f))
+			bool surpriseAttack = firstHit && !prey.IsColonist;
+			if (pawn.meleeVerbs.TryMeleeAttack(prey, job.verbToUse, surpriseAttack))
 			{
-				if (prey.RaceProps.Humanlike)
+				if (!notifiedPlayerAttacked && PawnUtility.ShouldSendNotificationAbout(prey))
 				{
-					Find.LetterStack.ReceiveLetter("LetterLabelPredatorHuntingColonist".Translate(pawn.LabelShort, prey.LabelDefinite(), pawn.Named("PREDATOR"), prey.Named("PREY")).CapitalizeFirst(), "LetterPredatorHuntingColonist".Translate(pawn.LabelIndefinite(), prey.LabelDefinite(), pawn.Named("PREDATOR"), prey.Named("PREY")).CapitalizeFirst(), LetterDefOf.ThreatBig, pawn);
+					notifiedPlayerAttacked = true;
+					Messages.Message("MessageAttackedByPredator".Translate(prey.LabelShort, pawn.LabelIndefinite(), prey.Named("PREY"), pawn.Named("PREDATOR")).CapitalizeFirst(), prey, MessageTypeDefOf.ThreatSmall);
 				}
-				else
-				{
-					Messages.Message((prey.Name.Numerical ? "LetterPredatorHuntingColonist" : "MessagePredatorHuntingPlayerAnimal").Translate(pawn.Named("PREDATOR"), prey.Named("PREY")), pawn, MessageTypeDefOf.ThreatBig);
-				}
-				pawn.mindState.Notify_PredatorHuntingPlayerNotification();
-				notifiedPlayerAttacking = true;
+				base.Map.attackTargetsCache.UpdateTarget(pawn);
+				firstHit = false;
 			}
+		};
+		Toil toil = Toils_Combat.FollowAndMeleeAttack(TargetIndex.A, hitAction).JumpIfDespawnedOrNull(TargetIndex.A, prepareToEatCorpse).JumpIf(() => Corpse != null, prepareToEatCorpse)
+			.FailOn(() => Find.TickManager.TicksGame > startTick + 5000 && (float)(job.GetTarget(TargetIndex.A).Cell - pawn.Position).LengthHorizontalSquared > 4f);
+		toil.AddPreTickIntervalAction(CheckWarnPlayerInterval);
+		yield return toil;
+		yield return prepareToEatCorpse;
+		Toil gotoCorpse = Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
+		yield return gotoCorpse;
+		float durationMultiplier = 1f / pawn.GetStatValue(StatDefOf.EatingSpeed);
+		yield return Toils_Ingest.ChewIngestible(pawn, durationMultiplier, TargetIndex.A).FailOnDespawnedOrNull(TargetIndex.A).FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
+		yield return Toils_Ingest.FinalizeIngest(pawn, TargetIndex.A);
+		yield return Toils_Jump.JumpIf(gotoCorpse, () => pawn.needs.food.CurLevelPercentage < 0.9f);
+	}
+
+	public override void Notify_DamageTaken(DamageInfo dinfo)
+	{
+		base.Notify_DamageTaken(dinfo);
+		if (dinfo.Def.ExternalViolenceFor(pawn) && dinfo.Def.isRanged && dinfo.Instigator != null && dinfo.Instigator != Prey && !pawn.InMentalState && !pawn.Downed)
+		{
+			pawn.mindState.StartFleeingBecauseOfPawnAction(dinfo.Instigator);
+		}
+	}
+
+	private void CheckWarnPlayerInterval(int delta)
+	{
+		if (notifiedPlayerAttacking)
+		{
+			return;
+		}
+		Pawn prey = Prey;
+		if (prey.Spawned && prey.Faction == Faction.OfPlayer && Find.TickManager.TicksGame > pawn.mindState.lastPredatorHuntingPlayerNotificationTick + 2500 && prey.Position.InHorDistOf(pawn.Position, 60f))
+		{
+			if (prey.RaceProps.Humanlike)
+			{
+				Find.LetterStack.ReceiveLetter("LetterLabelPredatorHuntingColonist".Translate(pawn.LabelShort, prey.LabelDefinite(), pawn.Named("PREDATOR"), prey.Named("PREY")).CapitalizeFirst(), "LetterPredatorHuntingColonist".Translate(pawn.LabelIndefinite(), prey.LabelDefinite(), pawn.Named("PREDATOR"), prey.Named("PREY")).CapitalizeFirst(), LetterDefOf.ThreatBig, pawn);
+			}
+			else
+			{
+				Messages.Message((prey.Name.Numerical ? "LetterPredatorHuntingColonist" : "MessagePredatorHuntingPlayerAnimal").Translate(pawn.Named("PREDATOR"), prey.Named("PREY")), pawn, MessageTypeDefOf.ThreatBig);
+			}
+			pawn.mindState.Notify_PredatorHuntingPlayerNotification();
+			notifiedPlayerAttacking = true;
 		}
 	}
 }

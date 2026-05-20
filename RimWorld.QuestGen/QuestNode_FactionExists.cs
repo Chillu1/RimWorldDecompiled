@@ -1,48 +1,47 @@
-namespace RimWorld.QuestGen
+namespace RimWorld.QuestGen;
+
+public class QuestNode_FactionExists : QuestNode
 {
-	public class QuestNode_FactionExists : QuestNode
+	public SlateRef<Faction> faction;
+
+	public QuestNode node;
+
+	public QuestNode elseNode;
+
+	protected override bool TestRunInt(Slate slate)
 	{
-		public SlateRef<Faction> faction;
-
-		public QuestNode node;
-
-		public QuestNode elseNode;
-
-		protected override bool TestRunInt(Slate slate)
+		if (FactionExists(slate))
 		{
-			if (FactionExists(slate))
+			if (node != null)
 			{
-				if (node != null)
-				{
-					return node.TestRun(slate);
-				}
-				return true;
-			}
-			if (elseNode != null)
-			{
-				return elseNode.TestRun(slate);
+				return node.TestRun(slate);
 			}
 			return true;
 		}
-
-		protected override void RunInt()
+		if (elseNode != null)
 		{
-			if (FactionExists(QuestGen.slate))
+			return elseNode.TestRun(slate);
+		}
+		return true;
+	}
+
+	protected override void RunInt()
+	{
+		if (FactionExists(QuestGen.slate))
+		{
+			if (node != null)
 			{
-				if (node != null)
-				{
-					node.Run();
-				}
-			}
-			else if (elseNode != null)
-			{
-				elseNode.Run();
+				node.Run();
 			}
 		}
-
-		private bool FactionExists(Slate slate)
+		else if (elseNode != null)
 		{
-			return faction.GetValue(slate) != null;
+			elseNode.Run();
 		}
+	}
+
+	private bool FactionExists(Slate slate)
+	{
+		return faction.GetValue(slate) != null;
 	}
 }
